@@ -1,0 +1,129 @@
+/**
+ * Employee Management Module Styles
+ */
+
+/* ============================================
+   USER AVATAR (Reused from users.css)
+   ============================================ */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--main-color, #012445), var(--secondary-color, #012445));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   DATA TABLE CUSTOMIZATION
+   ============================================ */
+#employeeTable {
+    font-size: 0.875rem;
+}
+
+#employeeTable thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 2px solid #dee2e6;
+}
+
+#employeeTable tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#employeeTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* DataTable Pagination */
+#employeeTable_wrapper .page-item.active {
+    --bs-pagination-active-bg: var(--main-color) !important;
+    --bs-pagination-active-border-color: var(--main-color) !important;
+}
+
+#employeeTable_wrapper .dataTables_wrapper .dataTables_paginate .pagination .page-link:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* Fix for DataTables responsive child rows */
+#employeeTable tbody tr.child ul.dtr-details {
+    width: 100%;
+}
+
+#employeeTable tbody tr.child ul.dtr-details li {
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.5rem 0;
+}
+
+#employeeTable tbody tr.child ul.dtr-details li:last-child {
+    border-bottom: none;
+}
+
+#employeeTable tbody tr.child .dtr-title {
+    font-weight: 600;
+    min-width: 120px;
+    display: inline-block;
+}
+
+/* ============================================
+   EMPLOYMENT TYPE BADGES
+   ============================================ */
+.bg-purple {
+    background-color: #9c27b0 !important;
+    color: white !important;
+}
+
+/* ============================================
+   NAV PILLS STYLING
+   ============================================ */
+.nav-pills .nav-link {
+    transition: all 0.3s ease;
+}
+
+.nav-pills .nav-link:hover:not(.active) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================
+   STAT CARDS
+   ============================================ */
+.stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-card .card-body {
+    min-height: 100px;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    .nav-pills {
+        flex-direction: column;
+    }
+    
+    .nav-pills .nav-item {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .nav-pills .nav-link {
+        text-align: left;
+    }
+}
+

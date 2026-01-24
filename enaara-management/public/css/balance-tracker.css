@@ -1,0 +1,88 @@
+/**
+ * Balance Tracker Module Styles
+ */
+
+/* ============================================
+   COUNTERS
+   ============================================ */
+.counter-card {
+    transition: transform 0.2s ease;
+}
+
+.counter-card:hover {
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   DATA TABLE CUSTOMIZATION
+   ============================================ */
+#balanceTable {
+    font-size: 0.875rem;
+}
+
+#balanceTable thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 2px solid #dee2e6;
+}
+
+#balanceTable tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#balanceTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Progress Bar in Table */
+#balanceTable .progress {
+    background-color: #e9ecef;
+}
+
+#balanceTable .progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* DataTable Pagination */
+#balanceTable_wrapper .page-item.active {
+    --bs-pagination-active-bg: var(--main-color) !important;
+    --bs-pagination-active-border-color: var(--main-color) !important;
+}
+
+#balanceTable_wrapper .dataTables_wrapper .dataTables_paginate .pagination .page-link:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* Fix for DataTables responsive child rows */
+#balanceTable tbody tr.child ul.dtr-details {
+    width: 100%;
+}
+
+#balanceTable tbody tr.child ul.dtr-details li {
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.5rem 0;
+}
+
+#balanceTable tbody tr.child ul.dtr-details li:last-child {
+    border-bottom: none;
+}
+
+#balanceTable tbody tr.child .dtr-title {
+    font-weight: 600;
+    min-width: 120px;
+    display: inline-block;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    #balanceTable {
+        font-size: 0.75rem;
+    }
+}
+

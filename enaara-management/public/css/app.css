@@ -1,0 +1,576 @@
+/* Admin Panel Layout Styles */
+:root {
+    --primary-color: #e6c673;
+    --main-color: #012445;
+    --secondary-color: #033d73;
+    --danger-color: #f93b4e;
+    --warning-color: #cfa219;
+    --info-color: #0073de;
+    --dark-color: #000;
+    --light-color: #fff;
+    
+    /* Bootstrap Color Overrides - Map to root colors */
+    --bs-primary: var(--main-color) !important;
+    --bs-primary-rgb: 1, 36, 69 !important;
+    --bs-primary-bg-subtle: rgba(1, 36, 69, 0.1) !important;
+    --bs-primary-border-subtle: rgba(1, 36, 69, 0.2) !important;
+    --bs-primary-text-emphasis: var(--main-color) !important;
+    
+    /* Danger (Red) for negative values and reject buttons */
+    --bs-danger: var(--danger-color) !important;
+    --bs-danger-rgb: 220, 53, 69 !important;
+    --bs-danger-bg-subtle: rgba(220, 53, 69, 0.1) !important;
+    --bs-danger-border-subtle: rgba(220, 53, 69, 0.2) !important;
+    --bs-danger-text-emphasis: var(--danger-color) !important;
+    
+    /* Success - Map to main color */
+    --bs-success: var(--main-color) !important;
+    --bs-success-rgb: 1, 36, 69 !important;
+    --bs-success-bg-subtle: rgba(1, 36, 69, 0.1) !important;
+    --bs-success-border-subtle: rgba(1, 36, 69, 0.2) !important;
+    --bs-success-text-emphasis: var(--main-color) !important;
+}
+
+* {
+    font-family: "Roboto Flex";
+}
+
+/* ============================================
+   BOOTSTRAP CLASS OVERRIDES
+   ============================================ */
+
+/* Primary (Main Color) */
+.btn-primary,
+.bg-primary {
+    background-color: var(--main-color) !important;
+    border-color: var(--main-color) !important;
+    color: var(--light-color) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+.btn-outline-primary {
+    border-color: var(--main-color) !important;
+    color: var(--main-color) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+    background-color: var(--main-color) !important;
+    color: var(--light-color) !important;
+}
+
+.text-primary {
+    color: var(--main-color) !important;
+}
+
+.border-primary {
+    border-color: var(--main-color) !important;
+}
+
+/* Danger (Red) - Only for negative values and reject buttons */
+.btn-danger,
+.bg-danger {
+    background-color: var(--danger-color) !important;
+    border-color: var(--danger-color) !important;
+    color: var(--light-color) !important;
+}
+
+.btn-danger:hover,
+.btn-danger:focus,
+.btn-danger:active {
+    background-color: #c82333 !important;
+    border-color: #bd2130 !important;
+}
+
+.btn-outline-danger {
+    border-color: var(--danger-color) !important;
+    color: var(--danger-color) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-danger:hover,
+.btn-outline-danger:focus,
+.btn-outline-danger:active {
+    background-color: var(--danger-color) !important;
+    color: var(--light-color) !important;
+}
+
+.text-danger {
+    color: var(--danger-color) !important;
+}
+
+.text-info {
+    color: var(--info-color) !important;
+}
+
+.bg-info {
+    background-color: var(--info-color) !important;
+}
+
+.border-danger {
+    border-color: var(--danger-color) !important;
+}
+
+.badge {
+    font-size: 10px !important;
+}
+
+/* Badge Primary */
+.badge.bg-primary {
+    background-color: var(--main-color) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger-color) !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-color) !important;
+}
+
+.text-warning {
+    color: var(--warning-color) !important;
+}
+
+.badge.bg-success {
+    background-color: var(--main-color) !important;
+}
+
+/* Success (Main Color) */
+.btn-success,
+.bg-success {
+    background-color: var(--main-color) !important;
+    border-color: var(--main-color) !important;
+    color: var(--light-color) !important;
+}
+
+.btn-success:hover,
+.btn-success:focus,
+.btn-success:active {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+.btn-outline-success {
+    border-color: var(--main-color) !important;
+    color: var(--main-color) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-success:hover,
+.btn-outline-success:focus,
+.btn-outline-success:active {
+    background-color: var(--main-color) !important;
+    color: var(--light-color) !important;
+}
+
+.text-success {
+    color: var(--main-color) !important;
+}
+
+.border-success {
+    border-color: var(--main-color) !important;
+}
+
+/* ============================================
+   GLOBAL UTILITY CLASSES
+   ============================================ */
+
+/* Main Color Utilities */
+.bg-main {
+    background-color: var(--main-color) !important;
+    color: var(--light-color) !important;
+}
+
+.text-main {
+    color: var(--main-color) !important;
+}
+
+.border-main {
+    border-color: var(--main-color) !important;
+}
+
+/* Primary Color Utilities (Gold/Yellow) */
+.bg-primary-custom {
+    background-color: var(--primary-color) !important;
+    color: var(--dark-color) !important;
+}
+
+.text-primary-custom {
+    color: var(--primary-color) !important;
+}
+
+/* Secondary Color Utilities */
+.bg-secondary {
+    background-color: var(--secondary-color) !important;
+}
+
+.text-secondary {
+    color: var(--secondary-color) !important;
+}
+
+/* Negative Value Classes (Red) */
+.text-negative,
+.bg-negative {
+    color: var(--danger-color) !important;
+}
+
+.bg-negative {
+    background-color: var(--danger-color) !important;
+}
+
+/* ============================================
+   COMMON COMPONENTS
+   ============================================ */
+
+.card {
+    background: rgba(255, 255, 255, 0);
+    border-radius: 16px;
+    box-shadow: 0 0px 5px rgba(0, 0, 0, 0.249);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+}
+
+.card-header {
+    background-color: transparent !important;
+}
+
+/* Employee Avatar */
+.employee-avatar,
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--main-color), var(--secondary-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--light-color);
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+/* Action Button */
+.action-btn {
+    border-radius: 3px !important;
+    font-size: 13px !important;
+    height: 30px !important;
+    width: 30px !important;
+}
+
+/* Typography */
+small {
+    font-size: 12px !important;
+}
+
+h6 {
+    line-height: 100% !important;
+}
+
+label, input, select, textarea {
+    font-size: 13px !important;
+}
+
+/* Form Controls */
+.form-check-input,
+.form-check-input:focus,
+.form-check-input:active,
+.form-check-input:checked {
+    box-shadow: none !important;
+}
+
+/* Z-Index Utilities */
+.z-5 {
+    z-index: 10 !important;
+}
+
+/* DataTables Control */
+.dt-control {
+    padding-left: 15px !important;
+    padding-right: 5px !important;
+}
+
+/* ============================================
+   SCROLLBAR STYLES
+   ============================================ */
+
+::-webkit-scrollbar {
+    width: 6px;
+    border-radius: 50px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   LAYOUT
+   ============================================ */
+
+.admin-wrapper {
+    height: 100vh;
+    overflow: hidden;
+    padding: 20px;
+    background-image: url("https://images.unsplash.com/photo-1657658661867-5f92544a5faf?w=3000&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NjB8fHdoaXRlJTIwYmFja2dyb3VuZHMlMjB3aXRoJTIwY2VudGVyJTIwZWxlbWVudHN8ZW58MHx8MHx8fDA%3D");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.admin-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0);
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Sidebar Styles */
+.admin-sidebar {
+    max-width: 210px;
+    min-height: calc(100vh - 40px);
+    background: var(--main-color);
+    color: var(--dark-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+    border-radius: 50px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.sidebar-nav .nav-link {
+    font-size: 13px;
+}
+
+.sidebar-nav .nav-link:hover {
+    color: var(--primary-color) !important;
+}
+
+.sidebar-nav .nav-link.active {
+    background: var(--primary-color) !important;
+    color: var(--dark-color) !important;
+}
+
+.sidebar-footer a:hover {
+    color: var(--primary-color) !important;
+    background: rgba(230, 198, 115, 0.1) !important;
+    transform: scale(1.1);
+}
+
+/* Main Content Area */
+.admin-main {
+    width: calc(100% - 210px);
+    min-height: calc(100vh - 40px);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    position: relative;
+    z-index: 10;
+}
+
+.admin-header {
+    padding: 1rem 1.5rem 0 1.5rem;
+}
+
+#globalSearch::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+#globalSearch:focus {
+    background: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 0 0 2px rgba(230, 198, 115, 0.3);
+    color: var(--light-color);
+}
+
+.admin-content {
+    padding: 1.5rem 0;
+    overflow-y: auto;
+    background: transparent;
+}
+
+.admin-content::-webkit-scrollbar {
+    width: 8px;
+    border-radius: 50px;
+}
+
+.admin-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 50px;
+}
+
+.admin-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 50px;
+}
+
+.admin-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Offcanvas */
+.offcanvas {
+    background-color: var(--main-color) !important;
+    color: var(--light-color) !important;
+}
+
+.offcanvas-body::-webkit-scrollbar {
+    width: 6px;
+    border-radius: 50px;
+}
+
+.offcanvas-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.offcanvas-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.offcanvas-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.canvas-footer a:hover {
+    color: var(--primary-color) !important;
+    background: rgba(230, 198, 115, 0.1) !important;
+    transform: scale(1.1);
+}
+
+/* ============================================
+   MODAL Z-INDEX FIX
+   ============================================ */
+.modal {
+    --bs-modal-zindex: 9999 !important;
+    z-index: 9999 !important;
+    position: fixed !important;
+}
+
+.modal.fade,
+.modal.show {
+    z-index: 9999 !important;
+}
+
+.modal-dialog {
+    z-index: 10000 !important;
+    position: relative;
+}
+
+.modal-content {
+    z-index: 10001 !important;
+    position: relative;
+}
+
+.modal-backdrop {
+    --bs-backdrop-zindex: 9998 !important;
+    z-index: 9998 !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+}
+
+.modal-backdrop.fade,
+.modal-backdrop.show {
+    z-index: 9998 !important;
+}
+
+body > .modal {
+    z-index: 9999 !important;
+}
+
+body > .modal-backdrop {
+    z-index: 9998 !important;
+}
+
+body.modal-open .admin-wrapper::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.modal-open .admin-wrapper {
+    z-index: 1;
+}
+
+/* ============================================
+   GLOBAL TOOLTIP STYLING
+   ============================================ */
+.tooltip,
+.tooltip-inner {
+    font-size: 12px !important;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 767.98px) {
+    .admin-wrapper {
+        padding: 10px;
+    }
+
+    .admin-sidebar {
+        min-height: calc(100vh - 20px);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .admin-sidebar.show {
+        transform: translateX(0);
+    }
+
+    .admin-main {
+        margin-left: 0;
+        min-height: calc(100vh - 20px);
+    }
+
+    .admin-content {
+        padding: 1rem;
+    }
+
+    .header-center {
+        display: none !important;
+    }
+}
