@@ -4,14 +4,17 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 
 // Authentication Routes
-Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
+Route::get('/', function () {
+    return view('admin.dashboard.index');
+})->name('admin.dashboard.index');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Admin Panel Routes
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->group(function () { 
+
     Route::get('/dashboard', function () {
         return view('admin.dashboard.index');
     })->name('admin.dashboard.index');
