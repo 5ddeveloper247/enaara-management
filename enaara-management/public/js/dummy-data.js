@@ -90,17 +90,17 @@ const ProjectData = {
             ],
             employees: {
                 inZone: [
-                    { name: 'John Doe', position: [33.5651, 73.0169], status: 'in-zone' },
-                    { name: 'Jane Smith', position: [33.5655, 73.0175], status: 'in-zone' },
-                    { name: 'Bob Johnson', position: [33.5645, 73.0165], status: 'in-zone' },
-                    { name: 'Alice Williams', position: [33.5750, 73.0260], status: 'in-zone' }
+                    { name: 'Ahmed Ali', position: [33.5651, 73.0169], status: 'in-zone' },
+                    { name: 'Fatima Khan', position: [33.5655, 73.0175], status: 'in-zone' },
+                    { name: 'Hassan Malik', position: [33.5645, 73.0165], status: 'in-zone' },
+                    { name: 'Ayesha Sheikh', position: [33.5750, 73.0260], status: 'in-zone' }
                 ],
                 outZone: [
-                    { name: 'Mike Roberts', position: [33.5800, 73.0300], status: 'out-zone' },
-                    { name: 'Sarah Connor', position: [33.5500, 73.0100], status: 'out-zone' }
+                    { name: 'Usman Raza', position: [33.5800, 73.0300], status: 'out-zone' },
+                    { name: 'Zainab Abbas', position: [33.5500, 73.0100], status: 'out-zone' }
                 ],
                 vpn: [
-                    { name: 'David Lee', position: [33.5700, 73.0200], status: 'vpn-proxy' }
+                    { name: 'Ali Hassan', position: [33.5700, 73.0200], status: 'vpn-proxy' }
                 ]
             }
         }
@@ -161,16 +161,16 @@ const ProjectData = {
     // ============================================
     shiftPlanner: {
         employees: [
-            { id: '1', name: 'John Doe' },
-            { id: '2', name: 'Sarah Miller' },
-            { id: '3', name: 'Robert Kim' },
-            { id: '4', name: 'Emma Wilson' },
-            { id: '5', name: 'Michael Johnson' },
-            { id: '6', name: 'Lisa Anderson' },
-            { id: '7', name: 'David Brown' },
-            { id: '8', name: 'Jennifer Lee' },
-            { id: '9', name: 'James Taylor' },
-            { id: '10', name: 'Maria Garcia' }
+            { id: '1', name: 'Ahmed Ali' },
+            { id: '2', name: 'Zainab Malik' },
+            { id: '3', name: 'Bilal Ahmed' },
+            { id: '4', name: 'Hira Ali' },
+            { id: '5', name: 'Hamza Khan' },
+            { id: '6', name: 'Sana Sheikh' },
+            { id: '7', name: 'Faisal Raza' },
+            { id: '8', name: 'Ayesha Malik' },
+            { id: '9', name: 'Usman Ali' },
+            { id: '10', name: 'Mariam Khan' }
         ]
     },
 
@@ -181,7 +181,7 @@ const ProjectData = {
         sampleLeaveRequests: [
             {
                 id: 1,
-                employeeName: 'John Doe',
+                employeeName: 'Ahmed Ali',
                 employeeId: 'EMP-001',
                 department: 'Sales',
                 leaveType: 'annual',
@@ -197,7 +197,7 @@ const ProjectData = {
             },
             {
                 id: 2,
-                employeeName: 'Sarah Miller',
+                employeeName: 'Zainab Malik',
                 employeeId: 'EMP-002',
                 department: 'HR',
                 leaveType: 'sick',
@@ -213,7 +213,7 @@ const ProjectData = {
             },
             {
                 id: 3,
-                employeeName: 'Robert Kim',
+                employeeName: 'Bilal Ahmed',
                 employeeId: 'EMP-003',
                 department: 'IT',
                 leaveType: 'casual',
@@ -229,7 +229,7 @@ const ProjectData = {
             },
             {
                 id: 4,
-                employeeName: 'Emma Wilson',
+                employeeName: 'Hira Ali',
                 employeeId: 'EMP-004',
                 department: 'Operations',
                 leaveType: 'annual',
@@ -253,7 +253,7 @@ const ProjectData = {
         sampleBalances: [
             {
                 id: 1,
-                employeeName: 'John Doe',
+                employeeName: 'Ahmed Ali',
                 employeeId: 'EMP-001',
                 joinDate: '2020-01-15',
                 organization: 'Enaara Developers',
@@ -264,7 +264,7 @@ const ProjectData = {
             },
             {
                 id: 2,
-                employeeName: 'Sarah Miller',
+                employeeName: 'Zainab Malik',
                 employeeId: 'EMP-002',
                 joinDate: '2019-03-20',
                 organization: 'Madison Square Mall Rawalpindi',
@@ -275,7 +275,7 @@ const ProjectData = {
             },
             {
                 id: 3,
-                employeeName: 'Robert Kim',
+                employeeName: 'Bilal Ahmed',
                 employeeId: 'EMP-003',
                 joinDate: '2021-06-10',
                 organization: 'Madison Square Mall Lahore',
@@ -286,7 +286,7 @@ const ProjectData = {
             },
             {
                 id: 4,
-                employeeName: 'Emma Wilson',
+                employeeName: 'Hira Ali',
                 employeeId: 'EMP-004',
                 joinDate: '2020-11-05',
                 organization: 'Royal Swiss Lahore',
@@ -297,7 +297,7 @@ const ProjectData = {
             },
             {
                 id: 5,
-                employeeName: 'Michael Johnson',
+                employeeName: 'Hamza Khan',
                 employeeId: 'EMP-005',
                 joinDate: '2022-02-14',
                 organization: 'Enaara Developers',
@@ -387,51 +387,51 @@ const ProjectData = {
         common: [
             {
                 id: 1,
-                name: 'John Doe',
+                name: 'Ahmed Ali',
                 employeeId: 'EMP-001',
                 department: 'Sales',
                 organization: 'Enaara Developers',
-                email: 'john.doe@enaara.com',
+                email: 'ahmed.ali@enaara.com',
                 phone: '+92-300-1234567',
                 position: 'Sales Manager'
             },
             {
                 id: 2,
-                name: 'Sarah Miller',
+                name: 'Zainab Malik',
                 employeeId: 'EMP-002',
                 department: 'HR',
                 organization: 'Madison Square Mall Rawalpindi',
-                email: 'sarah.miller@enaara.com',
+                email: 'zainab.malik@enaara.com',
                 phone: '+92-300-1234568',
                 position: 'HR Manager'
             },
             {
                 id: 3,
-                name: 'Robert Kim',
+                name: 'Bilal Ahmed',
                 employeeId: 'EMP-003',
                 department: 'IT',
                 organization: 'Madison Square Mall Lahore',
-                email: 'robert.kim@enaara.com',
+                email: 'bilal.ahmed@enaara.com',
                 phone: '+92-300-1234569',
                 position: 'IT Manager'
             },
             {
                 id: 4,
-                name: 'Emma Wilson',
+                name: 'Hira Ali',
                 employeeId: 'EMP-004',
                 department: 'Operations',
                 organization: 'Royal Swiss Lahore',
-                email: 'emma.wilson@enaara.com',
+                email: 'hira.ali@enaara.com',
                 phone: '+92-300-1234570',
                 position: 'Operations Manager'
             },
             {
                 id: 5,
-                name: 'Michael Johnson',
+                name: 'Hamza Khan',
                 employeeId: 'EMP-005',
                 department: 'Finance',
                 organization: 'Enaara Developers',
-                email: 'michael.johnson@enaara.com',
+                email: 'hamza.khan@enaara.com',
                 phone: '+92-300-1234571',
                 position: 'Finance Manager'
             }

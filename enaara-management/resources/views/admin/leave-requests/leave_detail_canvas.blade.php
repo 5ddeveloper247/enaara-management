@@ -15,7 +15,7 @@
             <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                 <div class="mb-2">
                     <small class="opacity-75 text-white d-block mb-1">Employee Name</small>
-                    <div class="fw-semibold small" id="detailEmployeeName">John Doe</div>
+                    <div class="fw-semibold small" id="detailEmployeeName">Ahmed Ali</div>
                 </div>
                 <div class="mb-2">
                     <small class="opacity-75 text-white d-block mb-1">Employee ID</small>

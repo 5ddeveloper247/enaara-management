@@ -6,148 +6,148 @@
         </div>
         <div class="card-body pt-3 p-0">
             <div class="avatar-gallery p-0">
-                <div class="avatar-gallery-item" title="Sarah Connor - Annual Leave">
+                <div class="avatar-gallery-item" title="Zainab Abbas - Annual Leave">
                     <div class="avatar-gallery-avatar">
-                        SC
+                        ZA
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Sarah C.</div>
+                    <div class="avatar-gallery-name">Zainab A.</div>
                     <div class="avatar-gallery-role">Annual Leave</div>
                 </div>
-                <div class="avatar-gallery-item" title="David Lee - Sick Leave">
+                <div class="avatar-gallery-item" title="Ali Hassan - Sick Leave">
                     <div class="avatar-gallery-avatar">
-                        DL
+                        AH
                         <span class="avatar-status-dot absent"></span>
                     </div>
-                    <div class="avatar-gallery-name">David L.</div>
+                    <div class="avatar-gallery-name">Ali H.</div>
                     <div class="avatar-gallery-role">Sick Leave</div>
                 </div>
-                <div class="avatar-gallery-item" title="Emily Chen - Personal Leave">
+                <div class="avatar-gallery-item" title="Hina Malik - Personal Leave">
                     <div class="avatar-gallery-avatar">
-                        EC
+                        HM
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Emily C.</div>
+                    <div class="avatar-gallery-name">Hina M.</div>
                     <div class="avatar-gallery-role">Personal</div>
                 </div>
-                <div class="avatar-gallery-item" title="Michael Brown - Emergency Leave">
+                <div class="avatar-gallery-item" title="Hamza Sheikh - Emergency Leave">
                     <div class="avatar-gallery-avatar">
-                        MB
+                        HS
                         <span class="avatar-status-dot absent"></span>
                     </div>
-                    <div class="avatar-gallery-name">Michael B.</div>
+                    <div class="avatar-gallery-name">Hamza S.</div>
                     <div class="avatar-gallery-role">Emergency</div>
                 </div>
-                <div class="avatar-gallery-item" title="Lisa Anderson - Annual Leave">
+                <div class="avatar-gallery-item" title="Sana Sheikh - Annual Leave">
                     <div class="avatar-gallery-avatar">
-                        LA
+                        SS
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Lisa A.</div>
+                    <div class="avatar-gallery-name">Sana S.</div>
                     <div class="avatar-gallery-role">Annual Leave</div>
                 </div>
-                <div class="avatar-gallery-item" title="Robert Taylor - Sick Leave">
+                <div class="avatar-gallery-item" title="Bilal Raza - Sick Leave">
                     <div class="avatar-gallery-avatar">
-                        RT
+                        BR
                         <span class="avatar-status-dot absent"></span>
                     </div>
-                    <div class="avatar-gallery-name">Robert T.</div>
+                    <div class="avatar-gallery-name">Bilal R.</div>
                     <div class="avatar-gallery-role">Sick Leave</div>
                 </div>
-                <div class="avatar-gallery-item" title="Jennifer White - Maternity Leave">
+                <div class="avatar-gallery-item" title="Ayesha Ali - Maternity Leave">
                     <div class="avatar-gallery-avatar">
-                        JW
+                        AA
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Jennifer W.</div>
+                    <div class="avatar-gallery-name">Ayesha A.</div>
                     <div class="avatar-gallery-role">Maternity</div>
                 </div>
-                <div class="avatar-gallery-item" title="Thomas Wilson - Personal Leave">
+                <div class="avatar-gallery-item" title="Tariq Khan - Personal Leave">
                     <div class="avatar-gallery-avatar">
-                        TW
+                        TK
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Thomas W.</div>
+                    <div class="avatar-gallery-name">Tariq K.</div>
                     <div class="avatar-gallery-role">Personal</div>
                 </div>
-                <div class="avatar-gallery-item" title="Rachel Green - Annual Leave">
+                <div class="avatar-gallery-item" title="Rabia Khan - Annual Leave">
                     <div class="avatar-gallery-avatar">
-                        RG
+                        RK
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Rachel G.</div>
+                    <div class="avatar-gallery-name">Rabia K.</div>
                     <div class="avatar-gallery-role">Annual Leave</div>
                 </div>
-                <div class="avatar-gallery-item" title="Daniel Martinez - Sick Leave">
+                <div class="avatar-gallery-item" title="Danish Sheikh - Sick Leave">
                     <div class="avatar-gallery-avatar">
-                        DM
+                        DS
                         <span class="avatar-status-dot absent"></span>
                     </div>
-                    <div class="avatar-gallery-name">Daniel M.</div>
+                    <div class="avatar-gallery-name">Danish S.</div>
                     <div class="avatar-gallery-role">Sick Leave</div>
                 </div>
-                <div class="avatar-gallery-item" title="Sophia Garcia - Personal Leave">
+                <div class="avatar-gallery-item" title="Saba Malik - Personal Leave">
                     <div class="avatar-gallery-avatar">
-                        SG
+                        SM
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Sophia G.</div>
+                    <div class="avatar-gallery-name">Saba M.</div>
                     <div class="avatar-gallery-role">Personal</div>
                 </div>
-                <div class="avatar-gallery-item" title="Christopher Lee - Annual Leave">
+                <div class="avatar-gallery-item" title="Khurram Ali - Annual Leave">
                     <div class="avatar-gallery-avatar">
-                        CL
+                        KA
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Chris L.</div>
+                    <div class="avatar-gallery-name">Khurram A.</div>
                     <div class="avatar-gallery-role">Annual Leave</div>
                 </div>
-                <div class="avatar-gallery-item" title="Amanda Johnson - Emergency Leave">
+                <div class="avatar-gallery-item" title="Amna Khan - Emergency Leave">
                     <div class="avatar-gallery-avatar">
-                        AJ
+                        AK
                         <span class="avatar-status-dot absent"></span>
                     </div>
-                    <div class="avatar-gallery-name">Amanda J.</div>
+                    <div class="avatar-gallery-name">Amna K.</div>
                     <div class="avatar-gallery-role">Emergency</div>
                 </div>
-                <div class="avatar-gallery-item" title="Matthew Davis - Personal Leave">
+                <div class="avatar-gallery-item" title="Moin Ali - Personal Leave">
                     <div class="avatar-gallery-avatar">
-                        MD
+                        MA
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Matthew D.</div>
+                    <div class="avatar-gallery-name">Moin A.</div>
                     <div class="avatar-gallery-role">Personal</div>
                 </div>
-                <div class="avatar-gallery-item" title="Jessica Wilson - Annual Leave">
+                <div class="avatar-gallery-item" title="Javeria Sheikh - Annual Leave">
                     <div class="avatar-gallery-avatar">
-                        JW
+                        JS
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Jessica W.</div>
+                    <div class="avatar-gallery-name">Javeria S.</div>
                     <div class="avatar-gallery-role">Annual Leave</div>
                 </div>
-                <div class="avatar-gallery-item" title="Daniel Martinez - Sick Leave">
+                <div class="avatar-gallery-item" title="Danish Sheikh - Sick Leave">
                     <div class="avatar-gallery-avatar">
-                        DM
+                        DS
                         <span class="avatar-status-dot absent"></span>
                     </div>
-                    <div class="avatar-gallery-name">Daniel M.</div>
+                    <div class="avatar-gallery-name">Danish S.</div>
                     <div class="avatar-gallery-role">Sick Leave</div>
                 </div>
-                <div class="avatar-gallery-item" title="Sophia Garcia - Personal Leave">
+                <div class="avatar-gallery-item" title="Saba Malik - Personal Leave">
                     <div class="avatar-gallery-avatar">
-                        SG
+                        SM
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Sophia G.</div>
+                    <div class="avatar-gallery-name">Saba M.</div>
                     <div class="avatar-gallery-role">Personal</div>
                 </div>
-                <div class="avatar-gallery-item" title="Christopher Lee - Annual Leave">
+                <div class="avatar-gallery-item" title="Khurram Ali - Annual Leave">
                     <div class="avatar-gallery-avatar">
-                        CL
+                        KA
                         <span class="avatar-status-dot on-leave"></span>
                     </div>
-                    <div class="avatar-gallery-name">Chris L.</div>
+                    <div class="avatar-gallery-name">Khurram A.</div>
                     <div class="avatar-gallery-role">Annual Leave</div>
                 </div>
             </div>

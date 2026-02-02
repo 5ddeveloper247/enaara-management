@@ -127,14 +127,14 @@
                 <div id="detailFenceViolations">
                     <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-top border-bottom" style="border-color: #ffffff1a !important;">
                         <div>
-                            <div class="small fw-semibold">John Doe</div>
+                            <div class="small fw-semibold">Ahmed Ali</div>
                             <small class="opacity-75 text-white">Attempted check-in outside fence</small>
                         </div>
                         <small class="opacity-75 text-white">2 hours ago</small>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="small fw-semibold">Sarah Miller</div>
+                            <div class="small fw-semibold">Zainab Malik</div>
                             <small class="opacity-75 text-white">Location mismatch detected</small>
                         </div>
                         <small class="opacity-75 text-white">5 hours ago</small>

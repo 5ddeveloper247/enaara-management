@@ -98,9 +98,9 @@
                     <label for="quickProxySelect" class="form-label fw-semibold small text-white">Select Proxy</label>
                     <select class="form-select" id="quickProxySelect">
                         <option value="">Select a proxy admin...</option>
-                        <option value="1">Sarah Miller (HR Manager)</option>
-                        <option value="2">Robert Kim (IT Director)</option>
-                        <option value="3">Emma Wilson (Operations Head)</option>
+                        <option value="1">Zainab Malik (HR Manager)</option>
+                        <option value="2">Bilal Ahmed (IT Director)</option>
+                        <option value="3">Hira Ali (Operations Head)</option>
                     </select>
                 </div>
             </div>

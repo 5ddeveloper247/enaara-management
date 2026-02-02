@@ -417,10 +417,10 @@
         function addSampleEmployees() {
             // Sample employee locations - Rawalpindi, Pakistan
             const employees = [
-                { name: 'John Doe', lat: 33.5655, lng: 73.0170, status: 'inside', fenceId: 1 },
-                { name: 'Sarah Miller', lat: 33.6005, lng: 73.0505, status: 'inside', fenceId: 2 },
-                { name: 'Robert Kim', lat: 33.5505, lng: 73.0005, status: 'inside', fenceId: 3 },
-                { name: 'Emma Wilson', lat: 33.5658, lng: 73.0175, status: 'outside', fenceId: 1 },
+                { name: 'Ahmed Ali', lat: 33.5655, lng: 73.0170, status: 'inside', fenceId: 1 },
+                { name: 'Zainab Malik', lat: 33.6005, lng: 73.0505, status: 'inside', fenceId: 2 },
+                { name: 'Bilal Ahmed', lat: 33.5505, lng: 73.0005, status: 'inside', fenceId: 3 },
+                { name: 'Hira Ali', lat: 33.5658, lng: 73.0175, status: 'outside', fenceId: 1 },
             ];
 
             employees.forEach(emp => {

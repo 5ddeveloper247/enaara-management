@@ -176,7 +176,7 @@
         const sampleBalances = [
             {
                 id: 1,
-                employeeName: 'John Doe',
+                employeeName: 'Ahmed Ali',
                 employeeId: 'EMP-001',
                 joinDate: '2020-01-15',
                 organization: 'Enaara Construction',
@@ -187,7 +187,7 @@
             },
             {
                 id: 2,
-                employeeName: 'Sarah Miller',
+                employeeName: 'Zainab Malik',
                 employeeId: 'EMP-002',
                 joinDate: '2019-03-20',
                 organization: 'Enaara Construction',
@@ -198,7 +198,7 @@
             },
             {
                 id: 3,
-                employeeName: 'Robert Kim',
+                employeeName: 'Bilal Ahmed',
                 employeeId: 'EMP-003',
                 joinDate: '2021-06-10',
                 organization: 'Enaara Properties',
@@ -209,7 +209,7 @@
             },
             {
                 id: 4,
-                employeeName: 'Emma Wilson',
+                employeeName: 'Hira Ali',
                 employeeId: 'EMP-004',
                 joinDate: '2020-11-05',
                 organization: 'Enaara Real Estate',
@@ -220,7 +220,7 @@
             },
             {
                 id: 5,
-                employeeName: 'Michael Johnson',
+                employeeName: 'Hamza Khan',
                 employeeId: 'EMP-005',
                 joinDate: '2018-09-12',
                 organization: 'Enaara Construction',
@@ -231,7 +231,7 @@
             },
             {
                 id: 6,
-                employeeName: 'Lisa Anderson',
+                employeeName: 'Sana Sheikh',
                 employeeId: 'EMP-006',
                 joinDate: '2022-02-28',
                 organization: 'Enaara Properties',

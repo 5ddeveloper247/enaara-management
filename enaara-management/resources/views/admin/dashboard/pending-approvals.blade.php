@@ -23,16 +23,16 @@
                     <div class="d-flex align-items-center flex-grow-1">
                         <input type="checkbox"
                             class="form-check-input approval-checkbox approval-item-checkbox" value="1">
-                        <div class="employee-avatar me-2">JD</div>
+                        <div class="employee-avatar me-2">AA</div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 small">John Doe</h6>
+                            <h6 class="mb-0 small">Ahmed Ali</h6>
                             <small class="text-muted">Sick Leave</small>
                             <div class="small text-muted">Requested: Jan 15, 2024</div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-outline-secondary rounded-3 border" title="View Reason"
-                            onclick="viewLeaveReason(1, 'John Doe', 'JD', 'Sick Leave', 'Jan 15, 2024', 'Jan 16, 2024', 'Jan 17, 2024', 'I need to take sick leave due to a severe migraine and need to rest.')">
+                            onclick="viewLeaveReason(1, 'Ahmed Ali', 'AA', 'Sick Leave', 'Jan 15, 2024', 'Jan 16, 2024', 'Jan 17, 2024', 'I need to take sick leave due to a severe migraine and need to rest.')">
                             <i class="bi bi-eye"></i>
                         </button>
                         <button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn"
@@ -51,16 +51,16 @@
                     <div class="d-flex align-items-center flex-grow-1">
                         <input type="checkbox"
                             class="form-check-input approval-checkbox approval-item-checkbox" value="2">
-                        <div class="employee-avatar me-2">JS</div>
+                        <div class="employee-avatar me-2">FK</div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 small">Jane Smith</h6>
+                            <h6 class="mb-0 small">Fatima Khan</h6>
                             <small class="text-muted">Annual Leave</small>
                             <div class="small text-muted">Requested: Jan 14, 2024</div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-outline-secondary rounded-3 border" title="View Reason"
-                            onclick="viewLeaveReason(2, 'Jane Smith', 'JS', 'Annual Leave', 'Jan 14, 2024', 'Jan 20, 2024', 'Jan 26, 2024', 'I would like to take my annual leave to spend time with family during the holidays.')">
+                            onclick="viewLeaveReason(2, 'Fatima Khan', 'FK', 'Annual Leave', 'Jan 14, 2024', 'Jan 20, 2024', 'Jan 26, 2024', 'I would like to take my annual leave to spend time with family during the holidays.')">
                             <i class="bi bi-eye"></i>
                         </button>
                         <button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn"
@@ -79,16 +79,16 @@
                     <div class="d-flex align-items-center flex-grow-1">
                         <input type="checkbox"
                             class="form-check-input approval-checkbox approval-item-checkbox" value="3">
-                        <div class="employee-avatar me-2">BJ</div>
+                        <div class="employee-avatar me-2">HM</div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 small">Bob Johnson</h6>
+                            <h6 class="mb-0 small">Hassan Malik</h6>
                             <small class="text-muted">Emergency Leave</small>
                             <div class="small text-muted">Requested: Jan 15, 2024</div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-outline-secondary rounded-3 border" title="View Reason"
-                            onclick="viewLeaveReason(3, 'Bob Johnson', 'BJ', 'Emergency Leave', 'Jan 15, 2024', 'Jan 15, 2024', 'Jan 15, 2024', 'Family emergency - need to attend to urgent family matter.')">
+                            onclick="viewLeaveReason(3, 'Hassan Malik', 'HM', 'Emergency Leave', 'Jan 15, 2024', 'Jan 15, 2024', 'Jan 15, 2024', 'Family emergency - need to attend to urgent family matter.')">
                             <i class="bi bi-eye"></i>
                         </button>
                         <button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn"
@@ -107,16 +107,16 @@
                     <div class="d-flex align-items-center flex-grow-1">
                         <input type="checkbox"
                             class="form-check-input approval-checkbox approval-item-checkbox" value="4">
-                        <div class="employee-avatar me-2">AW</div>
+                        <div class="employee-avatar me-2">AS</div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 small">Alice Williams</h6>
+                            <h6 class="mb-0 small">Ayesha Sheikh</h6>
                             <small class="text-muted">Sick Leave</small>
                             <div class="small text-muted">Requested: Jan 13, 2024</div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-outline-secondary rounded-3 border" title="View Reason"
-                            onclick="viewLeaveReason(4, 'Alice Williams', 'AW', 'Sick Leave', 'Jan 13, 2024', 'Jan 13, 2024', 'Jan 14, 2024', 'Feeling unwell with flu symptoms. Need rest to recover.')">
+                            onclick="viewLeaveReason(4, 'Ayesha Sheikh', 'AS', 'Sick Leave', 'Jan 13, 2024', 'Jan 13, 2024', 'Jan 14, 2024', 'Feeling unwell with flu symptoms. Need rest to recover.')">
                             <i class="bi bi-eye"></i>
                         </button>
                         <button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn"
@@ -135,16 +135,16 @@
                     <div class="d-flex align-items-center flex-grow-1">
                         <input type="checkbox"
                             class="form-check-input approval-checkbox approval-item-checkbox" value="5">
-                        <div class="employee-avatar me-2">MR</div>
+                        <div class="employee-avatar me-2">UR</div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 small">Mike Roberts</h6>
+                            <h6 class="mb-0 small">Usman Raza</h6>
                             <small class="text-muted">Personal Leave</small>
                             <div class="small text-muted">Requested: Jan 12, 2024</div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-outline-secondary rounded-3 border" title="View Reason"
-                            onclick="viewLeaveReason(5, 'Mike Roberts', 'MR', 'Personal Leave', 'Jan 12, 2024', 'Jan 18, 2024', 'Jan 18, 2024', 'Personal appointment that cannot be rescheduled.')">
+                            onclick="viewLeaveReason(5, 'Usman Raza', 'UR', 'Personal Leave', 'Jan 12, 2024', 'Jan 18, 2024', 'Jan 18, 2024', 'Personal appointment that cannot be rescheduled.')">
                             <i class="bi bi-eye"></i>
                         </button>
                         <button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn"

@@ -10,8 +10,8 @@
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="employee-avatar">JD</div>
-                            <h6 class="mb-0 small">John Doe</h6>
+                            <div class="employee-avatar">AA</div>
+                            <h6 class="mb-0 small">Ahmed Ali</h6>
                         </div>
                         <div class="time-comparison">
                             <div class="time-item">
@@ -40,8 +40,8 @@
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="employee-avatar">JS</div>
-                            <h6 class="mb-0 small">Jane Smith</h6>
+                            <div class="employee-avatar">FK</div>
+                            <h6 class="mb-0 small">Fatima Khan</h6>
                         </div>
                         <div class="time-comparison">
                             <div class="time-item">
@@ -70,8 +70,8 @@
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="employee-avatar">BJ</div>
-                            <h6 class="mb-0 small">Bob Johnson</h6>
+                            <div class="employee-avatar">HM</div>
+                            <h6 class="mb-0 small">Hassan Malik</h6>
                         </div>
                         <div class="time-comparison">
                             <div class="time-item">
@@ -100,8 +100,8 @@
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="employee-avatar">AW</div>
-                            <h6 class="mb-0 small">Alice Williams</h6>
+                            <div class="employee-avatar">AS</div>
+                            <h6 class="mb-0 small">Ayesha Sheikh</h6>
                         </div>
                         <div class="time-comparison">
                             <div class="time-item">

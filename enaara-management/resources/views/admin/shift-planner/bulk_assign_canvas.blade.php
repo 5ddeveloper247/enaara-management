@@ -32,31 +32,31 @@
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" value="1" id="emp1" name="employees[]">
                             <label class="form-check-label text-white" for="emp1">
-                                John Doe - Sales - Head Office
+                                Ahmed Ali - Sales - Head Office
                             </label>
                         </div>
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" value="2" id="emp2" name="employees[]">
                             <label class="form-check-label text-white" for="emp2">
-                                Sarah Miller - HR - Head Office
+                                Zainab Malik - HR - Head Office
                             </label>
                         </div>
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" value="3" id="emp3" name="employees[]">
                             <label class="form-check-label text-white" for="emp3">
-                                Robert Kim - IT - Site 1
+                                Bilal Ahmed - IT - Site 1
                             </label>
                         </div>
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" value="4" id="emp4" name="employees[]">
                             <label class="form-check-label text-white" for="emp4">
-                                Emma Wilson - Operations - Branch A
+                                Hira Ali - Operations - Branch A
                             </label>
                         </div>
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" value="5" id="emp5" name="employees[]">
                             <label class="form-check-label text-white" for="emp5">
-                                Michael Johnson - Finance - Head Office
+                                Hamza Khan - Finance - Head Office
                             </label>
                         </div>
                     </div>

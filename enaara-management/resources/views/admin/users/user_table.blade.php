@@ -16,10 +16,10 @@
         <tr>
             <td>
                 <div class="d-flex align-items-center">
-                    <div class="user-avatar me-3">JD</div>
+                    <div class="user-avatar me-3">AA</div>
                     <div>
-                        <div class="fw-semibold">John Doe</div>
-                        <small class="text-muted">john.doe@enaara.com</small>
+                        <div class="fw-semibold">Ahmed Ali</div>
+                        <small class="text-muted">ahmed.ali@enaara.com</small>
                     </div>
                 </div>
             </td>
@@ -41,8 +41,8 @@
                         data-bs-target="#userCanvas"
                         data-mode="edit"
                         data-user-id="1" 
-                        data-user-name="John Doe"
-                        data-user-email="john.doe@enaara.com"
+                        data-user-name="Ahmed Ali"
+                        data-user-email="ahmed.ali@enaara.com"
                         data-employee-id="EMP-001"
                         data-department="Sales"
                         data-role="Manager"
@@ -54,8 +54,8 @@
                         data-bs-target="#userCanvas"
                         data-mode="view"
                         data-user-id="1" 
-                        data-user-name="John Doe"
-                        data-user-email="john.doe@enaara.com"
+                        data-user-name="Ahmed Ali"
+                        data-user-email="ahmed.ali@enaara.com"
                         data-employee-id="EMP-001"
                         data-department="Sales"
                         data-role="Manager"
@@ -66,8 +66,8 @@
                         data-bs-toggle="modal" 
                         data-bs-target="#deleteConfirmModal"
                         data-user-id="1"
-                        data-user-name="John Doe"
-                        data-user-email="john.doe@enaara.com"
+                        data-user-name="Ahmed Ali"
+                        data-user-email="ahmed.ali@enaara.com"
                         title="Delete">
                         <i class="bi bi-trash"></i>
                     </button>

@@ -12,9 +12,9 @@
             <div class="regularization-item" data-regularization-id="1">
                 <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                     <div class="d-flex align-items-center flex-grow-1">
-                        <div class="employee-avatar me-3">JD</div>
+                        <div class="employee-avatar me-3">AA</div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 small">John Doe</h6>
+                            <h6 class="mb-0 small">Ahmed Ali</h6>
                             <small class="text-muted d-block">EMP-001</small>
                             <div class="conflict-info mt-1">
                                 <span class="badge bg-danger-subtle text-danger small">System: Absent</span>
@@ -39,9 +39,9 @@
             <div class="regularization-item" data-regularization-id="2">
                 <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                     <div class="d-flex align-items-center flex-grow-1">
-                        <div class="employee-avatar me-3">JS</div>
+                        <div class="employee-avatar me-3">FK</div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 small">Jane Smith</h6>
+                            <h6 class="mb-0 small">Fatima Khan</h6>
                             <small class="text-muted d-block">EMP-002</small>
                             <div class="conflict-info mt-1">
                                 <span class="badge bg-danger-subtle text-danger small">Missed Punch</span>
@@ -67,9 +67,9 @@
             <div class="regularization-item" data-regularization-id="3">
                 <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                     <div class="d-flex align-items-center flex-grow-1">
-                        <div class="employee-avatar me-3">BJ</div>
+                        <div class="employee-avatar me-3">HM</div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 small">Bob Johnson</h6>
+                            <h6 class="mb-0 small">Hassan Malik</h6>
                             <small class="text-muted d-block">EMP-003</small>
                             <div class="conflict-info mt-1">
                                 <span class="badge bg-warning-subtle text-warning small">Technical Error</span>
@@ -95,9 +95,9 @@
             <div class="regularization-item" data-regularization-id="4">
                 <div class="d-flex align-items-center justify-content-between p-3">
                     <div class="d-flex align-items-center flex-grow-1">
-                        <div class="employee-avatar me-3">AW</div>
+                        <div class="employee-avatar me-3">AS</div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 small">Alice Williams</h6>
+                            <h6 class="mb-0 small">Ayesha Sheikh</h6>
                             <small class="text-muted d-block">EMP-004</small>
                             <div class="conflict-info mt-1">
                                 <span class="badge bg-danger-subtle text-danger small">On-Duty (Outside)</span>

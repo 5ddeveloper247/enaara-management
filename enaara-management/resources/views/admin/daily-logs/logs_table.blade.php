@@ -20,7 +20,7 @@
                     <div class="user-avatar me-3">
                         @php
                             $names = ['JD', 'SM', 'RK', 'EW', 'MJ', 'LB', 'AB', 'CD'];
-                            $fullNames = ['John Doe', 'Sarah Miller', 'Robert Kim', 'Emma Wilson', 'Michael Johnson', 'Lisa Brown', 'Alex Brown', 'Chris Davis'];
+                            $fullNames = ['Ahmed Ali', 'Zainab Malik', 'Bilal Ahmed', 'Hira Ali', 'Hamza Khan', 'Sana Sheikh', 'Ali Raza', 'Khurram Ali'];
                             $departments = ['Sales', 'HR', 'IT', 'Legal', 'Operations', 'Finance'];
                             $nameIndex = $i % count($names);
                         @endphp

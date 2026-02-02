@@ -224,7 +224,7 @@
         const sampleLeaveRequests = [
             {
                 id: 1,
-                employeeName: 'John Doe',
+                employeeName: 'Ahmed Ali',
                 employeeId: 'EMP-001',
                 department: 'Sales',
                 leaveType: 'annual',
@@ -240,7 +240,7 @@
             },
             {
                 id: 2,
-                employeeName: 'Sarah Miller',
+                employeeName: 'Zainab Malik',
                 employeeId: 'EMP-002',
                 department: 'HR',
                 leaveType: 'sick',
@@ -256,7 +256,7 @@
             },
             {
                 id: 3,
-                employeeName: 'Robert Kim',
+                employeeName: 'Bilal Ahmed',
                 employeeId: 'EMP-003',
                 department: 'IT',
                 leaveType: 'casual',
@@ -272,7 +272,7 @@
             },
             {
                 id: 4,
-                employeeName: 'Emma Wilson',
+                employeeName: 'Hira Ali',
                 employeeId: 'EMP-004',
                 department: 'Operations',
                 leaveType: 'comp-off',
@@ -288,7 +288,7 @@
             },
             {
                 id: 5,
-                employeeName: 'Michael Johnson',
+                employeeName: 'Hamza Khan',
                 employeeId: 'EMP-005',
                 department: 'Sales',
                 leaveType: 'annual',
@@ -306,9 +306,9 @@
 
         // Sample away today data
         const awayToday = [
-            { name: 'John Doe', department: 'Sales', leaveType: 'Annual Leave', days: 3 },
-            { name: 'Sarah Miller', department: 'HR', leaveType: 'Sick Leave', days: 1 },
-            { name: 'David Brown', department: 'IT', leaveType: 'Casual Leave', days: 1 }
+            { name: 'Ahmed Ali', department: 'Sales', leaveType: 'Annual Leave', days: 3 },
+            { name: 'Zainab Malik', department: 'HR', leaveType: 'Sick Leave', days: 1 },
+            { name: 'Faisal Raza', department: 'IT', leaveType: 'Casual Leave', days: 1 }
         ];
 
         // Sample quota warnings

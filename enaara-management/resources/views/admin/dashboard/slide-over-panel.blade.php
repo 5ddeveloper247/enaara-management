@@ -12,7 +12,7 @@
             <div class="d-flex align-items-center gap-3 mb-3">
                 <div class="employee-avatar me-2" id="slideEmployeeAvatar">JD</div>
                 <div>
-                    <h5 class="mb-0" id="slideEmployeeName">John Doe</h5>
+                    <h5 class="mb-0" id="slideEmployeeName">Ahmed Ali</h5>
                     <small class="text-muted" id="slideLeaveType">Sick Leave</small>
                 </div>
             </div>

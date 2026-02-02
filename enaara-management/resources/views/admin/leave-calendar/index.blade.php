@@ -463,8 +463,8 @@
 
         function generateSampleEmployees(department, count) {
             const names = [
-                'John Doe', 'Sarah Miller', 'Robert Kim', 'Emma Wilson', 'Michael Johnson',
-                'Lisa Anderson', 'David Brown', 'Jennifer Lee', 'Chris Taylor', 'Amanda White'
+                'Ahmed Ali', 'Zainab Malik', 'Bilal Ahmed', 'Hira Ali', 'Hamza Khan',
+                'Sana Sheikh', 'Faisal Raza', 'Ayesha Malik', 'Khurram Raza', 'Amna Ali'
             ];
             const leaveTypes = ['Annual Leave', 'Sick Leave', 'Casual Leave', 'Comp-Off'];
             const employees = [];

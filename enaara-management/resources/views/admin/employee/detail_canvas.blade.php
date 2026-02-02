@@ -14,7 +14,7 @@
             <div class="d-flex align-items-center">
                 <div class="user-avatar me-3" id="detailEmployeeAvatar" style="width: 45px; height: 45px; font-size: 1rem;">JD</div>
                 <div>
-                    <h6 class="fw-semibold small mb-0" id="detailEmployeeName">John Doe</h6>
+                    <h6 class="fw-semibold small mb-0" id="detailEmployeeName">Ahmed Ali</h6>
                     <small class="opacity-75 text-white small" id="detailEmployeeInfo">Sales - EMP-001</small>
                 </div>
             </div>

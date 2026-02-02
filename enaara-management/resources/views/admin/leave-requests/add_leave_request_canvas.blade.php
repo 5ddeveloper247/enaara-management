@@ -18,10 +18,10 @@
                     <label for="leaveEmployee" class="form-label fw-semibold small text-white">Select Employee <span class="text-danger">*</span></label>
                     <select class="form-select" id="leaveEmployee" required>
                         <option value="">Select Employee</option>
-                        <option value="1">John Doe (EMP-001) - Sales</option>
-                        <option value="2">Sarah Miller (EMP-002) - HR</option>
-                        <option value="3">Robert Kim (EMP-003) - IT</option>
-                        <option value="4">Emma Wilson (EMP-004) - Operations</option>
+                        <option value="1">Ahmed Ali (EMP-001) - Sales</option>
+                        <option value="2">Zainab Malik (EMP-002) - HR</option>
+                        <option value="3">Bilal Ahmed (EMP-003) - IT</option>
+                        <option value="4">Hira Ali (EMP-004) - Operations</option>
                     </select>
                 </div>
 

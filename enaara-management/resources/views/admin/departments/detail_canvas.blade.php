@@ -59,7 +59,7 @@
                     <div class="d-flex align-items-center">
                         <div class="user-avatar me-3">JD</div>
                         <div class="flex-grow-1">
-                            <div class="fw-semibold small">John Doe</div>
+                            <div class="fw-semibold small">Ahmed Ali</div>
                             <small class="opacity-50 text-white fw-light">Property Sales Manager</small>
                         </div>
                         <span class="badge rounded-1 px-3 py-1 fw-light bg-success">Online</span>
@@ -69,7 +69,7 @@
                     <div class="d-flex align-items-center">
                         <div class="user-avatar me-3">JS</div>
                         <div class="flex-grow-1">
-                            <div class="fw-semibold small">Jane Smith</div>
+                            <div class="fw-semibold small">Fatima Khan</div>
                             <small class="opacity-50 text-white fw-light">Leasing Manager</small>
                         </div>
                         <span class="badge rounded-1 px-3 py-1 fw-light bg-success">Online</span>

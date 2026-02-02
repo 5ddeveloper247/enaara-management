@@ -83,10 +83,10 @@
             </h6>
             <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                 <div class="d-flex align-items-center">
-                    <div class="user-avatar me-3" id="detailAdminAvatar">JD</div>
+                    <div class="user-avatar me-3" id="detailAdminAvatar">AA</div>
                     <div class="flex-grow-1">
-                        <div class="fw-semibold small" id="detailAdminName">John Doe</div>
-                        <small class="opacity-75 text-white" id="detailAdminEmail">john.doe@enaara.com</small>
+                        <div class="fw-semibold small" id="detailAdminName">Ahmed Ali</div>
+                        <small class="opacity-75 text-white" id="detailAdminEmail">ahmed.ali@enaara.com</small>
                     </div>
                     <span class="badge px-3 py-2 rounded-1 bg-success" id="detailAdminStatus">
                         <i class="bi bi-check-circle me-1"></i>Active

@@ -194,10 +194,10 @@
             // Sample conflicts
             conflictList.innerHTML = `
                 <div class="conflict-item" style="font-size: 13px !important">
-                    <strong>John Doe</strong> - Assigned to Night Shift ending at 06:00, but Morning Shift starts at 09:00 (only 3 hours gap)
+                    <strong>Ahmed Ali</strong> - Assigned to Night Shift ending at 06:00, but Morning Shift starts at 09:00 (only 3 hours gap)
                 </div>
                 <div class="conflict-item" style="font-size: 13px !important">
-                    <strong>Sarah Miller</strong> - Double assignment on March 15th (Morning Shift and Night Shift)
+                    <strong>Zainab Malik</strong> - Double assignment on March 15th (Morning Shift and Night Shift)
                 </div>
             `;
 

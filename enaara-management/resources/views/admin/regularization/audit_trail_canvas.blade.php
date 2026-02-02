@@ -56,7 +56,7 @@
                             <small class="opacity-50 text-white">1 day ago</small>
                         </div>
                         <small class="opacity-50 text-white d-block">
-                            Employee <strong>John Doe</strong> submitted this request on <strong>Jan 14, 2024</strong> at <strong>6:00 PM</strong>
+                            Employee <strong>Ahmed Ali</strong> submitted this request on <strong>Jan 14, 2024</strong> at <strong>6:00 PM</strong>
                         </small>
                     </div>
                 </div>

@@ -43,7 +43,7 @@
                         <div class="d-flex align-items-center pt-3 border-top">
                             <div class="user-avatar me-3">JD</div>
                             <div class="flex-grow-1">
-                                <div class="fw-semibold small" style="line-height: 100%;">John Doe</div>
+                                <div class="fw-semibold small" style="line-height: 100%;">Ahmed Ali</div>
                                 <small class="text-muted">Admin / HR Manager</small>
                             </div>
                             <small style="font-size: 10px !important; padding: 4px 6px !important" class="badge px-0 bg-success small">Active</small>
@@ -64,7 +64,7 @@
                                     data-org-website="www.enaara.com"
                                     data-org-headcount="450"
                                     data-org-departments="12"
-                                    data-admin-name="John Doe"
+                                    data-admin-name="Ahmed Ali"
                                     data-admin-email="john.doe@enaara.com"
                                     data-admin-avatar="JD"
                                     data-admin-status="Active"
@@ -122,7 +122,7 @@
                         <div class="d-flex align-items-center pt-3 border-top">
                             <div class="user-avatar me-3">SM</div>
                             <div class="flex-grow-1">
-                                <div class="fw-semibold small" style="line-height: 100%;">Sarah Miller</div>
+                                <div class="fw-semibold small" style="line-height: 100%;">Zainab Malik</div>
                                 <small class="text-muted">Admin / HR Manager</small>
                             </div>
                             <small style="font-size: 10px !important; padding: 4px 6px !important" class="badge px-0 bg-success small">Active</small>
@@ -143,7 +143,7 @@
                                     data-org-website="www.msrgroup.com"
                                     data-org-headcount="285"
                                     data-org-departments="8"
-                                    data-admin-name="Sarah Miller"
+                                    data-admin-name="Zainab Malik"
                                     data-admin-email="sarah.miller@msrgroup.com"
                                     data-admin-avatar="SM"
                                     data-admin-status="Active"
@@ -201,7 +201,7 @@
                         <div class="d-flex align-items-center pt-3 border-top">
                             <div class="user-avatar me-3">RK</div>
                             <div class="flex-grow-1">
-                                <div class="fw-semibold small" style="line-height: 100%;">Robert Kim</div>
+                                <div class="fw-semibold small" style="line-height: 100%;">Bilal Ahmed</div>
                                 <small class="text-muted">Admin / HR Manager</small>
                             </div>
                             <small style="font-size: 10px !important; padding: 4px 6px !important" class="badge px-0 bg-warning text-dark small">Pending</small>
@@ -222,7 +222,7 @@
                                     data-org-website="www.swissbuilders.com"
                                     data-org-headcount="120"
                                     data-org-departments="5"
-                                    data-admin-name="Robert Kim"
+                                    data-admin-name="Bilal Ahmed"
                                     data-admin-email="robert.kim@swissbuilders.com"
                                     data-admin-avatar="RK"
                                     data-admin-status="Pending"

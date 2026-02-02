@@ -43,7 +43,7 @@
                         <div class="d-flex align-items-center pt-3 border-top">
                             <div class="user-avatar me-3">JD</div>
                             <div>
-                                <div class="fw-semibold small" style="line-height: 100%;">John Doe</div>
+                                <div class="fw-semibold small" style="line-height: 100%;">Ahmed Ali</div>
                                 <small class="text-muted">Department Head</small>
                             </div>
                         </div>
@@ -90,7 +90,7 @@
                         <div class="d-flex align-items-center pt-3 border-top">
                             <div class="user-avatar me-3">SM</div>
                             <div>
-                                <div class="fw-semibold small" style="line-height: 100%;">Sarah Miller</div>
+                                <div class="fw-semibold small" style="line-height: 100%;">Zainab Malik</div>
                                 <small class="text-muted">Department Head</small>
                             </div>
                         </div>
@@ -136,7 +136,7 @@
                         <div class="d-flex align-items-center pt-3 border-top">
                             <div class="user-avatar me-3">RK</div>
                             <div>
-                                <div class="fw-semibold small" style="line-height: 100%;">Robert Kim</div>
+                                <div class="fw-semibold small" style="line-height: 100%;">Bilal Ahmed</div>
                                 <small class="text-muted">Department Head</small>
                             </div>
                         </div>
@@ -182,7 +182,7 @@
                         <div class="d-flex align-items-center pt-3 border-top">
                             <div class="user-avatar me-3">EW</div>
                             <div>
-                                <div class="fw-semibold small" style="line-height: 100%;">Emma Wilson</div>
+                                <div class="fw-semibold small" style="line-height: 100%;">Hira Ali</div>
                                 <small class="text-muted">Department Head</small>
                             </div>
                         </div>
@@ -229,7 +229,7 @@
                         <div class="d-flex align-items-center pt-3 border-top">
                             <div class="user-avatar me-3">MJ</div>
                             <div>
-                                <div class="fw-semibold small" style="line-height: 100%;">Michael Johnson</div>
+                                <div class="fw-semibold small" style="line-height: 100%;">Hamza Khan</div>
                                 <small class="text-muted">Department Head</small>
                             </div>
                         </div>

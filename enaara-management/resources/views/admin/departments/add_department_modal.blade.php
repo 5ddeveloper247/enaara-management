@@ -29,9 +29,9 @@
                         <label for="departmentHead" class="form-label fw-semibold">Department Head</label>
                         <select class="form-select" id="departmentHead" required>
                             <option value="">Select Department Head</option>
-                            <option value="1">John Doe</option>
-                            <option value="2">Sarah Miller</option>
-                            <option value="3">Robert Kim</option>
+                            <option value="1">Ahmed Ali</option>
+                            <option value="2">Zainab Malik</option>
+                            <option value="3">Bilal Ahmed</option>
                         </select>
                     </div>
 

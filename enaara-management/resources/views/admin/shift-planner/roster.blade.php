@@ -175,16 +175,16 @@ function generateDummyRosterEvents() {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     
     const employees = [
-        { id: '1', name: 'John Doe' },
-        { id: '2', name: 'Sarah Miller' },
-        { id: '3', name: 'Robert Kim' },
-        { id: '4', name: 'Emma Wilson' },
-        { id: '5', name: 'Michael Johnson' },
-        { id: '6', name: 'Lisa Anderson' },
-        { id: '7', name: 'David Brown' },
-        { id: '8', name: 'Jennifer Lee' },
-        { id: '9', name: 'James Taylor' },
-        { id: '10', name: 'Maria Garcia' }
+        { id: '1', name: 'Ahmed Ali' },
+        { id: '2', name: 'Zainab Malik' },
+        { id: '3', name: 'Bilal Ahmed' },
+        { id: '4', name: 'Hira Ali' },
+        { id: '5', name: 'Hamza Khan' },
+        { id: '6', name: 'Sana Sheikh' },
+        { id: '7', name: 'Faisal Raza' },
+        { id: '8', name: 'Ayesha Malik' },
+        { id: '9', name: 'Usman Ali' },
+        { id: '10', name: 'Mariam Khan' }
     ];
     
     const events = [];
@@ -202,7 +202,7 @@ function generateDummyRosterEvents() {
                 events.push({
                     id: String(eventId++),
                     employeeId: '4',
-                    employeeName: 'Emma Wilson',
+                    employeeName: 'Hira Ali',
                     shiftId: '3',
                     shiftName: 'Site Sales - Weekend',
                     start: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
@@ -213,7 +213,7 @@ function generateDummyRosterEvents() {
                 events.push({
                     id: String(eventId++),
                     employeeId: '6',
-                    employeeName: 'Lisa Anderson',
+                    employeeName: 'Sana Sheikh',
                     shiftId: '3',
                     shiftName: 'Site Sales - Weekend',
                     start: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,

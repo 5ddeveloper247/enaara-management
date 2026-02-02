@@ -212,9 +212,9 @@
                 <label for="orgAdmin" class="form-label fw-semibold small text-white">Assign Admin/HR Manager</label>
                 <select class="form-select" id="orgAdmin">
                     <option value="">Select Admin (Optional - can assign later)</option>
-                    <option value="1">John Doe (john.doe@enaara.com)</option>
-                    <option value="2">Sarah Miller (sarah.miller@enaara.com)</option>
-                    <option value="3">Robert Kim (robert.kim@enaara.com)</option>
+                    <option value="1">Ahmed Ali (ahmed.ali@enaara.com)</option>
+                    <option value="2">Zainab Malik (zainab.malik@enaara.com)</option>
+                    <option value="3">Bilal Ahmed (bilal.ahmed@enaara.com)</option>
                 </select>
                 <small class="opacity-75 text-white">The assigned admin will have full access to manage this organization</small>
             </div>
