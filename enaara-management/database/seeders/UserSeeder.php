@@ -20,27 +20,33 @@ class UserSeeder extends Seeder
                 'name' => 'Test User',
                 'email' => 'test@example.com',
                 'password' => Hash::make($testPassword),
+                'role' => 'employee',
             ],
             [
                 'name' => 'Admin User',
                 'email' => 'admin@example.com',
                 'password' => Hash::make($testPassword),
+                'role' => 'super_admin',
             ],
             [
                 'name' => 'Demo User',
                 'email' => 'demo@example.com',
                 'password' => Hash::make($testPassword),
+                'role' => 'manager',
             ],
         ];
 
-        foreach ($users as $user) {
-            User::updateOrCreate(
-                ['email' => $user['email']],
+        foreach ($users as $data) {
+            $role = $data['role'];
+            unset($data['role']);
+            $user = User::updateOrCreate(
+                ['email' => $data['email']],
                 [
-                    'name' => $user['name'],
-                    'password' => $user['password'],
+                    'name' => $data['name'],
+                    'password' => $data['password'],
                 ]
             );
+            $user->syncRoles([$role]);
         }
     }
 }
