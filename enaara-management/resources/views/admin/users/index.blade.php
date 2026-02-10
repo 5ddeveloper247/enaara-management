@@ -201,8 +201,8 @@
                     </div>
                 </div>
 
-                <!-- Data Table -->
-                @include('admin.users.user_table')
+                <!-- Data Table (Yajra server-side) -->
+                {!! $dataTable->table(['class' => 'display table table-striped', 'style' => 'width:100%']) !!}
             </div>
         </div>
     </div>
@@ -223,43 +223,16 @@
     <!-- DataTables Buttons Extension -->
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
-    <!-- Common Helper Functions -->
-    <script src="{{ asset('js/helpers.js') }}"></script>
-
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    {!! $dataTable->scripts(attributes: ['type' => 'text/javascript']) !!}
     <script>
-        // Global variables
         let usersTable;
         let userToDelete = null;
         let userToDeleteRow = null;
 
         $(document).ready(function() {
-            // Initialize DataTable
-            usersTable = initUserDataTable('#usersTable', {
-                columnDefs: [{
-                        targets: [0, 1, 2, 3, 4, 5, 6], // User, Status, Actions - visible by default
-                        visible: true,
-                        className: 'default-col'
-                    },
-                    {
-                        targets: [], // Last Login - hidden initially
-                        visible: false
-                    },
-                    {
-                        targets: 6, // Actions column
-                        orderable: false,
-                        className: 'no-toggle'
-                    }
-                ],
-                buttons: [{
-                    extend: 'colvis',
-                    text: 'Select Columns',
-                    className: 'btn btn-sm border-0 bg-main text-white',
-                    columns: [0, 1, 2, 3, 4, 5] // All columns except Actions
-                }]
-            });
-
-
+            usersTable = $('#usersTable').DataTable();
 
             // Handle Offcanvas show event (for add/edit/view)
             const userCanvas = document.getElementById('userCanvas');
@@ -319,18 +292,12 @@
                 userToDeleteRow = $(button).closest('tr');
             });
 
-            // Confirm Delete
+            // Confirm Delete (reload table after row remove for server-side DataTables)
             $('#confirmDeleteBtn').on('click', function() {
                 if (userToDelete && userToDeleteRow) {
-                    console.log('Deleting user:', userToDelete);
-
                     if ($.fn.DataTable.isDataTable('#usersTable')) {
-                        usersTable.row(userToDeleteRow).remove().draw();
-                    } else {
-                        userToDeleteRow.remove();
+                        usersTable.row(userToDeleteRow).remove().draw(false);
                     }
-
-                    // Modal will close automatically via data-bs-dismiss attribute
                     userToDelete = null;
                     userToDeleteRow = null;
                 }
