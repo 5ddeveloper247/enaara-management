@@ -7,6 +7,7 @@ Route::get('/', function () {
     if (auth()->check()) {
         return redirect('/admin/dashboard');
     }
+
     return redirect()->route('login');
 });
 
@@ -14,17 +15,15 @@ Route::get('/dashboard', function () {
     return redirect('/admin/dashboard');
 })->middleware(['auth'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
 // Admin Panel Routes (protected)
-Route::prefix('admin')->middleware(['auth'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         return view('admin.dashboard.index');
     })->name('admin.dashboard.index');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/users', function () {
         return view('admin.users.index');

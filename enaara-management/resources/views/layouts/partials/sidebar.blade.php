@@ -149,9 +149,9 @@
     
     <div class="sidebar-footer p-4">
         <div class="d-flex flex-column align-items-center text-center">
-            <div class="mb-2">
-                <img src="{{ asset('images/profile-placeholder.png') }}" alt="Profile" class="rounded-circle border-2" style="width: 50px; height: 50px; object-fit: cover; border-color: var(--primary-color) !important;" onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'User') }}&background=e6c673&color=000&size=80'">
-            </div>
+            <a href="{{ route('admin.profile.edit') }}" class="text-white text-decoration-none d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 50px; height: 50px; object-fit: cover; border-color: var(--primary-color) !important;">
+                <img src="{{ asset('images/profile-placeholder.png') }}" alt="Profile" class="rounded-circle border-2" style="width: 50px; height: 50px; object-fit: cover; border-color: var(--primary-color) !important;">
+            </a>
             <h6 class="text-white fw-normal mb-0 small">{{ Auth::user()->name ?? 'Admin User' }}</h6>
             <a href="{{ route('logout') }}" class="text-white text-decoration-none d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px;" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <i class="bi bi-box-arrow-right fs-5"></i>

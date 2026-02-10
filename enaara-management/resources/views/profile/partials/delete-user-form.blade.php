@@ -15,7 +15,7 @@
     <div class="modal fade" id="confirm-user-deletion-modal" tabindex="-1" aria-labelledby="confirmUserDeletionLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <form method="post" action="{{ route('profile.destroy') }}">
+                <form method="post" action="{{ route('admin.profile.destroy') }}">
                     @csrf
                     @method('delete')
 
