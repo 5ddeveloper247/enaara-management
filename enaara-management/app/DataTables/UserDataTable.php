@@ -76,13 +76,14 @@ class UserDataTable extends DataTable
                     'infoFiltered' => '(filtered from _MAX_ total entries)',
                     'zeroRecords' => 'No matching records found',
                 ],
-                'dom' => '<"row px-4 py-3"<"col-md-6"l><"col-md-6 d-flex justify-content-end"f>>rt<"row px-4 py-2"<"col-md-5"i><"col-md-7"p>>',
+                'dom' => '<"row px-4 py-3"<"col-md-6"l><"col-md-6 d-flex justify-content-end"<B><f>>>rt<"row px-4 py-2"<"col-md-5"i><"col-md-7"p>>',
             ])
             ->buttons([
-                Button::make('excel'),
-                Button::make('csv'),
-                Button::make('pdf'),
-                Button::make('print'),
+                // Button::make('excel'),
+                // Button::make('csv'),
+                // Button::make('pdf'),
+                // Button::make('print'),
+                Button::make('colvis')->text('Select Columns')->className('btn btn-sm border-0 bg-main text-white'),
             ]);
     }
 

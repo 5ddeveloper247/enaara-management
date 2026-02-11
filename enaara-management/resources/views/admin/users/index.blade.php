@@ -35,18 +35,103 @@
             --bs-table-bg: transparent !important;
         }
 
-        th {
-            padding: 1.3rem 2rem !important;
-            color: var(--light-color) !important;
+        /* Table header: match Employee Directory (dark blue bar, white uppercase) */
+        #usersTable thead th {
+            background-color: var(--main-color) !important;
+            color: white !important;
+            padding: 1rem 1.5rem !important;
             white-space: nowrap !important;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: none;
         }
 
         td {
             padding: 1rem 2rem !important;
         }
 
+        /* Toolbar row: match Employee Directory - buttons to the left of search, same row */
+        .row:first-child {
+            padding: 0.75rem 1.5rem;
+            align-items: center;
+        }
+        .row:first-child > [class*="col-"]:last-child {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        /* Buttons container: above / immediately left of search */
         .dt-buttons {
-            margin-top: 2px;
+            order: 1;
+        }
+        .dataTables_filter {
+            order: 2;
+            margin: 0;
+        }
+        .row:first-child .form-select {
+            border-radius: 0.375rem;
+            border: 1px solid #dee2e6;
+            font-size: 13px;
+            padding: 0.35rem 2rem;
+        }
+        /* Button group: match Employee (Select Columns + Export/PDF in one row, rounded, same height) */
+        .dt-buttons {
+            margin-top: 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .dt-buttons .btn {
+            border-radius: 0.375rem;
+            font-size: 13px;
+            padding: 0.35rem 0.75rem;
+            font-weight: 500;
+        }
+        /* Select Columns: dark blue, white text (match Employee) */
+        .dt-buttons .btn.bg-main,
+        .dt-buttons .btn.bg-main {
+            background-color: var(--main-color) !important;
+            color: white !important;
+            border: none !important;
+        }
+        .dt-buttons .btn.bg-main::after {
+            display: inline-block;
+            margin-left: 0.5em;
+            vertical-align: 0.255em;
+            content: "";
+            border-top: 0.3em solid currentColor;
+            border-right: 0.3em solid transparent;
+            border-bottom: 0;
+            border-left: 0.3em solid transparent;
+        }
+        /* Excel, CSV, PDF: outline style like Employee Export/Filter (light grey border, dark text) */
+        .dt-buttons .btn-outline-secondary,
+        .dt-buttons .btn:not(.bg-main) {
+            border: 1px solid #dee2e6 !important;
+            color: #495057 !important;
+            background-color: #fff !important;
+        }
+        .dt-buttons .btn-outline-secondary:hover,
+        .dt-buttons .btn:not(.bg-main):hover {
+            background-color: #f8f9fa !important;
+            border-color: #dee2e6 !important;
+            color: #495057 !important;
+        }
+        /* Search input: match Employee (white, rounded, placeholder) */
+        .dataTables_filter input {
+            border-radius: 0.375rem;
+            border: 1px solid #dee2e6;
+            font-size: 13px;
+            padding: 0.35rem 0.75rem;
+            margin-left: 0.5rem;
+        }
+        .dataTables_filter input:focus {
+            border-color: var(--main-color);
+            outline: 0;
+            box-shadow: none;
         }
     </style>
 @endpush
@@ -61,9 +146,6 @@
                         <h5 class="mb-0">Manage Users</h5>
                     </div>
                     <div class="col-md-6 text-end">
-                        <button type="button" class="btn btn-outline-secondary me-2" id="exportBtn">
-                            <i class="bi bi-download me-1"></i>Export
-                        </button>
                         <button type="button" class="btn btn-primary bg-main border-0 me-2" data-bs-toggle="offcanvas"
                             data-bs-target="#userCanvas" data-mode="add">
                             <i class="bi bi-person-plus me-1"></i>Add New User
@@ -223,6 +305,7 @@
     <!-- DataTables Buttons Extension -->
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
     {!! $dataTable->scripts(attributes: ['type' => 'text/javascript']) !!}
