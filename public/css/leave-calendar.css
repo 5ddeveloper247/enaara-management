@@ -1,0 +1,281 @@
+/**
+ * Leave Calendar Module Styles
+ */
+
+/* ============================================
+   FULLCALENDAR CUSTOMIZATION
+   ============================================ */
+/* #leaveCalendar {
+    font-family: 'Roboto Flex', sans-serif;
+} */
+
+.fc {
+    background-color: transparent;
+    --fc-border-color: #dee2e6;
+    --fc-daygrid-event-dot-width: 8px;
+    /* font-size: 12px !important; */
+}
+
+.fc-header-toolbar {
+    margin-bottom: 1.5rem;
+}
+
+.fc-button {
+    background-color: var(--main-color) !important;
+    border-color: var(--main-color) !important;
+    color: white !important;
+    font-size: 12px !important;
+    padding: 0.5rem 1rem;
+}
+
+.fc-button:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+.fc-button-active {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+.fc-today-button {
+    background-color: var(--main-color) !important;
+    border-color: var(--main-color) !important;
+}
+
+.fc-daygrid-day {
+    border-color: #dee2e6;
+}
+
+.fc-daygrid-day-number {
+    color: var(--dark-color);
+    font-weight: 600;
+    font-size: 12px !important;
+}
+
+.fc-col-header-cell {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    padding: 0.75rem;
+    font-weight: 600;
+    color: var(--dark-color);
+    font-size: 12px !important;
+}
+
+.fc-col-header-cell a {
+    font-size: 12px !important;
+}
+
+.fc-day-today {
+    background-color: rgba(1, 36, 69, 0.1) !important;
+}
+
+.fc-event {
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px !important;
+    cursor: pointer;
+    border: none !important;
+}
+
+.fc-event:hover {
+    opacity: 0.9;
+}
+
+.fc-daygrid-event {
+    margin: 2px 0;
+}
+
+.fc-daygrid-day-events {
+    margin-top: 4px;
+}
+
+.fc-more-link {
+    font-size: 12px !important;
+    padding: 2px 4px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+}
+
+.fc-popover {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.fc-popover-header {
+    background-color: var(--main-color);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 8px 8px 0 0;
+    font-size: 12px !important;
+}
+
+.fc-popover-body {
+    padding: 0.5rem;
+    font-size: 12px !important;
+}
+
+/* Additional calendar text elements */
+.fc-toolbar-title {
+    font-size: 12px !important;
+}
+
+.fc-button-group button,
+.fc-button-group .fc-button {
+    font-size: 12px !important;
+}
+
+.fc-daygrid-event-title {
+    font-size: 10px !important;
+}
+
+.fc-event-title {
+    font-size: 10px !important;
+    font-weight: 400 !important;
+}
+
+.fc-event-title-container {
+    font-size: 10px !important;
+}
+
+.fc-list-event-title,
+.fc-list-event-time {
+    font-size: 10px !important;
+}
+
+.fc-timegrid-slot-label {
+    font-size: 12px !important;
+}
+
+.fc-timegrid-axis {
+    font-size: 12px !important;
+}
+
+/* ============================================
+   HOLIDAY EVENTS (Bootstrap Info Color)
+   ============================================ */
+.holiday-event {
+    background-color: #0dcaf0 !important;
+    border: none !important;
+    color: #000000 !important;
+    font-weight: 600;
+}
+
+.holiday-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #0dcaf0;
+    border-radius: 50%;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+}
+
+/* ============================================
+   DEPARTMENTAL LEAVE HEATMAP (Bars)
+   Using main color (#012445) variations only
+   Darker backgrounds with clear distinction
+   ============================================ */
+.department-leave-low {
+    background-color: rgba(1, 36, 69, 0.35) !important;
+    border-left: 4px solid rgba(1, 36, 69, 0.6) !important;
+    color: #012445 !important;
+    font-weight: 500;
+}
+
+.department-leave-medium {
+    background-color: rgba(1, 36, 69, 0.55) !important;
+    border-left: 4px solid rgba(1, 36, 69, 0.85) !important;
+    color: #012445 !important;
+    font-weight: 600;
+}
+
+.department-leave-high {
+    background-color: rgba(1, 36, 69, 0.75) !important;
+    border-left: 4px solid var(--main-color) !important;
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+/* ============================================
+   BLACKOUT DATES (Full Black Background)
+   ============================================ */
+.blackout-date {
+    background-color: #000000 !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    border-radius: 4px !important;
+}
+
+.fc-daygrid-day.fc-day-blackout {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ============================================
+   LEGEND - All 10px rounded dots
+   Using main color (#012445) variations only
+   ============================================ */
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-dot.holiday-dot {
+    background-color: #0dcaf0;
+}
+
+.legend-dot.department-leave-low {
+    background-color: rgba(1, 36, 69, 0.4);
+}
+
+.legend-dot.department-leave-medium {
+    background-color: rgba(1, 36, 69, 0.7);
+}
+
+.legend-dot.department-leave-high {
+    background-color: var(--main-color);
+}
+
+.legend-dot.blackout-dot {
+    background-color: #000000;
+}
+
+/* ============================================
+   SIDEBAR STATS
+   ============================================ */
+#upcomingHolidaysList .border-bottom:last-child {
+    border-bottom: none !important;
+}
+
+#upcomingHolidaysList .border-bottom {
+    border-color: #dee2e6 !important;
+}
+
+#staffShortageAlerts .alert:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .fc-header-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .fc-toolbar-chunk {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .legend {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}
+

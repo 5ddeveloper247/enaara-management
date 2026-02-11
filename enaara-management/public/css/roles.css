@@ -1,0 +1,197 @@
+/**
+ * Roles & Permissions Module Styles
+ */
+
+/* ============================================
+   ROLE ICON
+   ============================================ */
+.role-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--main-color, #012445), var(--secondary-color, #012445));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.role-icon-large {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--main-color, #012445), var(--secondary-color, #012445));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.8rem;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn {
+    font-size: 13px;
+}
+
+.input-group {
+    border: 1px solid var(--main-color) !important;
+}
+
+input:focus {
+    box-shadow: none !important;
+    border: 1px solid var(--main-color) !important;
+}
+
+.badge {
+    font-weight: 500 !important;
+}
+
+/* ============================================
+   DATA TABLE CUSTOMIZATION
+   ============================================ */
+.table {
+    --bs-table-bg: transparent !important;
+}
+
+#rolesTable {
+    font-size: 0.875rem;
+}
+
+#rolesTable thead th {
+    padding: 1.3rem 2rem !important;
+    color: var(--light-color) !important;
+    white-space: nowrap !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+#rolesTable tbody td {
+    padding: 1rem 2rem !important;
+}
+
+#rolesTable tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#rolesTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.dt-buttons {
+    margin-top: 2px;
+}
+
+/* DataTable Pagination */
+#rolesTable_wrapper .page-item.active {
+    --bs-pagination-active-bg: var(--main-color) !important;
+    --bs-pagination-active-border-color: var(--main-color) !important;
+}
+
+#rolesTable_wrapper .dataTables_wrapper .dataTables_paginate .pagination .page-link:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* ============================================
+   PERMISSIONS CONTAINER
+   ============================================ */
+.permissions-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.permissions-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.permissions-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.permissions-container::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.permissions-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.permission-category {
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    padding-left: 1rem;
+}
+
+.permission-list {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.permission-list.show {
+    max-height: 1000px;
+}
+
+.category-toggle {
+    transition: transform 0.3s ease;
+}
+
+.category-toggle.rotated {
+    transform: rotate(180deg);
+}
+
+.permissions-list-detail {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.permissions-list-detail::-webkit-scrollbar {
+    width: 6px;
+}
+
+.permissions-list-detail::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.permissions-list-detail::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.permissions-list-detail::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   COUNTER CARDS
+   ============================================ */
+.role-counter-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.role-counter-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    .permissions-container {
+        max-height: 300px !important;
+    }
+    
+    .permissions-list-detail {
+        max-height: 250px !important;
+    }
+}
+

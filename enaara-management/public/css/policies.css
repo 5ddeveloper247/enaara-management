@@ -1,0 +1,141 @@
+/**
+ * Policy Management Module Styles
+ */
+
+/* ============================================
+   POLICIES TABLE SPECIFIC STYLES
+   ============================================ */
+#policiesTable {
+    width: 100% !important;
+}
+
+/* ============================================
+   MODAL STYLING
+   ============================================ */
+.modal-header.bg-main {
+    background-color: var(--main-color) !important;
+    color: white !important;
+}
+
+.modal-header.bg-main .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.modal-body .form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.modal-body .form-control,
+.modal-body .form-select {
+    font-size: 0.875rem;
+}
+
+.modal-body textarea.form-control {
+    resize: vertical;
+}
+
+
+#policiesTable_wrapper .dataTables_wrapper .dataTables_paginate .pagination .page-link:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    .summary-counter-card .h4 {
+        font-size: 1.5rem;
+    }
+
+    .summary-counter-card .fs-1 {
+        font-size: 2rem !important;
+    }
+}
+
+/* ============================================
+   FILTER SECTION
+   ============================================ */
+.input-group-sm .form-control,
+.input-group-sm .form-select {
+    font-size: 0.875rem;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* ============================================
+   DATA TABLE BUTTONS
+   ============================================ */
+.dt-buttons {
+    margin-top: 2px;
+}
+
+.dt-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.dt-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   ACTION BUTTONS
+   ============================================ */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.view-policy-btn {
+    transition: all 0.2s ease;
+}
+
+.view-policy-btn:hover {
+    transform: scale(1.1);
+}
+
+/* ============================================
+   FORM VALIDATION
+   ============================================ */
+.form-control:invalid,
+.form-select:invalid {
+    border-color: #dc3545;
+}
+
+.form-control:valid,
+.form-select:valid {
+    border-color: #198754;
+}
+
+/* ============================================
+   FILE UPLOAD
+   ============================================ */
+.form-control[type="file"] {
+    padding: 0.375rem;
+}
+
+.form-control[type="file"]::-webkit-file-upload-button {
+    padding: 0.375rem 0.75rem;
+    margin-right: 0.5rem;
+    background-color: var(--main-color);
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.form-control[type="file"]::-webkit-file-upload-button:hover {
+    background-color: var(--secondary-color);
+}
+

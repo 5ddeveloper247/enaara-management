@@ -1,0 +1,107 @@
+/**
+ * Leave Requests Module Styles
+ */
+
+/* ============================================
+   COUNTERS
+   ============================================ */
+.counter-card {
+    transition: transform 0.2s ease;
+}
+
+.counter-card:hover {
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   AWAY TODAY LIST
+   ============================================ */
+#awayTodayList .border-bottom:last-child {
+    border-bottom: none !important;
+}
+
+/* ============================================
+   QUOTA WARNINGS
+   ============================================ */
+#quotaWarnings .alert {
+    margin-bottom: 0.5rem;
+}
+
+#quotaWarnings .alert:last-child {
+    margin-bottom: 0;
+}
+
+/* ============================================
+   DATA TABLE CUSTOMIZATION
+   ============================================ */
+#leaveRequestsTable {
+    font-size: 0.875rem;
+}
+
+#leaveRequestsTable thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 2px solid #dee2e6;
+}
+
+#leaveRequestsTable tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#leaveRequestsTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* DataTable Pagination */
+#leaveRequestsTable_wrapper .page-item.active {
+    --bs-pagination-active-bg: var(--main-color) !important;
+    --bs-pagination-active-border-color: var(--main-color) !important;
+}
+
+#leaveRequestsTable_wrapper .dataTables_wrapper .dataTables_paginate .pagination .page-link:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* Fix for DataTables responsive child rows */
+#leaveRequestsTable tbody tr.child ul.dtr-details {
+    width: 100%;
+}
+
+#leaveRequestsTable tbody tr.child ul.dtr-details li {
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.5rem 0;
+}
+
+#leaveRequestsTable tbody tr.child ul.dtr-details li:last-child {
+    border-bottom: none;
+}
+
+#leaveRequestsTable tbody tr.child .dtr-title {
+    font-weight: 600;
+    min-width: 120px;
+    display: inline-block;
+}
+
+/* ============================================
+   LEAVE TYPE BADGES
+   ============================================ */
+.badge.bg-primary {
+    background-color: var(--main-color) !important;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    #awayTodayList,
+    #quotaWarnings {
+        font-size: 0.875rem;
+    }
+}
+
+
+
