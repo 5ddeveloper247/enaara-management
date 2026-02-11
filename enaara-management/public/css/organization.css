@@ -1,0 +1,27 @@
+/**
+ * Organization Module Styles
+ */
+
+/* ============================================
+   ORGANIZATION CARDS
+   ============================================ */
+.organization-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.organization-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ============================================
+   FILTER SIDEBAR
+   ============================================ */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+}
+

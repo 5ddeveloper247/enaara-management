@@ -30,9 +30,9 @@
                 </a>
             </li>
             <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/organization') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/organization*') ? 'active' : '' }}">
+                <a href="{{ url('/admin/sbu') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/sbu*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
-                    <span>Organization</span>
+                    <span>SBU</span>
                 </a>
             </li>
             <li class="mb-1 mx-3">
@@ -96,29 +96,23 @@
                     <span>Balance Tracker</span>
                 </a>
             </li>
-            <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/analytics') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/analytics*') ? 'active' : '' }}">
-                    <i class="bi bi-wallet2 me-2"></i>
-                    <span>Balance Tracker</span>
-                </a>
-            </li>
 
             {{-- PAYROLL & COMPLIANCE --}}
             <div class="text-white px-4 opacity-50 small mt-3 mb-2">Payroll & Compliance</div>
             <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/reports') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/reports*') ? 'active' : '' }}">
+                <a href="{{ url('/admin/monthly-summary') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/monthly-summary*') ? 'active' : '' }}">
                     <i class="bi bi-receipt-cutoff me-2"></i>
                     <span>Monthly Summary</span>
                 </a>
             </li>
             <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/analytics') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/analytics*') ? 'active' : '' }}">
+                <a href="{{ url('/admin/overtime') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/overtime*') ? 'active' : '' }}">
                     <i class="bi bi-hourglass-split me-2"></i>
                     <span>Overtime Tracker</span>
                 </a>
             </li>
             <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/analytics') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/analytics*') ? 'active' : '' }}">
+                <a href="{{ url('/admin/audit-trails') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/audit-trails*') ? 'active' : '' }}">
                     <i class="bi bi-shield-check me-2"></i>
                     <span>Audit Trail</span>
                 </a>
@@ -127,19 +121,19 @@
             {{-- CONFIGURATION --}}
             <div class="text-white px-4 opacity-50 small mt-3 mb-2">Configuration</div>
             <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/reports') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/reports*') ? 'active' : '' }}">
+                <a href="{{ url('/admin/policies') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/policies*') ? 'active' : '' }}">
                     <i class="bi bi-file-text me-2"></i>
                     <span>Policies</span>
                 </a>
             </li>
             <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/analytics') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/analytics*') ? 'active' : '' }}">
+                <a href="{{ url('/admin/workflows') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/workflows*') ? 'active' : '' }}">
                     <i class="bi bi-diagram-2 me-2"></i>
                     <span>Workflows</span>
                 </a>
             </li>
             <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/analytics') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/analytics*') ? 'active' : '' }}">
+                <a href="{{ url('/admin/roles') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/roles*') ? 'active' : '' }}">
                     <i class="bi bi-shield-lock me-2"></i>
                     <span>Roles & Permissions</span>
                 </a>

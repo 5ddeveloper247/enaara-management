@@ -1,0 +1,135 @@
+/**
+ * Users Module Styles
+ */
+
+/* ============================================
+   USER AVATAR
+   ============================================ */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--main-color, #012445), var(--secondary-color, #012445));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   DEPARTMENT BADGES
+   ============================================ */
+.badge.bg-primary {
+    background-color: #0d6efd !important;
+}
+
+.badge.bg-info {
+    background-color: #0dcaf0 !important;
+}
+
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+/* ============================================
+   STATUS TOGGLE
+   ============================================ */
+.form-check-input.status-toggle {
+    cursor: pointer;
+}
+
+.form-check-input.status-toggle:checked {
+    background-color: var(--main-color, #012445);
+    border-color: var(--main-color, #012445);
+}
+
+/* ============================================
+   DATA TABLE CUSTOMIZATION
+   ============================================ */
+#usersTable {
+    font-size: 0.875rem;
+}
+
+#usersTable thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 2px solid #dee2e6;
+}
+
+#usersTable tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#usersTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* DataTable Pagination */
+#usersTable_wrapper .page-item.active{
+    --bs-pagination-active-bg: var(--main-color) !important;
+    --bs-pagination-active-border-color: var(--main-color) !important;
+}
+
+#usersTable_wrapper .dataTables_wrapper .dataTables_paginate .pagination .page-link:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+
+.password-input-group {
+    margin-top: 0.5rem;
+}
+
+/* ============================================
+   OFFCANVAS CUSTOMIZATION
+   ============================================ */
+.offcanvas {
+    width: 500px !important;
+    max-width: 90vw;
+}
+
+.offcanvas-header {
+    padding: 1.5rem;
+}
+
+.offcanvas-body {
+    padding: 1.5rem;
+}
+
+/* ============================================
+   SEARCH INPUT
+   ============================================ */
+#searchInput {
+    border-left: none;
+    padding-left: 0;
+}
+
+.input-group-text {
+    border-right: none;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    .offcanvas {
+        width: 100% !important;
+    }
+
+}
+

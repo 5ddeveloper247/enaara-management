@@ -33,7 +33,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         return view('admin.departments.index');
     })->name('departments.index');
 
-    Route::get('/organization', function () {
+    Route::get('/sbu', function () {
         return view('admin.organization.index');
     })->name('organization.index');
 

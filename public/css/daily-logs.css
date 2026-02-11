@@ -1,0 +1,219 @@
+/**
+ * Daily Logs Module Styles
+ */
+
+/* ============================================
+   USER AVATAR (Reused from users.css)
+   ============================================ */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--main-color, #012445), var(--secondary-color, #012445));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   STATUS INDICATORS
+   ============================================ */
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* ============================================
+   PHOTO VERIFICATION
+   ============================================ */
+.photo-thumbnail {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.photo-thumbnail:hover {
+    transform: scale(1.5);
+    z-index: 10;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   LOCATION CELL WITH MAP TOOLTIP
+   ============================================ */
+.location-cell {
+    position: relative;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+}
+
+.location-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 10px;
+    display: none;
+    z-index: 1000;
+    width: 300px;
+    height: 200px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+}
+
+.location-cell:hover .location-tooltip {
+    display: block;
+}
+
+#locationMapTooltip {
+    position: fixed;
+    display: none;
+    z-index: 1060;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 0;
+    pointer-events: auto;
+}
+
+#locationMapTooltip .leaflet-container {
+    border-radius: 8px;
+    width: 100%;
+    height: 100%;
+}
+
+/* ============================================
+   DATA TABLE CUSTOMIZATION
+   ============================================ */
+#dailyLogsTable {
+    font-size: 0.875rem;
+}
+
+#dailyLogsTable thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 2px solid #dee2e6;
+    background-color: transparent !important;
+}
+
+/* Fix for DataTables responsive child rows */
+#dailyLogsTable tbody tr.child ul.dtr-details {
+    width: 100%;
+}
+
+#dailyLogsTable tbody tr.child ul.dtr-details li {
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.5rem 0;
+}
+
+#dailyLogsTable tbody tr.child ul.dtr-details li:last-child {
+    border-bottom: none;
+}
+
+#dailyLogsTable tbody tr.child .dtr-title {
+    font-weight: 600;
+    min-width: 120px;
+    display: inline-block;
+}
+
+#dailyLogsTable tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#dailyLogsTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* DataTable Pagination */
+#dailyLogsTable_wrapper .page-item.active {
+    --bs-pagination-active-bg: var(--main-color) !important;
+    --bs-pagination-active-border-color: var(--main-color) !important;
+}
+
+#dailyLogsTable_wrapper .dataTables_wrapper .dataTables_paginate .pagination .page-link:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* ============================================
+   FILTER BAR
+   ============================================ */
+.filter-bar .form-control,
+.filter-bar .form-select {
+    font-size: 0.875rem;
+}
+
+/* ============================================
+   LIVE STREAM INDICATOR
+   ============================================ */
+.form-check-input:checked ~ .form-check-label {
+    color: var(--main-color);
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.bi-arrow-clockwise.rotate {
+    animation: rotate 1s linear;
+}
+
+/* ============================================
+   DATA TABLE PAGINATION
+   ============================================ */
+#dailyLogsTable_wrapper .page-item.active {
+    --bs-pagination-active-bg: var(--main-color) !important;
+    --bs-pagination-active-border-color: var(--main-color) !important;
+}
+
+#dailyLogsTable_wrapper .dataTables_wrapper .dataTables_paginate .pagination .page-link:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* ============================================
+   EMPLOYEE AVATAR CLICKABLE
+   ============================================ */
+#dailyLogsTable tbody td:first-child {
+    cursor: pointer;
+}
+
+#dailyLogsTable tbody td:first-child:hover {
+    background-color: #f0f0f0;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    .location-tooltip,
+    #locationMapTooltip {
+        width: 250px;
+        height: 150px;
+    }
+}
+

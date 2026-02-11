@@ -1,0 +1,133 @@
+/**
+ * Workflows Module Styles
+ */
+
+/* ============================================
+   WORKFLOWS TABLE SPECIFIC STYLES
+   ============================================ */
+#workflowsTable {
+    width: 100% !important;
+}
+
+/* ============================================
+   OFFCANVAS STYLING
+   ============================================ */
+.offcanvas.bg-main {
+    background-color: var(--main-color) !important;
+    color: white !important;
+}
+
+.offcanvas-header.border-bottom {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.offcanvas-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.offcanvas-body .form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.offcanvas-body .form-control,
+.offcanvas-body .form-select {
+    font-size: 0.875rem;
+    background-color: white;
+    color: #212529;
+}
+
+.offcanvas-body .form-control::placeholder {
+    color: #6c757d;
+}
+
+/* ============================================
+   APPROVAL CHAIN DESIGNER
+   ============================================ */
+.approval-level-item {
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.approval-level-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.approval-level-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 15px;
+    background-color: var(--main-color);
+}
+
+.approval-level-box {
+    transition: all 0.2s ease;
+}
+
+.approval-level-box:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+
+/* Approval Chain Visualization in Canvas */
+.approval-chain-item {
+    position: relative;
+}
+
+.approval-chain-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 100px;
+    width: 2px;
+    height: 20px;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    .approval-level-item {
+        margin-bottom: 1rem;
+    }
+}
+
+
+.view-workflow-btn {
+    transition: all 0.2s ease;
+}
+
+.view-workflow-btn:hover {
+    transform: scale(1.1);
+}
+
+.remove-level-btn {
+    transition: all 0.2s ease;
+}
+
+.remove-level-btn:hover {
+    transform: scale(1.1);
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: white !important;
+}
+
+/* ============================================
+   FORM VALIDATION
+   ============================================ */
+.form-control:invalid,
+.form-select:invalid {
+    border-color: #dc3545;
+}
+
+.form-control:valid,
+.form-select:valid {
+    border-color: #198754;
+}
+

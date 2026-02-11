@@ -1,8 +1,8 @@
-<!-- Add Organization Canvas -->
+<!-- Add SBU Canvas -->
 <div class="offcanvas offcanvas-end bg-main text-white" tabindex="-1" id="addOrganizationCanvas" aria-labelledby="addOrganizationCanvasLabel" style="width: 600px;">
     <div class="offcanvas-header border-bottom" style="border-color: #ffffff42 !important">
         <h5 class="offcanvas-title" id="addOrganizationCanvasLabel">
-            <i class="bi bi-building-add me-2"></i>Add New Organization
+            <i class="bi bi-building-add me-2"></i>Add New SBU
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
@@ -14,9 +14,9 @@
                     <i class="bi bi-info-circle me-2"></i>Basic Information
                 </h6>
                 
-                <!-- Organization Name -->
+                <!-- SBU Name -->
                 <div class="mb-3">
-                    <label for="orgName" class="form-label fw-semibold small text-white">Organization Name <span class="text-danger">*</span></label>
+                    <label for="orgName" class="form-label fw-semibold small text-white">SBU Name <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="orgName" placeholder="e.g., Enaara Construction" required>
                 </div>
 
@@ -28,7 +28,7 @@
 
                 <!-- Logo Upload -->
                 <div class="mb-3">
-                    <label for="orgLogo" class="form-label fw-semibold small text-white">Organization Logo</label>
+                    <label for="orgLogo" class="form-label fw-semibold small text-white">SBU Logo</label>
                     <input type="file" class="form-control" id="orgLogo" accept="image/*">
                     <small class="opacity-75 text-white">Recommended size: 200x200px (PNG, JPG)</small>
                     <div class="mt-2" id="logoPreview" style="display: none;">
@@ -39,7 +39,7 @@
                 <!-- Address -->
                 <div class="mb-3">
                     <label for="orgAddress" class="form-label fw-semibold small text-white">Address <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="orgAddress" rows="2" placeholder="Enter organization address" required></textarea>
+                    <textarea class="form-control" id="orgAddress" rows="2" placeholder="Enter SBU address" required></textarea>
                 </div>
 
                 <!-- Website -->
@@ -121,7 +121,7 @@
                             </div>
                         </div>
                     </div>
-                    <small class="opacity-75 text-white d-block mt-2">Select the working days for this organization</small>
+                    <small class="opacity-75 text-white d-block mt-2">Select the working days for this SBU</small>
                 </div>
 
                 <!-- Attendance Radius -->
@@ -175,7 +175,7 @@
                     </div>
                     <div class="alert alert-info small mb-0" style="background-color: rgba(13, 110, 253, 0.2); border-color: rgba(13, 110, 253, 0.3); color: white;">
                         <i class="bi bi-info-circle me-2"></i>
-                        <strong>Note:</strong> SSO configuration will require additional setup after organization creation.
+                        <strong>Note:</strong> SSO configuration will require additional setup after SBU creation.
                     </div>
                 </div>
             </div>
@@ -216,7 +216,7 @@
                     <option value="2">Zainab Malik (zainab.malik@enaara.com)</option>
                     <option value="3">Bilal Ahmed (bilal.ahmed@enaara.com)</option>
                 </select>
-                <small class="opacity-75 text-white">The assigned admin will have full access to manage this organization</small>
+                <small class="opacity-75 text-white">The assigned admin will have full access to manage this SBU</small>
             </div>
         </form>
     </div>
@@ -224,7 +224,7 @@
         <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
             <button type="button" class="btn btn-light text-dark border-0" id="saveOrganizationBtn">
-                <i class="bi bi-check-lg me-1"></i>Create Organization
+                <i class="bi bi-check-lg me-1"></i>Create SBU
             </button>
         </div>
     </div>
