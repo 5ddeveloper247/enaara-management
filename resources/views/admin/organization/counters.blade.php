@@ -5,13 +5,9 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="flex-grow-1">
                         <h6 class="opacity-75 text-white mb-2 small fw-normal text-uppercase">
-                            <i class="bi bi-building me-1"></i>Total SBUs
+                            <i class="bi bi-building me-1"></i>Total Organizations
                         </h6>
-                        <div class="fs-4 mb-2 fw-bold text-white" id="totalOrganizations">12</div>
-                        <div class="trend-indicator text-white opacity-75">
-                            <i class="bi bi-arrow-up small text-white opacity-75"></i>
-                            <small>+2 vs last month</small>
-                        </div>
+                        <div class="fs-4 mb-2 fw-bold text-white" id="totalOrganizations">{{ $totalOrganizations ?? 0 }}</div>
                     </div>
                     <div class="text-white opacity-50">
                         <i class="bi bi-building fs-1"></i>
@@ -27,13 +23,10 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="flex-grow-1">
                         <h6 class="text-muted mb-2 small fw-normal text-uppercase">
-                            <i class="bi bi-people me-1"></i>Global Headcount
+                            <i class="bi bi-people me-1"></i>Active organizations
                         </h6>
-                        <div class="fs-4 mb-2 fw-bold" id="globalHeadcount">1200</div>
-                        <div class="trend-indicator text-success">
-                            <i class="bi bi-arrow-up small text-success"></i>
-                            <small>+85 vs last month</small>
-                        </div>
+                        <div class="fs-4 mb-2 fw-bold" id="globalHeadcount">{{ $activeOrganizations ?? 0 }}</div>
+                        <small class="text-muted">Active organizations</small>
                     </div>
                     <div class="text-main opacity-50">
                         <i class="bi bi-people fs-1"></i>
@@ -49,13 +42,10 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="flex-grow-1">
                         <h6 class="text-muted mb-2 small fw-normal text-uppercase">
-                            <i class="bi bi-fingerprint me-1"></i>Biometric Status
+                            <i class="bi bi-fingerprint me-1"></i>In-Active Organizations
                         </h6>
-                        <div class="fs-4 mb-2 fw-bold text-main" id="biometricStatus">42</div>
-                        <div class="trend-indicator text-danger">
-                            <i class="bi bi-arrow-down small text-danger"></i>
-                            <small>-3 vs last month</small>
-                        </div>
+                        <div class="fs-4 mb-2 fw-bold text-main" id="biometricStatus">{{ $totalOrganizations - $activeOrganizations ?? 0 }}</div>
+                        <small class="text-muted">In-Active Organizations</small>
                     </div>
                     <div class="text-main opacity-50">
                         <i class="bi bi-fingerprint fs-1"></i>
@@ -71,13 +61,10 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="flex-grow-1">
                         <h6 class="text-muted mb-2 small fw-normal text-uppercase">
-                            <i class="bi bi-activity me-1"></i>Attendance Pulse
+                            <i class="bi bi-activity me-1"></i>Active rate
                         </h6>
-                        <div class="fs-4 mb-2 fw-bold text-main" id="attendencePulse">94%</div>
-                        <div class="trend-indicator text-success">
-                            <i class="bi bi-arrow-up small text-success"></i>
-                            <small>+2.5% vs last month</small>
-                        </div>
+                        <div class="fs-4 mb-2 fw-bold text-main" id="attendencePulse">{{ $activePercentage ?? 0 }}%</div>
+                        <small class="text-muted">Active rate</small>
                     </div>
                     <div class="text-main opacity-50">
                         <i class="bi bi-activity fs-1"></i>

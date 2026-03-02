@@ -9,14 +9,105 @@
     <nav class="sidebar-nav flex-fill overflow-y-auto">
         <ul class="list-unstyled mb-0">
             <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/dashboard') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/dashboard') ? 'active' : '' }}">
+                <a href="{{ route('admin.dashboard.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/dashboard') ? 'active' : '' }}">
                     <i class="bi bi-house-door me-2"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
             
+            <div class="text-white px-4 opacity-50 small mt-3 mb-2">Manage Organization</div>
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.organization.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/organization*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Organization</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.employee.type.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/employee-type*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Employee Type</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.work.type.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/work-type*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Work Type</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.attendance.modes.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/attendance-modes*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Attendance Modes</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.shift.type.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/shift-type*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Shift Types</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.sbu.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/sbu') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Sbu's</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.sbu.floor.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/sbu-floor*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Sbu's FLoor</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.department.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/department*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Department</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.leave.type.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/leave-type*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Leave Types</span>
+                </a>
+            </li>
+
+
+            <div class="text-white px-4 opacity-50 small mt-3 mb-2">Role Management</div>
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.module.category.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/module-categories*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Module Categories</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.module.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/module') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Modules</span>
+                </a>
+            </li>
+
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.role.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/role*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>User Roles</span>
+                </a>
+            </li>
+
+
+
+
+            
             {{-- EMPLOYE MANAGEMENT --}}
-            <div class="text-white px-4 opacity-50 small mt-3 mb-2">Employee Management</div>
+            <!-- <div class="text-white px-4 opacity-50 small mt-3 mb-2">Employee Management</div>
             <li class="mb-1 mx-3">
                 <a href="{{ url('/admin/users') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/users*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
@@ -137,7 +228,7 @@
                     <i class="bi bi-shield-lock me-2"></i>
                     <span>Roles & Permissions</span>
                 </a>
-            </li>
+            </li> -->
         </ul>
     </nav>
     

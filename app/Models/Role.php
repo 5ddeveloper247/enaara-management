@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Role extends Model
+{
+    protected $table = 'roles';
+
+    protected $fillable = [
+        'name',
+        'slug',
+        'description',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public static function slugFromName(string $name): string
+    {
+        return \Illuminate\Support\Str::slug($name);
+    }
+
+    public function rolePrivileges(): HasMany
+    {
+        return $this->hasMany(RolePrivilege::class);
+    }
+
+    public function modules(): BelongsToMany
+    {
+        return $this->belongsToMany(Module::class, 'role_privileges', 'role_id', 'module_id')
+            ->whereNull('role_privileges.deleted_at')
+            ->withTimestamps();
+    }
+}

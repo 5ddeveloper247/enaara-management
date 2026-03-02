@@ -14,18 +14,18 @@
         <!-- Top Header with Actions -->
         <div class="row align-items-center mb-3">
             <div class="col-md-6">
-                <h5 class="mb-0">SBU Management</h5>
+                <h5 class="mb-0">Organization Management</h5>
             </div>
 
             <div class="col-md-6 text-end">
-                <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal"
+                <!-- <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal"
                     data-bs-target="#bulkPolicyModal">
                     <i class="bi bi-clipboard-data me-1"></i>Bulk Policy Update
-                </button>
-                <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
+                </button> -->
+                <!-- <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                     data-bs-target="#addOrganizationCanvas">
                     <i class="bi bi-building-add me-1"></i>Add New SBU
-                </button>
+                </button> -->
             </div>
         </div>
 
@@ -56,8 +56,6 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- Common Helper Functions -->
     <script src="{{ asset('js/helpers.js') }}"></script>
-    <!-- Dummy Data -->
-    <script src="{{ asset('js/dummy-data.js') }}"></script>
     <!-- Organization Module JavaScript -->
     <script src="{{ asset('js/organization.js') }}"></script>
 @endpush

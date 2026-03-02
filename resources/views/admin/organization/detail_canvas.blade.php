@@ -15,11 +15,11 @@
             <div class="d-flex align-items-center mb-3">
                 <div class="me-3" id="detailOrgLogoContainer">
                     <img src="" alt="Logo" class="rounded-3" id="detailOrgLogo" style="width: 60px; height: 60px; object-fit: cover; display: none;">
-                    <div class="bg-light text-dark rounded-3 d-flex align-items-center justify-content-center fw-bold" id="detailOrgLogoPlaceholder" style="width: 60px; height: 60px; font-size: 1.25rem;">EC</div>
+                    <div class="bg-light text-dark rounded-3 d-flex align-items-center justify-content-center fw-bold" id="detailOrgLogoPlaceholder" style="width: 60px; height: 60px; font-size: 1.25rem;">—</div>
                 </div>
                 <div class="flex-grow-1">
-                    <h6 class="fw-semibold small mb-1" id="detailOrgName">Enaara Construction</h6>
-                    <small class="opacity-75 text-white" id="detailOrgRegNumber">Reg. No: REG-2024-001</small>
+                    <h6 class="fw-semibold small mb-1" id="detailOrgName">—</h6>
+                    <small class="opacity-75 text-white" id="detailOrgRegNumber">Code: —</small>
                 </div>
             </div>
         </div>
@@ -35,15 +35,13 @@
                 <div class="col-12">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Address</small>
-                        <div class="fw-semibold small" id="detailOrgAddress">123 Business District, Dubai, UAE</div>
+                        <div class="fw-semibold small" id="detailOrgAddress">—</div>
                     </div>
                 </div>
                 <div class="col-12">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Website</small>
-                        <div class="fw-semibold small" id="detailOrgWebsite">
-                            <a href="#" class="text-white text-decoration-underline" target="_blank" id="detailOrgWebsiteLink">www.enaara.com</a>
-                        </div>
+                        <div class="fw-semibold small" id="detailOrgWebsite">—</div>
                     </div>
                 </div>
             </div>
@@ -67,7 +65,7 @@
                 <div class="col-6">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Departments</small>
-                        <div class="fw-bold fs-5" id="detailOrgDepartments">12</div>
+                        <div class="fw-bold fs-5" id="detailOrgDepartments">—</div>
                         <small class="opacity-50 text-white">Active</small>
                     </div>
                 </div>
@@ -83,14 +81,12 @@
             </h6>
             <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                 <div class="d-flex align-items-center">
-                    <div class="user-avatar me-3" id="detailAdminAvatar">AA</div>
+                    <div class="user-avatar me-3" id="detailAdminAvatar">—</div>
                     <div class="flex-grow-1">
-                        <div class="fw-semibold small" id="detailAdminName">Ahmed Ali</div>
-                        <small class="opacity-75 text-white" id="detailAdminEmail">ahmed.ali@enaara.com</small>
+                        <div class="fw-semibold small" id="detailAdminName">—</div>
+                        <small class="opacity-75 text-white" id="detailAdminEmail">—</small>
                     </div>
-                    <span class="badge px-3 py-2 rounded-1 bg-success" id="detailAdminStatus">
-                        <i class="bi bi-check-circle me-1"></i>Active
-                    </span>
+                    <span class="badge px-3 py-2 rounded-1 bg-secondary" id="detailAdminStatus">—</span>
                 </div>
             </div>
         </div>
@@ -106,7 +102,7 @@
                 <div class="col-12">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Timezone</small>
-                        <div class="fw-semibold small" id="detailOrgTimezone">Asia/Dubai (UTC+4)</div>
+                        <div class="fw-semibold small" id="detailOrgTimezone">—</div>
                     </div>
                 </div>
                 <div class="col-12">
@@ -118,7 +114,7 @@
                 <div class="col-12">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Attendance Radius</small>
-                        <div class="fw-semibold small" id="detailOrgAttendanceRadius">100 Meters</div>
+                        <div class="fw-semibold small" id="detailOrgAttendanceRadius">—</div>
                         <small class="opacity-50 text-white">Geofencing radius for attendance check-in/out</small>
                     </div>
                 </div>
@@ -136,15 +132,13 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <small class="opacity-75 text-white d-block mb-2">Authentication Method</small>
-                        <div class="fw-semibold small" id="detailOrgAuthMethod">Email/Password</div>
+                        <div class="fw-semibold small" id="detailOrgAuthMethod">—</div>
                     </div>
-                    <div id="detailOrgAuthBadge">
-                        <span class="badge px-3 py-2 rounded-1 bg-info">Standard</span>
-                    </div>
+                    <div id="detailOrgAuthBadge">—</div>
                 </div>
-                <div class="mt-3 pt-3 border-top" style="border-color: #ffffff1a !important;" id="detailSSOInfo" style="display: none;">
+                <div class="mt-3 pt-3 border-top d-none" style="border-color: #ffffff1a !important;" id="detailSSOInfo">
                     <small class="opacity-75 text-white d-block mb-2">SSO Provider</small>
-                    <div class="fw-semibold small" id="detailSSOProvider">-</div>
+                    <div class="fw-semibold small" id="detailSSOProvider">—</div>
                 </div>
             </div>
         </div>
@@ -157,26 +151,13 @@
                 <i class="bi bi-fingerprint me-2"></i>Biometric Devices
             </h6>
             <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
-                <div class="mb-3">
+                    <div class="mb-3">
                     <small class="opacity-75 text-white d-block mb-2">Total Devices</small>
-                    <div class="fw-bold fs-5" id="detailOrgDevicesCount">8</div>
+                    <div class="fw-bold fs-5" id="detailOrgDevicesCount">—</div>
                 </div>
-                <div class="mt-3 pt-3 border-top" style="border-color: #ffffff1a !important;">
+                <div class="mt-3 pt-3 border-top d-none" style="border-color: #ffffff1a !important;" id="detailOrgDevicesListWrapper">
                     <small class="opacity-75 text-white d-block mb-2">Device Serial Numbers</small>
-                    <div id="detailOrgDevicesList">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="small">BIO-001-2024</span>
-                            <span class="badge bg-success small">Active</span>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="small">BIO-002-2024</span>
-                            <span class="badge bg-success small">Active</span>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between">
-                            <span class="small">BIO-003-2024</span>
-                            <span class="badge bg-warning text-dark small">Maintenance</span>
-                        </div>
-                    </div>
+                    <div id="detailOrgDevicesList">—</div>
                 </div>
             </div>
         </div>
@@ -191,19 +172,15 @@
             <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                 <div class="mb-3">
                     <small class="opacity-75 text-white d-block mb-2">Status</small>
-                    <div id="detailOrgSubscriptionStatus">
-                        <span class="badge px-3 py-2 rounded-1 bg-success">
-                            <i class="bi bi-check-circle me-1"></i>Active
-                        </span>
-                    </div>
+                    <div id="detailOrgSubscriptionStatus">—</div>
                 </div>
                 <div class="mt-3 pt-3 border-top" style="border-color: #ffffff1a !important;">
                     <small class="opacity-75 text-white d-block mb-2">Plan</small>
-                    <div class="fw-semibold small" id="detailOrgPlan">Enterprise</div>
+                    <div class="fw-semibold small" id="detailOrgPlan">—</div>
                 </div>
                 <div class="mt-3 pt-3 border-top" style="border-color: #ffffff1a !important;">
                     <small class="opacity-75 text-white d-block mb-2">Expiry Date</small>
-                    <div class="fw-semibold small" id="detailOrgExpiryDate">December 31, 2024</div>
+                    <div class="fw-semibold small" id="detailOrgExpiryDate">—</div>
                 </div>
             </div>
         </div>
@@ -211,9 +188,9 @@
         <!-- Action Buttons -->
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
-            <button type="button" class="btn btn-light text-dark border-0" id="editOrganizationBtn">
+            <!-- <button type="button" class="btn btn-light text-dark border-0" id="editOrganizationBtn">
                 <i class="bi bi-pencil me-1"></i>Edit SBU
-            </button>
+            </button> -->
         </div>
     </div>
 </div>

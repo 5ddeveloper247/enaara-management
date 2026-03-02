@@ -57,224 +57,74 @@
             </div>
 
             <div class="col-md-6 text-end">
-                <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal"
-                    data-bs-target="#transferEmployeesModal">
-                    <i class="bi bi-arrow-left-right me-1"></i>Transfer Employees
-                </button>
-                <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal"
-                    data-bs-target="#bulkPolicyModal">
-                    <i class="bi bi-clipboard-data me-1"></i>Bulk Policy Update
-                </button>
-                <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="modal"
-                    data-bs-target="#addDepartmentModal">
+                <a href="{{ route('admin.department.add') }}" class="btn btn-primary bg-main border-0">
                     <i class="bi bi-building-add me-1"></i>Add New Department
-                </button>
+                </a>
             </div>
         </div>
+
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
 
         <!-- Summary Metrics Row -->
         @include('admin.departments.counters')
 
         <!-- Main Content Area with Sidebar Filter -->
-        @include('admin.departments.departments_cards') 
+        @include('admin.departments.departments_cards')
     </div>
 
     <!-- Department Detail Side Canvas -->
     @include('admin.departments.detail_canvas')
-
-    <!-- Add Department Modal -->
-    @include('admin.departments.add_department_modal')
-
-    <!-- Transfer Employees Modal -->
-    @include('admin.departments.transfer_modal')
-
-    <!-- Bulk Policy Update Modal -->
-    @include('admin.departments.bulk_policy_modal')
 @endsection
 
-@push('styles')
-    <!-- ApexCharts CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.css">
-@endpush
-
 @push('scripts')
-    <!-- ApexCharts JS -->
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.min.js"></script>
-    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
-        // Fix modal z-index issues by moving modals to body level
         document.addEventListener('DOMContentLoaded', function() {
-            // Move all modals to body level to avoid stacking context issues
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(function(modal) {
-                if (modal.parentElement !== document.body) {
-                    document.body.appendChild(modal);
-                }
-            });
-
-            // Fix z-index when modals are shown
-            modals.forEach(function(modal) {
-                modal.addEventListener('show.bs.modal', function() {
-                    // Move to body if not already there
-                    if (this.parentElement !== document.body) {
-                        document.body.appendChild(this);
+            var departmentCanvas = document.getElementById('departmentDetailCanvas');
+            if (departmentCanvas) {
+                departmentCanvas.addEventListener('show.bs.offcanvas', function(event) {
+                    var button = event.relatedTarget;
+                    if (button && button.classList.contains('view-department-btn')) {
+                        var get = function(attr, fallback) {
+                            var v = button.getAttribute(attr);
+                            return (v !== null && v !== '') ? v : (fallback || '—');
+                        };
+                        document.getElementById('canvasDeptName').textContent = get('data-department-name');
+                        document.getElementById('canvasDeptCode').textContent = 'Code: ' + get('data-department-code');
+                        document.getElementById('canvasDeptOrganization').textContent = get('data-organization-name');
+                        document.getElementById('canvasDeptSbu').textContent = get('data-sbu-name');
+                        document.getElementById('canvasDeptParent').textContent = get('data-parent-name');
+                        document.getElementById('canvasDeptDescription').textContent = get('data-description');
+                        document.getElementById('canvasDeptStatus').textContent = get('data-department-status');
                     }
                 });
-
-                modal.addEventListener('shown.bs.modal', function() {
-                    // Force z-index values
-                    this.style.zIndex = '9999';
-                    const backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) {
-                        backdrop.style.zIndex = '9998';
-                    }
-                    const modalDialog = this.querySelector('.modal-dialog');
-                    if (modalDialog) {
-                        modalDialog.style.zIndex = '10000';
-                    }
-                });
-            });
-        });
-
-        // ApexCharts Heatmap for Department Attendance
-        let attendanceHeatmapChart = null;
-
-        function initAttendanceHeatmap(departmentData) {
-            const heatmapElement = document.getElementById('attendanceHeatmapChart');
-            if (!heatmapElement) return;
-
-            // Destroy existing chart if any
-            if (attendanceHeatmapChart) {
-                attendanceHeatmapChart.destroy();
             }
-
-            // Sample data for 4 weeks (28 days)
-            // ApexCharts heatmap data format: {name: 'Week X', data: [{x: 'Day', y: value}]}
-            const heatmapData = departmentData || generateSampleHeatmapData();
-
-            const options = {
-                series: heatmapData,
-                chart: {
-                    type: 'heatmap',
-                    height: 200,
-                    toolbar: {
-                        show: false
-                    },
-                    fontFamily: 'Roboto Flex, sans-serif'
-                },
-                plotOptions: {
-                    heatmap: {
-                        shadeIntensity: 0.5,
-                        radius: 4,
-                        colorScale: {
-                            ranges: [{
-                                from: 0,
-                                to: 50,
-                                name: 'Low',
-                                color: '#dc3545' // Red/Danger
-                            }, {
-                                from: 51,
-                                to: 75,
-                                name: 'Medium',
-                                color: '#ffc107' // Yellow/Warning
-                            }, {
-                                from: 76,
-                                to: 100,
-                                name: 'High',
-                                color: '#198754' // Green/Success
-                            }]
-                        }
-                    }
-                },
-                dataLabels: {
-                    enabled: true,
-                    style: {
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        colors: ['#fff']
-                    },
-                    formatter: function(val) {
-                        return val + '%';
-                    }
-                },
-                xaxis: {
-                    type: 'category',
-                    categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    labels: {
-                        style: {
-                            fontSize: '11px'
-                        }
-                    }
-                },
-                tooltip: {
-                    y: {
-                        formatter: function(val) {
-                            return val + '% Attendance';
-                        }
-                    }
-                },
-                grid: {
-                    padding: {
-                        right: 20,
-                        bottom: 10
-                    }
-                },
-                legend: {
-                    show: false
-                }
-            };
-
-            attendanceHeatmapChart = new ApexCharts(heatmapElement, options);
-            attendanceHeatmapChart.render();
-        }
-
-        // Generate sample heatmap data for 4 weeks
-        function generateSampleHeatmapData() {
-            const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            
-            return weeks.map((week, weekIndex) => {
-                const weekData = days.map((day, dayIndex) => {
-                    let value;
-                    if (dayIndex < 5) {
-                        // Weekdays: 80-95% attendance
-                        value = Math.floor(Math.random() * 15) + 80;
-                    } else {
-                        // Weekends: 20-60% attendance
-                        value = Math.floor(Math.random() * 40) + 20;
-                    }
-                    return {
-                        x: day,
-                        y: value
-                    };
+            var filterStatus = document.querySelectorAll('.filter-status');
+            filterStatus.forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    var status = document.querySelector('input[name="filterStatus"]:checked').value;
+                    document.querySelectorAll('#departmentsGrid .col-md-6').forEach(function(col) {
+                        var card = col.querySelector('.department-card');
+                        var cardStatus = card ? card.getAttribute('data-department-status') : '';
+                        col.style.display = (status === 'all' || cardStatus === status) ? '' : 'none';
+                    });
                 });
-                
-                return {
-                    name: week,
-                    data: weekData
-                };
             });
-        }
-
-        // Initialize heatmap when offcanvas is shown
-        const departmentCanvas = document.getElementById('departmentDetailCanvas');
-        if (departmentCanvas) {
-            departmentCanvas.addEventListener('show.bs.offcanvas', function() {
-                // Wait a bit for the offcanvas to fully render
-                setTimeout(function() {
-                    initAttendanceHeatmap();
-                }, 100);
-            });
-
-            departmentCanvas.addEventListener('hidden.bs.offcanvas', function() {
-                // Destroy chart when offcanvas is hidden
-                if (attendanceHeatmapChart) {
-                    attendanceHeatmapChart.destroy();
-                    attendanceHeatmapChart = null;
-                }
-            });
-        }
-
-        // Department management scripts will go here
+            var clearBtn = document.getElementById('clearFiltersBtn');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    var all = document.getElementById('filterStatusAll');
+                    if (all) all.checked = true;
+                    document.querySelectorAll('#departmentsGrid .col-md-6').forEach(function(col) {
+                        col.style.display = '';
+                    });
+                });
+            }
+        });
     </script>
 @endpush

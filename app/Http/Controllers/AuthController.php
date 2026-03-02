@@ -31,7 +31,7 @@ class AuthController extends Controller
         if (Auth::attempt($request->only('email', 'password'), $request->filled('remember'))) {
             $request->session()->regenerate();
             
-            return redirect()->intended('/admin/dashboard');
+            return redirect()->intended(route('admin.dashboard.index'));
         }
 
         throw ValidationException::withMessages([
@@ -66,7 +66,7 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        return redirect('/admin/dashboard')->with('success', 'Registration successful! Welcome to the admin panel.');
+        return redirect()->route('admin.dashboard.index')->with('success', 'Registration successful! Welcome to the admin panel.');
     }
 
     /**
@@ -79,7 +79,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/')->with('success', 'You have been logged out successfully.');
+        return redirect()->route('login')->with('success', 'You have been logged out successfully.');
     }
 }
 

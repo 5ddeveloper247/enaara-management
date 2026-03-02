@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <a href="{{ route('admin.dashboard') }}" class="btn btn-auth w-100 mb-3 text-decoration-none">
+    <a href="{{ route('admin.dashboard.index') }}" class="btn btn-auth w-100 mb-3 text-decoration-none">
         <i class="bi bi-person-plus me-2"></i>Create Account
     </a>
 
