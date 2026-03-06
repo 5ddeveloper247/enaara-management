@@ -15,6 +15,7 @@ use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\ModuleCategoryController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RegistrationController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -102,6 +103,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::delete('/role/{id}', [RoleController::class, 'destroy'])->name('admin.role.destroy');
     Route::get('/role/search', [RoleController::class, 'searchRole'])->name('admin.role.search');
     
+    Route::get('/register', [RegistrationController::class, 'index'])->name('admin.register.index');
     
     
     

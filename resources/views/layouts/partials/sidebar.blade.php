@@ -102,6 +102,13 @@
                 </a>
             </li>
 
+            <li class="mb-1 mx-3">
+                <a href="{{ route('admin.register.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/role*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i>
+                    <span>Registration Form</span>
+                </a>
+            </li>
+
 
 
 
