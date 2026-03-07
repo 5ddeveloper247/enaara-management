@@ -9,105 +9,166 @@
     // ============================================
     // GLOBAL VARIABLES
     // ============================================
-    let rolesTree;
     let currentRoleId = null;
     let currentRoleData = null;
+    let currentUserId = null;
     let usersTable = null;
 
     // ============================================
     // INITIALIZATION
     // ============================================
     $(document).ready(function () {
-        initializeRolesTree();
+        initializeRoleTabs();
         initializeEventHandlers();
     });
 
     // ============================================
-    // ROLES TREE INITIALIZATION
+    // ROLE TABS
     // ============================================
-    function initializeRolesTree() {
+    function initializeRoleTabs() {
         if (typeof ProjectData === 'undefined' || !ProjectData.rolesPermissions) {
             console.error('ProjectData.rolesPermissions not found');
             return;
         }
 
         const hierarchy = ProjectData.rolesPermissions.getRolesHierarchy();
-        const treeData = convertToJsTreeFormat(hierarchy);
+        const flatRoles = flattenHierarchy(hierarchy);
+        const container = document.getElementById('rolesTree');
 
-        $('#rolesTree').jstree({
-            'core': {
-                'data': treeData,
-                'themes': {
-                    'name': 'default',
-                    'responsive': true
-                },
-                'check_callback': true
-            },
-            'plugins': ['search', 'types'],
-            'types': {
-                'default': {
-                    'icon': 'bi bi-person-badge'
-                }
-            }
-        }).on('select_node.jstree', function (e, data) {
-            handleRoleSelection(data.node.id);
-        });
+        container.innerHTML = flatRoles.map((role, index) => `
+            <button
+                type="button"
+                class="btn btn-sm text-start role-tab-btn px-3 py-2 rounded-2 ${index === 0 ? 'btn-dark active' : 'btn-light text-muted'}"
+                data-role-id="${role.id}"
+                onclick="handleRoleTabClick('${role.id}')"
+            >
+                <i class="bi bi-person-badge me-2"></i>
+                ${role.text}
+            </button>
+        `).join('');
 
-        rolesTree = $('#rolesTree').jstree(true);
+        // Auto-select first role tab
+        if (flatRoles.length > 0) {
+            handleRoleTabClick(flatRoles[0].id);
+        }
     }
 
     // ============================================
-    // CONVERT HIERARCHY TO JSTREE FORMAT
+    // FLATTEN nested tree → flat ordered array
     // ============================================
-    function convertToJsTreeFormat(node) {
-        const result = {
-            id: node.id,
-            text: node.text,
-            icon: node.icon || 'bi bi-person-badge',
-            data: {
-                level: node.level
+    function flattenHierarchy(node, result = []) {
+        if (!node) return result;
+        if (Array.isArray(node)) {
+            node.forEach(n => flattenHierarchy(n, result));
+        } else {
+            result.push({ id: node.id, text: node.text, level: node.level });
+            if (node.children && node.children.length > 0) {
+                node.children.forEach(child => flattenHierarchy(child, result));
             }
-        };
-
-        if (node.children && node.children.length > 0) {
-            result.children = node.children.map(child => convertToJsTreeFormat(child));
         }
-
         return result;
     }
 
     // ============================================
-    // ROLE SELECTION HANDLER
+    // ROLE TAB CLICK
+    // → highlights tab, loads users list below
     // ============================================
-    function handleRoleSelection(roleId) {
+    function handleRoleTabClick(roleId) {
         currentRoleId = roleId;
-        
+        currentUserId = null;
+
+        // Update tab active styling
+        document.querySelectorAll('.role-tab-btn').forEach(btn => {
+            const isActive = btn.dataset.roleId === roleId;
+            btn.classList.toggle('active', isActive);
+            btn.classList.toggle('btn-dark', isActive);
+            btn.classList.toggle('btn-light', !isActive);
+            btn.classList.toggle('text-muted', !isActive);
+        });
+
         if (typeof ProjectData === 'undefined' || !ProjectData.rolesPermissions) {
             console.error('ProjectData.rolesPermissions not found');
             return;
         }
 
         const roleData = ProjectData.rolesPermissions.getRolePermissions(roleId);
-        
-        if (!roleData) {
-            showEmptyState();
-            return;
-        }
+        if (!roleData) { showEmptyState(); return; }
 
         currentRoleData = roleData;
+
+        // Show role label + users list in sidebar
         updateSelectedRoleInfo(roleData);
-        loadPermissions(roleData);
-        loadDataScope(roleData);
-        loadUsers(roleData);
+
+        // Hide right panel until a user is picked
+        showEmptyState();
     }
 
     // ============================================
-    // UPDATE SELECTED ROLE INFO
+    // UPDATE SELECTED ROLE INFO + USERS LIST
     // ============================================
     function updateSelectedRoleInfo(roleData) {
         $('#selectedRoleName').text(roleData.name);
         $('#selectedRoleLevel').text(`Level ${roleData.level}`);
         $('#selectedRoleInfo').show();
+
+        const list = document.getElementById('roleUsersList');
+
+        if (!roleData.users || roleData.users.length === 0) {
+            list.innerHTML = `<div class="text-muted small px-2 py-1">No users in this role</div>`;
+            return;
+        }
+
+        list.innerHTML = roleData.users.map(user => `
+            <button
+                type="button"
+                class="btn btn-sm text-start user-tab-btn px-3 py-2 rounded-2 btn-light text-muted"
+                data-user-id="${user.id}"
+                onclick="handleUserTabClick('${user.id}')"
+            >
+                <div class="d-flex align-items-center gap-2">
+                    <div class="avatar-circle bg-main text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; font-size: 0.6rem;">
+                        ${user.avatar}
+                    </div>
+                    <div class="text-truncate">
+                        <div class="fw-semibold" style="font-size: 0.78rem;">${user.name}</div>
+                        <div class="text-muted" style="font-size: 0.68rem;">${user.department}</div>
+                    </div>
+                </div>
+            </button>
+        `).join('');
+    }
+
+    // ============================================
+    // USER TAB CLICK
+    // → highlights user, loads right panel for them
+    // ============================================
+    function handleUserTabClick(userId) {
+        currentUserId = userId;
+
+        // Update user button active styling
+        document.querySelectorAll('.user-tab-btn').forEach(btn => {
+            const isActive = btn.dataset.userId == userId;
+            btn.classList.toggle('active', isActive);
+            btn.classList.toggle('btn-dark', isActive);
+            btn.classList.toggle('btn-light', !isActive);
+            btn.classList.toggle('text-muted', !isActive);
+        });
+
+        // Find user in current role's users list
+        const user = currentRoleData.users.find(u => u.id == userId);
+        if (!user) return;
+
+        // Build a user-specific roleData view:
+        // permissions & dataScope come from the role, but header shows the user
+        const userRoleData = Object.assign({}, currentRoleData, {
+            name: user.name,
+            subtitle: `${currentRoleData.name} · Level ${currentRoleData.level}`,
+            _user: user
+        });
+
+        loadPermissions(userRoleData);
+        loadDataScope(userRoleData);
+        loadUsers(userRoleData);
     }
 
     // ============================================
@@ -124,7 +185,9 @@
 
             // Update role header
             $('#permissionRoleName').text(roleData.name);
-            $('#permissionRoleLevel').text(`Level ${roleData.level} - Organizational Hierarchy`);
+            $('#permissionRoleLevel').text(
+                roleData.subtitle || `Level ${roleData.level} - Organizational Hierarchy`
+            );
 
             // Build permissions accordion
             const accordion = $('#permissionsAccordion');
@@ -158,10 +221,10 @@
                             <div class="accordion-body">
                                 <div class="row g-3">
                                     ${groupPermissions.map(perm => {
-                                        const permData = roleData.permissions[perm];
-                                        if (!permData) return '';
-                                        return buildPermissionRow(perm, permData);
-                                    }).join('')}
+                    const permData = roleData.permissions[perm];
+                    if (!permData) return '';
+                    return buildPermissionRow(perm, permData);
+                }).join('')}
                                 </div>
                             </div>
                         </div>
@@ -172,7 +235,7 @@
             });
 
             // Initialize Bootstrap 5 Toggle switches
-            $('[data-switch]').each(function() {
+            $('[data-switch]').each(function () {
                 const isInherited = $(this).data('inherited') === true;
                 $(this).bootstrapToggle({
                     on: 'ON',
@@ -181,7 +244,7 @@
                     onstyle: 'success',
                     offstyle: 'secondary'
                 });
-                
+
                 // Disable inherited permissions
                 if (isInherited) {
                     $(this).bootstrapToggle('disable');
@@ -255,12 +318,15 @@
         tbody.empty();
 
         roleData.users.forEach(user => {
-            const statusBadge = user.status === 'Active' 
+            const statusBadge = user.status === 'Active'
                 ? '<span class="badge bg-success">Active</span>'
                 : '<span class="badge bg-secondary">Inactive</span>';
 
+            const isCurrentUser = roleData._user && roleData._user.id == user.id;
+            const highlightClass = isCurrentUser ? 'table-active fw-bold' : '';
+
             const row = `
-                <tr>
+                <tr class="${highlightClass}">
                     <td>
                         <div class="d-flex align-items-center">
                             <div class="avatar-circle bg-main text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
@@ -301,7 +367,7 @@
             });
 
             // Custom search
-            $('#usersSearch').on('keyup', function() {
+            $('#usersSearch').on('keyup', function () {
                 usersTable.search(this.value).draw();
             });
         } else {
@@ -324,23 +390,22 @@
     // EVENT HANDLERS
     // ============================================
     function initializeEventHandlers() {
-        // Tree search
-        $('#treeSearch').on('keyup', function() {
-            rolesTree.search($(this).val());
-        });
-
-        // Expand all
-        $('#expandAllBtn').on('click', function() {
-            rolesTree.open_all();
+        // Search filters both role tabs and user buttons
+        $('#treeSearch').on('keyup', function () {
+            const query = $(this).val().toLowerCase();
+            $('.role-tab-btn, .user-tab-btn').each(function () {
+                const text = $(this).text().toLowerCase();
+                $(this).toggle(text.includes(query));
+            });
         });
 
         // Save permissions
-        $('#savePermissionsBtn').on('click', function() {
+        $('#savePermissionsBtn').on('click', function () {
             savePermissions();
         });
 
         // Reset permissions
-        $('#resetPermissionsBtn').on('click', function() {
+        $('#resetPermissionsBtn').on('click', function () {
             if (currentRoleData) {
                 loadPermissions(currentRoleData);
                 loadDataScope(currentRoleData);
@@ -348,18 +413,18 @@
         });
 
         // Data scope change handlers
-        $('#dataScopeOrganization, #dataScopeDepartment, #dataScopeFloor, #dataScopeEmployee').on('change', function() {
+        $('#dataScopeOrganization, #dataScopeDepartment, #dataScopeFloor, #dataScopeEmployee').on('change', function () {
             updateSpecificSelections();
         });
 
         // Export button
-        $('#exportBtn').on('click', function() {
+        $('#exportBtn').on('click', function () {
             alert('Export functionality will be implemented with backend integration.');
         });
 
-        // Refresh tree
-        $('#refreshTreeBtn').on('click', function() {
-            rolesTree.refresh();
+        // Refresh tabs
+        $('#refreshTreeBtn').on('click', function () {
+            initializeRoleTabs();
         });
     }
 
@@ -388,10 +453,9 @@
 
         // Collect permission changes
         const permissions = {};
-        $('[data-permission]').each(function() {
+        $('[data-permission]').each(function () {
             const permissionName = $(this).data('permission');
             const action = $(this).data('action');
-            // For bootstrap5-toggle, get the actual checkbox state
             const checkbox = $(this);
             const isChecked = checkbox.is(':checked') || (checkbox.data('toggle') && checkbox.prop('checked'));
 
@@ -409,8 +473,7 @@
             employee: $('#dataScopeEmployee').val()
         };
 
-        // In a real application, this would send data to the backend
-        console.log('Saving permissions for role:', currentRoleId);
+        console.log('Saving permissions for role:', currentRoleId, '/ user:', currentUserId);
         console.log('Permissions:', permissions);
         console.log('Data Scope:', dataScope);
 
@@ -420,8 +483,11 @@
     // ============================================
     // GLOBAL FUNCTIONS
     // ============================================
-    window.viewUser = function(userId) {
+    window.viewUser = function (userId) {
         alert(`View user details for user ID: ${userId} (This will open user detail view in a real application)`);
     };
-})();
 
+    window.handleRoleTabClick = handleRoleTabClick;
+    window.handleUserTabClick = handleUserTabClick;
+
+})();

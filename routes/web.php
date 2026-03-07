@@ -165,9 +165,9 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.balance-tracker.index');
     // })->name('admin.balance-tracker.index');
     
-    // Route::get('/roles', function () {
-    //     return view('admin.roles-permissions.index');
-    // })->name('admin.roles.index');
+    Route::get('/roles', function () {
+        return view('admin.roles-permissions.index');
+    })->name('admin.roles.index');
     
     // Route::get('/monthly-summary', function () {
     //     return view('admin.monthly-summary.index');
