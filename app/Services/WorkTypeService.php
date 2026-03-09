@@ -10,7 +10,7 @@ class WorkTypeService
 {
     public function getList(): Collection
     {
-        return WorkModel::with('organization')
+        return WorkModel::with(['organization', 'department'])
             ->orderByDesc('id')
             ->get();
     }

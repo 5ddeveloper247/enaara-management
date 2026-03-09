@@ -41,7 +41,7 @@
                                 </div>
                             @endif
                             <div class="mt-3 pt-3 border-top">
-                                <button type="button"
+                                <!-- <button type="button"
                                         class="btn btn-sm btn-outline-primary w-100 view-organization-btn"
                                         data-bs-toggle="offcanvas"
                                         data-bs-target="#organizationDetailCanvas"
@@ -55,7 +55,7 @@
                                         data-org-active="{{ $org->is_active ? '1' : '0' }}"
                                         data-org-parent="{{ $org->parent ? e($org->parent->name) : '' }}">
                                     <i class="bi bi-eye me-1"></i>View Details
-                                </button>
+                                </button> -->
                             </div>
                         </div>
                     </div>

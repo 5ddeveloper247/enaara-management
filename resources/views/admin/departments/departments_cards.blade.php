@@ -35,9 +35,13 @@
                                 </div>
                             @endif
                             <div class="mt-3 pt-3 border-top d-flex gap-1">
-                                <a href="{{ route('admin.department.edit', $dept->id) }}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary flex-grow-1 edit-department-btn"
+                                        data-bs-toggle="offcanvas"
+                                        data-bs-target="#departmentEditCanvas"
+                                        data-department-id="{{ $dept->id }}">
                                     <i class="bi bi-pencil me-1"></i>Edit
-                                </a>
+                                </button>
                                 <button type="button"
                                         class="btn btn-sm btn-outline-secondary view-department-btn"
                                         data-bs-toggle="offcanvas"

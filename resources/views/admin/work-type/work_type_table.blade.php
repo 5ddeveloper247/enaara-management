@@ -4,6 +4,7 @@
             <th>Name</th>
             <th>Code</th>
             <th>Organization</th>
+            <th>Department</th>
             <th>Status</th>
             <th class="text-end">Actions</th>
         </tr>
@@ -29,6 +30,13 @@
                 @endif
             </td>
             <td>
+                @if($wt->department)
+                    <span class="badge px-3 rounded-1 bg-info">{{ $wt->department->name }}</span>
+                @else
+                    <span class="text-muted">—</span>
+                @endif
+            </td>
+            <td>
                 <div class="form-check form-switch">
                     <input class="form-check-input status-toggle" type="checkbox" {{ $wt->is_active ? 'checked' : '' }} data-work-type-id="{{ $wt->id }}">
                 </div>
@@ -40,6 +48,7 @@
                         data-work-type-name="{{ e($wt->name) }}"
                         data-work-type-code="{{ e($wt->code ?? '') }}"
                         data-organization-name="{{ $wt->organization ? e($wt->organization->name) : '' }}"
+                        data-department-name="{{ $wt->department ? e($wt->department->name) : '' }}"
                         title="View">
                         <i class="bi bi-eye"></i>
                     </button>
@@ -57,7 +66,7 @@
         </tr>
         @empty
         <tr>
-            <td colspan="5" class="text-center text-muted py-4">No work types found.</td>
+            <td colspan="6" class="text-center text-muted py-4">No work types found.</td>
         </tr>
         @endforelse
     </tbody>

@@ -34,7 +34,7 @@
                                 </div>
                             @endif
                             <div class="mt-3 pt-3 border-top">
-                                <a href="{{ route('admin.sbu.show', $sbu->id) }}" class="btn btn-sm btn-outline-secondary me-1">Open</a>
+                                <!-- <a href="{{ route('admin.sbu.show', $sbu->id) }}" class="btn btn-sm btn-outline-secondary me-1">Open</a> -->
                                 <button type="button"
                                         class="btn btn-sm btn-outline-primary view-sbu-btn"
                                         data-bs-toggle="offcanvas"

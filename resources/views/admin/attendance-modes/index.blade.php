@@ -57,7 +57,7 @@
                 dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
                 language: { emptyTable: 'No attendance modes found.' },
                 columnDefs: [
-                    { targets: 4, orderable: false, className: 'no-toggle' }
+                    { targets: 5, orderable: false, className: 'no-toggle' }
                 ]
             });
 
@@ -66,6 +66,7 @@
                 $('#detailAttendanceModeName').text(btn.data('attendance-mode-name') || '—');
                 $('#detailAttendanceModeGrace').text(btn.data('grace-minutes') !== undefined ? btn.data('grace-minutes') + ' min' : '—');
                 $('#detailAttendanceModeOrganization').text(btn.data('organization-name') || '—');
+                $('#detailAttendanceModeDepartment').text(btn.data('department-name') || '—');
                 $('#detailAttendanceModeStatus').text(btn.closest('tr').data('status') === 'active' ? 'Active' : 'Inactive');
                 new bootstrap.Offcanvas(document.getElementById('attendanceModeDetailCanvas')).show();
             });

@@ -33,27 +33,29 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
     Route::get('/organization', [OrganizationController::class, 'index'])->name('admin.organization.index');
     
-    Route::get('/employee-type', [EmployeeTypeController::class, 'index'])->name('admin.employee.type.index');
-    Route::patch('/employee-type/{id}/status', [EmployeeTypeController::class, 'updateStatus'])->name('admin.employee.type.update.status');
-    Route::delete('/employee-type/{id}', [EmployeeTypeController::class, 'destroy'])->name('admin.employee.type.destroy');
-    
-    Route::get('/work-type', [WorkTypeController::class, 'index'])->name('admin.work.type.index');
-    Route::patch('/work-type/{id}/status', [WorkTypeController::class, 'updateStatus'])->name('admin.work.type.update.status');
-    Route::delete('/work-type/{id}', [WorkTypeController::class, 'destroy'])->name('admin.work.type.destroy');
-
-    Route::get('/attendance-modes', [AttendanceModesController::class, 'index'])->name('admin.attendance.modes.index');
-    Route::patch('/attendance-modes/{id}/status', [AttendanceModesController::class, 'updateStatus'])->name('admin.attendance.modes.update.status');
-    Route::delete('/attendance-modes/{id}', [AttendanceModesController::class, 'destroy'])->name('admin.attendance.modes.destroy');
-    
-    Route::get('/shift-type', [ShiftTypesController::class, 'index'])->name('admin.shift.type.index');
-    Route::patch('/shift-type/{id}/status', [ShiftTypesController::class, 'updateStatus'])->name('admin.shift.type.update.status');
-    Route::delete('/shift-type/{id}', [ShiftTypesController::class, 'destroy'])->name('admin.shift.type.destroy');
-    
     Route::get('/sbu', [SbuController::class, 'index'])->name('admin.sbu.index');
     Route::get('/sbu/{id}/show', [SbuController::class, 'show'])->name('admin.sbu.show');
     
     Route::get('/sbu-floor', [SbuFloorsController::class, 'index'])->name('admin.sbu.floor.index');
     Route::get('/sbu-floor/{id}/show', [SbuFloorsController::class, 'show'])->name('admin.sbu.floor.show');
+
+    Route::get('/employee-type', [EmployeeTypeController::class, 'index'])->name('admin.employee.type.index');
+    Route::patch('/employee-type/{id}/status', [EmployeeTypeController::class, 'updateStatus'])->name('admin.employee.type.update.status');
+    Route::delete('/employee-type/{id}/delete', [EmployeeTypeController::class, 'destroy'])->name('admin.employee.type.destroy');
+    
+    Route::get('/work-type', [WorkTypeController::class, 'index'])->name('admin.work.type.index');
+    Route::patch('/work-type/{id}/status', [WorkTypeController::class, 'updateStatus'])->name('admin.work.type.update.status');
+    Route::delete('/work-type/{id}/delete', [WorkTypeController::class, 'destroy'])->name('admin.work.type.destroy');
+
+    Route::get('/attendance-modes', [AttendanceModesController::class, 'index'])->name('admin.attendance.modes.index');
+    Route::patch('/attendance-modes/{id}/status', [AttendanceModesController::class, 'updateStatus'])->name('admin.attendance.modes.update.status');
+    Route::delete('/attendance-modes/{id}/delete', [AttendanceModesController::class, 'destroy'])->name('admin.attendance.modes.destroy');
+    
+    Route::get('/shift-type', [ShiftTypesController::class, 'index'])->name('admin.shift.type.index');
+    Route::patch('/shift-type/{id}/status', [ShiftTypesController::class, 'updateStatus'])->name('admin.shift.type.update.status');
+    Route::delete('/shift-type/{id}/delete', [ShiftTypesController::class, 'destroy'])->name('admin.shift.type.destroy');
+    
+    
     
     Route::get('/department', [DepartmentController::class, 'index'])->name('admin.department.index');
     Route::get('/department/add', [DepartmentController::class, 'create'])->name('admin.department.add');
@@ -79,7 +81,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/module-categories/edit/{id}', [ModuleCategoryController::class, 'edit'])->name('admin.module.category.edit');
     Route::post('/module-categories/edit/{id}', [ModuleCategoryController::class, 'update'])->name('admin.module.category.update');
     Route::patch('/module-categories/{id}/status', [ModuleCategoryController::class, 'updateStatus'])->name('admin.module.category.update.status');
-    Route::delete('/module-categories/{id}', [ModuleCategoryController::class, 'destroy'])->name('admin.module.category.destroy');
+    Route::delete('/module-categories/{id}/delete', [ModuleCategoryController::class, 'destroy'])->name('admin.module.category.destroy');
     Route::get('/module-categories/search', [ModuleCategoryController::class, 'searchModuleCategory'])->name('admin.module.category.search');
     
     Route::get('/module', [ModuleController::class, 'index'])->name('admin.module.index');
@@ -89,7 +91,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/module/edit/{id}', [ModuleController::class, 'edit'])->name('admin.module.edit');
     Route::post('/module/edit/{id}', [ModuleController::class, 'update'])->name('admin.module.update');
     Route::patch('/module/{id}/status', [ModuleController::class, 'updateStatus'])->name('admin.module.update.status');
-    Route::delete('/module/{id}', [ModuleController::class, 'destroy'])->name('admin.module.destroy');
+    Route::delete('/module/{id}/delete', [ModuleController::class, 'destroy'])->name('admin.module.destroy');
     Route::get('/module/search', [ModuleController::class, 'searchModule'])->name('admin.module.search');
     
     Route::get('/role', [RoleController::class, 'index'])->name('admin.role.index');
@@ -99,7 +101,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/role/edit/{id}', [RoleController::class, 'edit'])->name('admin.role.edit');
     Route::post('/role/edit/{id}', [RoleController::class, 'update'])->name('admin.role.update');
     Route::patch('/role/{id}/status', [RoleController::class, 'updateStatus'])->name('admin.role.update.status');
-    Route::delete('/role/{id}', [RoleController::class, 'destroy'])->name('admin.role.destroy');
+    Route::delete('/role/{id}/delete', [RoleController::class, 'destroy'])->name('admin.role.destroy');
     Route::get('/role/search', [RoleController::class, 'searchRole'])->name('admin.role.search');
     
     

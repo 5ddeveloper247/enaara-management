@@ -7,6 +7,7 @@
             <th>Break (min)</th>
             <th>Night</th>
             <th>Organization</th>
+            <th>Department</th>
             <th>Status</th>
             <th class="text-end">Actions</th>
         </tr>
@@ -41,6 +42,13 @@
                 @endif
             </td>
             <td>
+                @if($st->department)
+                    <span class="badge px-3 rounded-1 bg-info">{{ $st->department->name }}</span>
+                @else
+                    <span class="text-muted">—</span>
+                @endif
+            </td>
+            <td>
                 <div class="form-check form-switch">
                     <input class="form-check-input status-toggle" type="checkbox" {{ $st->is_active ? 'checked' : '' }} data-shift-type-id="{{ $st->id }}">
                 </div>
@@ -56,6 +64,7 @@
                         data-break-minutes="{{ $st->break_duration_minutes }}"
                         data-night-shift="{{ $st->is_night_shift ? '1' : '0' }}"
                         data-organization-name="{{ $st->organization ? e($st->organization->name) : '' }}"
+                        data-department-name="{{ $st->department ? e($st->department->name) : '' }}"
                         title="View">
                         <i class="bi bi-eye"></i>
                     </button>
@@ -73,7 +82,7 @@
         </tr>
         @empty
         <tr>
-            <td colspan="8" class="text-center text-muted py-4">No shift types found.</td>
+            <td colspan="9" class="text-center text-muted py-4">No shift types found.</td>
         </tr>
         @endforelse
     </tbody>

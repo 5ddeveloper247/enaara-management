@@ -10,7 +10,7 @@ class EmployeeTypeService
 {
     public function getList(): Collection
     {
-        return EmployeeType::with('organization')
+        return EmployeeType::with(['organization', 'department'])
             ->orderByDesc('id')
             ->get();
     }

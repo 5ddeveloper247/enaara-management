@@ -8,99 +8,188 @@
     
     <nav class="sidebar-nav flex-fill overflow-y-auto">
         <ul class="list-unstyled mb-0">
-            <li class="mb-1 mx-3">
-                <a href="{{ route('admin.dashboard.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/dashboard') ? 'active' : '' }}">
-                    <i class="bi bi-house-door me-2"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
+            <!-- @if (validatePermissions('admin/dashboard'))
+                <li class="mb-1 mx-3">
+                    <a href="{{ route('admin.dashboard.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/dashboard') ? 'active' : '' }}">
+                        <i class="bi bi-house-door me-2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+            @endif -->
             
-            <div class="text-white px-4 opacity-50 small mt-3 mb-2">Manage Organization</div>
+            @php
+                $moduleCategories = \App\Models\ModuleCategory::where('is_active', 1)
+                    ->orderBy('display_order')
+                    ->get();
+            @endphp
+
+            @foreach($moduleCategories as $category)
+                @php
+                    $menuItems = getLeftMenuItems($category->ID);
+                @endphp
+                
+                @if($menuItems->count() > 0)
+                    <div class="text-white px-4 opacity-50 small mt-3 mb-2">{{ $category->category_name }}</div>
+                    
+                    @foreach($menuItems as $menuItem)
+                        @php
+                            $routePath = $menuItem->route;
+                            
+                            if (empty($routePath)) {
+                                continue;
+                            }
+                            
+                            $isActive = false;
+                            $menuUrl = '#';
+                            
+                            if (strpos($routePath, 'admin.') === 0) {
+                                try {
+                                    $menuUrl = route($routePath);
+                                    $currentRoute = request()->route() ? request()->route()->getName() : '';
+                                    if ($currentRoute) {
+                                        $isActive = $currentRoute === $routePath || strpos($currentRoute, $routePath . '.') === 0;
+                                    } else {
+                                        $currentPath = request()->path();
+                                        $menuPath = ltrim(str_replace('.', '/', $routePath), '/');
+                                        $isActive = $currentPath === $menuPath || strpos($currentPath, $menuPath . '/') === 0;
+                                    }
+                                } catch (\Exception $e) {
+                                    $menuUrl = url('/' . str_replace('.', '/', $routePath));
+                                    $currentPath = request()->path();
+                                    $menuPath = ltrim(str_replace('.', '/', $routePath), '/');
+                                    $isActive = $currentPath === $menuPath || strpos($currentPath, $menuPath . '/') === 0 || request()->is($menuPath . '*');
+                                }
+                            } else {
+                                $menuUrl = url($routePath);
+                                $currentPath = request()->path();
+                                $menuPath = ltrim($routePath, '/');
+                                $isActive = $currentPath === $menuPath || strpos($currentPath, $menuPath . '/') === 0 || request()->is($menuPath . '*');
+                            }
+                            
+                            $iconClass = $menuItem->css_class ?? 'bi bi-people';
+                        @endphp
+                        
+                        <li class="mb-1 mx-3">
+                            <a href="{{ $menuUrl }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ $isActive ? 'active' : '' }}">
+                                <i class="{{ $iconClass }} me-2"></i>
+                                <span>{{ $menuItem->module_name }}</span>
+                            </a>
+                        </li>
+                    @endforeach
+                @endif
+            @endforeach
+
+
+            <!-- <div class="text-white px-4 opacity-50 small mt-3 mb-2">Manage Organization</div>
+            @if (validatePermissions('admin/organization'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.organization.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/organization*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Organization</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/employee-type'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.employee.type.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/employee-type*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Employee Type</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/work-type'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.work.type.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/work-type*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Work Type</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/attendance-modes'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.attendance.modes.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/attendance-modes*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Attendance Modes</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/shift-type'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.shift.type.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/shift-type*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Shift Types</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/sbu'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.sbu.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/sbu') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Sbu's</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/sbu-floor'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.sbu.floor.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/sbu-floor*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Sbu's FLoor</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/department'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.department.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/department*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Department</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/leave-type'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.leave.type.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/leave-type*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Leave Types</span>
                 </a>
             </li>
+            @endif
 
 
             <div class="text-white px-4 opacity-50 small mt-3 mb-2">Role Management</div>
+            @if (validatePermissions('admin/module-categories'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.module.category.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/module-categories*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Module Categories</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/module'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.module.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/module') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Modules</span>
                 </a>
             </li>
+            @endif
 
+            @if (validatePermissions('admin/role'))
             <li class="mb-1 mx-3">
                 <a href="{{ route('admin.role.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/role*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>User Roles</span>
                 </a>
             </li>
+            @endif -->
 
 
 

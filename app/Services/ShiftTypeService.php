@@ -10,7 +10,7 @@ class ShiftTypeService
 {
     public function getList(): Collection
     {
-        return ShiftType::with('organization')
+        return ShiftType::with(['organization', 'department'])
             ->orderByDesc('id')
             ->get();
     }

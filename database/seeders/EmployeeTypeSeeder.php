@@ -20,9 +20,12 @@ class EmployeeTypeSeeder extends Seeder
         ];
 
         foreach ($orgIds as $orgId) {
+            $departmentIds = DB::table('departments')->where('organization_id', $orgId)->pluck('id')->toArray();
             foreach ($types as $type) {
+                $departmentId = !empty($departmentIds) ? ($departmentIds[array_rand($departmentIds)] ?? null) : null;
                 DB::table('employee_types')->insert([
                     'organization_id' => $orgId,
+                    'department_id' => $departmentId,
                     'name' => $type['name'],
                     'code' => $type['code'],
                     'rules_json' => $type['rules_json'],

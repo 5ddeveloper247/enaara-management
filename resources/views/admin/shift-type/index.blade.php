@@ -57,7 +57,7 @@
                 dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
                 language: { emptyTable: 'No shift types found.' },
                 columnDefs: [
-                    { targets: 7, orderable: false, className: 'no-toggle' }
+                    { targets: 8, orderable: false, className: 'no-toggle' }
                 ]
             });
 
@@ -69,6 +69,7 @@
                 $('#detailShiftTypeBreak').text(btn.data('break-minutes') !== undefined ? btn.data('break-minutes') + ' min' : '—');
                 $('#detailShiftTypeNight').text(btn.data('night-shift') === '1' ? 'Yes' : 'No');
                 $('#detailShiftTypeOrganization').text(btn.data('organization-name') || '—');
+                $('#detailShiftTypeDepartment').text(btn.data('department-name') || '—');
                 $('#detailShiftTypeStatus').text(btn.closest('tr').data('status') === 'active' ? 'Active' : 'Inactive');
                 new bootstrap.Offcanvas(document.getElementById('shiftTypeDetailCanvas')).show();
             });

@@ -57,9 +57,9 @@
             </div>
 
             <div class="col-md-6 text-end">
-                <a href="{{ route('admin.department.add') }}" class="btn btn-primary bg-main border-0">
+                <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas" data-bs-target="#departmentEditCanvas" id="addDepartmentBtn">
                     <i class="bi bi-building-add me-1"></i>Add New Department
-                </a>
+                </button>
             </div>
         </div>
 
@@ -79,12 +79,21 @@
 
     <!-- Department Detail Side Canvas -->
     @include('admin.departments.detail_canvas')
+    
+    <!-- Department Edit Side Canvas -->
+    @include('admin.departments.edit_canvas')
 @endsection
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            var departmentEditUrl = '{{ route("admin.department.edit", ":id") }}';
+            var departmentUpdateUrl = '{{ route("admin.department.update", ":id") }}';
+            var departmentStoreUrl = '{{ route("admin.department.store") }}';
+            var departmentCreateUrl = '{{ route("admin.department.add") }}';
+            
             var departmentCanvas = document.getElementById('departmentDetailCanvas');
             if (departmentCanvas) {
                 departmentCanvas.addEventListener('show.bs.offcanvas', function(event) {
@@ -104,6 +113,196 @@
                     }
                 });
             }
+            
+            var editCanvas = document.getElementById('departmentEditCanvas');
+            if (editCanvas) {
+                editCanvas.addEventListener('show.bs.offcanvas', function(event) {
+                    var button = event.relatedTarget;
+                    if (button && button.id === 'addDepartmentBtn') {
+                        loadDepartmentForAdd();
+                    } else if (button && button.classList.contains('edit-department-btn')) {
+                        var departmentId = button.getAttribute('data-department-id');
+                        if (departmentId) {
+                            loadDepartmentForEdit(departmentId);
+                        }
+                    }
+                });
+            }
+            
+            function loadDepartmentForAdd() {
+                $('#editFormMode').val('add');
+                $('#editDepartmentId').val('');
+                $('#canvasTitleText').text('Add New Department');
+                $('#canvasEditIcon').removeClass('bi-pencil').addClass('bi-building-add');
+                $('#submitBtnText').text('Create Department');
+                
+                $.ajax({
+                    url: departmentCreateUrl,
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(response) {
+                        var orgSelect = $('#editOrganizationId');
+                        orgSelect.empty().append('<option value="">Select Organization</option>');
+                        response.organizations.forEach(function(org) {
+                            orgSelect.append('<option value="' + org.id + '">' + org.name + '</option>');
+                        });
+                        
+                        var sbuSelect = $('#editSbuId');
+                        sbuSelect.empty().append('<option value="">Select SBU</option>');
+                        response.sbus.forEach(function(sbu) {
+                            sbuSelect.append('<option value="' + sbu.id + '">' + sbu.name + '</option>');
+                        });
+                        
+                        var parentSelect = $('#editParentDepartmentId');
+                        parentSelect.empty().append('<option value="">None</option>');
+                        response.parentDepartments.forEach(function(parent) {
+                            var orgName = parent.organization ? ' (' + parent.organization.name + ')' : '';
+                            parentSelect.append('<option value="' + parent.id + '">' + parent.name + orgName + '</option>');
+                        });
+                        
+                        $('#editDepartmentName').val('');
+                        $('#editDepartmentCode').val('');
+                        $('#editDepartmentDescription').val('');
+                        $('#editDepartmentIsActive').prop('checked', true);
+                        
+                        $('.invalid-feedback').text('').hide();
+                        $('.form-select, .form-control').removeClass('is-invalid');
+                    },
+                    error: function(xhr) {
+                        console.error('Error loading data for add:', xhr);
+                        alert('Failed to load form data. Please try again.');
+                    }
+                });
+            }
+            
+            function loadDepartmentForEdit(departmentId) {
+                $('#editFormMode').val('edit');
+                $('#canvasTitleText').text('Edit Department');
+                $('#canvasEditIcon').removeClass('bi-building-add').addClass('bi-pencil');
+                $('#submitBtnText').text('Update Department');
+                
+                var url = departmentEditUrl.replace(':id', departmentId);
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(response) {
+                        $('#editDepartmentId').val(response.department.id);
+                        $('#editDepartmentName').val(response.department.name);
+                        $('#editDepartmentCode').val(response.department.code || '');
+                        $('#editDepartmentDescription').val(response.department.description || '');
+                        $('#editDepartmentIsActive').prop('checked', response.department.is_active);
+                        
+                        var orgSelect = $('#editOrganizationId');
+                        orgSelect.empty().append('<option value="">Select Organization</option>');
+                        response.organizations.forEach(function(org) {
+                            var selected = org.id == response.department.organization_id ? 'selected' : '';
+                            orgSelect.append('<option value="' + org.id + '" ' + selected + '>' + org.name + '</option>');
+                        });
+                        
+                        var sbuSelect = $('#editSbuId');
+                        sbuSelect.empty().append('<option value="">Select SBU</option>');
+                        response.sbus.forEach(function(sbu) {
+                            var selected = sbu.id == response.department.sbu_id ? 'selected' : '';
+                            sbuSelect.append('<option value="' + sbu.id + '" ' + selected + '>' + sbu.name + '</option>');
+                        });
+                        
+                        var parentSelect = $('#editParentDepartmentId');
+                        parentSelect.empty().append('<option value="">None</option>');
+                        response.parentDepartments.forEach(function(parent) {
+                            var selected = parent.id == response.department.parent_department_id ? 'selected' : '';
+                            var orgName = parent.organization ? ' (' + parent.organization.name + ')' : '';
+                            parentSelect.append('<option value="' + parent.id + '" ' + selected + '>' + parent.name + orgName + '</option>');
+                        });
+                        
+                        $('.invalid-feedback').text('').hide();
+                        $('.form-select, .form-control').removeClass('is-invalid');
+                    },
+                    error: function(xhr) {
+                        console.error('Error loading department:', xhr);
+                        alert('Failed to load department data. Please try again.');
+                    }
+                });
+            }
+            
+            $('#editDepartmentForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var formMode = $('#editFormMode').val();
+                var formData = {
+                    organization_id: $('#editOrganizationId').val(),
+                    sbu_id: $('#editSbuId').val(),
+                    name: $('#editDepartmentName').val(),
+                    code: $('#editDepartmentCode').val(),
+                    parent_department_id: $('#editParentDepartmentId').val() || null,
+                    description: $('#editDepartmentDescription').val(),
+                    is_active: $('#editDepartmentIsActive').is(':checked') ? 1 : 0
+                };
+                
+                $('.invalid-feedback').text('').hide();
+                $('.form-select, .form-control').removeClass('is-invalid');
+                
+                var url, method;
+                if (formMode === 'add') {
+                    url = departmentStoreUrl;
+                    method = 'POST';
+                } else {
+                    var departmentId = $('#editDepartmentId').val();
+                    url = departmentUpdateUrl.replace(':id', departmentId);
+                    method = 'POST';
+                }
+                
+                $.ajax({
+                    url: url,
+                    method: method,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        if (response.success) {
+                            var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('departmentEditCanvas'));
+                            if (offcanvas) {
+                                offcanvas.hide();
+                            }
+                            location.reload();
+                        }
+                    },
+                    error: function(xhr) {
+                        if (xhr.status === 422) {
+                            var errors = xhr.responseJSON.errors;
+                            var fieldMap = {
+                                'organization_id': 'editOrganizationId',
+                                'sbu_id': 'editSbuId',
+                                'name': 'editDepartmentName',
+                                'code': 'editDepartmentCode',
+                                'parent_department_id': 'editParentDepartmentId',
+                                'description': 'editDepartmentDescription',
+                                'is_active': 'editDepartmentIsActive'
+                            };
+                            $.each(errors, function(field, messages) {
+                                var fieldId = '#' + (fieldMap[field] || 'edit' + field);
+                                var errorId = fieldId + 'Error';
+                                $(fieldId).addClass('is-invalid');
+                                $(errorId).text(messages[0]).show();
+                            });
+                        } else {
+                            var errorMsg = formMode === 'add' ? 'Failed to create department. Please try again.' : 'Failed to update department. Please try again.';
+                            alert(errorMsg);
+                        }
+                    }
+                });
+            });
+            
             var filterStatus = document.querySelectorAll('.filter-status');
             filterStatus.forEach(function(radio) {
                 radio.addEventListener('change', function() {

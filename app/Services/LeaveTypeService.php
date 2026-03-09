@@ -10,7 +10,7 @@ class LeaveTypeService
 {
     public function getList(): Collection
     {
-        return LeaveType::with('organization')
+        return LeaveType::with(['organization', 'department'])
             ->orderByDesc('id')
             ->get();
     }
@@ -35,7 +35,7 @@ class LeaveTypeService
 
     public function findById(int $id): ?LeaveType
     {
-        return LeaveType::with('organization')->find($id);
+        return LeaveType::with(['organization', 'department'])->find($id);
     }
 
     public function create(array $data): LeaveType

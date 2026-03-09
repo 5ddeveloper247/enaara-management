@@ -92,6 +92,10 @@ function validatePermissions($slug){
     //return true;
 }
 
+function getLeftMenuItems($moduleCatId){
+    return App\Traits\HasPermissionsTrait::getLeftMenuByCategory($moduleCatId);
+}
+
 function base_url()
 {
     return URL::to('/');

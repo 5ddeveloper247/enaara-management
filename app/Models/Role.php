@@ -37,4 +37,16 @@ class Role extends Model
             ->whereNull('role_privileges.deleted_at')
             ->withTimestamps();
     }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_roles', 'role_id', 'user_id')
+            ->whereNull('user_roles.deleted_at')
+            ->withTimestamps();
+    }
+
+    public function userRoles(): HasMany
+    {
+        return $this->hasMany(UserRole::class);
+    }
 }

@@ -4,6 +4,7 @@
             <th>Name</th>
             <th>Code</th>
             <th>Organization</th>
+            <th>Department</th>
             <th>Status</th>
             <th class="text-end">Actions</th>
         </tr>
@@ -29,6 +30,13 @@
                 @endif
             </td>
             <td>
+                @if($et->department)
+                    <span class="badge px-3 rounded-1 bg-info">{{ $et->department->name }}</span>
+                @else
+                    <span class="text-muted">—</span>
+                @endif
+            </td>
+            <td>
                 <div class="form-check form-switch">
                     <input class="form-check-input status-toggle" type="checkbox" {{ $et->is_active ? 'checked' : '' }} data-employee-type-id="{{ $et->id }}">
                 </div>
@@ -40,6 +48,7 @@
                         data-employee-type-name="{{ e($et->name) }}"
                         data-employee-type-code="{{ e($et->code ?? '') }}"
                         data-organization-name="{{ $et->organization ? e($et->organization->name) : '' }}"
+                        data-department-name="{{ $et->department ? e($et->department->name) : '' }}"
                         title="View">
                         <i class="bi bi-eye"></i>
                     </button>
@@ -57,7 +66,7 @@
         </tr>
         @empty
         <tr>
-            <td colspan="5" class="text-center text-muted py-4">No employee types found.</td>
+            <td colspan="6" class="text-center text-muted py-4">No employee types found.</td>
         </tr>
         @endforelse
     </tbody>

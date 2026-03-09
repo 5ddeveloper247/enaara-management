@@ -11,6 +11,7 @@ class WorkModel extends Model
 
     protected $fillable = [
         'organization_id',
+        'department_id',
         'name',
         'code',
         'default_schedule_json',
@@ -24,5 +25,10 @@ class WorkModel extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 }
