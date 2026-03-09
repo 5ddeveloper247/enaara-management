@@ -1,43 +1,3 @@
-{{-- STEP 7: Academic Background
-<div class="step" id="step-7">
-    <div class="section-title">Section G — Academic Background / Professional Trainings / Certification
-        <small class="text-muted fw-normal">(Start from Recent)</small>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-bordered align-middle">
-            <thead class="bg-main">
-                <tr>
-                    <th>#</th>
-                    <th>Degree / Certificate</th>
-                    <th>Grade / Div / CGPA</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Field of Study</th>
-                    <th>University / Board / Institute</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody id="academicTable">
-                <tr>
-                    <td>1</td>
-                    <td><input type="text" class="form-control form-control-sm"></td>
-                    <td><input type="text" class="form-control form-control-sm"></td>
-                    <td><input type="date" class="form-control form-control-sm"></td>
-                    <td><input type="date" class="form-control form-control-sm"></td>
-                    <td><input type="text" class="form-control form-control-sm"></td>
-                    <td><input type="text" class="form-control form-control-sm"></td>
-                    <td> <button
-                            type="button"class="action-btn border-0 text-danger bg-danger-subtle delete-shift-type"
-                            onclick="removeRow(this)" title="Delete">
-                            <i class="bi bi-trash"></i>
-                        </button>
-            </tbody>
-        </table>
-    </div>
-    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addAcademicRow()">+ Add
-        Row</button>
-</div> --}}
-
 
 {{-- STEP 7 layout with vertical left nav --}}
 <div class="step" id="step-7">  
@@ -64,10 +24,10 @@
         </div>
 
         {{-- Right Content --}}
-        <div class="flex-grow-1">
+        <div class="flex-grow-1 min-w-0 overflow-auto">
 
             {{-- G: Academic --}}
-            <div class="sub-section" id="s7-academic">
+            <div class="sub-section overflow-hidden" id="s7-academic">
                 <div class="section-title">Section G — Academic Background / Professional Trainings / Certification
                     <small class="text-muted fw-normal">(Start from Recent)</small>
                 </div>
@@ -107,7 +67,7 @@
             </div>
 
             {{-- H: Employment History --}}
-            <div class="sub-section d-none" id="s7-employment">
+            <div class="sub-section  d-none" id="s7-employment">
                 <div class="section-title">Section H — Employment History <small class="text-muted fw-normal">(Start
                         from Recent)</small></div>
                 <div class="table-responsive">
@@ -144,7 +104,7 @@
             </div>
 
             {{-- I: Medical --}}
-            <div class="sub-section d-none" id="s7-medical">
+            <div class="sub-section px-3 d-none" id="s7-medical">
                 <div class="section-title">Section I — Medical Ailment / History / Disability</div>
                 <div class="row g-3">
                     <div class="col-12"><label class="form-label">Last Medical Fitness Test — Date & Results</label>
@@ -176,7 +136,7 @@
             </div>
 
             {{-- J: References --}}
-            <div class="sub-section d-none" id="s7-references">
+            <div class="sub-section px-3 d-none" id="s7-references">
                 <div class="section-title">Section J — References</div>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -231,7 +191,7 @@
             </div>
 
             {{-- K: Declaration --}}
-            <div class="sub-section d-none" id="s7-declaration">
+            <div class="sub-section px-3 d-none" id="s7-declaration">
                 <div class="section-title">Section K — Declarative Statement / Employee Declaration</div>
                 <div class="alert alert-light border" style="font-size:.9rem">
                     I S/O, D/O, W/O, C/O, solemnly affirm in the presence of Almighty Allah that the information given
@@ -253,7 +213,7 @@
             </div>
 
             {{-- L: Parental Consent --}}
-            <div class="sub-section d-none" id="s7-consent">
+            <div class="sub-section px-3 d-none" id="s7-consent">
                 <div class="section-title">Section L — Parental Consent & Declaration <small
                         class="text-muted fw-normal">(Intern Only)</small></div>
                 <div class="alert alert-light border" style="font-size:.9rem">
@@ -274,7 +234,7 @@
             </div>
 
             {{-- M: Attachment Checklist --}}
-            <div class="sub-section d-none" id="s7-checklist">
+            <div class="sub-section px-3 d-none" id="s7-checklist">
                 <div class="section-title">Section M — Attachment Checklist & Pre-Employment Status</div>
 
                 <p class="fw-semibold mb-2">M-I: Document Attachment Checklist</p>
@@ -517,7 +477,7 @@
             </div>
 
             {{-- Service History --}}
-            <div class="sub-section d-none" id="s7-history">
+            <div class="sub-section px-3 d-none" id="s7-history">
                 <div class="section-title">Service History</div>
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">

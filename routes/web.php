@@ -129,9 +129,9 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual settings view
     // })->name('admin.settings');
     
-    // Route::get('/daily-logs', function () {
-    //     return view('admin.daily-logs.index');
-    // })->name('admin.daily-logs.index');
+    Route::get('/monthly-logs', function () {
+        return view('admin.monthly-logs.index');
+    })->name('admin.monthly-logs.index');
     
     // Route::get('/employee', function () {
     //     return view('admin.employee.index');
