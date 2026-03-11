@@ -15,6 +15,7 @@ use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\ModuleCategoryController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\EmployeeController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -105,6 +106,12 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/role/search', [RoleController::class, 'searchRole'])->name('admin.role.search');
     
     
+    Route::get('/employee', [EmployeeController::class, 'index'])->name('admin.employee.index');
+    Route::get('/employee/add', [EmployeeController::class, 'create'])->name('admin.employee.add');
+    Route::post('/employee/add', [EmployeeController::class, 'store'])->name('admin.employee.store');
+    Route::get('/employee/edit/{id}', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
+    Route::post('/employee/edit/{id}', [EmployeeController::class, 'update'])->name('admin.employee.update');
+    Route::delete('/employee/{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
     
     
     

@@ -15,10 +15,12 @@ class Role extends Model
         'slug',
         'description',
         'is_active',
+        'is_primary',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_primary' => 'boolean',
     ];
 
     public static function slugFromName(string $name): string

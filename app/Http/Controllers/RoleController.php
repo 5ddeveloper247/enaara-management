@@ -44,11 +44,13 @@ class RoleController extends Controller
             'slug' => 'nullable|string|max:255|unique:roles,slug',
             'description' => 'nullable|string|max:500',
             'is_active' => 'boolean',
+            'is_primary' => 'boolean',
             'module_ids' => 'nullable|array',
             'module_ids.*' => 'integer|exists:modules,id',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_primary'] = $request->boolean('is_primary');
         $validated['module_ids'] = $request->input('module_ids', []);
 
         $this->roleService->create($validated);
@@ -99,11 +101,13 @@ class RoleController extends Controller
             'slug' => 'nullable|string|max:255|unique:roles,slug,' . $role->id,
             'description' => 'nullable|string|max:500',
             'is_active' => 'boolean',
+            'is_primary' => 'boolean',
             'module_ids' => 'nullable|array',
             'module_ids.*' => 'integer|exists:modules,id',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_primary'] = $request->boolean('is_primary');
         $validated['module_ids'] = $request->input('module_ids', []);
 
         $this->roleService->update($role, $validated);
