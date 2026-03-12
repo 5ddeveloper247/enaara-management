@@ -1,11 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'Roles - Admin Panel')
+@section('title', 'Register - Admin Panel')
 
-@section('page-title', 'Roles')
+@section('page-title', 'Register')
 
 @push('styles')
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <link href="{{ asset('css/users.css') }}" rel="stylesheet">
     <style>
         .btn {
@@ -42,8 +41,12 @@
         select,
         option {
             background: transparent !important;
-            border: 1px solid #012445;
-            box-shadow: 0 0 4px 2px #5a59593d;
+            border: 2px solid #012445;
+            box-shadow: 0 0 7px 4px #5a59593d;
+        }
+
+        select {
+            border: white !important;
         }
 
         .connector {
@@ -149,6 +152,10 @@
     <script>
         let current = 1;
         const total = 7;
+        const icons = [
+            'bi-person-fill', 'bi-shield-fill', 'bi-award-fill',
+            'bi-telephone-fill', 'bi-bank2', 'bi-people-fill', ''
+        ];
 
         function changeStep(dir) {
             document.getElementById('step-' + current).classList.remove('active');
@@ -160,36 +167,37 @@
             updateCircle(current, 'active');
 
             document.getElementById('prevBtn').style.display = current === 1 ? 'none' : 'inline-block';
+
             const nextBtn = document.getElementById('nextBtn');
             nextBtn.textContent = current === total ? 'Submit' : 'Next';
             nextBtn.className = current === total ? 'btn btn-success ms-auto' : 'btn btn-primary ms-auto';
 
-            if (current === total && dir === 1 && document.getElementById('nextBtn').textContent === 'Submit') {
-                document.getElementById('nextBtn').onclick = function() {
+            nextBtn.onclick = (current === total && dir === 1) ?
+                function() {
                     alert('Form submitted!');
-                };
-            } else {
-                document.getElementById('nextBtn').onclick = function() {
+                } :
+                function() {
                     changeStep(1);
                 };
-            }
         }
 
         function updateCircle(step, state) {
-            const el = document.getElementById('circle-' + step);
+            const pill = document.getElementById('step-pill-' + step);
+            const icon = document.getElementById('circle-' + step);
             const con = document.getElementById('con-' + step);
-            el.className = 'step-circle ';
+
+            pill.classList.remove('is-active', 'is-done');
+
             if (state === 'done') {
-                el.className += 'bg-success text-white';
-                el.textContent = '✓';
-                if (con) con.className = 'connector bg-success';
+                pill.classList.add('is-done');
+                icon.innerHTML = '<i class="bi bi-check-lg"></i>';
+                if (con) con.classList.add('is-done');
             } else if (state === 'active') {
-                el.className += 'bg-primary text-white';
-                el.textContent = step;
+                pill.classList.add('is-active');
+                icon.innerHTML = `<i class="bi ${icons[step - 1]}"></i>`;
             } else {
-                el.className += 'bg-light border text-muted';
-                el.textContent = step;
-                if (con) con.className = 'connector bg-secondary bg-opacity-25';
+                icon.innerHTML = `<i class="bi ${icons[step - 1]}"></i>`;
+                if (con) con.classList.remove('is-done');
             }
         }
 
@@ -204,11 +212,9 @@
                 <td><input type="date" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
-                <td> <button type="button"
-                            class="action-btn border-0 text-danger bg-danger-subtle delete-shift-type"
-                            onclick="removeRow(this)" title="Delete">
-                            <i class="bi bi-trash"></i>
-                        </button></td>
+                <td><button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete">
+                    <i class="bi bi-trash"></i>
+                </button></td>
             </tr>`);
         }
 
@@ -224,11 +230,9 @@
                 <td><input type="date" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
-                <td> <button type="button"
-                            class="action-btn border-0 text-danger bg-danger-subtle delete-shift-type"
-                            onclick="removeRow(this)" title="Delete">
-                            <i class="bi bi-trash"></i>
-                        </button></td>
+                <td><button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete">
+                    <i class="bi bi-trash"></i>
+                </button></td>
             </tr>`);
         }
 

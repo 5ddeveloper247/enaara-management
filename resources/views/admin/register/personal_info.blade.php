@@ -6,11 +6,11 @@
         <div class="col-12">
             <label class="form-label">Verification Status</label>
             <div class="d-flex gap-3 mt-1">
-                <div class="form-check"><input class="form-check-input" type="radio" name="vStatus"><label
+                <div class="form-check"><input class="check-input" type="radio" name="vStatus"><label
                         class="form-check-label">Cleared</label></div>
-                <div class="form-check"><input class="form-check-input" type="radio" name="vStatus"><label
+                <div class="form-check"><input class="check-input" type="radio" name="vStatus"><label
                         class="form-check-label">Not Cleared</label></div>
-                <div class="form-check"><input class="form-check-input" type="radio" name="vStatus"><label
+                <div class="form-check"><input class="check-input" type="radio" name="vStatus"><label
                         class="form-check-label">In Process</label></div>
             </div>
         </div>

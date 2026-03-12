@@ -35,9 +35,13 @@
             @endphp
             <td>
                 <div class="d-flex align-items-center">
-                    <div class="user-avatar me-3">
-                        {{ $names[$nameIndex] }}
-                    </div>
+                    
+                    <a href="{{ route('admin.register.index') }}">
+                        <div class="user-avatar me-3">
+                            {{ $names[$nameIndex] }}
+                        </div>
+    
+                    </a>
                     <div>
                         <div class="fw-semibold">{{ $fullNames[$nameIndex] }}</div>
                         <small class="text-muted">{{ $departments[$i % count($departments)] }} - EMP-{{ str_pad($i + 1, 4, '0', STR_PAD_LEFT) }}</small>

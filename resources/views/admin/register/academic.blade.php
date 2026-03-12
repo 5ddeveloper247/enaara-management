@@ -31,7 +31,7 @@
                 <div class="section-title">Section G — Academic Background / Professional Trainings / Certification
                     <small class="text-muted fw-normal">(Start from Recent)</small>
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive mb-2">
                     <table class="table table-bordered align-middle">
                         <thead class="bg-main">
                             <tr>
@@ -104,7 +104,7 @@
             </div>
 
             {{-- I: Medical --}}
-            <div class="sub-section px-3 d-none" id="s7-medical">
+            <div class="sub-section px-3 pb-2 d-none" id="s7-medical">
                 <div class="section-title">Section I — Medical Ailment / History / Disability</div>
                 <div class="row g-3">
                     <div class="col-12"><label class="form-label">Last Medical Fitness Test — Date & Results</label>
@@ -136,7 +136,7 @@
             </div>
 
             {{-- J: References --}}
-            <div class="sub-section px-3 d-none" id="s7-references">
+            <div class="sub-section px-3 pb-2 d-none" id="s7-references">
                 <div class="section-title">Section J — References</div>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -191,7 +191,7 @@
             </div>
 
             {{-- K: Declaration --}}
-            <div class="sub-section px-3 d-none" id="s7-declaration">
+            <div class="sub-section px-3 pb-2 d-none" id="s7-declaration">
                 <div class="section-title">Section K — Declarative Statement / Employee Declaration</div>
                 <div class="alert alert-light border" style="font-size:.9rem">
                     I S/O, D/O, W/O, C/O, solemnly affirm in the presence of Almighty Allah that the information given
@@ -213,7 +213,7 @@
             </div>
 
             {{-- L: Parental Consent --}}
-            <div class="sub-section px-3 d-none" id="s7-consent">
+            <div class="sub-section px-3 pb-2 d-none" id="s7-consent">
                 <div class="section-title">Section L — Parental Consent & Declaration <small
                         class="text-muted fw-normal">(Intern Only)</small></div>
                 <div class="alert alert-light border" style="font-size:.9rem">

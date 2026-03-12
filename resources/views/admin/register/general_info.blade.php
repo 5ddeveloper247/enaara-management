@@ -5,11 +5,16 @@
 
         {{-- Personal --}}
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Name</label>
             <input type="text" class="form-control">
         </div>
-
+        
+        <div class="col-md-6">
+            <label class="form-label">Father Name</label>
+            <input type="text" class="form-control">
+        </div>
+        
         <div class="col-md-4">
             <label class="form-label">CNIC</label>
             <input type="text" class="form-control" placeholder="00000-0000000-0">
@@ -22,32 +27,27 @@
 
 
         <div class="col-md-4">
-            <label class="form-label">Father Name</label>
-            <input type="text" class="form-control">
-        </div>
-
-        <div class="col-md-4">
             <label class="form-label">Father CNIC</label>
             <input type="text" class="form-control" placeholder="00000-0000000-0">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Nationality</label>
             <input type="text" class="form-control">
         </div>
 
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Date of Birth</label>
             <input type="date" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">NTN #</label>
             <input type="text" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Gender</label>
             <div class="d-flex gap-3 mt-1">
                 <div class="form-check d-flex align-items-center gap-1">
@@ -78,23 +78,23 @@
         </div>
 
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Religion</label>
             <input type="text" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Sect</label>
             <input type="text" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Spouse Name & Nationality</label>
             <input type="text" class="form-control">
         </div>
 
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Marital Status</label>
             <div class="position-relative">
                 <select class="form-select pe-4"
@@ -111,56 +111,56 @@
 
         {{-- NOK --}}
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">Name of Next of Kin (NOK)</label>
             <input type="text" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">NOK CNIC & Date of Expiry</label>
             <input type="text" class="form-control">
         </div>
 
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">Relation with NOK</label>
             <input type="text" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">NOK Date of Birth</label>
             <input type="date" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">NOK Contact No</label>
             <input type="tel" class="form-control">
         </div>
 
         {{-- Employment --}}
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Date of Joining</label>
             <input type="date" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Designation</label>
             <input type="text" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Grade</label>
             <input type="text" class="form-control">
         </div>
 
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Branch</label>
             <input type="text" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label class="form-label">Location</label>
             <input type="text" class="form-control">
         </div>
