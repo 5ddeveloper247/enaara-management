@@ -7,10 +7,6 @@
 @push('styles')
     <link href="{{ asset('css/users.css') }}" rel="stylesheet">
     <style>
-        .btn {
-            font-size: 13px;
-        }
-
         .table {
             --bs-table-bg: transparent !important;
         }
@@ -23,17 +19,6 @@
 
         td {
             padding: 1rem 2rem !important;
-        }
-
-
-        .step-circle {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
         }
 
         form input,
@@ -49,39 +34,8 @@
             border: white !important;
         }
 
-        .connector {
-            height: 3px;
-            flex: 1;
-        }
-
-        .step-content {
-            min-height: 220px;
-        }
-
-        .step-circle {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: .8rem;
-            font-weight: 600;
-        }
-
-        .connector {
-            height: 3px;
-            flex: 1;
-            margin-bottom: 18px;
-        }
 
         .section-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #000;
-            border-bottom: 2px solid #000;
-            padding-bottom: 6px;
-            margin-bottom: 20px;
             display: none;
         }
 
@@ -109,14 +63,23 @@
             </div>
         </div>
     </div>
-    @include('admin.role.delete-modal')
     @include('admin.role.detail_canvas') --}}
 
+    @include('admin.register.attachment-modal')
 
     <div class="container">
         <div class="d-flex justify-content-between mb-4 align-items-center">
             <h5 class="text-center">Employee Information Form</h5>
-            <button class="btn btn-primary ms-auto" id="attachment">Attachment</button>
+            <div class="d-flex gap-3 align-items-center">
+                <a href="{{ route('admin.employee.index') }}" class="btn btn-secondary d-flex align-items-center border-0 px-3 ms-auto">
+                    Go Back
+                </a>
+                <button
+                    class=" btn btn-link text-decoration-none text-white bg-main d-flex align-items-center border-0 px-3 ms-auto"
+                    data-bs-toggle="modal" data-bs-target="#attachmentModal">
+                    Attachment
+                </button>
+            </div>
         </div>
         <div class="card shadow-sm p-4">
 
@@ -137,7 +100,9 @@
             <div class="d-flex justify-content-between mt-4">
                 <button class="btn btn-outline-secondary" id="prevBtn" onclick="changeStep(-1)"
                     style="display:none">Back</button>
-                <button class="btn btn-primary ms-auto" id="nextBtn" onclick="changeStep(1)">Next</button>
+                <button
+                    class="btn ms-auto text-decoration-none text-white bg-main rounded-2 d-flex align-items-center border-0 px-3"
+                    id="nextBtn" onclick="changeStep(1)">Next</button>
             </div>
 
         </div>
@@ -154,31 +119,37 @@
         const total = 7;
         const icons = [
             'bi-person-fill', 'bi-shield-fill', 'bi-award-fill',
-            'bi-telephone-fill', 'bi-bank2', 'bi-people-fill', ''
+            'bi-telephone-fill', 'bi-bank2', 'bi-people-fill', 'bi-plus'
         ];
 
         function changeStep(dir) {
+            goToStep(current + dir);
+        }
+
+        function goToStep(target) {
+            if (target < 1 || target > total) return;
+
             document.getElementById('step-' + current).classList.remove('active');
-            updateCircle(current, dir === 1 ? 'done' : 'pending');
 
-            current += dir;
+            // Sync all step states relative to target
+            for (let i = 1; i <= total; i++) {
+                if (i < target) updateCircle(i, 'done');
+                else if (i === target) updateCircle(i, 'active');
+                else updateCircle(i, 'pending');
+            }
 
+            current = target;
             document.getElementById('step-' + current).classList.add('active');
-            updateCircle(current, 'active');
 
             document.getElementById('prevBtn').style.display = current === 1 ? 'none' : 'inline-block';
 
             const nextBtn = document.getElementById('nextBtn');
             nextBtn.textContent = current === total ? 'Submit' : 'Next';
-            nextBtn.className = current === total ? 'btn btn-success ms-auto' : 'btn btn-primary ms-auto';
-
-            nextBtn.onclick = (current === total && dir === 1) ?
-                function() {
-                    alert('Form submitted!');
-                } :
-                function() {
-                    changeStep(1);
-                };
+            nextBtn.className = current === total ? 'btn btn-success ms-auto' :
+                'btn ms-auto text-decoration-none text-white bg-main rounded-2 d-flex align-items-center border-0 px-3';
+            nextBtn.onclick = current === total ?
+                () => alert('Form submitted!') :
+                () => changeStep(1);
         }
 
         function updateCircle(step, state) {
@@ -212,9 +183,17 @@
                 <td><input type="date" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
-                <td><button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete">
-                    <i class="bi bi-trash"></i>
-                </button></td>
+                 <td class="d-flex gap-1">
+                        <button type="button" class="action-btn border-0 text-success bg-success-subtle"
+                            onclick="saveFamilyRow(this)" title="Save">
+                            <i class="bi bi-floppy"></i>
+                        </button>
+                        <button type="button"
+                            class="action-btn border-0 text-danger bg-danger-subtle delete-shift-type"
+                            onclick="removeRow(this)" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
             </tr>`);
         }
 
@@ -230,9 +209,16 @@
                 <td><input type="date" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
-                <td><button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete">
-                    <i class="bi bi-trash"></i>
-                </button></td>
+               <td class="d-flex gap-1">
+    <button type="button" class="action-btn border-0 text-success bg-success-subtle"
+        onclick="saveAcademicRow(this)" title="Save">
+        <i class="bi bi-floppy"></i>
+    </button>
+    <button type="button" class="action-btn border-0 text-danger bg-danger-subtle delete-shift-type"
+        onclick="removeRow(this)" title="Delete">
+        <i class="bi bi-trash"></i>
+    </button>
+</td>
             </tr>`);
         }
 

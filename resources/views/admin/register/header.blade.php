@@ -10,6 +10,7 @@
         background: #fff;
         white-space: nowrap;
         flex-shrink: 0;
+        cursor: pointer;
         transition: all .25s ease;
     }
     .step-item .step-bubble {
@@ -50,43 +51,43 @@
 <div class="p-3 pb-4">
     <div class="stepper-track">
 
-        <div class="step-item is-active" id="step-pill-1">
+        <div onclick="goToStep(1)" class="step-item is-active" id="step-pill-1">
             <div class="step-bubble" id="circle-1"><i class="bi bi-person-fill"></i></div>
             <span class="step-label" id="label-1">General</span>
         </div>
         <div class="step-connector" id="con-1"></div>
 
-        <div class="step-item" id="step-pill-2">
+        <div onclick="goToStep(2)" class="step-item" id="step-pill-2">
             <div class="step-bubble" id="circle-2"><i class="bi bi-shield-fill"></i></div>
             <span class="step-label" id="label-2">Police</span>
         </div>
         <div class="step-connector" id="con-2"></div>
 
-        <div class="step-item" id="step-pill-3">
+        <div onclick="goToStep(3)" class="step-item" id="step-pill-3">
             <div class="step-bubble" id="circle-3"><i class="bi bi-award-fill"></i></div>
             <span class="step-label" id="label-3">Armed</span>
         </div>
         <div class="step-connector" id="con-3"></div>
 
-        <div class="step-item" id="step-pill-4">
+        <div onclick="goToStep(4)" class="step-item" id="step-pill-4">
             <div class="step-bubble" id="circle-4"><i class="bi bi-telephone-fill"></i></div>
             <span class="step-label" id="label-4">Contact</span>
         </div>
         <div class="step-connector" id="con-4"></div>
 
-        <div class="step-item" id="step-pill-5">
+        <div onclick="goToStep(5)" class="step-item" id="step-pill-5">
             <div class="step-bubble" id="circle-5"><i class="bi bi-bank2"></i></div>
             <span class="step-label" id="label-5">Bank</span>
         </div>
         <div class="step-connector" id="con-5"></div>
 
-        <div class="step-item" id="step-pill-6">
+        <div onclick="goToStep(6)" class="step-item" id="step-pill-6">
             <div class="step-bubble" id="circle-6"><i class="bi bi-people-fill"></i></div>
             <span class="step-label" id="label-6">Family</span>
         </div>
         <div class="step-connector" id="con-6"></div>
 
-        <div class="step-item" id="step-pill-7">
+        <div onclick="goToStep(7)" class="step-item" id="step-pill-7">
             <div class="step-bubble" id="circle-7"><i class="bi bi-plus fs-5"></i></div>
             <span class="step-label" id="label-7">More</span>
         </div>

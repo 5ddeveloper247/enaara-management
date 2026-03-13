@@ -1,6 +1,5 @@
-
 {{-- STEP 7 layout with vertical left nav --}}
-<div class="step" id="step-7">  
+<div class="step" id="step-7">
     <div class="d-flex gap-3">
 
         {{-- Left Vertical Nav --}}
@@ -13,14 +12,7 @@
                 data-target="s7-medical" onclick="showSubSection(this, 's7-medical')">Medical</button>
             <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
                 data-target="s7-references" onclick="showSubSection(this, 's7-references')">References</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
-                data-target="s7-declaration" onclick="showSubSection(this, 's7-declaration')">Declaration</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
-                data-target="s7-consent" onclick="showSubSection(this, 's7-consent')">Consent</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
-                data-target="s7-checklist" onclick="showSubSection(this, 's7-checklist')">Checklist</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
-                data-target="s7-history" onclick="showSubSection(this, 's7-history')">Service History</button>
+
         </div>
 
         {{-- Right Content --}}
@@ -54,17 +46,25 @@
                                 <td><input type="date" class="form-control form-control-sm"></td>
                                 <td><input type="text" class="form-control form-control-sm"></td>
                                 <td><input type="text" class="form-control form-control-sm"></td>
-                                <td> <button
-                                        type="button"class="action-btn border-0 text-danger bg-danger-subtle delete-shift-type"
+                                <td class="d-flex gap-1">
+                                    <button type="button" class="action-btn border-0 text-success bg-success-subtle"
+                                        onclick="saveAcademicRow(this)" title="Save">
+                                        <i class="bi bi-floppy"></i>
+                                    </button>
+                                    <button type="button"
+                                        class="action-btn border-0 text-danger bg-danger-subtle delete-shift-type"
                                         onclick="removeRow(this)" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                </td>
                         </tbody>
                     </table>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addAcademicRow()">+ Add
                     Row</button>
+                <div id="academicListing" class="row g-3 mt-3"></div>
             </div>
+
 
             {{-- H: Employment History --}}
             <div class="sub-section  d-none" id="s7-employment">
@@ -93,14 +93,24 @@
                                 <td><input type="date" class="form-control form-control-sm"></td>
                                 <td><input type="text" class="form-control form-control-sm"></td>
                                 <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><button type="button" class="btn btn-sm btn-outline-danger"
-                                        onclick="removeRow(this)">✕</button></td>
+                                <td class="d-flex gap-1">
+                                    <button type="button" class="action-btn border-0 text-success bg-success-subtle"
+                                        onclick="saveEmploymentRow(this)" title="Save">
+                                        <i class="bi bi-floppy"></i>
+                                    </button>
+                                    <button type="button" class="action-btn border-0 text-danger bg-danger-subtle"
+                                        onclick="removeRow(this)" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEmploymentRow()">+ Add
                     Row</button>
+
+                <div id="employmentListing" class="row g-3 mt-3"></div>
             </div>
 
             {{-- I: Medical --}}
@@ -189,398 +199,9 @@
                     </div>
                 </div>
             </div>
-
-            {{-- K: Declaration --}}
-            <div class="sub-section px-3 pb-2 d-none" id="s7-declaration">
-                <div class="section-title">Section K — Declarative Statement / Employee Declaration</div>
-                <div class="alert alert-light border" style="font-size:.9rem">
-                    I S/O, D/O, W/O, C/O, solemnly affirm in the presence of Almighty Allah that the information given
-                    in this Personal Data Form is true and correct to the best of my knowledge and belief. I fully
-                    understand that my false statement or material omission / suppression of any fact shall render me
-                    liable to disciplinary action and / or dismissal from service. I authorize MSR to contact my
-                    previous employers and references provided in this form / CV for further information / verification
-                    as deemed necessary.
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-6"><label class="form-label">Duty Station</label><input type="text"
-                            class="form-control"></div>
-                    <div class="col-md-6"><label class="form-label">Date</label><input type="date"
-                            class="form-control"></div>
-                    <div class="col-md-6"><label class="form-label">Signature of Employee / Thumb
-                            Impression</label><input type="text" class="form-control" placeholder="Signature">
-                    </div>
-                </div>
-            </div>
-
-            {{-- L: Parental Consent --}}
-            <div class="sub-section px-3 pb-2 d-none" id="s7-consent">
-                <div class="section-title">Section L — Parental Consent & Declaration <small
-                        class="text-muted fw-normal">(Intern Only)</small></div>
-                <div class="alert alert-light border" style="font-size:.9rem">
-                    I, F/O, M/O, G/O hereby give my consent for their participation in the internship program at MSR. I
-                    understand and accept that my child may be using their personal laptop for work purposes, and the
-                    company is not liable for any damage to personal devices or equipment. My child will follow the
-                    company's policies and will be working under structured supervision. I understand the nature,
-                    duration, and expectations of this internship program.
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-6"><label class="form-label">Duty Station</label><input type="text"
-                            class="form-control"></div>
-                    <div class="col-md-6"><label class="form-label">Date</label><input type="date"
-                            class="form-control"></div>
-                    <div class="col-md-6"><label class="form-label">Signature of Parent / Guardian</label><input
-                            type="text" class="form-control" placeholder="Signature"></div>
-                </div>
-            </div>
-
-            {{-- M: Attachment Checklist --}}
-            <div class="sub-section px-3 d-none" id="s7-checklist">
-                <div class="section-title">Section M — Attachment Checklist & Pre-Employment Status</div>
-
-                <p class="fw-semibold mb-2">M-I: Document Attachment Checklist</p>
-                <div class="table-responsive mb-4">
-                    <table class="table table-bordered table-sm align-middle">
-                        <thead class="bg-main">
-                            <tr>
-                                <th>S.No</th>
-                                <th>Document Description</th>
-                                <th>Mandatory</th>
-                                <th>Category Requirement</th>
-                                <th>✓</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>Colored Passport Size Photo (Blue background)</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>Copy of CNIC - Front and Back</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>Copy of Father's CNIC (If applicable)</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>Copy of Domicile Certificate</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>5</td>
-                                <td>Copy of NTN Proof (If applicable)</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>6</td>
-                                <td>NOK CNIC Copy</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>7</td>
-                                <td>Proof of Marital Status</td>
-                                <td>If applicable</td>
-                                <td>Section A</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>8</td>
-                                <td>All Academic Degrees/Certificates</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>9</td>
-                                <td>Academic Transcripts for Most Recent Degree</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>10</td>
-                                <td>Professional Trainings/Certifications</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>11</td>
-                                <td>Detailed CV/Resume</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>12</td>
-                                <td>Experience Certificates from All Previous Employers</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>13</td>
-                                <td>Last Drawn Salary Slip</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>14</td>
-                                <td>Bank Account Verification Letter</td>
-                                <td>Yes</td>
-                                <td>All</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>15</td>
-                                <td>Offer Letter / Letter of Engagement (Signed)</td>
-                                <td>If applicable</td>
-                                <td>Intern/Contractual</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>16</td>
-                                <td>Consultancy Agreement/Contract (Signed)</td>
-                                <td>If applicable</td>
-                                <td>Consultants</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>17</td>
-                                <td>Parent/Guardian Consent Form (Signed)</td>
-                                <td>If applicable</td>
-                                <td>Interns</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                            <tr>
-                                <td>18</td>
-                                <td>Discharge/Retirement Order & Medical Category Certificate</td>
-                                <td>If applicable</td>
-                                <td>Ex-Armed Forces</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <p class="fw-semibold mb-2">M-II: Before Employment Checklist <small class="text-muted fw-normal">(HR
-                        / Recruitment Use Only)</small></p>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-sm align-middle">
-                        <thead class="bg-main">
-                            <tr>
-                                <th>S.No</th>
-                                <th>Pre-Employment Activity</th>
-                                <th>Status ✓</th>
-                                <th>Date Completed</th>
-                                <th>HR Initial</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>Interview Assessment Form Received and Finalized</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>Offer Letter Issued</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>Signed Offer Letter Received</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>Reference Checks Completed (Minimum 2)</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>5</td>
-                                <td>Police Verification Request Initiated</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>6</td>
-                                <td>Medical Fitness Test Cleared</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>7</td>
-                                <td>Induction/Onboarding Form Completed by HR</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>8</td>
-                                <td>IT Account/Email ID Creation Initiated</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>9</td>
-                                <td>Workstation/Desk Allocated and Prepared</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>10</td>
-                                <td>All Mandatory Documents Received</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>11</td>
-                                <td>Probation Evaluation Form Signed and Attached</td>
-                                <td><input type="checkbox" class="check-input"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {{-- Service History --}}
-            <div class="sub-section px-3 d-none" id="s7-history">
-                <div class="section-title">Service History</div>
-                <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
-                        <thead class="bg-main">
-                            <tr>
-                                <th>Sr.</th>
-                                <th>Date</th>
-                                <th>Category</th>
-                                <th>Details / Description</th>
-                                <th>Reference No</th>
-                                <th>Approved By</th>
-                                <th>Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><span class="badge bg-secondary">Appointment</span></td>
-                                <td><input type="text" class="form-control form-control-sm"
-                                        placeholder="Appointed as ___"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><span class="badge bg-success">Confirmation</span></td>
-                                <td><input type="text" class="form-control form-control-sm"
-                                        placeholder="Probation completed"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><span class="badge bg-info text-dark">Salary Increment</span></td>
-                                <td><input type="text" class="form-control form-control-sm"
-                                        placeholder="Revised salary"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><span class="badge bg-primary">Promotion/Transfer</span></td>
-                                <td><input type="text" class="form-control form-control-sm"
-                                        placeholder="From ___ to ___"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>5</td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><span class="badge bg-warning text-dark">Warning/Discipline</span></td>
-                                <td><input type="text" class="form-control form-control-sm"
-                                        placeholder="Verbal / Written"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>6</td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><span class="badge bg-secondary">Leave / LWP</span></td>
-                                <td><input type="text" class="form-control form-control-sm"
-                                        placeholder="Period ___"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>7</td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><span class="badge bg-dark">Suspension</span></td>
-                                <td><input type="text" class="form-control form-control-sm" placeholder="Reason">
-                                </td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                            <tr>
-                                <td>8</td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><span class="badge bg-danger">Termination/Resignation</span></td>
-                                <td><input type="text" class="form-control form-control-sm"
-                                        placeholder="Last working day"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-        </div>{{-- end right content --}}
-    </div>{{-- end d-flex --}}
-</div>{{-- end step-7 --}}
+        </div>
+    </div>
+</div>
 
 
 <script>
@@ -607,7 +228,164 @@
                 <td><input type="date" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
                 <td><input type="text" class="form-control form-control-sm"></td>
-                <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">✕</button></td>
+                <td class="d-flex gap-1">
+                                    <button type="button" class="action-btn border-0 text-success bg-success-subtle"
+                                        onclick="saveEmploymentRow(this)" title="Save">
+                                        <i class="bi bi-floppy"></i>
+                                    </button>
+                                    <button type="button" class="action-btn border-0 text-danger bg-danger-subtle"
+                                        onclick="removeRow(this)" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
             </tr>`);
+    }
+
+    function saveAcademicRow(btn) {
+        const row = btn.closest('tr');
+        const cells = row.querySelectorAll('td');
+
+        const degree = cells[1].querySelector('input').value.trim();
+        const grade = cells[2].querySelector('input').value.trim();
+        const startDate = cells[3].querySelector('input').value;
+        const endDate = cells[4].querySelector('input').value;
+        const field = cells[5].querySelector('input').value.trim();
+        const institute = cells[6].querySelector('input').value.trim();
+
+        if (!degree) {
+            alert('Please enter a degree before saving.');
+            return;
+        }
+
+        const initials = degree.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        }) : '—';
+        const id = 'academic-card-' + Date.now();
+
+        const card = `
+    <div class="col-md-6 col-lg-4" id="${id}">
+        <div class="card border-1 rounded-3 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold"
+                            style="width:45px;height:45px;font-size:1.1rem;">
+                            ${initials}
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-semibold small">${degree}</h6>
+                            <small class="text-muted small">${institute || '—'}</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-primary" style="font-size:10px;padding:4px 6px;">${grade || '—'}</span>
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-book me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>Field:</strong> ${field || '—'}</small>
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-calendar me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>Start:</strong> ${fmt(startDate)}</small>
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-calendar-check me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>End:</strong> ${fmt(endDate)}</small>
+                </div>
+                <div class="mt-3 pt-3 border-top d-flex justify-content-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                        onclick="removeAcademicCard('${id}')">
+                        <i class="bi bi-trash me-1"></i>Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+        document.getElementById('academicListing').insertAdjacentHTML('beforeend', card);
+        row.querySelectorAll('input, select').forEach(el => el.disabled = true);
+        btn.disabled = true;
+    }
+
+    function removeAcademicCard(id) {
+        document.getElementById(id)?.remove();
+    }
+
+    function saveEmploymentRow(btn) {
+        const row = btn.closest('tr');
+        const cells = row.querySelectorAll('td');
+
+        const org = cells[1].querySelector('input').value.trim();
+        const desig = cells[2].querySelector('input').value.trim();
+        const from = cells[3].querySelector('input').value;
+        const to = cells[4].querySelector('input').value;
+        const salary = cells[5].querySelector('input').value.trim();
+        const reason = cells[6].querySelector('input').value.trim();
+
+        if (!org) {
+            alert('Please enter an organization before saving.');
+            return;
+        }
+
+        const initials = org.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        }) : '—';
+        const id = 'employment-card-' + Date.now();
+
+        const card = `
+    <div class="col-md-6 col-lg-4" id="${id}">
+        <div class="card border-1 rounded-3 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold"
+                            style="width:45px;height:45px;font-size:1.1rem;">
+                            ${initials}
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-semibold small">${org}</h6>
+                            <small class="text-muted small">${desig || '—'}</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-success" style="font-size:10px;padding:4px 6px;">Past</span>
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-calendar me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>From:</strong> ${fmt(from)}</small>
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-calendar-check me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>To:</strong> ${fmt(to)}</small>
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-currency-dollar me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>Salary:</strong> ${salary || '—'}</small>
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-door-open me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>Reason:</strong> ${reason || '—'}</small>
+                </div>
+                <div class="mt-3 pt-3 border-top d-flex justify-content-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                        onclick="removeEmploymentCard('${id}')">
+                        <i class="bi bi-trash me-1"></i>Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+        document.getElementById('employmentListing').insertAdjacentHTML('beforeend', card);
+        row.querySelectorAll('input, select').forEach(el => el.disabled = true);
+        btn.disabled = true;
+    }
+
+    function removeEmploymentCard(id) {
+        document.getElementById(id)?.remove();
     }
 </script>

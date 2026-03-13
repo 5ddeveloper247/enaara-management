@@ -4,17 +4,30 @@
     <div class="row g-3">
 
         {{-- Personal --}}
+        <div class="d-flex align-items-end gap-2">
+            <div class="col-2">
+                <label class="form-label">Upload Image</label>
+                <label for="uploadImage" class="d-flex flex-column align-items-center justify-content-center gap-2"
+                    style="width:160px; height:160px; border: 2px dashed var(--main-color); border-radius: 10px; cursor:pointer; background:#f8f9fa1a;">
+                    <i class="bi bi-cloud-arrow-up fs-1 text-secondary"></i>
+                    <span style="font-size:.72rem; color:#6c757d;">Click to upload</span>
+                    <input type="file" id="uploadImage" accept="image/*" class="d-none" onchange="previewImg(this)">
+                </label>
+                <img id="imgPreview" src="" alt=""
+                    style="display:none; width:160px; height:160px; object-fit:cover; border-radius:10px; margin-top:6px; border:2px solid var(--main-color);">
+            </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Name</label>
-            <input type="text" class="form-control">
+            <div class="col-md-5">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-control">
+            </div>
+
+            <div class="col-md-5">
+                <label class="form-label">Father Name</label>
+                <input type="text" class="form-control">
+            </div>
         </div>
-        
-        <div class="col-md-6">
-            <label class="form-label">Father Name</label>
-            <input type="text" class="form-control">
-        </div>
-        
+
         <div class="col-md-4">
             <label class="form-label">CNIC</label>
             <input type="text" class="form-control" placeholder="00000-0000000-0">
@@ -105,7 +118,7 @@
                     <option>Separated</option>
                     <option>Divorced</option>
                     <option>Widowed</option>
-            </select>
+                </select>
             </div>
         </div>
 
