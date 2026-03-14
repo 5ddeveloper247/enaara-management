@@ -1,65 +1,91 @@
 <?php
 namespace App\Traits;
-use App\Models\Module;
 use App\Models\RolePrivilege;
-use App\Models\Role;
 use App\Models\UserRole;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 trait HasPermissionsTrait {
 
   public function getModulesPremissions(){
-    $return=false;
-    $currentUri = Route::getFacadeRoot()->current()->uri();
-    $user = Auth::user();
-    if(!$user){
-      return $return;
+    $hasAccess = false;
+
+    $currentRoute = Route::getFacadeRoot()->current()->uri();
+    $loggedInUser = Auth::user();
+
+    if (!$loggedInUser) {
+        return $hasAccess;
     }
-    $adminUserId = $user->id;
-    $resultAdminRoles = UserRole::where('user_id',$adminUserId)->get();
-    if($resultAdminRoles){
-      foreach($resultAdminRoles as $rowAdminRole){
-        $result = RolePrivilege::hasPermission($rowAdminRole->role_id,$currentUri);
-        if($result)
-          $return = $result;
-      }
+
+    $userId = $loggedInUser->id;
+
+    $userRoles = UserRole::where('user_id', $userId)->get();
+
+    if ($userRoles) {
+        foreach ($userRoles as $roleItem) {
+
+            $permissionCheck = RolePrivilege::hasPermission(
+                $roleItem->role_id,
+                $currentRoute
+            );
+
+            if ($permissionCheck) {
+                $hasAccess = $permissionCheck;
+            }
+        }
     }
-    return $return;
+
+    return $hasAccess;
   }
 
-  public static function getModulesPremissionsBySlug($slug){
-    $return=false;
-    $currentUri = trim($slug);
-  
-    $user = Auth::user();
-    if(!$user){
-      return $return;
+  public static function getPremissionsByRoute($routeSlug){
+    $permissionGranted = false;
+    $routeName = trim($routeSlug);
+
+    $currentUser = Auth::user();
+
+    if (!$currentUser) {
+        return $permissionGranted;
     }
-    $adminUserId = $user->id;
-    $resultAdminRoles = UserRole::where('user_id',$adminUserId)->get();
-    if($resultAdminRoles){
-      foreach($resultAdminRoles as $rowAdminRole){
-        $result = RolePrivilege::hasPermission($rowAdminRole->role_id,$currentUri);
-        if($result)
-          $return = $result;
-      }
+
+    $userId = $currentUser->id;
+
+    $assignedRoles = UserRole::where('user_id', $userId)->get();
+
+    if ($assignedRoles) {
+        foreach ($assignedRoles as $roleRecord) {
+
+            $permissionResult = RolePrivilege::hasPermission(
+                $roleRecord->role_id,
+                $routeName
+            );
+
+            if ($permissionResult) {
+                $permissionGranted = $permissionResult;
+            }
+        }
     }
-    return $return;
+
+    return $permissionGranted;
   }
 
-  public static function getLeftMenuByCategory($moduleCatId){
-    $user = Auth::user();
-    if(!$user){
-      return collect();
+  public static function getLeftMenuByCategory($categoryId){
+    $loggedUser = Auth::user();
+
+    if (!$loggedUser) {
+        return collect();
     }
-    $adminUserId = $user->id;
-    $resultAdminRoles = UserRole::where('user_id',$adminUserId)->get();
-    $roleIds = $resultAdminRoles->pluck('role_id')->toArray();
-    if(empty($roleIds)){
-      return collect();
+
+    $userId = $loggedUser->id;
+
+    $userRoles = UserRole::where('user_id', $userId)->get();
+
+    $roleIdList = $userRoles->pluck('role_id')->toArray();
+
+    if (empty($roleIdList)) {
+        return collect();
     }
-    return RolePrivilege::drawLeftMenu($roleIds, $moduleCatId);
+
+    return RolePrivilege::drawLeftMenu($roleIdList, $categoryId);
   }
 
 }
