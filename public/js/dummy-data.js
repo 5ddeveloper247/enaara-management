@@ -20,22 +20,22 @@ const ProjectData = {
             },
             14: {
                 labels: ['W1 Mon', 'W1 Tue', 'W1 Wed', 'W1 Thu', 'W1 Fri', 'W1 Sat', 'W1 Sun',
-                         'W2 Mon', 'W2 Tue', 'W2 Wed', 'W2 Thu', 'W2 Fri', 'W2 Sat', 'W2 Sun'],
+                    'W2 Mon', 'W2 Tue', 'W2 Wed', 'W2 Thu', 'W2 Fri', 'W2 Sat', 'W2 Sun'],
                 present: [120, 125, 118, 130, 125, 80, 45, 115, 122, 120, 128, 123, 85, 50],
                 absent: [15, 12, 18, 8, 10, 5, 3, 18, 15, 20, 9, 12, 6, 4],
                 onLeave: [15, 13, 14, 12, 15, 65, 102, 17, 13, 16, 14, 16, 70, 105]
             },
             28: {
                 labels: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7',
-                         'D8', 'D9', 'D10', 'D11', 'D12', 'D13', 'D14',
-                         'D15', 'D16', 'D17', 'D18', 'D19', 'D20', 'D21',
-                         'D22', 'D23', 'D24', 'D25', 'D26', 'D27', 'D28'],
+                    'D8', 'D9', 'D10', 'D11', 'D12', 'D13', 'D14',
+                    'D15', 'D16', 'D17', 'D18', 'D19', 'D20', 'D21',
+                    'D22', 'D23', 'D24', 'D25', 'D26', 'D27', 'D28'],
                 present: [120, 125, 118, 130, 125, 80, 45, 115, 122, 120, 128, 123, 85, 50,
-                          118, 124, 119, 132, 127, 82, 47, 116, 121, 117, 129, 124, 83, 48],
+                    118, 124, 119, 132, 127, 82, 47, 116, 121, 117, 129, 124, 83, 48],
                 absent: [15, 12, 18, 8, 10, 5, 3, 18, 15, 20, 9, 12, 6, 4,
-                         16, 13, 19, 9, 11, 6, 3, 17, 14, 21, 10, 13, 7, 4],
+                    16, 13, 19, 9, 11, 6, 3, 17, 14, 21, 10, 13, 7, 4],
                 onLeave: [15, 13, 14, 12, 15, 65, 102, 17, 13, 16, 14, 16, 70, 105,
-                          16, 14, 15, 13, 16, 68, 100, 18, 15, 17, 15, 17, 72, 108]
+                    16, 14, 15, 13, 16, 68, 100, 18, 15, 17, 15, 17, 72, 108]
             }
         },
 
@@ -330,7 +330,7 @@ const ProjectData = {
             { date: '2026-02-08', department: 'IT', count: 3, total: 15 },
             { date: '2026-02-08', department: 'Operations', count: 2, total: 18 },
             { date: '2026-02-09', department: 'HR', count: 1, total: 10 },
-            
+
             // February 2026 - Week 2
             { date: '2026-02-12', department: 'Operations', count: 7, total: 18 },
             { date: '2026-02-12', department: 'IT', count: 4, total: 15 },
@@ -442,15 +442,15 @@ const ProjectData = {
     // MONTHLY SUMMARY DATA
     // ============================================
     monthlySummary: {
-        generateSampleData: function(count = 50) {
+        generateSampleData: function (count = 50) {
             const names = ['AA', 'ZM', 'BA', 'HA', 'HK', 'SS', 'AR', 'KA', 'HM', 'TK'];
             const fullNames = ['Ahmed Ali', 'Zainab Malik', 'Bilal Ahmed', 'Hira Ali', 'Hamza Khan', 'Sana Sheikh', 'Ali Raza', 'Khurram Ali', 'Hina Malik', 'Tariq Khan'];
             const departments = ['Sales', 'HR', 'IT', 'Legal', 'Operations', 'Finance'];
             const floors = ['Ground', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
             const branches = ['Rawalpindi', 'Lahore', 'Karachi'];
-            
+
             const data = [];
-            
+
             for (let i = 0; i < count; i++) {
                 const nameIndex = i % names.length;
                 const deptIndex = i % departments.length;
@@ -468,7 +468,7 @@ const ProjectData = {
                 const isFloor9 = floors[floorIndex] === '9';
                 const zone2Verification = isFloor9 ? (Math.floor(Math.random() * 6) === 0 ? 'Pending' : 'Verified') : 'N/A';
                 const regularization = Math.floor(Math.random() * 6);
-                
+
                 data.push({
                     id: i + 1,
                     employeeId: 'EMP-' + String(i + 1).padStart(4, '0'),
@@ -490,7 +490,7 @@ const ProjectData = {
                     regularization: regularization
                 });
             }
-            
+
             return data;
         }
     },
@@ -499,7 +499,7 @@ const ProjectData = {
     // OVERTIME TRACKER DATA
     // ============================================
     overtime: {
-        generateSampleData: function(count = 50) {
+        generateSampleData: function (count = 50) {
             const names = ['AA', 'ZM', 'BA', 'HA', 'HK', 'SS', 'AR', 'KA', 'HM', 'TK'];
             const fullNames = ['Ahmed Ali', 'Zainab Malik', 'Bilal Ahmed', 'Hira Ali', 'Hamza Khan', 'Sana Sheikh', 'Ali Raza', 'Khurram Ali', 'Hina Malik', 'Tariq Khan'];
             const departments = ['Sales', 'HR', 'IT', 'Legal', 'Operations', 'Finance'];
@@ -508,44 +508,44 @@ const ProjectData = {
             const organizations = ['Enaara Developers', 'Madison Square Mall Rawalpindi', 'Madison Square Mall Lahore', 'Royal Swiss Lahore'];
             const otCategories = ['In-Office OT', 'Field-Work OT', 'Weekend OT'];
             const statuses = ['pending', 'approved', 'rejected'];
-            
+
             const data = [];
             const today = new Date();
-            
+
             for (let i = 0; i < count; i++) {
                 const nameIndex = i % names.length;
                 const deptIndex = i % departments.length;
                 const floorIndex = i % floors.length;
                 const branchIndex = i % branches.length;
                 const orgIndex = i % organizations.length;
-                
+
                 const isFloor9 = floors[floorIndex] === '9';
                 const otCategory = otCategories[Math.floor(Math.random() * otCategories.length)];
                 const status = statuses[Math.floor(Math.random() * statuses.length)];
-                
+
                 // Generate date (within last 7 days)
                 const daysAgo = Math.floor(Math.random() * 7);
                 const otDate = new Date(today);
                 otDate.setDate(today.getDate() - daysAgo);
                 const dateStr = otDate.toISOString().split('T')[0];
-                
+
                 // Generate shift times
                 const shiftEndHour = 18; // 6 PM
                 const shiftEndMinute = 0;
                 const actualPunchOutHour = shiftEndHour + Math.floor(Math.random() * 4) + 1; // 7 PM to 10 PM
                 const actualPunchOutMinute = Math.floor(Math.random() * 60);
-                
+
                 // Calculate OT hours
                 const otHours = (actualPunchOutHour - shiftEndHour) + (actualPunchOutMinute / 60);
                 const otHoursFormatted = otHours.toFixed(1);
-                
+
                 // Zone-2 verification for Floor 9
                 const zone2Verified = isFloor9 ? (Math.floor(Math.random() * 10) < 8 ? true : false) : null;
-                
+
                 // Geofence status (for Field-Work OT)
                 const isFieldWork = otCategory === 'Field-Work OT';
                 const geofenceStatus = isFieldWork ? (Math.floor(Math.random() * 10) < 7 ? 'in-zone' : 'out-of-zone') : null;
-                
+
                 // Verification status
                 let verificationStatus = 'Not Required';
                 if (isFloor9 && zone2Verified) {
@@ -557,7 +557,7 @@ const ProjectData = {
                 } else if (isFieldWork && geofenceStatus === 'out-of-zone') {
                     verificationStatus = 'Location Mismatch';
                 }
-                
+
                 data.push({
                     id: i + 1,
                     employeeId: 'EMP-' + String(i + 1).padStart(4, '0'),
@@ -579,7 +579,7 @@ const ProjectData = {
                     hasEvidence: Math.floor(Math.random() * 10) < 7
                 });
             }
-            
+
             return data;
         }
     },
@@ -588,7 +588,7 @@ const ProjectData = {
     // AUDIT TRAILS DATA
     // ============================================
     auditTrails: {
-        generateSampleData: function(count = 100) {
+        generateSampleData: function (count = 100) {
             const users = [
                 { name: 'Ahmed Ali', role: 'Admin', avatar: 'AA' },
                 { name: 'Zainab Malik', role: 'HR Manager', avatar: 'ZM' },
@@ -597,7 +597,7 @@ const ProjectData = {
                 { name: 'Hamza Khan', role: 'Admin', avatar: 'HK' },
                 { name: 'Sana Sheikh', role: 'Super Admin', avatar: 'SS' }
             ];
-            
+
             const categories = ['Leave', 'Geofence', 'Shift', 'Security', 'Employee', 'System'];
             const severities = ['critical', 'warning', 'info', 'success'];
             const organizations = ['Enaara Developers', 'Madison Square Mall Rawalpindi', 'Madison Square Mall Lahore', 'Royal Swiss Lahore'];
@@ -609,7 +609,7 @@ const ProjectData = {
                 'Mobile Chrome',
                 'Edge on Windows'
             ];
-            
+
             const actions = {
                 'Leave': [
                     { desc: 'Approved leave request for EMP-0045', severity: 'success', hasChanges: true, changes: [{ field: 'Status', before: 'Pending', after: 'Approved' }] },
@@ -647,10 +647,10 @@ const ProjectData = {
                     { desc: 'System maintenance performed', severity: 'info', hasChanges: false }
                 ]
             };
-            
+
             const data = [];
             const today = new Date();
-            
+
             for (let i = 0; i < count; i++) {
                 const userIndex = i % users.length;
                 const category = categories[Math.floor(Math.random() * categories.length)];
@@ -658,7 +658,7 @@ const ProjectData = {
                 const action = categoryActions[Math.floor(Math.random() * categoryActions.length)];
                 const orgIndex = i % organizations.length;
                 const branchIndex = i % branches.length;
-                
+
                 // Generate timestamp (within last 30 days, more recent entries more likely)
                 const daysAgo = Math.floor(Math.random() * 30);
                 const hoursAgo = Math.floor(Math.random() * 24);
@@ -667,13 +667,13 @@ const ProjectData = {
                 timestamp.setDate(today.getDate() - daysAgo);
                 timestamp.setHours(today.getHours() - hoursAgo);
                 timestamp.setMinutes(today.getMinutes() - minutesAgo);
-                
+
                 // Generate IP address
                 const ipAddress = `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-                
+
                 // Generate device
                 const device = devices[Math.floor(Math.random() * devices.length)];
-                
+
                 data.push({
                     id: i + 1,
                     timestamp: timestamp.toISOString(),
@@ -690,10 +690,10 @@ const ProjectData = {
                     context: action.context || null
                 });
             }
-            
+
             // Sort by timestamp (newest first)
             data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
+
             return data;
         }
     },
@@ -702,14 +702,14 @@ const ProjectData = {
     // POLICIES DATA
     // ============================================
     policies: {
-        generateSampleData: function(count = 30) {
+        generateSampleData: function (count = 30) {
             const categories = ['Leave Policy', 'Attendance Grace Period', 'Geofencing Rules', 'Shift Rota Protocols', 'Security Policy', 'HR Policy'];
             const statuses = ['active', 'draft', 'archived'];
             const organizations = ['Enaara Developers', 'Madison Square Mall Rawalpindi', 'Madison Square Mall Lahore', 'Royal Swiss Lahore'];
             const branches = ['Rawalpindi', 'Lahore', 'Karachi'];
             const floors = ['Ground', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
             const applicableToTypes = ['global', 'organization', 'branch', 'floor'];
-            
+
             const policyTemplates = {
                 'Leave Policy': [
                     'Annual Leave Policy',
@@ -749,30 +749,30 @@ const ProjectData = {
                     'Termination Policy'
                 ]
             };
-            
+
             const data = [];
             const today = new Date();
-            
+
             for (let i = 0; i < count; i++) {
                 const category = categories[Math.floor(Math.random() * categories.length)];
                 const templates = policyTemplates[category];
                 const title = templates[Math.floor(Math.random() * templates.length)];
                 const status = statuses[Math.floor(Math.random() * statuses.length)];
                 const applicableTo = applicableToTypes[Math.floor(Math.random() * applicableToTypes.length)];
-                
+
                 // Generate dates
                 const effectiveDate = new Date(today);
                 effectiveDate.setDate(today.getDate() - Math.floor(Math.random() * 365));
-                
+
                 const lastUpdated = new Date(effectiveDate);
                 lastUpdated.setDate(effectiveDate.getDate() + Math.floor(Math.random() * 30));
-                
+
                 // Determine applicable details based on type
                 let applicableDetails = '';
                 let organization = null;
                 let branch = null;
                 let floor = null;
-                
+
                 if (applicableTo === 'global') {
                     applicableDetails = 'Global (All Organizations)';
                 } else if (applicableTo === 'organization') {
@@ -785,7 +785,7 @@ const ProjectData = {
                     floor = floors[Math.floor(Math.random() * floors.length)];
                     applicableDetails = `Floor ${floor}`;
                 }
-                
+
                 // Generate description
                 const descriptions = {
                     'Leave Policy': 'This policy outlines the rules and regulations for employee leave requests, including annual leave, sick leave, and other leave types.',
@@ -795,12 +795,12 @@ const ProjectData = {
                     'Security Policy': 'Outlines security protocols, access control measures, and safety guidelines.',
                     'HR Policy': 'Covers human resources policies including onboarding, performance reviews, and disciplinary actions.'
                 };
-                
+
                 // Random document availability
                 const hasDocument = Math.floor(Math.random() * 10) < 7;
                 const documentName = hasDocument ? `${title.replace(/\s+/g, '_')}.pdf` : null;
                 const documentSize = hasDocument ? `${(Math.random() * 5 + 1).toFixed(2)} MB` : null;
-                
+
                 data.push({
                     id: i + 1,
                     title: title,
@@ -819,10 +819,10 @@ const ProjectData = {
                     documentSize: documentSize
                 });
             }
-            
+
             // Sort by last updated (newest first)
             data.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
-            
+
             return data;
         }
     },
@@ -831,13 +831,13 @@ const ProjectData = {
     // WORKFLOWS DATA
     // ============================================
     workflows: {
-        generateSampleData: function(count = 20) {
+        generateSampleData: function (count = 20) {
             const requestTypes = ['Leave', 'Overtime', 'Regularization', 'Shift'];
             const organizations = ['Enaara Developers', 'Madison Square Mall Rawalpindi', 'Madison Square Mall Lahore', 'Royal Swiss Lahore'];
             const branches = ['Rawalpindi', 'Lahore', 'Karachi'];
             const approverRoles = ['Department Head', 'HR Manager', 'Super Admin', 'Manager', 'Supervisor'];
             const statuses = ['active', 'inactive'];
-            
+
             const workflowTemplates = {
                 'Leave': [
                     { name: 'Standard Leave Approval', levels: ['Supervisor', 'HR Manager', 'Super Admin'] },
@@ -857,31 +857,31 @@ const ProjectData = {
                     { name: 'Shift Swap Workflow', levels: ['Supervisor'] }
                 ]
             };
-            
+
             const data = [];
-            
+
             for (let i = 0; i < count; i++) {
                 const requestType = requestTypes[Math.floor(Math.random() * requestTypes.length)];
                 const templates = workflowTemplates[requestType];
                 const template = templates[Math.floor(Math.random() * templates.length)];
                 const status = statuses[Math.floor(Math.random() * statuses.length)];
-                
+
                 // Organization assignment
                 const isGlobal = Math.random() < 0.3;
                 const organization = isGlobal ? 'Global' : organizations[Math.floor(Math.random() * organizations.length)];
                 const branch = !isGlobal && Math.random() < 0.5 ? branches[Math.floor(Math.random() * branches.length)] : null;
-                
+
                 // Build approval levels
                 const approvalLevels = template.levels.map((role, index) => ({
                     level: index + 1,
                     role: role,
                     approverType: role.toLowerCase().replace(/\s+/g, '-')
                 }));
-                
+
                 // SLA settings
                 const slaHours = [24, 48, 72][Math.floor(Math.random() * 3)];
                 const escalateTo = Math.random() < 0.6 ? ['HR Manager', 'Super Admin', 'Next Level'][Math.floor(Math.random() * 3)] : null;
-                
+
                 data.push({
                     id: i + 1,
                     name: template.name,
@@ -895,14 +895,13 @@ const ProjectData = {
                     createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
                 });
             }
-            
+
             return data;
         }
     },
-
     rolesPermissions: {
         // Organizational hierarchy: Owner → CEO → COO → GM → Team Lead
-        getRolesHierarchy: function() {
+        getRolesHierarchy: function () {
             return {
                 id: 'owner',
                 text: 'Owner',
@@ -944,7 +943,7 @@ const ProjectData = {
             };
         },
 
-        getRolePermissions: function(roleId) {
+        getRolePermissions: function (roleId) {
             const permissions = {
                 owner: {
                     name: 'Owner',
@@ -964,14 +963,14 @@ const ProjectData = {
                         'Settings': { view: true, edit: true, delete: true, approve: true, inherited: false },
                         'Roles & Permissions': { view: true, edit: true, delete: true, approve: true, inherited: false }
                     },
-                    dataScope: {
-                        organization: 'all',
-                        department: 'all',
-                        floor: 'all',
-                        employee: 'all'
-                    },
-                    users: this.generateUsersForRole(roleId, 3)
+                    dataScope: { organization: 'all', department: 'all', floor: 'all', employee: 'all' },
+                    users: [
+                        { id: 'owner-1', name: 'James Carter', email: 'james.carter@enaara.com', department: 'Executive', status: 'Active', avatar: 'JC' },
+                        { id: 'owner-2', name: 'Sophia Bennett', email: 'sophia.bennett@enaara.com', department: 'Executive', status: 'Active', avatar: 'SB' },
+                        { id: 'owner-3', name: 'William Hayes', email: 'william.hayes@enaara.com', department: 'Executive', status: 'Active', avatar: 'WH' }
+                    ]
                 },
+
                 ceo: {
                     name: 'CEO',
                     level: 2,
@@ -990,14 +989,13 @@ const ProjectData = {
                         'Settings': { view: true, edit: false, delete: false, approve: false, inherited: false },
                         'Roles & Permissions': { view: false, edit: false, delete: false, approve: false, inherited: false }
                     },
-                    dataScope: {
-                        organization: 'all',
-                        department: 'all',
-                        floor: 'all',
-                        employee: 'all'
-                    },
-                    users: this.generateUsersForRole(roleId, 2)
+                    dataScope: { organization: 'all', department: 'all', floor: 'all', employee: 'all' },
+                    users: [
+                        { id: 'ceo-1', name: 'Daniel Morgan', email: 'daniel.morgan@enaara.com', department: 'Executive', status: 'Active', avatar: 'DM' },
+                        { id: 'ceo-2', name: 'Rachel Collins', email: 'rachel.collins@enaara.com', department: 'Executive', status: 'Active', avatar: 'RC' }
+                    ]
                 },
+
                 coo: {
                     name: 'COO',
                     level: 3,
@@ -1016,14 +1014,15 @@ const ProjectData = {
                         'Settings': { view: false, edit: false, delete: false, approve: false, inherited: false },
                         'Roles & Permissions': { view: false, edit: false, delete: false, approve: false, inherited: false }
                     },
-                    dataScope: {
-                        organization: 'specific',
-                        department: 'all',
-                        floor: 'all',
-                        employee: 'all'
-                    },
-                    users: this.generateUsersForRole(roleId, 4)
+                    dataScope: { organization: 'specific', department: 'all', floor: 'all', employee: 'all' },
+                    users: [
+                        { id: 'coo-1', name: 'Ethan Clarke', email: 'ethan.clarke@enaara.com', department: 'Operations', status: 'Active', avatar: 'EC' },
+                        { id: 'coo-2', name: 'Natalie Brooks', email: 'natalie.brooks@enaara.com', department: 'Operations', status: 'Active', avatar: 'NB' },
+                        { id: 'coo-3', name: 'Marcus Webb', email: 'marcus.webb@enaara.com', department: 'Operations', status: 'Active', avatar: 'MW' },
+                        { id: 'coo-4', name: 'Priya Nair', email: 'priya.nair@enaara.com', department: 'Operations', status: 'Inactive', avatar: 'PN' }
+                    ]
                 },
+
                 gm: {
                     name: 'General Manager',
                     level: 4,
@@ -1042,14 +1041,19 @@ const ProjectData = {
                         'Settings': { view: false, edit: false, delete: false, approve: false, inherited: false },
                         'Roles & Permissions': { view: false, edit: false, delete: false, approve: false, inherited: false }
                     },
-                    dataScope: {
-                        organization: 'own',
-                        department: 'all',
-                        floor: 'all',
-                        employee: 'all'
-                    },
-                    users: this.generateUsersForRole(roleId, 8)
+                    dataScope: { organization: 'own', department: 'all', floor: 'all', employee: 'all' },
+                    users: [
+                        { id: 'gm-1', name: 'Oliver Grant', email: 'oliver.grant@enaara.com', department: 'IT', status: 'Active', avatar: 'OG' },
+                        { id: 'gm-2', name: 'Isabella Fox', email: 'isabella.fox@enaara.com', department: 'HR', status: 'Active', avatar: 'IF' },
+                        { id: 'gm-3', name: 'Lucas Stone', email: 'lucas.stone@enaara.com', department: 'Sales', status: 'Active', avatar: 'LS' },
+                        { id: 'gm-4', name: 'Amelia Cross', email: 'amelia.cross@enaara.com', department: 'Finance', status: 'Active', avatar: 'AC' },
+                        { id: 'gm-5', name: 'Henry Park', email: 'henry.park@enaara.com', department: 'Operations', status: 'Inactive', avatar: 'HP' },
+                        { id: 'gm-6', name: 'Charlotte Reed', email: 'charlotte.reed@enaara.com', department: 'IT', status: 'Active', avatar: 'CR' },
+                        { id: 'gm-7', name: 'Liam Foster', email: 'liam.foster@enaara.com', department: 'HR', status: 'Active', avatar: 'LF' },
+                        { id: 'gm-8', name: 'Zoe Mitchell', email: 'zoe.mitchell@enaara.com', department: 'Sales', status: 'Active', avatar: 'ZM' }
+                    ]
                 },
+
                 'team-lead': {
                     name: 'Team Lead',
                     level: 5,
@@ -1068,40 +1072,36 @@ const ProjectData = {
                         'Settings': { view: false, edit: false, delete: false, approve: false, inherited: false },
                         'Roles & Permissions': { view: false, edit: false, delete: false, approve: false, inherited: false }
                     },
-                    dataScope: {
-                        organization: 'own',
-                        department: 'own',
-                        floor: 'own',
-                        employee: 'team'
-                    },
-                    users: this.generateUsersForRole(roleId, 15)
+                    dataScope: { organization: 'own', department: 'own', floor: 'own', employee: 'team' },
+                    users: [
+                        { id: 'tl-1', name: 'Aaron Hughes', email: 'aaron.hughes@enaara.com', department: 'IT', status: 'Active', avatar: 'AH' },
+                        { id: 'tl-2', name: 'Bella Turner', email: 'bella.turner@enaara.com', department: 'HR', status: 'Active', avatar: 'BT' },
+                        { id: 'tl-3', name: 'Carlos Diaz', email: 'carlos.diaz@enaara.com', department: 'Sales', status: 'Active', avatar: 'CD' },
+                        { id: 'tl-4', name: 'Diana Patel', email: 'diana.patel@enaara.com', department: 'Finance', status: 'Active', avatar: 'DP' },
+                        { id: 'tl-5', name: 'Evan Shaw', email: 'evan.shaw@enaara.com', department: 'Operations', status: 'Inactive', avatar: 'ES' },
+                        { id: 'tl-6', name: 'Fiona Walsh', email: 'fiona.walsh@enaara.com', department: 'IT', status: 'Active', avatar: 'FW' },
+                        { id: 'tl-7', name: 'George Kim', email: 'george.kim@enaara.com', department: 'HR', status: 'Active', avatar: 'GK' },
+                        { id: 'tl-8', name: 'Hannah Lee', email: 'hannah.lee@enaara.com', department: 'Sales', status: 'Active', avatar: 'HL' },
+                        { id: 'tl-9', name: 'Ian Cooper', email: 'ian.cooper@enaara.com', department: 'Finance', status: 'Active', avatar: 'IC' },
+                        { id: 'tl-10', name: 'Julia Simmons', email: 'julia.simmons@enaara.com', department: 'Operations', status: 'Active', avatar: 'JS' },
+                        { id: 'tl-11', name: 'Kyle Nguyen', email: 'kyle.nguyen@enaara.com', department: 'IT', status: 'Active', avatar: 'KN' },
+                        { id: 'tl-12', name: 'Laura Price', email: 'laura.price@enaara.com', department: 'HR', status: 'Inactive', avatar: 'LP' },
+                        { id: 'tl-13', name: 'Mason Bell', email: 'mason.bell@enaara.com', department: 'Sales', status: 'Active', avatar: 'MB' },
+                        { id: 'tl-14', name: 'Nina Russo', email: 'nina.russo@enaara.com', department: 'Finance', status: 'Active', avatar: 'NR' },
+                        { id: 'tl-15', name: 'Oscar Fleming', email: 'oscar.fleming@enaara.com', department: 'Operations', status: 'Active', avatar: 'OF' }
+                    ]
                 }
             };
 
             return permissions[roleId] || null;
         },
 
-        generateUsersForRole: function(roleId, count) {
-            const names = ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Williams', 'David Brown', 'Emily Davis', 'Chris Wilson', 'Lisa Anderson', 'Tom Martinez', 'Amy Taylor', 'Mark Thomas', 'Jessica Jackson', 'Ryan White', 'Michelle Harris', 'Kevin Martin'];
-            const emails = ['john.doe@enaara.com', 'jane.smith@enaara.com', 'mike.johnson@enaara.com', 'sarah.williams@enaara.com', 'david.brown@enaara.com', 'emily.davis@enaara.com', 'chris.wilson@enaara.com', 'lisa.anderson@enaara.com', 'tom.martinez@enaara.com', 'amy.taylor@enaara.com', 'mark.thomas@enaara.com', 'jessica.jackson@enaara.com', 'ryan.white@enaara.com', 'michelle.harris@enaara.com', 'kevin.martin@enaara.com'];
-            const departments = ['IT', 'HR', 'Sales', 'Operations', 'Finance'];
-            const statuses = ['Active', 'Active', 'Active', 'Active', 'Inactive'];
-
-            const users = [];
-            for (let i = 0; i < count && i < names.length; i++) {
-                users.push({
-                    id: i + 1,
-                    name: names[i],
-                    email: emails[i],
-                    department: departments[Math.floor(Math.random() * departments.length)],
-                    status: statuses[Math.floor(Math.random() * statuses.length)],
-                    avatar: this.getInitials(names[i])
-                });
-            }
-            return users;
+        // kept for compatibility — no longer called internally
+        generateUsersForRole: function (roleId, count) {
+            return [];
         },
 
-        getInitials: function(name) {
+        getInitials: function (name) {
             return name.split(' ').map(n => n[0]).join('').toUpperCase();
         }
     },
@@ -1110,7 +1110,7 @@ const ProjectData = {
     // ORGANIZATIONS DATA
     // ============================================
     organizations: {
-        generateSampleData: function() {
+        generateSampleData: function () {
             return [
                 {
                     id: 1,

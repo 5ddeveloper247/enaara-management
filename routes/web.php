@@ -16,6 +16,7 @@ use App\Http\Controllers\ModuleCategoryController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\RegistrationController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -105,6 +106,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::delete('/role/{id}/delete', [RoleController::class, 'destroy'])->name('admin.role.destroy');
     Route::get('/role/search', [RoleController::class, 'searchRole'])->name('admin.role.search');
     
+    Route::get('/register', [RegistrationController::class, 'index'])->name('admin.register.index');
     
     Route::get('/employee', [EmployeeController::class, 'index'])->name('admin.employee.index');
     Route::get('/employee/add', [EmployeeController::class, 'create'])->name('admin.employee.add');
@@ -136,13 +138,13 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual settings view
     // })->name('admin.settings');
     
-    // Route::get('/daily-logs', function () {
-    //     return view('admin.daily-logs.index');
-    // })->name('admin.daily-logs.index');
+    Route::get('/monthly-logs', function () {
+        return view('admin.monthly-logs.index');
+    })->name('admin.monthly-logs.index');
     
-    // Route::get('/employee', function () {
-    //     return view('admin.employee.index');
-    // })->name('admin.employee.index');
+    Route::get('/employee', function () {
+        return view('admin.employee.index');
+    })->name('admin.employee.index');
     
     // Route::get('/shift-planner', function () {
     //     return view('admin.shift-planner.index');
@@ -172,9 +174,9 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.balance-tracker.index');
     // })->name('admin.balance-tracker.index');
     
-    // Route::get('/roles', function () {
-    //     return view('admin.roles-permissions.index');
-    // })->name('admin.roles.index');
+    Route::get('/roles', function () {
+        return view('admin.roles-permissions.index');
+    })->name('admin.roles.index');
     
     // Route::get('/monthly-summary', function () {
     //     return view('admin.monthly-summary.index');

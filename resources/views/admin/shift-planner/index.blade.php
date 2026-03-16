@@ -134,6 +134,9 @@
     <!-- Shift Detail Canvas -->
     @include('admin.shift-planner.shift_detail_canvas')
 
+    <!-- Roster Shift Canvas (add/edit single assignment per cell) -->
+    @include('admin.shift-planner.roster_shift_canvas')
+
     <!-- Add/Edit Shift Canvas -->
     @include('admin.shift-planner.add_shift_canvas')
 
@@ -146,6 +149,8 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- FullCalendar JS -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <script src="{{ asset('js/dummy-data.js') }}"></script>
+    <script src="{{ asset('js/roster-render.js') }}"></script>
 
     <script>
         $(document).ready(function() {

@@ -2,10 +2,11 @@
 <aside class="admin-sidebar rounded-5">
     <div class="sidebar-header p-4">
         <div class="d-flex align-items-center justify-content-center">
-            <img src="{{ asset('images/enaara-logo.png') }}" alt="Enaara Logo" class="img-fluid" style="max-height: 60px; object-fit: contain;">
+            <img src="{{ asset('images/enaara-logo.png') }}" alt="Enaara Logo" class="img-fluid"
+                style="max-height: 60px; object-fit: contain;">
         </div>
     </div>
-    
+
     <nav class="sidebar-nav flex-fill overflow-y-auto">
         <ul class="list-unstyled mb-0">
             <!-- @if (validatePermissions('admin/dashboard'))
@@ -80,19 +81,12 @@
             @endforeach
 
 
-            
             {{-- EMPLOYE MANAGEMENT --}}
             <!-- <div class="text-white px-4 opacity-50 small mt-3 mb-2">Employee Management</div>
             <li class="mb-1 mx-3">
                 <a href="{{ url('/admin/users') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/users*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i>
                     <span>Users</span>
-                </a>
-            </li>
-            <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/employee') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/employee*') ? 'active' : '' }}">
-                    <i class="bi bi-people-fill me-2"></i>
-                    <span>Employee</span>
                 </a>
             </li>
             <li class="mb-1 mx-3">
@@ -206,14 +200,20 @@
             </li> -->
         </ul>
     </nav>
-    
+
     <div class="sidebar-footer p-4">
         <div class="d-flex flex-column align-items-center text-center">
             <div class="mb-2">
-                <img src="{{ asset('images/profile-placeholder.png') }}" alt="Profile" class="rounded-circle border-2" style="width: 50px; height: 50px; object-fit: cover; border-color: var(--primary-color) !important;" onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'User') }}&background=e6c673&color=000&size=80'">
+                <img src="{{ asset('images/profile-placeholder.png') }}" alt="Profile"
+                    class="rounded-circle border-2"
+                    style="width: 50px; height: 50px; object-fit: cover; border-color: var(--primary-color) !important;"
+                    onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'User') }}&background=e6c673&color=000&size=80'">
             </div>
             <h6 class="text-white fw-normal mb-0 small">{{ Auth::user()->name ?? 'Admin User' }}</h6>
-            <a href="{{ route('logout') }}" class="text-white text-decoration-none d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px;" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+            <a href="{{ route('logout') }}"
+                class="text-white text-decoration-none d-inline-flex align-items-center justify-content-center rounded-circle"
+                style="width: 36px; height: 36px;"
+                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <i class="bi bi-box-arrow-right fs-5"></i>
             </a>
             <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
@@ -222,4 +222,3 @@
         </div>
     </div>
 </aside>
-
