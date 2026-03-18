@@ -211,8 +211,8 @@
         // Away today data (currently empty or handled differently if needed)
         const awayToday = [];
 
-        // Quota warnings (currently empty)
-        const quotaWarnings = [];
+        // Personal Quota Summary from backend
+        const quotaWarnings = @json($personalQuota);
 
         $(document).ready(function() {
             // Initialize DataTables on the server-rendered table
@@ -312,13 +312,17 @@
                 }
             });
 
-            // Status actions
-            $(document).on('click', '.action-leave-btn', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            // Detail canvas actions
+            $('#approveDetailBtn').on('click', function() {
                 const requestId = $(this).data('request-id');
-                const actionCode = $(this).data('action');
-                handleLeaveAction(requestId, actionCode);
+                const action = $(this).data('action');
+                handleLeaveAction(requestId, action);
+            });
+
+            $('#rejectDetailBtn').on('click', function() {
+                const requestId = $(this).data('request-id');
+                const action = $(this).data('action');
+                handleLeaveAction(requestId, action);
             });
 
             // Prevent row expansion when clicking on actions column
@@ -360,15 +364,20 @@
             const container = $('#quotaWarnings');
             container.empty();
 
-            quotaWarnings.forEach(warning => {
-                const badgeClass = warning.status === 'critical' ? 'bg-danger' : 'bg-warning text-dark';
-                const item = `
-                    <div class="alert ${badgeClass} mb-2" role="alert">
-                        <div class="small fw-semibold">${warning.department}</div>
-                        <div class="small">${warning.percentage}% on leave - ${warning.date}</div>
+            if (quotaWarnings.length === 0) {
+                container.append('<div class="text-muted small p-3 text-center">No quota data available</div>');
+                return;
+            }
+
+            quotaWarnings.forEach(item => {
+                const badgeClass = item.percentage >= 90 ? 'bg-danger text-white' : 'bg-warning text-dark';
+                const html = `
+                    <div class="alert ${badgeClass} mb-2 p-2" role="alert" style="border:none; border-radius: 8px;">
+                        <div class="small fw-semibold">${item.type}</div>
+                        <div class="small">Balance: ${item.remaining} / ${item.total} (Used: ${item.used})</div>
                     </div>
                 `;
-                container.append(item);
+                container.append(html);
             });
         }
 
@@ -384,14 +393,15 @@
             return badges[code] || '<span class="badge bg-warning text-dark px-2 py-1 rounded-1">Pending</span>';
         }
 
-        function getLeaveTypeBadge(type) {
+        function getLeaveTypeBadge(type, label) {
             const badges = {
-                'annual': '<span class="badge bg-primary px-2 py-1 rounded-1">Annual Leave</span>',
-                'sick': '<span class="badge bg-danger px-2 py-1 rounded-1">Sick Leave</span>',
-                'casual': '<span class="badge bg-info text-dark px-2 py-1 rounded-1">Casual Leave</span>',
-                'comp-off': '<span class="badge bg-warning text-dark px-2 py-1 rounded-1">Comp-Off</span>'
+                'annual': 'bg-primary',
+                'sick': 'bg-danger',
+                'casual': 'bg-info text-dark',
+                'comp-off': 'bg-warning text-dark'
             };
-            return badges[type] || '<span class="badge bg-secondary px-2 py-1 rounded-1">Other</span>';
+            const bgClass = badges[type] || 'bg-secondary';
+            return `<span class="badge ${bgClass} px-2 py-1 rounded-1">${label || 'Other'}</span>`;
         }
 
         function getInitials(name) {
@@ -426,7 +436,7 @@
             $('#detailEmployeeName').text(request.employeeName);
             $('#detailEmployeeId').text(request.employeeId);
             $('#detailDepartment').text(request.department);
-            $('#detailLeaveType').html(getLeaveTypeBadge(request.leaveType));
+            $('#detailLeaveType').html(getLeaveTypeBadge(request.leaveType, request.leaveTypeLabel));
             $('#detailStartDate').text(formatDate(request.startDate));
             $('#detailEndDate').text(formatDate(request.endDate));
             $('#detailDays').text(request.days);
@@ -434,6 +444,87 @@
             $('#detailBalance').text(request.balance);
             $('#detailStatus').html(getStatusBadge(request.statusCode));
             $('#detailApprovalLevel').text(request.approvalLevel);
+
+            // Dynamic Timeline Logic
+            const timelineContainer = $('#approvalTimeline');
+            timelineContainer.empty();
+
+            // Step 1: Request Submitted
+            timelineContainer.append(`
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-check-circle-fill text-success me-3 fs-5"></i>
+                    <div>
+                        <div class="fw-semibold small">Request Submitted</div>
+                        <small class="opacity-75">By ${request.employeeName}</small>
+                    </div>
+                </div>
+            `);
+
+            // Step 2: Recommendations (Children)
+            let step2Icon = 'bi-circle text-white-50';
+            let step2Text = 'Waiting for Recommendation';
+            if (request.statusCode == 1) {
+                step2Icon = 'bi-check-circle-fill text-success';
+                step2Text = 'Recommended';
+            } else if (request.statusCode == 2) {
+                step2Icon = 'bi-x-circle-fill text-danger';
+                step2Text = 'Not Recommended';
+            } else if (request.statusCode >= 3) {
+                step2Icon = 'bi-check-circle-fill text-success';
+                step2Text = 'Recommendation Step Passed';
+            }
+            
+            timelineContainer.append(`
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi ${step2Icon} me-3 fs-5"></i>
+                    <div>
+                        <div class="fw-semibold small">Child Roles: ${step2Text}</div>
+                        <small class="opacity-75">Team/Department Members</small>
+                    </div>
+                </div>
+            `);
+
+            // Step 3: Final Approval (Parent)
+            let step3Icon = 'bi-circle text-white-50';
+            let step3Text = 'Awaiting Final Decision';
+            if (request.statusCode == 3) {
+                step3Icon = 'bi-check-circle-fill text-success';
+                step3Text = 'Approved';
+            } else if (request.statusCode == 4) {
+                step3Icon = 'bi-x-circle-fill text-danger';
+                step3Text = 'Rejected';
+            } else if (request.statusCode == 5) {
+                step3Icon = 'bi-dash-circle-fill text-secondary';
+                step3Text = 'Cancelled';
+            }
+
+            timelineContainer.append(`
+                <div class="d-flex align-items-center">
+                    <i class="bi ${step3Icon} me-3 fs-5"></i>
+                    <div>
+                        <div class="fw-semibold small">Parent Role: ${step3Text}</div>
+                        <small class="opacity-75">Reporting Manager / Super Admin</small>
+                    </div>
+                </div>
+            `);
+
+            // Setup Buttons
+            const approveBtn = $('#approveDetailBtn');
+            const rejectBtn = $('#rejectDetailBtn');
+
+            approveBtn.data('request-id', request.id);
+            rejectBtn.data('request-id', request.id);
+
+            if (request.isChild && request.statusCode == 0) {
+                approveBtn.show().data('action', 1).html('<i class="bi bi-hand-thumbs-up me-1"></i>Recommend');
+                rejectBtn.show().data('action', 2).html('<i class="bi bi-hand-thumbs-down me-1"></i>Not Recommend');
+            } else if (request.isParent && (request.statusCode == 0 || request.statusCode == 1 || request.statusCode == 2)) {
+                approveBtn.show().data('action', 3).html('<i class="bi bi-check-circle me-1"></i>Approve');
+                rejectBtn.show().data('action', 4).html('<i class="bi bi-x-circle me-1"></i>Reject');
+            } else {
+                approveBtn.hide();
+                rejectBtn.hide();
+            }
             
             const canvas = new bootstrap.Offcanvas(document.getElementById('leaveDetailCanvas'));
             canvas.show();

@@ -126,6 +126,9 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/employee/edit/{id}', [EmployeeController::class, 'update'])->name('admin.employee.update');
     Route::delete('/employee/{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
 
+    // Notifications
+    Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsReadAndRedirect'])->name('admin.notifications.read');
+    Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('admin.notifications.mark-all-read');
 
 
 
@@ -211,7 +214,5 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual reports view
     // })->name('admin.reports');
 
-    // Route::get('/analytics', function () {
-    //     return view('admin.dashboard'); // Placeholder - replace with actual analytics view
-    // })->name('admin.analytics');
+    
 });

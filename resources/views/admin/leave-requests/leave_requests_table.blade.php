@@ -36,7 +36,7 @@
                         'casual' => ['class' => 'bg-info text-dark', 'label' => 'Casual Leave'],
                         'comp-off' => ['class' => 'bg-warning text-dark', 'label' => 'Comp-Off'],
                     ];
-                    $type = $typeBadges[$request['leaveType']] ?? ['class' => 'bg-secondary', 'label' => 'Other'];
+                    $type = $typeBadges[$request['leaveType']] ?? ['class' => 'bg-secondary', 'label' => $request['leaveTypeLabel']];
 
                     $startDate = \Carbon\Carbon::parse($request['startDate']);
                     $endDate = \Carbon\Carbon::parse($request['endDate']);
@@ -91,31 +91,37 @@
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="1">
-                                        <i class="bi bi-hand-thumbs-up text-info me-2"></i>Recommend
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="2">
-                                        <i class="bi bi-hand-thumbs-down text-warning me-2"></i>Not Recommend
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="3">
-                                        <i class="bi bi-check-circle text-success me-2"></i>Approve
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="4">
-                                        <i class="bi bi-x-circle text-danger me-2"></i>Reject
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="5">
-                                        <i class="bi bi-slash-circle text-secondary me-2"></i>Cancel
-                                    </a>
-                                </li>
+                                
+                                @if($request['isChild'])
+                                    <li>
+                                        <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="1">
+                                            <i class="bi bi-hand-thumbs-up text-info me-2"></i>Recommend
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="2">
+                                            <i class="bi bi-hand-thumbs-down text-warning me-2"></i>Not Recommend
+                                        </a>
+                                    </li>
+                                @endif
+
+                                @if($request['isParent'] || (!$request['isChild'] && !$request['isParent']))
+                                    <li>
+                                        <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="3">
+                                            <i class="bi bi-check-circle text-success me-2"></i>Approve
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="4">
+                                            <i class="bi bi-x-circle text-danger me-2"></i>Reject
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="5">
+                                            <i class="bi bi-slash-circle text-secondary me-2"></i>Cancel
+                                        </a>
+                                    </li>
+                                @endif
                             </ul>
                         </div>
                     </td>

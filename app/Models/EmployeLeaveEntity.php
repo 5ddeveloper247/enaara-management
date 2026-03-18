@@ -13,6 +13,7 @@ class EmployeLeaveEntity extends Model
         'leave_request_id',
         'employee_id',
         'leave_type_id',
+        'department_id',
         'leave_date',
         'start_date',
         'end_date',

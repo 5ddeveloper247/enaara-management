@@ -12,6 +12,7 @@ class EmployeeLeaveQuota extends Model
     protected $fillable = [
         'employee_id',
         'leave_type_id',
+        'department_id',
         'year',
         'quota',
         'used',

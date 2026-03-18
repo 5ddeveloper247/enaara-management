@@ -29,14 +29,15 @@ class LeaveApprovalNotification extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject('Leave Request Approval Required')
-            ->greeting('Hello!')
-            ->line($employeeName . ' has submitted a leave request that requires your approval.')
-            ->line('Leave Type: ' . (optional($this->leaveRequest->leaveType)->name ?? '-'))
-            ->line('Start Date: ' . $this->leaveRequest->start_date)
-            ->line('End Date: ' . $this->leaveRequest->end_date)
-            ->line('Duration: ' . $this->leaveRequest->duration . ' day(s)')
-            ->action('View Leave Requests', url('/admin/leave-request'))
-            ->line('Please review the request.');
+            ->view('admin.emails.leave_approval', [
+                'recipientName' => $notifiable->name,
+                'senderName' => $employeeName,
+                'leaveType' => optional($this->leaveRequest->leaveType)->name ?? '-',
+                'startDate' => $this->leaveRequest->start_date,
+                'endDate' => $this->leaveRequest->end_date,
+                'duration' => $this->leaveRequest->duration,
+                'actionUrl' => url('/admin/leave-request'),
+            ]);
     }
 
     public function toArray(object $notifiable): array

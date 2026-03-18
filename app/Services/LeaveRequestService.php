@@ -20,14 +20,10 @@ class LeaveRequestService
         $employees = Employee::where('is_active', true)->orderBy('name')->get();
         $leaveTypes = LeaveType::where('is_active', true)->orderBy('name')->get();
 
-        $leaveRequests = EmployeLeaveRequest::with([
-            'fromEmployee.department:id,name',
-            'fromEmployee:id,name,department_id,organization_id',
-            'toEmployee:id,name,department_id,organization_id',
-            'leaveType:id,name',
-        ])
-            ->latest('id')
-            ->paginate(20);
+        $currentUser = Auth::user();
+        $currentEmployee = $currentUser?->employee;
+        $currentRole = $currentEmployee?->role;
+
         $statusMap = [
             0 => 'pending',
             1 => 'recommended',
@@ -36,7 +32,79 @@ class LeaveRequestService
             4 => 'rejected',
             5 => 'cancelled',
         ];
-        $mappedLeaveRequests = $leaveRequests->map(function ($request) use ($statusMap) {
+
+        $leaveRequests = EmployeLeaveRequest::with([
+            'fromEmployee.department:id,name',
+            'fromEmployee.role:id,parent_role_id,organization_id,department_id',
+            'fromEmployee:id,name,department_id,organization_id,role_id',
+            'toEmployee:id,name,department_id,organization_id,role_id',
+            'leaveType:id,name',
+        ])
+            ->when($currentRole, function ($query) use ($currentRole) {
+                $query->whereHas('fromEmployee.role', function ($roleQuery) use ($currentRole) {
+                    $roleQuery->where(function ($q) use ($currentRole) {
+                        // Logged in user is parent of requester
+                        $q->where('parent_role_id', $currentRole->id)
+                            ->where('organization_id', $currentRole->organization_id);
+
+                        if (!empty($currentRole->department_id)) {
+                            $q->where('department_id', $currentRole->department_id);
+                        }
+                    })->orWhere(function ($q) use ($currentRole) {
+                        // Logged in user is child of requester
+                        $q->where('id', $currentRole->parent_role_id)
+                            ->where('organization_id', $currentRole->organization_id);
+
+                        if (!empty($currentRole->department_id)) {
+                            $q->where('department_id', $currentRole->department_id);
+                        }
+                    });
+                });
+            })
+            ->latest('id')
+            ->paginate(20);
+
+        $mappedLeaveRequests = $leaveRequests->getCollection()->map(function ($request) use ($statusMap, $currentRole, $currentUser) {
+            $isApprover = ($currentUser && $currentUser->id === $request->to_user_id);
+
+            $requesterRole = optional($request->fromEmployee)->role;
+
+            $isParent = false;
+            $isChild = false;
+
+            if ($currentRole && $requesterRole) {
+                $sameOrganization = (int) $currentRole->organization_id === (int) $requesterRole->organization_id;
+
+                $sameDepartment = true;
+                if (!empty($currentRole->department_id) && !empty($requesterRole->department_id)) {
+                    $sameDepartment = (int) $currentRole->department_id === (int) $requesterRole->department_id;
+                }
+
+                if ($sameOrganization && $sameDepartment) {
+                    // I am parent of requester
+                    if ((int) $requesterRole->parent_role_id === (int) $currentRole->id) {
+                        $isParent = true;
+                    }
+
+                    // I am child of requester
+                    if ((int) $currentRole->parent_role_id === (int) $requesterRole->id) {
+                        $isChild = true;
+                    }
+                }
+            }
+
+            // Calculate balance for this specific leave type and employee
+            $maxAllowed = (float) (optional($request->leaveType)->annual_quota ?? 0);
+            $year = Carbon::parse($request->start_date)->year;
+            
+            $claimed = (float) EmployeLeaveRequest::where('from_employee_id', $request->from_employee_id)
+                ->where('leave_type_id', $request->leave_type_id)
+                ->whereYear('start_date', $year)
+                ->whereIn('status', [0, 1, 3])
+                ->sum('duration');
+            
+            $remaining = max(0, $maxAllowed - $claimed);
+
             return [
                 'id' => $request->id,
                 'employeeName' => optional($request->fromEmployee)->name ?? 'Unknown',
@@ -50,30 +118,83 @@ class LeaveRequestService
                 'reason' => $request->reason ?? '-',
                 'status' => $statusMap[$request->status] ?? 'pending',
                 'statusCode' => $request->status,
-                'approvalLevel' => 'Manager / HR',
+                'approvalLevel' => $isParent ? 'Parent Approval' : ($isChild ? 'Child Recommendation' : '-'),
                 'pendingSince' => $request->created_at ? $request->created_at->diffForHumans() : '-',
-                'balance' => 0
+                'balance' => $remaining . ' / ' . $maxAllowed,
+                'isParent' => $isParent,
+                'isChild' => $isChild,
+                'isApprover' => $isApprover,
+                'canApprove' => $isParent,
+                'canReject' => $isParent,
+                'canCancel' => $isParent,
+                'canRecommend' => $isChild,
+                'canNotRecommend' => $isChild,
             ];
         })->values()->all();
 
-        $pendingCount = $leaveRequests->whereIn('status', [0, 1, 2])->count();
-        $approvedTodayCount = $leaveRequests->where('status', 3)->where('updated_at', '>=', now()->startOfDay())->count();
+        $pendingCount = EmployeLeaveRequest::whereIn('status', [0, 1, 2])->count();
+        $approvedTodayCount = EmployeLeaveRequest::where('status', 3)
+            ->where('updated_at', '>=', now()->startOfDay())
+            ->count();
         $awayTodayCount = EmployeLeaveRequest::where('status', 3)
             ->where('start_date', '<=', now()->toDateString())
             ->where('end_date', '>=', now()->toDateString())
             ->count();
-        $overdueCount = $leaveRequests->whereIn('status', [0, 1, 2])->where('created_at', '<', now()->subDays(2))->count();
+        $overdueCount = EmployeLeaveRequest::whereIn('status', [0, 1, 2])
+            ->where('created_at', '<', now()->subDays(2))
+            ->count();
 
-        return view('admin.leave-requests.index', compact(
-            'employees',
-            'leaveTypes',
-            'leaveRequests',
-            'mappedLeaveRequests',
-            'pendingCount',
-            'approvedTodayCount',
-            'awayTodayCount',
-            'overdueCount'
-        ));
+        $personalQuota = $currentEmployee ? $this->getPersonalQuotaSummary($currentEmployee->id) : [];
+
+        return view('admin.leave-requests.index', [
+            'employees' => $employees,
+            'leaveTypes' => $leaveTypes,
+            'leaveRequests' => $leaveRequests,
+            'mappedLeaveRequests' => $mappedLeaveRequests,
+            'pendingCount' => $pendingCount,
+            'approvedTodayCount' => $approvedTodayCount,
+            'awayTodayCount' => $awayTodayCount,
+            'overdueCount' => $overdueCount,
+            'personalQuota' => $personalQuota,
+        ]);
+    }
+
+    public function getPersonalQuotaSummary($employeeId)
+    {
+        $employee = Employee::find($employeeId);
+        $year = now()->year;
+        
+        $organizationId = $employee?->role?->organization_id;
+        $departmentId = $employee?->role?->department_id;
+
+        $leaveTypes = LeaveType::where('is_active', true)
+            ->when($organizationId, fn($q) => $q->where(function ($qq) use ($organizationId) {
+                $qq->whereNull('organization_id')->orWhere('organization_id', $organizationId);
+            }))
+            ->when($departmentId, fn($q) => $q->where(function ($qq) use ($departmentId) {
+                $qq->whereNull('department_id')->orWhere('department_id', $departmentId);
+            }))
+            ->get();
+        
+        $summary = [];
+        foreach ($leaveTypes as $type) {
+            $maxAllowed = (float) $type->annual_quota;
+            
+            $claimed = (float) EmployeLeaveRequest::where('from_employee_id', $employeeId)
+                ->where('leave_type_id', $type->id)
+                ->whereYear('start_date', $year)
+                ->whereIn('status', [0, 1, 3])
+                ->sum('duration');
+
+            $summary[] = [
+                'type' => $type->name,
+                'total' => $maxAllowed,
+                'used' => $claimed,
+                'remaining' => max(0, $maxAllowed - $claimed),
+                'percentage' => $maxAllowed > 0 ? min(100, round(($claimed / $maxAllowed) * 100)) : 0
+            ];
+        }
+        return $summary;
     }
 
     public function store(array $validated): EmployeLeaveRequest
@@ -91,14 +212,54 @@ class LeaveRequestService
 
         $duration = $startDate->diffInDays($endDate) + 1;
 
-        $toEmployee = $this->resolveParentApproverEmployee($fromEmployee);
-        $approverUser = $toEmployee ? User::where('employee_id', $toEmployee->id)->first() : null;
+        // Date Conflict Check (No overlapping leaves)
+        $hasConflict = EmployeLeaveRequest::where('from_employee_id', $fromEmployee->id)
+            ->whereIn('status', [0, 1, 3]) // 0:pending, 1:recommended, 3:approved
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->where(function ($q) use ($startDate, $endDate) {
+                    $q->where('start_date', '<=', $endDate->toDateString())
+                      ->where('end_date', '>=', $startDate->toDateString());
+                });
+            })
+            ->exists();
 
+        if ($hasConflict) {
+            throw ValidationException::withMessages([
+                'start_date' => 'You already have a pending or approved leave request during this date range.',
+            ]);
+        }
+
+        // Quota Check
+        $year = $startDate->year;
+        $leaveType = LeaveType::findOrFail($validated['leave_type_id']);
+        $maxAllowed = (float) ($leaveType->annual_quota ?? 0);
+
+        // Sum up all days already claimed for this year (Pending, Recommended, or Approved)
+        $alreadyClaimed = (float) EmployeLeaveRequest::where('from_employee_id', $fromEmployee->id)
+            ->where('leave_type_id', $validated['leave_type_id'])
+            ->whereYear('start_date', $year)
+            ->whereIn('status', [0, 1, 3]) // 0:pending, 1:recommended, 3:approved
+            ->sum('duration');
+
+        if (($alreadyClaimed + $duration) > $maxAllowed) {
+            $remaining = max(0, $maxAllowed - $alreadyClaimed);
+            throw ValidationException::withMessages([
+                'leave_type_id' => "Insufficient leave balance. You have {$remaining} day(s) remaining for this leave type in {$year}, but you are requesting {$duration} day(s)."
+            ]);
+        }
+
+        $parentApprover = $this->resolveParentApproverEmployee($fromEmployee);
+        $childApprovers = $this->resolveChildEmployees($fromEmployee);
+
+        // Create the single master leave request
+        $parentApproverUser = $parentApprover ? User::where('employee_id', $parentApprover->id)->first() : null;
+        
         $leaveRequest = EmployeLeaveRequest::create([
             'from_employee_id' => $fromEmployee->id,
-            'to_employee_id' => $toEmployee?->id,
+            'to_employee_id' => $parentApprover?->id,
             'from_user_id' => Auth::id(),
-            'to_user_id' => $approverUser?->id,
+            'to_user_id' => $parentApproverUser?->id,
+            'department_id' => $fromEmployee->department_id,
             'leave_type_id' => $validated['leave_type_id'],
             'start_date' => $startDate->format('Y-m-d'),
             'end_date' => $endDate->format('Y-m-d'),
@@ -113,9 +274,43 @@ class LeaveRequestService
             'leaveType:id,name',
         ]);
 
-        $this->notifyApprover($leaveRequest, $toEmployee);
+        // Notify Parent
+        if ($parentApprover) {
+            $this->notifyApprover($leaveRequest, $parentApprover);
+        }
+
+        // Notify all Children
+        foreach ($childApprovers as $child) {
+            $this->notifyApprover($leaveRequest, $child);
+        }
 
         return $leaveRequest;
+    }
+
+    private function resolveChildEmployees(Employee $fromEmployee): \Illuminate\Support\Collection
+    {
+        $currentRole = $fromEmployee->role;
+
+        if (!$currentRole) {
+            return collect();
+        }
+
+        // Find all roles that have this role as parent
+        $childRoles = Role::where('parent_role_id', $currentRole->id)
+            ->where('is_active', true)
+            ->where('organization_id', $currentRole->organization_id)
+            ->get();
+
+        if ($childRoles->isEmpty()) {
+            return collect();
+        }
+
+        return Employee::query()
+            ->where('is_active', true)
+            ->where('id', '!=', $fromEmployee->id)
+            ->whereIn('role_id', $childRoles->pluck('id'))
+            ->where('department_id', $fromEmployee->department_id)
+            ->get();
     }
 
     private function resolveParentApproverEmployee(Employee $fromEmployee): ?Employee

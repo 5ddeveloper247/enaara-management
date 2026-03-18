@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 class EmployeLeaveRequest extends Model
 {
-    protected $table = 'employe_leave_requests';
     protected $fillable = [
         'from_employee_id',
         'to_employee_id',
@@ -22,6 +21,8 @@ class EmployeLeaveRequest extends Model
         'reason',
         'status',
         'duration',
+        'department_id',
+        'action_type',
     ];
 
     protected $casts = [
@@ -66,45 +67,53 @@ class EmployeLeaveRequest extends Model
     {
         static::updated(function (EmployeLeaveRequest $leaveRequest) {
             // When request becomes approved (status=3), create day-wise leave entities.
-            if (!$leaveRequest->wasChanged('status') || (int) $leaveRequest->status !== 3) {
-                return;
-            }
-
-            if (!$leaveRequest->start_date || !$leaveRequest->end_date || !$leaveRequest->from_employee_id) {
-                return;
-            }
-
-            $start = Carbon::parse($leaveRequest->start_date)->startOfDay();
-            $end = Carbon::parse($leaveRequest->end_date)->startOfDay();
-            if ($end->lt($start)) {
-                return;
-            }
-
-            DB::transaction(function () use ($leaveRequest, $start, $end) {
-                $rows = [];
-                $cursor = $start->copy();
-                while ($cursor->lte($end)) {
-                    $rows[] = [
-                        'leave_request_id' => $leaveRequest->id,
-                        'employee_id' => $leaveRequest->from_employee_id,
-                        'leave_type_id' => $leaveRequest->leave_type_id,
-                        'leave_date' => $cursor->toDateString(),
-                        'start_date' => $cursor->toDateString(),
-                        'end_date' => $cursor->toDateString(),
-                        'status' => 0,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                    $cursor->addDay();
+            if ((int) $leaveRequest->status === 3) {
+                if (!$leaveRequest->start_date || !$leaveRequest->end_date || !$leaveRequest->from_employee_id) {
+                    return;
                 }
 
-                // Avoid duplicates if approved twice.
-                EmployeLeaveEntity::query()->upsert(
-                    $rows,
-                    ['leave_request_id', 'leave_date'],
-                    ['employee_id', 'leave_type_id', 'status', 'updated_at']
-                );
-            });
+                $start = Carbon::parse($leaveRequest->start_date)->startOfDay();
+                $end = Carbon::parse($leaveRequest->end_date)->startOfDay();
+                if ($end->lt($start)) {
+                    return;
+                }
+
+                DB::transaction(function () use ($leaveRequest, $start, $end) {
+                    // First clear any existing entities (in case dates changed or we are re-approving)
+                    $leaveRequest->leaveEntities()->delete();
+
+                    $rows = [];
+                    $cursor = $start->copy();
+                    
+                    // Fallback to employee's department if not set on the request (e.g. for older records)
+                    $deptId = $leaveRequest->department_id;
+                    if (!$deptId) {
+                        $deptId = Employee::where('id', $leaveRequest->from_employee_id)->value('department_id');
+                    }
+
+                    while ($cursor->lte($end)) {
+                        $rows[] = [
+                            'leave_request_id' => $leaveRequest->id,
+                            'employee_id' => $leaveRequest->from_employee_id,
+                            'leave_type_id' => $leaveRequest->leave_type_id,
+                            'department_id' => $deptId,
+                            'leave_date' => $cursor->toDateString(),
+                            'start_date' => $cursor->toDateString(),
+                            'end_date' => $cursor->toDateString(),
+                            'status' => 0,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                        $cursor->addDay();
+                    }
+
+                    // Insert fresh entities
+                    EmployeLeaveEntity::query()->insert($rows);
+                });
+            } else {
+                // If the request is not approved (or no longer approved), delete any entities.
+                $leaveRequest->leaveEntities()->delete();
+            }
         });
     }
 }
