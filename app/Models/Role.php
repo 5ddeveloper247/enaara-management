@@ -14,6 +14,9 @@ class Role extends Model
         'name',
         'slug',
         'description',
+        'organization_id',
+        'department_id',
+        'parent_role_id',
         'is_active',
         'is_primary',
     ];
@@ -50,5 +53,25 @@ class Role extends Model
     public function userRoles(): HasMany
     {
         return $this->hasMany(UserRole::class);
+    }
+    
+    public function parentRole()
+    {
+        return $this->belongsTo(Role::class, 'parent_role_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Role::class, 'parent_role_id');
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
     }
 }

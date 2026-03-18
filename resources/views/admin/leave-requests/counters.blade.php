@@ -6,7 +6,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <small class="text-muted d-block mb-1">Pending Requests</small>
-                        <h3 class="mb-0 fw-bold" id="pendingRequestsCount">12</h3>
+                        <h3 class="mb-0 fw-bold" id="pendingRequestsCount">{{ $pendingCount }}</h3>
                     </div>
                     <div>
                         <i class="bi bi-clock-history text-warning fs-4"></i>
@@ -28,7 +28,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <small class="text-muted d-block mb-1">Approved Today</small>
-                        <h3 class="mb-0 fw-bold" id="approvedTodayCount">8</h3>
+                        <h3 class="mb-0 fw-bold" id="approvedTodayCount">{{ $approvedTodayCount }}</h3>
                     </div>
                     <div>
                         <i class="bi bi-check-circle text-success fs-4"></i>
@@ -50,7 +50,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <small class="text-muted d-block mb-1">Away Today</small>
-                        <h3 class="mb-0 fw-bold" id="awayTodayCount">15</h3>
+                        <h3 class="mb-0 fw-bold" id="awayTodayCount">{{ $awayTodayCount }}</h3>
                     </div>
                     <div>
                         <i class="bi bi-person-x text-info fs-4"></i>
@@ -72,7 +72,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <small class="text-muted d-block mb-1">Overdue (>48hrs)</small>
-                        <h3 class="mb-0 fw-bold text-danger" id="overdueRequestsCount">5</h3>
+                        <h3 class="mb-0 fw-bold text-danger" id="overdueRequestsCount">{{ $overdueCount }}</h3>
                     </div>
                     <div>
                         <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>

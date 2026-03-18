@@ -7,7 +7,9 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-        <form id="addLeaveRequestForm">
+        <form id="addLeaveRequestForm" method="POST" action="{{ route('admin.leave.request.store') }}">
+            @csrf
+            <div class="alert alert-danger d-none mb-3" data-form-errors role="alert"></div>
             <!-- Employee Selection -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
@@ -16,12 +18,13 @@
                 
                 <div class="mb-3">
                     <label for="leaveEmployee" class="form-label fw-semibold small text-white">Select Employee <span class="text-danger">*</span></label>
-                    <select class="form-select" id="leaveEmployee" required>
+                    <select class="form-select" id="leaveEmployee" name="employee_id" required>
                         <option value="">Select Employee</option>
-                        <option value="1">Ahmed Ali (EMP-001) - Sales</option>
-                        <option value="2">Zainab Malik (EMP-002) - HR</option>
-                        <option value="3">Bilal Ahmed (EMP-003) - IT</option>
-                        <option value="4">Hira Ali (EMP-004) - Operations</option>
+                        @isset($employees)
+                            @foreach($employees as $employee)
+                                <option value="{{ $employee->id }}">{{ $employee->name }}</option>
+                            @endforeach
+                        @endisset
                     </select>
                 </div>
 
@@ -56,12 +59,13 @@
                 <!-- Leave Type -->
                 <div class="mb-3">
                     <label for="leaveType" class="form-label fw-semibold small text-white">Leave Type <span class="text-danger">*</span></label>
-                    <select class="form-select" id="leaveType" required>
+                    <select class="form-select" id="leaveType" name="leave_type_id" required>
                         <option value="">Select Leave Type</option>
-                        <option value="annual">Annual Leave</option>
-                        <option value="sick">Sick Leave</option>
-                        <option value="casual">Casual Leave</option>
-                        <option value="comp-off">Compensatory Off</option>
+                        @isset($leaveTypes)
+                            @foreach($leaveTypes as $leaveType)
+                                <option value="{{ $leaveType->id }}">{{ $leaveType->name }}</option>
+                            @endforeach
+                        @endisset
                     </select>
                 </div>
 
@@ -69,11 +73,11 @@
                 <div class="row g-3 mb-3">
                     <div class="col-6">
                         <label for="leaveStartDate" class="form-label fw-semibold small text-white">Start Date <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="leaveStartDate" required>
+                        <input type="date" class="form-control" id="leaveStartDate" name="start_date" required>
                     </div>
                     <div class="col-6">
                         <label for="leaveEndDate" class="form-label fw-semibold small text-white">End Date <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="leaveEndDate" required>
+                        <input type="date" class="form-control" id="leaveEndDate" name="end_date" required>
                     </div>
                 </div>
 
@@ -88,7 +92,7 @@
                 <!-- Reason -->
                 <div class="mb-3">
                     <label for="leaveReason" class="form-label fw-semibold small text-white">Reason <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="leaveReason" rows="3" placeholder="Enter reason for leave" required></textarea>
+                    <textarea class="form-control" id="leaveReason" name="reason" rows="3" placeholder="Enter reason for leave" required></textarea>
                 </div>
 
                 <!-- Medical Certificate (for Sick Leave) -->
@@ -121,92 +125,12 @@
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
         <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
-            <button type="button" class="btn btn-light text-dark border-0" id="submitLeaveRequestBtn">
+            <button type="submit" form="addLeaveRequestForm" class="btn btn-light text-dark border-0" id="submitLeaveRequestBtn">
                 <i class="bi bi-check-lg me-1"></i>Submit Request
             </button>
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const startDateInput = document.getElementById('leaveStartDate');
-    const endDateInput = document.getElementById('leaveEndDate');
-    const leaveTypeSelect = document.getElementById('leaveType');
-    const calculatedDaysEl = document.getElementById('calculatedDays');
-    const medicalCertSection = document.getElementById('medicalCertSection');
-
-    // Calculate days when dates change
-    function calculateDays() {
-        if (startDateInput.value && endDateInput.value) {
-            const start = new Date(startDateInput.value);
-            const end = new Date(endDateInput.value);
-            if (end >= start) {
-                const diffTime = Math.abs(end - start);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end
-                calculatedDaysEl.textContent = diffDays;
-            } else {
-                calculatedDaysEl.textContent = '0';
-            }
-        } else {
-            calculatedDaysEl.textContent = '0';
-        }
-    }
-
-    startDateInput.addEventListener('change', calculateDays);
-    endDateInput.addEventListener('change', calculateDays);
-
-    // Show/hide medical certificate section
-    leaveTypeSelect.addEventListener('change', function() {
-        if (this.value === 'sick') {
-            medicalCertSection.style.display = 'block';
-        } else {
-            medicalCertSection.style.display = 'none';
-        }
-    });
-
-    // Reset form when offcanvas is hidden
-    const addLeaveCanvas = document.getElementById('addLeaveRequestCanvas');
-    if (addLeaveCanvas) {
-        addLeaveCanvas.addEventListener('hidden.bs.offcanvas', function() {
-            document.getElementById('addLeaveRequestForm').reset();
-            calculatedDaysEl.textContent = '0';
-            medicalCertSection.style.display = 'none';
-        });
-    }
-
-    // Handle form submission
-    const submitBtn = document.getElementById('submitLeaveRequestBtn');
-    if (submitBtn) {
-        submitBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const form = document.getElementById('addLeaveRequestForm');
-            if (form && form.checkValidity()) {
-                const formData = {
-                    employee: document.getElementById('leaveEmployee').value,
-                    leaveType: document.getElementById('leaveType').value,
-                    startDate: document.getElementById('leaveStartDate').value,
-                    endDate: document.getElementById('leaveEndDate').value,
-                    days: calculatedDaysEl.textContent,
-                    reason: document.getElementById('leaveReason').value,
-                    medicalCertificate: document.getElementById('medicalCertificate').files[0]
-                };
-                
-                console.log('Leave Request data:', formData);
-                // TODO: Implement API call to submit leave request
-                
-                // Close offcanvas
-                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('addLeaveRequestCanvas'));
-                if (offcanvas) {
-                    offcanvas.hide();
-                }
-            } else if (form) {
-                form.reportValidity();
-            }
-        });
-    }
-});
-</script>
-
-
-
+@push('scripts')
+    <script src="{{ asset('js/leave-request.js') }}"></script>
+@endpush
