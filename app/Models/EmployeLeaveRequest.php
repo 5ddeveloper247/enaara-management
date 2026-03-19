@@ -100,6 +100,7 @@ class EmployeLeaveRequest extends Model
                             'leave_date' => $cursor->toDateString(),
                             'start_date' => $cursor->toDateString(),
                             'end_date' => $cursor->toDateString(),
+                            'duration' => 1,
                             'status' => 0,
                             'created_at' => now(),
                             'updated_at' => now(),

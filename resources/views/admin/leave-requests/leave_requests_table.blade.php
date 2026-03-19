@@ -92,7 +92,7 @@
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 
-                                @if($request['isChild'])
+                                @if($request['canRecommend'] || $request['canNotRecommend'])
                                     <li>
                                         <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="1">
                                             <i class="bi bi-hand-thumbs-up text-info me-2"></i>Recommend
@@ -105,17 +105,23 @@
                                     </li>
                                 @endif
 
-                                @if($request['isParent'] || (!$request['isChild'] && !$request['isParent']))
+                                @if($request['canApprove'])
                                     <li>
                                         <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="3">
                                             <i class="bi bi-check-circle text-success me-2"></i>Approve
                                         </a>
                                     </li>
+                                @endif
+
+                                @if($request['canReject'])
                                     <li>
                                         <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="4">
                                             <i class="bi bi-x-circle text-danger me-2"></i>Reject
                                         </a>
                                     </li>
+                                @endif
+
+                                @if($request['canCancel'])
                                     <li>
                                         <a class="dropdown-item action-leave-btn" href="#" data-request-id="{{ $request['id'] }}" data-action="5">
                                             <i class="bi bi-slash-circle text-secondary me-2"></i>Cancel

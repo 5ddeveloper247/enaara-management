@@ -15,7 +15,4 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })
-    ->withSchedule(function ($schedule) {
-        $schedule->command('leaves:process-daily')->dailyAt('23:59');
     })->create();

@@ -64,7 +64,9 @@ class LeaveRequestService
             ->latest('id')
             ->paginate(20);
 
-        $mappedLeaveRequests = $leaveRequests->getCollection()->map(function ($request) use ($statusMap, $currentRole, $currentUser) {
+        $isSuperAdmin = \DB::table('user_roles')->where('user_id', $currentUser->id)->where('role_id', 1)->exists();
+
+        $mappedLeaveRequests = $leaveRequests->getCollection()->map(function ($request) use ($statusMap, $currentRole, $currentUser, $isSuperAdmin) {
             $isApprover = ($currentUser && $currentUser->id === $request->to_user_id);
 
             $requesterRole = optional($request->fromEmployee)->role;
@@ -124,11 +126,12 @@ class LeaveRequestService
                 'isParent' => $isParent,
                 'isChild' => $isChild,
                 'isApprover' => $isApprover,
-                'canApprove' => $isParent,
-                'canReject' => $isParent,
-                'canCancel' => $isParent,
-                'canRecommend' => $isChild,
-                'canNotRecommend' => $isChild,
+                'isSuperAdmin' => $isSuperAdmin,
+                'canApprove' => $isParent || $isSuperAdmin,
+                'canReject' => $isParent || $isSuperAdmin,
+                'canCancel' => $isParent || $isSuperAdmin,
+                'canRecommend' => $isChild && !$isParent && in_array($request->status, [0, 1, 2]),
+                'canNotRecommend' => $isChild && !$isParent && in_array($request->status, [0, 1, 2]),
             ];
         })->values()->all();
 
@@ -392,7 +395,62 @@ class LeaveRequestService
         ]);
 
         $leaveRequest = EmployeLeaveRequest::findOrFail($id);
-        $leaveRequest->status = $request->input('status');
+        $newStatus = (int) $request->input('status');
+        $currentStatus = (int) $leaveRequest->status;
+
+        $currentUser = Auth::user();
+        $isSuperAdmin = \DB::table('user_roles')->where('user_id', $currentUser->id)->where('role_id', 1)->exists();
+
+        $currentEmployee = $currentUser->employee;
+        $currentRole = optional($currentEmployee)->role;
+
+        $requesterEmployee = $leaveRequest->fromEmployee;
+        $requesterRole = optional($requesterEmployee)->role;
+
+        // Role check logic
+        $isParent = false;
+        $isChild = false;
+
+        if ($currentRole && $requesterRole) {
+            $sameOrganization = (int) $currentRole->organization_id === (int) $requesterRole->organization_id;
+            $sameDepartment = true;
+            if (!empty($currentRole->department_id) && !empty($requesterRole->department_id)) {
+                $sameDepartment = (int) $currentRole->department_id === (int) $requesterRole->department_id;
+            }
+
+            if ($sameOrganization && $sameDepartment) {
+                if ((int) $requesterRole->parent_role_id === (int) $currentRole->id) {
+                    $isParent = true;
+                }
+                if ((int) $currentRole->parent_role_id === (int) $requesterRole->id) {
+                    $isChild = true;
+                }
+            }
+        }
+
+        // Permissions Validations
+        if (!$isSuperAdmin) {
+            if ($isChild && !$isParent) {
+                if (!in_array($currentStatus, [0, 1, 2])) {
+                    $msg = 'Children can only act on pending or recommended requests.';
+                    return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
+                }
+                if (!in_array($newStatus, [1, 2])) {
+                    $msg = 'Children can only recommend or not recommend.';
+                    return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
+                }
+            } elseif ($isParent) {
+                if (!in_array($newStatus, [3, 4, 5])) {
+                    $msg = 'Parents can only approve, reject or cancel.';
+                    return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
+                }
+            } else {
+                $msg = 'You do not have permission to act on this request.';
+                return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
+            }
+        }
+
+        $leaveRequest->status = $newStatus;
         $leaveRequest->save();
 
         if ($request->expectsJson()) {
