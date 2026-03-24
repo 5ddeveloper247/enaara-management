@@ -147,10 +147,12 @@ class LeaveRequestService
             $claimed = (float) EmployeLeaveRequest::where('from_employee_id', $employeeId)
                 ->where('leave_type_id', $type->id)
                 ->whereYear('start_date', $year)
-                ->whereIn('status', [0, 1, 3])
+                ->whereIn('status', [3]) // Only count approved for the "Used" label in charts
+                ->whereIn('action_type', [0, 2])
                 ->sum('duration');
 
             $summary[] = [
+                'id' => $type->id,
                 'type' => $type->name,
                 'total' => $maxAllowed,
                 'used' => $claimed,
@@ -159,6 +161,59 @@ class LeaveRequestService
             ];
         }
         return $summary;
+    }
+
+    public function getPersonalLeaveHistory($employeeId)
+    {
+        $statusMap = [
+            0 => 'pending',
+            1 => 'recommended',
+            2 => 'not_recommended',
+            3 => 'approved',
+            4 => 'rejected',
+            5 => 'cancelled',
+        ];
+
+        $statusLabelMap = [
+            0 => 'Pending Approval',
+            1 => 'Recommended',
+            2 => 'Not Recommended',
+            3 => 'Approved',
+            4 => 'Rejected',
+            5 => 'Cancelled',
+        ];
+
+        $history = EmployeLeaveRequest::with('leaveType')
+            ->where('from_employee_id', $employeeId)
+            ->whereIn('action_type', [0, 2]) // Master rows
+            ->latest('start_date')
+            ->get();
+
+        return $history->map(function ($h) use ($statusMap, $statusLabelMap) {
+            $startDate = Carbon::parse($h->start_date);
+            $endDate = Carbon::parse($h->end_date);
+            $today = Carbon::today();
+
+            $category = 'past';
+            if ($startDate->isFuture()) {
+                $category = 'upcoming';
+            } elseif ($today->between($startDate, $endDate)) {
+                $category = 'active';
+            }
+
+            return [
+                'id' => $h->id,
+                'type' => $h->leaveType ? strtolower(str_replace(' ', '-', $h->leaveType->name)) : 'other',
+                'typeLabel' => $h->leaveType ? $h->leaveType->name : 'Other',
+                'startDate' => $h->start_date,
+                'endDate' => $h->end_date,
+                'days' => $h->duration,
+                'reason' => $h->reason,
+                'status' => $statusMap[$h->status] ?? 'pending',
+                'statusLabel' => $statusLabelMap[$h->status] ?? 'Pending',
+                'category' => $category,
+            ];
+        });
     }
 
     public function store(array $validated): EmployeLeaveRequest
@@ -417,6 +472,12 @@ class LeaveRequestService
 
         $leaveRequest->status = $newStatus;
         $leaveRequest->save();
+
+        // Notify the original requester about the status update
+        $requesterUser = User::where('id', $leaveRequest->from_user_id)->first();
+        if ($requesterUser) {
+            $requesterUser->notify(new \App\Notifications\LeaveStatusUpdateNotification($leaveRequest, Auth::user()->name));
+        }
 
         // Sync final status from Approver (Type 2) to Recommender (Type 1)
         if ((int)$leaveRequest->action_type === 2 && in_array($newStatus, [3, 4, 5])) {

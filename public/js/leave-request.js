@@ -140,6 +140,12 @@
     }
 
     if (canvasEl) {
+      canvasEl.addEventListener('show.bs.offcanvas', function () {
+        // If employee is pre-selected (like on My Leaves), trigger data load
+        if (employeeSelect && employeeSelect.value) {
+            employeeSelect.dispatchEvent(new Event('change'));
+        }
+      });
       canvasEl.addEventListener('hidden.bs.offcanvas', function () {
         form.reset();
         clearFormError(form);

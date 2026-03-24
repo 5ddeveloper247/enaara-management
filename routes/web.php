@@ -174,9 +174,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
 
 
 
-    Route::get('/my-leaves', function () {
-        return view('admin.my-leaves.index');
-    })->name('admin.my-leaves.index');
+    Route::get('/my-leaves', [LeaveRequestController::class, 'myLeaves'])->name('admin.my.leaves.index');
 
     // Route::get('/leave-calendar', function () {
     //     return view('admin.leave-calendar.index');
