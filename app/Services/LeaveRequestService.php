@@ -33,6 +33,8 @@ class LeaveRequestService
             5 => 'cancelled',
         ];
 
+        $isSuperAdmin = \DB::table('user_roles')->where('user_id', $currentUser->id)->where('role_id', 1)->exists();
+
         $leaveRequests = EmployeLeaveRequest::with([
             'fromEmployee.department:id,name',
             'fromEmployee.role:id,parent_role_id,organization_id,department_id',
@@ -40,60 +42,17 @@ class LeaveRequestService
             'toEmployee:id,name,department_id,organization_id,role_id',
             'leaveType:id,name',
         ])
-            ->when($currentRole, function ($query) use ($currentRole) {
-                $query->whereHas('fromEmployee.role', function ($roleQuery) use ($currentRole) {
-                    $roleQuery->where(function ($q) use ($currentRole) {
-                        // Logged in user is parent of requester
-                        $q->where('parent_role_id', $currentRole->id)
-                            ->where('organization_id', $currentRole->organization_id);
-
-                        if (!empty($currentRole->department_id)) {
-                            $q->where('department_id', $currentRole->department_id);
-                        }
-                    })->orWhere(function ($q) use ($currentRole) {
-                        // Logged in user is child of requester
-                        $q->where('id', $currentRole->parent_role_id)
-                            ->where('organization_id', $currentRole->organization_id);
-
-                        if (!empty($currentRole->department_id)) {
-                            $q->where('department_id', $currentRole->department_id);
-                        }
-                    });
+            ->when(!$isSuperAdmin && $currentEmployee, function ($query) use ($currentEmployee) {
+                $query->where(function($q) use ($currentEmployee) {
+                    $q->where('from_employee_id', $currentEmployee->id)
+                      ->orWhere('to_employee_id', $currentEmployee->id);
                 });
             })
             ->latest('id')
             ->paginate(20);
 
-        $isSuperAdmin = \DB::table('user_roles')->where('user_id', $currentUser->id)->where('role_id', 1)->exists();
-
-        $mappedLeaveRequests = $leaveRequests->getCollection()->map(function ($request) use ($statusMap, $currentRole, $currentUser, $isSuperAdmin) {
+        $mappedLeaveRequests = $leaveRequests->getCollection()->map(function ($request) use ($statusMap, $currentUser, $isSuperAdmin) {
             $isApprover = ($currentUser && $currentUser->id === $request->to_user_id);
-
-            $requesterRole = optional($request->fromEmployee)->role;
-
-            $isParent = false;
-            $isChild = false;
-
-            if ($currentRole && $requesterRole) {
-                $sameOrganization = (int) $currentRole->organization_id === (int) $requesterRole->organization_id;
-
-                $sameDepartment = true;
-                if (!empty($currentRole->department_id) && !empty($requesterRole->department_id)) {
-                    $sameDepartment = (int) $currentRole->department_id === (int) $requesterRole->department_id;
-                }
-
-                if ($sameOrganization && $sameDepartment) {
-                    // I am parent of requester
-                    if ((int) $requesterRole->parent_role_id === (int) $currentRole->id) {
-                        $isParent = true;
-                    }
-
-                    // I am child of requester
-                    if ((int) $currentRole->parent_role_id === (int) $requesterRole->id) {
-                        $isChild = true;
-                    }
-                }
-            }
 
             // Calculate balance for this specific leave type and employee
             $maxAllowed = (float) (optional($request->leaveType)->annual_quota ?? 0);
@@ -103,9 +62,13 @@ class LeaveRequestService
                 ->where('leave_type_id', $request->leave_type_id)
                 ->whereYear('start_date', $year)
                 ->whereIn('status', [0, 1, 3])
+                ->whereIn('action_type', [0, 2]) // Only count approver rows
                 ->sum('duration');
             
             $remaining = max(0, $maxAllowed - $claimed);
+
+            $canRecommend = $isApprover && $request->action_type == 1;
+            $canApprove = $isApprover && $request->action_type == 2;
 
             return [
                 'id' => $request->id,
@@ -120,18 +83,16 @@ class LeaveRequestService
                 'reason' => $request->reason ?? '-',
                 'status' => $statusMap[$request->status] ?? 'pending',
                 'statusCode' => $request->status,
-                'approvalLevel' => $isParent ? 'Parent Approval' : ($isChild ? 'Child Recommendation' : '-'),
+                'approvalLevel' => $request->action_type == 2 ? 'Final Approval' : ($request->action_type == 1 ? 'Recommendation' : '-'),
                 'pendingSince' => $request->created_at ? $request->created_at->diffForHumans() : '-',
                 'balance' => $remaining . ' / ' . $maxAllowed,
-                'isParent' => $isParent,
-                'isChild' => $isChild,
                 'isApprover' => $isApprover,
                 'isSuperAdmin' => $isSuperAdmin,
-                'canApprove' => $isParent || $isSuperAdmin,
-                'canReject' => $isParent || $isSuperAdmin,
-                'canCancel' => $isParent || $isSuperAdmin,
-                'canRecommend' => $isChild && !$isParent && in_array($request->status, [0, 1, 2]),
-                'canNotRecommend' => $isChild && !$isParent && in_array($request->status, [0, 1, 2]),
+                'canApprove' => $canApprove || $isSuperAdmin,
+                'canReject' => $canApprove || $isSuperAdmin,
+                'canCancel' => $canApprove || $isSuperAdmin,
+                'canRecommend' => $canRecommend || $isSuperAdmin,
+                'canNotRecommend' => $canRecommend || $isSuperAdmin,
             ];
         })->values()->all();
 
@@ -218,6 +179,7 @@ class LeaveRequestService
         // Date Conflict Check (No overlapping leaves)
         $hasConflict = EmployeLeaveRequest::where('from_employee_id', $fromEmployee->id)
             ->whereIn('status', [0, 1, 3]) // 0:pending, 1:recommended, 3:approved
+            ->whereIn('action_type', [0, 2]) // Only check final approver rows (or uncategorized ones from before) to avoid double counting
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->where(function ($q) use ($startDate, $endDate) {
                     $q->where('start_date', '<=', $endDate->toDateString())
@@ -237,11 +199,12 @@ class LeaveRequestService
         $leaveType = LeaveType::findOrFail($validated['leave_type_id']);
         $maxAllowed = (float) ($leaveType->annual_quota ?? 0);
 
-        // Sum up all days already claimed for this year (Pending, Recommended, or Approved)
+        // Sum up all days already claimed for this year
         $alreadyClaimed = (float) EmployeLeaveRequest::where('from_employee_id', $fromEmployee->id)
             ->where('leave_type_id', $validated['leave_type_id'])
             ->whereYear('start_date', $year)
             ->whereIn('status', [0, 1, 3]) // 0:pending, 1:recommended, 3:approved
+            ->whereIn('action_type', [0, 2]) // ONLY check final approver rows to avoid double subtraction
             ->sum('duration');
 
         if (($alreadyClaimed + $duration) > $maxAllowed) {
@@ -251,43 +214,67 @@ class LeaveRequestService
             ]);
         }
 
-        $parentApprover = $this->resolveParentApproverEmployee($fromEmployee);
-        $childApprovers = $this->resolveChildEmployees($fromEmployee);
+        $currentRole = $fromEmployee->role;
+        $parentRole = $currentRole ? Role::find($currentRole->parent_role_id) : null;
+        $grandparentRole = $parentRole ? Role::find($parentRole->parent_role_id) : null;
 
-        // Create the single master leave request
-        $parentApproverUser = $parentApprover ? User::where('employee_id', $parentApprover->id)->first() : null;
+        $parentApprover = $parentRole ? $this->resolveGenericApprover($parentRole, $fromEmployee) : null;
+        $grandparentApprover = $grandparentRole ? $this->resolveGenericApprover($grandparentRole, $fromEmployee) : null;
+
+        $createdRequests = [];
+
+        // Determine who gets action_type 1 and 2
+        // IF there is a grandparent: parent gets 1, grandparent gets 2
+        // IF there is NO grandparent: parent gets 2.
         
-        $leaveRequest = EmployeLeaveRequest::create([
-            'from_employee_id' => $fromEmployee->id,
-            'to_employee_id' => $parentApprover?->id,
-            'from_user_id' => Auth::id(),
-            'to_user_id' => $parentApproverUser?->id,
-            'department_id' => $fromEmployee->department_id,
-            'leave_type_id' => $validated['leave_type_id'],
-            'start_date' => $startDate->format('Y-m-d'),
-            'end_date' => $endDate->format('Y-m-d'),
-            'duration' => $duration,
-            'reason' => $validated['reason'] ?? null,
-            'status' => 0,
-        ]);
-
-        $leaveRequest->load([
-            'fromEmployee:id,name',
-            'toEmployee:id,name',
-            'leaveType:id,name',
-        ]);
-
-        // Notify Parent
-        if ($parentApprover) {
-            $this->notifyApprover($leaveRequest, $parentApprover);
+        $receivers = [];
+        
+        if ($parentApprover && $grandparentApprover && $parentApprover->id !== $grandparentApprover->id) {
+            $receivers[] = ['employee' => $parentApprover, 'action_type' => 1];
+            $receivers[] = ['employee' => $grandparentApprover, 'action_type' => 2];
+        } elseif ($parentApprover) {
+            $receivers[] = ['employee' => $parentApprover, 'action_type' => 2];
+        } else {
+            // Unlikely final fallback if they have no parent
+            $receivers[] = ['employee' => null, 'action_type' => 2];
         }
 
-        // Notify all Children
-        foreach ($childApprovers as $child) {
-            $this->notifyApprover($leaveRequest, $child);
+        foreach ($receivers as $receiverData) {
+            $toEmployee = $receiverData['employee'];
+            $actionType = $receiverData['action_type'];
+            
+            $toUser = $toEmployee ? User::where('employee_id', $toEmployee->id)->first() : null;
+
+            $leaveRequest = EmployeLeaveRequest::create([
+                'from_employee_id' => $fromEmployee->id,
+                'to_employee_id' => $toEmployee?->id,
+                'from_user_id' => Auth::id(),
+                'to_user_id' => $toUser?->id,
+                'department_id' => $fromEmployee->department_id,
+                'leave_type_id' => $validated['leave_type_id'],
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+                'duration' => $duration,
+                'reason' => $validated['reason'] ?? null,
+                'action_type' => $actionType,
+                'status' => 0,
+            ]);
+
+            $leaveRequest->load([
+                'fromEmployee:id,name',
+                'toEmployee:id,name',
+                'leaveType:id,name',
+            ]);
+
+            if ($toEmployee) {
+                $this->notifyApprover($leaveRequest, $toEmployee);
+            }
+
+            $createdRequests[] = $leaveRequest;
         }
 
-        return $leaveRequest;
+        // Return the final approver request for default response
+        return end($createdRequests) ?: $createdRequests[0];
     }
 
     private function resolveChildEmployees(Employee $fromEmployee): \Illuminate\Support\Collection
@@ -316,30 +303,24 @@ class LeaveRequestService
             ->get();
     }
 
-    private function resolveParentApproverEmployee(Employee $fromEmployee): ?Employee
+    private function resolveGenericApprover(Role $targetRole, Employee $fromEmployee): ?Employee
     {
         $currentRole = $fromEmployee->role;
 
-        if (!$currentRole || !$currentRole->parent_role_id) {
+        if (!$currentRole) {
             return null;
         }
 
-        $parentRole = Role::find($currentRole->parent_role_id);
-
-        if (!$parentRole) {
-            return null;
-        }
-
-        if ((int) $parentRole->organization_id !== (int) $currentRole->organization_id) {
+        if ((int) $targetRole->organization_id !== (int) $currentRole->organization_id) {
             return null;
         }
 
         $query = Employee::query()
             ->where('is_active', true)
             ->where('id', '!=', $fromEmployee->id)
-            ->where('role_id', $parentRole->id);
+            ->where('role_id', $targetRole->id);
 
-        if (!empty($parentRole->department_id)) {
+        if (!empty($targetRole->department_id)) {
             $query->where('department_id', $fromEmployee->department_id);
         }
 
@@ -401,51 +382,31 @@ class LeaveRequestService
         $currentUser = Auth::user();
         $isSuperAdmin = \DB::table('user_roles')->where('user_id', $currentUser->id)->where('role_id', 1)->exists();
 
-        $currentEmployee = $currentUser->employee;
-        $currentRole = optional($currentEmployee)->role;
-
-        $requesterEmployee = $leaveRequest->fromEmployee;
-        $requesterRole = optional($requesterEmployee)->role;
-
-        // Role check logic
-        $isParent = false;
-        $isChild = false;
-
-        if ($currentRole && $requesterRole) {
-            $sameOrganization = (int) $currentRole->organization_id === (int) $requesterRole->organization_id;
-            $sameDepartment = true;
-            if (!empty($currentRole->department_id) && !empty($requesterRole->department_id)) {
-                $sameDepartment = (int) $currentRole->department_id === (int) $requesterRole->department_id;
-            }
-
-            if ($sameOrganization && $sameDepartment) {
-                if ((int) $requesterRole->parent_role_id === (int) $currentRole->id) {
-                    $isParent = true;
-                }
-                if ((int) $currentRole->parent_role_id === (int) $requesterRole->id) {
-                    $isChild = true;
-                }
-            }
-        }
-
         // Permissions Validations
         if (!$isSuperAdmin) {
-            if ($isChild && !$isParent) {
+            $isAssigned = $leaveRequest->to_employee_id === optional($currentUser->employee)->id;
+            
+            if (!$isAssigned) {
+                $msg = 'You do not have permission to act on this request.';
+                return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
+            }
+
+            if ((int)$leaveRequest->action_type === 1) {
                 if (!in_array($currentStatus, [0, 1, 2])) {
-                    $msg = 'Children can only act on pending or recommended requests.';
+                    $msg = 'You can only act on pending or recommended requests.';
                     return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
                 }
                 if (!in_array($newStatus, [1, 2])) {
-                    $msg = 'Children can only recommend or not recommend.';
+                    $msg = 'You can only recommend or not recommend.';
                     return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
                 }
-            } elseif ($isParent) {
+            } elseif ((int)$leaveRequest->action_type === 2) {
                 if (!in_array($newStatus, [3, 4, 5])) {
-                    $msg = 'Parents can only approve, reject or cancel.';
+                    $msg = 'You can only approve, reject or cancel.';
                     return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
                 }
             } else {
-                $msg = 'You do not have permission to act on this request.';
+                $msg = 'This request has no valid action type assignment.';
                 return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
             }
         }

@@ -212,7 +212,10 @@ class RoleController extends Controller
                 $q->where('organization_id', $request->organization_id);
             })
             ->when($request->department_id, function ($q) use ($request) {
-                $q->where('department_id', $request->department_id);
+                $q->where(function ($query) use ($request) {
+                    $query->where('department_id', $request->department_id)
+                          ->orWhereNull('department_id');
+                });
             })
             ->when($request->exclude_role_id, function ($q) use ($request) {
                 $q->where('id', '!=', $request->exclude_role_id);

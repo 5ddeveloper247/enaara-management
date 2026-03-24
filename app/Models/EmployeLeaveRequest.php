@@ -66,8 +66,8 @@ class EmployeLeaveRequest extends Model
     protected static function booted(): void
     {
         static::updated(function (EmployeLeaveRequest $leaveRequest) {
-            // When request becomes approved (status=3), create day-wise leave entities.
-            if ((int) $leaveRequest->status === 3) {
+            // When request becomes approved (status=3), create day-wise leave entities. Only for Approver rows.
+            if ((int) $leaveRequest->status === 3 && in_array((int) $leaveRequest->action_type, [0, 2])) {
                 if (!$leaveRequest->start_date || !$leaveRequest->end_date || !$leaveRequest->from_employee_id) {
                     return;
                 }
