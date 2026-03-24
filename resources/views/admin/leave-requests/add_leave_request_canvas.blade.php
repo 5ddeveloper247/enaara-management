@@ -33,16 +33,16 @@
                     <small class="opacity-75 text-white d-block mb-2">Current Leave Balance</small>
                     <div class="row g-2">
                         <div class="col-6">
-                            <div class="small">Annual: <strong id="balanceAnnual">25</strong> days</div>
+                            <div class="small">Annual: <strong id="balanceAnnual">0</strong> days</div>
                         </div>
                         <div class="col-6">
-                            <div class="small">Sick: <strong id="balanceSick">13</strong> days</div>
+                            <div class="small">Sick: <strong id="balanceSick">0</strong> days</div>
                         </div>
                         <div class="col-6">
-                            <div class="small">Casual: <strong id="balanceCasual">8</strong> days</div>
+                            <div class="small">Casual: <strong id="balanceCasual">0</strong> days</div>
                         </div>
                         <div class="col-6">
-                            <div class="small">Comp-Off: <strong id="balanceCompOff">2</strong> days</div>
+                            <div class="small">Comp-Off: <strong id="balanceCompOff">0</strong> days</div>
                         </div>
                     </div>
                 </div>

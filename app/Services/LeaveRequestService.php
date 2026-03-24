@@ -363,9 +363,13 @@ class LeaveRequestService
             }))
             ->orderBy('name')
             ->get(['id', 'name']);
+
+        $quotaSummary = $this->getPersonalQuotaSummary($employee->id);
+
         return response()->json([
             'success' => true,
             'leaveTypes' => $leaveTypes,
+            'quotaSummary' => $quotaSummary,
         ]);
     }
 
@@ -413,6 +417,17 @@ class LeaveRequestService
 
         $leaveRequest->status = $newStatus;
         $leaveRequest->save();
+
+        // Sync final status from Approver (Type 2) to Recommender (Type 1)
+        if ((int)$leaveRequest->action_type === 2 && in_array($newStatus, [3, 4, 5])) {
+            EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
+                ->where('leave_type_id', $leaveRequest->leave_type_id)
+                ->where('start_date', $leaveRequest->start_date)
+                ->where('end_date', $leaveRequest->end_date)
+                ->where('action_type', 1)
+                ->where('status', '!=', $newStatus)
+                ->update(['status' => $newStatus]);
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
