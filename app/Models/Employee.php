@@ -11,7 +11,7 @@ class Employee extends Model
     protected $table = 'employees';
 
     protected $fillable = [
-        'name',
+        'full_name',
         'employee_code',
         'organization_id',
         'sbu_id',
@@ -20,7 +20,7 @@ class Employee extends Model
         'employee_type',
         'employment_type',
         'email',
-        'phone_number',
+        'phone',
         'cnic',
         'gender',
         'nationality',
@@ -29,10 +29,9 @@ class Employee extends Model
         'is_manager',
         'is_active',
         'role_id',
-        'vendor',
-        'site_assignment',
+        'site',
         'join_date',
-        'floor_access_10',
+        'floor_access',
         'biometric_id',
         'sync_with_biometric',
     ];
