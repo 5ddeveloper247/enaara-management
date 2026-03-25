@@ -12,9 +12,13 @@ class Employee extends Model
 
     protected $fillable = [
         'name',
+        'employee_code',
         'organization_id',
+        'sbu_id',
         'department_id',
         'employee_type_id',
+        'employee_type',
+        'employment_type',
         'email',
         'phone_number',
         'cnic',
@@ -25,6 +29,12 @@ class Employee extends Model
         'is_manager',
         'is_active',
         'role_id',
+        'vendor',
+        'site_assignment',
+        'join_date',
+        'floor_access_10',
+        'biometric_id',
+        'sync_with_biometric',
     ];
 
     protected $casts = [
@@ -56,5 +66,10 @@ class Employee extends Model
     public function user(): HasOne
     {
         return $this->hasOne(User::class, 'employee_id');
+    }
+
+    public function sbu(): BelongsTo
+    {
+        return $this->belongsTo(Sbu::class);
     }
 }

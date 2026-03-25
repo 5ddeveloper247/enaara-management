@@ -201,80 +201,119 @@
     // ============================================
     // ADD EMPLOYEE CANVAS
     // ============================================
-    // function initializeAddEmployeeCanvas() {
-    //     const addEmployeeCanvas = document.getElementById('addEmployeeCanvas');
-    //     const employeeTypeSelect = document.getElementById('employeeType');
-    //     const createUserCheckbox = document.getElementById('createUserAccount');
-    //     const userAccountSection = document.getElementById('userAccountSection');
-    //     const vendorSection = document.getElementById('vendorSection');
+    function initializeAddEmployeeCanvas() {
+        const addEmployeeCanvas = document.getElementById('addEmployeeCanvas');
+        const employeeTypeSelect = document.getElementById('employeeType');
+        const createUserCheckbox = document.getElementById('createUserAccount');
+        const userAccountSection = document.getElementById('userAccountSection');
+        const vendorSection = document.getElementById('vendorSection');
 
-    //     // Show/hide vendor section based on employee type
-    //     if (employeeTypeSelect) {
-    //         employeeTypeSelect.addEventListener('change', function() {
-    //             if (this.value === 'Third-party') {
-    //                 vendorSection.style.display = 'block';
-    //                 document.getElementById('employeeVendor').setAttribute('required', 'required');
-    //             } else {
-    //                 vendorSection.style.display = 'none';
-    //                 document.getElementById('employeeVendor').removeAttribute('required');
-    //             }
-    //         });
-    //     }
+        // Show/hide vendor section based on employee type
+        if (employeeTypeSelect) {
+            employeeTypeSelect.addEventListener('change', function() {
+                if (this.value === 'Third-party') {
+                    vendorSection.style.display = 'block';
+                    document.getElementById('employeeVendor').setAttribute('required', 'required');
+                } else {
+                    vendorSection.style.display = 'none';
+                    document.getElementById('employeeVendor').removeAttribute('required');
+                }
+            });
+        }
 
-    //     // Show/hide user account section
-    //     if (createUserCheckbox) {
-    //         createUserCheckbox.addEventListener('change', function() {
-    //             if (this.checked) {
-    //                 userAccountSection.style.display = 'block';
-    //             } else {
-    //                 userAccountSection.style.display = 'none';
-    //             }
-    //         });
-    //     }
+        // Show/hide user account section
+        if (createUserCheckbox) {
+            createUserCheckbox.addEventListener('change', function() {
+                userAccountSection.style.display = this.checked ? 'block' : 'none';
+            });
+        }
 
-    //     // Handle form submission
-    //     const addEmployeeForm = document.getElementById('addEmployeeForm');
-    //     if (addEmployeeForm) {
-    //         addEmployeeForm.addEventListener('submit', function(e) {
-    //             e.preventDefault();
-    //             const formData = new FormData(this);
-    //             const data = Object.fromEntries(formData);
-    //             console.log('Submitting employee form:', data);
+        // Handle form submission via AJAX
+        const addEmployeeForm = document.getElementById('addEmployeeForm');
+        if (addEmployeeForm) {
+            addEmployeeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
 
-    //             // Close offcanvas
-    //             const canvas = bootstrap.Offcanvas.getInstance(addEmployeeCanvas);
-    //             if (canvas) {
-    //                 canvas.hide();
-    //             }
+                // Clear previous errors
+                addEmployeeForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                addEmployeeForm.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
 
-    //             // Reset form
-    //             this.reset();
-    //             vendorSection.style.display = 'none';
-    //             userAccountSection.style.display = 'none';
-    //         });
-    //     }
+                const formData = new FormData(this);
 
-    //     // Reset form when offcanvas is hidden
-    //     if (addEmployeeCanvas) {
-    //         addEmployeeCanvas.addEventListener('hidden.bs.offcanvas', function() {
-    //             const form = document.getElementById('addEmployeeForm');
-    //             if (form) {
-    //                 form.reset();
-    //                 vendorSection.style.display = 'none';
-    //                 userAccountSection.style.display = 'none';
-    //             }
-    //         });
-    //     }
-    // }
+                fetch('/admin/employee/add', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Close canvas
+                        const canvas = bootstrap.Offcanvas.getInstance(addEmployeeCanvas);
+                        if (canvas) canvas.hide();
 
-    // // ============================================
-    // // STATS UPDATE
-    // // ============================================
-    // function updateEmployeeStats() {
-    //     // Update badge counts
-    //     $('#totalWorkforceBadge').text(employeeTable ? employeeTable.rows().count() : 0);
-    //     // TODO: Calculate and update other stats from table data
-    // }
+                        // Reset form
+                        addEmployeeForm.reset();
+                        if (vendorSection) vendorSection.style.display = 'none';
+                        if (userAccountSection) userAccountSection.style.display = 'none';
+
+                        // Reset SBU/Dept dropdowns
+                        const sbuSelect = document.getElementById('employeeSbu');
+                        const deptSelect = document.getElementById('employeeDepartment');
+                        if (sbuSelect) { sbuSelect.innerHTML = '<option value="">Select SBU</option>'; sbuSelect.disabled = true; }
+                        if (deptSelect) { deptSelect.innerHTML = '<option value="">Select Department</option>'; deptSelect.disabled = true; }
+
+                        // Show success toast / reload table
+                        alert('Employee created successfully!');
+                        location.reload();
+                    } else if (data.errors) {
+                        // Show validation errors inline
+                        Object.entries(data.errors).forEach(([field, messages]) => {
+                            const input = addEmployeeForm.querySelector(`[name="${field}"]`);
+                            if (input) {
+                                input.classList.add('is-invalid');
+                                const feedback = document.createElement('div');
+                                feedback.className = 'invalid-feedback';
+                                feedback.textContent = messages[0];
+                                input.insertAdjacentElement('afterend', feedback);
+                            }
+                        });
+                    } else {
+                        alert(data.message || 'Something went wrong.');
+                    }
+                })
+                .catch(() => alert('Network error. Please try again.'));
+            });
+        }
+
+        // Reset form when canvas is closed
+        if (addEmployeeCanvas) {
+            addEmployeeCanvas.addEventListener('hidden.bs.offcanvas', function() {
+                if (addEmployeeForm) addEmployeeForm.reset();
+                if (vendorSection) vendorSection.style.display = 'none';
+                if (userAccountSection) userAccountSection.style.display = 'none';
+                addEmployeeForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                addEmployeeForm.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+                const sbuSelect = document.getElementById('employeeSbu');
+                const deptSelect = document.getElementById('employeeDepartment');
+                if (sbuSelect) { sbuSelect.innerHTML = '<option value="">Select SBU</option>'; sbuSelect.disabled = true; }
+                if (deptSelect) { deptSelect.innerHTML = '<option value="">Select Department</option>'; deptSelect.disabled = true; }
+            });
+        }
+    }
+
+    // ============================================
+    // STATS UPDATE
+    // ============================================
+    function updateEmployeeStats() {
+        if (employeeTable) {
+            $('#totalWorkforceBadge').text(employeeTable.rows().count());
+        }
+    }
 
 })();
 

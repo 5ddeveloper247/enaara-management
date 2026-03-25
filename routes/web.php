@@ -156,10 +156,6 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         return view('admin.monthly-logs.index');
     })->name('admin.monthly-logs.index');
 
-    Route::get('/employee', function () {
-        return view('admin.employee.index');
-    })->name('admin.employee.index');
-
     // Route::get('/shift-planner', function () {
     //     return view('admin.shift-planner.index');
     // })->name('admin.shift-planner.index');
