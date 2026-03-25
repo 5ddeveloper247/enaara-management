@@ -44,8 +44,8 @@ class LeaveRequestService
         ])
             ->when(!$isSuperAdmin && $currentEmployee, function ($query) use ($currentEmployee) {
                 $query->where(function($q) use ($currentEmployee) {
-                    $q->where('from_employee_id', $currentEmployee->id)
-                      ->orWhere('to_employee_id', $currentEmployee->id);
+                    $q->where('to_employee_id',  $currentEmployee->id);
+                    //   ->orWhere('to_employee_id', $currentEmployee->id);
                 });
             })
             ->latest('id')
