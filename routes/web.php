@@ -178,9 +178,9 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         return view('admin.my-leaves.index');
     })->name('admin.my-leaves.index');
 
-    // Route::get('/leave-calendar', function () {
-    //     return view('admin.leave-calendar.index');
-    // })->name('admin.leave-calendar.index');
+    Route::get('/leave-calendar', function () {
+        return view('admin.leave-calendar.index');
+    })->name('admin.leave-calendar.index');
 
     // Route::get('/balance-tracker', function () {
     //     return view('admin.balance-tracker.index');
