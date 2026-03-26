@@ -103,7 +103,15 @@
         </div>
     </div>
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
-        <div class="d-flex justify-content-end">
+        <div class="d-flex justify-content-between w-100">
+            <div id="holidayActions" style="display: none;">
+                <button type="button" class="btn btn-outline-warning me-2" id="detailEditBtn">
+                    <i class="bi bi-pencil me-1"></i>Edit
+                </button>
+                <button type="button" class="btn btn-outline-danger" id="detailDeleteBtn">
+                    <i class="bi bi-trash me-1"></i>Delete
+                </button>
+            </div>
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
         </div>
     </div>

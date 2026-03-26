@@ -85,11 +85,10 @@
         </div>
     </div>
 
-    <!-- Add Holiday Canvas -->
-    @include('admin.leave-calendar.add_holiday_canvas')
-
     <!-- Event Detail Canvas -->
     @include('admin.leave-calendar.event_detail_canvas')
+    <!-- Add Holiday Canvas -->
+    @include('admin.leave-calendar.add_holiday_canvas')
 @endsection
 
 @push('scripts')
@@ -101,154 +100,36 @@
         let calendarEl;
 
         // Comprehensive Sample Data - Shows everything in the calendar
-        const publicHolidays = [
-            // February 2026
-            { date: '2026-02-05', name: 'Kashmir Day', organization: 'all' },
-            { date: '2026-02-14', name: 'Valentine\'s Day', organization: 'all' },
-            // March 2026
-            { date: '2026-03-23', name: 'Pakistan Day', organization: 'all' },
-            // April 2026
-            { date: '2026-04-10', name: 'Eid-ul-Fitr', organization: 'all' },
-            { date: '2026-04-11', name: 'Eid-ul-Fitr', organization: 'all' },
-            { date: '2026-04-21', name: 'Eid Milad-un-Nabi', organization: 'all' },
-            // May 2026
-            { date: '2026-05-01', name: 'Labour Day', organization: 'all' },
-            { date: '2026-05-14', name: 'Youm-e-Takbir', organization: 'all' },
-            // June 2026
-            { date: '2026-06-16', name: 'Eid-ul-Adha', organization: 'all' },
-            { date: '2026-06-17', name: 'Eid-ul-Adha', organization: 'all' },
-            // July 2026
-            { date: '2026-07-09', name: 'Ashura', organization: 'all' },
-            { date: '2026-07-10', name: 'Ashura', organization: 'all' },
-            // August 2026
-            { date: '2026-08-14', name: 'Independence Day', organization: 'all' },
-            // September 2026
-            { date: '2026-09-06', name: 'Defence Day', organization: 'all' },
-            // December 2026
-            { date: '2026-12-25', name: 'Christmas', organization: 'all' },
-            { date: '2026-12-31', name: 'New Year\'s Eve', organization: 'all' }
-        ];
-
-        // Comprehensive fixed departmental leave data - ensures calendar is always populated
-        const departmentalLeaves = [
-            // February 2026 - Week 1
-            { date: '2026-02-01', department: 'Sales', count: 3, total: 20 },
-            { date: '2026-02-01', department: 'HR', count: 1, total: 10 },
-            { date: '2026-02-01', department: 'IT', count: 2, total: 15 },
-            { date: '2026-02-02', department: 'Operations', count: 2, total: 18 },
-            { date: '2026-02-02', department: 'Finance', count: 1, total: 12 },
-            { date: '2026-02-05', department: 'Sales', count: 8, total: 20 },
-            { date: '2026-02-05', department: 'IT', count: 6, total: 15 },
-            { date: '2026-02-05', department: 'Marketing', count: 3, total: 14 },
-            { date: '2026-02-06', department: 'HR', count: 2, total: 10 },
-            { date: '2026-02-06', department: 'Operations', count: 3, total: 18 },
-            { date: '2026-02-07', department: 'Finance', count: 2, total: 12 },
-            { date: '2026-02-07', department: 'Sales', count: 4, total: 20 },
-            { date: '2026-02-08', department: 'IT', count: 3, total: 15 },
-            { date: '2026-02-08', department: 'Operations', count: 2, total: 18 },
-            { date: '2026-02-09', department: 'HR', count: 1, total: 10 },
-            
-            // February 2026 - Week 2
-            { date: '2026-02-12', department: 'Operations', count: 7, total: 18 },
-            { date: '2026-02-12', department: 'IT', count: 4, total: 15 },
-            { date: '2026-02-13', department: 'Sales', count: 5, total: 20 },
-            { date: '2026-02-13', department: 'Finance', count: 2, total: 12 },
-            { date: '2026-02-14', department: 'Sales', count: 4, total: 20 },
-            { date: '2026-02-14', department: 'HR', count: 2, total: 10 },
-            { date: '2026-02-15', department: 'Sales', count: 9, total: 20 },
-            { date: '2026-02-15', department: 'HR', count: 4, total: 10 },
-            { date: '2026-02-15', department: 'IT', count: 5, total: 15 },
-            { date: '2026-02-16', department: 'Operations', count: 4, total: 18 },
-            { date: '2026-02-16', department: 'Marketing', count: 3, total: 14 },
-            
-            // February 2026 - Week 3
-            { date: '2026-02-19', department: 'IT', count: 3, total: 15 },
-            { date: '2026-02-19', department: 'Finance', count: 2, total: 12 },
-            { date: '2026-02-20', department: 'IT', count: 7, total: 15 },
-            { date: '2026-02-20', department: 'HR', count: 3, total: 10 },
-            { date: '2026-02-20', department: 'Operations', count: 3, total: 18 },
-            { date: '2026-02-21', department: 'Sales', count: 7, total: 20 },
-            { date: '2026-02-21', department: 'Marketing', count: 4, total: 14 },
-            { date: '2026-02-22', department: 'IT', count: 4, total: 15 },
-            { date: '2026-02-22', department: 'Finance', count: 2, total: 12 },
-            { date: '2026-02-23', department: 'Operations', count: 3, total: 18 },
-            { date: '2026-02-23', department: 'Sales', count: 3, total: 20 },
-            
-            // February 2026 - Week 4
-            { date: '2026-02-26', department: 'Operations', count: 6, total: 18 },
-            { date: '2026-02-26', department: 'Sales', count: 5, total: 20 },
-            { date: '2026-02-27', department: 'HR', count: 2, total: 10 },
-            { date: '2026-02-27', department: 'IT', count: 3, total: 15 },
-            { date: '2026-02-28', department: 'Finance', count: 2, total: 12 },
-            { date: '2026-02-28', department: 'Marketing', count: 3, total: 14 },
-            { date: '2026-02-29', department: 'Operations', count: 4, total: 18 },
-            { date: '2026-02-29', department: 'Sales', count: 3, total: 20 },
-            
-            // March 2026 - Week 1
-            { date: '2026-03-01', department: 'IT', count: 2, total: 15 },
-            { date: '2026-03-01', department: 'HR', count: 1, total: 10 },
-            { date: '2026-03-04', department: 'IT', count: 8, total: 15 },
-            { date: '2026-03-04', department: 'Sales', count: 5, total: 20 },
-            { date: '2026-03-05', department: 'HR', count: 3, total: 10 },
-            { date: '2026-03-05', department: 'Operations', count: 3, total: 18 },
-            { date: '2026-03-06', department: 'Finance', count: 2, total: 12 },
-            { date: '2026-03-06', department: 'Marketing', count: 3, total: 14 },
-            { date: '2026-03-07', department: 'Sales', count: 8, total: 20 },
-            { date: '2026-03-07', department: 'Marketing', count: 5, total: 14 },
-            { date: '2026-03-08', department: 'Operations', count: 5, total: 18 },
-            { date: '2026-03-08', department: 'IT', count: 3, total: 15 },
-            
-            // March 2026 - Week 2
-            { date: '2026-03-11', department: 'Finance', count: 5, total: 12 },
-            { date: '2026-03-11', department: 'Sales', count: 4, total: 20 },
-            { date: '2026-03-12', department: 'HR', count: 2, total: 10 },
-            { date: '2026-03-12', department: 'Operations', count: 4, total: 18 },
-            { date: '2026-03-13', department: 'IT', count: 3, total: 15 },
-            { date: '2026-03-13', department: 'Marketing', count: 2, total: 14 },
-            { date: '2026-03-14', department: 'Sales', count: 3, total: 20 },
-            { date: '2026-03-15', department: 'HR', count: 5, total: 10 },
-            { date: '2026-03-15', department: 'IT', count: 4, total: 15 },
-            
-            // March 2026 - Week 3
-            { date: '2026-03-18', department: 'Operations', count: 6, total: 18 },
-            { date: '2026-03-18', department: 'Sales', count: 4, total: 20 },
-            { date: '2026-03-19', department: 'Sales', count: 7, total: 20 },
-            { date: '2026-03-19', department: 'Finance', count: 3, total: 12 },
-            { date: '2026-03-20', department: 'IT', count: 4, total: 15 },
-            { date: '2026-03-20', department: 'Marketing', count: 3, total: 14 },
-            { date: '2026-03-21', department: 'HR', count: 2, total: 10 },
-            { date: '2026-03-21', department: 'Operations', count: 3, total: 18 },
-            { date: '2026-03-22', department: 'IT', count: 6, total: 15 },
-            { date: '2026-03-22', department: 'Sales', count: 4, total: 20 },
-            
-            // March 2026 - Week 4
-            { date: '2026-03-25', department: 'Sales', count: 6, total: 20 },
-            { date: '2026-03-25', department: 'Operations', count: 4, total: 18 },
-            { date: '2026-03-26', department: 'HR', count: 3, total: 10 },
-            { date: '2026-03-26', department: 'Finance', count: 2, total: 12 },
-            { date: '2026-03-27', department: 'IT', count: 3, total: 15 },
-            { date: '2026-03-27', department: 'Marketing', count: 3, total: 14 },
-            { date: '2026-03-28', department: 'Operations', count: 5, total: 18 },
-            { date: '2026-03-28', department: 'Sales', count: 4, total: 20 },
-            { date: '2026-03-29', department: 'IT', count: 2, total: 15 }
-        ];
-
-
-        const blackoutDates = [
-            { date: '2026-02-12', reason: 'Project Deadline - Q1 Release' },
-            { date: '2026-02-13', reason: 'Project Deadline - Q1 Release' },
-            { date: '2026-02-29', reason: 'Month End Closing - Finance' },
-            { date: '2026-03-01', reason: 'Quarter End Closing' },
-            { date: '2026-03-02', reason: 'Quarter End Closing' },
-            { date: '2026-03-15', reason: 'Audit Period - No Leave' },
-            { date: '2026-03-16', reason: 'Audit Period - No Leave' },
-            { date: '2026-03-31', reason: 'Month End Closing - Finance' }
-        ];
+        const publicHolidays = @json($publicHolidays);
+        const deptLeaves = @json($deptLeaves);
+        const blackoutDates = @json($blackoutDates);
 
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeCalendar();
             populateSidebarStats();
+
+            // Offcanvas Reset Listener
+            const addHolidayCanvasEl = document.getElementById('addHolidayCanvas');
+            if (addHolidayCanvasEl) {
+                addHolidayCanvasEl.addEventListener('show.bs.offcanvas', function (event) {
+                    if (event.relatedTarget) { // Opened via "Add" button
+                        const form = document.getElementById('addHolidayForm');
+                        form.reset();
+                        form.dataset.mode = 'add';
+                        document.getElementById('addHolidayCanvasLabel').textContent = 'Add Public Holiday';
+                        form.action = "{{ route('admin.leave-calendar.store') }}";
+                        const deleteBtn = document.getElementById('deleteHolidayBtn');
+                        if (deleteBtn) deleteBtn.classList.add('d-none');
+                        
+                        // Reset organizations select if using select2 or similar, 
+                        // but here we use native select. Just manual reset:
+                        const orgSelect = document.getElementById('holidayOrganizations');
+                        Array.from(orgSelect.options).forEach(opt => opt.selected = false);
+                        document.getElementById('organizationSelectSection').style.display = 'none';
+                    }
+                });
+            }
         });
 
         function initializeCalendar() {
@@ -259,20 +140,23 @@
 
             // Add public holidays (blue dots)
             publicHolidays.forEach(holiday => {
-                events.push({
-                    title: holiday.name,
-                    start: holiday.date,
-                    allDay: true,
-                    classNames: ['holiday-event'],
-                    extendedProps: {
-                        type: 'holiday',
-                        organization: holiday.organization
-                    }
-                });
+                if (!holiday.is_blackout) {
+                    events.push({
+                        title: holiday.name,
+                        start: holiday.start_date,
+                        allDay: true,
+                        classNames: ['holiday-event'],
+                        extendedProps: {
+                            id: holiday.id,
+                            type: 'holiday',
+                            organization: holiday.organization_scope
+                        }
+                    });
+                }
             });
 
             // Add departmental leaves (heatmap bars)
-            departmentalLeaves.forEach(leave => {
+            deptLeaves.forEach(leave => {
                 const percentage = (leave.count / leave.total) * 100;
                 let intensity = 'low';
                 if (percentage >= 30) intensity = 'high';
@@ -286,6 +170,7 @@
                     extendedProps: {
                         type: 'department-leave',
                         department: leave.department,
+                        department_id: leave.department_id,
                         count: leave.count,
                         total: leave.total,
                         percentage: percentage
@@ -309,11 +194,21 @@
 
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
-                initialDate: '2026-02-01', // Set to February 2026 where we have data
+                initialDate: new Date(),
+
                 headerToolbar: {
-                    left: 'prev,next today',
+                    left: 'prev,next myToday',
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                customButtons: {
+                    myToday: {
+                        text: 'Today',
+                        click: function() {
+                            calendar.changeView('timeGridDay');
+                            calendar.today();
+                        }
+                    }
                 },
                 events: events,
                 eventDisplay: 'block',
@@ -345,15 +240,17 @@
 
             calendar.render();
 
-            // Today button
+            // Today button (Top Right)
             document.getElementById('todayBtn').addEventListener('click', function() {
+                calendar.changeView('timeGridDay');
                 calendar.today();
             });
         }
 
         function showEventDetails(event) {
             const props = event.extendedProps;
-            const canvas = new bootstrap.Offcanvas(document.getElementById('eventDetailCanvas'));
+            const canvasEl = document.getElementById('eventDetailCanvas');
+            const canvas = bootstrap.Offcanvas.getOrCreateInstance(canvasEl);
             
             // Set title
             document.getElementById('eventTitle').textContent = event.title;
@@ -371,6 +268,7 @@
             document.getElementById('leaveStatsSection').style.display = 'none';
             document.getElementById('impactLevelSection').style.display = 'none';
             document.getElementById('affectedEmployeesSection').style.display = 'none';
+            document.getElementById('holidayActions').style.display = 'none';
 
             // Show appropriate sections based on event type
             if (props.type === 'holiday') {
@@ -381,6 +279,11 @@
                 document.getElementById('eventOrganizationSection').style.display = 'block';
                 document.getElementById('eventOrganization').textContent = 
                     props.organization === 'all' ? 'All Organizations' : props.organization;
+
+                // Show Edit/Delete for holidays
+                document.getElementById('holidayActions').style.display = 'block';
+                document.getElementById('detailEditBtn').onclick = () => editHoliday(props.id);
+                document.getElementById('detailDeleteBtn').onclick = () => deleteHoliday(props.id);
             } 
             else if (props.type === 'department-leave') {
                 // Departmental Leave - Using main color (#012445) variations only
@@ -429,24 +332,42 @@
                     `<span class="badge" style="background-color: ${badgeColor}; padding: 0.5rem 1rem; font-size: 0.875rem;">${intensity} Impact</span>`;
                 document.getElementById('impactLevelDescription').textContent = impactDescription;
                 
-                // Show affected employees (sample data)
+                // Show affected employees (Real data via AJAX)
                 document.getElementById('affectedEmployeesSection').style.display = 'block';
-                const sampleEmployees = generateSampleEmployees(props.department, props.count);
                 const employeesList = document.getElementById('affectedEmployeesList');
-                employeesList.innerHTML = '';
-                sampleEmployees.forEach(emp => {
-                    const empItem = document.createElement('div');
-                    empItem.className = 'd-flex align-items-center mb-2 pb-2 border-bottom';
-                    empItem.style.borderColor = '#ffffff1a !important';
-                    empItem.innerHTML = `
-                        <div class="user-avatar me-3">${emp.initials}</div>
-                        <div class="flex-grow-1">
-                            <div class="small fw-semibold">${emp.name}</div>
-                            <small class="opacity-75 text-white">${emp.id} • ${emp.leaveType}</small>
-                        </div>
-                    `;
-                    employeesList.appendChild(empItem);
-                });
+                employeesList.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-light" role="status"></div><div class="small mt-2">Loading employees...</div></div>';
+                
+                // Format date as YYYY-MM-DD (Local Timezone safe)
+                const d = event.start;
+                const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                const fetchUrl = `{{ route('admin.leave-calendar.fetch-department-employees') }}?date=${dateStr}&department_id=${props.department_id}`;
+                
+                fetch(fetchUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        employeesList.innerHTML = '';
+                        if (data.success && data.employees.length > 0) {
+                            data.employees.forEach(emp => {
+                                const empItem = document.createElement('div');
+                                empItem.className = 'd-flex align-items-center mb-2 pb-2 border-bottom';
+                                empItem.style.borderColor = '#ffffff1a !important';
+                                empItem.innerHTML = `
+                                    <div class="user-avatar me-3">${emp.initials}</div>
+                                    <div class="flex-grow-1">
+                                        <div class="small fw-semibold">${emp.name}</div>
+                                        <small class="opacity-75 text-white">${emp.id} • ${emp.leaveType}${emp.quota_info ? ` • Quota: ${emp.quota_info}` : ''}</small>
+                                    </div>
+                                `;
+                                employeesList.appendChild(empItem);
+                            });
+                        } else {
+                            employeesList.innerHTML = '<div class="small opacity-50 text-center py-3">No specific employee records found for this date.</div>';
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Fetch error:', err);
+                        employeesList.innerHTML = '<div class="small text-warning text-center py-3">Error loading employee data.</div>';
+                    });
             } 
             else if (props.type === 'blackout') {
                 // Blackout Date - Full black background
@@ -484,6 +405,37 @@
         }
 
         function populateSidebarStats() {
+            // Today's Leaves
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayLeaves = deptLeaves.filter(l => l.date === todayStr);
+            const todayContainer = document.getElementById('todayLeavesList');
+            
+            if (todayContainer) {
+                todayContainer.innerHTML = '';
+                if (todayLeaves.length === 0) {
+                    todayContainer.innerHTML = '<div class="text-muted small py-3 text-center border rounded-3" style="border-style: dashed !important; opacity: 0.6;">No leaves scheduled for today</div>';
+                } else {
+                    todayLeaves.forEach(leave => {
+                        const percentage = Math.round((leave.count / leave.total) * 100);
+                        let badgeClass = 'bg-success';
+                        if (percentage >= 30) badgeClass = 'bg-main';
+                        else if (percentage >= 20) badgeClass = 'bg-primary';
+                        
+                        const item = document.createElement('div');
+                        item.className = 'd-flex justify-content-between align-items-center p-2 mb-2 rounded-3';
+                        item.style.backgroundColor = 'rgba(1, 36, 69, 0.05)';
+                        item.innerHTML = `
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold" style="font-size: 13px; color: #012445;">${leave.department}</div>
+                                <small class="text-muted" style="font-size: 11px;">${leave.count} away out of ${leave.total}</small>
+                            </div>
+                            <span class="badge ${badgeClass}" style="font-size: 10px;">${percentage}%</span>
+                        `;
+                        todayContainer.appendChild(item);
+                    });
+                }
+            }
+
             // Upcoming Holidays
             const upcomingHolidaysContainer = document.getElementById('upcomingHolidaysList');
             if (upcomingHolidaysContainer) {
@@ -491,8 +443,8 @@
                 
                 const today = new Date();
                 const upcoming = publicHolidays
-                    .filter(h => new Date(h.date) >= today)
-                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .filter(h => new Date(h.start_date) >= today)
+                    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
                     .slice(0, 5);
 
                 if (upcoming.length === 0) {
@@ -502,17 +454,166 @@
                         const item = document.createElement('div');
                         item.className = 'd-flex justify-content-between align-items-center p-2 border-bottom';
                         item.innerHTML = `
-                            <div>
-                                <div class="small fw-semibold">${holiday.name}</div>
-                                <small class="text-muted">${new Date(holiday.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold" style="font-size: 13px; color: #333;">${holiday.name}</div>
+                                <small class="text-muted" style="font-size: 11px;">${new Date(holiday.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
                             </div>
-                            <span class="badge bg-info text-dark">Holiday</span>
+                            <button class="btn btn-primary btn-sm rounded-3" 
+                                    style="font-size: 10px !important; padding: 4px 10px; height: 26px;"
+                                    onclick="editHoliday(${holiday.id})">
+                                Holiday
+                            </button>
                         `;
+
+
+
                         upcomingHolidaysContainer.appendChild(item);
                     });
                 }
             }
         }
     </script>
+
+    <script>
+        function editHoliday(id) {
+            const url = "{{ route('admin.leave-calendar.show', ['id' => ':id']) }}".replace(':id', id);
+            
+            fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        let errorMsg = `Server error ${response.status}`;
+                        try {
+                            const errJson = JSON.parse(text);
+                            errorMsg = errJson.message || errorMsg;
+                        } catch(e) {
+                            // It's likely HTML error page
+                            if (text.includes('403') || text.includes('Unauthorized')) errorMsg = 'Unauthorized action (403)';
+                            if (text.includes('404') || text.includes('Not Found')) errorMsg = 'Holiday not found (404)';
+                        }
+                        throw new Error(errorMsg);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const holiday = data.holiday;
+                    const offcanvasEl = document.getElementById('addHolidayCanvas');
+                    const canvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+                    
+                    // Update UI to "Edit" mode
+                    document.getElementById('addHolidayCanvasLabel').textContent = 'Edit Holiday';
+                    const form = document.getElementById('addHolidayForm');
+                    
+                    // Update form action for the POST update
+                    form.action = "{{ route('admin.leave-calendar.update', ['id' => ':id']) }}".replace(':id', id);
+                    
+                    // Set field values (formatting to YYYY-MM-DD for HTML5 date inputs)
+                    document.getElementById('holidayName').value = holiday.name;
+                    document.getElementById('holidayStartDate').value = holiday.start_date.split('T')[0];
+                    document.getElementById('holidayEndDate').value = holiday.end_date ? holiday.end_date.split('T')[0] : '';
+                    document.getElementById('isRecurring').checked = holiday.is_recurring;
+                    document.getElementById('isBlackout').checked = holiday.is_blackout;
+                    document.getElementById('blackoutReason').value = holiday.reason || '';
+                    
+                    // Set scope and organizations
+                    if (holiday.organization_scope === 'all') {
+                        document.getElementById('scopeAll').checked = true;
+                        document.getElementById('organizationSelectSection').style.display = 'none';
+                    } else {
+                        document.getElementById('scopeSpecific').checked = true;
+                        document.getElementById('organizationSelectSection').style.display = 'block';
+                        
+                        // Select organizations
+                        const orgIds = holiday.organizations.map(o => o.id);
+                        const select = document.getElementById('holidayOrganizations');
+                        Array.from(select.options).forEach(option => {
+                            option.selected = orgIds.includes(parseInt(option.value));
+                        });
+                    }
+                    
+                    // Store edit mode status
+                    form.dataset.mode = 'edit';
+                    form.dataset.holidayId = id;
+                    
+                    // Show delete button
+                    const deleteBtn = document.getElementById('deleteHolidayBtn');
+                    if (deleteBtn) deleteBtn.classList.remove('d-none');
+
+                    // Handle transition with a small delay to avoid backdrop conflicts
+                    const detailCanvasEl = document.getElementById('eventDetailCanvas');
+                    const detailInstance = bootstrap.Offcanvas.getInstance(detailCanvasEl);
+                    
+                    if (detailInstance && detailCanvasEl.classList.contains('show')) {
+                        detailInstance.hide();
+                        // Wait for hide transition to finish or just use a safe delay
+                        setTimeout(() => {
+                            canvas.show();
+                        }, 350); // 350ms is Bootstrap's default transition duration
+                    } else {
+                        canvas.show();
+                    }
+                } else {
+                    Swal.fire('Error', data.message || 'Could not fetch holiday details.', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Edit fetch error:', err);
+                Swal.fire('Error', 'Detail: ' + err.message, 'error');
+            });
+        }
+
+        function deleteHoliday(id) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This holiday will be permanently deleted!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const url = "{{ route('admin.leave-calendar.destroy', ['id' => ':id']) }}".replace(':id', id);
+                    fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Delete failed');
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Deleted!', data.message, 'success').then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', data.message, 'error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Delete error:', err);
+                        Swal.fire('Error', 'An unexpected error occurred.', 'error');
+                    });
+                }
+            });
+        }
+
+        // Make functions global for onclick handlers
+        window.editHoliday = editHoliday;
+        window.deleteHoliday = deleteHoliday;
+    </script>
+
 @endpush
 

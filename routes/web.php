@@ -18,7 +18,7 @@ use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\RegistrationController;
-
+use App\Http\Controllers\LeaveCalendarController;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -130,10 +130,14 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsReadAndRedirect'])->name('admin.notifications.read');
     Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('admin.notifications.mark-all-read');
 
-
-
-
-
+    //Leave Calendar
+    Route::get('/leave-calendar', [LeaveCalendarController::class, 'index'])->name('admin.leave-calendar.index');
+    Route::get('/leave-calendar/add', [LeaveCalendarController::class, 'create'])->name('admin.leave-calendar.add');
+        Route::post('/leave-calendar/store', [LeaveCalendarController::class, 'store'])->name('admin.leave-calendar.store');
+        Route::get('/leave-calendar/show/{id}', [LeaveCalendarController::class, 'show'])->name('admin.leave-calendar.show');
+        Route::post('/leave-calendar/update/{id}', [LeaveCalendarController::class, 'update'])->name('admin.leave-calendar.update');
+        Route::delete('/leave-calendar/destroy/{id}', [LeaveCalendarController::class, 'destroy'])->name('admin.leave-calendar.destroy');
+        Route::get('/leave-calendar/fetch-department-employees', [LeaveCalendarController::class, 'fetchDepartmentLeaveEmployees'])->name('admin.leave-calendar.fetch-department-employees');
 
 
     // Route::get('/users', function () {
@@ -172,13 +176,9 @@ Route::middleware('auth')->prefix('admin')->group(function () {
 
     Route::get('/my-leaves', [LeaveRequestController::class, 'myLeaves'])->name('admin.my.leaves.index');
 
-    Route::get('/leave-calendar', function () {
-        return view('admin.leave-calendar.index');
-    })->name('admin.leave-calendar.index');
-
-    // Route::get('/balance-tracker', function () {
-    //     return view('admin.balance-tracker.index');
-    // })->name('admin.balance-tracker.index');
+    Route::get('/balance-tracker', function () {
+        return view('admin.balance-tracker.index');
+    })->name('admin.balance-tracker.index');
 
     Route::get('/roles', function () {
         return view('admin.roles-permissions.index');

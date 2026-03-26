@@ -62,11 +62,11 @@
                 </div>
             </div>
 
-            <p>You can view your updated leave dashboard by clicking the button below:</p>
+            <p>You can view your updated leave dashboard.</p>
             
-            <div style="text-align: center;">
+            <!-- <div style="text-align: center;">
                 <a href="{{ $actionUrl }}" class="btn">View My Leaves</a>
-            </div>
+            </div> -->
         </div>
         <div class="footer">
             <p>&copy; {{ date('Y') }} Enaara Management. All rights reserved.</p>

@@ -7,7 +7,8 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-        <form id="addHolidayForm">
+        <form id="addHolidayForm" action="{{ route('admin.leave-calendar.store') }}" method="POST">
+            @csrf <!-- Include CSRF token for security -->
             <!-- Holiday Name -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
@@ -16,18 +17,26 @@
 
                 <div class="mb-3">
                     <label for="holidayName" class="form-label fw-semibold small text-white">Holiday Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="holidayName" placeholder="e.g., Independence Day" required>
+                    <input type="text" class="form-control" id="holidayName" name="name" placeholder="e.g., Independence Day" required>
                 </div>
 
                 <!-- Date Selection -->
                 <div class="mb-3">
-                    <label for="holidayDate" class="form-label fw-semibold small text-white">Date <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control" id="holidayDate" required>
+                    <label for="holidayStartDate" class="form-label fw-semibold small text-white">Start Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="holidayStartDate" name="start_date" required>
                 </div>
+
+                <!-- End Date -->
+                <div class="mb-3">
+                    <label for="holidayEndDate" class="form-label fw-semibold small text-white">End Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="holidayEndDate" name="end_date" required>
+                </div>
+
 
                 <!-- Recurring Option -->
                 <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="isRecurring">
+                    <input class="form-check-input" type="checkbox" id="isRecurring" name="is_recurring" value="1">
+
                     <label class="form-check-label text-white" for="isRecurring">
                         <strong>Recurring Holiday</strong>
                         <small class="d-block opacity-75">Repeat annually</small>
@@ -45,14 +54,14 @@
 
                 <div class="mb-3">
                     <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="holidayScope" id="scopeAll" value="all" checked>
+                        <input class="form-check-input" type="radio" name="organization_scope" id="scopeAll" value="all" checked>
                         <label class="form-check-label text-white" for="scopeAll">
                             <strong>All Organizations</strong>
                             <small class="d-block opacity-75">Apply to entire group</small>
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="holidayScope" id="scopeSpecific" value="specific">
+                        <input class="form-check-input" type="radio" name="organization_scope" id="scopeSpecific" value="specific">
                         <label class="form-check-label text-white" for="scopeSpecific">
                             <strong>Specific Organization</strong>
                             <small class="d-block opacity-75">Select organization(s)</small>
@@ -63,11 +72,12 @@
                 <!-- Organization Select (shown when specific is selected) -->
                 <div class="mb-3" id="organizationSelectSection" style="display: none;">
                     <label for="holidayOrganizations" class="form-label fw-semibold small text-white">Select Organizations</label>
-                    <select class="form-select" id="holidayOrganizations" multiple>
-                        <option value="1">Enaara Construction</option>
-                        <option value="2">Enaara Properties</option>
-                        <option value="3">Enaara Real Estate</option>
+                    <select class="form-select" id="holidayOrganizations" name="organizations[]" multiple>
+                        @foreach($organizations as $org)
+                            <option value="{{ $org->id }}">{{ $org->name }}</option>
+                        @endforeach
                     </select>
+
                     <small class="opacity-75 text-white">Hold Ctrl/Cmd to select multiple</small>
                 </div>
             </div>
@@ -81,7 +91,8 @@
                 </h6>
 
                 <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="isBlackout">
+                    <input class="form-check-input" type="checkbox" id="isBlackout" name="is_blackout" value="1">
+
                     <label class="form-check-label text-white" for="isBlackout">
                         <strong>Mark as Blackout Date</strong>
                         <small class="d-block opacity-75">No leave requests allowed on this date</small>
@@ -90,17 +101,22 @@
 
                 <div class="mb-3" id="blackoutReasonSection" style="display: none;">
                     <label for="blackoutReason" class="form-label fw-semibold small text-white">Reason</label>
-                    <input type="text" class="form-control" id="blackoutReason" placeholder="e.g., Project Deadline, Quarter End">
+                    <input type="text" class="form-control" id="blackoutReason" name="reason" placeholder="e.g., Project Deadline, Quarter End">
                 </div>
             </div>
         </form>
     </div>
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
-        <div class="d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
-            <button type="button" class="btn btn-light text-dark border-0" id="saveHolidayBtn">
-                <i class="bi bi-check-lg me-1"></i>Save Holiday
+        <div class="d-flex justify-content-between w-100">
+            <button type="button" class="btn btn-outline-danger d-none" id="deleteHolidayBtn">
+                <i class="bi bi-trash me-1"></i>Delete
             </button>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
+                <button type="submit" class="btn btn-light text-dark border-0" id="saveHolidayBtn" form="addHolidayForm">
+                    <i class="bi bi-check-lg me-1"></i>Save Holiday
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -112,71 +128,158 @@ document.addEventListener('DOMContentLoaded', function() {
     const organizationSelectSection = document.getElementById('organizationSelectSection');
     const isBlackout = document.getElementById('isBlackout');
     const blackoutReasonSection = document.getElementById('blackoutReasonSection');
-    const saveBtn = document.getElementById('saveHolidayBtn');
+    const addHolidayForm = document.getElementById('addHolidayForm');
+    const deleteHolidayBtn = document.getElementById('deleteHolidayBtn');
+    const offcanvasEl = document.getElementById('addHolidayCanvas');
 
     // Show/hide organization select
-    scopeAll.addEventListener('change', function() {
-        if (this.checked) {
-            organizationSelectSection.style.display = 'none';
-        }
-    });
-
-    scopeSpecific.addEventListener('change', function() {
-        if (this.checked) {
-            organizationSelectSection.style.display = 'block';
-        }
-    });
-
-    // Show/hide blackout reason
-    isBlackout.addEventListener('change', function() {
-        if (this.checked) {
-            blackoutReasonSection.style.display = 'block';
-        } else {
-            blackoutReasonSection.style.display = 'none';
-        }
-    });
-
-    // Reset form when offcanvas is hidden
-    const addHolidayCanvas = document.getElementById('addHolidayCanvas');
-    if (addHolidayCanvas) {
-        addHolidayCanvas.addEventListener('hidden.bs.offcanvas', function() {
-            document.getElementById('addHolidayForm').reset();
-            organizationSelectSection.style.display = 'none';
-            blackoutReasonSection.style.display = 'none';
+    if (scopeAll) {
+        scopeAll.addEventListener('change', function() {
+            if (this.checked) organizationSelectSection.style.display = 'none';
         });
     }
 
-    // Handle form submission
-    if (saveBtn) {
-        saveBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const form = document.getElementById('addHolidayForm');
-            if (form && form.checkValidity()) {
-                const formData = {
-                    name: document.getElementById('holidayName').value,
-                    date: document.getElementById('holidayDate').value,
-                    isRecurring: document.getElementById('isRecurring').checked,
-                    scope: document.querySelector('input[name="holidayScope"]:checked').value,
-                    organizations: document.getElementById('holidayOrganizations').selectedOptions.length > 0 
-                        ? Array.from(document.getElementById('holidayOrganizations').selectedOptions).map(opt => opt.value)
-                        : [],
-                    isBlackout: isBlackout.checked,
-                    blackoutReason: document.getElementById('blackoutReason').value
-                };
-                
-                console.log('Holiday data:', formData);
-                // TODO: Implement API call to save holiday
-                
-                // Close offcanvas
-                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('addHolidayCanvas'));
-                if (offcanvas) {
-                    offcanvas.hide();
-                }
-            } else if (form) {
-                form.reportValidity();
+    if (scopeSpecific) {
+        scopeSpecific.addEventListener('change', function() {
+            if (this.checked) organizationSelectSection.style.display = 'block';
+        });
+    }
+
+    // Show/hide blackout reason
+    if (isBlackout) {
+        isBlackout.addEventListener('change', function() {
+            blackoutReasonSection.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+
+    // Reset form when canvas is hidden - Consolidated
+    if (offcanvasEl) {
+        offcanvasEl.addEventListener('hidden.bs.offcanvas', function () {
+            if (addHolidayForm) {
+                addHolidayForm.reset();
+                addHolidayForm.dataset.mode = 'add';
+                addHolidayForm.dataset.holidayId = '';
+                addHolidayForm.action = `{{ route('admin.leave-calendar.store') }}`;
             }
+            
+            const label = document.getElementById('addHolidayCanvasLabel');
+            if (label) label.textContent = 'Add New Holiday';
+            
+            if (organizationSelectSection) organizationSelectSection.style.display = 'none';
+            if (blackoutReasonSection) blackoutReasonSection.style.display = 'none';
+            if (deleteHolidayBtn) deleteHolidayBtn.classList.add('d-none');
+            
+            // Clear errors
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+        });
+    }
+
+    // Handle form submission via AJAX
+    if (addHolidayForm) {
+        addHolidayForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Clear previous errors
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+            const formData = new FormData(this);
+            const submitBtn = document.getElementById('saveHolidayBtn');
+            if (submitBtn) submitBtn.disabled = true;
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: data.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else if (data.errors) {
+                    Object.keys(data.errors).forEach(key => {
+                        let input = document.getElementsByName(key)[0] || document.getElementById(key);
+                        if (key === 'name') input = document.getElementById('holidayName');
+                        if (key === 'start_date') input = document.getElementById('holidayStartDate');
+                        if (key === 'end_date') input = document.getElementById('holidayEndDate');
+                        
+                        if (input) {
+                            input.classList.add('is-invalid');
+                            const feedback = document.createElement('div');
+                            feedback.className = 'invalid-feedback d-block text-warning small mt-1';
+                            feedback.innerText = data.errors[key][0];
+                            input.closest('.mb-3')?.appendChild(feedback) || input.parentElement.appendChild(feedback);
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', data.message || 'Something went wrong.', 'error');
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                Swal.fire('Network Error', 'Please try again.', 'error');
+            })
+            .finally(() => {
+                if (submitBtn) submitBtn.disabled = false;
+            });
+        });
+    }
+
+    // Handle Delete
+    if (deleteHolidayBtn) {
+        deleteHolidayBtn.addEventListener('click', function() {
+            const id = addHolidayForm.dataset.holidayId;
+            if (!id) return;
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This will permanently delete this holiday.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const url = "{{ route('admin.leave-calendar.destroy', ['id' => ':id']) }}".replace(':id', id);
+                    fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json',
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Deleted!', data.message, 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.message || 'Failed to delete holiday.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Delete error:', error);
+                        Swal.fire('Error', 'Network error. Please try again.', 'error');
+                    });
+                }
+            });
         });
     }
 });
 </script>
+
+
+
 

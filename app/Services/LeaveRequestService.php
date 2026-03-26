@@ -58,12 +58,12 @@ class LeaveRequestService
             $maxAllowed = (float) (optional($request->leaveType)->annual_quota ?? 0);
             $year = Carbon::parse($request->start_date)->year;
             
-            $claimed = (float) EmployeLeaveRequest::where('from_employee_id', $request->from_employee_id)
+            $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $request->from_employee_id)
                 ->where('leave_type_id', $request->leave_type_id)
-                ->whereYear('start_date', $year)
-                ->whereIn('status', [0, 1, 3])
-                ->whereIn('action_type', [0, 2]) // Only count approver rows
-                ->sum('duration');
+                ->where('year', $year)
+                ->first();
+            
+            $claimed = $quotaRecord ? (float) $quotaRecord->used : 0;
             
             $remaining = max(0, $maxAllowed - $claimed);
 
@@ -96,15 +96,20 @@ class LeaveRequestService
             ];
         })->values()->all();
 
-        $pendingCount = EmployeLeaveRequest::whereIn('status', [0, 1, 2])->count();
+        $pendingCount = EmployeLeaveRequest::whereIn('status', [0, 1, 2])
+            ->whereIn('action_type', [0, 2])
+            ->count();
         $approvedTodayCount = EmployeLeaveRequest::where('status', 3)
+            ->whereIn('action_type', [0, 2])
             ->where('updated_at', '>=', now()->startOfDay())
             ->count();
         $awayTodayCount = EmployeLeaveRequest::where('status', 3)
+            ->whereIn('action_type', [0, 2])
             ->where('start_date', '<=', now()->toDateString())
             ->where('end_date', '>=', now()->toDateString())
             ->count();
         $overdueCount = EmployeLeaveRequest::whereIn('status', [0, 1, 2])
+            ->whereIn('action_type', [0, 2])
             ->where('created_at', '<', now()->subDays(2))
             ->count();
 
@@ -144,12 +149,12 @@ class LeaveRequestService
         foreach ($leaveTypes as $type) {
             $maxAllowed = (float) $type->annual_quota;
             
-            $claimed = (float) EmployeLeaveRequest::where('from_employee_id', $employeeId)
+            $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $employeeId)
                 ->where('leave_type_id', $type->id)
-                ->whereYear('start_date', $year)
-                ->whereIn('status', [3]) // Only count approved for the "Used" label in charts
-                ->whereIn('action_type', [0, 2])
-                ->sum('duration');
+                ->where('year', $year)
+                ->first();
+                
+            $claimed = $quotaRecord ? (float) $quotaRecord->used : 0;
 
             $summary[] = [
                 'id' => $type->id,
@@ -255,12 +260,22 @@ class LeaveRequestService
         $maxAllowed = (float) ($leaveType->annual_quota ?? 0);
 
         // Sum up all days already claimed for this year
-        $alreadyClaimed = (float) EmployeLeaveRequest::where('from_employee_id', $fromEmployee->id)
+        $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $fromEmployee->id)
+            ->where('leave_type_id', $validated['leave_type_id'])
+            ->where('year', $year)
+            ->first();
+            
+        $alreadyClaimed = $quotaRecord ? (float) $quotaRecord->used : 0;
+
+        // Also add currently pending requests (status 0, 1) so they can't overbook before approval
+        $pendingRequested = (float) EmployeLeaveRequest::where('from_employee_id', $fromEmployee->id)
             ->where('leave_type_id', $validated['leave_type_id'])
             ->whereYear('start_date', $year)
-            ->whereIn('status', [0, 1, 3]) // 0:pending, 1:recommended, 3:approved
+            ->whereIn('status', [0, 1]) 
             ->whereIn('action_type', [0, 2]) // ONLY check final approver rows to avoid double subtraction
             ->sum('duration');
+
+        $alreadyClaimed += $pendingRequested;
 
         if (($alreadyClaimed + $duration) > $maxAllowed) {
             $remaining = max(0, $maxAllowed - $alreadyClaimed);
