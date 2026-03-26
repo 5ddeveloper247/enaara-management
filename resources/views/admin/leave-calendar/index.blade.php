@@ -89,6 +89,8 @@
     @include('admin.leave-calendar.event_detail_canvas')
     <!-- Add Holiday Canvas -->
     @include('admin.leave-calendar.add_holiday_canvas')
+    <!-- All Holidays List Canvas -->
+    @include('admin.leave-calendar.all_holidays_canvas')
 @endsection
 
 @push('scripts')
@@ -471,7 +473,56 @@
                     });
                 }
             }
+
+            // All Holidays History
+            const allHolidaysContainer = document.getElementById('allHolidaysList');
+            if (allHolidaysContainer) {
+                allHolidaysContainer.innerHTML = '';
+                
+                const today = new Date();
+                const twoYearsAgo = new Date();
+                twoYearsAgo.setFullYear(today.getFullYear() - 2);
+
+                const historical = publicHolidays
+                    .filter(h => new Date(h.start_date) >= twoYearsAgo && new Date(h.start_date) <= today)
+                    .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+
+                const previewList = historical.slice(0, 3);
+
+                if (previewList.length === 0) {
+                    allHolidaysContainer.innerHTML = '<div class="text-muted small">No holiday history found</div>';
+                } else {
+                    previewList.forEach(holiday => {
+                        const item = document.createElement('div');
+                        item.className = 'd-flex justify-content-between align-items-center p-2 border-bottom';
+                        item.innerHTML = `
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold" style="font-size: 13px; color: #333;">${holiday.name}</div>
+                                <small class="text-muted" style="font-size: 11px;">${new Date(holiday.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</small>
+                            </div>
+                            <button class="btn btn-primary btn-sm rounded-3" 
+                                    style="font-size: 10px !important; padding: 4px 10px; height: 26px;"
+                                    onclick="editHoliday(${holiday.id})">
+                                Holiday
+                            </button>
+                        `;
+                        allHolidaysContainer.appendChild(item);
+                    });
+
+                    if (historical.length > 3) {
+                        const viewAllContainer = document.createElement('div');
+                        viewAllContainer.className = 'text-center mt-3';
+                        viewAllContainer.innerHTML = `
+                            <button class="btn btn-sm btn-outline-primary w-100 rounded-3" style="font-size: 12px; padding: 6px;" onclick="showAllHolidaysHistory()">
+                                View All Holidays (${historical.length - 3} more)
+                            </button>
+                        `;
+                        allHolidaysContainer.appendChild(viewAllContainer);
+                    }
+                }
+            }
         }
+
     </script>
 
     <script>
@@ -548,14 +599,17 @@
 
                     // Handle transition with a small delay to avoid backdrop conflicts
                     const detailCanvasEl = document.getElementById('eventDetailCanvas');
-                    const detailInstance = bootstrap.Offcanvas.getInstance(detailCanvasEl);
+                    const detailInstance = detailCanvasEl ? bootstrap.Offcanvas.getInstance(detailCanvasEl) : null;
+                    
+                    const allHolidaysCanvasEl = document.getElementById('allHolidaysCanvas');
+                    const allHolidaysInstance = allHolidaysCanvasEl ? bootstrap.Offcanvas.getInstance(allHolidaysCanvasEl) : null;
                     
                     if (detailInstance && detailCanvasEl.classList.contains('show')) {
                         detailInstance.hide();
-                        // Wait for hide transition to finish or just use a safe delay
-                        setTimeout(() => {
-                            canvas.show();
-                        }, 350); // 350ms is Bootstrap's default transition duration
+                        setTimeout(() => canvas.show(), 350);
+                    } else if (allHolidaysInstance && allHolidaysCanvasEl.classList.contains('show')) {
+                        allHolidaysInstance.hide();
+                        setTimeout(() => canvas.show(), 350);
                     } else {
                         canvas.show();
                     }
@@ -613,6 +667,46 @@
         // Make functions global for onclick handlers
         window.editHoliday = editHoliday;
         window.deleteHoliday = deleteHoliday;
+        window.showAllHolidaysHistory = showAllHolidaysHistory;
+
+        function showAllHolidaysHistory() {
+            const today = new Date();
+            const twoYearsAgo = new Date();
+            twoYearsAgo.setFullYear(today.getFullYear() - 2);
+
+            const historical = publicHolidays
+                .filter(h => new Date(h.start_date) >= twoYearsAgo && new Date(h.start_date) <= today)
+                .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+
+            const fullListContainer = document.getElementById('allHolidaysFullList');
+            fullListContainer.innerHTML = '';
+
+            if (historical.length === 0) {
+                fullListContainer.innerHTML = '<div class="text-muted text-center py-4">No historical holidays found in the past 2 years.</div>';
+                return;
+            }
+
+            historical.forEach(holiday => {
+                const item = document.createElement('div');
+                item.className = 'd-flex justify-content-between align-items-center mb-0 p-3 border-bottom';
+                item.style.borderColor = '#ffffff42 !important';
+                item.innerHTML = `
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold text-white" style="font-size: 14px;">${holiday.name}</div>
+                        <small class="text-white opacity-75">${new Date(holiday.start_date).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}</small>
+                    </div>
+                    <button class="btn btn-light btn-sm rounded-3 ms-2 text-dark fw-semibold border-0" 
+                            style="font-size: 11px !important; padding: 6px 12px; height: 30px;"
+                            onclick="editHoliday(${holiday.id})">
+                        Holiday
+                    </button>
+                `;
+                fullListContainer.appendChild(item);
+            });
+
+            const canvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('allHolidaysCanvas'));
+            canvas.show();
+        }
     </script>
 
 @endpush
