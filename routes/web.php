@@ -19,6 +19,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\LeaveCalendarController;
+use App\Http\Controllers\BalanceTrackerController;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -140,6 +141,10 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         Route::get('/leave-calendar/fetch-department-employees', [LeaveCalendarController::class, 'fetchDepartmentLeaveEmployees'])->name('admin.leave-calendar.fetch-department-employees');
 
 
+    //Leave Balance 
+    Route::get('/balance-tracker', [BalanceTrackerController::class, 'index'])->name('admin.balance-tracker.index');
+    Route::post('/balance-tracker', [BalanceTrackerController::class, 'adjustBalance'])->name('admin.balance-tracker.adjust');
+    Route::get('/balance-tracker/export', [BalanceTrackerController::class, 'export'])->name('admin.balance-tracker.export');
     // Route::get('/users', function () {
     //     return view('admin.users.index'); // Placeholder - replace with actual users view
     // })->name('admin.users.index');
@@ -160,26 +165,23 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         return view('admin.monthly-logs.index');
     })->name('admin.monthly-logs.index');
 
-    // Route::get('/shift-planner', function () {
-    //     return view('admin.shift-planner.index');
-    // })->name('admin.shift-planner.index');
+    Route::get('/shift-planner', function () {
+        return view('admin.shift-planner.index');
+    })->name('admin.shift-planner.index');
 
     // Route::get('/regularization', function () {
     //     return view('admin.regularization.index');
     // })->name('admin.regularization.index');
 
-    // Route::get('/geofencing', function () {
-    //     return view('admin.geofencing.index');
-    // })->name('admin.geofencing.index');
+    Route::get('/geofencing', function () {
+        return view('admin.geofencing.index');
+    })->name('admin.geofencing.index');
 
 
 
     Route::get('/my-leaves', [LeaveRequestController::class, 'myLeaves'])->name('admin.my.leaves.index');
 
-    Route::get('/balance-tracker', function () {
-        return view('admin.balance-tracker.index');
-    })->name('admin.balance-tracker.index');
-
+ 
     Route::get('/roles', function () {
         return view('admin.roles-permissions.index');
     })->name('admin.roles.index');

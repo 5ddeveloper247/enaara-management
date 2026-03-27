@@ -40,6 +40,60 @@
             color: white !important;
             font-size: 13px !important;
         }
+
+        /* Sidebar Tabs Styling */
+        .sidebar-tabs .nav-pills {
+            background-color: rgba(1, 36, 69, 0.05);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-tabs .nav-link {
+            border-radius: 10px;
+            color: var(--main-color);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 8px 4px; /* Reduced side padding to prevent wrap */
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            flex-grow: 1; /* Use flex-grow instead of width: 50% for better sizing */
+            white-space: nowrap; /* Prevent text wrap */
+            letter-spacing: 0.2px;
+        }
+
+        .sidebar-tabs .nav-link.active {
+            background-color: var(--main-color) !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(1, 36, 69, 0.25);
+            transform: scale(1.02);
+        }
+
+        .holiday-list-item {
+            transition: transform 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .holiday-list-item:hover {
+            background-color: rgba(1, 36, 69, 0.02);
+            transform: translateX(4px);
+            border-left: 3px solid var(--main-color);
+        }
+
+        .year-filter-select {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            color: var(--main-color);
+            font-weight: 500;
+        }
+
+        .year-filter-select:focus {
+            outline: none;
+            border-color: var(--main-color);
+        }
     </style>
 @endpush
 
@@ -78,9 +132,56 @@
                 </div>
             </div>
 
-            <!-- Sidebar Stats -->
+            <!-- Sidebar Tabs Section -->
             <div class="col-md-3">
-                @include('admin.leave-calendar.sidebar_stats')
+                <div class="card border-0 rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="sidebar-tabs">
+                            <ul class="nav nav-pills" id="sidebarHolidayTabs" role="tablist">
+                                <li class="nav-item d-flex flex-fill" role="presentation">
+                                    <button class="nav-link active w-100" id="upcoming-tab" data-bs-toggle="pill"
+                                        data-bs-target="#upcoming-content" type="button" role="tab">
+                                        Upcoming Holidays
+                                    </button>
+                                </li>
+                                <li class="nav-item d-flex flex-fill" role="presentation">
+                                    <button class="nav-link w-100" id="all-tab" data-bs-toggle="pill"
+                                        data-bs-target="#all-content" type="button" role="tab">
+                                        All Holidays
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="tab-content" id="sidebarHolidayTabsContent">
+                            <!-- Upcoming Holidays Tab -->
+                            <div class="tab-pane fade show active" id="upcoming-content" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0 fw-bold" style="font-size: 14px; color: var(--main-color)">Upcoming Holidays</h6>
+                                </div>
+                                <div id="upcomingHolidaysList">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+
+                            <!-- All Holidays History Tab -->
+                            <div class="tab-pane fade" id="all-content" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0 fw-bold" style="font-size: 14px; color: var(--main-color)">All Holidays</h6>
+                                    <select id="holidayYearFilter" class="year-filter-select">
+                                        @php $currentYear = date('Y'); @endphp
+                                        @for($y = $currentYear; $y >= $currentYear - 2; $y--)
+                                            <option value="{{ $y }}">{{ $y }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                                <div id="allHolidaysList">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -89,8 +190,6 @@
     @include('admin.leave-calendar.event_detail_canvas')
     <!-- Add Holiday Canvas -->
     @include('admin.leave-calendar.add_holiday_canvas')
-    <!-- All Holidays List Canvas -->
-    @include('admin.leave-calendar.all_holidays_canvas')
 @endsection
 
 @push('scripts')
@@ -110,6 +209,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeCalendar();
             populateSidebarStats();
+
+            // Year Filter Change Support
+            const yearFilter = document.getElementById('holidayYearFilter');
+            if (yearFilter) {
+                yearFilter.addEventListener('change', function() {
+                    populateHistoryByYear(this.value);
+                });
+            }
 
             // Offcanvas Reset Listener
             const addHolidayCanvasEl = document.getElementById('addHolidayCanvas');
@@ -161,8 +268,8 @@
             deptLeaves.forEach(leave => {
                 const percentage = (leave.count / leave.total) * 100;
                 let intensity = 'low';
-                if (percentage >= 30) intensity = 'high';
-                else if (percentage >= 20) intensity = 'medium';
+                if (percentage >= 50) intensity = 'high';
+                else if (percentage >= 30) intensity = 'medium';
 
                 events.push({
                     title: `${leave.department}: ${leave.count} on leave`,
@@ -226,8 +333,10 @@
                         dot.className = 'holiday-dot';
                         info.el.appendChild(dot);
                     } else if (eventType === 'blackout') {
-                        // Add red border
-                        info.el.style.border = '2px solid #dc3545';
+                        // Add black border/background for blackout dates
+                        info.el.style.border = '2px solid #000000';
+                        info.el.style.backgroundColor = '#000000';
+                        info.el.style.color = '#ffffff';
                         info.el.style.borderRadius = '4px';
                     }
                 },
@@ -293,10 +402,10 @@
                 let badgeColor = 'rgba(1, 36, 69, 0.4)'; // Low
                 let intensity = 'Low';
                 
-                if (percentage >= 30) {
-                    badgeColor = 'var(--main-color)'; // High - main color (#012445)
+                if (percentage >= 50) {
+                    badgeColor = 'var(--main-color)'; // High
                     intensity = 'High';
-                } else if (percentage >= 20) {
+                } else if (percentage >= 30) {
                     badgeColor = 'rgba(1, 36, 69, 0.7)'; // Medium
                     intensity = 'Medium';
                 }
@@ -315,7 +424,6 @@
                 
                 const progressBar = document.getElementById('leaveProgressBar');
                 progressBar.style.width = percentage + '%';
-                progressBar.style.backgroundColor = badgeColor;
                 progressBar.setAttribute('aria-valuenow', percentage);
                 progressBar.setAttribute('aria-valuemin', 0);
                 progressBar.setAttribute('aria-valuemax', 100);
@@ -323,12 +431,12 @@
                 // Show impact level
                 document.getElementById('impactLevelSection').style.display = 'block';
                 let impactDescription = '';
-                if (percentage >= 30) {
-                    impactDescription = 'Critical: More than 30% of department is on leave. Consider redistributing workload.';
-                } else if (percentage >= 20) {
-                    impactDescription = 'Warning: 20-30% of department is on leave. Monitor workload distribution.';
+                if (percentage >= 50) {
+                    impactDescription = 'Critical: 50% or more of department is on leave. Immediate workload redistribution required.';
+                } else if (percentage >= 30) {
+                    impactDescription = 'Warning: 30-50% of department is on leave. Monitor workload distribution closely.';
                 } else {
-                    impactDescription = 'Normal: Less than 20% of department is on leave. Standard operations expected.';
+                    impactDescription = 'Normal: Less than 30% of department is on leave. Standard operations expected.';
                 }
                 document.getElementById('impactLevelBadge').innerHTML = 
                     `<span class="badge" style="background-color: ${badgeColor}; padding: 0.5rem 1rem; font-size: 0.875rem;">${intensity} Impact</span>`;
@@ -420,8 +528,8 @@
                     todayLeaves.forEach(leave => {
                         const percentage = Math.round((leave.count / leave.total) * 100);
                         let badgeClass = 'bg-success';
-                        if (percentage >= 30) badgeClass = 'bg-main';
-                        else if (percentage >= 20) badgeClass = 'bg-primary';
+                        if (percentage >= 50) badgeClass = 'bg-main';
+                        else if (percentage >= 30) badgeClass = 'bg-primary';
                         
                         const item = document.createElement('div');
                         item.className = 'd-flex justify-content-between align-items-center p-2 mb-2 rounded-3';
@@ -444,83 +552,37 @@
                 upcomingHolidaysContainer.innerHTML = '';
                 
                 const today = new Date();
+                today.setHours(0, 0, 0, 0); // Start of today
+
                 const upcoming = publicHolidays
                     .filter(h => new Date(h.start_date) >= today)
-                    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
-                    .slice(0, 5);
+                    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
 
                 if (upcoming.length === 0) {
-                    upcomingHolidaysContainer.innerHTML = '<div class="text-muted small">No upcoming holidays</div>';
+                    upcomingHolidaysContainer.innerHTML = '<div class="text-muted small py-4 text-center opacity-75">No upcoming holidays found</div>';
                 } else {
                     upcoming.forEach(holiday => {
                         const item = document.createElement('div');
-                        item.className = 'd-flex justify-content-between align-items-center p-2 border-bottom';
+                        item.className = 'holiday-list-item d-flex justify-content-between align-items-center p-2 mb-2 rounded-3';
+                        item.style.backgroundColor = 'rgba(1, 36, 69, 0.02)';
                         item.innerHTML = `
                             <div class="flex-grow-1">
                                 <div class="fw-semibold" style="font-size: 13px; color: #333;">${holiday.name}</div>
                                 <small class="text-muted" style="font-size: 11px;">${new Date(holiday.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
                             </div>
-                            <button class="btn btn-primary btn-sm rounded-3" 
-                                    style="font-size: 10px !important; padding: 4px 10px; height: 26px;"
+                            <button class="btn btn-outline-primary btn-sm rounded-pill" 
+                                    style="font-size: 9px !important; padding: 2px 8px; height: 22px;"
                                     onclick="editHoliday(${holiday.id})">
-                                Holiday
+                                Details
                             </button>
                         `;
-
-
-
                         upcomingHolidaysContainer.appendChild(item);
                     });
                 }
             }
 
-            // All Holidays History
-            const allHolidaysContainer = document.getElementById('allHolidaysList');
-            if (allHolidaysContainer) {
-                allHolidaysContainer.innerHTML = '';
-                
-                const today = new Date();
-                const twoYearsAgo = new Date();
-                twoYearsAgo.setFullYear(today.getFullYear() - 2);
-
-                const historical = publicHolidays
-                    .filter(h => new Date(h.start_date) >= twoYearsAgo && new Date(h.start_date) <= today)
-                    .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-
-                const previewList = historical.slice(0, 3);
-
-                if (previewList.length === 0) {
-                    allHolidaysContainer.innerHTML = '<div class="text-muted small">No holiday history found</div>';
-                } else {
-                    previewList.forEach(holiday => {
-                        const item = document.createElement('div');
-                        item.className = 'd-flex justify-content-between align-items-center p-2 border-bottom';
-                        item.innerHTML = `
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold" style="font-size: 13px; color: #333;">${holiday.name}</div>
-                                <small class="text-muted" style="font-size: 11px;">${new Date(holiday.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</small>
-                            </div>
-                            <button class="btn btn-primary btn-sm rounded-3" 
-                                    style="font-size: 10px !important; padding: 4px 10px; height: 26px;"
-                                    onclick="editHoliday(${holiday.id})">
-                                Holiday
-                            </button>
-                        `;
-                        allHolidaysContainer.appendChild(item);
-                    });
-
-                    if (historical.length > 3) {
-                        const viewAllContainer = document.createElement('div');
-                        viewAllContainer.className = 'text-center mt-3';
-                        viewAllContainer.innerHTML = `
-                            <button class="btn btn-sm btn-outline-primary w-100 rounded-3" style="font-size: 12px; padding: 6px;" onclick="showAllHolidaysHistory()">
-                                View All Holidays (${historical.length - 3} more)
-                            </button>
-                        `;
-                        allHolidaysContainer.appendChild(viewAllContainer);
-                    }
-                }
-            }
+            // Initial population of history tab (current year)
+            populateHistoryByYear(new Date().getFullYear());
         }
 
     </script>
@@ -601,14 +663,8 @@
                     const detailCanvasEl = document.getElementById('eventDetailCanvas');
                     const detailInstance = detailCanvasEl ? bootstrap.Offcanvas.getInstance(detailCanvasEl) : null;
                     
-                    const allHolidaysCanvasEl = document.getElementById('allHolidaysCanvas');
-                    const allHolidaysInstance = allHolidaysCanvasEl ? bootstrap.Offcanvas.getInstance(allHolidaysCanvasEl) : null;
-                    
                     if (detailInstance && detailCanvasEl.classList.contains('show')) {
                         detailInstance.hide();
-                        setTimeout(() => canvas.show(), 350);
-                    } else if (allHolidaysInstance && allHolidaysCanvasEl.classList.contains('show')) {
-                        allHolidaysInstance.hide();
                         setTimeout(() => canvas.show(), 350);
                     } else {
                         canvas.show();
@@ -667,45 +723,40 @@
         // Make functions global for onclick handlers
         window.editHoliday = editHoliday;
         window.deleteHoliday = deleteHoliday;
-        window.showAllHolidaysHistory = showAllHolidaysHistory;
+        window.populateHistoryByYear = populateHistoryByYear;
 
-        function showAllHolidaysHistory() {
-            const today = new Date();
-            const twoYearsAgo = new Date();
-            twoYearsAgo.setFullYear(today.getFullYear() - 2);
+        function populateHistoryByYear(year) {
+            const container = document.getElementById('allHolidaysList');
+            if (!container) return;
 
-            const historical = publicHolidays
-                .filter(h => new Date(h.start_date) >= twoYearsAgo && new Date(h.start_date) <= today)
+            const filtered = publicHolidays
+                .filter(h => new Date(h.start_date).getFullYear() === parseInt(year))
                 .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
 
-            const fullListContainer = document.getElementById('allHolidaysFullList');
-            fullListContainer.innerHTML = '';
+            container.innerHTML = '';
 
-            if (historical.length === 0) {
-                fullListContainer.innerHTML = '<div class="text-muted text-center py-4">No historical holidays found in the past 2 years.</div>';
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-muted text-center py-4 small opacity-75">No holidays found for ' + year + '</div>';
                 return;
             }
 
-            historical.forEach(holiday => {
+            filtered.forEach(holiday => {
                 const item = document.createElement('div');
-                item.className = 'd-flex justify-content-between align-items-center mb-0 p-3 border-bottom';
-                item.style.borderColor = '#ffffff42 !important';
+                item.className = 'holiday-list-item d-flex justify-content-between align-items-center p-2 mb-2 rounded-3';
+                item.style.backgroundColor = 'rgba(1, 36, 69, 0.02)';
                 item.innerHTML = `
                     <div class="flex-grow-1">
-                        <div class="fw-semibold text-white" style="font-size: 14px;">${holiday.name}</div>
-                        <small class="text-white opacity-75">${new Date(holiday.start_date).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}</small>
+                        <div class="fw-semibold" style="font-size: 13px; color: #333;">${holiday.name}</div>
+                        <small class="text-muted" style="font-size: 11px;">${new Date(holiday.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
                     </div>
-                    <button class="btn btn-light btn-sm rounded-3 ms-2 text-dark fw-semibold border-0" 
-                            style="font-size: 11px !important; padding: 6px 12px; height: 30px;"
+                    <button class="btn btn-outline-primary btn-sm rounded-pill" 
+                            style="font-size: 9px !important; padding: 2px 8px; height: 22px;"
                             onclick="editHoliday(${holiday.id})">
-                        Holiday
+                        Details
                     </button>
                 `;
-                fullListContainer.appendChild(item);
+                container.appendChild(item);
             });
-
-            const canvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('allHolidaysCanvas'));
-            canvas.show();
         }
     </script>
 

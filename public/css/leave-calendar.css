@@ -181,24 +181,25 @@
    Darker backgrounds with clear distinction
    ============================================ */
 .department-leave-low {
-    background-color: rgba(1, 36, 69, 0.35) !important;
-    border-left: 4px solid rgba(1, 36, 69, 0.6) !important;
+    background-color: rgba(1, 36, 69, 0.25) !important;
+    border-left: 4px solid rgba(1, 36, 69, 0.4) !important;
     color: #012445 !important;
     font-weight: 500;
 }
 
 .department-leave-medium {
     background-color: rgba(1, 36, 69, 0.55) !important;
-    border-left: 4px solid rgba(1, 36, 69, 0.85) !important;
-    color: #012445 !important;
+    border-left: 4px solid rgba(1, 36, 69, 0.75) !important;
+    color: #ffffff !important;
     font-weight: 600;
 }
 
 .department-leave-high {
-    background-color: rgba(1, 36, 69, 0.75) !important;
-    border-left: 4px solid var(--main-color) !important;
+    background-color: var(--main-color) !important; /* Full intensity (#012445) */
+    border-left: 4px solid #ffffff !important;
     color: #ffffff !important;
     font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* ============================================
@@ -232,11 +233,11 @@
 }
 
 .legend-dot.department-leave-low {
-    background-color: rgba(1, 36, 69, 0.4);
+    background-color: rgba(1, 36, 69, 0.25);
 }
 
 .legend-dot.department-leave-medium {
-    background-color: rgba(1, 36, 69, 0.7);
+    background-color: rgba(1, 36, 69, 0.55);
 }
 
 .legend-dot.department-leave-high {
