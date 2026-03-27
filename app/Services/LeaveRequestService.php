@@ -55,7 +55,6 @@ class LeaveRequestService
             $isApprover = ($currentUser && $currentUser->id === $request->to_user_id);
 
             // Calculate balance for this specific leave type and employee
-            $maxAllowed = (float) (optional($request->leaveType)->annual_quota ?? 0);
             $year = Carbon::parse($request->start_date)->year;
             
             $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $request->from_employee_id)
@@ -63,6 +62,7 @@ class LeaveRequestService
                 ->where('year', $year)
                 ->first();
             
+            $maxAllowed = (float) ($quotaRecord ? $quotaRecord->adjusted_quota : (optional($request->leaveType)->annual_quota ?? 0));
             $claimed = $quotaRecord ? (float) $quotaRecord->used : 0;
             
             $remaining = max(0, $maxAllowed - $claimed);
@@ -133,8 +133,8 @@ class LeaveRequestService
         $employee = Employee::find($employeeId);
         $year = now()->year;
         
-        $organizationId = $employee?->role?->organization_id;
-        $departmentId = $employee?->role?->department_id;
+        $organizationId = $employee->organization_id;
+        $departmentId = $employee->department_id;
 
         $leaveTypes = LeaveType::where('is_active', true)
             ->when($organizationId, fn($q) => $q->where(function ($qq) use ($organizationId) {
@@ -147,13 +147,12 @@ class LeaveRequestService
         
         $summary = [];
         foreach ($leaveTypes as $type) {
-            $maxAllowed = (float) $type->annual_quota;
-            
             $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $employeeId)
                 ->where('leave_type_id', $type->id)
                 ->where('year', $year)
                 ->first();
-                
+
+            $maxAllowed = (float) ($quotaRecord ? $quotaRecord->adjusted_quota : $type->annual_quota);
             $claimed = $quotaRecord ? (float) $quotaRecord->used : 0;
 
             $summary[] = [
@@ -257,7 +256,6 @@ class LeaveRequestService
         // Quota Check
         $year = $startDate->year;
         $leaveType = LeaveType::findOrFail($validated['leave_type_id']);
-        $maxAllowed = (float) ($leaveType->annual_quota ?? 0);
 
         // Sum up all days already claimed for this year
         $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $fromEmployee->id)
@@ -265,6 +263,7 @@ class LeaveRequestService
             ->where('year', $year)
             ->first();
             
+        $maxAllowed = (float) ($quotaRecord ? $quotaRecord->adjusted_quota : ($leaveType->annual_quota ?? 0));
         $alreadyClaimed = $quotaRecord ? (float) $quotaRecord->used : 0;
 
         // Also add currently pending requests (status 0, 1) so they can't overbook before approval
@@ -420,8 +419,8 @@ class LeaveRequestService
 
         $employee = Employee::with('role')->findOrFail((int) $request->input('employee_id'));
 
-        $organizationId = $employee->role?->organization_id;
-        $departmentId = $employee->role?->department_id;
+        $organizationId = $employee->organization_id;
+        $departmentId = $employee->department_id;
 
         $leaveTypes = LeaveType::query()
             ->where('is_active', true)

@@ -108,7 +108,7 @@ class LeaveCalenderService
                 'id' => $employee->employee_code ?? 'N/A',
                 'initials' => strtoupper($initials),
                 'leaveType' => $entity->leaveType->name ?? 'Leave',
-                'quota_info' => $quota ? "{$quota->used}/{$quota->quota}" : '0/0'
+                'quota_info' => $quota ? "{$quota->used}/{$quota->adjusted_quota}" : '0/0'
             ];
         });
     }
