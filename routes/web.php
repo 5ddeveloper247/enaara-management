@@ -198,9 +198,9 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.audit-trails.index');
     // })->name('admin.audit-trails.index');
 
-    // Route::get('/policies', function () {
-    //     return view('admin.policies.index');
-    // })->name('admin.policies.index');
+    Route::get('/policies', function () {
+        return view('admin.policies.index');
+    })->name('admin.policies.index');
 
     // Route::get('/workflows', function () {
     //     return view('admin.workflows.index');

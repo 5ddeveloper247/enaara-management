@@ -502,9 +502,22 @@
                 const type = $('#filterType').val();
                 const status = $('#filterStatus').val();
                 
-                // Apply filters to DataTable
-                fencesTable.column(4).search(type); // Type column
-                fencesTable.column(7).search(status); // Status column
+                // Map form values to the rendered badge text for regex search
+                const typeMap = {
+                    'hard-lock': 'Hard Lock',
+                    'soft-lock': 'Soft Lock'
+                };
+                const statusMap = {
+                    'active': 'Active',
+                    'inactive': 'Inactive'
+                };
+
+                const typeSearch = type ? typeMap[type] || '' : '';
+                const statusSearch = status ? statusMap[status] || '' : '';
+                
+                // Apply filters to DataTable using regex for exact badge text match
+                fencesTable.column(4).search(typeSearch, false, false); // Type column
+                fencesTable.column(7).search(statusSearch, false, false); // Status column
                 
                 fencesTable.draw();
                 
