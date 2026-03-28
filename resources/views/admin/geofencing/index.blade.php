@@ -186,6 +186,9 @@
 
     <!-- Add Fence Canvas -->
     @include('admin.geofencing.add_fence_canvas')
+    
+    <!-- Edit Fence Canvas -->
+    @include('admin.geofencing.edit_fence_canvas')
 
     <!-- Fence Detail Canvas -->
     @include('admin.geofencing.fence_detail_canvas')
@@ -222,58 +225,30 @@
         let breadcrumbTrails = [];
         let fencesTable;
 
-        // Sample fence data - Rawalpindi, Pakistan
-        const sampleFences = [
-            {
-                id: 1,
-                name: 'Enaara Tower A',
-                address: 'Commercial Area, Rawalpindi, Pakistan',
-                lat: 33.5651,
-                lng: 73.0169,
-                radius: 200,
-                radiusUnit: 'meters',
-                type: 'hard-lock',
-                assignedGroups: ['Site Maintenance', 'Security Team'],
-                insideCount: 45,
-                outsideCount: 12,
-                status: 'active'
-            },
-            {
-                id: 2,
-                name: 'Downtown Site',
-                address: 'Saddar, Rawalpindi, Pakistan',
-                lat: 33.6000,
-                lng: 73.0500,
-                radius: 150,
-                radiusUnit: 'meters',
-                type: 'soft-lock',
-                assignedGroups: ['Sales Team', 'Field Agents'],
-                insideCount: 28,
-                outsideCount: 5,
-                status: 'active'
-            },
-            {
-                id: 3,
-                name: 'Construction Site B',
-                address: 'DHA Phase 1, Rawalpindi, Pakistan',
-                lat: 33.5500,
-                lng: 73.0000,
-                radius: 300,
-                radiusUnit: 'meters',
-                type: 'hard-lock',
-                assignedGroups: ['Construction Team'],
-                insideCount: 69,
-                outsideCount: 0,
-                status: 'active'
-            }
-        ];
+        // Dynamic fence data
+        const dbFences = @json($geofences ?? []);
+        const sampleFences = dbFences.map(f => ({
+            id: f.id,
+            name: f.name,
+            address: f.address || 'No Address provided',
+            lat: f.latitude,
+            lng: f.longitude,
+            radius: f.radius,
+            radiusUnit: f.radius_unit,
+            type: f.type,
+            assignedGroups: f.sbu ? [f.sbu.name] : ['None'],
+            insideCount: 0,
+            outsideCount: 0,
+            antiSpoofing: f.anti_spoofing,
+            offlineSync: f.offline_sync,
+            autoCheckIn: f.auto_check_in,
+            status: f.status
+        }));
 
         $(document).ready(function() {
             initializeMap();
             initializeFencesDataTable();
             addSampleFencesToMap();
-            addSampleEmployees();
-            addSampleBreadcrumbs();
 
             // Refresh map button
             $('#refreshMapBtn').on('click', function() {
@@ -357,113 +332,60 @@
         }
 
         function addSampleFencesToMap() {
+            if (!sampleFences || sampleFences.length === 0) return;
+
             sampleFences.forEach(fenceData => {
                 const fence = createFence(fenceData);
                 fences.push(fence);
             });
+
+            // Automatically pan/zoom map to fit all dynamic fences
+            const group = new L.featureGroup(fences.map(f => f.circle));
+            geofencingMap.fitBounds(group.getBounds().pad(0.1));
         }
 
         function createFence(fenceData) {
-            const circle = L.circle([fenceData.lat, fenceData.lng], {
-                radius: fenceData.radius,
-                color: fenceData.type === 'hard-lock' ? '#dc3545' : '#ffc107',
-                fillColor: fenceData.type === 'hard-lock' ? '#dc3545' : '#ffc107',
-                fillOpacity: 0.2,
-                weight: 2
-            }).addTo(geofencingMap);
+            let shape;
+            const color = fenceData.type === 'hard-lock' ? '#dc3545' : '#ffc107';
 
-            // Create custom marker for site
-            const marker = L.marker([fenceData.lat, fenceData.lng], {
-                icon: L.divIcon({
-                    className: 'custom-site-marker',
-                    html: `<div class="site-marker-pin">
-                        <i class="bi bi-building"></i>
-                    </div>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30]
-                })
-            }).addTo(geofencingMap);
+            if (fenceData.radius) {
+                // Determine radius in meters
+                let radiusInMeters = fenceData.radius;
+                if (fenceData.radiusUnit === 'kilometers') {
+                    radiusInMeters = fenceData.radius * 1000;
+                }
+                
+                shape = L.circle([fenceData.lat, fenceData.lng], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.2,
+                    radius: radiusInMeters
+                });
+            }
 
-            // Popup with site info
-            const popupContent = `
-                <div class="fence-popup">
-                    <h6 class="fw-semibold mb-2">${fenceData.name}</h6>
-                    <p class="small mb-2">${fenceData.address}</p>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="small">Inside: <strong class="text-success">${fenceData.insideCount}</strong></span>
-                        <span class="small">Outside: <strong class="text-warning">${fenceData.outsideCount}</strong></span>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-primary view-fence-btn" data-fence-id="${fenceData.id}">
-                            <i class="bi bi-eye"></i> View Details
-                        </button>
-                    </div>
-                </div>
-            `;
+            if (shape) {
+                shape.addTo(geofencingMap);
 
-            marker.bindPopup(popupContent);
-            circle.bindPopup(popupContent);
-
-            // Store fence data
-            return {
-                id: fenceData.id,
-                name: fenceData.name,
-                circle: circle,
-                marker: marker,
-                data: fenceData
-            };
-        }
-
-        function addSampleEmployees() {
-            // Sample employee locations - Rawalpindi, Pakistan
-            const employees = [
-                { name: 'Ahmed Ali', lat: 33.5655, lng: 73.0170, status: 'inside', fenceId: 1 },
-                { name: 'Zainab Malik', lat: 33.6005, lng: 73.0505, status: 'inside', fenceId: 2 },
-                { name: 'Bilal Ahmed', lat: 33.5505, lng: 73.0005, status: 'inside', fenceId: 3 },
-                { name: 'Hira Ali', lat: 33.5658, lng: 73.0175, status: 'outside', fenceId: 1 },
-            ];
-
-            employees.forEach(emp => {
-                const iconColor = emp.status === 'inside' ? '#28a745' : '#ffc107';
-                const marker = L.marker([emp.lat, emp.lng], {
-                    icon: L.divIcon({
-                        className: 'employee-marker',
-                        html: `<div class="employee-marker-pin" style="background-color: ${iconColor};">
-                            <i class="bi bi-person-fill"></i>
-                        </div>`,
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 24]
-                    })
-                }).addTo(geofencingMap);
-
+                // Add a proper location pin marker at the center
+                const marker = L.marker([fenceData.lat, fenceData.lng]).addTo(geofencingMap);
                 marker.bindPopup(`
-                    <div>
-                        <strong>${emp.name}</strong><br>
-                        Status: <span class="badge bg-${emp.status === 'inside' ? 'success' : 'warning'}">${emp.status === 'inside' ? 'Inside' : 'Outside'}</span>
+                    <div class="p-2">
+                        <strong class="d-block mb-1">${fenceData.name}</strong>
+                        <small class="text-muted d-block mb-2">${fenceData.address}</small>
+                        <div class="d-flex justify-content-between text-white small mt-2">
+                            <span><i class="bi bi-box-arrow-in-right me-1 text-success"></i>Inside: <span class="text-success">${fenceData.insideCount}</span></span>
+                            <span><i class="bi bi-box-arrow-right me-1 text-warning"></i>Outside: <span class="text-warning">${fenceData.outsideCount}</span></span>
+                        </div>
                     </div>
                 `);
 
-                employeeMarkers.push(marker);
-            });
-        }
-
-        function addSampleBreadcrumbs() {
-            // Sample breadcrumb trail for a field agent - Rawalpindi, Pakistan
-            const trailCoordinates = [
-                [33.5651, 73.0169],
-                [33.5653, 73.0171],
-                [33.5655, 73.0173],
-                [33.5657, 73.0175],
-                [33.5659, 73.0177]
-            ];
-
-            const polyline = L.polyline(trailCoordinates, {
-                color: '#6c757d',
-                weight: 3,
-                opacity: 0.6
-            }).addTo(geofencingMap);
-
-            breadcrumbTrails.push(polyline);
+                return {
+                    ...fenceData,
+                    circle: shape,
+                    marker: marker
+                };
+            }
+            return fenceData;
         }
 
         function initializeFencesDataTable() {
@@ -493,12 +415,15 @@
                             <span class="text-warning">${fence.outsideCount}</span>
                         </td>
                         <td>${statusBadge}</td>
-                        <td class="text-end">
+                        <td class="text-end" style="white-space: nowrap;">
                             <button class="btn btn-sm btn-outline-primary view-fence-btn" data-fence-id="${fence.id}" data-bs-toggle="tooltip" title="View Details">
                                 <i class="bi bi-eye"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-secondary edit-fence-btn" data-fence-id="${fence.id}" data-bs-toggle="tooltip" title="Edit">
                                 <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-fence-btn" data-fence-id="${fence.id}" data-bs-toggle="tooltip" title="Delete">
+                                <i class="bi bi-trash"></i>
                             </button>
                         </td>
                     </tr>
@@ -544,8 +469,12 @@
                         responsivePriority: 4
                     },
                     {
-                        targets: [2, 3, 7], // Address, Radius, Status - can hide on small screens
+                        targets: [2, 3], // Address, Radius - can hide on small screens
                         responsivePriority: 5
+                    },
+                    {
+                        targets: 7, // Status - keep visible
+                        responsivePriority: 3
                     }
                 ],
                 language: {
@@ -646,6 +575,89 @@
             }
         });
 
+        // Handle edit fence button clicks
+        $(document).on('click', '.edit-fence-btn', function() {
+            const fenceId = $(this).data('fence-id');
+            
+            // Show loading state
+            const btn = $(this);
+            const originalIcon = btn.html();
+            btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+            btn.prop('disabled', true);
+
+            // Fetch current Geofence data
+            $.ajax({
+                url: `/admin/geofencing/${fenceId}/edit`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.geofence) {
+                        const gf = response.geofence;
+                        $('#editFenceId').val(gf.id);
+                        $('#editFenceSbu').val(gf.sbu_id);
+                        $('#editFenceSiteName').val(gf.name);
+                        $('#editFenceAddress').val(gf.address);
+                        $('#editFenceLat').val(gf.latitude);
+                        $('#editFenceLng').val(gf.longitude);
+                        $('#editFenceRadius').val(gf.radius);
+                        $('#editFenceRadiusUnit').val(gf.radius_unit);
+                        $('#editFenceType').val(gf.type);
+                        $('#editFenceStatus').val(gf.status);
+                        
+                        $('#editEnableAntiSpoofing').prop('checked', !!Math.round(gf.anti_spoofing));
+                        $('#editEnableOfflineSync').prop('checked', !!Math.round(gf.offline_sync));
+                        $('#editEnableAutoCheckIn').prop('checked', !!Math.round(gf.auto_check_in));
+
+                        // Open Canvas
+                        const canvas = new bootstrap.Offcanvas(document.getElementById('editFenceCanvas'));
+                        canvas.show();
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Error', 'Unable to fetch geofence details.', 'error');
+                },
+                complete: function() {
+                    btn.html(originalIcon);
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // Handle delete fence button clicks
+        $(document).on('click', '.delete-fence-btn', function() {
+            const fenceId = $(this).data('fence-id');
+            
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/admin/geofencing/${fenceId}`,
+                        method: 'DELETE',
+                        data: {
+                            _token: '{{ csrf_token() }}' // For Laravel forms/ajax without meta tag
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('Deleted!', response.message || 'Geofence has been deleted.', 'success').then(() => {
+                                    window.location.reload();
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            const err = xhr.responseJSON?.message || 'Error occurred while deleting the geofence.';
+                            Swal.fire('Error', err, 'error');
+                        }
+                    });
+                }
+            });
+        });
+
         // Function to show fence details
         function showFenceDetails(fenceData) {
             // Populate detail canvas
@@ -669,6 +681,32 @@
                 `<span class="badge bg-secondary me-2 mb-2">${group}</span>`
             ).join('');
             $('#detailFenceGroups').html(groupsHtml);
+
+            // Advanced Features
+            const formatBadge = (isEnabled) => isEnabled 
+                ? '<span class="badge bg-success">Enabled</span>' 
+                : '<span class="badge bg-secondary">Disabled</span>';
+            
+            $('#detailAntiSpoofing').replaceWith(`<span class="badge ${fenceData.antiSpoofing ? 'bg-success' : 'bg-secondary'}" id="detailAntiSpoofing">${fenceData.antiSpoofing ? 'Enabled' : 'Disabled'}</span>`);
+            $('#detailOfflineSync').replaceWith(`<span class="badge ${fenceData.offlineSync ? 'bg-success' : 'bg-secondary'}" id="detailOfflineSync">${fenceData.offlineSync ? 'Enabled' : 'Disabled'}</span>`);
+            $('#detailAutoCheckIn').replaceWith(`<span class="badge ${fenceData.autoCheckIn ? 'bg-success' : 'bg-secondary'}" id="detailAutoCheckIn">${fenceData.autoCheckIn ? 'Enabled' : 'Disabled'}</span>`);
+
+            // Violations (Placeholder, but dynamic empty state handled if needed)
+            const violationsHtml = fenceData.violations && fenceData.violations.length > 0 
+                ? fenceData.violations.map(v => `
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom" style="border-color: #ffffff1a !important;">
+                        <div>
+                            <div class="small fw-semibold">${v.employeeName}</div>
+                            <small class="opacity-75 text-white">${v.type}</small>
+                        </div>
+                        <small class="opacity-75 text-white">${v.timeAgo}</small>
+                    </div>`).join('') 
+                : `<div class="text-center py-3 opacity-50 small">
+                    <i class="bi bi-shield-check fs-4 d-block mb-1"></i>
+                    No recent violations
+                   </div>`;
+                   
+            $('#detailFenceViolations').html(violationsHtml);
             
             // Open canvas
             const canvas = new bootstrap.Offcanvas(document.getElementById('fenceDetailCanvas'));

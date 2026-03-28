@@ -20,6 +20,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\BalanceTrackerController;
+use App\Http\Controllers\Admin\GeofenceController;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -173,12 +174,11 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.regularization.index');
     // })->name('admin.regularization.index');
 
-    Route::get('/geofencing', function () {
-        return view('admin.geofencing.index');
-    })->name('admin.geofencing.index');
-
-
-
+    Route::get('/geofencing', [GeofenceController::class, 'index'])->name('admin.geofencing.index');
+    Route::post('/geofencing', [GeofenceController::class, 'store'])->name('admin.geofencing.store');
+    Route::get('/geofencing/{id}/edit', [GeofenceController::class, 'edit'])->name('admin.geofencing.edit');
+    Route::post('/geofencing/{id}', [GeofenceController::class, 'update'])->name('admin.geofencing.update');
+    Route::delete('/geofencing/{id}', [GeofenceController::class, 'destroy'])->name('admin.geofencing.destroy');
     Route::get('/my-leaves', [LeaveRequestController::class, 'myLeaves'])->name('admin.my.leaves.index');
 
  
