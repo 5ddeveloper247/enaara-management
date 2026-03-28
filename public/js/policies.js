@@ -12,6 +12,8 @@
     let policiesTable;
     let policiesData = [];
     let customFilterFunction = null;
+    let isEditMode = false;
+    let editPolicyId = null;
 
     // ============================================
     // INITIALIZATION
@@ -27,10 +29,23 @@
     // DATA LOADING
     // ============================================
     function loadPoliciesData() {
-        if (typeof ProjectData !== 'undefined' && ProjectData.policies) {
-            policiesData = ProjectData.policies.generateSampleData(30);
+        if (typeof dbPolicies !== 'undefined' && dbPolicies.length > 0) {
+            policiesData = dbPolicies.map(p => ({
+                id: p.id,
+                title: p.title,
+                category: p.category,
+                status: p.status,
+                effectiveDate: p.effective_date,
+                lastUpdated: p.updated_at,
+                applicableTo: p.applicable_to,
+                applicableDetails: p.applicable_details || '',
+                description: p.description || '',
+                hasDocument: !!p.document_path,
+                documentName: p.document_name || null,
+                documentPath: p.document_path || null,
+                documentSize: null
+            }));
         } else {
-            console.warn('ProjectData not found, using empty array');
             policiesData = [];
         }
     }
@@ -160,21 +175,34 @@
         const lastUpdated = formatTimestamp(policy.lastUpdated);
 
         // Actions
-        const viewBtn = `
-            <button type="button" 
-                    class="btn btn-sm btn-primary view-policy-btn" 
-                    data-bs-toggle="offcanvas"
-                    data-bs-target="#policyDetailCanvas"
-                    data-policy-id="${policy.id}"
-                    title="View Details">
-                <i class="bi bi-eye"></i>
-            </button>
+        const actions = `
+            <div class="d-flex gap-1 justify-content-end" style="white-space: nowrap;">
+                <button type="button" 
+                        class="btn btn-sm btn-primary view-policy-btn" 
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#policyDetailCanvas"
+                        data-policy-id="${policy.id}"
+                        title="View Details">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button type="button" 
+                        class="btn btn-sm btn-outline-secondary edit-policy-btn" 
+                        data-policy-id="${policy.id}"
+                        title="Edit">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" 
+                        class="btn btn-sm btn-outline-danger delete-policy-btn" 
+                        data-policy-id="${policy.id}"
+                        title="Delete">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
         `;
 
         return `
             <tr data-category="${policy.category.toLowerCase().replace(/\s+/g, '-')}" 
                 data-status="${policy.status}" 
-                data-organization="${policy.organization ? policy.organization.toLowerCase().replace(/\s+/g, '-') : ''}" 
                 data-applicable-to="${policy.applicableTo}">
                 <td class="dt-control"></td>
                 <td>
@@ -190,7 +218,7 @@
                     <div class="small fw-semibold">${lastUpdated.date}</div>
                     <small class="text-muted">${lastUpdated.time}</small>
                 </td>
-                <td class="text-end">${viewBtn}</td>
+                <td class="text-end">${actions}</td>
             </tr>
         `;
     }
@@ -232,24 +260,64 @@
                 const button = event.relatedTarget;
                 if (button && button.classList.contains('view-policy-btn')) {
                     const policyId = parseInt($(button).data('policy-id'));
-                    const policy = policiesData.find(p => p.id === policyId);
-                    if (policy) {
-                        populateDetailCanvas(policy);
-                    }
+                    fetchAndPopulateDetailCanvas(policyId);
                 }
             });
         }
 
         // View/Download Document
-        $('#viewDocumentBtn, #downloadDocumentBtn').on('click', function() {
-            const action = $(this).attr('id') === 'viewDocumentBtn' ? 'view' : 'download';
-            alert(`${action === 'view' ? 'Viewing' : 'Downloading'} document functionality will be implemented with backend integration.`);
+        $('#viewDocumentBtn').on('click', function() {
+            const docPath = $(this).data('document-path');
+            if (docPath) {
+                window.open('/storage/' + docPath, '_blank');
+            }
         });
 
-        // Edit Policy
-        $('#editPolicyBtn').on('click', function() {
-            alert('Edit functionality will be implemented with backend integration.');
+        $('#downloadDocumentBtn').on('click', function() {
+            const docPath = $(this).data('document-path');
+            if (docPath) {
+                const link = document.createElement('a');
+                link.href = '/storage/' + docPath;
+                link.download = $(this).data('document-name') || 'document';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         });
+
+        // Edit Policy from detail canvas
+        $('#editPolicyBtn').on('click', function() {
+            const policyId = $(this).data('current-policy-id');
+            if (policyId) {
+                // Close offcanvas
+                const offcanvasEl = document.getElementById('policyDetailCanvas');
+                const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                if (offcanvasInstance) offcanvasInstance.hide();
+                
+                // Trigger edit
+                openEditModal(policyId);
+            }
+        });
+
+        // Edit Policy from table
+        $(document).on('click', '.edit-policy-btn', function() {
+            const policyId = $(this).data('policy-id');
+            openEditModal(policyId);
+        });
+
+        // Delete Policy from table
+        $(document).on('click', '.delete-policy-btn', function() {
+            const policyId = $(this).data('policy-id');
+            handleDeletePolicy(policyId);
+        });
+
+        // Reset modal when closed
+        const createModal = document.getElementById('createPolicyModal');
+        if (createModal) {
+            createModal.addEventListener('hidden.bs.modal', function () {
+                resetModal();
+            });
+        }
     }
 
     // ============================================
@@ -339,68 +407,224 @@
     }
 
     // ============================================
-    // POLICY CREATION
+    // POLICY CREATION / UPDATE
     // ============================================
     function handleCreatePolicy(e) {
         e.preventDefault();
         
-        const policyData = {
-            id: policiesData.length + 1,
-            title: $('#policyTitle').val(),
-            category: $('#policyCategory option:selected').text(),
-            status: $('#policyStatus').val(),
-            effectiveDate: $('#policyEffectiveDate').val(),
-            lastUpdated: new Date().toISOString(),
-            applicableTo: $('#policyApplicableTo').val(),
-            organization: $('#policyOrganization').val() || null,
-            branch: $('#policyBranch').val() || null,
-            floor: $('#policyFloor').val() || null,
-            description: $('#policyDescription').val() || '',
-            hasDocument: $('#policyDocument')[0].files.length > 0,
-            documentName: $('#policyDocument')[0].files.length > 0 ? $('#policyDocument')[0].files[0].name : null,
-            documentSize: $('#policyDocument')[0].files.length > 0 ? (($('#policyDocument')[0].files[0].size / 1024 / 1024).toFixed(2)) + ' MB' : null
-        };
+        const formData = new FormData();
+        formData.append('title', $('#policyTitle').val());
+        formData.append('category', $('#policyCategory option:selected').text());
+        formData.append('status', $('#policyStatus').val());
+        formData.append('effective_date', $('#policyEffectiveDate').val());
+        formData.append('applicable_to', $('#policyApplicableTo').val());
 
         // Set applicable details
-        if (policyData.applicableTo === 'global') {
-            policyData.applicableDetails = 'Global (All Organizations)';
-        } else if (policyData.applicableTo === 'organization') {
-            policyData.applicableDetails = $('#policyOrganization option:selected').text();
-        } else if (policyData.applicableTo === 'branch') {
-            policyData.applicableDetails = $('#policyBranch option:selected').text() + ' Branch';
-        } else if (policyData.applicableTo === 'floor') {
-            policyData.applicableDetails = 'Floor ' + $('#policyFloor').val();
+        const applicableTo = $('#policyApplicableTo').val();
+        let applicableDetails = '';
+        if (applicableTo === 'global') {
+            applicableDetails = 'Global (All Organizations)';
+        } else if (applicableTo === 'organization') {
+            applicableDetails = $('#policyOrganization option:selected').text();
+        } else if (applicableTo === 'branch') {
+            applicableDetails = $('#policyBranch option:selected').text() + ' Branch';
+        } else if (applicableTo === 'floor') {
+            applicableDetails = 'Floor ' + $('#policyFloor').val();
+        }
+        formData.append('applicable_details', applicableDetails);
+
+        formData.append('description', $('#policyDescription').val() || '');
+
+        // File upload
+        const fileInput = $('#policyDocument')[0];
+        if (fileInput.files.length > 0) {
+            formData.append('document', fileInput.files[0]);
         }
 
-        // Add to data array
-        policiesData.unshift(policyData);
+        // Determine URL and method
+        let url = '/admin/policies';
+        if (isEditMode && editPolicyId) {
+            url = `/admin/policies/${editPolicyId}`;
+        }
 
-        // Rebuild table
-        const tbody = $('#policiesTableBody');
-        tbody.empty();
-        policiesData.forEach(policy => {
-            const row = buildTableRow(policy);
-            tbody.append(row);
+        // Submit button state
+        const submitBtn = $('#createPolicyForm button[type="submit"]');
+        const originalBtnText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
+
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createPolicyModal'));
+                    if (modal) modal.hide();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: isEditMode ? 'Updated!' : 'Created!',
+                        text: response.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = 'An error occurred. Please try again.';
+                if (xhr.responseJSON) {
+                    if (xhr.responseJSON.errors) {
+                        errorMsg = Object.values(xhr.responseJSON.errors).flat().join('\n');
+                    } else if (xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                }
+                Swal.fire('Error', errorMsg, 'error');
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false).html(originalBtnText);
+            }
         });
-        policiesTable.draw();
+    }
 
-        // Close modal and reset form
-        const modal = bootstrap.Modal.getInstance(document.getElementById('createPolicyModal'));
-        modal.hide();
+    // ============================================
+    // EDIT POLICY
+    // ============================================
+    function openEditModal(policyId) {
+        // Fetch policy data
+        $.ajax({
+            url: `/admin/policies/${policyId}`,
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success && response.policy) {
+                    const p = response.policy;
+                    
+                    isEditMode = true;
+                    editPolicyId = p.id;
+
+                    // Update modal title
+                    $('#createPolicyModalLabel').html('<i class="bi bi-pencil me-2"></i>Edit Policy');
+                    $('#createPolicyForm button[type="submit"]').html('<i class="bi bi-check-circle me-1"></i>Update Policy');
+
+                    // Populate form fields
+                    $('#policyTitle').val(p.title);
+
+                    // Match category by text
+                    const categoryMap = {
+                        'Leave Policy': 'leave',
+                        'Attendance Grace Period': 'attendance',
+                        'Geofencing Rules': 'geofence',
+                        'Shift Rota Protocols': 'shift',
+                        'Security Policy': 'security',
+                        'HR Policy': 'hr'
+                    };
+                    $('#policyCategory').val(categoryMap[p.category] || '');
+
+                    $('#policyStatus').val(p.status);
+                    $('#policyEffectiveDate').val(p.effective_date ? p.effective_date.split('T')[0] : '');
+                    $('#policyApplicableTo').val(p.applicable_to).trigger('change');
+                    $('#policyDescription').val(p.description || '');
+
+                    // Open modal
+                    const modal = new bootstrap.Modal(document.getElementById('createPolicyModal'));
+                    modal.show();
+                }
+            },
+            error: function() {
+                Swal.fire('Error', 'Unable to fetch policy details.', 'error');
+            }
+        });
+    }
+
+    function resetModal() {
+        isEditMode = false;
+        editPolicyId = null;
+        $('#createPolicyModalLabel').html('<i class="bi bi-plus-circle me-2"></i>Create New Policy');
+        $('#createPolicyForm button[type="submit"]').html('<i class="bi bi-check-circle me-1"></i>Create Policy');
         $('#createPolicyForm')[0].reset();
         $('#organizationSelect, #branchSelect, #floorSelect').hide();
+    }
 
-        // Update counters
-        updateCounters();
-
-        // Show success message
-        alert('Policy created successfully!');
+    // ============================================
+    // DELETE POLICY
+    // ============================================
+    function handleDeletePolicy(policyId) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/admin/policies/${policyId}`,
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted!',
+                                text: response.message || 'Policy has been deleted.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        const err = xhr.responseJSON?.message || 'Error occurred while deleting the policy.';
+                        Swal.fire('Error', err, 'error');
+                    }
+                });
+            }
+        });
     }
 
     // ============================================
     // DETAIL CANVAS POPULATION
     // ============================================
+    function fetchAndPopulateDetailCanvas(policyId) {
+        $.ajax({
+            url: `/admin/policies/${policyId}`,
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success && response.policy) {
+                    populateDetailCanvas(response.policy);
+                }
+            },
+            error: function() {
+                Swal.fire('Error', 'Unable to fetch policy details.', 'error');
+            }
+        });
+    }
+
     function populateDetailCanvas(policy) {
+        // Store current policy ID for edit button
+        $('#editPolicyBtn').data('current-policy-id', policy.id);
+
         // Policy Information
         $('#detailTitle').text(policy.title);
         
@@ -435,21 +659,21 @@
         }
         $('#detailStatus').html(statusBadge);
 
-        $('#detailEffectiveDate').text(formatDate(policy.effectiveDate));
+        $('#detailEffectiveDate').text(formatDate(policy.effective_date));
         
-        const lastUpdated = formatTimestamp(policy.lastUpdated);
+        const lastUpdated = formatTimestamp(policy.updated_at);
         $('#detailLastUpdated').text(`${lastUpdated.date} at ${lastUpdated.time}`);
 
         // Applicable To
         let applicableToHtml = '';
-        if (policy.applicableTo === 'global') {
+        if (policy.applicable_to === 'global') {
             applicableToHtml = '<span class="badge px-2 py-1 bg-primary"><i class="bi bi-globe me-1"></i>Global (All Organizations)</span>';
-        } else if (policy.applicableTo === 'organization') {
-            applicableToHtml = `<span class="badge px-2 py-1 bg-info"><i class="bi bi-building me-1"></i>${policy.applicableDetails}</span>`;
-        } else if (policy.applicableTo === 'branch') {
-            applicableToHtml = `<span class="badge px-2 py-1 bg-success"><i class="bi bi-geo-alt me-1"></i>${policy.applicableDetails}</span>`;
-        } else if (policy.applicableTo === 'floor') {
-            applicableToHtml = `<span class="badge px-2 py-1 bg-warning text-dark"><i class="bi bi-building me-1"></i>${policy.applicableDetails}</span>`;
+        } else if (policy.applicable_to === 'organization') {
+            applicableToHtml = `<span class="badge px-2 py-1 bg-info"><i class="bi bi-building me-1"></i>${policy.applicable_details}</span>`;
+        } else if (policy.applicable_to === 'branch') {
+            applicableToHtml = `<span class="badge px-2 py-1 bg-success"><i class="bi bi-geo-alt me-1"></i>${policy.applicable_details}</span>`;
+        } else if (policy.applicable_to === 'floor') {
+            applicableToHtml = `<span class="badge px-2 py-1 bg-warning text-dark"><i class="bi bi-building me-1"></i>${policy.applicable_details}</span>`;
         }
         $('#detailApplicableTo').html(applicableToHtml);
 
@@ -462,11 +686,12 @@
         }
 
         // Document
-        if (policy.hasDocument && policy.documentName) {
+        if (policy.document_path && policy.document_name) {
             $('#documentSection').show();
-            $('#detailDocumentName').text(policy.documentName);
-            $('#detailDocumentSize').text(policy.documentSize || '');
-            $('#viewDocumentBtn, #downloadDocumentBtn').data('document-name', policy.documentName);
+            $('#detailDocumentName').text(policy.document_name);
+            $('#detailDocumentSize').text('');
+            $('#viewDocumentBtn').data('document-path', policy.document_path);
+            $('#downloadDocumentBtn').data('document-path', policy.document_path).data('document-name', policy.document_name);
         } else {
             $('#documentSection').hide();
         }
@@ -476,6 +701,7 @@
     // UTILITY FUNCTIONS
     // ============================================
     function formatDate(dateString) {
+        if (!dateString) return '-';
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', { 
             year: 'numeric', 
@@ -485,6 +711,7 @@
     }
 
     function formatTimestamp(timestamp) {
+        if (!timestamp) return { date: '-', time: '' };
         const date = new Date(timestamp);
         const dateStr = date.toLocaleDateString('en-US', { 
             year: 'numeric', 
@@ -500,7 +727,30 @@
     }
 
     function handleExport() {
-        alert('Export functionality will be implemented with backend integration.');
+        if (!policiesTable) return;
+
+        const data = policiesTable.rows({search: 'applied'}).data();
+        let csvContent = "Title,Category,Applicable To,Effective Date,Status,Last Updated\n";
+        
+        data.each(function(row) {
+            const title = $(row[1]).text().trim().replace(/,/g, ';');
+            const category = $(row[2]).text().trim().replace(/,/g, ';');
+            const applicableTo = $(row[3]).text().trim().replace(/,/g, ';');
+            const effectiveDate = $(row[4]).text().trim().replace(/,/g, ';');
+            const status = $(row[5]).text().trim().replace(/,/g, ';');
+            const lastUpdated = $(row[6]).text().trim().replace(/,/g, ';');
+            csvContent += `"${title}","${category}","${applicableTo}","${effectiveDate}","${status}","${lastUpdated}"\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'policies_' + new Date().toISOString().split('T')[0] + '.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     // ============================================
@@ -536,4 +786,3 @@
     }
 
 })();
-

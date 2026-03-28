@@ -21,6 +21,7 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\BalanceTrackerController;
 use App\Http\Controllers\Admin\GeofenceController;
+use App\Http\Controllers\PolicyController;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -198,13 +199,15 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.audit-trails.index');
     // })->name('admin.audit-trails.index');
 
-    Route::get('/policies', function () {
-        return view('admin.policies.index');
-    })->name('admin.policies.index');
+    Route::get('/policies', [PolicyController::class, 'index'])->name('admin.policies.index');
+    Route::post('/policies', [PolicyController::class, 'store'])->name('admin.policies.store');
+    Route::get('/policies/{id}', [PolicyController::class, 'show'])->name('admin.policies.show');
+    Route::post('/policies/{id}', [PolicyController::class, 'update'])->name('admin.policies.update');
+    Route::delete('/policies/{id}', [PolicyController::class, 'destroy'])->name('admin.policies.destroy');
 
-    // Route::get('/workflows', function () {
-    //     return view('admin.workflows.index');
-    // })->name('admin.workflows.index');
+    Route::get('/workflows', function () {
+        return view('admin.workflows.index');
+    })->name('admin.workflows.index');
 
     // Route::get('/reports', function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual reports view
