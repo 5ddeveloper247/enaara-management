@@ -20,7 +20,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\BalanceTrackerController;
-use App\Http\Controllers\Admin\GeofenceController;
+use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\PolicyController;
 // Authentication Routes
 Route::get('/', function () {
