@@ -56,5 +56,10 @@ class EmployeeLeaveQuota extends Model
     {
         return $this->adjusted_quota - (float) $this->used;
     }
+
+    public function leaveBalanceAdjustments()
+    {
+        return $this->hasMany(LeaveBalanceAdjustment::class, 'leave_quota_id');
+    }
 }
 

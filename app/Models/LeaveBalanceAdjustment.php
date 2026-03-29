@@ -18,6 +18,7 @@ class LeaveBalanceAdjustment extends Model
         'days',
         'reason',
         'adjusted_by',
+        'leave_quota_id',
     ];
 
     public function employee()
@@ -43,5 +44,10 @@ class LeaveBalanceAdjustment extends Model
     public function adjustedBy()
     {
         return $this->belongsTo(User::class, 'adjusted_by');
+    }
+
+    public function leaveQuota()
+    {
+        return $this->belongsTo(EmployeeLeaveQuota::class, 'leave_quota_id');
     }
 }

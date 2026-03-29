@@ -134,6 +134,7 @@ class BalanceTrackerService
                 LeaveBalanceAdjustment::create([
                     'employee_id' => $employeeId,
                     'organization_id' => $employee->organization_id,
+                    'leave_quota_id' => $targetQuota->id,
                     'department_id' => $employee->department_id,
                     'leave_type_id' => $targetQuota->leave_type_id,
                     'adjustment_type' => $adjustmentType,
