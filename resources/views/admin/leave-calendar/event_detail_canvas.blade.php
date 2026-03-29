@@ -36,6 +36,13 @@
                     <small class="opacity-75 text-white d-block mb-1">Department</small>
                     <div class="small" id="eventDepartment">-</div>
                 </div>
+
+                <!-- ADD THIS HERE -->
+                <div id="eventSbuSection" style="display: none;">
+                    <small class="opacity-75 text-white d-block mb-1">SBU</small>
+                    <div class="small" id="eventSbu">-</div>
+                </div>
+
                 <div id="eventReasonSection" style="display: none;">
                     <small class="opacity-75 text-white d-block mb-1">Reason</small>
                     <div class="small" id="eventReason">-</div>
@@ -116,4 +123,3 @@
         </div>
     </div>
 </div>
-

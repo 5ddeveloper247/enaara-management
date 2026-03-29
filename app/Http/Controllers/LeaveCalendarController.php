@@ -6,7 +6,10 @@ use Illuminate\Http\Request;
 use App\Services\LeaveCalenderService;
 use App\Http\Requests\Admin\LeaveCalendar\LeaveCalendarRequest;
 use App\Models\Organization;
+use App\Models\Department;
+use App\Models\Sbu;
 use App\Models\PublicHoliday;
+
 class LeaveCalendarController extends Controller
 {
     public function __construct(LeaveCalenderService $leaveCalenderService)
@@ -20,19 +23,23 @@ class LeaveCalendarController extends Controller
             abort(403, 'Unauthorized action.');
         }
         $organizations = Organization::all();
-        $publicHolidays = PublicHoliday::with('organizations')->get();
-        
+        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $sbus = Sbu::where('is_active', true)->orderBy('name')->get();
+        $publicHolidays = PublicHoliday::with('organizations', 'departments', 'sbus')->get();
+
         // Fetch dynamic calendar data
         $blackoutDates = $this->leaveCalenderService->getBlackoutDates();
         $deptLeaves = $this->leaveCalenderService->getDepartmentLeaves(
-            now()->subMonths(3)->startOfMonth(), 
+            now()->subMonths(3)->startOfMonth(),
             now()->addMonths(3)->endOfMonth()
         );
 
         return view('admin.leave-calendar.index', compact(
-            'organizations', 
-            'publicHolidays', 
-            'blackoutDates', 
+            'organizations',
+            'departments',
+            'sbus',
+            'publicHolidays',
+            'blackoutDates',
             'deptLeaves'
         ));
     }
@@ -72,7 +79,7 @@ class LeaveCalendarController extends Controller
         }
 
         try {
-            $holiday = \App\Models\PublicHoliday::with('organizations')->findOrFail($id);
+            $holiday = PublicHoliday::with('organizations','departments', 'sbus')->findOrFail($id);
             return response()->json([
                 'success' => true,
                 'holiday' => $holiday,
@@ -104,7 +111,6 @@ class LeaveCalendarController extends Controller
             return redirect()
                 ->route('admin.leave-calendar.index')
                 ->with('success', 'Holiday added successfully.');
-
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -143,7 +149,6 @@ class LeaveCalendarController extends Controller
             return redirect()
                 ->route('admin.leave-calendar.index')
                 ->with('success', 'Holiday updated successfully.');
-
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -172,7 +177,6 @@ class LeaveCalendarController extends Controller
                 'success' => true,
                 'message' => 'Holiday deleted successfully.',
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

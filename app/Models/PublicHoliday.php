@@ -15,6 +15,8 @@ class PublicHoliday extends Model
         'end_date',
         'is_recurring',
         'organization_scope',
+        'department_scope',
+        'sbu_scope',
         'is_blackout',
         'reason',
     ];
@@ -32,5 +34,15 @@ class PublicHoliday extends Model
     public function organizations()
     {
         return $this->belongsToMany(Organization::class, 'holiday_organization', 'public_holiday_id', 'organization_id');
+    }
+
+    public function departments()
+    {
+        return $this->belongsToMany(Department::class, 'holiday_departments', 'public_holiday_id', 'department_id');
+    }
+
+    public function sbus()
+    {
+        return $this->belongsToMany(Sbu::class, 'holiday_sbus', 'public_holiday_id', 'sbu_id');
     }
 }

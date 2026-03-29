@@ -30,14 +30,39 @@ class LeaveCalendarRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'start_date' => 'required|date|before_or_equal:end_date',
-            'end_date' => 'required|date|after_or_equal:start_date', 
-            'is_recurring' => 'boolean', 
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'is_recurring' => 'boolean',
             'organization_scope' => 'nullable|in:all,specific',
             'is_blackout' => 'boolean',
             'organizations' => 'nullable|array|required_if:organization_scope,specific',
             'organizations.*' => 'exists:organizations,id',
             'reason' => 'nullable|string|max:1000',
+
+            'department_scope' => 'required|in:all,specific,none',
+            'departments' => 'nullable|array',
+            'departments.*' => 'exists:departments,id',
+
+            'sbu_scope' => 'required|in:all,specific,none',
+            'sbus' => 'nullable|array',
+            'sbus.*' => 'exists:sbus,id',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            if ($this->organization_scope === 'specific' && empty($this->organizations)) {
+                $validator->errors()->add('organizations', 'Please select at least one organization.');
+            }
+
+            if ($this->department_scope === 'specific' && empty($this->departments)) {
+                $validator->errors()->add('departments', 'Please select at least one department.');
+            }
+
+            if ($this->sbu_scope === 'specific' && empty($this->sbus)) {
+                $validator->errors()->add('sbus', 'Please select at least one SBU.');
+            }
+        });
     }
 
     public function messages(): array
@@ -52,4 +77,3 @@ class LeaveCalendarRequest extends FormRequest
         ];
     }
 }
-
