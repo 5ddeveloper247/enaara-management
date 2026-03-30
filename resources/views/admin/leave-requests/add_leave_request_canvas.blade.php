@@ -17,15 +17,25 @@
                 </h6>
                 
                 <div class="mb-3">
-                    <label for="leaveEmployee" class="form-label fw-semibold small text-white">Select Employee <span class="text-danger">*</span></label>
-                    <select class="form-select" id="leaveEmployee" name="employee_id" required>
-                        <option value="">Select Employee</option>
-                        @isset($employees)
-                            @foreach($employees as $employee)
-                                <option value="{{ $employee->id }}">{{ $employee->name }}</option>
-                            @endforeach
-                        @endisset
-                    </select>
+                    @if(request()->routeIs('admin.my.leaves.index'))
+                        <label class="form-label fw-semibold small text-white">Employee</label>
+                        <div class="form-control-plaintext text-white border-bottom pb-2" style="border-color: #ffffff1a !important;">
+                            {{ Auth::user()->name }}
+                        </div>
+                        <input type="hidden" id="leaveEmployee" name="employee_id" value="{{ Auth::user()->employee_id }}">
+                    @else
+                        <label for="leaveEmployee" class="form-label fw-semibold small text-white">Select Employee <span class="text-danger">*</span></label>
+                        <select class="form-select" id="leaveEmployee" name="employee_id" required>
+                            <option value="">Select Employee</option>
+                            @isset($employees)
+                                @foreach($employees as $employee)
+                                    <option value="{{ $employee->id }}">
+                                        {{ $employee->name }}
+                                    </option>
+                                @endforeach
+                            @endisset
+                        </select>
+                    @endif
                 </div>
 
                 <!-- Leave Balance Display -->
@@ -33,16 +43,16 @@
                     <small class="opacity-75 text-white d-block mb-2">Current Leave Balance</small>
                     <div class="row g-2">
                         <div class="col-6">
-                            <div class="small">Annual: <strong id="balanceAnnual">25</strong> days</div>
+                            <div class="small">Annual: <strong id="balanceAnnual">0</strong> days</div>
                         </div>
                         <div class="col-6">
-                            <div class="small">Sick: <strong id="balanceSick">13</strong> days</div>
+                            <div class="small">Sick: <strong id="balanceSick">0</strong> days</div>
                         </div>
                         <div class="col-6">
-                            <div class="small">Casual: <strong id="balanceCasual">8</strong> days</div>
+                            <div class="small">Casual: <strong id="balanceCasual">0</strong> days</div>
                         </div>
                         <div class="col-6">
-                            <div class="small">Comp-Off: <strong id="balanceCompOff">2</strong> days</div>
+                            <div class="small">Comp-Off: <strong id="balanceCompOff">0</strong> days</div>
                         </div>
                     </div>
                 </div>

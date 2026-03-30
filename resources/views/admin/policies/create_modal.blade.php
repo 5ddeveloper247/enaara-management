@@ -1,6 +1,6 @@
 <!-- Create/Edit Policy Modal -->
 <div class="modal fade" id="createPolicyModal" tabindex="-1" aria-labelledby="createPolicyModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-main text-white">
                 <h5 class="modal-title" id="createPolicyModalLabel">

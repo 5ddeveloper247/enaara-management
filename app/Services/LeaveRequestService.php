@@ -44,8 +44,8 @@ class LeaveRequestService
         ])
             ->when(!$isSuperAdmin && $currentEmployee, function ($query) use ($currentEmployee) {
                 $query->where(function($q) use ($currentEmployee) {
-                    $q->where('from_employee_id', $currentEmployee->id)
-                      ->orWhere('to_employee_id', $currentEmployee->id);
+                    $q->where('to_employee_id',  $currentEmployee->id);
+                    //   ->orWhere('to_employee_id', $currentEmployee->id);
                 });
             })
             ->latest('id')
@@ -55,15 +55,15 @@ class LeaveRequestService
             $isApprover = ($currentUser && $currentUser->id === $request->to_user_id);
 
             // Calculate balance for this specific leave type and employee
-            $maxAllowed = (float) (optional($request->leaveType)->annual_quota ?? 0);
             $year = Carbon::parse($request->start_date)->year;
             
-            $claimed = (float) EmployeLeaveRequest::where('from_employee_id', $request->from_employee_id)
+            $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $request->from_employee_id)
                 ->where('leave_type_id', $request->leave_type_id)
-                ->whereYear('start_date', $year)
-                ->whereIn('status', [0, 1, 3])
-                ->whereIn('action_type', [0, 2]) // Only count approver rows
-                ->sum('duration');
+                ->where('year', $year)
+                ->first();
+            
+            $maxAllowed = (float) ($quotaRecord ? $quotaRecord->adjusted_quota : (optional($request->leaveType)->annual_quota ?? 0));
+            $claimed = $quotaRecord ? (float) $quotaRecord->used : 0;
             
             $remaining = max(0, $maxAllowed - $claimed);
 
@@ -96,15 +96,20 @@ class LeaveRequestService
             ];
         })->values()->all();
 
-        $pendingCount = EmployeLeaveRequest::whereIn('status', [0, 1, 2])->count();
+        $pendingCount = EmployeLeaveRequest::whereIn('status', [0, 1, 2])
+            ->whereIn('action_type', [0, 2])
+            ->count();
         $approvedTodayCount = EmployeLeaveRequest::where('status', 3)
+            ->whereIn('action_type', [0, 2])
             ->where('updated_at', '>=', now()->startOfDay())
             ->count();
         $awayTodayCount = EmployeLeaveRequest::where('status', 3)
+            ->whereIn('action_type', [0, 2])
             ->where('start_date', '<=', now()->toDateString())
             ->where('end_date', '>=', now()->toDateString())
             ->count();
         $overdueCount = EmployeLeaveRequest::whereIn('status', [0, 1, 2])
+            ->whereIn('action_type', [0, 2])
             ->where('created_at', '<', now()->subDays(2))
             ->count();
 
@@ -128,8 +133,8 @@ class LeaveRequestService
         $employee = Employee::find($employeeId);
         $year = now()->year;
         
-        $organizationId = $employee?->role?->organization_id;
-        $departmentId = $employee?->role?->department_id;
+        $organizationId = $employee->organization_id;
+        $departmentId = $employee->department_id;
 
         $leaveTypes = LeaveType::where('is_active', true)
             ->when($organizationId, fn($q) => $q->where(function ($qq) use ($organizationId) {
@@ -142,15 +147,16 @@ class LeaveRequestService
         
         $summary = [];
         foreach ($leaveTypes as $type) {
-            $maxAllowed = (float) $type->annual_quota;
-            
-            $claimed = (float) EmployeLeaveRequest::where('from_employee_id', $employeeId)
+            $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $employeeId)
                 ->where('leave_type_id', $type->id)
-                ->whereYear('start_date', $year)
-                ->whereIn('status', [0, 1, 3])
-                ->sum('duration');
+                ->where('year', $year)
+                ->first();
+
+            $maxAllowed = (float) ($quotaRecord ? $quotaRecord->adjusted_quota : $type->annual_quota);
+            $claimed = $quotaRecord ? (float) $quotaRecord->used : 0;
 
             $summary[] = [
+                'id' => $type->id,
                 'type' => $type->name,
                 'total' => $maxAllowed,
                 'used' => $claimed,
@@ -159,6 +165,59 @@ class LeaveRequestService
             ];
         }
         return $summary;
+    }
+
+    public function getPersonalLeaveHistory($employeeId)
+    {
+        $statusMap = [
+            0 => 'pending',
+            1 => 'recommended',
+            2 => 'not_recommended',
+            3 => 'approved',
+            4 => 'rejected',
+            5 => 'cancelled',
+        ];
+
+        $statusLabelMap = [
+            0 => 'Pending Approval',
+            1 => 'Recommended',
+            2 => 'Not Recommended',
+            3 => 'Approved',
+            4 => 'Rejected',
+            5 => 'Cancelled',
+        ];
+
+        $history = EmployeLeaveRequest::with('leaveType')
+            ->where('from_employee_id', $employeeId)
+            ->whereIn('action_type', [0, 2]) // Master rows
+            ->latest('start_date')
+            ->get();
+
+        return $history->map(function ($h) use ($statusMap, $statusLabelMap) {
+            $startDate = Carbon::parse($h->start_date);
+            $endDate = Carbon::parse($h->end_date);
+            $today = Carbon::today();
+
+            $category = 'past';
+            if ($startDate->isFuture()) {
+                $category = 'upcoming';
+            } elseif ($today->between($startDate, $endDate)) {
+                $category = 'active';
+            }
+
+            return [
+                'id' => $h->id,
+                'type' => $h->leaveType ? strtolower(str_replace(' ', '-', $h->leaveType->name)) : 'other',
+                'typeLabel' => $h->leaveType ? $h->leaveType->name : 'Other',
+                'startDate' => $h->start_date,
+                'endDate' => $h->end_date,
+                'days' => $h->duration,
+                'reason' => $h->reason,
+                'status' => $statusMap[$h->status] ?? 'pending',
+                'statusLabel' => $statusLabelMap[$h->status] ?? 'Pending',
+                'category' => $category,
+            ];
+        });
     }
 
     public function store(array $validated): EmployeLeaveRequest
@@ -197,15 +256,25 @@ class LeaveRequestService
         // Quota Check
         $year = $startDate->year;
         $leaveType = LeaveType::findOrFail($validated['leave_type_id']);
-        $maxAllowed = (float) ($leaveType->annual_quota ?? 0);
 
         // Sum up all days already claimed for this year
-        $alreadyClaimed = (float) EmployeLeaveRequest::where('from_employee_id', $fromEmployee->id)
+        $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $fromEmployee->id)
+            ->where('leave_type_id', $validated['leave_type_id'])
+            ->where('year', $year)
+            ->first();
+            
+        $maxAllowed = (float) ($quotaRecord ? $quotaRecord->adjusted_quota : ($leaveType->annual_quota ?? 0));
+        $alreadyClaimed = $quotaRecord ? (float) $quotaRecord->used : 0;
+
+        // Also add currently pending requests (status 0, 1) so they can't overbook before approval
+        $pendingRequested = (float) EmployeLeaveRequest::where('from_employee_id', $fromEmployee->id)
             ->where('leave_type_id', $validated['leave_type_id'])
             ->whereYear('start_date', $year)
-            ->whereIn('status', [0, 1, 3]) // 0:pending, 1:recommended, 3:approved
+            ->whereIn('status', [0, 1]) 
             ->whereIn('action_type', [0, 2]) // ONLY check final approver rows to avoid double subtraction
             ->sum('duration');
+
+        $alreadyClaimed += $pendingRequested;
 
         if (($alreadyClaimed + $duration) > $maxAllowed) {
             $remaining = max(0, $maxAllowed - $alreadyClaimed);
@@ -350,8 +419,8 @@ class LeaveRequestService
 
         $employee = Employee::with('role')->findOrFail((int) $request->input('employee_id'));
 
-        $organizationId = $employee->role?->organization_id;
-        $departmentId = $employee->role?->department_id;
+        $organizationId = $employee->organization_id;
+        $departmentId = $employee->department_id;
 
         $leaveTypes = LeaveType::query()
             ->where('is_active', true)
@@ -363,9 +432,13 @@ class LeaveRequestService
             }))
             ->orderBy('name')
             ->get(['id', 'name']);
+
+        $quotaSummary = $this->getPersonalQuotaSummary($employee->id);
+
         return response()->json([
             'success' => true,
             'leaveTypes' => $leaveTypes,
+            'quotaSummary' => $quotaSummary,
         ]);
     }
 
@@ -413,6 +486,23 @@ class LeaveRequestService
 
         $leaveRequest->status = $newStatus;
         $leaveRequest->save();
+
+        // Notify the original requester about the status update
+        $requesterUser = User::where('id', $leaveRequest->from_user_id)->first();
+        if ($requesterUser) {
+            $requesterUser->notify(new \App\Notifications\LeaveStatusUpdateNotification($leaveRequest, Auth::user()->name));
+        }
+
+        // Sync final status from Approver (Type 2) to Recommender (Type 1)
+        if ((int)$leaveRequest->action_type === 2 && in_array($newStatus, [3, 4, 5])) {
+            EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
+                ->where('leave_type_id', $leaveRequest->leave_type_id)
+                ->where('start_date', $leaveRequest->start_date)
+                ->where('end_date', $leaveRequest->end_date)
+                ->where('action_type', 1)
+                ->where('status', '!=', $newStatus)
+                ->update(['status' => $newStatus]);
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

@@ -8,7 +8,7 @@
     </div>
     <div class="offcanvas-body">
         <form id="adjustmentForm">
-            <input type="hidden" id="adjustEmployeeIdHidden" name="employee_id">
+            <input type="hidden" id="adjustEmployeeIdHidden" name="employeeId">
 
             <!-- Employee Information -->
             <div class="mb-4">
@@ -127,82 +127,125 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const adjustmentType = document.getElementById('adjustmentType');
-    const adjustLeaveType = document.getElementById('adjustLeaveType');
-    const adjustDays = document.getElementById('adjustDays');
-    const previewText = document.getElementById('previewText');
-    const currentAnnualBalance = document.getElementById('currentAnnualBalance');
-    const currentSickBalance = document.getElementById('currentSickBalance');
-    const currentCasualBalance = document.getElementById('currentCasualBalance');
-    const saveBtn = document.getElementById('saveAdjustmentBtn');
+    document.addEventListener('DOMContentLoaded', function() {
+        const adjustmentType = document.getElementById('adjustmentType');
+        const adjustLeaveType = document.getElementById('adjustLeaveType');
+        const adjustDays = document.getElementById('adjustDays');
+        const previewText = document.getElementById('previewText');
+        const currentAnnualBalance = document.getElementById('currentAnnualBalance');
+        const currentSickBalance = document.getElementById('currentSickBalance');
+        const currentCasualBalance = document.getElementById('currentCasualBalance');
+        const saveBtn = document.getElementById('saveAdjustmentBtn');
 
-    function updatePreview() {
-        if (!adjustLeaveType.value || !adjustDays.value) {
-            previewText.textContent = 'Select adjustment type and leave type to see preview';
-            return;
+        function updatePreview() {
+            if (!adjustLeaveType.value || !adjustDays.value) {
+                previewText.textContent = 'Select adjustment type and leave type to see preview';
+                return;
+            }
+
+            const type = adjustmentType.value;
+            const leaveType = adjustLeaveType.value;
+            const days = parseFloat(adjustDays.value);
+            const currentBalance = parseFloat(
+                leaveType === 'annual' ? currentAnnualBalance.textContent :
+                leaveType === 'sick' ? currentSickBalance.textContent :
+                currentCasualBalance.textContent
+            );
+
+            const newBalance = type === 'add' ? currentBalance + days : currentBalance - days;
+            const action = type === 'add' ? 'Adding to Quota' : 'Subtracting from Quota';
+            const leaveTypeLabel = leaveType === 'annual' ? 'Annual Leave' : leaveType === 'sick' ? 'Sick Leave' : 'Casual Leave';
+
+            previewText.innerHTML = `
+            <div class="mb-2"><strong>${action}</strong>: ${days} day(s) <strong>${type === 'add' ? 'to' : 'from'}</strong> <strong>${leaveTypeLabel}</strong></div>
+            <div class="mb-1">Current Remaining: <strong>${currentBalance}</strong></div>
+            <div>New Remaining: <strong class="${newBalance < 0 ? 'text-danger' : 'text-success'}">${newBalance.toFixed(1)}</strong></div>
+        `;
         }
 
-        const type = adjustmentType.value;
-        const leaveType = adjustLeaveType.value;
-        const days = parseFloat(adjustDays.value);
-        const currentBalance = parseFloat(
-            leaveType === 'annual' ? currentAnnualBalance.textContent :
-            leaveType === 'sick' ? currentSickBalance.textContent :
-            currentCasualBalance.textContent
-        );
+        adjustmentType.addEventListener('change', updatePreview);
+        adjustLeaveType.addEventListener('change', updatePreview);
+        adjustDays.addEventListener('input', updatePreview);
 
-        const newBalance = type === 'add' ? currentBalance + days : currentBalance - days;
-        const action = type === 'add' ? 'Adding' : 'Subtracting';
-        const leaveTypeLabel = leaveType === 'annual' ? 'Annual Leave' : leaveType === 'sick' ? 'Sick Leave' : 'Casual Leave';
+        // Reset form when offcanvas is hidden
+        const adjustmentCanvas = document.getElementById('adjustmentCanvas');
+        if (adjustmentCanvas) {
+            adjustmentCanvas.addEventListener('hidden.bs.offcanvas', function() {
+                document.getElementById('adjustmentForm').reset();
+                previewText.textContent = 'Select adjustment type and leave type to see preview';
+            });
+        }
 
-        previewText.innerHTML = `
-            <div class="mb-2"><strong>${action}</strong> ${days} day(s) to/from <strong>${leaveTypeLabel}</strong></div>
-            <div class="mb-1">Current Balance: <strong>${currentBalance}</strong></div>
-            <div>New Balance: <strong class="${newBalance < 0 ? 'text-danger' : 'text-success'}">${newBalance.toFixed(1)}</strong></div>
-        `;
-    }
+        // Handle form submission
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function(e) {
+                e.preventDefault();
 
-    adjustmentType.addEventListener('change', updatePreview);
-    adjustLeaveType.addEventListener('change', updatePreview);
-    adjustDays.addEventListener('input', updatePreview);
+                const form = document.getElementById('adjustmentForm');
 
-    // Reset form when offcanvas is hidden
-    const adjustmentCanvas = document.getElementById('adjustmentCanvas');
-    if (adjustmentCanvas) {
-        adjustmentCanvas.addEventListener('hidden.bs.offcanvas', function() {
-            document.getElementById('adjustmentForm').reset();
-            previewText.textContent = 'Select adjustment type and leave type to see preview';
-        });
-    }
+                if (form && form.checkValidity()) {
 
-    // Handle form submission
-    if (saveBtn) {
-        saveBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const form = document.getElementById('adjustmentForm');
-            if (form && form.checkValidity()) {
-                const formData = {
-                    employeeId: document.getElementById('adjustEmployeeIdHidden').value,
-                    adjustmentType: adjustmentType.value,
-                    leaveType: adjustLeaveType.value,
-                    days: parseFloat(adjustDays.value),
-                    reason: document.getElementById('adjustReason').value
-                };
-                
-                console.log('Balance Adjustment data:', formData);
-                // TODO: Implement API call to save adjustment
-                
-                // Close offcanvas
-                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('adjustmentCanvas'));
-                if (offcanvas) {
-                    offcanvas.hide();
+                    const formData = {
+                        employeeId: document.getElementById('adjustEmployeeIdHidden').value,
+                        adjustmentType: adjustmentType.value,
+                        leaveType: adjustLeaveType.value,
+                        days: parseFloat(adjustDays.value),
+                        reason: document.getElementById('adjustReason').value
+                    };
+
+                    $.ajax({
+                        url: "{{ route('admin.balance-tracker.adjust') }}",
+                        method: "POST",
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                            ...formData
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success',
+                                    text: response.message
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            console.error('Adjustment error:', xhr);
+                            let errorMessage = 'Something went wrong!';
+                            
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                if (response.errors) {
+                                    // Handle Laravel validation errors
+                                    errorMessage = Object.values(response.errors).flat().join('\n');
+                                } else if (response.message) {
+                                    // Handle direct error messages
+                                    errorMessage = response.message;
+                                }
+                            } catch (e) {
+                                console.error('Error parsing response:', e);
+                            }
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Adjustment Failed',
+                                text: errorMessage
+                            });
+                        }
+                    });
+
+                } else if (form) {
+                    form.reportValidity();
                 }
-            } else if (form) {
-                form.reportValidity();
-            }
-        });
-    }
-});
+            });
+        }
+    });
 </script>
-

@@ -12,6 +12,21 @@
 /* ============================================
    MODAL STYLING
    ============================================ */
+#createPolicyModal .modal-content {
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#createPolicyModal .modal-body {
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+#createPolicyModal .modal-footer {
+    flex-shrink: 0;
+}
+
 .modal-header.bg-main {
     background-color: var(--main-color) !important;
     color: white !important;

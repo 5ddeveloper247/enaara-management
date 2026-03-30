@@ -1,194 +1,128 @@
 <div class="row">
-    <!-- Shift List -->
     <div class="col-lg-9">
         <div class="row g-4" id="shiftsGrid">
-            <!-- Sample Shift Cards -->
-            <div class="col-md-6 col-lg-4">
-                <div class="card shift-card border-1 rounded-4 h-100" 
-                     data-bs-toggle="offcanvas"
-                     data-bs-target="#shiftDetailCanvas"
-                     data-shift-id="1"
-                     data-shift-name="Morning Shift"
-                     data-shift-start="09:00"
-                     data-shift-end="18:00"
-                     data-clock-in-window="08:30"
-                     data-clock-out-window="18:30"
-                     data-grace-period="15"
-                     data-break-time="60"
-                     data-overtime-allowed="true"
-                     data-overtime-trigger="8">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h6 class="mb-1 fw-semibold">Morning Shift</h6>
-                                <small class="text-muted">09:00 - 18:00</small>
-                            </div>
-                            <span class="badge bg-success" style="font-size: 10px !important; padding: 4px 6px !important;">Active</span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-clock me-2 text-main small"></i>
-                                <small class="fw-semibold small">Clock-in Window: 08:30 - 09:00</small>
-                            </div>
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-hourglass-split me-2 text-main small"></i>
-                                <small class="fw-semibold small">Grace Period: 15 mins</small>
-                            </div>
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-cup-straw me-2 text-main small"></i>
-                                <small class="fw-semibold small">Break Time: 60 mins</small>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-arrow-repeat me-2 text-main small"></i>
-                                <small class="fw-semibold small">OT Allowed: After 8h</small>
-                            </div>
-                        </div>
+            @forelse($shifts as $shift)
+                @php
+                    $startTime = \Carbon\Carbon::parse($shift->start_time)->format('H:i');
+                    $endTime = \Carbon\Carbon::parse($shift->end_time)->format('H:i');
 
-                        <div class="d-flex gap-2 pt-3 border-top">
-                            <button type="button" class="btn btn-sm btn-outline-primary flex-fill edit-shift-btn"
-                                    data-bs-toggle="offcanvas"
-                                    data-bs-target="#addShiftCanvas"
-                                    data-mode="edit"
-                                    data-shift-id="1"
-                                    onclick="event.stopPropagation();">
-                                <i class="bi bi-pencil me-1"></i>Edit
-                            </button>
-                            <button type="button" class="btn btn-sm btn-primary flex-fill"
-                                    data-shift-id="1"
-                                    onclick="event.stopPropagation();">
-                                <i class="bi bi-eye me-1"></i>View
-                            </button>
+                    $clockInStart = \Carbon\Carbon::parse($shift->start_time)
+                        ->subMinutes((int) $shift->clock_in_window_minutes)
+                        ->format('H:i');
+
+                    $clockOutEnd = \Carbon\Carbon::parse($shift->end_time)
+                        ->addMinutes((int) $shift->clock_out_window_minutes)
+                        ->format('H:i');
+                @endphp
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shift-card border-1 rounded-4 h-100"
+                         data-bs-toggle="offcanvas"
+                         data-bs-target="#shiftDetailCanvas"
+                         data-shift-id="{{ $shift->id }}"
+                         data-shift-name="{{ $shift->name }}"
+                         data-shift-start="{{ $startTime }}"
+                         data-shift-end="{{ $endTime }}"
+                         data-clock-in-window="{{ $clockInStart }} - {{ $startTime }}"
+                         data-clock-out-window="{{ $endTime }} - {{ $clockOutEnd }}"
+                         data-grace-period="{{ $shift->grace_period_minutes }}"
+                         data-break-time="{{ $shift->break_time_minutes }}"
+                         data-overtime-allowed="{{ $shift->overtime_allowed ? 'true' : 'false' }}"
+                         data-overtime-trigger="{{ $shift->overtime_trigger_hours ?? 0 }}"
+                         data-is-active="{{ $shift->is_active ? 'active' : 'inactive' }}">
+
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="mb-1 fw-semibold">{{ $shift->name }}</h6>
+                                    <small class="text-muted">{{ $startTime }} - {{ $endTime }}</small>
+                                </div>
+
+                                @if($shift->is_active)
+                                    <span class="badge bg-success" style="font-size: 10px !important; padding: 4px 6px !important;">
+                                        Active
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary" style="font-size: 10px !important; padding: 4px 6px !important;">
+                                        Inactive
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-clock me-2 text-main small"></i>
+                                    <small class="fw-semibold small">
+                                        Clock-in Window: {{ $clockInStart }} - {{ $startTime }}
+                                    </small>
+                                </div>
+
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-hourglass-split me-2 text-main small"></i>
+                                    <small class="fw-semibold small">
+                                        Grace Period: {{ $shift->grace_period_minutes }} mins
+                                    </small>
+                                </div>
+
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-cup-straw me-2 text-main small"></i>
+                                    <small class="fw-semibold small">
+                                        Break Time: {{ $shift->break_time_minutes }} mins
+                                    </small>
+                                </div>
+
+                                <div class="d-flex align-items-center">
+                                    @if($shift->overtime_allowed)
+                                        <i class="bi bi-arrow-repeat me-2 text-main small"></i>
+                                        <small class="fw-semibold small">
+                                            OT Allowed: After {{ $shift->overtime_trigger_hours }}h
+                                        </small>
+                                    @else
+                                        <i class="bi bi-x-circle me-2 text-muted small"></i>
+                                        <small class="fw-semibold small text-muted">
+                                            OT Not Allowed
+                                        </small>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 pt-3 border-top">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary flex-fill edit-shift-btn"
+                                        data-bs-toggle="offcanvas"
+                                        data-bs-target="#addShiftCanvas"
+                                        data-mode="edit"
+                                        data-shift-id="{{ $shift->id }}"
+                                        onclick="event.stopPropagation();">
+                                    <i class="bi bi-pencil me-1"></i>Edit
+                                </button>
+
+                                <button type="button"
+                                        class="btn btn-sm btn-primary flex-fill view-shift-btn"
+                                        data-bs-toggle="offcanvas"
+                                        data-bs-target="#shiftDetailCanvas"
+                                        data-shift-id="{{ $shift->id }}"
+                                        onclick="event.stopPropagation();">
+                                    <i class="bi bi-eye me-1"></i>View
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="card shift-card border-1 rounded-4 h-100"
-                     data-bs-toggle="offcanvas"
-                     data-bs-target="#shiftDetailCanvas"
-                     data-shift-id="2"
-                     data-shift-name="Night Shift"
-                     data-shift-start="18:00"
-                     data-shift-end="06:00"
-                     data-clock-in-window="17:30"
-                     data-clock-out-window="06:30"
-                     data-grace-period="15"
-                     data-break-time="60"
-                     data-overtime-allowed="true"
-                     data-overtime-trigger="8">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h6 class="mb-1 fw-semibold">Night Shift</h6>
-                                <small class="text-muted">18:00 - 06:00</small>
-                            </div>
-                            <span class="badge bg-success" style="font-size: 10px !important; padding: 4px 6px !important;">Active</span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-clock me-2 text-main small"></i>
-                                <small class="fw-semibold small">Clock-in Window: 17:30 - 18:00</small>
-                            </div>
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-hourglass-split me-2 text-main small"></i>
-                                <small class="fw-semibold small">Grace Period: 15 mins</small>
-                            </div>
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-cup-straw me-2 text-main small"></i>
-                                <small class="fw-semibold small">Break Time: 60 mins</small>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-arrow-repeat me-2 text-main small"></i>
-                                <small class="fw-semibold small">OT Allowed: After 8h</small>
-                            </div>
-                        </div>
-
-                        <div class="d-flex gap-2 pt-3 border-top">
-                            <button type="button" class="btn btn-sm btn-outline-primary flex-fill edit-shift-btn"
-                                    data-bs-toggle="offcanvas"
-                                    data-bs-target="#addShiftCanvas"
-                                    data-mode="edit"
-                                    data-shift-id="2"
-                                    onclick="event.stopPropagation();">
-                                <i class="bi bi-pencil me-1"></i>Edit
-                            </button>
-                            <button type="button" class="btn btn-sm btn-primary flex-fill"
-                                    data-shift-id="2"
-                                    onclick="event.stopPropagation();">
-                                <i class="bi bi-eye me-1"></i>View
-                            </button>
+            @empty
+                <div class="col-12">
+                    <div class="card border-0 rounded-4">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-calendar-x fs-1 text-muted mb-3 d-block"></i>
+                            <h6 class="mb-1">No shifts found</h6>
+                            <small class="text-muted">Create your first shift to show data here.</small>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="card shift-card border-1 rounded-4 h-100"
-                     data-bs-toggle="offcanvas"
-                     data-bs-target="#shiftDetailCanvas"
-                     data-shift-id="3"
-                     data-shift-name="Site Sales - Weekend"
-                     data-shift-start="10:00"
-                     data-shift-end="16:00"
-                     data-clock-in-window="09:45"
-                     data-clock-out-window="16:15"
-                     data-grace-period="10"
-                     data-break-time="30"
-                     data-overtime-allowed="false"
-                     data-overtime-trigger="0">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h6 class="mb-1 fw-semibold">Site Sales - Weekend</h6>
-                                <small class="text-muted">10:00 - 16:00</small>
-                            </div>
-                            <span class="badge bg-success" style="font-size: 10px !important; padding: 4px 6px !important;">Active</span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-clock me-2 text-main small"></i>
-                                <small class="fw-semibold small">Clock-in Window: 09:45 - 10:00</small>
-                            </div>
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-hourglass-split me-2 text-main small"></i>
-                                <small class="fw-semibold small">Grace Period: 10 mins</small>
-                            </div>
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-cup-straw me-2 text-main small"></i>
-                                <small class="fw-semibold small">Break Time: 30 mins</small>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-x-circle me-2 text-muted small"></i>
-                                <small class="fw-semibold small text-muted">OT Not Allowed</small>
-                            </div>
-                        </div>
-
-                        <div class="d-flex gap-2 pt-3 border-top">
-                            <button type="button" class="btn btn-sm btn-outline-primary flex-fill edit-shift-btn"
-                                    data-bs-toggle="offcanvas"
-                                    data-bs-target="#addShiftCanvas"
-                                    data-mode="edit"
-                                    data-shift-id="3"
-                                    onclick="event.stopPropagation();">
-                                <i class="bi bi-pencil me-1"></i>Edit
-                            </button>
-                            <button type="button" class="btn btn-sm btn-primary flex-fill"
-                                    data-shift-id="3"
-                                    onclick="event.stopPropagation();">
-                                <i class="bi bi-trash me-1"></i>View
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @endforelse
         </div>
     </div>
 
-    <!-- Filter Sidebar -->
     <div class="col-lg-3">
         <div class="card border-0 rounded-4">
             <div class="card-body p-4">
@@ -196,7 +130,6 @@
                     <i class="bi bi-funnel me-2"></i>Filters
                 </h6>
 
-                <!-- Status Filter -->
                 <div class="mb-4">
                     <label class="form-label small fw-semibold text-muted mb-2">Status</label>
                     <div class="bg-transparent">
@@ -215,7 +148,6 @@
                     </div>
                 </div>
 
-                <!-- Overtime Filter -->
                 <div class="mb-4">
                     <label class="form-label small fw-semibold text-muted mb-2">Overtime</label>
                     <div class="bg-transparent">
@@ -241,4 +173,3 @@
         </div>
     </div>
 </div>
-

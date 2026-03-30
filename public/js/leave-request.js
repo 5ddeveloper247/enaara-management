@@ -140,11 +140,21 @@
     }
 
     if (canvasEl) {
+      canvasEl.addEventListener('show.bs.offcanvas', function () {
+        // If employee is pre-selected (like on My Leaves), trigger data load
+        if (employeeSelect && employeeSelect.value) {
+            employeeSelect.dispatchEvent(new Event('change'));
+        }
+      });
       canvasEl.addEventListener('hidden.bs.offcanvas', function () {
         form.reset();
         clearFormError(form);
         clearFieldErrors(form);
         if (calculatedDaysEl) calculatedDaysEl.textContent = '0';
+        ['balanceAnnual', 'balanceSick', 'balanceCasual', 'balanceCompOff'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '0';
+        });
         if (medicalCertSection) medicalCertSection.style.display = 'none';
         setSubmitting(submitBtn, false);
       });
@@ -167,6 +177,29 @@
           data: { employee_id: employeeId },
           success: function (resp) {
             populateLeaveTypes(leaveTypeSelect, resp && resp.leaveTypes ? resp.leaveTypes : []);
+
+            if (resp && resp.quotaSummary) {
+                var balances = {
+                    annual: document.getElementById('balanceAnnual'),
+                    sick: document.getElementById('balanceSick'),
+                    casual: document.getElementById('balanceCasual'),
+                    comp: document.getElementById('balanceCompOff')
+                };
+
+                // Reset
+                Object.keys(balances).forEach(function(key) {
+                    if (balances[key]) balances[key].textContent = '0';
+                });
+
+                // Map
+                resp.quotaSummary.forEach(function (q) {
+                    let typeName = (q.type || '').toLowerCase();
+                    if (typeName.includes('annual') && balances.annual) balances.annual.textContent = q.remaining;
+                    else if (typeName.includes('sick') && balances.sick) balances.sick.textContent = q.remaining;
+                    else if (typeName.includes('casual') && balances.casual) balances.casual.textContent = q.remaining;
+                    else if (typeName.includes('comp') && balances.comp) balances.comp.textContent = q.remaining;
+                });
+            }
           },
           error: function () {
             showFormError(form, 'Failed to load leave types for selected employee.');

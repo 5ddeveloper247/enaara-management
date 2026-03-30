@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\LeaveBalanceAdjustment;
 
 class EmployeeLeaveQuota extends Model
 {
@@ -32,6 +33,33 @@ class EmployeeLeaveQuota extends Model
     public function leaveType(): BelongsTo
     {
         return $this->belongsTo(LeaveType::class);
+    }
+
+    /**
+     * Get the quota after manual adjustments (Add/Subtract).
+     */
+    public function getAdjustedQuotaAttribute(): float
+    {
+        $adjustments = LeaveBalanceAdjustment::where('employee_id', $this->employee_id)
+            ->where('leave_type_id', $this->leave_type_id)
+            ->whereYear('created_at', $this->year)
+            ->selectRaw("SUM(CASE WHEN adjustment_type = 'add' THEN days ELSE -days END) as total")
+            ->value('total') ?? 0;
+
+        return (float) $this->quota + (float) $adjustments;
+    }
+
+    /**
+     * Calculate the remaining balance based on adjusted quota and used leaves.
+     */
+    public function getRemainingBalanceAttribute(): float
+    {
+        return $this->adjusted_quota - (float) $this->used;
+    }
+
+    public function leaveBalanceAdjustments()
+    {
+        return $this->hasMany(LeaveBalanceAdjustment::class, 'leave_quota_id');
     }
 }
 

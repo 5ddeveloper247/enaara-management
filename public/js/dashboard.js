@@ -1,4 +1,4 @@
-(function() {
+(function () {
     'use strict';
 
     // ============================================
@@ -213,7 +213,7 @@
         initPeriodButtons() {
             const periodButtons = document.querySelectorAll('.period-btn');
             periodButtons.forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     periodButtons.forEach(btn => btn.classList.remove('active'));
                     this.classList.add('active');
                     const period = parseInt(this.getAttribute('data-period'));
@@ -301,13 +301,13 @@
                             titleSpacing: 8,
                             bodySpacing: 8,
                             callbacks: {
-                                title: function(context) {
+                                title: function (context) {
                                     return context[0].label;
                                 },
-                                label: function(context) {
+                                label: function (context) {
                                     return context.dataset.label + ': ' + context.parsed.y + '%';
                                 },
-                                labelColor: function(context) {
+                                labelColor: function (context) {
                                     return {
                                         borderColor: context.dataset.borderColor,
                                         backgroundColor: context.dataset.borderColor,
@@ -409,7 +409,7 @@
             const bulkApproveAll = document.getElementById('bulkApproveAll');
             if (!bulkApproveAll) return;
 
-            bulkApproveAll.addEventListener('change', function() {
+            bulkApproveAll.addEventListener('change', function () {
                 const checkboxes = document.querySelectorAll('.approval-checkbox');
                 checkboxes.forEach(checkbox => {
                     checkbox.checked = this.checked;
@@ -418,7 +418,7 @@
             });
 
             document.querySelectorAll('.approval-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
+                checkbox.addEventListener('change', function () {
                     DashboardApprovals.updateBulkApproveButton();
                     DashboardApprovals.updateSelectAllCheckbox();
                 });
@@ -426,7 +426,7 @@
 
             const bulkApproveBtn = document.getElementById('bulkApproveBtn');
             if (bulkApproveBtn) {
-                bulkApproveBtn.addEventListener('click', function() {
+                bulkApproveBtn.addEventListener('click', function () {
                     const checkedBoxes = document.querySelectorAll('.approval-checkbox:checked');
                     const ids = Array.from(checkedBoxes).map(cb => cb.value);
 
@@ -515,7 +515,7 @@
          */
         initApprovalButtons() {
             document.querySelectorAll('.approve-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     const id = this.getAttribute('data-id');
                     if (DashboardUtils.confirmAction('Are you sure you want to approve this leave request?')) {
                         DashboardApprovals.approveRequest(id);
@@ -524,7 +524,7 @@
             });
 
             document.querySelectorAll('.reject-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     const id = this.getAttribute('data-id');
                     if (DashboardUtils.confirmAction('Are you sure you want to reject this leave request?')) {
                         DashboardApprovals.rejectRequest(id);
@@ -670,7 +670,7 @@
          * Initialize slide-over keyboard shortcuts
          */
         initSlideOverKeyboard() {
-            document.addEventListener('keydown', function(e) {
+            document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
                     DashboardApprovals.closeSlideOver();
                 }
@@ -687,7 +687,7 @@
          */
         initNotifyButtons() {
             document.querySelectorAll('.notify-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     const id = this.getAttribute('data-id');
                     DashboardExceptions.notifyManager(id);
                 });
@@ -739,9 +739,6 @@
     const DashboardGeofence = {
         map: null,
 
-        /**
-         * Initialize Geofence & IP Compliance Map
-         */
         initialize() {
             const mapElement = document.getElementById('geofenceMap');
             if (!mapElement) return;
@@ -767,12 +764,10 @@
             }
         },
 
-        /**
-         * Create the map with zones and markers
-         */
         createMap() {
-            const mapData = DashboardData.geofence;
-            this.map = L.map('geofenceMap').setView(mapData.center, mapData.zoom);
+            const geofences = window.dashboardGeofences || [];
+
+            this.map = L.map('geofenceMap').setView([33.5651, 73.0169], 12);
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -780,106 +775,67 @@
                 subdomains: 'abcd'
             }).addTo(this.map);
 
-            mapData.zones.forEach(zone => {
-                const circle = L.circle(zone.center, {
-                    color: zone.color,
-                    fillColor: zone.color,
-                    fillOpacity: 0.12,
-                    radius: zone.radius,
-                    weight: 2,
-                    className: 'geofence-zone',
-                    dashArray: '4'
+            if (!geofences.length) {
+                return;
+            }
+
+            const layers = [];
+
+            geofences.forEach(fenceData => {
+                if (!fenceData.lat || !fenceData.lng) return;
+
+                let radiusInMeters = parseFloat(fenceData.radius || 0);
+
+                if (fenceData.radiusUnit === 'kilometers') {
+                    radiusInMeters = radiusInMeters * 1000;
+                }
+
+                const color = fenceData.type === 'hard-lock' ? '#dc3545' : '#ffc107';
+
+                const circle = L.circle([fenceData.lat, fenceData.lng], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.2,
+                    radius: radiusInMeters
                 }).addTo(this.map);
 
-                L.marker(zone.center, {
-                    icon: L.divIcon({
-                        className: 'zone-label-wrapper',
-                        html: `<div class="zone-label">${zone.name}</div>`,
-                        iconSize: [120, 28],
-                        iconAnchor: [60, 14]
-                    }),
-                    interactive: false
-                }).addTo(this.map);
+                const marker = L.marker([fenceData.lat, fenceData.lng]).addTo(this.map);
 
-                circle.bindPopup(`
-                    <div class="popup-title">${zone.name}</div>
-                    <div class="popup-line">Employees: <strong>${zone.employees}</strong></div>
-                    <div class="popup-line">Status: <span class="popup-status in-zone">In-Zone</span></div>
+                marker.bindPopup(`
+                    <div class="p-2">
+                        <strong class="d-block mb-1">${fenceData.name}</strong>
+                        <small class="text-muted d-block mb-2">${fenceData.address}</small>
+                        <div class="small">Radius: ${fenceData.radius} ${fenceData.radiusUnit}</div>
+                    </div>
                 `);
+
+                layers.push(circle);
+                layers.push(marker);
             });
 
-            const icons = this.createIcons();
-            const employees = mapData.employees;
-
-            employees.inZone.forEach(emp => {
-                L.marker(emp.position, { icon: icons.inZone })
-                    .addTo(this.map)
-                    .bindPopup(`<strong>${emp.name}</strong><br>Status: <span class="text-success">In-Zone</span>`);
-            });
-
-            employees.outZone.forEach(emp => {
-                L.marker(emp.position, { icon: icons.outZone })
-                    .addTo(this.map)
-                    .bindPopup(`<strong>${emp.name}</strong><br>Status: <span class="text-warning">Out-of-Zone</span>`);
-            });
-
-            employees.vpn.forEach(emp => {
-                L.marker(emp.position, { icon: icons.vpn })
-                    .addTo(this.map)
-                    .bindPopup(`<strong>${emp.name}</strong><br>Status: <span class="text-danger">VPN/Proxy Detected</span>`);
-            });
-
-            const group = new L.featureGroup([
-                ...employees.inZone.map(e => L.marker(e.position)),
-                ...employees.outZone.map(e => L.marker(e.position)),
-                ...employees.vpn.map(e => L.marker(e.position))
-            ]);
-            this.map.fitBounds(group.getBounds().pad(0.1));
-        },
-
-        /**
-         * Create custom icons for markers
-         */
-        createIcons() {
-            return {
-                inZone: L.divIcon({
-                    className: 'custom-marker in-zone-marker',
-                    html: '<div class="marker-pin in-zone"></div>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 20]
-                }),
-                outZone: L.divIcon({
-                    className: 'custom-marker out-zone-marker',
-                    html: '<div class="marker-pin out-zone"></div>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 20]
-                }),
-                vpn: L.divIcon({
-                    className: 'custom-marker vpn-marker',
-                    html: '<div class="marker-pin vpn"></div>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 20]
-                })
-            };
+            if (layers.length) {
+                const group = new L.featureGroup(layers);
+                this.map.fitBounds(group.getBounds().pad(0.1));
+            }
         }
     };
 
     // ============================================
     // GLOBAL FUNCTIONS (for inline handlers)
     // ============================================
-    window.viewLeaveReason = function(id, name, initials, leaveType, requestDate, startDate, endDate, reason) {
+    window.viewLeaveReason = function (id, name, initials, leaveType, requestDate, startDate, endDate, reason) {
         DashboardApprovals.viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason);
     };
 
-    window.closeSlideOver = function() {
+    window.closeSlideOver = function () {
         DashboardApprovals.closeSlideOver();
     };
 
-    window.approveFromSlide = function() {
+    window.approveFromSlide = function () {
         DashboardApprovals.approveFromSlide();
     };
 
-    window.rejectFromSlide = function() {
+    window.rejectFromSlide = function () {
         DashboardApprovals.rejectFromSlide();
     };
 

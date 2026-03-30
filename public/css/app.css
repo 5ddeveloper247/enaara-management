@@ -694,6 +694,11 @@ body.modal-open .admin-wrapper::after {
 
 body.modal-open .admin-wrapper {
     z-index: 1;
+    overflow: visible !important;
+}
+
+body.modal-open .admin-main {
+    overflow: visible !important;
 }
 
 /* ============================================

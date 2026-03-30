@@ -46,11 +46,11 @@
                 </div>
             </div>
 
-            <p>Please review and take action on this request by clicking the button below:</p>
+            <p>Please review and take action on this request.</p>
             
-            <div style="text-align: center;">
+            <!-- <div style="text-align: center;">
                 <a href="{{ $actionUrl }}" class="btn">View Request Dashboard</a>
-            </div>
+            </div> -->
         </div>
         <div class="footer">
             <p>&copy; {{ date('Y') }} Enaara Management. All rights reserved.</p>

@@ -90,8 +90,10 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
     <!-- Common Helper Functions -->
     <script src="{{ asset('js/helpers.js') }}"></script>
-    <!-- Dummy Data -->
-    <script src="{{ asset('js/dummy-data.js') }}"></script>
+    <script>
+        // Dynamic policies data from backend
+        const dbPolicies = @json($policies ?? []);
+    </script>
     <!-- Policies Module JavaScript -->
     <script src="{{ asset('js/policies.js') }}"></script>
 @endpush

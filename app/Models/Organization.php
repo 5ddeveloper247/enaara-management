@@ -67,4 +67,9 @@ class Organization extends Model
     {
         return $this->hasMany(LeaveType::class, 'organization_id');
     }
+
+    public function publicHolidays()
+    {
+        return $this->belongsToMany(PublicHoliday::class, 'holiday_organization', 'organization_id', 'public_holiday_id');
+    }
 }
