@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Role;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -48,4 +49,5 @@ class Employee extends Model
     public function medical()           { return $this->hasOne(EmployeeMedical::class); }
     public function references()        { return $this->hasMany(EmployeeReference::class); }
     public function mediaFiles()        { return $this->hasMany(MediaFile::class, 'module_id')->where('module_name', 'employee'); }
+    public function role()              { return $this->belongsTo(Role::class, 'role_id'); }
 }
