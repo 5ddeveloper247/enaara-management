@@ -17,7 +17,7 @@ class LeaveRequestService
 {
     public function index()
     {
-        $employees = Employee::where('is_active', true)->orderBy('name')->get();
+        $employees = Employee::where('is_active', true)->orderBy('full_name')->get();
         $leaveTypes = LeaveType::where('is_active', true)->orderBy('name')->get();
 
         $currentUser = Auth::user();

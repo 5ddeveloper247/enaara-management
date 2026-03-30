@@ -23,7 +23,7 @@ class ShiftPlannerController extends Controller
         }
 
         $employees = Employee::where('is_active', 1)
-            ->orderBy('name')
+            ->orderBy('full_name')
             ->get();
         $shifts = ShiftPlanner::orderBy('updated_at', 'desc')->get();
         return view('admin.shift-planner.index', compact('shifts', 'employees'));
