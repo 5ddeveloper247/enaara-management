@@ -42,7 +42,14 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 Route::middleware('auth')->prefix('admin')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
+
+    // Organization Management Routes
     Route::get('/organization', [OrganizationController::class, 'index'])->name('admin.organization.index');
+    Route::get('/organization/add', [OrganizationController::class, 'create'])->name('admin.organization.create');
+    Route::post('/organization/add', [OrganizationController::class, 'store'])->name('admin.organization.store');
+    Route::get('/organization/edit/{id}', [OrganizationController::class, 'edit'])->name('admin.organization.edit');
+    Route::post('/organization/edit/{id}', [OrganizationController::class, 'update'])->name('admin.organization.update');
+    Route::delete('/organization/delete/{id}', [OrganizationController::class, 'destroy'])->name('admin.organization.destroy');
 
     Route::get('/sbu', [SbuController::class, 'index'])->name('admin.sbu.index');
     Route::get('/sbu/{id}/show', [SbuController::class, 'show'])->name('admin.sbu.show');
