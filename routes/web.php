@@ -23,6 +23,7 @@ use App\Http\Controllers\BalanceTrackerController;
 use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ShiftPlannerController;
+use App\Http\Controllers\ShiftRosterController;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -137,11 +138,11 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //Leave Calendar
     Route::get('/leave-calendar', [LeaveCalendarController::class, 'index'])->name('admin.leave-calendar.index');
     Route::get('/leave-calendar/add', [LeaveCalendarController::class, 'create'])->name('admin.leave-calendar.add');
-        Route::post('/leave-calendar/store', [LeaveCalendarController::class, 'store'])->name('admin.leave-calendar.store');
-        Route::get('/leave-calendar/show/{id}', [LeaveCalendarController::class, 'show'])->name('admin.leave-calendar.show');
-        Route::post('/leave-calendar/update/{id}', [LeaveCalendarController::class, 'update'])->name('admin.leave-calendar.update');
-        Route::delete('/leave-calendar/destroy/{id}', [LeaveCalendarController::class, 'destroy'])->name('admin.leave-calendar.destroy');
-        Route::get('/leave-calendar/fetch-department-employees', [LeaveCalendarController::class, 'fetchDepartmentLeaveEmployees'])->name('admin.leave-calendar.fetch-department-employees');
+    Route::post('/leave-calendar/store', [LeaveCalendarController::class, 'store'])->name('admin.leave-calendar.store');
+    Route::get('/leave-calendar/show/{id}', [LeaveCalendarController::class, 'show'])->name('admin.leave-calendar.show');
+    Route::post('/leave-calendar/update/{id}', [LeaveCalendarController::class, 'update'])->name('admin.leave-calendar.update');
+    Route::delete('/leave-calendar/destroy/{id}', [LeaveCalendarController::class, 'destroy'])->name('admin.leave-calendar.destroy');
+    Route::get('/leave-calendar/fetch-department-employees', [LeaveCalendarController::class, 'fetchDepartmentLeaveEmployees'])->name('admin.leave-calendar.fetch-department-employees');
 
 
     //Leave Balance 
@@ -174,6 +175,15 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/shift-planner/{id}', [ShiftPlannerController::class, 'update'])->name('admin.shift-planner.update');
     Route::delete('/shift-planner/{id}', [ShiftPlannerController::class, 'destroy'])->name('admin.shift-planner.destroy');
 
+    //Shift Roster
+    Route::get('/shift-roster', [ShiftRosterController::class, 'index'])->name('admin.shift-roster.index');
+    Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
+    Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
+    ->name('admin.shift-roster.bulk-assign');
+    Route::get('/shift-roster/{id}', [ShiftRosterController::class, 'show'])->name('admin.shift-roster.show');
+    Route::post('/shift-roster/{id}', [ShiftRosterController::class, 'update'])->name('admin.shift-roster.update');
+    Route::delete('/shift-roster/{id}', [ShiftRosterController::class, 'destroy'])->name('admin.shift-roster.destroy');
+  
     // Route::get('/regularization', function () {
     //     return view('admin.regularization.index');
     // })->name('admin.regularization.index');
@@ -185,7 +195,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::delete('/geofencing/{id}', [GeofenceController::class, 'destroy'])->name('admin.geofencing.destroy');
     Route::get('/my-leaves', [LeaveRequestController::class, 'myLeaves'])->name('admin.my.leaves.index');
 
- 
+
     Route::get('/roles', function () {
         return view('admin.roles-permissions.index');
     })->name('admin.roles.index');
@@ -216,5 +226,5 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual reports view
     // })->name('admin.reports');
 
-    
+
 });

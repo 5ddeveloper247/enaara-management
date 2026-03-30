@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\ShiftPlannerService;
 use App\Http\Requests\Admin\ShiftPlanner\ShiftPlannerRequest;
 use App\Models\ShiftPlanner;
-
+use App\Models\Employee;
 class ShiftPlannerController extends Controller
 {
     protected $shiftPlannerService;
@@ -22,8 +22,11 @@ class ShiftPlannerController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        $employees = Employee::where('is_active', 1)
+            ->orderBy('name')
+            ->get();
         $shifts = ShiftPlanner::orderBy('updated_at', 'desc')->get();
-        return view('admin.shift-planner.index', compact('shifts'));
+        return view('admin.shift-planner.index', compact('shifts', 'employees'));
     }
 
     public function show($id)
@@ -66,7 +69,6 @@ class ShiftPlannerController extends Controller
             return redirect()
                 ->route('admin.shift-planner.index')
                 ->with('success', 'Shift created successfully.');
-
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -104,7 +106,6 @@ class ShiftPlannerController extends Controller
             return redirect()
                 ->route('admin.shift-planner.index')
                 ->with('success', 'Shift updated successfully.');
-
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -133,7 +134,6 @@ class ShiftPlannerController extends Controller
                 'success' => true,
                 'message' => 'Shift deleted successfully.',
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
