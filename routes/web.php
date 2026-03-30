@@ -50,8 +50,13 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/organization/edit/{id}', [OrganizationController::class, 'edit'])->name('admin.organization.edit');
     Route::post('/organization/edit/{id}', [OrganizationController::class, 'update'])->name('admin.organization.update');
     Route::delete('/organization/delete/{id}', [OrganizationController::class, 'destroy'])->name('admin.organization.destroy');
-
+    // Sbu ROutes
     Route::get('/sbu', [SbuController::class, 'index'])->name('admin.sbu.index');
+    Route::get('/sbu/add', [SbuController::class, 'create'])->name('admin.sbu.create');
+    Route::post('/sbu/add', [SbuController::class, 'store'])->name('admin.sbu.store');
+    Route::get('/sbu/edit/{id}', [SbuController::class, 'edit'])->name('admin.sbu.edit');
+    Route::post('/sbu/edit/{id}', [SbuController::class, 'update'])->name('admin.sbu.update');
+    Route::delete('/sbu/delete/{id}', [SbuController::class, 'destroy'])->name('admin.sbu.destroy');
     Route::get('/sbu/{id}/show', [SbuController::class, 'show'])->name('admin.sbu.show');
 
     Route::get('/sbu-floor', [SbuFloorsController::class, 'index'])->name('admin.sbu.floor.index');
@@ -141,14 +146,14 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/employee/{id}/edit', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
     Route::post('/employee/{id}/update', [EmployeeController::class, 'update'])->name('admin.employee.update');
     Route::delete('/employee/{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
     Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
     Route::get('/users/data', [UserController::class, 'data'])->name('admin.users.data');
     Route::get('/users/stats', [UserController::class, 'stats'])->name('admin.users.stats');
@@ -156,7 +161,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/users/{id}/update', [UserController::class, 'update'])->name('admin.users.update');
     Route::patch('/users/{id}/status', [UserController::class, 'updateStatus'])->name('admin.users.status');
     Route::delete('/users/{id}/delete', [UserController::class, 'destroy'])->name('admin.users.destroy');
-    
+
 
     // Notifications
     Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsReadAndRedirect'])->name('admin.notifications.read');
@@ -206,11 +211,11 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/shift-roster', [ShiftRosterController::class, 'index'])->name('admin.shift-roster.index');
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
     Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
-    ->name('admin.shift-roster.bulk-assign');
+        ->name('admin.shift-roster.bulk-assign');
     Route::get('/shift-roster/{id}', [ShiftRosterController::class, 'show'])->name('admin.shift-roster.show');
     Route::post('/shift-roster/{id}', [ShiftRosterController::class, 'update'])->name('admin.shift-roster.update');
     Route::delete('/shift-roster/{id}', [ShiftRosterController::class, 'destroy'])->name('admin.shift-roster.destroy');
-  
+
     // Route::get('/regularization', function () {
     //     return view('admin.regularization.index');
     // })->name('admin.regularization.index');
@@ -255,7 +260,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     // Route::get('/policies', function () {
     //     return view('admin.policies.index');
     // })->name('admin.policies.index');
-    
+
     // Workflow Management Routes
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('admin.workflows.index');
     Route::get('/workflows/data', [WorkflowController::class, 'data'])->name('admin.workflows.data');
@@ -264,7 +269,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/workflows/{id}/update', [WorkflowController::class, 'update'])->name('admin.workflows.update');
     Route::patch('/workflows/{id}/status', [WorkflowController::class, 'updateStatus'])->name('admin.workflows.status');
     Route::delete('/workflows/{id}/delete', [WorkflowController::class, 'destroy'])->name('admin.workflows.destroy');
-    
+
     // Route::get('/reports', function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual reports view
     // })->name('admin.reports');

@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Sbu;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SbuService
 {
@@ -26,8 +28,75 @@ class SbuService
         ];
     }
 
-    public function findById(int $id): ?Sbu
+    public function store(array $data): Sbu
+    {
+        DB::beginTransaction();
+
+        try {
+            $sbuData = [
+                'organization_id' => $data['organization_id'],
+                'name'            => $data['name'],
+                'city'            => $data['city'] ?? null,
+                'address'         => $data['address'] ?? null,
+                'latitude'        => $data['latitude'] ?? null,
+                'longitude'       => $data['longitude'] ?? null,
+                'is_active'       => $data['is_active'] ?? true,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ];
+
+            $sbu = Sbu::create($sbuData);
+
+            DB::commit();
+
+            return $sbu;
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('SBU Store Error: ' . $e->getMessage());
+
+            throw $e;
+        }
+    }
+
+    public function findById($id): ?Sbu
     {
         return Sbu::with('organization')->find($id);
+    }
+
+    public function update($id, array $data): Sbu
+    {
+        $sbu = Sbu::findOrFail($id);
+
+        $sbu->update([
+            'organization_id' => $data['organization_id'],
+            'name'            => $data['name'],
+            'city'            => $data['city'] ?? null,
+            'address'         => $data['address'] ?? null,
+            'latitude'        => $data['latitude'] ?? null,
+            'longitude'       => $data['longitude'] ?? null,
+            'is_active'       => $data['is_active'],
+        ]);
+
+        return $sbu;
+    }
+
+    public function destroy($id): void
+    {
+        DB::beginTransaction();
+
+        try {
+            $sbu = Sbu::findOrFail($id);
+
+            $sbu->delete();
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('SBU Delete Error: ' . $e->getMessage());
+
+            throw $e;
+        }
     }
 }
