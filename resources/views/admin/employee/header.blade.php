@@ -20,10 +20,9 @@
         <button type="button" class="btn btn-outline-secondary me-2" id="exportBtn">
             <i class="bi bi-download me-1"></i>Export
         </button>
-        <button type="button" class="btn btn-primary bg-main border-0 me-2" data-bs-toggle="offcanvas"
-            data-bs-target="#addEmployeeCanvas" data-mode="add">
+        <a href="{{ route('admin.register.index') }}" class="btn btn-primary bg-main border-0 me-2">
             <i class="bi bi-person-plus me-1"></i>Add New Employee
-        </button>
+        </a>
         <div class="btn-group">
             <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
                 aria-expanded="false" id="filterDropdownBtn">

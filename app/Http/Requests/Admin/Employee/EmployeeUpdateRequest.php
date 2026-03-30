@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Http\Requests\Admin\Employee;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class EmployeeUpdateRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        $id = $this->route('id');
+
+        return [
+            'full_name'              => ['required', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
+            'father_name'            => ['nullable', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
+            'email'                  => ['nullable', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($id)],
+            'phone'                  => ['nullable', 'string', 'max:15'],
+            'cnic'                   => ['nullable', 'string', 'max:20'],
+            'cnic_expiry'            => ['nullable', 'date'],
+            'father_cnic'            => ['nullable', 'string', 'max:20'],
+            'ntn'                    => ['nullable', 'string', 'max:50'],
+            'gender'                 => ['nullable', Rule::in(['Male', 'Female', 'Other'])],
+            'nationality'            => ['nullable', 'string', 'max:100'],
+            'dob'                    => ['nullable', 'date', 'before:today'],
+            'domicile_district'      => ['nullable', 'string', 'max:100'],
+            'domicile_province'      => ['nullable', 'string', 'max:100'],
+            'city_of_birth'          => ['nullable', 'string', 'max:100'],
+            'religion'               => ['nullable', 'string', 'max:100'],
+            'sect'                   => ['nullable', 'string', 'max:100'],
+            'marital_status'         => ['nullable', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widowed'])],
+            'spouse_name'            => ['nullable', 'string', 'max:255'],
+            'nok_name'               => ['nullable', 'string', 'max:255'],
+            'nok_cnic'               => ['nullable', 'string', 'max:20'],
+            'nok_relation'           => ['nullable', 'string', 'max:100'],
+            'nok_dob'                => ['nullable', 'date'],
+            'nok_contact'            => ['nullable', 'string', 'max:15'],
+            'organization_id'        => ['nullable', 'integer', 'exists:organizations,id'],
+            'sbu_id'                 => ['nullable', 'integer', 'exists:sbus,id'],
+            'department_id'          => ['nullable', 'integer', 'exists:departments,id'],
+            'employee_type'          => ['nullable', 'string', 'max:100'],
+            'employment_type'        => ['nullable', 'string', 'max:100'],
+            'designation'            => ['nullable', 'string', 'max:255'],
+            'grade'                  => ['nullable', 'string', 'max:50'],
+            'branch'                 => ['nullable', 'string', 'max:100'],
+            'location'               => ['nullable', 'string', 'max:255'],
+            'site'                   => ['nullable', 'string', 'max:255'],
+            'join_date'              => ['nullable', 'date'],
+            'floor_access'           => ['nullable', 'boolean'],
+            'biometric_id'           => ['nullable', 'string', 'max:50'],
+            'sync_with_biometric'    => ['nullable', 'boolean'],
+            'verification_status'    => ['nullable', Rule::in(['Cleared', 'Not Cleared', 'In Process'])],
+            'msr_letter_no'          => ['nullable', 'string', 'max:255'],
+            'addressee'              => ['nullable', 'string', 'max:255'],
+            'verifying_authority'    => ['nullable', 'string', 'max:255'],
+            'verification_letter_no' => ['nullable', 'string', 'max:255'],
+            'next_verification_date' => ['nullable', 'date'],
+            'police_remarks'         => ['nullable', 'string', 'max:2000'],
+            'service_no'             => ['nullable', 'string', 'max:100'],
+            'rank'                   => ['nullable', 'string', 'max:100'],
+            'medical_category'       => ['nullable', 'string', 'max:100'],
+            'date_of_commissioning'  => ['nullable', 'date'],
+            'date_of_retirement'     => ['nullable', 'date'],
+            'reason_of_retirement'   => ['nullable', 'string', 'max:255'],
+            'corps_regiment'         => ['nullable', 'string', 'max:255'],
+            'ex_army_unit'           => ['nullable', 'string', 'max:255'],
+            'trade'                  => ['nullable', 'string', 'max:100'],
+            'pma_lc_ots'             => ['nullable', 'string', 'max:255'],
+            'residence_phone'        => ['nullable', 'string', 'max:15'],
+            'emergency_contact'      => ['nullable', 'string', 'max:15'],
+            'cell_no'                => ['nullable', 'string', 'max:15'],
+            'contact_email'          => ['nullable', 'email', 'max:255'],
+            'present_address'        => ['nullable', 'string', 'max:1000'],
+            'permanent_address'      => ['nullable', 'string', 'max:1000'],
+            'account_title'          => ['nullable', 'string', 'max:255'],
+            'account_no'             => ['nullable', 'string', 'max:100'],
+            'bank_branch'            => ['nullable', 'string', 'max:255'],
+            'account_type'           => ['nullable', Rule::in(['Saving', 'Current'])],
+            'family'                         => ['nullable', 'array'],
+            'family.*.name'                  => ['required_with:family.*', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
+            'family.*.gender'                => ['nullable', Rule::in(['Male', 'Female'])],
+            'family.*.dob'                   => ['nullable', 'date'],
+            'family.*.relation'              => ['nullable', 'string', 'max:100'],
+            'family.*.occupation'            => ['nullable', 'string', 'max:255'],
+            'academics'                      => ['nullable', 'array'],
+            'academics.*.degree'             => ['required_with:academics.*', 'string', 'max:255'],
+            'academics.*.grade_cgpa'         => ['nullable', 'string', 'max:50'],
+            'academics.*.start_date'         => ['nullable', 'date'],
+            'academics.*.end_date'           => ['nullable', 'date'],
+            'academics.*.field_of_study'     => ['nullable', 'string', 'max:255'],
+            'academics.*.institute'          => ['nullable', 'string', 'max:255'],
+            'employments'                    => ['nullable', 'array'],
+            'employments.*.organization'     => ['required_with:employments.*', 'string', 'max:255'],
+            'employments.*.designation'      => ['nullable', 'string', 'max:255'],
+            'employments.*.from_date'        => ['nullable', 'date'],
+            'employments.*.to_date'          => ['nullable', 'date'],
+            'employments.*.salary'           => ['nullable', 'string', 'max:100'],
+            'employments.*.reason_for_leaving' => ['nullable', 'string', 'max:500'],
+            'last_fitness_test'      => ['nullable', 'string', 'max:1000'],
+            'has_disability'         => ['nullable', Rule::in(['yes', 'no'])],
+            'blood_group'            => ['nullable', 'string', 'max:10'],
+            'disability_type'        => ['nullable', 'string', 'max:100'],
+            'disability_description' => ['nullable', 'string', 'max:1000'],
+            'ref1_name'         => ['nullable', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
+            'ref1_designation'  => ['nullable', 'string', 'max:255'],
+            'ref1_organization' => ['nullable', 'string', 'max:255'],
+            'ref1_contact'      => ['nullable', 'string', 'max:15'],
+            'ref1_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
+            'ref2_name'         => ['nullable', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
+            'ref2_designation'  => ['nullable', 'string', 'max:255'],
+            'ref2_organization' => ['nullable', 'string', 'max:255'],
+            'ref2_contact'      => ['nullable', 'string', 'max:15'],
+            'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
+            'profile_photo'       => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'full_name.required' => 'Employee ka poora naam zaroori hai.',
+            'full_name.regex'    => 'Naam mein sirf letters, spaces aur dots allowed hain.',
+            'email.email'        => 'Email address ka format sahi nahi hai.',
+            'email.unique'       => 'Yeh email pehle se registered hai.',
+            'dob.before'         => 'Date of Birth aaj ki date se pehle ki honi chahiye.',
+        ];
+    }
+}

@@ -11,7 +11,7 @@
                     style="width:160px; height:160px; border: 2px dashed var(--main-color); border-radius: 10px; cursor:pointer; background:#f8f9fa1a;">
                     <i class="bi bi-cloud-arrow-up fs-1 text-secondary"></i>
                     <span style="font-size:.72rem; color:#6c757d;">Click to upload</span>
-                    <input type="file" id="uploadImage" accept="image/*" class="d-none" onchange="previewImg(this)">
+                    <input type="file" id="uploadImage" name="profile_photo" accept="image/*" class="d-none" onchange="previewImg(this)">
                 </label>
                 <img id="imgPreview" src="" alt=""
                     style="display:none; width:160px; height:160px; object-fit:cover; border-radius:10px; margin-top:6px; border:2px solid var(--main-color);">
@@ -19,98 +19,93 @@
 
             <div class="col-md-5">
                 <label class="form-label">Name</label>
-                <input type="text" class="form-control">
+                <input type="text" name="full_name" class="form-control">
             </div>
 
             <div class="col-md-5">
                 <label class="form-label">Father Name</label>
-                <input type="text" class="form-control">
+                <input type="text" name="father_name" class="form-control">
             </div>
         </div>
 
         <div class="col-md-4">
             <label class="form-label">CNIC</label>
-            <input type="text" class="form-control" placeholder="00000-0000000-0">
+            <input type="text" name="cnic" class="form-control" placeholder="00000-0000000-0">
         </div>
 
         <div class="col-md-4">
             <label class="form-label">CNIC Expiry Date</label>
-            <input type="date" class="form-control">
+            <input type="date" name="cnic_expiry" class="form-control">
         </div>
-
 
         <div class="col-md-4">
             <label class="form-label">Father CNIC</label>
-            <input type="text" class="form-control" placeholder="00000-0000000-0">
+            <input type="text" name="father_cnic" class="form-control" placeholder="00000-0000000-0">
         </div>
 
         <div class="col-md-6">
             <label class="form-label">Nationality</label>
-            <input type="text" class="form-control">
+            <input type="text" name="nationality" class="form-control">
         </div>
-
 
         <div class="col-md-6">
             <label class="form-label">Date of Birth</label>
-            <input type="date" class="form-control">
+            <input type="date" name="dob" class="form-control">
         </div>
 
         <div class="col-md-6">
             <label class="form-label">NTN #</label>
-            <input type="text" class="form-control">
+            <input type="text" name="ntn" class="form-control">
         </div>
 
         <div class="col-md-6">
             <label class="form-label">Gender</label>
             <div class="d-flex gap-3 mt-1">
                 <div class="form-check d-flex align-items-center gap-1">
-                    <input class="check-input" type="radio" name="gender">
+                    <input class="check-input" type="radio" name="gender" value="Male">
                     <label class="form-check-label">Male</label>
                 </div>
                 <div class="form-check d-flex align-items-center gap-1">
-                    <input class="check-input" type="radio" name="gender">
+                    <input class="check-input" type="radio" name="gender" value="Female">
                     <label class="form-check-label">Female</label>
                 </div>
             </div>
         </div>
 
-
         <div class="col-md-4">
             <label class="form-label">Domicile (District)</label>
-            <input type="text" class="form-control">
+            <input type="text" name="domicile_district" class="form-control">
         </div>
 
         <div class="col-md-4">
             <label class="form-label">Domicile (Province)</label>
-            <input type="text" class="form-control">
+            <input type="text" name="domicile_province" class="form-control">
         </div>
 
         <div class="col-md-4">
             <label class="form-label">Town / City of Birth</label>
-            <input type="text" class="form-control">
+            <input type="text" name="city_of_birth" class="form-control">
         </div>
-
 
         <div class="col-md-6">
             <label class="form-label">Religion</label>
-            <input type="text" class="form-control">
+            <input type="text" name="religion" class="form-control">
         </div>
 
         <div class="col-md-6">
             <label class="form-label">Sect</label>
-            <input type="text" class="form-control">
+            <input type="text" name="sect" class="form-control">
         </div>
 
         <div class="col-md-6">
             <label class="form-label">Spouse Name & Nationality</label>
-            <input type="text" class="form-control">
+            <input type="text" name="spouse_name" class="form-control">
         </div>
-
 
         <div class="col-md-6">
             <label class="form-label">Marital Status</label>
             <div class="position-relative">
-                <select class="form-select pe-4"
+                <select name="marital_status" class="form-select pe-4"
                     style="background-color: transparent !important; border: 1px solid #012445; box-shadow: 0 0 4px 2px #5a59593d; appearance: none; -webkit-appearance: none;">
                     <option value="">Select</option>
                     <option>Single</option>
@@ -123,60 +118,142 @@
         </div>
 
         {{-- NOK --}}
-
         <div class="col-md-3">
             <label class="form-label">Name of Next of Kin (NOK)</label>
-            <input type="text" class="form-control">
+            <input type="text" name="nok_name" class="form-control">
         </div>
 
         <div class="col-md-3">
             <label class="form-label">NOK CNIC & Date of Expiry</label>
-            <input type="text" class="form-control">
+            <input type="text" name="nok_cnic" class="form-control">
         </div>
-
 
         <div class="col-md-3">
             <label class="form-label">Relation with NOK</label>
-            <input type="text" class="form-control">
+            <input type="text" name="nok_relation" class="form-control">
         </div>
 
         <div class="col-md-3">
             <label class="form-label">NOK Date of Birth</label>
-            <input type="date" class="form-control">
+            <input type="date" name="nok_dob" class="form-control">
         </div>
 
         <div class="col-md-6">
             <label class="form-label">NOK Contact No</label>
-            <input type="tel" class="form-control">
+            <input type="tel" name="nok_contact" class="form-control">
+        </div>
+
+        {{-- Organization / SBU / Department --}}
+        <div class="col-md-4">
+            <label class="form-label">Organization <span class="text-danger">*</span></label>
+            <select name="organization_id" id="org_select" class="form-select"
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;"
+                onchange="onOrgChange(this.value)">
+                <option value="">— Select Organization —</option>
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">SBU</label>
+            <select name="sbu_id" id="sbu_select" class="form-select"
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;"
+                onchange="onSbuChange(this.value)">
+                <option value="">— Select SBU —</option>
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Department</label>
+            <select name="department_id" id="dept_select" class="form-select"
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
+                <option value="">— Select Department —</option>
+            </select>
         </div>
 
         {{-- Employment --}}
-
         <div class="col-md-6">
             <label class="form-label">Date of Joining</label>
-            <input type="date" class="form-control">
+            <input type="date" name="join_date" class="form-control">
         </div>
 
         <div class="col-md-6">
             <label class="form-label">Designation</label>
-            <input type="text" class="form-control">
+            <input type="text" name="designation" class="form-control">
         </div>
 
         <div class="col-md-6">
             <label class="form-label">Grade</label>
-            <input type="text" class="form-control">
+            <input type="text" name="grade" class="form-control">
         </div>
-
 
         <div class="col-md-6">
             <label class="form-label">Branch</label>
-            <input type="text" class="form-control">
+            <input type="text" name="branch" class="form-control">
         </div>
 
         <div class="col-md-6">
             <label class="form-label">Location</label>
-            <input type="text" class="form-control">
+            <input type="text" name="location" class="form-control">
         </div>
 
     </div>
 </div>
+
+<script>
+    window._orgsData = @json($orgsData ?? []);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const orgSel = document.getElementById('org_select');
+        window._orgsData.forEach(function (o) {
+            orgSel.insertAdjacentHTML('beforeend',
+                '<option value="' + o.id + '">' + escHtmlBasic(o.name) + '</option>');
+        });
+    });
+
+    function escHtmlBasic(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function onOrgChange(orgId) {
+        const sbuSel  = document.getElementById('sbu_select');
+        const deptSel = document.getElementById('dept_select');
+        sbuSel.innerHTML  = '<option value="">— Select SBU —</option>';
+        deptSel.innerHTML = '<option value="">— Select Department —</option>';
+
+        if (!orgId) return;
+        const org = (window._orgsData || []).find(o => String(o.id) === String(orgId));
+        if (!org) return;
+        (org.sbus || []).forEach(function (s) {
+            sbuSel.insertAdjacentHTML('beforeend',
+                '<option value="' + s.id + '">' + escHtmlBasic(s.name) + '</option>');
+        });
+    }
+
+    function onSbuChange(sbuId) {
+        const orgId   = document.getElementById('org_select').value;
+        const deptSel = document.getElementById('dept_select');
+        deptSel.innerHTML = '<option value="">— Select Department —</option>';
+
+        if (!sbuId || !orgId) return;
+        const org = (window._orgsData || []).find(o => String(o.id) === String(orgId));
+        if (!org) return;
+        const sbu = (org.sbus || []).find(s => String(s.id) === String(sbuId));
+        if (!sbu) return;
+        (sbu.departments || []).forEach(function (d) {
+            deptSel.insertAdjacentHTML('beforeend',
+                '<option value="' + d.id + '">' + escHtmlBasic(d.name) + '</option>');
+        });
+    }
+
+    function previewImg(input) {
+        const preview = document.getElementById('imgPreview');
+        if (input.files && input.files[0]) {
+            preview.src = URL.createObjectURL(input.files[0]);
+            preview.style.display = 'block';
+        }
+    }
+</script>

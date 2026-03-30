@@ -17,6 +17,8 @@ use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\WorkflowController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -107,12 +109,13 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/role/search', [RoleController::class, 'searchRole'])->name('admin.role.search');
     
     Route::get('/register', [RegistrationController::class, 'index'])->name('admin.register.index');
-    
+
     Route::get('/employee', [EmployeeController::class, 'index'])->name('admin.employee.index');
-    Route::get('/employee/add', [EmployeeController::class, 'create'])->name('admin.employee.add');
-    Route::post('/employee/add', [EmployeeController::class, 'store'])->name('admin.employee.store');
-    Route::get('/employee/edit/{id}', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
-    Route::post('/employee/edit/{id}', [EmployeeController::class, 'update'])->name('admin.employee.update');
+    Route::get('/employee/data', [EmployeeController::class, 'tableData'])->name('admin.employee.data');
+    Route::get('/employee/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
+    Route::post('/employee/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
+    Route::get('/employee/{id}/edit', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
+    Route::post('/employee/{id}/update', [EmployeeController::class, 'update'])->name('admin.employee.update');
     Route::delete('/employee/{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
     
     
@@ -122,9 +125,13 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     
     
     
-    // Route::get('/users', function () {
-    //     return view('admin.users.index'); // Placeholder - replace with actual users view
-    // })->name('admin.users.index');
+    Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
+    Route::get('/users/data', [UserController::class, 'data'])->name('admin.users.data');
+    Route::get('/users/stats', [UserController::class, 'stats'])->name('admin.users.stats');
+    Route::post('/users/store', [UserController::class, 'store'])->name('admin.users.store');
+    Route::post('/users/{id}/update', [UserController::class, 'update'])->name('admin.users.update');
+    Route::patch('/users/{id}/status', [UserController::class, 'updateStatus'])->name('admin.users.status');
+    Route::delete('/users/{id}/delete', [UserController::class, 'destroy'])->name('admin.users.destroy');
     
     // Route::get('/departments', function () {
     //     return view('admin.departments.index');
@@ -142,17 +149,13 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         return view('admin.monthly-logs.index');
     })->name('admin.monthly-logs.index');
     
-    Route::get('/employee', function () {
-        return view('admin.employee.index');
-    })->name('admin.employee.index');
-    
     // Route::get('/shift-planner', function () {
     //     return view('admin.shift-planner.index');
     // })->name('admin.shift-planner.index');
     
-    // Route::get('/regularization', function () {
-    //     return view('admin.regularization.index');
-    // })->name('admin.regularization.index');
+    Route::get('/regularization', function () {
+        return view('admin.regularization.index');
+    })->name('admin.regularization.index');
     
     // Route::get('/geofencing', function () {
     //     return view('admin.geofencing.index');
@@ -194,9 +197,14 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.policies.index');
     // })->name('admin.policies.index');
     
-    // Route::get('/workflows', function () {
-    //     return view('admin.workflows.index');
-    // })->name('admin.workflows.index');
+    // Workflow Management Routes
+    Route::get('/workflows', [WorkflowController::class, 'index'])->name('admin.workflows.index');
+    Route::get('/workflows/data', [WorkflowController::class, 'data'])->name('admin.workflows.data');
+    Route::get('/workflows/stats', [WorkflowController::class, 'stats'])->name('admin.workflows.stats');
+    Route::post('/workflows/store', [WorkflowController::class, 'store'])->name('admin.workflows.store');
+    Route::post('/workflows/{id}/update', [WorkflowController::class, 'update'])->name('admin.workflows.update');
+    Route::patch('/workflows/{id}/status', [WorkflowController::class, 'updateStatus'])->name('admin.workflows.status');
+    Route::delete('/workflows/{id}/delete', [WorkflowController::class, 'destroy'])->name('admin.workflows.destroy');
     
     // Route::get('/reports', function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual reports view

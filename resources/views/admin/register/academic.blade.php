@@ -12,7 +12,6 @@
                 data-target="s7-medical" onclick="showSubSection(this, 's7-medical')">Medical</button>
             <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
                 data-target="s7-references" onclick="showSubSection(this, 's7-references')">References</button>
-
         </div>
 
         {{-- Right Content --}}
@@ -40,12 +39,12 @@
                         <tbody id="academicTable">
                             <tr>
                                 <td>1</td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
+                                <td><input type="text" class="form-control form-control-sm ac-degree"></td>
+                                <td><input type="text" class="form-control form-control-sm ac-grade"></td>
+                                <td><input type="date" class="form-control form-control-sm ac-start"></td>
+                                <td><input type="date" class="form-control form-control-sm ac-end"></td>
+                                <td><input type="text" class="form-control form-control-sm ac-field"></td>
+                                <td><input type="text" class="form-control form-control-sm ac-institute"></td>
                                 <td class="d-flex gap-1">
                                     <button type="button" class="action-btn border-0 text-success bg-success-subtle"
                                         onclick="saveAcademicRow(this)" title="Save">
@@ -57,19 +56,17 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addAcademicRow()">+ Add
-                    Row</button>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addAcademicRow()">+ Add Row</button>
                 <div id="academicListing" class="row g-3 mt-3"></div>
             </div>
 
-
             {{-- H: Employment History --}}
-            <div class="sub-section  d-none" id="s7-employment">
-                <div class="section-title">Section H — Employment History <small class="text-muted fw-normal">(Start
-                        from Recent)</small></div>
+            <div class="sub-section d-none" id="s7-employment">
+                <div class="section-title">Section H — Employment History <small class="text-muted fw-normal">(Start from Recent)</small></div>
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                         <thead class="bg-main">
@@ -87,12 +84,12 @@
                         <tbody id="employmentTable">
                             <tr>
                                 <td>1</td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="date" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
-                                <td><input type="text" class="form-control form-control-sm"></td>
+                                <td><input type="text" class="form-control form-control-sm em-org"></td>
+                                <td><input type="text" class="form-control form-control-sm em-desig"></td>
+                                <td><input type="date" class="form-control form-control-sm em-from"></td>
+                                <td><input type="date" class="form-control form-control-sm em-to"></td>
+                                <td><input type="text" class="form-control form-control-sm em-salary"></td>
+                                <td><input type="text" class="form-control form-control-sm em-reason"></td>
                                 <td class="d-flex gap-1">
                                     <button type="button" class="action-btn border-0 text-success bg-success-subtle"
                                         onclick="saveEmploymentRow(this)" title="Save">
@@ -107,9 +104,7 @@
                         </tbody>
                     </table>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEmploymentRow()">+ Add
-                    Row</button>
-
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEmploymentRow()">+ Add Row</button>
                 <div id="employmentListing" class="row g-3 mt-3"></div>
             </div>
 
@@ -117,30 +112,38 @@
             <div class="sub-section px-3 pb-2 d-none" id="s7-medical">
                 <div class="section-title">Section I — Medical Ailment / History / Disability</div>
                 <div class="row g-3">
-                    <div class="col-12"><label class="form-label">Last Medical Fitness Test — Date & Results</label>
-                        <textarea class="form-control" rows="2"></textarea>
+                    <div class="col-12">
+                        <label class="form-label">Last Medical Fitness Test — Date & Results</label>
+                        <textarea name="last_fitness_test" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Do you have any disability?</label>
                         <div class="d-flex gap-3 mt-1">
-                            <div class="form-check"><input class="check-input" type="radio"
-                                    name="disability"><label class="form-check-label">Yes</label></div>
-                            <div class="form-check"><input class="check-input" type="radio"
-                                    name="disability"><label class="form-check-label">No</label></div>
+                            <div class="form-check">
+                                <input class="check-input" type="radio" name="has_disability" value="yes">
+                                <label class="form-check-label">Yes</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="check-input" type="radio" name="has_disability" value="no">
+                                <label class="form-check-label">No</label>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4"><label class="form-label">Blood Group</label><input type="text"
-                            class="form-control"></div>
                     <div class="col-md-4">
-                        <label class="form-label">If Yes</label>
-                        <select class="form-select">
+                        <label class="form-label">Blood Group</label>
+                        <input type="text" name="blood_group" class="form-control" maxlength="10">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">If Yes (Disability Type)</label>
+                        <select name="disability_type" class="form-select">
                             <option value="">Select</option>
                             <option>Partially Disabled</option>
                             <option>Fully Disabled at Home</option>
                         </select>
                     </div>
-                    <div class="col-12"><label class="form-label">Disease / Disability Description</label>
-                        <textarea class="form-control" rows="2"></textarea>
+                    <div class="col-12">
+                        <label class="form-label">Disease / Disability Description</label>
+                        <textarea name="disability_description" class="form-control" rows="2"></textarea>
                     </div>
                 </div>
             </div>
@@ -152,17 +155,13 @@
                     <div class="col-md-6">
                         <p class="fw-semibold mb-2 text-primary">Reference 1</p>
                         <div class="row g-2">
-                            <div class="col-12"><label class="form-label">Name</label><input type="text"
-                                    class="form-control"></div>
-                            <div class="col-12"><label class="form-label">Designation</label><input type="text"
-                                    class="form-control"></div>
-                            <div class="col-12"><label class="form-label">Organization</label><input type="text"
-                                    class="form-control"></div>
-                            <div class="col-12"><label class="form-label">Contact No</label><input type="tel"
-                                    class="form-control"></div>
+                            <div class="col-12"><label class="form-label">Name</label><input type="text" name="ref1_name" class="form-control"></div>
+                            <div class="col-12"><label class="form-label">Designation</label><input type="text" name="ref1_designation" class="form-control"></div>
+                            <div class="col-12"><label class="form-label">Organization</label><input type="text" name="ref1_organization" class="form-control"></div>
+                            <div class="col-12"><label class="form-label">Contact No</label><input type="tel" name="ref1_contact" class="form-control" maxlength="15"></div>
                             <div class="col-12">
                                 <label class="form-label">Relationship</label>
-                                <select class="form-select">
+                                <select name="ref1_relationship" class="form-select">
                                     <option value="">Select</option>
                                     <option>Family</option>
                                     <option>Friend</option>
@@ -176,17 +175,13 @@
                     <div class="col-md-6">
                         <p class="fw-semibold mb-2 text-primary">Reference 2</p>
                         <div class="row g-2">
-                            <div class="col-12"><label class="form-label">Name</label><input type="text"
-                                    class="form-control"></div>
-                            <div class="col-12"><label class="form-label">Designation</label><input type="text"
-                                    class="form-control"></div>
-                            <div class="col-12"><label class="form-label">Organization</label><input type="text"
-                                    class="form-control"></div>
-                            <div class="col-12"><label class="form-label">Contact No</label><input type="tel"
-                                    class="form-control"></div>
+                            <div class="col-12"><label class="form-label">Name</label><input type="text" name="ref2_name" class="form-control"></div>
+                            <div class="col-12"><label class="form-label">Designation</label><input type="text" name="ref2_designation" class="form-control"></div>
+                            <div class="col-12"><label class="form-label">Organization</label><input type="text" name="ref2_organization" class="form-control"></div>
+                            <div class="col-12"><label class="form-label">Contact No</label><input type="tel" name="ref2_contact" class="form-control" maxlength="15"></div>
                             <div class="col-12">
                                 <label class="form-label">Relationship</label>
-                                <select class="form-select">
+                                <select name="ref2_relationship" class="form-select">
                                     <option value="">Select</option>
                                     <option>Family</option>
                                     <option>Friend</option>
@@ -199,12 +194,15 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
 
-
 <script>
+    window.academicsData   = window.academicsData   || [];
+    window.employmentsData = window.employmentsData || [];
+
     function showSubSection(btn, targetId) {
         document.querySelectorAll('.sub-section').forEach(s => s.classList.add('d-none'));
         document.querySelectorAll('.sub-nav-btn').forEach(b => {
@@ -216,176 +214,136 @@
         btn.classList.add('btn-primary');
     }
 
+    function addAcademicRow() {
+        const tbody = document.getElementById('academicTable');
+        const count = tbody.rows.length + 1;
+        tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+            <td>${count}</td>
+            <td><input type="text" class="form-control form-control-sm ac-degree"></td>
+            <td><input type="text" class="form-control form-control-sm ac-grade"></td>
+            <td><input type="date" class="form-control form-control-sm ac-start"></td>
+            <td><input type="date" class="form-control form-control-sm ac-end"></td>
+            <td><input type="text" class="form-control form-control-sm ac-field"></td>
+            <td><input type="text" class="form-control form-control-sm ac-institute"></td>
+            <td class="d-flex gap-1">
+                <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveAcademicRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
+                <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`);
+    }
+
     function addEmploymentRow() {
         const tbody = document.getElementById('employmentTable');
         const count = tbody.rows.length + 1;
         tbody.insertAdjacentHTML('beforeend', `
-            <tr>
-                <td>${count}</td>
-                <td><input type="text" class="form-control form-control-sm"></td>
-                <td><input type="text" class="form-control form-control-sm"></td>
-                <td><input type="date" class="form-control form-control-sm"></td>
-                <td><input type="date" class="form-control form-control-sm"></td>
-                <td><input type="text" class="form-control form-control-sm"></td>
-                <td><input type="text" class="form-control form-control-sm"></td>
-                <td class="d-flex gap-1">
-                                    <button type="button" class="action-btn border-0 text-success bg-success-subtle"
-                                        onclick="saveEmploymentRow(this)" title="Save">
-                                        <i class="bi bi-floppy"></i>
-                                    </button>
-                                    <button type="button" class="action-btn border-0 text-danger bg-danger-subtle"
-                                        onclick="removeRow(this)" title="Delete">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-            </tr>`);
+        <tr>
+            <td>${count}</td>
+            <td><input type="text" class="form-control form-control-sm em-org"></td>
+            <td><input type="text" class="form-control form-control-sm em-desig"></td>
+            <td><input type="date" class="form-control form-control-sm em-from"></td>
+            <td><input type="date" class="form-control form-control-sm em-to"></td>
+            <td><input type="text" class="form-control form-control-sm em-salary"></td>
+            <td><input type="text" class="form-control form-control-sm em-reason"></td>
+            <td class="d-flex gap-1">
+                <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveEmploymentRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
+                <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`);
     }
+
+    function removeRow(btn) { btn.closest('tr').remove(); }
 
     function saveAcademicRow(btn) {
-        const row = btn.closest('tr');
-        const cells = row.querySelectorAll('td');
+        const row     = btn.closest('tr');
+        const degree  = row.querySelector('.ac-degree').value.trim();
+        const grade   = row.querySelector('.ac-grade').value.trim();
+        const start   = row.querySelector('.ac-start').value;
+        const end     = row.querySelector('.ac-end').value;
+        const field   = row.querySelector('.ac-field').value.trim();
+        const inst    = row.querySelector('.ac-institute').value.trim();
 
-        const degree = cells[1].querySelector('input').value.trim();
-        const grade = cells[2].querySelector('input').value.trim();
-        const startDate = cells[3].querySelector('input').value;
-        const endDate = cells[4].querySelector('input').value;
-        const field = cells[5].querySelector('input').value.trim();
-        const institute = cells[6].querySelector('input').value.trim();
+        if (!degree) { alert('Please enter a degree before saving.'); return; }
 
-        if (!degree) {
-            alert('Please enter a degree before saving.');
-            return;
-        }
+        const idx  = window.academicsData.length;
+        window.academicsData.push({ degree, grade_cgpa: grade, start_date: start, end_date: end, field_of_study: field, institute: inst });
 
         const initials = degree.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        }) : '—';
-        const id = 'academic-card-' + Date.now();
+        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        const id  = 'academic-card-' + idx;
 
-        const card = `
-    <div class="col-md-6 col-lg-4" id="${id}">
-        <div class="card border-1 rounded-3 h-100">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="d-flex align-items-center">
-                        <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold"
-                            style="width:45px;height:45px;font-size:1.1rem;">
-                            ${initials}
+        document.getElementById('academicListing').insertAdjacentHTML('beforeend', `
+        <div class="col-md-6 col-lg-4" id="${id}">
+            <div class="card border-1 rounded-3 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width:45px;height:45px;font-size:1.1rem;">${initials}</div>
+                            <div><h6 class="mb-0 fw-semibold small">${degree}</h6><small class="text-muted small">${inst || '—'}</small></div>
                         </div>
-                        <div>
-                            <h6 class="mb-0 fw-semibold small">${degree}</h6>
-                            <small class="text-muted small">${institute || '—'}</small>
-                        </div>
+                        <span class="badge bg-primary" style="font-size:10px;padding:4px 6px;">${grade || '—'}</span>
                     </div>
-                    <span class="badge bg-primary" style="font-size:10px;padding:4px 6px;">${grade || '—'}</span>
-                </div>
-                <div class="mb-2">
-                    <i class="bi bi-book me-1 text-main small"></i>
-                    <small class="text-muted small"><strong>Field:</strong> ${field || '—'}</small>
-                </div>
-                <div class="mb-2">
-                    <i class="bi bi-calendar me-1 text-main small"></i>
-                    <small class="text-muted small"><strong>Start:</strong> ${fmt(startDate)}</small>
-                </div>
-                <div class="mb-2">
-                    <i class="bi bi-calendar-check me-1 text-main small"></i>
-                    <small class="text-muted small"><strong>End:</strong> ${fmt(endDate)}</small>
-                </div>
-                <div class="mt-3 pt-3 border-top d-flex justify-content-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger"
-                        onclick="removeAcademicCard('${id}')">
-                        <i class="bi bi-trash me-1"></i>Remove
-                    </button>
+                    <div class="mb-2"><i class="bi bi-book me-1 text-main small"></i><small class="text-muted small"><strong>Field:</strong> ${field || '—'}</small></div>
+                    <div class="mb-2"><i class="bi bi-calendar me-1 text-main small"></i><small class="text-muted small"><strong>Period:</strong> ${fmt(start)} – ${fmt(end)}</small></div>
+                    <div class="mt-3 pt-3 border-top d-flex justify-content-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAcademicCard('${id}', ${idx})"><i class="bi bi-trash me-1"></i>Remove</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>`;
+        </div>`);
 
-        document.getElementById('academicListing').insertAdjacentHTML('beforeend', card);
-        row.querySelectorAll('input, select').forEach(el => el.disabled = true);
-        btn.disabled = true;
+        row.remove();
     }
 
-    function removeAcademicCard(id) {
+    function removeAcademicCard(id, idx) {
         document.getElementById(id)?.remove();
+        window.academicsData[idx] = null;
     }
 
     function saveEmploymentRow(btn) {
-        const row = btn.closest('tr');
-        const cells = row.querySelectorAll('td');
+        const row    = btn.closest('tr');
+        const org    = row.querySelector('.em-org').value.trim();
+        const desig  = row.querySelector('.em-desig').value.trim();
+        const from   = row.querySelector('.em-from').value;
+        const to     = row.querySelector('.em-to').value;
+        const salary = row.querySelector('.em-salary').value.trim();
+        const reason = row.querySelector('.em-reason').value.trim();
 
-        const org = cells[1].querySelector('input').value.trim();
-        const desig = cells[2].querySelector('input').value.trim();
-        const from = cells[3].querySelector('input').value;
-        const to = cells[4].querySelector('input').value;
-        const salary = cells[5].querySelector('input').value.trim();
-        const reason = cells[6].querySelector('input').value.trim();
+        if (!org) { alert('Please enter an organization before saving.'); return; }
 
-        if (!org) {
-            alert('Please enter an organization before saving.');
-            return;
-        }
+        const idx = window.employmentsData.length;
+        window.employmentsData.push({ organization: org, designation: desig, from_date: from, to_date: to, salary, reason_for_leaving: reason });
 
         const initials = org.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        }) : '—';
-        const id = 'employment-card-' + Date.now();
+        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        const id = 'employment-card-' + idx;
 
-        const card = `
-    <div class="col-md-6 col-lg-4" id="${id}">
-        <div class="card border-1 rounded-3 h-100">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="d-flex align-items-center">
-                        <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold"
-                            style="width:45px;height:45px;font-size:1.1rem;">
-                            ${initials}
+        document.getElementById('employmentListing').insertAdjacentHTML('beforeend', `
+        <div class="col-md-6 col-lg-4" id="${id}">
+            <div class="card border-1 rounded-3 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width:45px;height:45px;font-size:1.1rem;">${initials}</div>
+                            <div><h6 class="mb-0 fw-semibold small">${org}</h6><small class="text-muted small">${desig || '—'}</small></div>
                         </div>
-                        <div>
-                            <h6 class="mb-0 fw-semibold small">${org}</h6>
-                            <small class="text-muted small">${desig || '—'}</small>
-                        </div>
+                        <span class="badge bg-success" style="font-size:10px;padding:4px 6px;">Past</span>
                     </div>
-                    <span class="badge bg-success" style="font-size:10px;padding:4px 6px;">Past</span>
-                </div>
-                <div class="mb-2">
-                    <i class="bi bi-calendar me-1 text-main small"></i>
-                    <small class="text-muted small"><strong>From:</strong> ${fmt(from)}</small>
-                </div>
-                <div class="mb-2">
-                    <i class="bi bi-calendar-check me-1 text-main small"></i>
-                    <small class="text-muted small"><strong>To:</strong> ${fmt(to)}</small>
-                </div>
-                <div class="mb-2">
-                    <i class="bi bi-currency-dollar me-1 text-main small"></i>
-                    <small class="text-muted small"><strong>Salary:</strong> ${salary || '—'}</small>
-                </div>
-                <div class="mb-2">
-                    <i class="bi bi-door-open me-1 text-main small"></i>
-                    <small class="text-muted small"><strong>Reason:</strong> ${reason || '—'}</small>
-                </div>
-                <div class="mt-3 pt-3 border-top d-flex justify-content-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger"
-                        onclick="removeEmploymentCard('${id}')">
-                        <i class="bi bi-trash me-1"></i>Remove
-                    </button>
+                    <div class="mb-2"><i class="bi bi-calendar me-1 text-main small"></i><small class="text-muted small"><strong>Period:</strong> ${fmt(from)} – ${fmt(to)}</small></div>
+                    <div class="mb-2"><i class="bi bi-currency-dollar me-1 text-main small"></i><small class="text-muted small"><strong>Salary:</strong> ${salary || '—'}</small></div>
+                    <div class="mb-2"><i class="bi bi-door-open me-1 text-main small"></i><small class="text-muted small"><strong>Reason:</strong> ${reason || '—'}</small></div>
+                    <div class="mt-3 pt-3 border-top d-flex justify-content-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeEmploymentCard('${id}', ${idx})"><i class="bi bi-trash me-1"></i>Remove</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>`;
+        </div>`);
 
-        document.getElementById('employmentListing').insertAdjacentHTML('beforeend', card);
-        row.querySelectorAll('input, select').forEach(el => el.disabled = true);
-        btn.disabled = true;
+        row.remove();
     }
 
-    function removeEmploymentCard(id) {
+    function removeEmploymentCard(id, idx) {
         document.getElementById(id)?.remove();
+        window.employmentsData[idx] = null;
     }
 </script>
