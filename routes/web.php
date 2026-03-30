@@ -22,6 +22,7 @@ use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\BalanceTrackerController;
 use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\PolicyController;
+use App\Http\Controllers\ShiftPlannerController;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -167,9 +168,11 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         return view('admin.monthly-logs.index');
     })->name('admin.monthly-logs.index');
 
-    Route::get('/shift-planner', function () {
-        return view('admin.shift-planner.index');
-    })->name('admin.shift-planner.index');
+    Route::get('/shift-planner', [ShiftPlannerController::class, 'index'])->name('admin.shift-planner.index');
+    Route::post('/shift-planner', [ShiftPlannerController::class, 'store'])->name('admin.shift-planner.store');
+    Route::get('/shift-planner/{id}', [ShiftPlannerController::class, 'show'])->name('admin.shift-planner.show');
+    Route::post('/shift-planner/{id}', [ShiftPlannerController::class, 'update'])->name('admin.shift-planner.update');
+    Route::delete('/shift-planner/{id}', [ShiftPlannerController::class, 'destroy'])->name('admin.shift-planner.destroy');
 
     // Route::get('/regularization', function () {
     //     return view('admin.regularization.index');

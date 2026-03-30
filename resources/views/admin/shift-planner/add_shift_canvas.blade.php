@@ -7,16 +7,24 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-        <form id="addShiftForm">
+        <form id="addShiftForm" method="POST" action="{{ route('admin.shift-planner.store') }}">
+            @csrf
+
+            <!-- Hidden ID for update -->
+            <input type="hidden" name="id" id="shiftId">
+
             <!-- Shift Name -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
                     <i class="bi bi-info-circle me-2"></i>Basic Information
                 </h6>
-                
+
                 <div class="mb-3">
-                    <label for="shiftName" class="form-label fw-semibold small text-white">Shift Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="shiftName" placeholder="e.g., Morning Shift, Night Shift" required>
+                    <label class="form-label fw-semibold small text-white">
+                        Shift Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" name="name" id="shiftName" class="form-control"
+                        placeholder="e.g., Morning Shift, Night Shift" required>
                 </div>
             </div>
 
@@ -30,12 +38,18 @@
 
                 <div class="row g-3 mb-3">
                     <div class="col-6">
-                        <label for="shiftStartTime" class="form-label fw-semibold small text-white">Start Time <span class="text-danger">*</span></label>
-                        <input type="time" class="form-control" id="shiftStartTime" value="09:00" required>
+                        <label class="form-label fw-semibold small text-white">
+                            Start Time <span class="text-danger">*</span>
+                        </label>
+                        <input type="time" name="start_time" id="shiftStartTime"
+                            class="form-control" value="09:00" required>
                     </div>
                     <div class="col-6">
-                        <label for="shiftEndTime" class="form-label fw-semibold small text-white">End Time <span class="text-danger">*</span></label>
-                        <input type="time" class="form-control" id="shiftEndTime" value="18:00" required>
+                        <label class="form-label fw-semibold small text-white">
+                            End Time <span class="text-danger">*</span>
+                        </label>
+                        <input type="time" name="end_time" id="shiftEndTime"
+                            class="form-control" value="18:00" required>
                     </div>
                 </div>
             </div>
@@ -49,15 +63,19 @@
                 </h6>
 
                 <div class="mb-3">
-                    <label for="clockInWindow" class="form-label fw-semibold small text-white">Clock-in Window (minutes before start) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="clockInWindow" min="0" max="120" value="30" required>
-                    <small class="opacity-75 text-white">Employees can clock-in this many minutes before shift starts</small>
+                    <label class="form-label fw-semibold small text-white">
+                        Clock-in Window (minutes before start) <span class="text-danger">*</span>
+                    </label>
+                    <input type="number" name="clock_in_window_minutes" id="clockInWindow"
+                        class="form-control" min="0" max="120" value="30" required>
                 </div>
 
                 <div class="mb-3">
-                    <label for="clockOutWindow" class="form-label fw-semibold small text-white">Clock-out Window (minutes after end) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="clockOutWindow" min="0" max="120" value="30" required>
-                    <small class="opacity-75 text-white">Employees can clock-out this many minutes after shift ends</small>
+                    <label class="form-label fw-semibold small text-white">
+                        Clock-out Window (minutes after end) <span class="text-danger">*</span>
+                    </label>
+                    <input type="number" name="clock_out_window_minutes" id="clockOutWindow"
+                        class="form-control" min="0" max="120" value="30" required>
                 </div>
             </div>
 
@@ -70,15 +88,19 @@
                 </h6>
 
                 <div class="mb-3">
-                    <label for="gracePeriod" class="form-label fw-semibold small text-white">Grace Period (minutes) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="gracePeriod" min="0" max="60" value="15" required>
-                    <small class="opacity-75 text-white">How many minutes late is acceptable before flagging in Daily Logs</small>
+                    <label class="form-label fw-semibold small text-white">
+                        Grace Period (minutes) <span class="text-danger">*</span>
+                    </label>
+                    <input type="number" name="grace_period_minutes" id="gracePeriod"
+                        class="form-control" min="0" max="60" value="15" required>
                 </div>
 
                 <div class="mb-3">
-                    <label for="breakTime" class="form-label fw-semibold small text-white">Break Time (minutes) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="breakTime" min="0" max="180" value="60" required>
-                    <small class="opacity-75 text-white">Automatically deducted from total working hours</small>
+                    <label class="form-label fw-semibold small text-white">
+                        Break Time (minutes) <span class="text-danger">*</span>
+                    </label>
+                    <input type="number" name="break_time_minutes" id="breakTime"
+                        class="form-control" min="0" max="180" value="60" required>
                 </div>
             </div>
 
@@ -92,8 +114,13 @@
 
                 <div class="mb-3">
                     <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="overtimeAllowed" checked>
-                        <label class="form-check-label text-white" for="overtimeAllowed">
+                        <!-- hidden for unchecked -->
+                        <input type="hidden" name="overtime_allowed" value="0">
+
+                        <input class="form-check-input" type="checkbox"
+                            name="overtime_allowed" id="overtimeAllowed" value="1" checked>
+
+                        <label class="form-check-label text-white">
                             Allow Overtime
                         </label>
                     </div>
@@ -101,9 +128,11 @@
 
                 <div id="overtimeTriggerSection">
                     <div class="mb-3">
-                        <label for="overtimeTrigger" class="form-label fw-semibold small text-white">Overtime Trigger (hours) <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="overtimeTrigger" min="1" max="12" value="8" step="0.5" required>
-                        <small class="opacity-75 text-white">OT calculation starts after this many hours</small>
+                        <label class="form-label fw-semibold small text-white">
+                            Overtime Trigger (hours)
+                        </label>
+                        <input type="number" name="overtime_trigger_hours" id="overtimeTrigger"
+                            class="form-control" min="1" max="12" value="8" step="0.5">
                     </div>
                 </div>
             </div>
@@ -118,98 +147,158 @@
         </div>
     </div>
 </div>
-
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle overtime toggle
-    const overtimeAllowed = document.getElementById('overtimeAllowed');
-    const overtimeTriggerSection = document.getElementById('overtimeTriggerSection');
-    const overtimeTrigger = document.getElementById('overtimeTrigger');
-    
-    if (overtimeAllowed && overtimeTriggerSection) {
-        overtimeAllowed.addEventListener('change', function() {
-            if (this.checked) {
+    document.addEventListener('DOMContentLoaded', function() {
+        const addShiftCanvas = document.getElementById('addShiftCanvas');
+        const addShiftForm = document.getElementById('addShiftForm');
+        const saveBtn = document.getElementById('saveShiftBtn');
+        const canvasLabel = document.getElementById('addShiftCanvasLabel');
+
+        const shiftIdInput = document.getElementById('shiftId');
+        const shiftName = document.getElementById('shiftName');
+        const shiftStartTime = document.getElementById('shiftStartTime');
+        const shiftEndTime = document.getElementById('shiftEndTime');
+        const clockInWindow = document.getElementById('clockInWindow');
+        const clockOutWindow = document.getElementById('clockOutWindow');
+        const gracePeriod = document.getElementById('gracePeriod');
+        const breakTime = document.getElementById('breakTime');
+        const overtimeAllowed = document.getElementById('overtimeAllowed');
+        const overtimeTriggerSection = document.getElementById('overtimeTriggerSection');
+        const overtimeTrigger = document.getElementById('overtimeTrigger');
+
+        function toggleOvertimeSection() {
+            if (overtimeAllowed.checked) {
                 overtimeTriggerSection.style.display = 'block';
                 overtimeTrigger.required = true;
             } else {
                 overtimeTriggerSection.style.display = 'none';
                 overtimeTrigger.required = false;
+                overtimeTrigger.value = '';
             }
-        });
-    }
+        }
 
-    // Handle canvas show event for edit mode
-    const addShiftCanvas = document.getElementById('addShiftCanvas');
-    if (addShiftCanvas) {
-        addShiftCanvas.addEventListener('show.bs.offcanvas', function(event) {
-            const button = event.relatedTarget;
-            if (button && button.classList.contains('edit-shift-btn')) {
-                const mode = button.getAttribute('data-mode');
-                const shiftId = button.getAttribute('data-shift-id');
-                
-                if (mode === 'edit') {
-                    document.getElementById('addShiftCanvasLabel').innerHTML = '<i class="bi bi-pencil me-2"></i>Edit Shift';
-                    document.getElementById('saveShiftBtn').innerHTML = '<i class="bi bi-check-lg me-1"></i>Update Shift';
-                    
-                    // Load shift data (this would come from API)
-                    // For now, we'll just set the mode
-                    document.getElementById('addShiftForm').setAttribute('data-shift-id', shiftId);
+        function resetShiftForm() {
+            addShiftForm.reset();
+
+            if (shiftIdInput) {
+                shiftIdInput.value = '';
+            }
+
+            addShiftForm.action = "{{ route('admin.shift-planner.store') }}";
+
+            canvasLabel.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add New Shift';
+            saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Save Shift';
+
+            if (overtimeAllowed) {
+                overtimeAllowed.checked = true;
+            }
+
+            if (overtimeTrigger) {
+                overtimeTrigger.value = 8;
+            }
+
+            if (shiftStartTime) {
+                shiftStartTime.value = '09:00';
+            }
+
+            if (shiftEndTime) {
+                shiftEndTime.value = '18:00';
+            }
+
+            if (clockInWindow) {
+                clockInWindow.value = 30;
+            }
+
+            if (clockOutWindow) {
+                clockOutWindow.value = 30;
+            }
+
+            if (gracePeriod) {
+                gracePeriod.value = 15;
+            }
+
+            if (breakTime) {
+                breakTime.value = 60;
+            }
+
+            toggleOvertimeSection();
+        }
+
+        if (overtimeAllowed && overtimeTriggerSection && overtimeTrigger) {
+            overtimeAllowed.addEventListener('change', toggleOvertimeSection);
+            toggleOvertimeSection();
+        }
+
+        if (addShiftCanvas) {
+            addShiftCanvas.addEventListener('show.bs.offcanvas', function(event) {
+                const button = event.relatedTarget;
+
+                if (button && button.classList.contains('edit-shift-btn')) {
+                    const mode = button.getAttribute('data-mode');
+                    const shiftId = button.getAttribute('data-shift-id');
+
+                    if (mode === 'edit' && shiftId) {
+                        canvasLabel.innerHTML = '<i class="bi bi-pencil me-2"></i>Edit Shift';
+                        saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Update Shift';
+
+                        if (shiftIdInput) {
+                            shiftIdInput.value = shiftId;
+                        }
+
+                        addShiftForm.action = "{{ url('/admin/shift-planner') }}/" + shiftId;
+
+                        fetch("{{ url('/admin/shift-planner') }}/" + shiftId)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Failed to fetch shift data.');
+                                }
+                                return response.json();
+                            })
+                            .then(response => {
+                                if (response.success && response.shift) {
+                                    const data = response.shift;
+
+                                    shiftName.value = data.name ?? '';
+                                    shiftStartTime.value = data.start_time ?? '';
+                                    shiftEndTime.value = data.end_time ?? '';
+                                    clockInWindow.value = data.clock_in_window_minutes ?? 30;
+                                    clockOutWindow.value = data.clock_out_window_minutes ?? 30;
+                                    gracePeriod.value = data.grace_period_minutes ?? 15;
+                                    breakTime.value = data.break_time_minutes ?? 60;
+
+                                    overtimeAllowed.checked = Boolean(data.overtime_allowed);
+                                    overtimeTrigger.value = data.overtime_trigger_hours ?? '';
+
+                                    toggleOvertimeSection();
+                                } else {
+                                    alert(response.message || 'Unable to load shift data.');
+                                }
+                            })
+                            .catch(error => {
+                                console.error(error);
+                                alert('Failed to load shift data.');
+                            });
+                    } else {
+                        resetShiftForm();
+                    }
                 } else {
-                    document.getElementById('addShiftCanvasLabel').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add New Shift';
-                    document.getElementById('saveShiftBtn').innerHTML = '<i class="bi bi-check-lg me-1"></i>Save Shift';
-                    document.getElementById('addShiftForm').reset();
+                    resetShiftForm();
                 }
-            } else {
-                // New shift mode
-                document.getElementById('addShiftCanvasLabel').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add New Shift';
-                document.getElementById('saveShiftBtn').innerHTML = '<i class="bi bi-check-lg me-1"></i>Save Shift';
-                document.getElementById('addShiftForm').reset();
-            }
-        });
+            });
 
-        // Reset form when canvas is hidden
-        addShiftCanvas.addEventListener('hidden.bs.offcanvas', function() {
-            document.getElementById('addShiftForm').reset();
-            overtimeTriggerSection.style.display = 'block';
-            overtimeTrigger.required = true;
-        });
-    }
+            addShiftCanvas.addEventListener('hidden.bs.offcanvas', function() {
+                resetShiftForm();
+            });
+        }
 
-    // Handle form submission
-    const saveBtn = document.getElementById('saveShiftBtn');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', function() {
-            const form = document.getElementById('addShiftForm');
-            if (form.checkValidity()) {
-                const formData = {
-                    name: document.getElementById('shiftName').value,
-                    startTime: document.getElementById('shiftStartTime').value,
-                    endTime: document.getElementById('shiftEndTime').value,
-                    clockInWindow: document.getElementById('clockInWindow').value,
-                    clockOutWindow: document.getElementById('clockOutWindow').value,
-                    gracePeriod: document.getElementById('gracePeriod').value,
-                    breakTime: document.getElementById('breakTime').value,
-                    overtimeAllowed: document.getElementById('overtimeAllowed').checked,
-                    overtimeTrigger: document.getElementById('overtimeTrigger').value
-                };
-                
-                const shiftId = form.getAttribute('data-shift-id');
-                if (shiftId) {
-                    formData.id = shiftId;
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function() {
+                if (addShiftForm.checkValidity()) {
+                    addShiftForm.submit();
+                } else {
+                    addShiftForm.reportValidity();
                 }
-                
-                // Frontend view only - no API call
-                
-                // Close canvas after save
-                // const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('addShiftCanvas'));
-                // if (offcanvas) {
-                //     offcanvas.hide();
-                // }
-            } else {
-                form.reportValidity();
-            }
-        });
-    }
-});
+            });
+        }
+    });
 </script>
-
