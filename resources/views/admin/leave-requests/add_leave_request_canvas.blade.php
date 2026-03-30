@@ -30,7 +30,7 @@
                             @isset($employees)
                                 @foreach($employees as $employee)
                                     <option value="{{ $employee->id }}">
-                                        {{ $employee->name }}
+                                        {{ $employee->full_name }}
                                     </option>
                                 @endforeach
                             @endisset
