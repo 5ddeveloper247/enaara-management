@@ -58,10 +58,15 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/sbu/edit/{id}', [SbuController::class, 'update'])->name('admin.sbu.update');
     Route::delete('/sbu/delete/{id}', [SbuController::class, 'destroy'])->name('admin.sbu.destroy');
     Route::get('/sbu/{id}/show', [SbuController::class, 'show'])->name('admin.sbu.show');
-
+    // Sbu Floor Routes
     Route::get('/sbu-floor', [SbuFloorsController::class, 'index'])->name('admin.sbu.floor.index');
+    Route::get('/sbu-floor/add', [SbuFloorsController::class, 'create'])->name('admin.sbu.floor.create');
+    Route::post('/sbu-floor/add', [SbuFloorsController::class, 'store'])->name('admin.sbu.floor.store');
+    Route::get('/sbu-floor/edit/{id}', [SbuFloorsController::class, 'edit'])->name('admin.sbu.floor.edit');
+    Route::post('/sbu-floor/edit/{id}', [SbuFloorsController::class, 'update'])->name('admin.sbu.floor.update');
+    Route::delete('/sbu-floor/delete/{id}', [SbuFloorsController::class, 'destroy'])->name('admin.sbu.floor.destroy');
     Route::get('/sbu-floor/{id}/show', [SbuFloorsController::class, 'show'])->name('admin.sbu.floor.show');
-
+    //
     Route::get('/employee-type', [EmployeeTypeController::class, 'index'])->name('admin.employee.type.index');
     Route::patch('/employee-type/{id}/status', [EmployeeTypeController::class, 'updateStatus'])->name('admin.employee.type.update.status');
     Route::delete('/employee-type/{id}/delete', [EmployeeTypeController::class, 'destroy'])->name('admin.employee.type.destroy');
