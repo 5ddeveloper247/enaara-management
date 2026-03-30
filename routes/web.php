@@ -260,11 +260,13 @@ Route::middleware('auth')->prefix('admin')->group(function () {
 
     // Route::get('/audit-trails', function () {
     //     return view('admin.audit-trails.index');
-    // })->name('admin.audit-trails.index');
-
-    // Route::get('/policies', function () {
-    //     return view('admin.policies.index');
-    // })->name('admin.policies.index');
+    // })->name('admin.audit-trails.index');    
+    // Policies Routes
+    Route::get('/policies', [PolicyController::class, 'index'])->name('admin.policies.index');
+    Route::post('/policies', [PolicyController::class, 'store'])->name('admin.policies.store');
+    Route::get('/policies/{id}', [PolicyController::class, 'show'])->name('admin.policies.show');
+    Route::post('/policies/{id}', [PolicyController::class, 'update'])->name('admin.policies.update');
+    Route::delete('/policies/{id}', [PolicyController::class, 'destroy'])->name('admin.policies.destroy');
 
     // Workflow Management Routes
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('admin.workflows.index');
