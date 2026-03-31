@@ -7,6 +7,7 @@ use App\Services\ShiftPlannerService;
 use App\Http\Requests\Admin\ShiftPlanner\ShiftPlannerRequest;
 use App\Models\ShiftPlanner;
 use App\Models\Employee;
+use App\Models\ShiftRoaster;
 class ShiftPlannerController extends Controller
 {
     protected $shiftPlannerService;
@@ -22,11 +23,19 @@ class ShiftPlannerController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $employees = Employee::where('is_active', 1)
+        $employees = Employee::with('department')
+            ->where('is_active', 1)
             ->orderBy('full_name')
             ->get();
-        $shifts = ShiftPlanner::orderBy('updated_at', 'desc')->get();
-        return view('admin.shift-planner.index', compact('shifts', 'employees'));
+
+        $shifts = ShiftPlanner::where('is_active', 1)
+            ->orderBy('name')
+            ->get();
+
+        $rosters = ShiftRoaster::with(['employee.department', 'shift'])
+            ->orderBy('roster_date', 'asc')
+            ->get();
+        return view('admin.shift-planner.index', compact('employees', 'shifts', 'rosters'));
     }
 
     public function show($id)
