@@ -97,6 +97,19 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <!-- Project Dummy Data -->
 <script src="{{ asset('js/dummy-data.js') }}"></script>
+<script>
+    window._dashRoutes = {
+        attendanceChart: '{{ route('admin.dashboard.attendance-chart') }}',
+    };
+    window._dashStats = {
+        totalEmployees:   {{ $counterStats['totalEmployees'] }},
+        presentToday:     {{ $counterStats['presentToday'] }},
+        absentOnLeave:    {{ $counterStats['absentOnLeave'] }},
+        lateArrivals:     {{ $counterStats['lateArrivals'] }},
+        activeEmployees:  {{ $counterStats['activeEmployees'] }},
+        workforcePercent: {{ $counterStats['workforcePercent'] }},
+    };
+</script>
 <!-- Dashboard JavaScript -->
 <script src="{{ asset('js/dashboard.js') }}"></script>
 @endpush
