@@ -5,26 +5,35 @@
 @section('page-title', 'SBU Floors')
 
 @push('styles')
-    <link href="{{ asset('css/organization.css') }}" rel="stylesheet">
+<link href="{{ asset('css/organization.css') }}" rel="stylesheet">
 @endpush
 
 @section('content')
-    <div class="container-fluid">
-        <div class="row align-items-center mb-3">
-            <div class="col-md-6">
-                <h5 class="mb-0">SBU Floor Management</h5>
-            </div>
-            <div class="col-md-6 text-end">
-            </div>
+<div class="container-fluid">
+    <div class="row align-items-center mb-3">
+        <div class="col-md-6">
+            <h5 class="mb-0">SBU Floor Management</h5>
         </div>
-        @include('admin.sbu.floor.counters')
-        @include('admin.sbu.floor.floor_cards')
+        <div class="col-md-6 text-end">
+            <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
+                data-bs-target="#addSbuFloorCanvas" aria-controls="addSbuFloorCanvas">
+                <i class="bi bi-building-add me-1"></i>Add New SBU Floor
+            </button>
+        </div>
     </div>
-    @include('admin.sbu.floor.detail_canvas')
+    @include('admin.sbu.floor.counters')
+    @include('admin.sbu.floor.floor_cards')
+</div>
+@include('admin.sbu.floor.detail_canvas')
+<!-- Add Sbu Canvas -->
+@include('admin.sbu.floor.add_sbu')
+
+<!-- Edit Sbu Canvas -->
+@include('admin.sbu.floor.edit_sbu')
 @endsection
 
 @push('scripts')
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="{{ asset('js/helpers.js') }}"></script>
-    <script src="{{ asset('js/sbu-floor.js') }}"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="{{ asset('js/helpers.js') }}"></script>
+<script src="{{ asset('js/sbu-floor.js') }}"></script>
 @endpush

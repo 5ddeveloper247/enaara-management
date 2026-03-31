@@ -5,11 +5,17 @@
         initializeEventHandlers();
     });
 
+    function getCsrfToken() {
+        return $('meta[name="csrf-token"]').attr('content');
+    }
+
     function applyFilters() {
         const status = $('input[name="filterStatus"]:checked').val();
+
         $('#sbusGrid .col-md-6').each(function() {
             const card = $(this).find('.sbu-card');
-            const cardStatus = card.data('sbu-status');
+            const cardStatus = String(card.data('sbu-status'));
+
             if (status === 'all' || cardStatus === status) {
                 $(this).show();
             } else {
@@ -28,16 +34,333 @@
             const v = button.getAttribute(attr);
             return (v !== null && v !== '') ? v : (fallback || '—');
         };
+
         const name = get('data-sbu-name');
+
         $('#detailSbuLogoPlaceholder').text((name.substring(0, 2) || '?').toUpperCase());
         $('#detailSbuName').text(name);
         $('#detailSbuCity').text(get('data-sbu-city'));
         $('#detailSbuOrganization').text(get('data-organization-name'));
         $('#detailSbuAddress').text(get('data-sbu-address'));
+
         const lat = button.getAttribute('data-sbu-latitude');
         const lng = button.getAttribute('data-sbu-longitude');
+
         $('#detailSbuCoordinates').text((lat && lng) ? lat + ', ' + lng : '—');
         $('#detailSbuStatus').text(get('data-sbu-active') === '1' ? 'Active' : 'Inactive');
+    }
+
+    function clearFormMessages(formSelector) {
+        $(formSelector + ' .is-invalid').removeClass('is-invalid');
+        $(formSelector + ' .invalid-feedback').remove();
+        $(formSelector + ' .form-alert-box').remove();
+    }
+
+    function showFormMessage(formSelector, message, type = 'danger') {
+        $(formSelector + ' .form-alert-box').remove();
+
+        const html = `
+            <div class="alert alert-${type} form-alert-box mt-2 mb-3" role="alert">
+                ${message}
+            </div>
+        `;
+
+        $(formSelector).prepend(html);
+    }
+
+    function resetAddSbuForm() {
+        const form = document.getElementById('addSbuForm');
+
+        if (form) {
+            form.reset();
+        }
+
+        clearFormMessages('#addSbuForm');
+        $('#is_active').val('1');
+    }
+
+    function resetEditSbuForm() {
+        const form = document.getElementById('editSbuForm');
+
+        if (form) {
+            form.reset();
+        }
+
+        clearFormMessages('#editSbuForm');
+        $('#edit_is_active').val('1');
+        $('#editSbuForm').attr('data-update-url', '');
+        $('#deleteSbuBtn').attr('data-delete-url', '');
+    }
+
+    function showValidationErrors(formSelector, errors) {
+        clearFormMessages(formSelector);
+
+        $.each(errors, function(field, messages) {
+            const input = $(formSelector + ' [name="' + field + '"]');
+
+            if (input.length) {
+                input.addClass('is-invalid');
+                input.after('<div class="invalid-feedback d-block">' + messages[0] + '</div>');
+            }
+        });
+    }
+
+    function storeSbu() {
+        const form = $('#addSbuForm');
+        const url = form.data('store-url');
+
+        clearFormMessages('#addSbuForm');
+
+        if (!url) {
+            showFormMessage('#addSbuForm', 'Store URL not found.');
+            return;
+        }
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: form.serialize(),
+            headers: {
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'Accept': 'application/json'
+            },
+            beforeSend: function() {
+                $('#saveSbuBtn')
+                    .prop('disabled', true)
+                    .html('Saving...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    const canvasEl = document.getElementById('addSbuCanvas');
+                    const offcanvas = bootstrap.Offcanvas.getInstance(canvasEl);
+
+                    if (offcanvas) {
+                        offcanvas.hide();
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: response.message || 'SBU created successfully.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    showFormMessage('#addSbuForm', response.message || 'Failed to create SBU.');
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    showValidationErrors('#addSbuForm', xhr.responseJSON.errors);
+                } else {
+                    showFormMessage(
+                        '#addSbuForm',
+                        (xhr.responseJSON && xhr.responseJSON.message)
+                            ? xhr.responseJSON.message
+                            : 'Failed to create SBU.'
+                    );
+                }
+            },
+            complete: function() {
+                $('#saveSbuBtn')
+                    .prop('disabled', false)
+                    .html('<i class="bi bi-check-lg me-1"></i>Create SBU');
+            }
+        });
+    }
+
+    function loadEditSbuData(button) {
+        const editUrl = $(button).data('edit-url');
+
+        clearFormMessages('#editSbuForm');
+
+        if (!editUrl) {
+            showFormMessage('#editSbuForm', 'Edit URL not found.');
+            return;
+        }
+
+        resetEditSbuForm();
+
+        $.ajax({
+            url: editUrl,
+            type: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    const data = response.data;
+
+                    $('#edit_id').val(data.id ?? '');
+                    $('#edit_organization_id').val(data.organization_id ?? '');
+                    $('#edit_name').val(data.name ?? '');
+                    $('#edit_city').val(data.city ?? '');
+                    $('#edit_address').val(data.address ?? '');
+                    $('#edit_latitude').val(data.latitude ?? '');
+                    $('#edit_longitude').val(data.longitude ?? '');
+                    $('#edit_is_active').val(
+                        data.is_active === 1 || data.is_active === '1' || data.is_active === true ? '1' : '0'
+                    );
+
+                    $('#editSbuForm').attr('data-update-url', $(button).data('update-url'));
+                    $('#deleteSbuBtn').attr('data-delete-url', $(button).data('delete-url'));
+                } else {
+                    showFormMessage('#editSbuForm', response.message || 'Failed to load SBU data.');
+                }
+            },
+            error: function(xhr) {
+                showFormMessage(
+                    '#editSbuForm',
+                    (xhr.responseJSON && xhr.responseJSON.message)
+                        ? xhr.responseJSON.message
+                        : 'Failed to fetch SBU.'
+                );
+            }
+        });
+    }
+
+    function updateSbu() {
+        const form = $('#editSbuForm');
+        const url = form.attr('data-update-url');
+
+        clearFormMessages('#editSbuForm');
+
+        if (!url) {
+            showFormMessage('#editSbuForm', 'Update URL not found.');
+            return;
+        }
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: form.serialize(),
+            headers: {
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'Accept': 'application/json'
+            },
+            beforeSend: function() {
+                $('#updateSbuBtn')
+                    .prop('disabled', true)
+                    .html('Updating...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    const canvasEl = document.getElementById('editSbuCanvas');
+                    const offcanvas = bootstrap.Offcanvas.getInstance(canvasEl);
+
+                    if (offcanvas) {
+                        offcanvas.hide();
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: response.message || 'SBU updated successfully.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    showFormMessage('#editSbuForm', response.message || 'Failed to update SBU.');
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    showValidationErrors('#editSbuForm', xhr.responseJSON.errors);
+                } else {
+                    showFormMessage(
+                        '#editSbuForm',
+                        (xhr.responseJSON && xhr.responseJSON.message)
+                            ? xhr.responseJSON.message
+                            : 'Failed to update SBU.'
+                    );
+                }
+            },
+            complete: function() {
+                $('#updateSbuBtn')
+                    .prop('disabled', false)
+                    .html('<i class="bi bi-check-lg me-1"></i>Update SBU');
+            }
+        });
+    }
+
+    function deleteSbu(button) {
+        const deleteUrl = $(button).data('delete-url');
+
+        if (!deleteUrl) {
+            showFormMessage('#editSbuForm', 'Delete URL not found.');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'This SBU will be permanently deleted.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            $.ajax({
+                url: deleteUrl,
+                type: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: getCsrfToken()
+                },
+                headers: {
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                beforeSend: function() {
+                    $('#deleteSbuBtn')
+                        .prop('disabled', true)
+                        .html('<i class="bi bi-trash me-1"></i>Deleting...');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const canvasEl = document.getElementById('editSbuCanvas');
+                        const offcanvas = bootstrap.Offcanvas.getInstance(canvasEl);
+
+                        if (offcanvas) {
+                            offcanvas.hide();
+                        }
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted',
+                            text: response.message || 'SBU deleted successfully.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        showFormMessage('#editSbuForm', response.message || 'Failed to delete SBU.');
+                    }
+                },
+                error: function(xhr) {
+                    showFormMessage(
+                        '#editSbuForm',
+                        (xhr.responseJSON && xhr.responseJSON.message)
+                            ? xhr.responseJSON.message
+                            : 'Failed to delete SBU.'
+                    );
+                },
+                complete: function() {
+                    $('#deleteSbuBtn')
+                        .prop('disabled', false)
+                        .html('<i class="bi bi-trash me-1"></i>Delete');
+                }
+            });
+        });
     }
 
     function initializeEventHandlers() {
@@ -45,16 +368,56 @@
         if (sbuDetailCanvas) {
             sbuDetailCanvas.addEventListener('show.bs.offcanvas', function(event) {
                 const button = event.relatedTarget;
+
                 if (button && button.classList.contains('view-sbu-btn')) {
                     populateDetailCanvas(button);
                 }
             });
         }
+
+        const addSbuCanvas = document.getElementById('addSbuCanvas');
+        if (addSbuCanvas) {
+            addSbuCanvas.addEventListener('show.bs.offcanvas', function() {
+                resetAddSbuForm();
+            });
+        }
+
+        const editSbuCanvas = document.getElementById('editSbuCanvas');
+        if (editSbuCanvas) {
+            editSbuCanvas.addEventListener('show.bs.offcanvas', function(event) {
+                const button = event.relatedTarget;
+
+                if (button && button.classList.contains('edit-sbu-btn')) {
+                    loadEditSbuData(button);
+                }
+            });
+
+            editSbuCanvas.addEventListener('hidden.bs.offcanvas', function() {
+                resetEditSbuForm();
+            });
+        }
+
         $('.filter-status').on('change', function() {
             applyFilters();
         });
+
         $('#clearFiltersBtn').on('click', function() {
             clearFilters();
+        });
+
+        $(document).on('click', '#saveSbuBtn', function(e) {
+            e.preventDefault();
+            storeSbu();
+        });
+
+        $(document).on('click', '#updateSbuBtn', function(e) {
+            e.preventDefault();
+            updateSbu();
+        });
+
+        $(document).on('click', '#deleteSbuBtn', function(e) {
+            e.preventDefault();
+            deleteSbu(this);
         });
     }
 })();
