@@ -40,7 +40,7 @@
                         </div>
                         <button class="btn btn-sm btn-outline-{{ $warning['badge_color'] }} rounded-3 ms-2"
                                 title="View Details"
-                                onclick="window.location='{{ url('/admin/leave-requests?department=' . $warning['department_id'] . '&date=' . $warning['date']) }}'">
+                                onclick="window.location='{{ route('admin.leave.request.index', ['department' => $warning['department_id'], 'date' => $warning['date']]) }}'">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
@@ -54,7 +54,7 @@
         </div>
 
         <div class="card-footer bg-transparent border-top">
-            <a href="{{ url('/admin/leave-requests') }}"
+            <a href="{{ route('admin.leave.request.index') }}"
                class="btn btn-link text-decoration-none text-main p-0 small">
                 View All Warnings <i class="bi bi-arrow-right ms-1"></i>
             </a>
