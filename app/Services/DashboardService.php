@@ -20,10 +20,12 @@ class DashboardService
         $quotaWarningDays = 14;
         $quotaWarningThreshold = 20;
 
-        $quotaWarnings = $this->getDepartmentalQuotaWarnings(
-            days: $quotaWarningDays,
-            threshold: $quotaWarningThreshold
-        );
+        $quotaWarnings = method_exists($this, 'getDepartmentalQuotaWarnings')
+            ? $this->getDepartmentalQuotaWarnings(
+                days: $quotaWarningDays,
+                threshold: $quotaWarningThreshold
+            )
+            : [];
 
         return view('admin.dashboard.index', compact(
             'geofences',
