@@ -99,8 +99,12 @@
 <script src="{{ asset('js/dummy-data.js') }}"></script>
 <script>
     window._dashRoutes = {
-        attendanceChart: '{{ route('admin.dashboard.attendance-chart') }}',
+        attendanceChart:    '{{ route('admin.dashboard.attendance-chart') }}',
+        pendingApprovals:   '{{ route('admin.dashboard.pending-approvals') }}',
+        upcomingHolidays:   '{{ route('admin.dashboard.upcoming-holidays') }}',
+        leaveRequestStatus: '/admin/leave-request/{id}/status',
     };
+    window._csrfToken = '{{ csrf_token() }}';
     window._dashStats = {
         totalEmployees:   {{ $counterStats['totalEmployees'] }},
         presentToday:     {{ $counterStats['presentToday'] }},

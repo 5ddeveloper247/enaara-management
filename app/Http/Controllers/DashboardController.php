@@ -29,4 +29,25 @@ class DashboardController extends Controller
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function pendingApprovals(): JsonResponse
+    {
+        try {
+            $data = $this->dashboardService->getPendingApprovals();
+            return response()->json(['success' => true, 'data' => $data, 'count' => count($data)]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function upcomingHolidays(Request $request): JsonResponse
+    {
+        try {
+            $days = in_array((int) $request->query('period'), [7, 14]) ? (int) $request->query('period') : 7;
+            $data = $this->dashboardService->getUpcomingHolidays($days);
+            return response()->json(['success' => true, 'data' => $data, 'count' => count($data)]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
 }

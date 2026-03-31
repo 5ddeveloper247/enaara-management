@@ -415,278 +415,411 @@
     const DashboardApprovals = {
         currentLeaveId: null,
 
-        /**
-         * Initialize bulk approve functionality
-         */
+        loadPendingApprovals() {
+            const url = (window._dashRoutes && window._dashRoutes.pendingApprovals)
+                ? window._dashRoutes.pendingApprovals
+                : '/admin/dashboard/pending-approvals';
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    const loader = document.getElementById('approvalsLoader');
+                    if (loader) loader.remove();
+                    if (!json.success) return;
+                    DashboardApprovals.renderApprovals(json.data);
+                    DashboardApprovals.updatePendingCount();
+                    DashboardApprovals.initBulkApprove();
+                })
+                .catch(function (err) {
+                    console.error('Pending approvals load failed:', err);
+                    const loader = document.getElementById('approvalsLoader');
+                    if (loader) loader.innerHTML = '<span class="text-danger small px-4">Failed to load.</span>';
+                });
+        },
+
+        renderApprovals(items) {
+            const list = document.getElementById('approvalsList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            if (!items || items.length === 0) {
+                const empty = document.getElementById('pendingApprovalsEmpty');
+                if (empty) empty.classList.remove('d-none');
+                const header = document.getElementById('bulkApproveHeader');
+                if (header) header.style.display = 'none';
+                return;
+            }
+
+            items.forEach(function (item) {
+                const div = document.createElement('div');
+                div.className = 'approval-item';
+                div.setAttribute('data-approval-id', item.id);
+                div.innerHTML =
+                    '<div class="d-flex align-items-center justify-content-between">' +
+                        '<div class="d-flex align-items-center flex-grow-1">' +
+                            '<input type="checkbox" class="form-check-input approval-checkbox approval-item-checkbox" value="' + item.id + '">' +
+                            '<div class="employee-avatar me-2">' + DashboardApprovals.esc(item.initials) + '</div>' +
+                            '<div class="flex-grow-1">' +
+                                '<h6 class="mb-0 small">' + DashboardApprovals.esc(item.name) + '</h6>' +
+                                '<small class="text-muted">' + DashboardApprovals.esc(item.leave_type) + '</small>' +
+                                '<div class="small text-muted">Requested: ' + DashboardApprovals.esc(item.request_date) + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="d-flex gap-2">' +
+                            '<button class="btn btn-sm btn-outline-secondary rounded-3 border view-btn" title="View Reason"' +
+                                ' data-id="' + item.id + '"' +
+                                ' data-name="' + DashboardApprovals.esc(item.name) + '"' +
+                                ' data-initials="' + DashboardApprovals.esc(item.initials) + '"' +
+                                ' data-leave-type="' + DashboardApprovals.esc(item.leave_type) + '"' +
+                                ' data-request-date="' + DashboardApprovals.esc(item.request_date) + '"' +
+                                ' data-start-date="' + DashboardApprovals.esc(item.start_date) + '"' +
+                                ' data-end-date="' + DashboardApprovals.esc(item.end_date) + '"' +
+                                ' data-reason="' + DashboardApprovals.esc(item.reason) + '">' +
+                                '<i class="bi bi-eye"></i>' +
+                            '</button>' +
+                            '<button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn" data-id="' + item.id + '" title="Approve">' +
+                                '<i class="bi bi-check-lg"></i>' +
+                            '</button>' +
+                            '<button class="btn btn-sm btn-danger border-0 bg-main rounded-3 reject-btn" data-id="' + item.id + '" title="Reject">' +
+                                '<i class="bi bi-x-lg"></i>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
+                list.appendChild(div);
+            });
+
+            DashboardApprovals.initApprovalButtons();
+        },
+
+        esc(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        },
+
         initBulkApprove() {
             const bulkApproveAll = document.getElementById('bulkApproveAll');
             if (!bulkApproveAll) return;
 
-            bulkApproveAll.addEventListener('change', function () {
-                const checkboxes = document.querySelectorAll('.approval-checkbox');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
+            bulkApproveAll.onchange = function () {
+                document.querySelectorAll('.approval-checkbox').forEach(function (cb) {
+                    cb.checked = bulkApproveAll.checked;
                 });
                 DashboardApprovals.updateBulkApproveButton();
-            });
-
-            document.querySelectorAll('.approval-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', function () {
-                    DashboardApprovals.updateBulkApproveButton();
-                    DashboardApprovals.updateSelectAllCheckbox();
-                });
-            });
+            };
 
             const bulkApproveBtn = document.getElementById('bulkApproveBtn');
             if (bulkApproveBtn) {
-                bulkApproveBtn.addEventListener('click', function () {
-                    const checkedBoxes = document.querySelectorAll('.approval-checkbox:checked');
-                    const ids = Array.from(checkedBoxes).map(cb => cb.value);
-
+                bulkApproveBtn.onclick = function () {
+                    const ids = Array.from(document.querySelectorAll('.approval-checkbox:checked')).map(function (cb) { return cb.value; });
+                    if (ids.length === 0) return;
                     if (ids.length > 10) {
-                        DashboardUtils.showAlert('You can only approve up to 10 requests at once. Please select fewer requests.');
+                        DashboardUtils.showAlert('You can only approve up to 10 requests at once.');
                         return;
                     }
-
-                    if (DashboardUtils.confirmAction(`Are you sure you want to approve ${ids.length} leave request(s)?`)) {
-                        DashboardApprovals.bulkApprove(ids);
+                    if (DashboardUtils.confirmAction('Approve ' + ids.length + ' leave request(s)?')) {
+                        DashboardApprovals.bulkApproveApi(ids);
                     }
-                });
+                };
             }
         },
 
-        /**
-         * Update bulk approve button state
-         */
         updateBulkApproveButton() {
-            const checkedBoxes = document.querySelectorAll('.approval-checkbox:checked');
+            const checked = document.querySelectorAll('.approval-checkbox:checked').length;
             const bulkBtn = document.getElementById('bulkApproveBtn');
             const countSpan = document.getElementById('selectedCount');
-
-            if (checkedBoxes.length > 0) {
-                if (bulkBtn) {
-                    bulkBtn.classList.remove('d-none');
-                    bulkBtn.disabled = false;
-                }
-                if (countSpan) countSpan.textContent = checkedBoxes.length;
+            if (checked > 0) {
+                if (bulkBtn) { bulkBtn.classList.remove('d-none'); bulkBtn.disabled = false; }
+                if (countSpan) countSpan.textContent = checked;
             } else {
-                if (bulkBtn) {
-                    bulkBtn.classList.add('d-none');
-                    bulkBtn.disabled = true;
-                }
+                if (bulkBtn) { bulkBtn.classList.add('d-none'); bulkBtn.disabled = true; }
             }
         },
 
-        /**
-         * Update select all checkbox state
-         */
         updateSelectAllCheckbox() {
-            const checkboxes = document.querySelectorAll('.approval-checkbox');
+            const total   = document.querySelectorAll('.approval-checkbox').length;
+            const checked = document.querySelectorAll('.approval-checkbox:checked').length;
             const selectAll = document.getElementById('bulkApproveAll');
-            const checkedCount = document.querySelectorAll('.approval-checkbox:checked').length;
-
             if (!selectAll) return;
-
-            if (checkedCount === 0) {
-                selectAll.indeterminate = false;
-                selectAll.checked = false;
-            } else if (checkedCount === checkboxes.length) {
-                selectAll.indeterminate = false;
-                selectAll.checked = true;
-            } else {
-                selectAll.indeterminate = true;
-            }
+            if (checked === 0) { selectAll.indeterminate = false; selectAll.checked = false; }
+            else if (checked === total) { selectAll.indeterminate = false; selectAll.checked = true; }
+            else { selectAll.indeterminate = true; }
         },
 
-        /**
-         * Bulk approve implementation
-         */
-        bulkApprove(ids) {
-            console.log('Bulk approving:', ids);
-
-            ids.forEach(id => {
-                const item = document.querySelector(`.approval-item[data-approval-id="${id}"]`);
-                if (item) {
-                    item.style.transition = 'opacity 0.3s ease';
-                    item.style.opacity = '0';
-                    setTimeout(() => {
-                        item.remove();
-                        DashboardApprovals.updatePendingCount();
-                    }, 300);
-                }
+        initApprovalButtons() {
+            document.querySelectorAll('.approve-btn').forEach(function (btn) {
+                btn.onclick = function () {
+                    const id = this.getAttribute('data-id');
+                    if (DashboardUtils.confirmAction('Approve this leave request?')) {
+                        DashboardApprovals.updateStatusApi(id, 3);
+                    }
+                };
             });
 
+            document.querySelectorAll('.reject-btn').forEach(function (btn) {
+                btn.onclick = function () {
+                    const id = this.getAttribute('data-id');
+                    if (DashboardUtils.confirmAction('Reject this leave request?')) {
+                        DashboardApprovals.updateStatusApi(id, 4);
+                    }
+                };
+            });
+
+            document.querySelectorAll('.view-btn').forEach(function (btn) {
+                btn.onclick = function () {
+                    DashboardApprovals.viewLeaveReason(
+                        this.getAttribute('data-id'),
+                        this.getAttribute('data-name'),
+                        this.getAttribute('data-initials'),
+                        this.getAttribute('data-leave-type'),
+                        this.getAttribute('data-request-date'),
+                        this.getAttribute('data-start-date'),
+                        this.getAttribute('data-end-date'),
+                        this.getAttribute('data-reason')
+                    );
+                };
+            });
+
+            document.querySelectorAll('.approval-checkbox').forEach(function (cb) {
+                cb.onchange = function () {
+                    DashboardApprovals.updateBulkApproveButton();
+                    DashboardApprovals.updateSelectAllCheckbox();
+                };
+            });
+        },
+
+        updateStatusApi(id, status) {
+            const baseUrl = (window._dashRoutes && window._dashRoutes.leaveRequestStatus)
+                ? window._dashRoutes.leaveRequestStatus
+                : '/admin/leave-request/{id}/status';
+            const url  = baseUrl.replace('{id}', id);
+            const csrf = window._csrfToken || '';
+
+            fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ status: status })
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    if (json.success !== false) {
+                        DashboardApprovals.removeItem(id);
+                        DashboardUtils.showAlert(status === 3 ? 'Leave request approved!' : 'Leave request rejected.');
+                    } else {
+                        DashboardUtils.showAlert(json.message || 'Action failed.');
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Status update failed:', err);
+                    DashboardUtils.showAlert('Action failed. Please try again.');
+                });
+        },
+
+        bulkApproveApi(ids) {
+            let done = 0;
+            ids.forEach(function (id) {
+                DashboardApprovals.updateStatusApi(id, 3);
+                done++;
+            });
             const bulkApproveAll = document.getElementById('bulkApproveAll');
             if (bulkApproveAll) bulkApproveAll.checked = false;
-            this.updateBulkApproveButton();
-
-            DashboardUtils.showAlert(`${ids.length} leave request(s) approved successfully!`);
+            DashboardApprovals.updateBulkApproveButton();
         },
 
-        /**
-         * Initialize individual approve/reject buttons
-         */
-        initApprovalButtons() {
-            document.querySelectorAll('.approve-btn').forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const id = this.getAttribute('data-id');
-                    if (DashboardUtils.confirmAction('Are you sure you want to approve this leave request?')) {
-                        DashboardApprovals.approveRequest(id);
-                    }
-                });
-            });
-
-            document.querySelectorAll('.reject-btn').forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const id = this.getAttribute('data-id');
-                    if (DashboardUtils.confirmAction('Are you sure you want to reject this leave request?')) {
-                        DashboardApprovals.rejectRequest(id);
-                    }
-                });
-            });
-        },
-
-        /**
-         * Approve single request
-         */
-        approveRequest(id) {
-            console.log('Approving request:', id);
-
-            const item = document.querySelector(`.approval-item[data-approval-id="${id}"]`);
+        removeItem(id) {
+            const item = document.querySelector('.approval-item[data-approval-id="' + id + '"]');
             if (item) {
                 item.style.transition = 'opacity 0.3s ease';
                 item.style.opacity = '0';
-                setTimeout(() => {
+                setTimeout(function () {
                     item.remove();
-                    this.updatePendingCount();
+                    DashboardApprovals.updatePendingCount();
                 }, 300);
             }
-
-            DashboardUtils.showAlert('Leave request approved successfully!');
         },
 
-        /**
-         * Reject single request
-         */
-        rejectRequest(id) {
-            console.log('Rejecting request:', id);
-
-            const item = document.querySelector(`.approval-item[data-approval-id="${id}"]`);
-            if (item) {
-                item.style.transition = 'opacity 0.3s ease';
-                item.style.opacity = '0';
-                setTimeout(() => {
-                    item.remove();
-                    this.updatePendingCount();
-                }, 300);
-            }
-
-            DashboardUtils.showAlert('Leave request rejected.');
-        },
-
-        /**
-         * Update pending count badge and show/hide empty state
-         */
         updatePendingCount() {
-            const items = document.querySelectorAll('.approval-item').length;
-            const pendingCard = document.querySelector('.card-header');
-            const pendingBadge = pendingCard ? pendingCard.querySelector('.badge') : null;
-            const emptyState = document.getElementById('pendingApprovalsEmpty');
-            const approvalItems = document.querySelectorAll('.approval-item');
-            const bulkHeader = document.querySelector('.bulk-approve-header');
+            const items  = document.querySelectorAll('.approval-item').length;
+            const badge  = document.getElementById('pendingApprovalsBadge');
+            const empty  = document.getElementById('pendingApprovalsEmpty');
+            const header = document.getElementById('bulkApproveHeader');
 
-            if (pendingBadge) {
-                pendingBadge.textContent = items;
-            }
+            if (badge) badge.textContent = items;
 
             if (items === 0) {
-                if (emptyState) emptyState.classList.remove('d-none');
-                if (approvalItems.length > 0) {
-                    approvalItems.forEach(item => item.style.display = 'none');
-                }
-                if (bulkHeader) bulkHeader.style.display = 'none';
+                if (empty) empty.classList.remove('d-none');
+                if (header) header.style.display = 'none';
             } else {
-                if (emptyState) emptyState.classList.add('d-none');
-                if (approvalItems.length > 0) {
-                    approvalItems.forEach(item => item.style.display = '');
-                }
-                if (bulkHeader) bulkHeader.style.display = '';
+                if (empty) empty.classList.add('d-none');
+                if (header) header.style.display = '';
             }
         },
 
-        /**
-         * View leave reason - opens slide-over panel
-         */
         viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason) {
             this.currentLeaveId = id;
+            var avatarEl      = document.getElementById('slideEmployeeAvatar');
+            var nameEl        = document.getElementById('slideEmployeeName');
+            var typeEl        = document.getElementById('slideLeaveType');
+            var requestDateEl = document.getElementById('slideRequestDate');
+            var startDateEl   = document.getElementById('slideStartDate');
+            var endDateEl     = document.getElementById('slideEndDate');
+            var reasonEl      = document.getElementById('slideReason');
 
-            const avatarEl = document.getElementById('slideEmployeeAvatar');
-            const nameEl = document.getElementById('slideEmployeeName');
-            const typeEl = document.getElementById('slideLeaveType');
-            const requestDateEl = document.getElementById('slideRequestDate');
-            const startDateEl = document.getElementById('slideStartDate');
-            const endDateEl = document.getElementById('slideEndDate');
-            const reasonEl = document.getElementById('slideReason');
+            if (avatarEl)      avatarEl.textContent      = initials || '';
+            if (nameEl)        nameEl.textContent        = name || '';
+            if (typeEl)        typeEl.textContent        = leaveType || '';
+            if (requestDateEl) requestDateEl.textContent = requestDate || '';
+            if (startDateEl)   startDateEl.textContent   = startDate || '';
+            if (endDateEl)     endDateEl.textContent     = endDate || '';
+            if (reasonEl)      reasonEl.textContent      = reason || '';
 
-            if (avatarEl) avatarEl.textContent = initials;
-            if (nameEl) nameEl.textContent = name;
-            if (typeEl) typeEl.textContent = leaveType;
-            if (requestDateEl) requestDateEl.textContent = requestDate;
-            if (startDateEl) startDateEl.textContent = startDate;
-            if (endDateEl) endDateEl.textContent = endDate;
-            if (reasonEl) reasonEl.textContent = reason;
-
-            const backdrop = document.getElementById('slideOverBackdrop');
-            const panel = document.getElementById('slideOverPanel');
+            var backdrop = document.getElementById('slideOverBackdrop');
+            var panel    = document.getElementById('slideOverPanel');
             if (backdrop) backdrop.classList.add('show');
-            if (panel) panel.classList.add('show');
+            if (panel)    panel.classList.add('show');
             document.body.style.overflow = 'hidden';
         },
 
-        /**
-         * Close slide-over panel
-         */
         closeSlideOver() {
-            const backdrop = document.getElementById('slideOverBackdrop');
-            const panel = document.getElementById('slideOverPanel');
+            var backdrop = document.getElementById('slideOverBackdrop');
+            var panel    = document.getElementById('slideOverPanel');
             if (backdrop) backdrop.classList.remove('show');
-            if (panel) panel.classList.remove('show');
+            if (panel)    panel.classList.remove('show');
             document.body.style.overflow = '';
             this.currentLeaveId = null;
         },
 
-        /**
-         * Approve from slide-over
-         */
         approveFromSlide() {
             if (!this.currentLeaveId) return;
-
-            if (DashboardUtils.confirmAction('Are you sure you want to approve this leave request?')) {
-                this.approveRequest(this.currentLeaveId);
+            if (DashboardUtils.confirmAction('Approve this leave request?')) {
+                this.updateStatusApi(this.currentLeaveId, 3);
                 this.closeSlideOver();
             }
         },
 
-        /**
-         * Reject from slide-over
-         */
         rejectFromSlide() {
             if (!this.currentLeaveId) return;
-
-            if (DashboardUtils.confirmAction('Are you sure you want to reject this leave request?')) {
-                this.rejectRequest(this.currentLeaveId);
+            if (DashboardUtils.confirmAction('Reject this leave request?')) {
+                this.updateStatusApi(this.currentLeaveId, 4);
                 this.closeSlideOver();
             }
         },
 
-        /**
-         * Initialize slide-over keyboard shortcuts
-         */
         initSlideOverKeyboard() {
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') {
-                    DashboardApprovals.closeSlideOver();
-                }
+                if (e.key === 'Escape') { DashboardApprovals.closeSlideOver(); }
+            });
+        }
+    };
+
+    // ============================================
+    // UPCOMING HOLIDAYS
+    // ============================================
+    const DashboardHolidays = {
+        load(period) {
+            const url = (window._dashRoutes && window._dashRoutes.upcomingHolidays)
+                ? window._dashRoutes.upcomingHolidays + '?period=' + period
+                : '/admin/dashboard/upcoming-holidays?period=' + period;
+
+            const list = document.getElementById('holidaysList');
+            if (list) {
+                list.innerHTML = '<div class="text-center py-4 text-muted" id="holidaysLoader">' +
+                    '<div class="spinner-border spinner-border-sm me-2" role="status"></div>Loading...</div>';
+            }
+
+            const empty = document.getElementById('holidaysEmpty');
+            if (empty) empty.classList.add('d-none');
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    if (!json.success) return;
+                    DashboardHolidays.render(json.data);
+                })
+                .catch(function (err) {
+                    console.error('Holidays load failed:', err);
+                    const loader = document.getElementById('holidaysLoader');
+                    if (loader) loader.innerHTML = '<span class="text-danger small px-4">Failed to load.</span>';
+                });
+        },
+
+        render(items) {
+            const list  = document.getElementById('holidaysList');
+            const badge = document.getElementById('holidaysBadge');
+            const empty = document.getElementById('holidaysEmpty');
+            if (!list) return;
+            list.innerHTML = '';
+
+            if (badge) badge.textContent = items.length;
+
+            if (!items || items.length === 0) {
+                if (empty) empty.classList.remove('d-none');
+                return;
+            }
+
+            if (empty) empty.classList.add('d-none');
+
+            items.forEach(function (item, idx) {
+                var isLast     = idx === items.length - 1;
+                var borderCls  = isLast ? '' : 'border-bottom';
+                var div        = document.createElement('div');
+                div.className  = 'holiday-item ' + borderCls + ' p-3';
+                var ongoingBadge = item.is_ongoing
+                    ? '<span class="badge bg-success ms-1">Ongoing</span>'
+                    : '';
+                div.innerHTML  =
+                    '<div class="d-flex align-items-center justify-content-between">' +
+                        '<div class="d-flex align-items-center">' +
+                            '<div class="holiday-date me-3 text-center">' +
+                                '<div class="fw-bold text-main">' + DashboardHolidays.esc(item.day) + '</div>' +
+                                '<small class="text-muted">' + DashboardHolidays.esc(item.month) + '</small>' +
+                            '</div>' +
+                            '<div>' +
+                                '<h6 class="mb-0 small">' + DashboardHolidays.esc(item.name) + ongoingBadge + '</h6>' +
+                                '<small class="text-muted">' + DashboardHolidays.esc(item.type) + '</small>' +
+                            '</div>' +
+                        '</div>' +
+                        '<span class="badge ' + DashboardHolidays.esc(item.badge_class) + '">' +
+                            DashboardHolidays.esc(item.scope_label) +
+                        '</span>' +
+                    '</div>';
+                list.appendChild(div);
+            });
+        },
+
+        esc(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        },
+
+        initPeriodButtons() {
+            var buttons = document.querySelectorAll('.holiday-period-btn');
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    buttons.forEach(function (b) {
+                        b.classList.remove('active', 'btn-warning');
+                        b.classList.add('btn-outline-secondary');
+                    });
+                    this.classList.add('active', 'btn-warning');
+                    this.classList.remove('btn-outline-secondary');
+                    DashboardHolidays.load(parseInt(this.getAttribute('data-period')));
+                });
             });
         }
     };
@@ -868,13 +1001,15 @@
         DashboardCharts.updateWorkforceStrength();
 
         // Initialize approval management
-        DashboardApprovals.initBulkApprove();
-        DashboardApprovals.initApprovalButtons();
+        DashboardApprovals.loadPendingApprovals();
         DashboardApprovals.initSlideOverKeyboard();
-        DashboardApprovals.updatePendingCount();
 
         // Initialize exception management
         DashboardExceptions.initNotifyButtons();
+
+        // Initialize upcoming holidays
+        DashboardHolidays.load(7);
+        DashboardHolidays.initPeriodButtons();
 
         // Initialize geofence map
         setTimeout(() => DashboardGeofence.initialize(), 500);

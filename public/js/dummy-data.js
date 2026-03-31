@@ -161,17 +161,50 @@ const ProjectData = {
     // ============================================
     shiftPlanner: {
         employees: [
-            { id: '1', name: 'Ahmed Ali' },
-            { id: '2', name: 'Zainab Malik' },
+            { id: '1', name: 'Shehryar Shahid' },
+            { id: '2', name: 'Ahmed Ali' },
             { id: '3', name: 'Bilal Ahmed' },
-            { id: '4', name: 'Hira Ali' },
-            { id: '5', name: 'Hamza Khan' },
-            { id: '6', name: 'Sana Sheikh' },
-            { id: '7', name: 'Faisal Raza' },
-            { id: '8', name: 'Ayesha Malik' },
-            { id: '9', name: 'Usman Ali' },
-            { id: '10', name: 'Mariam Khan' }
+            { id: '4', name: 'Hira Ali' }
         ]
+    },
+
+    // ============================================
+    // ROSTER (DUMMY) DATA FOR SHIFT PLANNER
+    // ============================================
+    roster: {
+        departments: [
+            { id: 1, name: 'Sales' },
+            { id: 2, name: 'IT' }
+        ],
+        employees: [
+            { id: 1, name: 'Shehryar Shahid', departmentId: 1 },
+            { id: 2, name: 'Ahmed Ali', departmentId: 1 },
+            { id: 3, name: 'Bilal Ahmed', departmentId: 2 },
+            { id: 4, name: 'Hira Ali', departmentId: 2 }
+        ],
+        shifts: [
+            // Week example: days 29, 30, 31
+            { employeeId: 1, day: 29, shiftType: 'evening', timeStart: '13:00', timeEnd: '21:00', checkIn: '12:55', checkOut: '21:00', floor: 'Ward B • 2nd Floor', lateCheckIn: false },
+            { employeeId: 1, day: 30, shiftType: 'night', timeStart: '21:00', timeEnd: '06:00', checkIn: '21:15', checkOut: '06:08', floor: 'Showroom • Ground', lateCheckIn: true },
+            { employeeId: 1, day: 31, shiftType: 'morning', timeStart: '09:00', timeEnd: '17:00', checkIn: '08:55', checkOut: '17:00', floor: 'Counter • 1st Floor', lateCheckIn: false },
+
+            { employeeId: 2, day: 30, shiftType: 'morning', timeStart: '09:00', timeEnd: '17:00', checkIn: '09:00', checkOut: '17:00', floor: 'Showroom • Ground', lateCheckIn: false },
+
+            { employeeId: 3, day: 29, shiftType: 'morning', timeStart: '09:00', timeEnd: '17:00', checkIn: '08:55', checkOut: '17:00', floor: 'Dev • 3rd Floor', lateCheckIn: false },
+            { employeeId: 3, day: 30, shiftType: 'morning', timeStart: '09:00', timeEnd: '17:00', checkIn: '09:00', checkOut: '17:00', floor: 'IT Block • 1st Floor', lateCheckIn: false },
+
+            { employeeId: 4, day: 29, shiftType: 'evening', timeStart: '13:00', timeEnd: '21:00', checkIn: '12:55', checkOut: '21:00', floor: 'Server Room • Basement', lateCheckIn: false }
+        ],
+        shiftTemplates: {
+            general: {
+                timeStart: '09:00',
+                timeEnd: '17:00',
+                checkInEarly: '08:55',
+                checkInLate: '09:10',
+                checkOutEarly: '17:00',
+                checkOutLate: '17:05'
+            }
+        }
     },
 
     // ============================================
