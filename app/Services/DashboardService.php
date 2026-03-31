@@ -8,17 +8,10 @@ use App\Models\Geofence;
 use App\Models\PublicHoliday;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardService
 {
-    // public function index()
-    // {
-    //     $geofences   = Geofence::with('sbu')->orderBy('name')->get();
-    //     $counterStats = $this->getCounterStats();
-
-    //     return view('admin.dashboard.index', compact('geofences', 'counterStats'));
-    // }
-
     public function index()
     {
         $geofences = Geofence::with('sbu')->orderBy('name')->get();
@@ -287,92 +280,4 @@ class DashboardService
     }
 
 
-    public function getDepartmentalQuotaWarnings(int $days = 14, int $threshold = 20): array
-{
-    $today    = Carbon::today();
-    $warnings = [];
- 
-    // Pre-load department employee counts once
-    // We use the employees table; adjust the FK column if yours differs.
-    $deptTotals = DB::table('employees')
-        ->whereNull('deleted_at')
-        ->where('is_active', true)
-        ->whereNotNull('department_id')
-        ->select('department_id', DB::raw('COUNT(*) as total'))
-        ->groupBy('department_id')
-        ->pluck('total', 'department_id');   // [dept_id => count]
- 
-    if ($deptTotals->isEmpty()) {
-        return [];
     }
- 
-    // For every calendar day in the window, find approved leaves per dept
-    for ($i = 1; $i <= $days; $i++) {
-        $date = $today->copy()->addDays($i);
-        $dateStr = $date->toDateString();
- 
-        // Approved leaves (status = 3) that cover this date,
-        // grouped by the employee's department_id.
-        // We join employees so we can group on their department.
-        $leaveCounts = DB::table('employe_leave_requests as lr')   // ← your actual table name
-            ->join('employees as e', 'e.id', '=', 'lr.from_employee_id')
-            ->where('lr.status', 3)
-            ->whereIn('lr.action_type', [0, 2])
-            ->where('lr.start_date', '<=', $dateStr)
-            ->where('lr.end_date',   '>=', $dateStr)
-            ->whereNull('e.deleted_at')
-            ->whereNotNull('e.department_id')
-            ->select('e.department_id', DB::raw('COUNT(DISTINCT lr.from_employee_id) as on_leave'))
-            ->groupBy('e.department_id')
-            ->pluck('on_leave', 'department_id');
- 
-        foreach ($leaveCounts as $deptId => $onLeave) {
-            $total = $deptTotals->get($deptId, 0);
-            if ($total === 0) continue;
- 
-            $percent = round(($onLeave / $total) * 100);
-            if ($percent < $threshold) continue;
- 
-            // Human-friendly date label
-            $dateLabel = $date->isNextWeek()
-                ? 'next ' . $date->format('l') . ' (' . $date->format('M j') . ')'
-                : $date->format('D, M j');
- 
-            // Colour ramp: ≥ 40 % → danger, else warning
-            $color = $percent >= 40 ? 'danger' : 'warning';
- 
-            $warnings[] = [
-                'department_id'   => $deptId,
-                'department_name' => null,   // filled below
-                'date'            => $dateStr,
-                'date_label'      => $dateLabel,
-                'on_leave_count'  => $onLeave,
-                'total_count'     => $total,
-                'percent'         => $percent,
-                'progress_color'  => $color,   // 'warning' | 'danger'
-                'badge_color'     => $color,
-            ];
-        }
-    }
- 
-    if (empty($warnings)) {
-        return [];
-    }
- 
-    // Resolve department names in one query
-    $deptIds   = array_unique(array_column($warnings, 'department_id'));
-    $deptNames = DB::table('departments')
-        ->whereIn('id', $deptIds)
-        ->pluck('name', 'id');
- 
-    foreach ($warnings as &$w) {
-        $w['department_name'] = $deptNames->get($w['department_id'], 'Unknown Department');
-    }
-    unset($w);
- 
-    // Sort: highest percent first; cap at 10 warnings for the widget
-    usort($warnings, fn($a, $b) => $b['percent'] <=> $a['percent']);
- 
-    return array_slice($warnings, 0, 10);
-}
-}
