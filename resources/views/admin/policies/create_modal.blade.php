@@ -8,7 +8,8 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="createPolicyForm">
+
+            <form id="createPolicyForm" class="d-flex flex-column h-100">
                 <div class="modal-body">
                     <!-- Basic Information -->
                     <div class="mb-4">
@@ -117,6 +118,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary bg-main border-0">
@@ -127,4 +129,3 @@
         </div>
     </div>
 </div>
-
