@@ -50,7 +50,7 @@ class ShiftRosterController extends Controller
         }
 
         try {
-            $roster = ShiftRoster::with(['employee', 'shift'])->findOrFail($id);
+            $roster = ShiftRoaster::with(['employee', 'shift'])->findOrFail($id);
 
             return response()->json([
                 'success' => true,

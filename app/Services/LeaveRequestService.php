@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use App\Notifications\LeaveApprovalNotification;
+use App\Notifications\LeaveApprovedToHodNotification;
 
 class LeaveRequestService
 {
@@ -43,7 +44,7 @@ class LeaveRequestService
             'leaveType:id,name',
         ])
             ->when(!$isSuperAdmin && $currentEmployee, function ($query) use ($currentEmployee) {
-                $query->where(function($q) use ($currentEmployee) {
+                $query->where(function ($q) use ($currentEmployee) {
                     $q->where('to_employee_id',  $currentEmployee->id);
                     //   ->orWhere('to_employee_id', $currentEmployee->id);
                 });
@@ -56,15 +57,15 @@ class LeaveRequestService
 
             // Calculate balance for this specific leave type and employee
             $year = Carbon::parse($request->start_date)->year;
-            
+
             $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $request->from_employee_id)
                 ->where('leave_type_id', $request->leave_type_id)
                 ->where('year', $year)
                 ->first();
-            
+
             $maxAllowed = (float) ($quotaRecord ? $quotaRecord->adjusted_quota : (optional($request->leaveType)->annual_quota ?? 0));
             $claimed = $quotaRecord ? (float) $quotaRecord->used : 0;
-            
+
             $remaining = max(0, $maxAllowed - $claimed);
 
             $canRecommend = $isApprover && $request->action_type == 1;
@@ -132,7 +133,7 @@ class LeaveRequestService
     {
         $employee = Employee::find($employeeId);
         $year = now()->year;
-        
+
         $organizationId = $employee->organization_id;
         $departmentId = $employee->department_id;
 
@@ -144,7 +145,7 @@ class LeaveRequestService
                 $qq->whereNull('department_id')->orWhere('department_id', $departmentId);
             }))
             ->get();
-        
+
         $summary = [];
         foreach ($leaveTypes as $type) {
             $quotaRecord = \App\Models\EmployeeLeaveQuota::where('employee_id', $employeeId)
@@ -220,7 +221,7 @@ class LeaveRequestService
         });
     }
 
-    public function store(array $validated): EmployeLeaveRequest
+    public function store(array $validated, Request $request): EmployeLeaveRequest
     {
         $fromEmployee = Employee::with('role')->findOrFail($validated['employee_id']);
 
@@ -242,7 +243,7 @@ class LeaveRequestService
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->where(function ($q) use ($startDate, $endDate) {
                     $q->where('start_date', '<=', $endDate->toDateString())
-                      ->where('end_date', '>=', $startDate->toDateString());
+                        ->where('end_date', '>=', $startDate->toDateString());
                 });
             })
             ->exists();
@@ -262,7 +263,7 @@ class LeaveRequestService
             ->where('leave_type_id', $validated['leave_type_id'])
             ->where('year', $year)
             ->first();
-            
+
         $maxAllowed = (float) ($quotaRecord ? $quotaRecord->adjusted_quota : ($leaveType->annual_quota ?? 0));
         $alreadyClaimed = $quotaRecord ? (float) $quotaRecord->used : 0;
 
@@ -270,7 +271,7 @@ class LeaveRequestService
         $pendingRequested = (float) EmployeLeaveRequest::where('from_employee_id', $fromEmployee->id)
             ->where('leave_type_id', $validated['leave_type_id'])
             ->whereYear('start_date', $year)
-            ->whereIn('status', [0, 1]) 
+            ->whereIn('status', [0, 1])
             ->whereIn('action_type', [0, 2]) // ONLY check final approver rows to avoid double subtraction
             ->sum('duration');
 
@@ -281,6 +282,14 @@ class LeaveRequestService
             throw ValidationException::withMessages([
                 'leave_type_id' => "Insufficient leave balance. You have {$remaining} day(s) remaining for this leave type in {$year}, but you are requesting {$duration} day(s)."
             ]);
+        }
+
+
+        $medicalReportPath = null;
+
+        if ($request->hasFile('medical_report')) {
+            $medicalReportPath = $request->file('medical_report')
+                ->store('leave-request/medical-reports', 'public');
         }
 
         $currentRole = $fromEmployee->role;
@@ -295,9 +304,9 @@ class LeaveRequestService
         // Determine who gets action_type 1 and 2
         // IF there is a grandparent: parent gets 1, grandparent gets 2
         // IF there is NO grandparent: parent gets 2.
-        
+
         $receivers = [];
-        
+
         if ($parentApprover && $grandparentApprover && $parentApprover->id !== $grandparentApprover->id) {
             $receivers[] = ['employee' => $parentApprover, 'action_type' => 1];
             $receivers[] = ['employee' => $grandparentApprover, 'action_type' => 2];
@@ -311,7 +320,7 @@ class LeaveRequestService
         foreach ($receivers as $receiverData) {
             $toEmployee = $receiverData['employee'];
             $actionType = $receiverData['action_type'];
-            
+
             $toUser = $toEmployee ? User::where('employee_id', $toEmployee->id)->first() : null;
 
             $leaveRequest = EmployeLeaveRequest::create([
@@ -325,6 +334,7 @@ class LeaveRequestService
                 'end_date' => $endDate->format('Y-m-d'),
                 'duration' => $duration,
                 'reason' => $validated['reason'] ?? null,
+                'medical_report' => $medicalReportPath,
                 'action_type' => $actionType,
                 'status' => 0,
             ]);
@@ -458,7 +468,7 @@ class LeaveRequestService
         // Permissions Validations
         if (!$isSuperAdmin) {
             $isAssigned = $leaveRequest->to_employee_id === optional($currentUser->employee)->id;
-            
+
             if (!$isAssigned) {
                 $msg = 'You do not have permission to act on this request.';
                 return $request->expectsJson() ? response()->json(['success' => false, 'message' => $msg], 403) : abort(403, $msg);
@@ -487,12 +497,28 @@ class LeaveRequestService
         $leaveRequest->status = $newStatus;
         $leaveRequest->save();
 
+        $actorName = Auth::user()->name ?? 'System';
         // Notify the original requester about the status update
         $requesterUser = User::where('id', $leaveRequest->from_user_id)->first();
-        if ($requesterUser) {
-            $requesterUser->notify(new \App\Notifications\LeaveStatusUpdateNotification($leaveRequest, Auth::user()->name));
-        }
+        $requesterUser->notify(
+            (new \App\Notifications\LeaveStatusUpdateNotification($leaveRequest, $actorName))
+                ->delay(now()->addSeconds(2))
+        );
+        // Notify HOD only when final approver approves the leave
+        if ((int) $leaveRequest->action_type === 2 && (int) $newStatus === 3) {
+            $fromEmployee = $leaveRequest->fromEmployee;
 
+            if ($fromEmployee) {
+                $hodUser = $this->resolveHeadOfDepartment($fromEmployee);
+
+                if ($hodUser && $hodUser->id !== $requesterUser?->id) {
+                    $hodUser->notify(
+                        (new LeaveApprovedToHodNotification($leaveRequest, $actorName))
+                            ->delay(now()->addSeconds(6))
+                    );
+                }
+            }
+        }
         // Sync final status from Approver (Type 2) to Recommender (Type 1)
         if ((int)$leaveRequest->action_type === 2 && in_array($newStatus, [3, 4, 5])) {
             EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
@@ -512,5 +538,37 @@ class LeaveRequestService
         }
 
         return redirect()->back()->with('success', 'Status updated successfully.');
+    }
+    private function resolveHeadOfDepartment(Employee $employee): ?User
+    {
+        if (!$employee->department_id || !$employee->organization_id) {
+            return null;
+        }
+
+        $hodEmployee = Employee::query()
+            ->where('is_active', true)
+            ->where('id', '!=', $employee->id)
+            ->where('organization_id', $employee->organization_id)
+            ->where('department_id', $employee->department_id)
+            ->whereHas('role', function ($roleQuery) use ($employee) {
+                $roleQuery
+                    ->where('department_id', $employee->department_id)
+                    ->where('organization_id', $employee->organization_id)
+                    ->whereNotNull('parent_role_id')
+                    ->whereHas('parentRole', function ($parentQuery) use ($employee) {
+                        $parentQuery
+                            ->whereNull('department_id')
+                            ->where('organization_id', $employee->organization_id)
+                            ->whereNull('parent_role_id');
+                    });
+            })
+            ->orderBy('id')
+            ->first();
+
+        if (!$hodEmployee) {
+            return null;
+        }
+
+        return User::where('employee_id', $hodEmployee->id)->first();
     }
 }
