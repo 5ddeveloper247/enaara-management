@@ -65,7 +65,7 @@ class BalanceTrackerService
 
                 return [
                     'id' => $employee->id,
-                    'employeeName' => $employee->name,
+                    'employeeName' => $employee->full_name,
                     'employeeId' => $employee->employee_code ?? ('EMP-' . str_pad($employee->id, 3, '0', STR_PAD_LEFT)),
                     'joinDate' => $employee->join_date ?? $employee->created_at,
                     'organization' => $employee->organization->name ?? 'N/A',
