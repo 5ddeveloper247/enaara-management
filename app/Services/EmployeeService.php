@@ -125,19 +125,62 @@ class EmployeeService
 
     private function peekNextCode(): string
     {
-        $seq = EmployeeIdSequence::first();
-        return $seq ? strtoupper($seq->prefix) . '-' . ($seq->last_number + 1) : 'EMP-101';
+        $seq    = EmployeeIdSequence::first();
+        $prefix = $seq ? strtoupper($seq->prefix) : 'EMP';
+        $last   = $seq ? $seq->last_number : 100;
+
+        // Sync with highest existing code so peek is accurate
+        $maxExisting = Employee::whereNotNull('employee_code')
+            ->where('employee_code', 'like', $prefix . '-%')
+            ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
+            ->value('employee_code');
+
+        if ($maxExisting) {
+            $maxNum = (int) substr($maxExisting, strrpos($maxExisting, '-') + 1);
+            if ($maxNum >= $last) {
+                $last = $maxNum;
+            }
+        }
+
+        return $prefix . '-' . ($last + 1);
     }
 
     private function generateNextCode(): string
     {
         $seq = EmployeeIdSequence::lockForUpdate()->first();
+
         if (!$seq) {
-            return 'EMP-101';
+            // No sequence record — create one seeded from existing data
+            $maxExisting = Employee::whereNotNull('employee_code')
+                ->where('employee_code', 'like', 'EMP-%')
+                ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
+                ->value('employee_code');
+            $lastNum = $maxExisting
+                ? (int) substr($maxExisting, strrpos($maxExisting, '-') + 1)
+                : 100;
+            $seq = EmployeeIdSequence::create(['prefix' => 'EMP', 'last_number' => $lastNum]);
         }
+
+        $prefix = strtoupper($seq->prefix);
+
+        // Self-heal: if the sequence is behind the highest existing code, catch up first
+        $maxExisting = Employee::whereNotNull('employee_code')
+            ->where('employee_code', 'like', $prefix . '-%')
+            ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
+            ->value('employee_code');
+
+        if ($maxExisting) {
+            $maxNum = (int) substr($maxExisting, strrpos($maxExisting, '-') + 1);
+            if ($maxNum >= $seq->last_number) {
+                $seq->last_number = $maxNum;
+                $seq->save();
+            }
+        }
+
         $seq->increment('last_number');
         $seq->refresh();
-        return strtoupper($seq->prefix) . '-' . $seq->last_number;
+
+        return $prefix . '-' . $seq->last_number;
     }
 
     private function savePoliceVerification(int $id, array $d): void

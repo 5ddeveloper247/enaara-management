@@ -84,7 +84,7 @@
         departmentChart: null,
 
         /**
-         * Initialize Attendance Overview Chart
+         * Initialize Attendance Overview Chart with real data
          */
         initAttendanceChart() {
             const ctx = document.getElementById('attendanceChart');
@@ -95,22 +95,22 @@
             this.attendanceChart = new Chart(ctx.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: DashboardData.attendance[7].labels,
+                    labels: [],
                     datasets: [{
                         label: 'Present',
-                        data: DashboardData.attendance[7].present,
+                        data: [],
                         backgroundColor: colors.primaryColor,
                         borderWidth: 0,
                         borderRadius: 1000
                     }, {
                         label: 'Absent',
-                        data: DashboardData.attendance[7].absent,
+                        data: [],
                         backgroundColor: '#dc3545',
                         borderWidth: 0,
                         borderRadius: 1000
                     }, {
                         label: 'On Leave',
-                        data: DashboardData.attendance[7].onLeave,
+                        data: [],
                         backgroundColor: colors.mainColor,
                         borderWidth: 0,
                         borderRadius: 1000
@@ -186,25 +186,36 @@
                     }
                 }
             });
+
+            this.loadAttendanceData(7);
         },
 
         /**
-         * Update attendance chart data based on selected period
+         * Fetch attendance data from API and update chart
          */
-        updateAttendanceData(period) {
+        loadAttendanceData(period) {
             if (!this.attendanceChart) return;
 
-            const data = DashboardData.attendance[period];
-            if (!data) {
-                console.error('Invalid period:', period);
-                return;
-            }
+            const url = (window._dashRoutes && window._dashRoutes.attendanceChart)
+                ? window._dashRoutes.attendanceChart + '?period=' + period
+                : '/admin/dashboard/attendance-chart?period=' + period;
 
-            this.attendanceChart.data.labels = data.labels;
-            this.attendanceChart.data.datasets[0].data = data.present;
-            this.attendanceChart.data.datasets[1].data = data.absent;
-            this.attendanceChart.data.datasets[2].data = data.onLeave;
-            this.attendanceChart.update();
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    if (!json.success) return;
+                    const data = json.data;
+                    DashboardCharts.attendanceChart.data.labels              = data.labels;
+                    DashboardCharts.attendanceChart.data.datasets[0].data    = data.present;
+                    DashboardCharts.attendanceChart.data.datasets[1].data    = data.absent;
+                    DashboardCharts.attendanceChart.data.datasets[2].data    = data.onLeave;
+                    DashboardCharts.attendanceChart.update();
+                })
+                .catch(function (err) {
+                    console.error('Attendance chart load failed:', err);
+                });
         },
 
         /**
@@ -212,12 +223,12 @@
          */
         initPeriodButtons() {
             const periodButtons = document.querySelectorAll('.period-btn');
-            periodButtons.forEach(button => {
+            periodButtons.forEach(function (button) {
                 button.addEventListener('click', function () {
-                    periodButtons.forEach(btn => btn.classList.remove('active'));
+                    periodButtons.forEach(function (btn) { btn.classList.remove('active'); });
                     this.classList.add('active');
                     const period = parseInt(this.getAttribute('data-period'));
-                    DashboardCharts.updateAttendanceData(period);
+                    DashboardCharts.loadAttendanceData(period);
                 });
             });
         },
@@ -377,17 +388,19 @@
          * Calculate and update workforce strength
          */
         updateWorkforceStrength() {
-            const departmentData = DashboardData.workforce.departmentData;
-            const sum = departmentData.reduce((total, deptData) => {
-                return total + deptData[deptData.length - 1];
-            }, 0);
-            const average = Math.round(sum / departmentData.length);
-            const percentage = average;
-            const totalEmployees = DashboardData.workforce.totalEmployees;
-            const activeEmployees = Math.round((percentage / 100) * totalEmployees);
+            const stats = window._dashStats || {};
+            const percentage = stats.workforcePercent !== undefined
+                ? stats.workforcePercent
+                : 0;
+            const activeEmployees = stats.activeEmployees !== undefined
+                ? stats.activeEmployees
+                : 0;
+            const totalEmployees = stats.totalEmployees !== undefined
+                ? stats.totalEmployees
+                : 0;
 
             const percentageEl = document.getElementById('workforcePercentage');
-            const subtextEl = document.getElementById('workforceSubtext');
+            const subtextEl    = document.getElementById('workforceSubtext');
             const progressBarEl = document.getElementById('workforceProgressBar');
 
             if (percentageEl) percentageEl.textContent = percentage + '%';
