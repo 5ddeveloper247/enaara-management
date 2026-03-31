@@ -20,13 +20,28 @@ class DashboardService
     // }
 
     public function index()
-{
-    $geofences    = Geofence::with('sbu')->orderBy('name')->get();
-    $counterStats = $this->getCounterStats();
-    $quotaWarnings = $this->getDepartmentalQuotaWarnings(days: 14, threshold: 20);
- 
-    return view('admin.dashboard.index', compact('geofences', 'counterStats', 'quotaWarnings'));
-}
+    {
+        $geofences = Geofence::with('sbu')->orderBy('name')->get();
+        $counterStats = $this->getCounterStats();
+
+        $quotaWarningDays = 14;
+        $quotaWarningThreshold = 20;
+
+        $quotaWarnings = method_exists($this, 'getDepartmentalQuotaWarnings')
+            ? $this->getDepartmentalQuotaWarnings(
+                days: $quotaWarningDays,
+                threshold: $quotaWarningThreshold
+            )
+            : [];
+
+        return view('admin.dashboard.index', compact(
+            'geofences',
+            'counterStats',
+            'quotaWarnings',
+            'quotaWarningDays',
+            'quotaWarningThreshold'
+        ));
+    }
 
     public function getPendingApprovals(): array
     {
