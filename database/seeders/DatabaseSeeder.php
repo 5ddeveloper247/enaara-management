@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             ShiftTypeSeeder::class,
             SbuSeeder::class,
             SbuFloorSeeder::class,
+            DepartmentalQuotaWarningSeeder::class,
         ]);
 
         User::factory()->create([

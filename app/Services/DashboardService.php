@@ -20,13 +20,28 @@ class DashboardService
     // }
 
     public function index()
-{
-    $geofences    = Geofence::with('sbu')->orderBy('name')->get();
-    $counterStats = $this->getCounterStats();
-    $quotaWarnings = $this->getDepartmentalQuotaWarnings(days: 14, threshold: 20);
- 
-    return view('admin.dashboard.index', compact('geofences', 'counterStats', 'quotaWarnings'));
-}
+    {
+        $geofences = Geofence::with('sbu')->orderBy('name')->get();
+        $counterStats = $this->getCounterStats();
+
+        $quotaWarningDays = 14;
+        $quotaWarningThreshold = 20;
+
+        $quotaWarnings = method_exists($this, 'getDepartmentalQuotaWarnings')
+            ? $this->getDepartmentalQuotaWarnings(
+                days: $quotaWarningDays,
+                threshold: $quotaWarningThreshold
+            )
+            : [];
+
+        return view('admin.dashboard.index', compact(
+            'geofences',
+            'counterStats',
+            'quotaWarnings',
+            'quotaWarningDays',
+            'quotaWarningThreshold'
+        ));
+    }
 
     public function getPendingApprovals(): array
     {
@@ -299,12 +314,14 @@ class DashboardService
         // Approved leaves (status = 3) that cover this date,
         // grouped by the employee's department_id.
         // We join employees so we can group on their department.
-        $leaveCounts = DB::table('employe_leave_requests as lr')   // ← your actual table name
+        $leaveRequestTable = (new EmployeLeaveRequest())->getTable();
+
+        $leaveCounts = DB::table($leaveRequestTable . ' as lr')
             ->join('employees as e', 'e.id', '=', 'lr.from_employee_id')
             ->where('lr.status', 3)
             ->whereIn('lr.action_type', [0, 2])
             ->where('lr.start_date', '<=', $dateStr)
-            ->where('lr.end_date',   '>=', $dateStr)
+            ->where('lr.end_date', '>=', $dateStr)
             ->whereNull('e.deleted_at')
             ->whereNotNull('e.department_id')
             ->select('e.department_id', DB::raw('COUNT(DISTINCT lr.from_employee_id) as on_leave'))
