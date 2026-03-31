@@ -17,7 +17,7 @@ class LeaveRequestService
 {
     public function index()
     {
-        $employees = Employee::where('is_active', true)->orderBy('name')->get();
+        $employees = Employee::where('is_active', true)->orderBy('full_name')->get();
         $leaveTypes = LeaveType::where('is_active', true)->orderBy('name')->get();
 
         $currentUser = Auth::user();
@@ -38,8 +38,8 @@ class LeaveRequestService
         $leaveRequests = EmployeLeaveRequest::with([
             'fromEmployee.department:id,name',
             'fromEmployee.role:id,parent_role_id,organization_id,department_id',
-            'fromEmployee:id,name,department_id,organization_id,role_id',
-            'toEmployee:id,name,department_id,organization_id,role_id',
+            'fromEmployee:id,full_name,department_id,organization_id,role_id',
+            'toEmployee:id,full_name,department_id,organization_id,role_id',
             'leaveType:id,name',
         ])
             ->when(!$isSuperAdmin && $currentEmployee, function ($query) use ($currentEmployee) {
@@ -72,7 +72,7 @@ class LeaveRequestService
 
             return [
                 'id' => $request->id,
-                'employeeName' => optional($request->fromEmployee)->name ?? 'Unknown',
+                'employeeName' => optional($request->fromEmployee)->full_name ?? 'Unknown',
                 'employeeId' => 'EMP-' . str_pad($request->from_employee_id, 3, '0', STR_PAD_LEFT),
                 'department' => optional(optional($request->fromEmployee)->department)->name ?? 'Unknown',
                 'leaveType' => $request->leaveType ? strtolower(str_replace(' ', '-', $request->leaveType->name)) : 'other',
@@ -330,8 +330,8 @@ class LeaveRequestService
             ]);
 
             $leaveRequest->load([
-                'fromEmployee:id,name',
-                'toEmployee:id,name',
+                'fromEmployee:id,full_name',
+                'toEmployee:id,full_name',
                 'leaveType:id,name',
             ]);
 

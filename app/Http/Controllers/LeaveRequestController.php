@@ -52,7 +52,7 @@ class LeaveRequestController extends Controller
         return view('admin.my-leaves.index', [
             'personalQuota' => $mappedQuota,
             'personalHistory' => $personalHistory,
-            'employees' => Employee::where('is_active', true)->orderBy('name')->get(),
+            'employees' => Employee::where('is_active', true)->orderBy('full_name')->get(),
             'leaveTypes' => LeaveType::where('is_active', true)->orderBy('name')->get(),
         ]);
     }

@@ -31,7 +31,7 @@ class ShiftRosterController extends Controller
             ->get();
 
         $employees = Employee::where('is_active', 1)
-            ->orderBy('name')
+            ->orderBy('full_name')
             ->get();
         $shifts = ShiftPlanner::where('is_active', 1)
             ->orderBy('name')

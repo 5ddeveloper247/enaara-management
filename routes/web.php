@@ -42,7 +42,14 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 Route::middleware('auth')->prefix('admin')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
+
+    // Organization Management Routes
     Route::get('/organization', [OrganizationController::class, 'index'])->name('admin.organization.index');
+    Route::get('/organization/add', [OrganizationController::class, 'create'])->name('admin.organization.create');
+    Route::post('/organization/add', [OrganizationController::class, 'store'])->name('admin.organization.store');
+    Route::get('/organization/edit/{id}', [OrganizationController::class, 'edit'])->name('admin.organization.edit');
+    Route::post('/organization/edit/{id}', [OrganizationController::class, 'update'])->name('admin.organization.update');
+    Route::delete('/organization/delete/{id}', [OrganizationController::class, 'destroy'])->name('admin.organization.destroy');
 
     Route::get('/sbu', [SbuController::class, 'index'])->name('admin.sbu.index');
     Route::get('/sbu/{id}/show', [SbuController::class, 'show'])->name('admin.sbu.show');
@@ -217,13 +224,13 @@ Route::middleware('auth')->prefix('admin')->group(function () {
 
 
 
-    Route::get('/my-leaves', function () {
-        return view('admin.my-leaves.index');
-    })->name('admin.my-leaves.index');
+    // Route::get('/my-leaves', function () {
+    //     return view('admin.my-leaves.index');
+    // })->name('admin.my-leaves.index');
 
-    Route::get('/leave-calendar', function () {
-        return view('admin.leave-calendar.index');
-    })->name('admin.leave-calendar.index');
+    // Route::get('/leave-calendar', function () {
+    //     return view('admin.leave-calendar.index');
+    // })->name('admin.leave-calendar.index');
 
     // Route::get('/balance-tracker', function () {
     //     return view('admin.balance-tracker.index');
