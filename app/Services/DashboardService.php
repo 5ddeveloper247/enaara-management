@@ -8,17 +8,10 @@ use App\Models\Geofence;
 use App\Models\PublicHoliday;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardService
 {
-    // public function index()
-    // {
-    //     $geofences   = Geofence::with('sbu')->orderBy('name')->get();
-    //     $counterStats = $this->getCounterStats();
-
-    //     return view('admin.dashboard.index', compact('geofences', 'counterStats'));
-    // }
-
     public function index()
     {
         $geofences = Geofence::with('sbu')->orderBy('name')->get();
@@ -370,11 +363,3 @@ class DashboardService
     foreach ($warnings as &$w) {
         $w['department_name'] = $deptNames->get($w['department_id'], 'Unknown Department');
     }
-    unset($w);
- 
-    // Sort: highest percent first; cap at 10 warnings for the widget
-    usort($warnings, fn($a, $b) => $b['percent'] <=> $a['percent']);
- 
-    return array_slice($warnings, 0, 10);
-}
-}
