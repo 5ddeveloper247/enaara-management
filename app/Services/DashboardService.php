@@ -14,13 +14,25 @@ class DashboardService
 {
     public function index()
     {
-        $geofences   = Geofence::with('sbu')->orderBy('name')->get();
+        $geofences = Geofence::with('sbu')->orderBy('name')->get();
         $counterStats = $this->getCounterStats();
 
-        return view('admin.dashboard.index', compact('geofences', 'counterStats'));
-    }
+        $quotaWarningDays = 14;
+        $quotaWarningThreshold = 20;
 
-    
+        $quotaWarnings = $this->getDepartmentalQuotaWarnings(
+            days: $quotaWarningDays,
+            threshold: $quotaWarningThreshold
+        );
+
+        return view('admin.dashboard.index', compact(
+            'geofences',
+            'counterStats',
+            'quotaWarnings',
+            'quotaWarningDays',
+            'quotaWarningThreshold'
+        ));
+    }
 
     public function getPendingApprovals(): array
     {
