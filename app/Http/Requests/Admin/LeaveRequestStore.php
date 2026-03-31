@@ -32,16 +32,39 @@ class LeaveRequestStore extends FormRequest
             'leave_type_id' => [
                 'required',
                 Rule::exists('leave_types', 'id')
-                    ->when($organizationId, fn ($q) => $q->where(function ($qq) use ($organizationId) {
+                    ->when($organizationId, fn($q) => $q->where(function ($qq) use ($organizationId) {
                         $qq->whereNull('organization_id')->orWhere('organization_id', $organizationId);
                     }))
-                    ->when($departmentId, fn ($q) => $q->where(function ($qq) use ($departmentId) {
+                    ->when($departmentId, fn($q) => $q->where(function ($qq) use ($departmentId) {
                         $qq->whereNull('department_id')->orWhere('department_id', $departmentId);
                     })),
             ],
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'reason' => 'required|string|max:1000',
+            // ✅ Medical report validation
+            'medical_report' => [
+                'nullable',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                // 'max:2048', 
+                // Rule::requiredIf(function () use ($duration) {
+                //     return $this->isSickLeave() && $duration > 2;
+                // }),
+            ],
         ];
     }
+
+    // private function isSickLeave(): bool
+    // {
+    //     $leaveTypeId = $this->input('leave_type_id');
+
+    //     if (!$leaveTypeId) {
+    //         return false;
+    //     }
+
+    //     $leaveType = \App\Models\LeaveType::find($leaveTypeId);
+
+    //     return $leaveType && strtolower($leaveType->name) === 'sick leave';
+    // }
 }

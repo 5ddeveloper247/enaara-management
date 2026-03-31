@@ -67,8 +67,7 @@ class LeaveRequestController extends Controller
         if(!validatePermissions('admin/leave-request/add')){
            abort(403, 'Unauthorized action.');
         }
-        $leaveRequest = $this->leaveRequestService->store($request->validated());
-
+        $leaveRequest = $this->leaveRequestService->store($request->validated(), $request);
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,

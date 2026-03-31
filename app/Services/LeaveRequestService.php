@@ -221,7 +221,7 @@ class LeaveRequestService
         });
     }
 
-    public function store(array $validated): EmployeLeaveRequest
+    public function store(array $validated, Request $request): EmployeLeaveRequest
     {
         $fromEmployee = Employee::with('role')->findOrFail($validated['employee_id']);
 
@@ -284,6 +284,14 @@ class LeaveRequestService
             ]);
         }
 
+
+        $medicalReportPath = null;
+
+        if ($request->hasFile('medical_report')) {
+            $medicalReportPath = $request->file('medical_report')
+                ->store('leave-request/medical-reports', 'public');
+        }
+
         $currentRole = $fromEmployee->role;
         $parentRole = $currentRole ? Role::find($currentRole->parent_role_id) : null;
         $grandparentRole = $parentRole ? Role::find($parentRole->parent_role_id) : null;
@@ -326,6 +334,7 @@ class LeaveRequestService
                 'end_date' => $endDate->format('Y-m-d'),
                 'duration' => $duration,
                 'reason' => $validated['reason'] ?? null,
+                'medical_report' => $medicalReportPath,
                 'action_type' => $actionType,
                 'status' => 0,
             ]);

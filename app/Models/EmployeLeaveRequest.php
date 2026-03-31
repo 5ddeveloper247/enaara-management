@@ -23,6 +23,7 @@ class EmployeLeaveRequest extends Model
         'duration',
         'department_id',
         'action_type',
+        'medical_report',
     ];
 
     protected $casts = [

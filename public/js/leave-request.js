@@ -223,11 +223,15 @@
 
       setSubmitting(submitBtn, true);
 
+      var formData = new FormData(form);
+
       $.ajax({
         url: form.getAttribute('action'),
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': getCsrfToken(), Accept: 'application/json' },
-        data: $(form).serialize(),
+        data: formData,
+        processData: false,
+        contentType: false,
         success: function () {
           var offcanvas = bootstrap.Offcanvas.getInstance(canvasEl) || new bootstrap.Offcanvas(canvasEl);
           offcanvas.hide();
@@ -237,7 +241,7 @@
         },
         error: function (xhr) {
           setSubmitting(submitBtn, false);
-
+      
           if (xhr && xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
             var errors = xhr.responseJSON.errors;
             showFieldErrors(form, errors);
@@ -246,7 +250,7 @@
             showFormError(form, firstMsg);
             return;
           }
-
+      
           showFormError(form, 'Failed to submit leave request. Please try again.');
         },
       });

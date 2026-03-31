@@ -7,7 +7,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-        <form id="addLeaveRequestForm" method="POST" action="{{ route('admin.leave.request.store') }}">
+        <form id="addLeaveRequestForm" method="POST" action="{{ route('admin.leave.request.store') }}" enctype="multipart/form-data">
             @csrf
             <div class="alert alert-danger d-none mb-3" data-form-errors role="alert"></div>
             <!-- Employee Selection -->
@@ -15,26 +15,26 @@
                 <h6 class="fw-semibold mb-3 small">
                     <i class="bi bi-person me-2"></i>Employee
                 </h6>
-                
+
                 <div class="mb-3">
                     @if(request()->routeIs('admin.my.leaves.index'))
-                        <label class="form-label fw-semibold small text-white">Employee</label>
-                        <div class="form-control-plaintext text-white border-bottom pb-2" style="border-color: #ffffff1a !important;">
-                            {{ Auth::user()->name }}
-                        </div>
-                        <input type="hidden" id="leaveEmployee" name="employee_id" value="{{ Auth::user()->employee_id }}">
+                    <label class="form-label fw-semibold small text-white">Employee</label>
+                    <div class="form-control-plaintext text-white border-bottom pb-2" style="border-color: #ffffff1a !important;">
+                        {{ Auth::user()->name }}
+                    </div>
+                    <input type="hidden" id="leaveEmployee" name="employee_id" value="{{ Auth::user()->employee_id }}">
                     @else
-                        <label for="leaveEmployee" class="form-label fw-semibold small text-white">Select Employee <span class="text-danger">*</span></label>
-                        <select class="form-select" id="leaveEmployee" name="employee_id" required>
-                            <option value="">Select Employee</option>
-                            @isset($employees)
-                                @foreach($employees as $employee)
-                                    <option value="{{ $employee->id }}">
-                                        {{ $employee->full_name }}
-                                    </option>
-                                @endforeach
-                            @endisset
-                        </select>
+                    <label for="leaveEmployee" class="form-label fw-semibold small text-white">Select Employee <span class="text-danger">*</span></label>
+                    <select class="form-select" id="leaveEmployee" name="employee_id" required>
+                        <option value="">Select Employee</option>
+                        @isset($employees)
+                        @foreach($employees as $employee)
+                        <option value="{{ $employee->id }}">
+                            {{ $employee->full_name }}
+                        </option>
+                        @endforeach
+                        @endisset
+                    </select>
                     @endif
                 </div>
 
@@ -72,9 +72,9 @@
                     <select class="form-select" id="leaveType" name="leave_type_id" required>
                         <option value="">Select Leave Type</option>
                         @isset($leaveTypes)
-                            @foreach($leaveTypes as $leaveType)
-                                <option value="{{ $leaveType->id }}">{{ $leaveType->name }}</option>
-                            @endforeach
+                        @foreach($leaveTypes as $leaveType)
+                        <option value="{{ $leaveType->id }}">{{ $leaveType->name }}</option>
+                        @endforeach
                         @endisset
                     </select>
                 </div>
@@ -107,9 +107,18 @@
 
                 <!-- Medical Certificate (for Sick Leave) -->
                 <div class="mb-3" id="medicalCertSection" style="display: none;">
-                    <label for="medicalCertificate" class="form-label fw-semibold small text-white">Medical Certificate</label>
-                    <input type="file" class="form-control" id="medicalCertificate" accept=".pdf,.jpg,.jpeg,.png">
-                    <small class="opacity-75 text-white">Required for sick leave exceeding 2 days</small>
+                    <label for="medical_report" class="form-label fw-semibold small text-white">
+                        Medical Certificate
+                    </label>
+                    <input
+                        type="file"
+                        class="form-control"
+                        id="medical_report"
+                        name="medical_report"
+                        accept=".pdf,.jpg,.jpeg,.png">
+                    <small class="opacity-75 text-white">
+                        Required for sick leave exceeding 2 days
+                    </small>
                 </div>
             </div>
 
@@ -142,5 +151,5 @@
     </div>
 </div>
 @push('scripts')
-    <script src="{{ asset('js/leave-request.js') }}"></script>
+<script src="{{ asset('js/leave-request.js') }}"></script>
 @endpush
