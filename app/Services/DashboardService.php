@@ -8,17 +8,10 @@ use App\Models\Geofence;
 use App\Models\PublicHoliday;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardService
 {
-    // public function index()
-    // {
-    //     $geofences   = Geofence::with('sbu')->orderBy('name')->get();
-    //     $counterStats = $this->getCounterStats();
-
-    //     return view('admin.dashboard.index', compact('geofences', 'counterStats'));
-    // }
-
     public function index()
     {
         $geofences = Geofence::with('sbu')->orderBy('name')->get();
