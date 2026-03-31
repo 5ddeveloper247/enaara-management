@@ -2,12 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\Department;
 use App\Models\EmployeLeaveRequest;
 use App\Models\Employee;
 use App\Models\LeaveType;
 use App\Models\Organization;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DepartmentalQuotaWarningSeeder extends Seeder
 {
@@ -34,27 +36,40 @@ class DepartmentalQuotaWarningSeeder extends Seeder
             $leaveTypeId = $leaveType->id;
         }
 
-        $targetDate = Carbon::today()->addDays(3)->toDateString();
+        $departments = Department::query()->where('is_active', true)->get(['id', 'organization_id']);
 
-        $employeesByDepartment = Employee::query()
-            ->where('is_active', true)
-            ->whereNull('deleted_at')
-            ->whereNotNull('department_id')
-            ->select('id', 'department_id')
-            ->orderBy('id')
-            ->get()
-            ->groupBy('department_id');
+        if ($departments->isEmpty()) {
+            $this->command?->warn('DepartmentalQuotaWarningSeeder: No active departments found.');
+            return;
+        }
 
-        foreach ($employeesByDepartment as $departmentId => $employees) {
-            $total = $employees->count();
+        foreach ($departments as $department) {
+            $activeEmployees = Employee::query()
+                ->where('department_id', $department->id)
+                ->where('is_active', true)
+                ->whereNull('deleted_at')
+                ->get(['id', 'department_id']);
 
-            if ($total < 1) {
-                continue;
+            // Guarantee enough active employees in department so warning is visible.
+            $missing = max(0, 3 - $activeEmployees->count());
+
+            for ($i = 1; $i <= $missing; $i++) {
+                $seedEmployee = Employee::query()->create([
+                    'full_name' => 'Quota Seed Emp ' . $department->id . '-' . $i,
+                    'organization_id' => $department->organization_id,
+                    'department_id' => $department->id,
+                    'employee_code' => 'QSEED-' . $department->id . '-' . Str::upper(Str::random(5)),
+                    'email' => 'qseed-' . $department->id . '-' . Str::lower(Str::random(6)) . '@example.com',
+                    'is_active' => true,
+                ]);
+
+                $activeEmployees->push($seedEmployee);
             }
 
-            // Make sure this department breaches the 20% warning threshold.
+            $targetDate = Carbon::today()->addDays(3)->toDateString();
+            $total = $activeEmployees->count();
             $requiredOnLeave = max(1, (int) ceil($total * 0.35));
-            $selectedEmployees = $employees->take($requiredOnLeave);
+            $selectedEmployees = $activeEmployees->take($requiredOnLeave);
 
             foreach ($selectedEmployees as $employee) {
                 EmployeLeaveRequest::query()->updateOrCreate(
@@ -68,7 +83,7 @@ class DepartmentalQuotaWarningSeeder extends Seeder
                         'to_employee_id' => null,
                         'from_user_id' => null,
                         'to_user_id' => null,
-                        'department_id' => (int) $departmentId,
+                        'department_id' => $department->id,
                         'leave_type_id' => $leaveTypeId,
                         'duration' => 1,
                         'reason' => 'Seeded departmental quota warning data',
