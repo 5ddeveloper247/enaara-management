@@ -15,6 +15,7 @@ use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
 use App\Models\MediaFile;
 use App\Models\Organization;
+use App\Models\Sbu;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -72,7 +73,12 @@ class EmployeeService
     public function store(array $data, array $files = []): Employee
     {
         return DB::transaction(function () use ($data, $files) {
-            $code = $this->generateNextCode();
+            $sbuId = isset($data['sbu_id']) ? (int) $data['sbu_id'] : null;
+            if (!$sbuId) {
+                throw new \InvalidArgumentException('SBU is required to generate employee code.');
+            }
+
+            $code = $this->generateNextCode($sbuId);
 
             $employee = Employee::create([
                 'full_name'           => $data['full_name'],
@@ -144,14 +150,15 @@ class EmployeeService
         });
     }
 
-    private function peekNextCode(): string
+    private function peekNextCode(int $sbuId): string
     {
-        $seq    = EmployeeIdSequence::first();
-        $prefix = $seq ? strtoupper($seq->prefix) : 'EMP';
+        $prefix = $this->buildSbuPrefix($sbuId);
+        $seq    = EmployeeIdSequence::where('sbu_id', $sbuId)->first();
         $last   = $seq ? $seq->last_number : 100;
 
         // Sync with highest existing code so peek is accurate
         $maxExisting = Employee::whereNotNull('employee_code')
+            ->where('sbu_id', $sbuId)
             ->where('employee_code', 'like', $prefix . '-%')
             ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
             ->value('employee_code');
@@ -166,26 +173,33 @@ class EmployeeService
         return $prefix . '-' . ($last + 1);
     }
 
-    private function generateNextCode(): string
+    private function generateNextCode(int $sbuId): string
     {
-        $seq = EmployeeIdSequence::lockForUpdate()->first();
+        $prefix = $this->buildSbuPrefix($sbuId);
+        $seq = EmployeeIdSequence::where('sbu_id', $sbuId)->lockForUpdate()->first();
 
         if (!$seq) {
             // No sequence record — create one seeded from existing data
             $maxExisting = Employee::whereNotNull('employee_code')
-                ->where('employee_code', 'like', 'EMP-%')
+                ->where('sbu_id', $sbuId)
+                ->where('employee_code', 'like', $prefix . '-%')
                 ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
                 ->value('employee_code');
             $lastNum = $maxExisting
                 ? (int) substr($maxExisting, strrpos($maxExisting, '-') + 1)
                 : 100;
-            $seq = EmployeeIdSequence::create(['prefix' => 'EMP', 'last_number' => $lastNum]);
+            $seq = EmployeeIdSequence::create(['sbu_id' => $sbuId, 'prefix' => $prefix, 'last_number' => $lastNum]);
         }
 
-        $prefix = strtoupper($seq->prefix);
+        $prefix = strtoupper($prefix);
+        if ($seq->prefix !== $prefix) {
+            $seq->prefix = $prefix;
+            $seq->save();
+        }
 
         // Self-heal: if the sequence is behind the highest existing code, catch up first
         $maxExisting = Employee::whereNotNull('employee_code')
+            ->where('sbu_id', $sbuId)
             ->where('employee_code', 'like', $prefix . '-%')
             ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
             ->value('employee_code');
@@ -202,6 +216,32 @@ class EmployeeService
         $seq->refresh();
 
         return $prefix . '-' . $seq->last_number;
+    }
+
+    private function buildSbuPrefix(int $sbuId): string
+    {
+        $sbu = Sbu::find($sbuId);
+        if (!$sbu || empty($sbu->name)) {
+            return 'SBU';
+        }
+
+        $stopWords = ['THE', 'AND', 'OF', 'IN', 'ON', 'AT', 'FOR', 'TO', 'A', 'AN', 'MALL'];
+        $words = preg_split('/\s+/', trim((string) $sbu->name)) ?: [];
+        $letters = [];
+
+        foreach ($words as $word) {
+            $clean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $word) ?? '');
+            if ($clean === '' || in_array($clean, $stopWords, true)) {
+                continue;
+            }
+            $letters[] = $clean[0];
+        }
+
+        if (empty($letters)) {
+            return 'SBU';
+        }
+
+        return substr(implode('', $letters), 0, 4);
     }
 
     private function savePoliceVerification(int $id, array $d): void
