@@ -258,9 +258,9 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         return view('admin.roles-permissions.index');
     })->name('admin.roles.index');
 
-    // Route::get('/monthly-summary', function () {
-    //     return view('admin.monthly-summary.index');
-    // })->name('admin.monthly-summary.index');
+    Route::get('/monthly-summary', function () {
+        return view('admin.monthly-summary.index');
+    })->name('admin.monthly-summary.index');
 
     // Route::get('/overtime', function () {
     //     return view('admin.overtime.index');
