@@ -232,6 +232,22 @@
             const form     = document.getElementById('employeeForm');
             const formData = new FormData(form);
             const nextBtn  = document.getElementById('nextBtn');
+            const attachmentPayload = typeof window.getAttachmentPayload === 'function'
+                ? window.getAttachmentPayload()
+                : { keptAttachmentIds: [], newAttachments: [] };
+
+            (attachmentPayload.keptAttachmentIds || []).forEach((id) => {
+                formData.append('kept_attachment_ids[]', id);
+            });
+
+            (attachmentPayload.newAttachments || []).forEach((a, idx) => {
+                formData.append(`attachments[${idx}][name]`, a.name || '');
+                formData.append(`attachments[${idx}][type]`, a.type || '');
+                formData.append(`attachments[${idx}][description]`, a.desc || '');
+                (a.files || []).forEach((file) => {
+                    formData.append(`attachments[${idx}][files][]`, file);
+                });
+            });
 
             nextBtn.disabled    = true;
             nextBtn.textContent = 'Saving…';
@@ -367,6 +383,9 @@
                 const label   = document.querySelector('label[for="uploadImage"]');
                 if (preview) { preview.src = d.photo_url; preview.style.display = 'block'; }
                 if (label)   { label.style.display = 'none'; }
+            }
+            if (typeof window.setExistingAttachments === 'function') {
+                window.setExistingAttachments(d.attachments || []);
             }
 
             if (d.police) {
