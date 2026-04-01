@@ -229,9 +229,7 @@
             var empId   = btn.dataset.employeeId   || '';
             var empCode = btn.dataset.employeeCode || '';
             var empName = btn.dataset.employeeName || '';
-            var roleId  = btn.dataset.roleId       || '';
             var empSel  = document.getElementById('userEmployeeSelect');
-            var rolSel  = document.getElementById('userRole');
 
             if (empSel && empId) {
                 var existing = empSel.querySelector('option[value="' + empId + '"]');
@@ -247,7 +245,6 @@
                 empSel.value = empId;
             }
 
-            if (rolSel) rolSel.value = roleId;
         }
 
         function resetForm() {
@@ -270,7 +267,6 @@
                 name:                 document.getElementById('userName').value.trim(),
                 email:                document.getElementById('userEmail').value.trim(),
                 employee_id:          document.getElementById('userEmployeeSelect').value || null,
-                role_id:              document.getElementById('userRole').value,
                 password:             document.getElementById('userPassword').value,
                 password_confirmation:document.getElementById('userPasswordConfirm').value,
                 _token:               window.csrfToken,

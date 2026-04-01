@@ -15,6 +15,7 @@ use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
 use App\Models\MediaFile;
 use App\Models\Organization;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,9 @@ class EmployeeService
     public function index(): View
     {
         $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
+        $roles = Role::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'organization_id', 'department_id']);
         $employees     = Employee::with(['organization', 'department'])
             ->orderByDesc('id')
             ->paginate(20);
@@ -38,6 +42,9 @@ class EmployeeService
     public function getFormData(): array
     {
         $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
+        $roles = Role::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'organization_id', 'department_id']);
 
         $orgsData = $organizations->map(fn($o) => [
             'id'   => $o->id,
@@ -52,7 +59,14 @@ class EmployeeService
             ])->values()->all(),
         ])->values()->all();
 
-        return compact('organizations', 'orgsData');
+        $rolesData = $roles->map(fn($r) => [
+            'id'              => $r->id,
+            'name'            => $r->name,
+            'organization_id' => $r->organization_id,
+            'department_id'   => $r->department_id,
+        ])->values()->all();
+
+        return compact('organizations', 'orgsData', 'rolesData');
     }
 
     public function store(array $data, array $files = []): Employee
@@ -67,6 +81,7 @@ class EmployeeService
                 'organization_id'     => $data['organization_id'] ?? null,
                 'sbu_id'              => $data['sbu_id'] ?? null,
                 'department_id'       => $data['department_id'] ?? null,
+                'role_id'             => $data['role_id'] ?? null,
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,
                 'designation'         => $data['designation'] ?? null,
@@ -452,6 +467,7 @@ class EmployeeService
             'organization_id'     => $employee->organization_id,
             'sbu_id'              => $employee->sbu_id,
             'department_id'       => $employee->department_id,
+            'role_id'             => $employee->role_id,
             'full_name'           => $employee->full_name,
             'father_name'         => $employee->father_name,
             'cnic'                => $employee->cnic,
@@ -578,6 +594,7 @@ class EmployeeService
                 'organization_id'     => $data['organization_id'] ?? null,
                 'sbu_id'              => $data['sbu_id'] ?? null,
                 'department_id'       => $data['department_id'] ?? null,
+                'role_id'             => $data['role_id'] ?? null,
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,
                 'designation'         => $data['designation'] ?? null,
