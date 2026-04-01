@@ -21,7 +21,8 @@
                     @foreach($employees as $emp)
                         <option value="{{ $emp->id }}"
                             data-name="{{ $emp->full_name }}"
-                            data-email="{{ $emp->email ?? '' }}">
+                            data-email="{{ $emp->email ?? '' }}"
+                            data-role="{{ $emp->role?->name ?? '' }}">
                             {{ $emp->employee_code }} — {{ $emp->full_name }}
                         </option>
                     @endforeach
@@ -47,6 +48,13 @@
                     placeholder="user@example.com" autocomplete="off"
                     style="background:transparent;border-color:#ffffff42;color:#fff;">
                 <div class="field-error text-danger small mt-1 d-none" id="err_email"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Assigned Role</label>
+                <input type="text" class="form-control form-control-sm" id="userAssignedRole"
+                    placeholder="Role will auto-fill from employee registration"
+                    style="background:transparent;border-color:#ffffff42;color:#fff;" readonly>
             </div>
 
             <hr class="my-3" style="border-color:#ffffff30 !important">

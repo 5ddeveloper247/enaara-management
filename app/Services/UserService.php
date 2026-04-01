@@ -16,14 +16,16 @@ class UserService
     {
         $linkedEmployeeIds = User::whereNotNull('employee_id')->pluck('employee_id');
 
-        $employees = Employee::whereNull('deleted_at')
+        $employees = Employee::with('role:id,name')
+            ->whereNull('deleted_at')
             ->whereNotIn('id', $linkedEmployeeIds)
             ->orderBy('full_name')
-            ->get(['id', 'full_name', 'employee_code', 'email']);
+            ->get(['id', 'full_name', 'employee_code', 'email', 'role_id']);
 
-        $allEmployees = Employee::whereNull('deleted_at')
+        $allEmployees = Employee::with('role:id,name')
+            ->whereNull('deleted_at')
             ->orderBy('full_name')
-            ->get(['id', 'full_name', 'employee_code', 'email']);
+            ->get(['id', 'full_name', 'employee_code', 'email', 'role_id']);
 
         return view('admin.users.index', compact('employees', 'allEmployees'));
     }
