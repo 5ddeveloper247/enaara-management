@@ -9,20 +9,20 @@
         </div>
 
         <div class="col-12">
-            <div class="p-3 border rounded-3" style="border-color:#198754 !important; background:rgba(25,135,84,.05);">
+            <div class="p-3">
                 <label class="form-label fw-semibold mb-2">Category</label>
 
                 <div class="d-flex flex-wrap gap-4 mb-3">
                     <div class="form-check d-flex align-items-center gap-1">
-                        <input class="check-input form-check-input category-radio" type="radio" name="employment_category" id="catIntern" value="intern">
+                        <input class="check-input " type="radio" name="employment_category" id="catIntern" value="intern">
                         <label class="form-check-label" for="catIntern">Intern</label>
                     </div>
                     <div class="form-check d-flex align-items-center gap-1">
-                        <input class="check-input form-check-input category-radio" type="radio" name="employment_category" id="catContractual" value="contractual">
+                        <input class="check-input " type="radio" name="employment_category" id="catContractual" value="contractual">
                         <label class="form-check-label" for="catContractual">Contractual</label>
                     </div>
                     <div class="form-check d-flex align-items-center gap-1">
-                        <input class="check-input form-check-input category-radio" type="radio" name="employment_category" id="catEngagement" value="engagement">
+                        <input class="check-input " type="radio" name="employment_category" id="catEngagement" value="engagement">
                         <label class="form-check-label" for="catEngagement">Engagement</label>
                     </div>
                 </div>
