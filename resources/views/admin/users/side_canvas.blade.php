@@ -51,21 +51,6 @@
 
             <hr class="my-3" style="border-color:#ffffff30 !important">
 
-            {{-- Role --}}
-            <div class="mb-3">
-                <label class="form-label small fw-semibold">Role <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" id="userRole" name="role_id"
-                    style="background:transparent;border-color:#ffffff42;color:#fff;">
-                    <option value="">— Select Role —</option>
-                    @foreach($roles as $role)
-                        <option value="{{ $role->id }}">{{ $role->name }}</option>
-                    @endforeach
-                </select>
-                <div class="field-error text-danger small mt-1 d-none" id="err_role_id"></div>
-            </div>
-
-            <hr class="my-3" style="border-color:#ffffff30 !important">
-
             {{-- Password --}}
             <div id="passwordSection">
                 <p class="small fw-semibold mb-2">Password <span id="passwordRequired" class="text-danger">*</span></p>

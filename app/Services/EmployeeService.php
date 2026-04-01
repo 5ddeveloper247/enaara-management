@@ -15,6 +15,7 @@ use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
 use App\Models\MediaFile;
 use App\Models\Organization;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,9 @@ class EmployeeService
     public function index(): View
     {
         $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
+        $roles = Role::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'organization_id', 'department_id']);
         $employees     = Employee::with(['organization', 'department'])
             ->orderByDesc('id')
             ->paginate(20);
@@ -38,6 +42,9 @@ class EmployeeService
     public function getFormData(): array
     {
         $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
+        $roles = Role::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'organization_id', 'department_id']);
 
         $orgsData = $organizations->map(fn($o) => [
             'id'   => $o->id,
@@ -52,7 +59,14 @@ class EmployeeService
             ])->values()->all(),
         ])->values()->all();
 
-        return compact('organizations', 'orgsData');
+        $rolesData = $roles->map(fn($r) => [
+            'id'              => $r->id,
+            'name'            => $r->name,
+            'organization_id' => $r->organization_id,
+            'department_id'   => $r->department_id,
+        ])->values()->all();
+
+        return compact('organizations', 'orgsData', 'rolesData');
     }
 
     public function store(array $data, array $files = []): Employee
@@ -67,6 +81,7 @@ class EmployeeService
                 'organization_id'     => $data['organization_id'] ?? null,
                 'sbu_id'              => $data['sbu_id'] ?? null,
                 'department_id'       => $data['department_id'] ?? null,
+                'role_id'             => $data['role_id'] ?? null,
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,
                 'designation'         => $data['designation'] ?? null,
@@ -98,6 +113,12 @@ class EmployeeService
                 'join_date'           => !empty($data['join_date']) ? $data['join_date'] : null,
                 'floor_access'        => isset($data['floor_access']) ? (bool) $data['floor_access'] : false,
                 'biometric_id'        => $data['biometric_id'] ?? null,
+                'employment_category' => $data['employment_category'] ?? null,
+                'intern_type'         => $data['intern_type'] ?? null,
+                'intern_duration'     => $data['intern_duration'] ?? null,
+                'contractual_type'    => $data['contractual_type'] ?? null,
+                'engagement_mode'     => $data['engagement_mode'] ?? null,
+                'hybrid_days'         => $data['hybrid_days'] ?? null,
                 'sync_with_biometric' => isset($data['sync_with_biometric']) ? (bool) $data['sync_with_biometric'] : false,
                 'is_active'           => true,
             ]);
@@ -446,6 +467,7 @@ class EmployeeService
             'organization_id'     => $employee->organization_id,
             'sbu_id'              => $employee->sbu_id,
             'department_id'       => $employee->department_id,
+            'role_id'             => $employee->role_id,
             'full_name'           => $employee->full_name,
             'father_name'         => $employee->father_name,
             'cnic'                => $employee->cnic,
@@ -472,6 +494,13 @@ class EmployeeService
             'grade'               => $employee->grade,
             'branch'              => $employee->branch,
             'location'            => $employee->location,
+            'biometric_id'        => $employee->biometric_id,
+            'employment_category' => $employee->employment_category,
+            'intern_type'         => $employee->intern_type,
+            'intern_duration'     => $employee->intern_duration,
+            'contractual_type'    => $employee->contractual_type,
+            'engagement_mode'     => $employee->engagement_mode,
+            'hybrid_days'         => $employee->hybrid_days,
             'photo_url'           => $photoUrl,
             'police' => $police ? [
                 'verification_status'    => $police->verification_status,
@@ -565,6 +594,7 @@ class EmployeeService
                 'organization_id'     => $data['organization_id'] ?? null,
                 'sbu_id'              => $data['sbu_id'] ?? null,
                 'department_id'       => $data['department_id'] ?? null,
+                'role_id'             => $data['role_id'] ?? null,
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,
                 'designation'         => $data['designation'] ?? null,
@@ -596,6 +626,12 @@ class EmployeeService
                 'join_date'           => !empty($data['join_date']) ? $data['join_date'] : null,
                 'floor_access'        => isset($data['floor_access']) ? (bool) $data['floor_access'] : false,
                 'biometric_id'        => $data['biometric_id'] ?? null,
+                'employment_category' => $data['employment_category'] ?? null,
+                'intern_type'         => $data['intern_type'] ?? null,
+                'intern_duration'     => $data['intern_duration'] ?? null,
+                'contractual_type'    => $data['contractual_type'] ?? null,
+                'engagement_mode'     => $data['engagement_mode'] ?? null,
+                'hybrid_days'         => $data['hybrid_days'] ?? null,
                 'sync_with_biometric' => isset($data['sync_with_biometric']) ? (bool) $data['sync_with_biometric'] : false,
             ]);
 
