@@ -55,4 +55,9 @@ class Employee extends Model
     // {
     //     return $this->belongsTo(Role::class);
     // }
+
+    public function leaveQuotas()
+    {
+        return $this->hasMany(EmployeeLeaveQuota::class, 'employee_id');
+    }
 }

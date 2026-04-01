@@ -24,19 +24,18 @@
         <label class="form-label small fw-semibold text-muted mb-2">SBU</label>
         <select class="form-select form-select-sm" id="filterSBU">
             <option value="">All SBUs</option>
-            <option value="enaara">Enaara Developers</option>
-            <option value="msr-rawalpindi">Madison Square Mall Rawalpindi</option>
-            <option value="msr-lahore">Madison Square Mall Lahore</option>
-            <option value="royal-swiss">Royal Swiss Lahore</option>
+            @foreach ($sbus as $sbu)
+                <option value="{{$sbu->id}}">{{$sbu->name}}</option>
+            @endforeach
         </select>
     </div>
     <div class="col-md-3">
-        <label class="form-label small fw-semibold text-muted mb-2">Branch</label>
+        <label class="form-label small fw-semibold text-muted mb-2">Departments</label>
         <select class="form-select form-select-sm" id="filterBranch">
-            <option value="">All Branches</option>
-            <option value="rawalpindi">Rawalpindi</option>
-            <option value="lahore">Lahore</option>
-            <option value="karachi">Karachi</option>
+            <option value="">All Departments</option>
+            @foreach ($departments as $dpt)
+                <option value="{{$dpt->id}}">{{$dpt->name}}</option>
+            @endforeach
         </select>
     </div>
     <div class="col-md-3">

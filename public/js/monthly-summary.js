@@ -28,10 +28,10 @@
     // DATA LOADING
     // ============================================
     function loadMonthlySummaryData() {
-        if (typeof ProjectData !== 'undefined' && ProjectData.monthlySummary) {
-            monthlySummaryData = ProjectData.monthlySummary.generateSampleData(50);
+        if (typeof window.monthlySummaryRows !== 'undefined' && Array.isArray(window.monthlySummaryRows)) {
+            monthlySummaryData = window.monthlySummaryRows;
         } else {
-            console.warn('ProjectData not found, using empty array');
+            console.warn('monthlySummaryRows not found, using empty array');
             monthlySummaryData = [];
         }
     }
@@ -112,100 +112,80 @@
     // TABLE ROW BUILDER
     // ============================================
     function buildTableRow(employee) {
-        const halfDaysBadge = employee.halfDays > 0 
-            ? `<span class="badge px-2 rounded-1 bg-warning text-dark">${employee.halfDays}</span>`
+        const halfDaysBadge = employee.half_days > 0
+            ? `<span class="badge px-2 rounded-1 bg-warning text-dark">${employee.half_days}</span>`
             : '<span class="text-muted">-</span>';
-
-        const annualLeaveBadge = employee.annualLeave > 0
-            ? `<span class="badge px-2 rounded-1 bg-info">${employee.annualLeave}</span>`
+    
+        const annualLeaveBadge = employee.annual_leave > 0
+            ? `<span class="badge px-2 rounded-1 bg-info">${employee.annual_leave}</span>`
             : '<span class="text-muted">-</span>';
-
-        const sickLeaveBadge = employee.sickLeave > 0
-            ? `<span class="badge px-2 rounded-1 bg-primary">${employee.sickLeave}</span>`
+    
+        const sickLeaveBadge = employee.sick_leave > 0
+            ? `<span class="badge px-2 rounded-1 bg-primary">${employee.sick_leave}</span>`
             : '<span class="text-muted">-</span>';
-
-        const casualLeaveBadge = employee.casualLeave > 0
-            ? `<span class="badge px-2 rounded-1 bg-secondary">${employee.casualLeave}</span>`
+    
+        const casualLeaveBadge = employee.casual_leave > 0
+            ? `<span class="badge px-2 rounded-1 bg-secondary">${employee.casual_leave}</span>`
             : '<span class="text-muted">-</span>';
-
-        const lateArrivalsBadge = employee.lateArrivals > 0
-            ? `<span class="badge px-2 rounded-1 bg-warning text-dark"><i class="bi bi-clock me-1"></i>${employee.lateArrivals}</span>`
+    
+        const lateArrivalsBadge = employee.late_arrivals > 0
+            ? `<span class="badge px-2 rounded-1 bg-warning text-dark">${employee.late_arrivals}</span>`
             : '<span class="text-muted">-</span>';
-
-        const earlyDeparturesBadge = employee.earlyDepartures > 0
-            ? `<span class="badge px-2 rounded-1 bg-warning text-dark"><i class="bi bi-arrow-left me-1"></i>${employee.earlyDepartures}</span>`
+    
+        const earlyDeparturesBadge = employee.early_departures > 0
+            ? `<span class="badge px-2 rounded-1 bg-warning text-dark">${employee.early_departures}</span>`
             : '<span class="text-muted">-</span>';
-
-        let zone2Badge = '<span class="text-muted small">N/A</span>';
-        if (employee.floor === '9') {
-            if (employee.zone2Verification === 'Verified') {
-                zone2Badge = '<span class="badge px-2 rounded-1 bg-success"><i class="bi bi-check-circle me-1"></i>Verified</span>';
-            } else {
-                zone2Badge = '<span class="badge px-2 rounded-1 bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Pending</span>';
-            }
-        }
-
-        const regularizationBadge = employee.regularization > 0
-            ? `<span class="badge px-2 rounded-1 bg-info"><i class="bi bi-patch-check me-1"></i>${employee.regularization}</span>`
-            : '<span class="text-muted">-</span>';
-
+    
         return `
             <tr>
                 <td class="dt-control"></td>
                 <td>
                     <div class="d-flex align-items-center">
-                        <div class="user-avatar me-3">${employee.employeeAvatar}</div>
+                        <div class="user-avatar me-3">${employee.employee_avatar ?? 'E'}</div>
                         <div>
-                            <div class="fw-semibold">${employee.employeeName}</div>
-                            <small class="text-muted">${employee.employeeId} | ${employee.department}</small>
+                            <div class="fw-semibold">${employee.employee_name}</div>
+                            <small class="text-muted">${employee.employee_code} | ${employee.department}</small>
                             <div class="mt-1">
                                 <span class="badge bg-info-subtle text-info px-2 py-1 rounded-1" style="font-size: 0.7rem;">
-                                    <i class="bi bi-building me-1"></i>${employee.branch} - Floor ${employee.floor}
+                                    <i class="bi bi-building me-1"></i>${employee.sbu} - ${employee.floor_name}
                                 </span>
                             </div>
                         </div>
                     </div>
                 </td>
-                <td>
-                    <div class="fw-semibold">${employee.totalDays}</div>
-                </td>
-                <td>
-                    <span class="badge px-2 rounded-1 bg-success">${employee.present}</span>
-                </td>
-                <td>
-                    <span class="badge px-2 rounded-1 bg-danger">${employee.absent}</span>
-                </td>
+                <td><div class="fw-semibold">${employee.total_days}</div></td>
+                <td><span class="badge px-2 rounded-1 bg-success">${employee.present}</span></td>
+                <td><span class="badge px-2 rounded-1 bg-danger">${employee.absent}</span></td>
                 <td>${halfDaysBadge}</td>
                 <td>${annualLeaveBadge}</td>
                 <td>${sickLeaveBadge}</td>
                 <td>${casualLeaveBadge}</td>
                 <td>${lateArrivalsBadge}</td>
                 <td>${earlyDeparturesBadge}</td>
-                <td>${zone2Badge}</td>
-                <td>${regularizationBadge}</td>
+                <td>${employee.zone2_verification}</td>
+                <td>${employee.regularization}</td>
                 <td class="text-end">
-                    <button type="button" 
-                            class="action-btn border-0 text-white btn-primary view-detail-btn" 
-                            title="View Monthly Calendar"
+                    <button type="button"
+                            class="action-btn border-0 text-white btn-primary view-detail-btn"
                             data-bs-toggle="offcanvas"
                             data-bs-target="#employeeMonthlyDetailCanvas"
-                            data-employee-id="${employee.employeeId}"
-                            data-employee-name="${employee.employeeName}"
-                            data-employee-avatar="${employee.employeeAvatar}"
+                            data-employee-id="${employee.employee_id}"
+                            data-employee-name="${employee.employee_name}"
+                            data-employee-avatar="${employee.employee_avatar}"
                             data-employee-dept="${employee.department}"
-                            data-total-days="${employee.totalDays}"
+                            data-total-days="${employee.total_days}"
                             data-present="${employee.present}"
                             data-absent="${employee.absent}"
-                            data-half-days="${employee.halfDays}"
-                            data-annual-leave="${employee.annualLeave}"
-                            data-sick-leave="${employee.sickLeave}"
-                            data-casual-leave="${employee.casualLeave}"
-                            data-late-arrivals="${employee.lateArrivals}"
-                            data-early-departures="${employee.earlyDepartures}"
-                            data-zone2-verification="${employee.zone2Verification}"
+                            data-half-days="${employee.half_days}"
+                            data-annual-leave="${employee.annual_leave}"
+                            data-sick-leave="${employee.sick_leave}"
+                            data-casual-leave="${employee.casual_leave}"
+                            data-late-arrivals="${employee.late_arrivals}"
+                            data-early-departures="${employee.early_departures}"
+                            data-zone2-verification="${employee.zone2_verification}"
                             data-regularization="${employee.regularization}"
-                            data-floor="${employee.floor}"
-                            data-branch="${employee.branch}">
+                            data-floor="${employee.floor_name}"
+                            data-branch="${employee.sbu}">
                         <i class="bi bi-calendar3"></i>
                     </button>
                 </td>

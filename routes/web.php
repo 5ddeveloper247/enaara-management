@@ -28,6 +28,7 @@ use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ShiftPlannerController;
 use App\Http\Controllers\ShiftRosterController;
+use App\Http\Controllers\MonthlySummaryController;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -240,8 +241,9 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::delete('/geofencing/{id}', [GeofenceController::class, 'destroy'])->name('admin.geofencing.destroy');
     Route::get('/my-leaves', [LeaveRequestController::class, 'myLeaves'])->name('admin.my.leaves.index');
 
-
-
+    //Monthly Summary ROutes
+    Route::get('/monthly-summary', [MonthlySummaryController::class, 'index'])->name('admin.monthly-summary.index');
+    
     // Route::get('/my-leaves', function () {
     //     return view('admin.my-leaves.index');
     // })->name('admin.my-leaves.index');
@@ -258,10 +260,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         return view('admin.roles-permissions.index');
     })->name('admin.roles.index');
 
-    Route::get('/monthly-summary', function () {
-        return view('admin.monthly-summary.index');
-    })->name('admin.monthly-summary.index');
-
+  
     Route::get('/overtime-tracker', function () {
         return view('admin.overtime.index');
     })->name('admin.overtime.index');
