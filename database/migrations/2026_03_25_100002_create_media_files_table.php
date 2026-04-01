@@ -13,6 +13,9 @@ return new class extends Migration
             $table->string('module_name', 100);
             $table->unsignedBigInteger('module_id');
             $table->string('file_type', 100);
+            $table->string('attachment_type', 100)->nullable();
+            $table->string('title')->nullable();
+            $table->text('description')->nullable();
             $table->string('file_path');
             $table->string('file_name');
             $table->string('mime_type', 100);

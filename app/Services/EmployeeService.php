@@ -70,9 +70,9 @@ class EmployeeService
         return compact('organizations', 'orgsData', 'rolesData');
     }
 
-    public function store(array $data, array $files = []): Employee
+    public function store(array $data, array $files = [], array $attachments = []): Employee
     {
-        return DB::transaction(function () use ($data, $files) {
+        return DB::transaction(function () use ($data, $files, $attachments) {
             $sbuId = isset($data['sbu_id']) ? (int) $data['sbu_id'] : null;
             if (!$sbuId) {
                 throw new \InvalidArgumentException('SBU is required to generate employee code.');
@@ -139,6 +139,7 @@ class EmployeeService
             $this->saveMedical($employee->id, $data);
             $this->saveReferences($employee->id, $data);
             $this->saveMediaFiles($employee->id, $files);
+            $this->saveAttachmentFiles($employee->id, $attachments);
 
             if (!empty($data['create_user_account'])) {
                 $this->createUserAccount($employee, $data);
@@ -395,6 +396,32 @@ class EmployeeService
         }
     }
 
+    private function saveAttachmentFiles(int $id, array $attachments): void
+    {
+        foreach ($attachments as $attachment) {
+            $name = $attachment['name'] ?? null;
+            $type = $attachment['type'] ?? null;
+            $description = $attachment['description'] ?? null;
+            $files = $attachment['files'] ?? [];
+
+            foreach ($files as $file) {
+                $path = $file->store("employees/{$id}/attachments", 'public');
+                MediaFile::create([
+                    'module_name'     => 'employee',
+                    'module_id'       => $id,
+                    'file_type'       => 'attachment',
+                    'attachment_type' => $type ?: null,
+                    'title'           => $name ?: null,
+                    'description'     => $description ?: null,
+                    'file_path'       => $path,
+                    'file_name'       => $file->getClientOriginalName(),
+                    'mime_type'       => $file->getMimeType(),
+                    'uploaded_by'     => Auth::id(),
+                ]);
+            }
+        }
+    }
+
     private function createUserAccount(Employee $employee, array $data): void
     {
         if (!$employee->email || User::where('email', $employee->email)->exists()) return;
@@ -495,6 +522,19 @@ class EmployeeService
 
         $photo     = $employee->mediaFiles->where('file_type', 'photo')->first();
         $photoUrl  = $photo ? Storage::url($photo->file_path) : null;
+        $attachments = $employee->mediaFiles
+            ->where('file_type', 'attachment')
+            ->map(fn($m) => [
+                'id' => $m->id,
+                'name' => $m->title ?: $m->file_name,
+                'type' => $m->attachment_type,
+                'description' => $m->description,
+                'file_name' => $m->file_name,
+                'mime_type' => $m->mime_type,
+                'url' => Storage::url($m->file_path),
+            ])
+            ->values()
+            ->all();
 
         $police     = $employee->policeVerification;
         $armedForce = $employee->armedForce;
@@ -542,6 +582,7 @@ class EmployeeService
             'engagement_mode'     => $employee->engagement_mode,
             'hybrid_days'         => $employee->hybrid_days,
             'photo_url'           => $photoUrl,
+            'attachments'         => $attachments,
             'police' => $police ? [
                 'verification_status'    => $police->verification_status,
                 'msr_letter_no'          => $police->msr_letter_no,
@@ -623,9 +664,9 @@ class EmployeeService
         ]));
     }
 
-    public function update(int $id, array $data, array $files = []): Employee
+    public function update(int $id, array $data, array $files = [], array $attachments = [], array $keptAttachmentIds = []): Employee
     {
-        return DB::transaction(function () use ($id, $data, $files) {
+        return DB::transaction(function () use ($id, $data, $files, $attachments, $keptAttachmentIds) {
             $employee = Employee::findOrFail($id);
 
             $employee->update([
@@ -699,6 +740,14 @@ class EmployeeService
                 $employee->mediaFiles()->where('file_type', 'photo')->delete();
                 $this->saveMediaFiles($employee->id, $files);
             }
+
+            $employee->mediaFiles()
+                ->where('file_type', 'attachment')
+                ->when(!empty($keptAttachmentIds), fn($q) => $q->whereNotIn('id', $keptAttachmentIds))
+                ->when(empty($keptAttachmentIds), fn($q) => $q)
+                ->delete();
+
+            $this->saveAttachmentFiles($employee->id, $attachments);
 
             Log::info('Employee updated', ['id' => $employee->id]);
 
