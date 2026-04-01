@@ -133,7 +133,7 @@
             {{-- LEAVE MANAGEMENT --}}
             <div class="text-white px-4 opacity-50 small mt-3 mb-2">Leave Management</div>
             <li class="mb-1 mx-3">
-                <a href="{{ url('/admin/leave-requests') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/leave-requests*') ? 'active' : '' }}">
+                <a href="{{ route('admin.leave.request.index') }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ request()->is('admin/leave-request*') ? 'active' : '' }}">
                     <i class="bi bi-envelope-paper me-2"></i>
                     <span>Leave Requests</span>
                 </a>
