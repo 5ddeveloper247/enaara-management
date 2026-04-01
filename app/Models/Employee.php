@@ -22,6 +22,8 @@ class Employee extends Model
         'nok_relation', 'nok_dob', 'nok_contact', 'line_manager_id', 'is_manager',
         'is_active', 'role_id', 'site', 'join_date', 'floor_access',
         'biometric_id', 'sync_with_biometric',
+        'employment_category', 'intern_type', 'intern_duration', 'contractual_type',
+        'engagement_mode', 'hybrid_days',
     ];
 
     protected $casts = [
@@ -33,6 +35,7 @@ class Employee extends Model
         'sync_with_biometric' => 'boolean',
         'is_manager'          => 'boolean',
         'is_active'           => 'boolean',
+        'hybrid_days'         => 'array',
     ];
 
     public function organization()      { return $this->belongsTo(Organization::class); }
