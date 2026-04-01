@@ -242,8 +242,17 @@
         <div class="col-md-4">
             <label class="form-label">Department</label>
             <select name="department_id" id="dept_select" class="form-select"
-                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;"
+                onchange="onDeptChange(this.value)">
                 <option value="">— Select Department —</option>
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Roles</label>
+            <select name="role_id" id="role_select" class="form-select"
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
+                <option value="">— Select Role —</option>
             </select>
         </div>
 
@@ -278,6 +287,7 @@
 
 <script>
     window._orgsData = @json($orgsData ?? []);
+    window._rolesData = @json($rolesData ?? []);
 
     document.addEventListener('DOMContentLoaded', function () {
         const orgSel = document.getElementById('org_select');
@@ -285,6 +295,7 @@
             orgSel.insertAdjacentHTML('beforeend',
                 '<option value="' + o.id + '">' + escHtmlBasic(o.name) + '</option>');
         });
+        populateRoles();
     });
 
     function escHtmlBasic(str) {
@@ -308,6 +319,7 @@
             sbuSel.insertAdjacentHTML('beforeend',
                 '<option value="' + s.id + '">' + escHtmlBasic(s.name) + '</option>');
         });
+        populateRoles();
     }
 
     function onSbuChange(sbuId) {
@@ -324,6 +336,37 @@
             deptSel.insertAdjacentHTML('beforeend',
                 '<option value="' + d.id + '">' + escHtmlBasic(d.name) + '</option>');
         });
+        populateRoles();
+    }
+
+    function onDeptChange() {
+        populateRoles();
+    }
+
+    function populateRoles() {
+        const roleSel = document.getElementById('role_select');
+        if (!roleSel) return;
+
+        const selectedRole = roleSel.value;
+        const orgId = document.getElementById('org_select')?.value || '';
+        const deptId = document.getElementById('dept_select')?.value || '';
+
+        roleSel.innerHTML = '<option value="">— Select Role —</option>';
+
+        (window._rolesData || []).forEach(function (role) {
+            const roleOrg = role.organization_id ? String(role.organization_id) : '';
+            const roleDept = role.department_id ? String(role.department_id) : '';
+            const orgMatch = !roleOrg || !orgId || roleOrg === String(orgId);
+            const deptMatch = !roleDept || !deptId || roleDept === String(deptId);
+            if (!orgMatch || !deptMatch) return;
+
+            roleSel.insertAdjacentHTML('beforeend',
+                '<option value="' + role.id + '">' + escHtmlBasic(role.name) + '</option>');
+        });
+
+        if (selectedRole && roleSel.querySelector('option[value="' + selectedRole + '"]')) {
+            roleSel.value = selectedRole;
+        }
     }
 
     function previewImg(input) {

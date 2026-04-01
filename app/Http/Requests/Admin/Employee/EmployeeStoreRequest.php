@@ -38,6 +38,7 @@ class EmployeeStoreRequest extends FormRequest
             'organization_id'        => ['nullable', 'integer', 'exists:organizations,id'],
             'sbu_id'                 => ['nullable', 'integer', 'exists:sbus,id'],
             'department_id'          => ['nullable', 'integer', 'exists:departments,id'],
+            'role_id'                => ['nullable', 'integer', 'exists:roles,id'],
             'employee_type'          => ['nullable', 'string', 'max:100'],
             'employment_type'        => ['nullable', 'string', 'max:100'],
             'designation'            => ['nullable', 'string', 'max:255'],

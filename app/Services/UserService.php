@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Employee;
-use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
 use Illuminate\Contracts\View\View;
@@ -15,7 +14,6 @@ class UserService
 {
     public function index(): View
     {
-        $roles     = Role::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $linkedEmployeeIds = User::whereNotNull('employee_id')->pluck('employee_id');
 
         $employees = Employee::whereNull('deleted_at')
@@ -27,7 +25,7 @@ class UserService
             ->orderBy('full_name')
             ->get(['id', 'full_name', 'employee_code', 'email']);
 
-        return view('admin.users.index', compact('roles', 'employees', 'allEmployees'));
+        return view('admin.users.index', compact('employees', 'allEmployees'));
     }
 
     public function getTableData(): array
@@ -93,9 +91,11 @@ class UserService
                 'password'    => Hash::make($data['password']),
             ]);
 
+            $employee = Employee::findOrFail((int) $data['employee_id']);
+
             UserRole::create([
                 'user_id' => $user->id,
-                'role_id' => $data['role_id'],
+                'role_id' => $employee->role_id,
             ]);
 
             Log::info('User created', ['user_id' => $user->id, 'email' => $user->email]);
@@ -121,10 +121,12 @@ class UserService
 
             $user->update($updateData);
 
+            $employee = Employee::findOrFail((int) $data['employee_id']);
+
             $user->userRoles()->whereNull('deleted_at')->update(['deleted_at' => now()]);
             UserRole::create([
                 'user_id' => $user->id,
-                'role_id' => $data['role_id'],
+                'role_id' => $employee->role_id,
             ]);
 
             Log::info('User updated', ['user_id' => $user->id]);

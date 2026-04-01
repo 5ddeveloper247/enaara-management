@@ -305,7 +305,13 @@
                     if (d.department_id) {
                         setTimeout(function () {
                             const deptSel = document.getElementById('dept_select');
-                            if (deptSel) deptSel.value = d.department_id;
+                            if (deptSel) {
+                                deptSel.value = d.department_id;
+                                if (typeof onDeptChange === 'function') onDeptChange(d.department_id);
+                                if (d.role_id) {
+                                    setTimeout(function () { setSelect('role_id', d.role_id); }, 25);
+                                }
+                            }
                         }, 50);
                     }
                 }, 50);
@@ -337,6 +343,7 @@
             setVal('grade',             d.grade);
             setVal('branch',            d.branch);
             setVal('location',          d.location);
+            if (d.role_id) setTimeout(function () { setSelect('role_id', d.role_id); }, 0);
             setVal('biometric_id',      d.biometric_id);
             setRadio('employment_category', d.employment_category);
             setSelect('intern_type',    d.intern_type);
