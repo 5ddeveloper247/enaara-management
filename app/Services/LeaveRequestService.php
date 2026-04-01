@@ -13,9 +13,17 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use App\Notifications\LeaveApprovalNotification;
 use App\Notifications\LeaveApprovedToHodNotification;
+use App\Services\AuditTrailService;
 
 class LeaveRequestService
 {
+    protected $auditTrailService;
+
+    public function __construct(AuditTrailService $auditTrailService)
+    {
+        $this->auditTrailService = $auditTrailService;
+    }
+
     public function index()
     {
         $employees = Employee::where('is_active', true)->orderBy('full_name')->get();
@@ -498,6 +506,23 @@ class LeaveRequestService
         $leaveRequest->save();
 
         $actorName = Auth::user()->name ?? 'System';
+        $statusLabel = match ($newStatus) {
+            1 => 'recommended',
+            2 => 'not recommended',
+            3 => 'approved',
+            4 => 'rejected',
+            5 => 'cancelled',
+            default => 'pending',
+        };
+
+        $this->auditTrailService->log(
+            action: $statusLabel,
+            category: 'LeaveRequest',
+            description: "Leave request #{$leaveRequest->id} for {$leaveRequest->fromEmployee->full_name} has been {$statusLabel} by {$actorName}.",
+            auditable: $leaveRequest,
+            context: ['old_status' => $currentStatus, 'new_status' => $newStatus]
+        );
+
         // Notify the original requester about the status update
         $requesterUser = User::where('id', $leaveRequest->from_user_id)->first();
         $requesterUser->notify(

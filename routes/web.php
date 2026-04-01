@@ -29,6 +29,7 @@ use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ShiftPlannerController;
 use App\Http\Controllers\ShiftRosterController;
 use App\Http\Controllers\MonthlySummaryController;
+use App\Http\Controllers\AuditTrailController;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -264,10 +265,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/overtime-tracker', function () {
         return view('admin.overtime.index');
     })->name('admin.overtime.index');
-
-    Route::get('/audit-trail', function () {
-        return view('admin.audit-trails.index');
-    })->name('admin.audit-trails.index');    
+  
     // Policies Routes
     Route::get('/policies', [PolicyController::class, 'index'])->name('admin.policies.index');
     Route::post('/policies', [PolicyController::class, 'store'])->name('admin.policies.store');
@@ -288,5 +286,8 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual reports view
     // })->name('admin.reports');
 
-
+    //Audit Trails Routes
+    Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('admin.audit-trails.index');
+    Route::get('/audit-trails/data', [AuditTrailController::class, 'data'])->name('admin.audit-trails.data');
+    Route::get('/audit-trails/{auditTrail}', [AuditTrailController::class, 'show'])->name('admin.audit-trails.show');
 });
