@@ -210,12 +210,12 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual settings view
     // })->name('admin.settings');
 
-    Route::get('/monthly-logs', function () {
+    Route::get('/daily-logs', function () {
         return view('admin.monthly-logs.index');
     })->name('admin.monthly-logs.index');
 
     Route::get('/shift-planner', [ShiftPlannerController::class, 'index'])->name('admin.shift-planner.index');
-    Route::post('/shift-planner', [ShiftPlannerController::class, 'store'])->name('admin.shift-planner.store');
+    Route::post('/shift-planner', [ShiftPlannerControedller::class, 'store'])->name('admin.shift-planner.store');
     Route::get('/shift-planner/{id}', [ShiftPlannerController::class, 'show'])->name('admin.shift-planner.show');
     Route::post('/shift-planner/{id}', [ShiftPlannerController::class, 'update'])->name('admin.shift-planner.update');
     Route::delete('/shift-planner/{id}', [ShiftPlannerController::class, 'destroy'])->name('admin.shift-planner.destroy');
@@ -258,17 +258,17 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         return view('admin.roles-permissions.index');
     })->name('admin.roles.index');
 
-    // Route::get('/monthly-summary', function () {
-    //     return view('admin.monthly-summary.index');
-    // })->name('admin.monthly-summary.index');
+    Route::get('/monthly-summary', function () {
+        return view('admin.monthly-summary.index');
+    })->name('admin.monthly-summary.index');
 
-    // Route::get('/overtime', function () {
-    //     return view('admin.overtime.index');
-    // })->name('admin.overtime.index');
+    Route::get('/overtime-tracker', function () {
+        return view('admin.overtime.index');
+    })->name('admin.overtime.index');
 
-    // Route::get('/audit-trails', function () {
-    //     return view('admin.audit-trails.index');
-    // })->name('admin.audit-trails.index');    
+    Route::get('/audit-trail', function () {
+        return view('admin.audit-trails.index');
+    })->name('admin.audit-trails.index');    
     // Policies Routes
     Route::get('/policies', [PolicyController::class, 'index'])->name('admin.policies.index');
     Route::post('/policies', [PolicyController::class, 'store'])->name('admin.policies.store');
