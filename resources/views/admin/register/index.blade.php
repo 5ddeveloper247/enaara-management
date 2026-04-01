@@ -337,6 +337,23 @@
             setVal('grade',             d.grade);
             setVal('branch',            d.branch);
             setVal('location',          d.location);
+            setVal('biometric_id',      d.biometric_id);
+            setRadio('employment_category', d.employment_category);
+            setSelect('intern_type',    d.intern_type);
+            setVal('intern_duration',   d.intern_duration);
+            setSelect('contractual_type', d.contractual_type);
+            setSelect('engagement_mode', d.engagement_mode);
+
+            if (Array.isArray(d.hybrid_days)) {
+                d.hybrid_days.forEach((day) => {
+                    const checkbox = document.querySelector('[name="hybrid_days[]"][value="' + day + '"]');
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+
+            if (typeof toggleCategoryBlocks === 'function') {
+                toggleCategoryBlocks();
+            }
 
             if (d.photo_url) {
                 const preview = document.getElementById('imgPreview');
