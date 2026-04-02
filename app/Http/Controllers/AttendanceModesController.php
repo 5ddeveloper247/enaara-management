@@ -15,6 +15,9 @@ class AttendanceModesController extends Controller
 
     public function index(): View
     {
+        if(!validatePermissions('admin/attendance-modes')){
+            abort(403);
+        }
         $attendanceModes = $this->attendanceModesService->getList();
         $organizations = $this->attendanceModesService->getOrganizationsForFilter();
         $counts = $this->attendanceModesService->getCounts();

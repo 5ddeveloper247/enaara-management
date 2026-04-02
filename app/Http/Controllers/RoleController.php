@@ -8,6 +8,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Models\Organization;
+use App\Models\Department;
 
 class RoleController extends Controller
 {
@@ -31,9 +33,14 @@ class RoleController extends Controller
     public function create(): View
     {
         $moduleCategories = $this->roleService->getModuleCategoriesWithModules();
-
+        $organizations = Organization::where('is_active', true)->orderBy('name')->get();
+        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $parentRoles = Role::where('is_active', true)->orderBy('name')->get();
         return view('admin.role.create', [
             'moduleCategories' => $moduleCategories,
+            'organizations' => $organizations,
+            'departments' => $departments,
+            'parentRoles' => $parentRoles,
         ]);
     }
 
@@ -44,11 +51,16 @@ class RoleController extends Controller
             'slug' => 'nullable|string|max:255|unique:roles,slug',
             'description' => 'nullable|string|max:500',
             'is_active' => 'boolean',
+            'is_primary' => 'boolean',
+            'organization_id' => 'required|exists:organizations,id',
+            'department_id' => 'nullable|exists:departments,id',
+            'parent_role_id' => 'nullable|exists:roles,id',
             'module_ids' => 'nullable|array',
             'module_ids.*' => 'integer|exists:modules,id',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_primary'] = $request->boolean('is_primary');
         $validated['module_ids'] = $request->input('module_ids', []);
 
         $this->roleService->create($validated);
@@ -79,10 +91,18 @@ class RoleController extends Controller
         }
 
         $moduleCategories = $this->roleService->getModuleCategoriesWithModules();
-
+        $organizations = Organization::where('is_active', true)->orderBy('name')->get();
+        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $parentRoles = Role::where('is_active', true)
+            ->where('id', '!=', $role->id)
+            ->orderBy('name')
+            ->get();
         return view('admin.role.edit', [
             'role' => $role,
             'moduleCategories' => $moduleCategories,
+            'organizations' => $organizations,
+            'departments' => $departments,
+            'parentRoles' => $parentRoles,
         ]);
     }
 
@@ -99,13 +119,22 @@ class RoleController extends Controller
             'slug' => 'nullable|string|max:255|unique:roles,slug,' . $role->id,
             'description' => 'nullable|string|max:500',
             'is_active' => 'boolean',
+            'is_primary' => 'boolean',
+            'organization_id' => 'required|exists:organizations,id',
+            'department_id' => 'nullable|exists:departments,id',
+            'parent_role_id' => 'nullable|exists:roles,id',
             'module_ids' => 'nullable|array',
             'module_ids.*' => 'integer|exists:modules,id',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_primary'] = $request->boolean('is_primary');
         $validated['module_ids'] = $request->input('module_ids', []);
-
+        if (!empty($validated['parent_role_id']) && (int) $validated['parent_role_id'] === (int) $role->id) {
+            return back()
+                ->withErrors(['parent_role_id' => 'A role cannot be its own parent.'])
+                ->withInput();
+        }
         $this->roleService->update($role, $validated);
 
         return redirect()->route('admin.role.index')
@@ -126,6 +155,7 @@ class RoleController extends Controller
     public function updateStatus(Request $request, int $id): JsonResponse
     {
         $request->validate(['is_active' => 'required|boolean']);
+
         $role = $this->roleService->updateStatus($id, (bool) $request->input('is_active'));
 
         if (!$role) {
@@ -144,7 +174,58 @@ class RoleController extends Controller
         $items = $this->roleService->searchRole($term);
 
         return response()->json([
-            'results' => $items->map(fn ($r) => ['id' => $r->id, 'text' => $r->name]),
+            'results' => $items->map(fn($r) => ['id' => $r->id, 'text' => $r->name]),
+        ]);
+    }
+
+    public function getDepartmentsByOrganization(Request $request): JsonResponse
+    {
+        $request->validate([
+            'organization_id' => 'nullable|exists:organizations,id',
+        ]);
+
+        $departments = Department::query()
+            ->where('is_active', true)
+            ->when($request->organization_id, function ($q) use ($request) {
+                $q->where('organization_id', $request->organization_id);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'success' => true,
+            'departments' => $departments,
+        ]);
+    }
+
+    public function getParentRoles(Request $request): JsonResponse
+    {
+        $request->validate([
+            'organization_id' => 'nullable|exists:organizations,id',
+            'department_id' => 'nullable|exists:departments,id',
+            'exclude_role_id' => 'nullable|exists:roles,id',
+        ]);
+
+        $roles = Role::query()
+            ->where('is_active', true)
+            ->when($request->organization_id, function ($q) use ($request) {
+                $q->where('organization_id', $request->organization_id);
+            })
+            ->when($request->department_id, function ($q) use ($request) {
+                $q->where(function ($query) use ($request) {
+                    $query->where('department_id', $request->department_id)
+                          ->orWhereNull('department_id');
+                });
+            })
+            ->when($request->exclude_role_id, function ($q) use ($request) {
+                $q->where('id', '!=', $request->exclude_role_id);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'success' => true,
+            'roles' => $roles,
         ]);
     }
 }

@@ -110,20 +110,9 @@
                     <div class="fw-semibold small" id="detailApprovalLevel">Supervisor</div>
                 </div>
                 <div class="mt-3 pt-3 border-top" style="border-color: #ffffff1a !important;">
-                    <small class="opacity-75 text-white d-block mb-2">Approval Chain</small>
-                    <div class="small">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            <span>Level 1: Supervisor</span>
-                        </div>
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="bi bi-clock text-warning me-2"></i>
-                            <span>Level 2: HR/Dept Head (Pending)</span>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-dash-circle text-muted me-2"></i>
-                            <span class="opacity-50">Level 3: Super Admin (Not Required)</span>
-                        </div>
+                    <small class="opacity-75 text-white d-block mb-3">Approval Timeline</small>
+                    <div id="approvalTimeline">
+                        <!-- Populated by JavaScript -->
                     </div>
                 </div>
             </div>

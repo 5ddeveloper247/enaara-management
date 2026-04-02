@@ -1,280 +1,354 @@
-(function() {
+(function () {
     'use strict';
 
-    // ============================================
-    // GLOBAL VARIABLES
-    // ============================================
     let employeeTable;
 
     // ============================================
     // INITIALIZATION
     // ============================================
-    $(document).ready(function() {
+    $(document).ready(function () {
         initializeDataTable();
         initializeEventHandlers();
         updateEmployeeStats();
     });
 
     // ============================================
-    // DATA TABLE INITIALIZATION
+    // DATA TABLE — AJAX
     // ============================================
     function initializeDataTable() {
         employeeTable = initUserDataTable('#employeeTable', {
             pageLength: 10,
             lengthMenu: [[10, 25, 50, 100, 200], [10, 25, 50, 100, 200]],
-            order: [[0, 'asc']],
+            processing: true,
+            ajax: {
+                url: window.employeeDataUrl,
+                type: 'GET',
+                dataSrc: 'data',
+            },
+            columns: [
+                { data: null,             render: renderProfile,        orderable: true  },
+                { data: 'biometric_id',   render: renderBiometric,      orderable: true  },
+                { data: 'employment_type',render: renderEmploymentType,  orderable: true  },
+                { data: 'site',           render: renderSite,           orderable: true  },
+                { data: null,             render: renderVendor,         orderable: false },
+                { data: 'sync_status',    render: renderSyncStatus,     orderable: true  },
+                { data: 'floor_access',   render: renderFloorAccess,    orderable: true  },
+                { data: null,             render: renderActions,        orderable: false, className: 'text-end no-toggle' },
+            ],
+            order: [[0, 'desc']],
             scrollX: false,
             responsive: {
-                details: {
-                    type: 'column',
-                    target: 'tr'
-                }
+                details: { type: 'column', target: 'tr' }
             },
             columnDefs: [
-                {
-                    targets: [0, 1, 2, 3, 4, 5, 6, 7],
-                    visible: true
-                },
-                {
-                    targets: 7, // Actions column
-                    orderable: false,
-                    className: 'no-toggle',
-                    responsivePriority: 1
-                },
-                {
-                    targets: 0, // Profile column
-                    responsivePriority: 2
-                },
-                {
-                    targets: [2, 3, 4], // Employment Type, Site, Vendor
-                    responsivePriority: 4
-                },
-                {
-                    targets: [1, 5, 6], // Biometric ID, Sync Status, Floor Access
-                    responsivePriority: 5
-                }
+                { targets: 0, responsivePriority: 2 },
+                { targets: [2, 3, 4], responsivePriority: 4 },
+                { targets: [1, 5, 6], responsivePriority: 5 },
             ],
             language: {
-                search: "",
-                searchPlaceholder: "Search employees...",
-                lengthMenu: "Show _MENU_ entries",
-                info: "Showing _START_ to _END_ of _TOTAL_ employees",
-                infoEmpty: "No employees available",
-                zeroRecords: "No matching employees found"
+                search: '',
+                searchPlaceholder: 'Search employees...',
+                lengthMenu: 'Show _MENU_ entries',
+                info: 'Showing _START_ to _END_ of _TOTAL_ employees',
+                infoEmpty: 'No employees available',
+                zeroRecords: 'No matching employees found',
+                processing: '<div class="spinner-border spinner-border-sm text-secondary" role="status"></div> Loading...',
             },
             buttons: [{
                 extend: 'colvis',
                 text: 'Select Columns',
                 className: 'btn btn-sm border-0 bg-main text-black',
-                columns: [0, 1, 2, 3, 4, 5, 6]
-            }]
+                columns: [0, 1, 2, 3, 4, 5, 6],
+            }],
         });
+    }
+
+    // ============================================
+    // COLUMN RENDER FUNCTIONS
+    // ============================================
+    function renderProfile(row) {
+        var dept    = row.department !== '-' ? row.department : '';
+        var code    = row.employee_code !== '-' ? row.employee_code : '';
+        var info    = (dept && code) ? (dept + ' - ' + code) : (dept || code || '-');
+        var editUrl = window.registerUrl || '#';
+        var avatar  = row.photo_url
+            ? '<img src="' + escAttr(row.photo_url) + '" alt="' + escAttr(row.full_name) + '" class="user-avatar me-3" style="object-fit:cover;border-radius:50%;">'
+            : '<div class="user-avatar me-3">' + escHtml(row.initials) + '</div>';
+        return '<div class="d-flex align-items-center">' +
+                   '<a href="' + editUrl + '">' + avatar + '</a>' +
+                   '<div>' +
+                       '<div class="fw-semibold">' + escHtml(row.full_name) + '</div>' +
+                       '<small class="text-muted">' + escHtml(info) + '</small>' +
+                   '</div>' +
+               '</div>';
+    }
+
+    function renderBiometric(data) {
+        if (data) {
+            return '<span class="badge bg-info px-2 rounded-1">' + escHtml(data) + '</span>';
+        }
+        return '<span class="text-muted">-</span>';
+    }
+
+    function renderEmploymentType(data) {
+        if (!data || data === '-') return '<span class="text-muted">-</span>';
+        if (data === 'Permanent') {
+            return '<span class="badge px-2 rounded-1 bg-success">' + escHtml(data) + '</span>';
+        }
+        if (data === 'Contract') {
+            return '<span class="badge px-2 rounded-1 bg-info">' + escHtml(data) + '</span>';
+        }
+        return '<span class="badge px-2 rounded-1" style="background-color:#9c27b0;color:white;">' + escHtml(data) + '</span>';
+    }
+
+    function renderSite(data) {
+        if (!data || data === '-') return '<span class="text-muted">-</span>';
+        return '<div class="fw-semibold small">' + escHtml(data) + '</div>';
+    }
+
+    function renderVendor(row) {
+        return '<span class="text-muted">-</span>';
+    }
+
+    function renderSyncStatus(data) {
+        if (data === 'Synced') {
+            return '<span class="badge px-2 rounded-1 bg-success"><i class="bi bi-check-circle me-1"></i>Synced</span>';
+        }
+        if (data === 'Pending') {
+            return '<span class="badge px-2 rounded-1 bg-warning"><i class="bi bi-clock-history me-1"></i>Pending</span>';
+        }
+        if (data === 'Failed') {
+            return '<span class="badge px-2 rounded-1 bg-danger"><i class="bi bi-x-circle me-1"></i>Failed</span>';
+        }
+        return '<span class="badge px-2 rounded-1 bg-secondary"><i class="bi bi-dash-circle me-1"></i>Not Linked</span>';
+    }
+
+    function renderFloorAccess(data) {
+        if (data) {
+            return '<span class="badge px-2 rounded-1 bg-primary"><i class="bi bi-building me-1"></i>10th Floor</span>';
+        }
+        return '<span class="text-muted small">-</span>';
+    }
+
+    function renderActions(row) {
+        var dept    = row.department !== '-' ? row.department : '';
+        var code    = row.employee_code !== '-' ? row.employee_code : '';
+        var info    = (dept && code) ? (dept + ' - ' + code) : (dept || code || '-');
+        return '<button type="button"' +
+            ' class="action-btn border-0 text-white btn-primary view-employee-btn"' +
+            ' title="View Details"' +
+            ' data-bs-toggle="offcanvas"' +
+            ' data-bs-target="#employeeDetailCanvas"' +
+            ' data-db-id="'            + row.id                          + '"' +
+            ' data-employee-id="'      + escAttr(code)                   + '"' +
+            ' data-employee-name="'    + escAttr(row.full_name)          + '"' +
+            ' data-employee-avatar="'  + escAttr(row.initials)           + '"' +
+            ' data-photo-url="'        + escAttr(row.photo_url || '')    + '"' +
+            ' data-employee-info="'    + escAttr(info)                   + '"' +
+            ' data-department="'       + escAttr(row.department)         + '"' +
+            ' data-employment-type="'  + escAttr(row.employment_type)    + '"' +
+            ' data-employee-type="'    + escAttr(row.employee_type)      + '"' +
+            ' data-biometric-id="'     + escAttr(row.biometric_id || '-') + '"' +
+            ' data-sync-status="'      + escAttr(row.sync_status)        + '"' +
+            ' data-site-assignment="'  + escAttr(row.site)               + '"' +
+            ' data-vendor="-"' +
+            ' data-floor-access="'     + (row.floor_access ? '1' : '0') + '"' +
+            '><i class="bi bi-eye"></i></button>';
+    }
+
+    // ============================================
+    // EMPLOYEE DETAIL CANVAS
+    // ============================================
+    function extractEmployeeData(button) {
+        return {
+            id:             button.dataset.employeeId     || '-',
+            name:           button.dataset.employeeName   || '-',
+            avatar:         button.dataset.employeeAvatar || '??',
+            photoUrl:       button.dataset.photoUrl       || '',
+            info:           button.dataset.employeeInfo   || '-',
+            department:     button.dataset.department     || '-',
+            employmentType: button.dataset.employmentType || '-',
+            employeeType:   button.dataset.employeeType   || '-',
+            biometricId:    button.dataset.biometricId    || '-',
+            syncStatus:     button.dataset.syncStatus     || 'Not Linked',
+            siteAssignment: button.dataset.siteAssignment || '-',
+            vendor:         button.dataset.vendor         || '-',
+            floorAccess:    button.dataset.floorAccess    === '1',
+            dbId:           button.dataset.dbId           || '',
+        };
+    }
+
+    function populateEmployeeDetail(d) {
+        var avatarEl = document.getElementById('detailEmployeeAvatar');
+        if (d.photoUrl) {
+            avatarEl.innerHTML = '';
+            avatarEl.style.backgroundImage  = 'url(' + d.photoUrl + ')';
+            avatarEl.style.backgroundSize   = 'cover';
+            avatarEl.style.backgroundPosition = 'center';
+            avatarEl.style.color            = 'transparent';
+        } else {
+            avatarEl.style.backgroundImage  = '';
+            avatarEl.style.backgroundSize   = '';
+            avatarEl.style.backgroundPosition = '';
+            avatarEl.style.color            = '';
+            avatarEl.textContent            = d.avatar;
+        }
+        $('#detailEmployeeName').text(d.name);
+        $('#detailEmployeeInfo').text(d.info);
+        $('#detailEmployeeId').text(d.id);
+        $('#detailDepartment').text(d.department);
+        $('#editEmployeeBtn').attr('data-employee-id', d.dbId);
+
+        var etClass = d.employmentType === 'Permanent' ? 'bg-success'
+                    : d.employmentType === 'Contract'  ? 'bg-info'
+                    : 'bg-warning';
+        $('#detailEmploymentType').html('<span class="badge ' + etClass + '">' + escHtml(d.employmentType) + '</span>');
+
+        var typeClass = d.employeeType === 'Internal' ? 'bg-primary' : 'bg-secondary';
+        $('#detailEmployeeType').html('<span class="badge ' + typeClass + '">' + escHtml(d.employeeType) + '</span>');
+
+        if (d.biometricId && d.biometricId !== '-') {
+            $('#detailBiometricId').text(d.biometricId);
+            var syncClass = d.syncStatus === 'Synced' ? 'bg-success'
+                          : d.syncStatus === 'Pending' ? 'bg-warning' : 'bg-danger';
+            $('#detailBiometricStatus').html('<span class="badge px-3 py-2 rounded-1 ' + syncClass + '"><i class="bi bi-check-circle me-1"></i>' + escHtml(d.syncStatus) + '</span>');
+            $('#detailSyncStatusText').text(
+                d.syncStatus === 'Synced'  ? 'Successfully synced with biometric system' :
+                d.syncStatus === 'Pending' ? 'Sync pending — not yet synchronized' :
+                                             'Sync failed — please check biometric device'
+            );
+        } else {
+            $('#detailBiometricId').text('-');
+            $('#detailBiometricStatus').html('<span class="badge px-3 py-2 rounded-1 bg-secondary"><i class="bi bi-dash-circle me-1"></i>Not Linked</span>');
+            $('#detailSyncStatusText').text('No biometric device linked');
+        }
+
+        $('#detailSiteAssignment').text(d.siteAssignment !== '-' ? d.siteAssignment : 'Not assigned');
+
+        if (d.vendor && d.vendor !== '-') {
+            $('#detailVendorContainer').show();
+            $('#detailVendor').text(d.vendor);
+        } else {
+            $('#detailVendorContainer').hide();
+        }
+
+        if (d.floorAccess) {
+            $('#detailFloorAccess').html('<span class="badge bg-primary"><i class="bi bi-building me-1"></i>10th Floor</span>');
+        } else {
+            $('#detailFloorAccess').html('<span class="badge bg-secondary">No Access</span>');
+        }
+
+        $('#detailCurrentStatus').html('<span class="badge px-3 py-2 rounded-1 bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>');
+        $('#detailStatusInfo1').text('Employee is active and working');
+        $('#detailStatusInfo2').text(d.biometricId !== '-' ? 'Biometric device linked' : 'No biometric device');
     }
 
     // ============================================
     // EVENT HANDLERS
     // ============================================
     function initializeEventHandlers() {
-
-        // Employee Detail Canvas
-        const employeeDetailCanvas = document.getElementById('employeeDetailCanvas');
-        if (employeeDetailCanvas) {
-            employeeDetailCanvas.addEventListener('show.bs.offcanvas', handleEmployeeDetailShow);
+        const detailCanvas = document.getElementById('employeeDetailCanvas');
+        if (detailCanvas) {
+            detailCanvas.addEventListener('show.bs.offcanvas', function (event) {
+                var btn = event.relatedTarget;
+                if (!btn || !btn.classList.contains('view-employee-btn')) return;
+                populateEmployeeDetail(extractEmployeeData(btn));
+            });
         }
 
-        // Create User Account Button
-        $('#createUserAccountBtn').on('click', handleCreateUserAccount);
+        $('#createUserAccountBtn').on('click', function () {
+            new bootstrap.Offcanvas(document.getElementById('createUserAccountCanvas')).show();
+        });
 
-        // Edit User Account Button
-        $('#editUserAccountBtn').on('click', handleEditUserAccount);
+        $('#editUserAccountBtn').on('click', function () {
+            console.log('Edit user account:', $('#detailEmployeeId').text());
+        });
 
-        // Deactivate User Account Button
-        $('#deactivateUserAccountBtn').on('click', handleDeactivateUserAccount);
+        $('#deactivateUserAccountBtn').on('click', function () {
+            var name = $('#detailEmployeeName').text();
+            if (confirm('Are you sure you want to deactivate the user account for ' + name + '?')) {
+                console.log('Deactivate:', $('#detailEmployeeId').text());
+            }
+        });
 
-        // Edit Employee Button
-        $('#editEmployeeBtn').on('click', handleEditEmployee);
+        $('#editEmployeeBtn').on('click', function () {
+            var dbId = $(this).attr('data-employee-id');
+            if (dbId) {
+                window.location.href = (window.employeeEditUrlBase || '/admin/employee') + '/' + dbId + '/edit';
+            }
+        });
 
-        // Create User Account Canvas
-        const createUserAccountCanvas = document.getElementById('createUserAccountCanvas');
-        if (createUserAccountCanvas) {
-            createUserAccountCanvas.addEventListener('show.bs.offcanvas', handleCreateUserAccountShow);
-            createUserAccountCanvas.addEventListener('hidden.bs.offcanvas', handleCreateUserAccountHide);
+        var createCanvas = document.getElementById('createUserAccountCanvas');
+        if (createCanvas) {
+            createCanvas.addEventListener('show.bs.offcanvas', function () {
+                $('#createUserEmployeeName').text($('#detailEmployeeName').text());
+                $('#createUserEmployeeId').text($('#detailEmployeeId').text());
+                $('#createUserDepartment').text($('#detailDepartment').text());
+            });
+            createCanvas.addEventListener('hidden.bs.offcanvas', function () {
+                var form = document.getElementById('createUserAccountForm');
+                if (form) form.reset();
+            });
         }
 
-        // Create User Account Form
-        const createUserAccountForm = document.getElementById('createUserAccountForm');
-        if (createUserAccountForm) {
-            createUserAccountForm.addEventListener('submit', handleCreateUserAccountSubmit);
+        var createForm = document.getElementById('createUserAccountForm');
+        if (createForm) {
+            createForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                console.log('Create user account submitted');
+            });
         }
 
-        // Add Employee Canvas
         initializeAddEmployeeCanvas();
     }
 
-    // ============================================
-    // EMPLOYEE DETAIL HANDLERS
-    // ============================================
-    function handleEmployeeDetailShow(event) {
-        const button = event.relatedTarget;
-        if (!button || !button.classList.contains('view-employee-btn')) return;
-
-        const employeeData = extractEmployeeData(button);
-        populateEmployeeDetail(employeeData);
+    function initializeAddEmployeeCanvas() {
+        // Add employee now redirects to multi-step registration form
     }
 
     // ============================================
-    // USER ACCOUNT HANDLERS
+    // STATS
     // ============================================
-    function handleCreateUserAccount() {
-        const createUserCanvas = new bootstrap.Offcanvas(document.getElementById('createUserAccountCanvas'));
-        createUserCanvas.show();
-    }
+    function updateEmployeeStats() {
+        $.get(window.employeeStatsUrl, function (res) {
+            if (!res.success) return;
+            var s = res.stats;
 
-    function handleEditUserAccount() {
-        const employeeId = $('#detailEmployeeId').text();
-        console.log('Edit user account for employee:', employeeId);
-        // TODO: Implement edit user account functionality
-    }
+            $('#statTotalEmployees').text(s.total);
+            $('#statActive').text(s.active);
+            $('#statBiometricLinked').text(s.biometric_linked);
+            $('#statPendingSync').text(s.pending_sync);
+            $('#statInternal').text(s.internal);
+            $('#statPermanent').text(s.permanent);
+            $('#statContract').text(s.contract);
+            $('#statOutsourced').text(s.outsourced);
+            $('#statVendors').text(s.vendors);
+            $('#statSynced').text(s.synced);
+            $('#statPending').text(s.pending);
+            $('#statFailed').text(s.failed);
 
-    function handleDeactivateUserAccount() {
-        const employeeId = $('#detailEmployeeId').text();
-        const employeeName = $('#detailEmployeeName').text();
-        
-        if (confirm(`Are you sure you want to deactivate the user account for ${employeeName}?`)) {
-            console.log('Deactivating user account for employee:', employeeId);
-            // TODO: Implement deactivate user account API call
-        }
-    }
-
-    // ============================================
-    // EMPLOYEE HANDLERS
-    // ============================================
-    function handleEditEmployee() {
-        const employeeId = $('#editEmployeeBtn').attr('data-employee-id');
-        console.log('Edit employee:', employeeId);
-        // TODO: Implement edit employee functionality
+            $('#totalWorkforceBadge').text(s.total);
+            $('#internalStaffBadge').text(s.internal);
+            $('#outsourcedStaffBadge').text(s.outsourced);
+            $('#biometricSyncBadge').text(s.biometric_linked);
+        });
     }
 
     // ============================================
-    // CREATE USER ACCOUNT HANDLERS
+    // UTILITIES
     // ============================================
-    function handleCreateUserAccountShow(event) {
-        const employeeName = $('#detailEmployeeName').text();
-        const employeeId = $('#detailEmployeeId').text();
-        const department = $('#detailDepartment').text();
-
-        $('#createUserEmployeeName').text(employeeName);
-        $('#createUserEmployeeId').text(employeeId);
-        $('#createUserDepartment').text(department);
+    function escHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
-    // function handleCreateUserAccountHide() {
-    //     const form = document.getElementById('createUserAccountForm');
-    //     if (form) {
-    //         form.reset();
-    //     }
-    // }
-
-    // function handleCreateUserAccountSubmit(e) {
-    //     e.preventDefault();
-    //     const formData = {
-    //         employeeId: $('#createUserEmployeeId').text(),
-    //         email: $('#userAccountEmail').val(),
-    //         role: $('#userAccountRole').val(),
-    //         passwordOption: $('input[name="passwordOption"]:checked').val(),
-    //         password: $('#userTempPassword').val()
-    //     };
-    //     console.log('Creating user account:', formData);
-
-    //     // TODO: Implement API call to create user account
-
-    //     // Close canvas
-    //     const canvas = bootstrap.Offcanvas.getInstance(document.getElementById('createUserAccountCanvas'));
-    //     if (canvas) {
-    //         canvas.hide();
-    //     }
-
-    //     // Reset form
-    //     this.reset();
-    // }
-
-    // ============================================
-    // ADD EMPLOYEE CANVAS
-    // ============================================
-    // function initializeAddEmployeeCanvas() {
-    //     const addEmployeeCanvas = document.getElementById('addEmployeeCanvas');
-    //     const employeeTypeSelect = document.getElementById('employeeType');
-    //     const createUserCheckbox = document.getElementById('createUserAccount');
-    //     const userAccountSection = document.getElementById('userAccountSection');
-    //     const vendorSection = document.getElementById('vendorSection');
-
-    //     // Show/hide vendor section based on employee type
-    //     if (employeeTypeSelect) {
-    //         employeeTypeSelect.addEventListener('change', function() {
-    //             if (this.value === 'Third-party') {
-    //                 vendorSection.style.display = 'block';
-    //                 document.getElementById('employeeVendor').setAttribute('required', 'required');
-    //             } else {
-    //                 vendorSection.style.display = 'none';
-    //                 document.getElementById('employeeVendor').removeAttribute('required');
-    //             }
-    //         });
-    //     }
-
-    //     // Show/hide user account section
-    //     if (createUserCheckbox) {
-    //         createUserCheckbox.addEventListener('change', function() {
-    //             if (this.checked) {
-    //                 userAccountSection.style.display = 'block';
-    //             } else {
-    //                 userAccountSection.style.display = 'none';
-    //             }
-    //         });
-    //     }
-
-    //     // Handle form submission
-    //     const addEmployeeForm = document.getElementById('addEmployeeForm');
-    //     if (addEmployeeForm) {
-    //         addEmployeeForm.addEventListener('submit', function(e) {
-    //             e.preventDefault();
-    //             const formData = new FormData(this);
-    //             const data = Object.fromEntries(formData);
-    //             console.log('Submitting employee form:', data);
-
-    //             // Close offcanvas
-    //             const canvas = bootstrap.Offcanvas.getInstance(addEmployeeCanvas);
-    //             if (canvas) {
-    //                 canvas.hide();
-    //             }
-
-    //             // Reset form
-    //             this.reset();
-    //             vendorSection.style.display = 'none';
-    //             userAccountSection.style.display = 'none';
-    //         });
-    //     }
-
-    //     // Reset form when offcanvas is hidden
-    //     if (addEmployeeCanvas) {
-    //         addEmployeeCanvas.addEventListener('hidden.bs.offcanvas', function() {
-    //             const form = document.getElementById('addEmployeeForm');
-    //             if (form) {
-    //                 form.reset();
-    //                 vendorSection.style.display = 'none';
-    //                 userAccountSection.style.display = 'none';
-    //             }
-    //         });
-    //     }
-    // }
-
-    // // ============================================
-    // // STATS UPDATE
-    // // ============================================
-    // function updateEmployeeStats() {
-    //     // Update badge counts
-    //     $('#totalWorkforceBadge').text(employeeTable ? employeeTable.rows().count() : 0);
-    //     // TODO: Calculate and update other stats from table data
-    // }
+    function escAttr(str) {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
 
 })();
-

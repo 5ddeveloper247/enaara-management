@@ -10,7 +10,7 @@ class AttendanceModesService
 {
     public function getList(): Collection
     {
-        return AttendanceModel::with('organization')
+        return AttendanceModel::with(['organization', 'department'])
             ->orderByDesc('id')
             ->get();
     }

@@ -49,6 +49,12 @@
                 </div>
                 <div class="col-12">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Department</small>
+                        <div class="fw-semibold small" id="detailShiftTypeDepartment">—</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Status</small>
                         <div class="fw-semibold small" id="detailShiftTypeStatus">—</div>
                     </div>

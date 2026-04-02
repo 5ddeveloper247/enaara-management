@@ -50,7 +50,7 @@
                         Remember me
                     </label>
                 </div>
-                <a href="#" class="text-decoration-none">Forgot password?</a>
+                <a href="{{ route('password.request') }}" class="text-decoration-none">Forgot password?</a>
             </div>
 
             <button type="submit" class="btn btn-auth w-100 mb-3">

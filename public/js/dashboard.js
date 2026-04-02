@@ -1,4 +1,4 @@
-(function() {
+(function () {
     'use strict';
 
     // ============================================
@@ -84,7 +84,7 @@
         departmentChart: null,
 
         /**
-         * Initialize Attendance Overview Chart
+         * Initialize Attendance Overview Chart with real data
          */
         initAttendanceChart() {
             const ctx = document.getElementById('attendanceChart');
@@ -95,22 +95,22 @@
             this.attendanceChart = new Chart(ctx.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: DashboardData.attendance[7].labels,
+                    labels: [],
                     datasets: [{
                         label: 'Present',
-                        data: DashboardData.attendance[7].present,
+                        data: [],
                         backgroundColor: colors.primaryColor,
                         borderWidth: 0,
                         borderRadius: 1000
                     }, {
                         label: 'Absent',
-                        data: DashboardData.attendance[7].absent,
+                        data: [],
                         backgroundColor: '#dc3545',
                         borderWidth: 0,
                         borderRadius: 1000
                     }, {
                         label: 'On Leave',
-                        data: DashboardData.attendance[7].onLeave,
+                        data: [],
                         backgroundColor: colors.mainColor,
                         borderWidth: 0,
                         borderRadius: 1000
@@ -186,25 +186,36 @@
                     }
                 }
             });
+
+            this.loadAttendanceData(7);
         },
 
         /**
-         * Update attendance chart data based on selected period
+         * Fetch attendance data from API and update chart
          */
-        updateAttendanceData(period) {
+        loadAttendanceData(period) {
             if (!this.attendanceChart) return;
 
-            const data = DashboardData.attendance[period];
-            if (!data) {
-                console.error('Invalid period:', period);
-                return;
-            }
+            const url = (window._dashRoutes && window._dashRoutes.attendanceChart)
+                ? window._dashRoutes.attendanceChart + '?period=' + period
+                : '/admin/dashboard/attendance-chart?period=' + period;
 
-            this.attendanceChart.data.labels = data.labels;
-            this.attendanceChart.data.datasets[0].data = data.present;
-            this.attendanceChart.data.datasets[1].data = data.absent;
-            this.attendanceChart.data.datasets[2].data = data.onLeave;
-            this.attendanceChart.update();
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    if (!json.success) return;
+                    const data = json.data;
+                    DashboardCharts.attendanceChart.data.labels              = data.labels;
+                    DashboardCharts.attendanceChart.data.datasets[0].data    = data.present;
+                    DashboardCharts.attendanceChart.data.datasets[1].data    = data.absent;
+                    DashboardCharts.attendanceChart.data.datasets[2].data    = data.onLeave;
+                    DashboardCharts.attendanceChart.update();
+                })
+                .catch(function (err) {
+                    console.error('Attendance chart load failed:', err);
+                });
         },
 
         /**
@@ -212,12 +223,12 @@
          */
         initPeriodButtons() {
             const periodButtons = document.querySelectorAll('.period-btn');
-            periodButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    periodButtons.forEach(btn => btn.classList.remove('active'));
+            periodButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    periodButtons.forEach(function (btn) { btn.classList.remove('active'); });
                     this.classList.add('active');
                     const period = parseInt(this.getAttribute('data-period'));
-                    DashboardCharts.updateAttendanceData(period);
+                    DashboardCharts.loadAttendanceData(period);
                 });
             });
         },
@@ -301,13 +312,13 @@
                             titleSpacing: 8,
                             bodySpacing: 8,
                             callbacks: {
-                                title: function(context) {
+                                title: function (context) {
                                     return context[0].label;
                                 },
-                                label: function(context) {
+                                label: function (context) {
                                     return context.dataset.label + ': ' + context.parsed.y + '%';
                                 },
-                                labelColor: function(context) {
+                                labelColor: function (context) {
                                     return {
                                         borderColor: context.dataset.borderColor,
                                         backgroundColor: context.dataset.borderColor,
@@ -377,17 +388,19 @@
          * Calculate and update workforce strength
          */
         updateWorkforceStrength() {
-            const departmentData = DashboardData.workforce.departmentData;
-            const sum = departmentData.reduce((total, deptData) => {
-                return total + deptData[deptData.length - 1];
-            }, 0);
-            const average = Math.round(sum / departmentData.length);
-            const percentage = average;
-            const totalEmployees = DashboardData.workforce.totalEmployees;
-            const activeEmployees = Math.round((percentage / 100) * totalEmployees);
+            const stats = window._dashStats || {};
+            const percentage = stats.workforcePercent !== undefined
+                ? stats.workforcePercent
+                : 0;
+            const activeEmployees = stats.activeEmployees !== undefined
+                ? stats.activeEmployees
+                : 0;
+            const totalEmployees = stats.totalEmployees !== undefined
+                ? stats.totalEmployees
+                : 0;
 
             const percentageEl = document.getElementById('workforcePercentage');
-            const subtextEl = document.getElementById('workforceSubtext');
+            const subtextEl    = document.getElementById('workforceSubtext');
             const progressBarEl = document.getElementById('workforceProgressBar');
 
             if (percentageEl) percentageEl.textContent = percentage + '%';
@@ -402,278 +415,411 @@
     const DashboardApprovals = {
         currentLeaveId: null,
 
-        /**
-         * Initialize bulk approve functionality
-         */
+        loadPendingApprovals() {
+            const url = (window._dashRoutes && window._dashRoutes.pendingApprovals)
+                ? window._dashRoutes.pendingApprovals
+                : '/admin/dashboard/pending-approvals';
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    const loader = document.getElementById('approvalsLoader');
+                    if (loader) loader.remove();
+                    if (!json.success) return;
+                    DashboardApprovals.renderApprovals(json.data);
+                    DashboardApprovals.updatePendingCount();
+                    DashboardApprovals.initBulkApprove();
+                })
+                .catch(function (err) {
+                    console.error('Pending approvals load failed:', err);
+                    const loader = document.getElementById('approvalsLoader');
+                    if (loader) loader.innerHTML = '<span class="text-danger small px-4">Failed to load.</span>';
+                });
+        },
+
+        renderApprovals(items) {
+            const list = document.getElementById('approvalsList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            if (!items || items.length === 0) {
+                const empty = document.getElementById('pendingApprovalsEmpty');
+                if (empty) empty.classList.remove('d-none');
+                const header = document.getElementById('bulkApproveHeader');
+                if (header) header.style.display = 'none';
+                return;
+            }
+
+            items.forEach(function (item) {
+                const div = document.createElement('div');
+                div.className = 'approval-item';
+                div.setAttribute('data-approval-id', item.id);
+                div.innerHTML =
+                    '<div class="d-flex align-items-center justify-content-between">' +
+                        '<div class="d-flex align-items-center flex-grow-1">' +
+                            '<input type="checkbox" class="form-check-input approval-checkbox approval-item-checkbox" value="' + item.id + '">' +
+                            '<div class="employee-avatar me-2">' + DashboardApprovals.esc(item.initials) + '</div>' +
+                            '<div class="flex-grow-1">' +
+                                '<h6 class="mb-0 small">' + DashboardApprovals.esc(item.name) + '</h6>' +
+                                '<small class="text-muted">' + DashboardApprovals.esc(item.leave_type) + '</small>' +
+                                '<div class="small text-muted">Requested: ' + DashboardApprovals.esc(item.request_date) + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="d-flex gap-2">' +
+                            '<button class="btn btn-sm btn-outline-secondary rounded-3 border view-btn" title="View Reason"' +
+                                ' data-id="' + item.id + '"' +
+                                ' data-name="' + DashboardApprovals.esc(item.name) + '"' +
+                                ' data-initials="' + DashboardApprovals.esc(item.initials) + '"' +
+                                ' data-leave-type="' + DashboardApprovals.esc(item.leave_type) + '"' +
+                                ' data-request-date="' + DashboardApprovals.esc(item.request_date) + '"' +
+                                ' data-start-date="' + DashboardApprovals.esc(item.start_date) + '"' +
+                                ' data-end-date="' + DashboardApprovals.esc(item.end_date) + '"' +
+                                ' data-reason="' + DashboardApprovals.esc(item.reason) + '">' +
+                                '<i class="bi bi-eye"></i>' +
+                            '</button>' +
+                            '<button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn" data-id="' + item.id + '" title="Approve">' +
+                                '<i class="bi bi-check-lg"></i>' +
+                            '</button>' +
+                            '<button class="btn btn-sm btn-danger border-0 bg-main rounded-3 reject-btn" data-id="' + item.id + '" title="Reject">' +
+                                '<i class="bi bi-x-lg"></i>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
+                list.appendChild(div);
+            });
+
+            DashboardApprovals.initApprovalButtons();
+        },
+
+        esc(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        },
+
         initBulkApprove() {
             const bulkApproveAll = document.getElementById('bulkApproveAll');
             if (!bulkApproveAll) return;
 
-            bulkApproveAll.addEventListener('change', function() {
-                const checkboxes = document.querySelectorAll('.approval-checkbox');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
+            bulkApproveAll.onchange = function () {
+                document.querySelectorAll('.approval-checkbox').forEach(function (cb) {
+                    cb.checked = bulkApproveAll.checked;
                 });
                 DashboardApprovals.updateBulkApproveButton();
-            });
-
-            document.querySelectorAll('.approval-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    DashboardApprovals.updateBulkApproveButton();
-                    DashboardApprovals.updateSelectAllCheckbox();
-                });
-            });
+            };
 
             const bulkApproveBtn = document.getElementById('bulkApproveBtn');
             if (bulkApproveBtn) {
-                bulkApproveBtn.addEventListener('click', function() {
-                    const checkedBoxes = document.querySelectorAll('.approval-checkbox:checked');
-                    const ids = Array.from(checkedBoxes).map(cb => cb.value);
-
+                bulkApproveBtn.onclick = function () {
+                    const ids = Array.from(document.querySelectorAll('.approval-checkbox:checked')).map(function (cb) { return cb.value; });
+                    if (ids.length === 0) return;
                     if (ids.length > 10) {
-                        DashboardUtils.showAlert('You can only approve up to 10 requests at once. Please select fewer requests.');
+                        DashboardUtils.showAlert('You can only approve up to 10 requests at once.');
                         return;
                     }
-
-                    if (DashboardUtils.confirmAction(`Are you sure you want to approve ${ids.length} leave request(s)?`)) {
-                        DashboardApprovals.bulkApprove(ids);
+                    if (DashboardUtils.confirmAction('Approve ' + ids.length + ' leave request(s)?')) {
+                        DashboardApprovals.bulkApproveApi(ids);
                     }
-                });
+                };
             }
         },
 
-        /**
-         * Update bulk approve button state
-         */
         updateBulkApproveButton() {
-            const checkedBoxes = document.querySelectorAll('.approval-checkbox:checked');
+            const checked = document.querySelectorAll('.approval-checkbox:checked').length;
             const bulkBtn = document.getElementById('bulkApproveBtn');
             const countSpan = document.getElementById('selectedCount');
-
-            if (checkedBoxes.length > 0) {
-                if (bulkBtn) {
-                    bulkBtn.classList.remove('d-none');
-                    bulkBtn.disabled = false;
-                }
-                if (countSpan) countSpan.textContent = checkedBoxes.length;
+            if (checked > 0) {
+                if (bulkBtn) { bulkBtn.classList.remove('d-none'); bulkBtn.disabled = false; }
+                if (countSpan) countSpan.textContent = checked;
             } else {
-                if (bulkBtn) {
-                    bulkBtn.classList.add('d-none');
-                    bulkBtn.disabled = true;
-                }
+                if (bulkBtn) { bulkBtn.classList.add('d-none'); bulkBtn.disabled = true; }
             }
         },
 
-        /**
-         * Update select all checkbox state
-         */
         updateSelectAllCheckbox() {
-            const checkboxes = document.querySelectorAll('.approval-checkbox');
+            const total   = document.querySelectorAll('.approval-checkbox').length;
+            const checked = document.querySelectorAll('.approval-checkbox:checked').length;
             const selectAll = document.getElementById('bulkApproveAll');
-            const checkedCount = document.querySelectorAll('.approval-checkbox:checked').length;
-
             if (!selectAll) return;
-
-            if (checkedCount === 0) {
-                selectAll.indeterminate = false;
-                selectAll.checked = false;
-            } else if (checkedCount === checkboxes.length) {
-                selectAll.indeterminate = false;
-                selectAll.checked = true;
-            } else {
-                selectAll.indeterminate = true;
-            }
+            if (checked === 0) { selectAll.indeterminate = false; selectAll.checked = false; }
+            else if (checked === total) { selectAll.indeterminate = false; selectAll.checked = true; }
+            else { selectAll.indeterminate = true; }
         },
 
-        /**
-         * Bulk approve implementation
-         */
-        bulkApprove(ids) {
-            console.log('Bulk approving:', ids);
-
-            ids.forEach(id => {
-                const item = document.querySelector(`.approval-item[data-approval-id="${id}"]`);
-                if (item) {
-                    item.style.transition = 'opacity 0.3s ease';
-                    item.style.opacity = '0';
-                    setTimeout(() => {
-                        item.remove();
-                        DashboardApprovals.updatePendingCount();
-                    }, 300);
-                }
+        initApprovalButtons() {
+            document.querySelectorAll('.approve-btn').forEach(function (btn) {
+                btn.onclick = function () {
+                    const id = this.getAttribute('data-id');
+                    if (DashboardUtils.confirmAction('Approve this leave request?')) {
+                        DashboardApprovals.updateStatusApi(id, 3);
+                    }
+                };
             });
 
+            document.querySelectorAll('.reject-btn').forEach(function (btn) {
+                btn.onclick = function () {
+                    const id = this.getAttribute('data-id');
+                    if (DashboardUtils.confirmAction('Reject this leave request?')) {
+                        DashboardApprovals.updateStatusApi(id, 4);
+                    }
+                };
+            });
+
+            document.querySelectorAll('.view-btn').forEach(function (btn) {
+                btn.onclick = function () {
+                    DashboardApprovals.viewLeaveReason(
+                        this.getAttribute('data-id'),
+                        this.getAttribute('data-name'),
+                        this.getAttribute('data-initials'),
+                        this.getAttribute('data-leave-type'),
+                        this.getAttribute('data-request-date'),
+                        this.getAttribute('data-start-date'),
+                        this.getAttribute('data-end-date'),
+                        this.getAttribute('data-reason')
+                    );
+                };
+            });
+
+            document.querySelectorAll('.approval-checkbox').forEach(function (cb) {
+                cb.onchange = function () {
+                    DashboardApprovals.updateBulkApproveButton();
+                    DashboardApprovals.updateSelectAllCheckbox();
+                };
+            });
+        },
+
+        updateStatusApi(id, status) {
+            const baseUrl = (window._dashRoutes && window._dashRoutes.leaveRequestStatus)
+                ? window._dashRoutes.leaveRequestStatus
+                : '/admin/leave-request/{id}/status';
+            const url  = baseUrl.replace('{id}', id);
+            const csrf = window._csrfToken || '';
+
+            fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ status: status })
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    if (json.success !== false) {
+                        DashboardApprovals.removeItem(id);
+                        DashboardUtils.showAlert(status === 3 ? 'Leave request approved!' : 'Leave request rejected.');
+                    } else {
+                        DashboardUtils.showAlert(json.message || 'Action failed.');
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Status update failed:', err);
+                    DashboardUtils.showAlert('Action failed. Please try again.');
+                });
+        },
+
+        bulkApproveApi(ids) {
+            let done = 0;
+            ids.forEach(function (id) {
+                DashboardApprovals.updateStatusApi(id, 3);
+                done++;
+            });
             const bulkApproveAll = document.getElementById('bulkApproveAll');
             if (bulkApproveAll) bulkApproveAll.checked = false;
-            this.updateBulkApproveButton();
-
-            DashboardUtils.showAlert(`${ids.length} leave request(s) approved successfully!`);
+            DashboardApprovals.updateBulkApproveButton();
         },
 
-        /**
-         * Initialize individual approve/reject buttons
-         */
-        initApprovalButtons() {
-            document.querySelectorAll('.approve-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    if (DashboardUtils.confirmAction('Are you sure you want to approve this leave request?')) {
-                        DashboardApprovals.approveRequest(id);
-                    }
-                });
-            });
-
-            document.querySelectorAll('.reject-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    if (DashboardUtils.confirmAction('Are you sure you want to reject this leave request?')) {
-                        DashboardApprovals.rejectRequest(id);
-                    }
-                });
-            });
-        },
-
-        /**
-         * Approve single request
-         */
-        approveRequest(id) {
-            console.log('Approving request:', id);
-
-            const item = document.querySelector(`.approval-item[data-approval-id="${id}"]`);
+        removeItem(id) {
+            const item = document.querySelector('.approval-item[data-approval-id="' + id + '"]');
             if (item) {
                 item.style.transition = 'opacity 0.3s ease';
                 item.style.opacity = '0';
-                setTimeout(() => {
+                setTimeout(function () {
                     item.remove();
-                    this.updatePendingCount();
+                    DashboardApprovals.updatePendingCount();
                 }, 300);
             }
-
-            DashboardUtils.showAlert('Leave request approved successfully!');
         },
 
-        /**
-         * Reject single request
-         */
-        rejectRequest(id) {
-            console.log('Rejecting request:', id);
-
-            const item = document.querySelector(`.approval-item[data-approval-id="${id}"]`);
-            if (item) {
-                item.style.transition = 'opacity 0.3s ease';
-                item.style.opacity = '0';
-                setTimeout(() => {
-                    item.remove();
-                    this.updatePendingCount();
-                }, 300);
-            }
-
-            DashboardUtils.showAlert('Leave request rejected.');
-        },
-
-        /**
-         * Update pending count badge and show/hide empty state
-         */
         updatePendingCount() {
-            const items = document.querySelectorAll('.approval-item').length;
-            const pendingCard = document.querySelector('.card-header');
-            const pendingBadge = pendingCard ? pendingCard.querySelector('.badge') : null;
-            const emptyState = document.getElementById('pendingApprovalsEmpty');
-            const approvalItems = document.querySelectorAll('.approval-item');
-            const bulkHeader = document.querySelector('.bulk-approve-header');
+            const items  = document.querySelectorAll('.approval-item').length;
+            const badge  = document.getElementById('pendingApprovalsBadge');
+            const empty  = document.getElementById('pendingApprovalsEmpty');
+            const header = document.getElementById('bulkApproveHeader');
 
-            if (pendingBadge) {
-                pendingBadge.textContent = items;
-            }
+            if (badge) badge.textContent = items;
 
             if (items === 0) {
-                if (emptyState) emptyState.classList.remove('d-none');
-                if (approvalItems.length > 0) {
-                    approvalItems.forEach(item => item.style.display = 'none');
-                }
-                if (bulkHeader) bulkHeader.style.display = 'none';
+                if (empty) empty.classList.remove('d-none');
+                if (header) header.style.display = 'none';
             } else {
-                if (emptyState) emptyState.classList.add('d-none');
-                if (approvalItems.length > 0) {
-                    approvalItems.forEach(item => item.style.display = '');
-                }
-                if (bulkHeader) bulkHeader.style.display = '';
+                if (empty) empty.classList.add('d-none');
+                if (header) header.style.display = '';
             }
         },
 
-        /**
-         * View leave reason - opens slide-over panel
-         */
         viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason) {
             this.currentLeaveId = id;
+            var avatarEl      = document.getElementById('slideEmployeeAvatar');
+            var nameEl        = document.getElementById('slideEmployeeName');
+            var typeEl        = document.getElementById('slideLeaveType');
+            var requestDateEl = document.getElementById('slideRequestDate');
+            var startDateEl   = document.getElementById('slideStartDate');
+            var endDateEl     = document.getElementById('slideEndDate');
+            var reasonEl      = document.getElementById('slideReason');
 
-            const avatarEl = document.getElementById('slideEmployeeAvatar');
-            const nameEl = document.getElementById('slideEmployeeName');
-            const typeEl = document.getElementById('slideLeaveType');
-            const requestDateEl = document.getElementById('slideRequestDate');
-            const startDateEl = document.getElementById('slideStartDate');
-            const endDateEl = document.getElementById('slideEndDate');
-            const reasonEl = document.getElementById('slideReason');
+            if (avatarEl)      avatarEl.textContent      = initials || '';
+            if (nameEl)        nameEl.textContent        = name || '';
+            if (typeEl)        typeEl.textContent        = leaveType || '';
+            if (requestDateEl) requestDateEl.textContent = requestDate || '';
+            if (startDateEl)   startDateEl.textContent   = startDate || '';
+            if (endDateEl)     endDateEl.textContent     = endDate || '';
+            if (reasonEl)      reasonEl.textContent      = reason || '';
 
-            if (avatarEl) avatarEl.textContent = initials;
-            if (nameEl) nameEl.textContent = name;
-            if (typeEl) typeEl.textContent = leaveType;
-            if (requestDateEl) requestDateEl.textContent = requestDate;
-            if (startDateEl) startDateEl.textContent = startDate;
-            if (endDateEl) endDateEl.textContent = endDate;
-            if (reasonEl) reasonEl.textContent = reason;
-
-            const backdrop = document.getElementById('slideOverBackdrop');
-            const panel = document.getElementById('slideOverPanel');
+            var backdrop = document.getElementById('slideOverBackdrop');
+            var panel    = document.getElementById('slideOverPanel');
             if (backdrop) backdrop.classList.add('show');
-            if (panel) panel.classList.add('show');
+            if (panel)    panel.classList.add('show');
             document.body.style.overflow = 'hidden';
         },
 
-        /**
-         * Close slide-over panel
-         */
         closeSlideOver() {
-            const backdrop = document.getElementById('slideOverBackdrop');
-            const panel = document.getElementById('slideOverPanel');
+            var backdrop = document.getElementById('slideOverBackdrop');
+            var panel    = document.getElementById('slideOverPanel');
             if (backdrop) backdrop.classList.remove('show');
-            if (panel) panel.classList.remove('show');
+            if (panel)    panel.classList.remove('show');
             document.body.style.overflow = '';
             this.currentLeaveId = null;
         },
 
-        /**
-         * Approve from slide-over
-         */
         approveFromSlide() {
             if (!this.currentLeaveId) return;
-
-            if (DashboardUtils.confirmAction('Are you sure you want to approve this leave request?')) {
-                this.approveRequest(this.currentLeaveId);
+            if (DashboardUtils.confirmAction('Approve this leave request?')) {
+                this.updateStatusApi(this.currentLeaveId, 3);
                 this.closeSlideOver();
             }
         },
 
-        /**
-         * Reject from slide-over
-         */
         rejectFromSlide() {
             if (!this.currentLeaveId) return;
-
-            if (DashboardUtils.confirmAction('Are you sure you want to reject this leave request?')) {
-                this.rejectRequest(this.currentLeaveId);
+            if (DashboardUtils.confirmAction('Reject this leave request?')) {
+                this.updateStatusApi(this.currentLeaveId, 4);
                 this.closeSlideOver();
             }
         },
 
-        /**
-         * Initialize slide-over keyboard shortcuts
-         */
         initSlideOverKeyboard() {
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    DashboardApprovals.closeSlideOver();
-                }
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') { DashboardApprovals.closeSlideOver(); }
+            });
+        }
+    };
+
+    // ============================================
+    // UPCOMING HOLIDAYS
+    // ============================================
+    const DashboardHolidays = {
+        load(period) {
+            const url = (window._dashRoutes && window._dashRoutes.upcomingHolidays)
+                ? window._dashRoutes.upcomingHolidays + '?period=' + period
+                : '/admin/dashboard/upcoming-holidays?period=' + period;
+
+            const list = document.getElementById('holidaysList');
+            if (list) {
+                list.innerHTML = '<div class="text-center py-4 text-muted" id="holidaysLoader">' +
+                    '<div class="spinner-border spinner-border-sm me-2" role="status"></div>Loading...</div>';
+            }
+
+            const empty = document.getElementById('holidaysEmpty');
+            if (empty) empty.classList.add('d-none');
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    if (!json.success) return;
+                    DashboardHolidays.render(json.data);
+                })
+                .catch(function (err) {
+                    console.error('Holidays load failed:', err);
+                    const loader = document.getElementById('holidaysLoader');
+                    if (loader) loader.innerHTML = '<span class="text-danger small px-4">Failed to load.</span>';
+                });
+        },
+
+        render(items) {
+            const list  = document.getElementById('holidaysList');
+            const badge = document.getElementById('holidaysBadge');
+            const empty = document.getElementById('holidaysEmpty');
+            if (!list) return;
+            list.innerHTML = '';
+
+            if (badge) badge.textContent = items.length;
+
+            if (!items || items.length === 0) {
+                if (empty) empty.classList.remove('d-none');
+                return;
+            }
+
+            if (empty) empty.classList.add('d-none');
+
+            items.forEach(function (item, idx) {
+                var isLast     = idx === items.length - 1;
+                var borderCls  = isLast ? '' : 'border-bottom';
+                var div        = document.createElement('div');
+                div.className  = 'holiday-item ' + borderCls + ' p-3';
+                var ongoingBadge = item.is_ongoing
+                    ? '<span class="badge bg-success ms-1">Ongoing</span>'
+                    : '';
+                div.innerHTML  =
+                    '<div class="d-flex align-items-center justify-content-between">' +
+                        '<div class="d-flex align-items-center">' +
+                            '<div class="holiday-date me-3 text-center">' +
+                                '<div class="fw-bold text-main">' + DashboardHolidays.esc(item.day) + '</div>' +
+                                '<small class="text-muted">' + DashboardHolidays.esc(item.month) + '</small>' +
+                            '</div>' +
+                            '<div>' +
+                                '<h6 class="mb-0 small">' + DashboardHolidays.esc(item.name) + ongoingBadge + '</h6>' +
+                                '<small class="text-muted">' + DashboardHolidays.esc(item.type) + '</small>' +
+                            '</div>' +
+                        '</div>' +
+                        '<span class="badge ' + DashboardHolidays.esc(item.badge_class) + '">' +
+                            DashboardHolidays.esc(item.scope_label) +
+                        '</span>' +
+                    '</div>';
+                list.appendChild(div);
+            });
+        },
+
+        esc(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        },
+
+        initPeriodButtons() {
+            var buttons = document.querySelectorAll('.holiday-period-btn');
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    buttons.forEach(function (b) {
+                        b.classList.remove('active', 'btn-warning');
+                        b.classList.add('btn-outline-secondary');
+                    });
+                    this.classList.add('active', 'btn-warning');
+                    this.classList.remove('btn-outline-secondary');
+                    DashboardHolidays.load(parseInt(this.getAttribute('data-period')));
+                });
             });
         }
     };
@@ -687,7 +833,7 @@
          */
         initNotifyButtons() {
             document.querySelectorAll('.notify-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     const id = this.getAttribute('data-id');
                     DashboardExceptions.notifyManager(id);
                 });
@@ -739,9 +885,6 @@
     const DashboardGeofence = {
         map: null,
 
-        /**
-         * Initialize Geofence & IP Compliance Map
-         */
         initialize() {
             const mapElement = document.getElementById('geofenceMap');
             if (!mapElement) return;
@@ -767,12 +910,10 @@
             }
         },
 
-        /**
-         * Create the map with zones and markers
-         */
         createMap() {
-            const mapData = DashboardData.geofence;
-            this.map = L.map('geofenceMap').setView(mapData.center, mapData.zoom);
+            const geofences = window.dashboardGeofences || [];
+
+            this.map = L.map('geofenceMap').setView([33.5651, 73.0169], 12);
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -780,106 +921,67 @@
                 subdomains: 'abcd'
             }).addTo(this.map);
 
-            mapData.zones.forEach(zone => {
-                const circle = L.circle(zone.center, {
-                    color: zone.color,
-                    fillColor: zone.color,
-                    fillOpacity: 0.12,
-                    radius: zone.radius,
-                    weight: 2,
-                    className: 'geofence-zone',
-                    dashArray: '4'
+            if (!geofences.length) {
+                return;
+            }
+
+            const layers = [];
+
+            geofences.forEach(fenceData => {
+                if (!fenceData.lat || !fenceData.lng) return;
+
+                let radiusInMeters = parseFloat(fenceData.radius || 0);
+
+                if (fenceData.radiusUnit === 'kilometers') {
+                    radiusInMeters = radiusInMeters * 1000;
+                }
+
+                const color = fenceData.type === 'hard-lock' ? '#dc3545' : '#ffc107';
+
+                const circle = L.circle([fenceData.lat, fenceData.lng], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.2,
+                    radius: radiusInMeters
                 }).addTo(this.map);
 
-                L.marker(zone.center, {
-                    icon: L.divIcon({
-                        className: 'zone-label-wrapper',
-                        html: `<div class="zone-label">${zone.name}</div>`,
-                        iconSize: [120, 28],
-                        iconAnchor: [60, 14]
-                    }),
-                    interactive: false
-                }).addTo(this.map);
+                const marker = L.marker([fenceData.lat, fenceData.lng]).addTo(this.map);
 
-                circle.bindPopup(`
-                    <div class="popup-title">${zone.name}</div>
-                    <div class="popup-line">Employees: <strong>${zone.employees}</strong></div>
-                    <div class="popup-line">Status: <span class="popup-status in-zone">In-Zone</span></div>
+                marker.bindPopup(`
+                    <div class="p-2">
+                        <strong class="d-block mb-1">${fenceData.name}</strong>
+                        <small class="text-muted d-block mb-2">${fenceData.address}</small>
+                        <div class="small">Radius: ${fenceData.radius} ${fenceData.radiusUnit}</div>
+                    </div>
                 `);
+
+                layers.push(circle);
+                layers.push(marker);
             });
 
-            const icons = this.createIcons();
-            const employees = mapData.employees;
-
-            employees.inZone.forEach(emp => {
-                L.marker(emp.position, { icon: icons.inZone })
-                    .addTo(this.map)
-                    .bindPopup(`<strong>${emp.name}</strong><br>Status: <span class="text-success">In-Zone</span>`);
-            });
-
-            employees.outZone.forEach(emp => {
-                L.marker(emp.position, { icon: icons.outZone })
-                    .addTo(this.map)
-                    .bindPopup(`<strong>${emp.name}</strong><br>Status: <span class="text-warning">Out-of-Zone</span>`);
-            });
-
-            employees.vpn.forEach(emp => {
-                L.marker(emp.position, { icon: icons.vpn })
-                    .addTo(this.map)
-                    .bindPopup(`<strong>${emp.name}</strong><br>Status: <span class="text-danger">VPN/Proxy Detected</span>`);
-            });
-
-            const group = new L.featureGroup([
-                ...employees.inZone.map(e => L.marker(e.position)),
-                ...employees.outZone.map(e => L.marker(e.position)),
-                ...employees.vpn.map(e => L.marker(e.position))
-            ]);
-            this.map.fitBounds(group.getBounds().pad(0.1));
-        },
-
-        /**
-         * Create custom icons for markers
-         */
-        createIcons() {
-            return {
-                inZone: L.divIcon({
-                    className: 'custom-marker in-zone-marker',
-                    html: '<div class="marker-pin in-zone"></div>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 20]
-                }),
-                outZone: L.divIcon({
-                    className: 'custom-marker out-zone-marker',
-                    html: '<div class="marker-pin out-zone"></div>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 20]
-                }),
-                vpn: L.divIcon({
-                    className: 'custom-marker vpn-marker',
-                    html: '<div class="marker-pin vpn"></div>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 20]
-                })
-            };
+            if (layers.length) {
+                const group = new L.featureGroup(layers);
+                this.map.fitBounds(group.getBounds().pad(0.1));
+            }
         }
     };
 
     // ============================================
     // GLOBAL FUNCTIONS (for inline handlers)
     // ============================================
-    window.viewLeaveReason = function(id, name, initials, leaveType, requestDate, startDate, endDate, reason) {
+    window.viewLeaveReason = function (id, name, initials, leaveType, requestDate, startDate, endDate, reason) {
         DashboardApprovals.viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason);
     };
 
-    window.closeSlideOver = function() {
+    window.closeSlideOver = function () {
         DashboardApprovals.closeSlideOver();
     };
 
-    window.approveFromSlide = function() {
+    window.approveFromSlide = function () {
         DashboardApprovals.approveFromSlide();
     };
 
-    window.rejectFromSlide = function() {
+    window.rejectFromSlide = function () {
         DashboardApprovals.rejectFromSlide();
     };
 
@@ -899,13 +1001,15 @@
         DashboardCharts.updateWorkforceStrength();
 
         // Initialize approval management
-        DashboardApprovals.initBulkApprove();
-        DashboardApprovals.initApprovalButtons();
+        DashboardApprovals.loadPendingApprovals();
         DashboardApprovals.initSlideOverKeyboard();
-        DashboardApprovals.updatePendingCount();
 
         // Initialize exception management
         DashboardExceptions.initNotifyButtons();
+
+        // Initialize upcoming holidays
+        DashboardHolidays.load(7);
+        DashboardHolidays.initPeriodButtons();
 
         // Initialize geofence map
         setTimeout(() => DashboardGeofence.initialize(), 500);

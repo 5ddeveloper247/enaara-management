@@ -12,6 +12,26 @@
 /* ============================================
    MODAL STYLING
    ============================================ */
+   #createPolicyModal .modal-dialog {
+    max-width: 900px;
+}
+
+#createPolicyModal .modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#createPolicyModal .modal-body {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+    padding-right: 1rem;
+}
+
+#createPolicyModal .modal-footer {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+}
+
 .modal-header.bg-main {
     background-color: var(--main-color) !important;
     color: white !important;

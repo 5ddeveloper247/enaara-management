@@ -36,7 +36,7 @@
             </div>
             <div class="col-md-6 text-end">
                 <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
-                    data-bs-target="#quickRequestCanvas">
+                    data-bs-target="#addLeaveRequestCanvas">
                     <i class="bi bi-plus-circle me-1"></i>Quick Request
                 </button>
             </div>
@@ -51,69 +51,22 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-4">
-                            <!-- Annual Leave -->
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="donut-chart-container">
-                                        <canvas id="annualLeaveChart"></canvas>
-                                        <div class="chart-center-text">
-                                            <div class="chart-number" id="annualUsed">5</div>
-                                            <div class="chart-label">Used</div>
-                                            <div class="chart-total">of 30</div>
+                            @foreach ($personalQuota as $quota)
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="donut-chart-container">
+                                            <canvas id="leaveChart_{{ $quota['id'] }}"></canvas>
+                                            <div class="chart-center-text">
+                                                <div class="chart-number">{{ $quota['used'] }}</div>
+                                                <div class="chart-label">Used</div>
+                                                <div class="chart-total">of {{ $quota['total'] }}</div>
+                                            </div>
                                         </div>
+                                        <h6 class="mt-3 mb-1">{{ $quota['type'] }}</h6>
+                                        <small class="text-muted">{{ $quota['remaining'] }} days remaining</small>
                                     </div>
-                                    <h6 class="mt-3 mb-1">Annual Leave</h6>
-                                    <small class="text-muted">25 days remaining</small>
                                 </div>
-                            </div>
-
-                            <!-- Sick Leave -->
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="donut-chart-container">
-                                        <canvas id="sickLeaveChart"></canvas>
-                                        <div class="chart-center-text">
-                                            <div class="chart-number" id="sickUsed">2</div>
-                                            <div class="chart-label">Used</div>
-                                            <div class="chart-total">of 15</div>
-                                        </div>
-                                    </div>
-                                    <h6 class="mt-3 mb-1">Sick Leave</h6>
-                                    <small class="text-muted">13 days remaining</small>
-                                </div>
-                            </div>
-
-                            <!-- Casual Leave -->
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="donut-chart-container">
-                                        <canvas id="casualLeaveChart"></canvas>
-                                        <div class="chart-center-text">
-                                            <div class="chart-number" id="casualUsed">2</div>
-                                            <div class="chart-label">Used</div>
-                                            <div class="chart-total">of 10</div>
-                                        </div>
-                                    </div>
-                                    <h6 class="mt-3 mb-1">Casual Leave</h6>
-                                    <small class="text-muted">8 days remaining</small>
-                                </div>
-                            </div>
-
-                            <!-- Compensatory Off -->
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="donut-chart-container">
-                                        <canvas id="compOffChart"></canvas>
-                                        <div class="chart-center-text">
-                                            <div class="chart-number" id="compOffUsed">0</div>
-                                            <div class="chart-label">Used</div>
-                                            <div class="chart-total">of 5</div>
-                                        </div>
-                                    </div>
-                                    <h6 class="mt-3 mb-1">Compensatory Off</h6>
-                                    <small class="text-muted">5 days available</small>
-                                </div>
-                            </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -122,36 +75,13 @@
 
         <div class="row g-4">
             <!-- Leave Timeline -->
-            <div class="col-md-8">
+            <div class="col-md-12"> <!-- Expanded to full width if needed, or keep 8 -->
                 <div class="card border-0 rounded-4">
                     <div class="card-header bg-transparent border-0 p-4">
                         <h6 class="mb-0 fw-semibold">Leave Timeline</h6>
                     </div>
                     <div class="card-body">
-                        @include('admin.my-leaves.leave_timeline')
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sidebar: Upcoming Holidays & Proxy -->
-            <div class="col-md-4">
-                <!-- Upcoming Holidays -->
-                <div class="card border-0 rounded-4 mb-4">
-                    <div class="card-header bg-transparent border-0 p-4">
-                        <h6 class="mb-0 fw-semibold">Upcoming Holidays</h6>
-                    </div>
-                    <div class="card-body">
-                        @include('admin.my-leaves.upcoming_holidays')
-                    </div>
-                </div>
-
-                <!-- Proxy Assignment -->
-                <div class="card border-0 rounded-4">
-                    <div class="card-header bg-transparent border-0 p-4">
-                        <h6 class="mb-0 fw-semibold">Proxy Assignment</h6>
-                    </div>
-                    <div class="card-body">
-                        @include('admin.my-leaves.proxy_assignment')
+                        <div id="leaveTimeline"></div>
                     </div>
                 </div>
             </div>
@@ -159,7 +89,7 @@
     </div>
 
     <!-- Quick Request Canvas -->
-    @include('admin.my-leaves.quick_request_canvas')
+    @include('admin.leave-requests.add_leave_request_canvas')
 
     <!-- Leave Detail Canvas -->
     @include('admin.my-leaves.leave_detail_canvas')
@@ -170,76 +100,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <script>
-        // Sample leave data
-        const myLeaves = {
-            annual: { used: 5, total: 30, remaining: 25 },
-            sick: { used: 2, total: 15, remaining: 13 },
-            casual: { used: 2, total: 10, remaining: 8 },
-            compOff: { used: 0, total: 5, remaining: 5 }
-        };
-
-        const leaveHistory = [
-            {
-                id: 1,
-                type: 'annual',
-                typeLabel: 'Annual Leave',
-                startDate: '2024-01-15',
-                endDate: '2024-01-19',
-                days: 5,
-                reason: 'Family vacation',
-                status: 'approved',
-                statusLabel: 'Approved',
-                category: 'past'
-            },
-            {
-                id: 2,
-                type: 'sick',
-                typeLabel: 'Sick Leave',
-                startDate: '2024-01-25',
-                endDate: '2024-01-26',
-                days: 2,
-                reason: 'Medical appointment',
-                status: 'approved',
-                statusLabel: 'Approved',
-                category: 'past'
-            },
-            {
-                id: 3,
-                type: 'casual',
-                typeLabel: 'Casual Leave',
-                startDate: '2024-02-05',
-                endDate: '2024-02-05',
-                days: 1,
-                reason: 'Personal work',
-                status: 'approved',
-                statusLabel: 'Approved',
-                category: 'past'
-            },
-            {
-                id: 4,
-                type: 'annual',
-                typeLabel: 'Annual Leave',
-                startDate: '2024-02-20',
-                endDate: '2024-02-22',
-                days: 3,
-                reason: 'Long weekend',
-                status: 'pending',
-                statusLabel: 'Pending Approval',
-                category: 'upcoming'
-            },
-            {
-                id: 5,
-                type: 'annual',
-                typeLabel: 'Annual Leave',
-                startDate: '2024-03-10',
-                endDate: '2024-03-15',
-                days: 6,
-                reason: 'Holiday trip',
-                status: 'pending',
-                statusLabel: 'Pending Approval',
-                category: 'upcoming'
-            }
-        ];
+        // Real leave data from controller
+        const myLeaves = @json($personalQuota);
+        const leaveHistory = @json($personalHistory);
 
         const upcomingHolidays = [
             { date: '2024-02-14', name: 'Valentine\'s Day', type: 'public' },
@@ -259,99 +122,34 @@
         });
 
         function initializeDonutCharts() {
-            // Annual Leave Chart
-            const annualCtx = document.getElementById('annualLeaveChart');
-            if (annualCtx) {
-                annualLeaveChart = new Chart(annualCtx, {
-                    type: 'doughnut',
-                    data: {
-                        datasets: [{
-                            data: [5, 25], // Used, Remaining
-                            backgroundColor: ['#e6c673', '#e9ecef'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        cutout: '75%',
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                enabled: false
-                            }
-                        }
-                    }
-                });
-            }
+            myLeaves.forEach(quota => {
+                const ctx = document.getElementById(`leaveChart_${quota.id}`);
+                if (!ctx) return;
 
-            // Sick Leave Chart
-            const sickCtx = document.getElementById('sickLeaveChart');
-            if (sickCtx) {
-                sickLeaveChart = new Chart(sickCtx, {
-                    type: 'doughnut',
-                    data: {
-                        datasets: [{
-                            data: [2, 13], // Used, Remaining
-                            backgroundColor: ['#dc3545', '#e9ecef'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        cutout: '75%',
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                enabled: false
-                            }
-                        }
-                    }
-                });
-            }
+                const colors = {
+                    'annual': '#e6c673',
+                    'sick': '#dc3545',
+                    'casual': '#0dcaf0',
+                    'comp': '#ffc107',
+                    'maternity': '#fd7e14',
+                    'unpaid': '#6c757d'
+                };
 
-            // Casual Leave Chart
-            const casualCtx = document.getElementById('casualLeaveChart');
-            if (casualCtx) {
-                casualLeaveChart = new Chart(casualCtx, {
-                    type: 'doughnut',
-                    data: {
-                        datasets: [{
-                            data: [2, 8], // Used, Remaining
-                            backgroundColor: ['#0dcaf0', '#e9ecef'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        cutout: '75%',
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                enabled: false
-                            }
-                        }
+                const typeLower = quota.type.toLowerCase();
+                let color = '#6c757d'; // default
+                for (const [key, val] of Object.entries(colors)) {
+                    if (typeLower.includes(key)) {
+                        color = val;
+                        break;
                     }
-                });
-            }
+                }
 
-            // Compensatory Off Chart
-            const compOffCtx = document.getElementById('compOffChart');
-            if (compOffCtx) {
-                compOffChart = new Chart(compOffCtx, {
+                new Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         datasets: [{
-                            data: [0, 5], // Used, Remaining
-                            backgroundColor: ['#ffc107', '#e9ecef'],
+                            data: [quota.used, quota.remaining],
+                            backgroundColor: [color, '#e9ecef'],
                             borderWidth: 0
                         }]
                     },
@@ -360,16 +158,12 @@
                         responsive: true,
                         maintainAspectRatio: true,
                         plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                enabled: false
-                            }
+                            legend: { display: false },
+                            tooltip: { enabled: false }
                         }
                     }
                 });
-            }
+            });
         }
 
         function populateLeaveTimeline() {
@@ -433,7 +227,7 @@
             item.addEventListener('click', () => showLeaveDetails(leave));
 
             const statusBadge = getStatusBadge(leave.status);
-            const typeBadge = getLeaveTypeBadge(leave.type);
+            const typeBadge = getLeaveTypeBadge(leave.type, leave.typeLabel);
 
             item.innerHTML = `
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -508,14 +302,15 @@
             return badges[status] || badges['pending'];
         }
 
-        function getLeaveTypeBadge(type) {
+        function getLeaveTypeBadge(type, label) {
             const badges = {
-                'annual': '<span class="badge bg-primary">Annual Leave</span>',
-                'sick': '<span class="badge bg-danger">Sick Leave</span>',
-                'casual': '<span class="badge bg-info text-dark">Casual Leave</span>',
-                'comp-off': '<span class="badge bg-warning text-dark">Comp-Off</span>'
+                'annual': 'bg-primary',
+                'sick': 'bg-danger',
+                'casual': 'bg-info text-dark',
+                'comp-off': 'bg-warning text-dark'
             };
-            return badges[type] || '<span class="badge bg-secondary">Other</span>';
+            const cls = badges[type] || 'bg-secondary';
+            return `<span class="badge ${cls}">${label || 'Other'}</span>`;
         }
 
         function formatDate(dateString) {
@@ -525,7 +320,7 @@
 
         function showLeaveDetails(leave) {
             // Populate detail canvas
-            document.getElementById('detailLeaveType').innerHTML = getLeaveTypeBadge(leave.type);
+            document.getElementById('detailLeaveType').innerHTML = getLeaveTypeBadge(leave.type, leave.typeLabel);
             document.getElementById('detailStartDate').textContent = formatDate(leave.startDate);
             document.getElementById('detailEndDate').textContent = formatDate(leave.endDate);
             document.getElementById('detailDays').textContent = leave.days;

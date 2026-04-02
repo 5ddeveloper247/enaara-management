@@ -8,6 +8,24 @@
     </div>
     <div class="offcanvas-body">
         <form id="addFenceForm">
+            <!-- SBU Selection Section -->
+            <div class="mb-4">
+                <h6 class="fw-semibold mb-3 small">
+                    <i class="bi bi-building me-2"></i>Unit Mapping
+                </h6>
+                <div class="mb-3">
+                    <label for="fenceSbu" class="form-label fw-semibold small text-white">Select SBU <span class="text-danger">*</span></label>
+                    <select class="form-select" id="fenceSbu" required>
+                        <option value="">Choose an SBU...</option>
+                        @foreach($sbus as $sbu)
+                            <option value="{{ $sbu->id }}">{{ $sbu->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <hr class="my-4" style="border-color: #ffffffab !important">
+
             <!-- Site Information Section -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
@@ -87,7 +105,7 @@
             <hr class="my-4" style="border-color: #ffffffab !important">
 
             <!-- Assignment Section -->
-            <div class="mb-4">
+            {{-- <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
                     <i class="bi bi-people me-2"></i>Assign to Groups
                 </h6>
@@ -130,7 +148,7 @@
                     </div>
                     <small class="opacity-75 text-white">Select which departments are restricted to this fence</small>
                 </div>
-            </div>
+            </div> --}}
 
             <hr class="my-4" style="border-color: #ffffffab !important">
 
@@ -200,14 +218,42 @@ document.addEventListener('DOMContentLoaded', function() {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
             updateLocation(lat, lng);
+            reverseGeocode(lat, lng);
         });
+    }
+
+    function reverseGeocode(lat, lng) {
+        // Use Nominatim API to get address from coordinates (Reverse Geocoding)
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    document.getElementById('fenceAddress').value = data.display_name;
+                }
+            })
+            .catch(error => console.error('Error in reverse geocoding:', error));
     }
 
     // Drop pin button
     document.getElementById('dropPinBtn')?.addEventListener('click', function() {
-        // Focus on main map for pin dropping
-        if (window.geofencingMap) {
-            alert('Click on the main map to drop a pin');
+        if (mapContainer) {
+            mapContainer.style.cursor = 'crosshair';
+            // Also draw attention to the preview map
+            mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Show a temporary tooltip or alert if needed
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="bi bi-geo-alt me-1"></i>Click Map Above';
+            this.classList.replace('btn-outline-light', 'btn-light');
+            this.classList.replace('text-white', 'text-dark');
+            
+            setTimeout(() => {
+                this.innerHTML = originalText;
+                this.classList.replace('btn-light', 'btn-outline-light');
+                this.classList.add('text-white');
+            }, 3000);
+        } else {
+            Swal.fire('Unavailable', 'Map is not available right now.', 'info');
         }
     });
 
@@ -224,11 +270,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Search address (simplified - would use geocoding API in production)
+    // Search address using OpenStreetMap Nominatim API (Free, no API key required)
     document.getElementById('searchAddressBtn')?.addEventListener('click', function() {
         const address = document.getElementById('fenceAddress').value;
-        // In production, use a geocoding service like Nominatim or Google Geocoding API
-        console.log('Searching for:', address);
+        if (!address) {
+            Swal.fire('Warning', 'Please enter an address to search.', 'warning');
+            return;
+        }
+
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        btn.disabled = true;
+
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lng = parseFloat(data[0].lon);
+                    updateLocation(lat, lng);
+                    document.getElementById('fenceAddress').value = data[0].display_name;
+                } else {
+                    Swal.fire('Not Found', 'Location not found. Please try a different search term.', 'warning');
+                }
+            })
+            .catch(error => {
+                console.error('Error during geocoding:', error);
+                Swal.fire('Error', 'Error searching for location. Please try again.', 'error');
+            })
+            .finally(() => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            });
     });
 
     function updateLocation(lat, lng) {
@@ -272,21 +346,45 @@ document.addEventListener('DOMContentLoaded', function() {
                     radius: document.getElementById('fenceRadius').value,
                     radiusUnit: document.getElementById('fenceRadiusUnit').value,
                     type: document.getElementById('fenceType').value,
-                    organization: document.getElementById('fenceOrganization').value,
-                    departments: Array.from(document.querySelectorAll('input[name="fenceDepartments"]:checked')).map(cb => cb.value),
-                    antiSpoofing: document.getElementById('enableAntiSpoofing').checked,
-                    offlineSync: document.getElementById('enableOfflineSync').checked,
-                    autoCheckIn: document.getElementById('enableAutoCheckIn').checked
+                    sbu_id: document.getElementById('fenceSbu').value,
+                    antiSpoofing: document.getElementById('enableAntiSpoofing').checked ? 1 : 0,
+                    offlineSync: document.getElementById('enableOfflineSync').checked ? 1 : 0,
+                    autoCheckIn: document.getElementById('enableAutoCheckIn').checked ? 1 : 0,
+                    _token: '{{ csrf_token() }}'
                 };
                 
-                console.log('Fence data:', formData);
-                // TODO: Implement API call to save fence
-                
-                // Close offcanvas
-                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('addFenceCanvas'));
-                if (offcanvas) {
-                    offcanvas.hide();
-                }
+                const originalHtml = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+                saveBtn.disabled = true;
+
+                $.ajax({
+                    url: '{{ route("admin.geofencing.store") }}',
+                    method: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            // Close offcanvas
+                            const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('addFenceCanvas'));
+                            if (offcanvas) offcanvas.hide();
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: response.message || 'Geofence created successfully.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        saveBtn.innerHTML = originalHtml;
+                        saveBtn.disabled = false;
+                        const err = xhr.responseJSON?.message || 'Error occurred while saving the geofence.';
+                        Swal.fire('Error', err, 'error');
+                    }
+                });
             } else if (form) {
                 form.reportValidity();
             }

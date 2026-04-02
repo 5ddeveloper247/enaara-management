@@ -4,6 +4,7 @@
             <th>Name</th>
             <th>Grace (min)</th>
             <th>Organization</th>
+            <th>Department</th>
             <th>Status</th>
             <th class="text-end">Actions</th>
         </tr>
@@ -23,6 +24,13 @@
                 @endif
             </td>
             <td>
+                @if($am->department)
+                    <span class="badge px-3 rounded-1 bg-info">{{ $am->department->name }}</span>
+                @else
+                    <span class="text-muted">—</span>
+                @endif
+            </td>
+            <td>
                 <div class="form-check form-switch">
                     <input class="form-check-input status-toggle" type="checkbox" {{ $am->is_active ? 'checked' : '' }} data-attendance-mode-id="{{ $am->id }}">
                 </div>
@@ -34,6 +42,7 @@
                         data-attendance-mode-name="{{ e($am->name) }}"
                         data-grace-minutes="{{ $am->grace_minutes }}"
                         data-organization-name="{{ $am->organization ? e($am->organization->name) : '' }}"
+                        data-department-name="{{ $am->department ? e($am->department->name) : '' }}"
                         title="View">
                         <i class="bi bi-eye"></i>
                     </button>
@@ -50,7 +59,7 @@
         </tr>
         @empty
         <tr>
-            <td colspan="5" class="text-center text-muted py-4">No attendance modes found.</td>
+            <td colspan="6" class="text-center text-muted py-4">No attendance modes found.</td>
         </tr>
         @endforelse
     </tbody>

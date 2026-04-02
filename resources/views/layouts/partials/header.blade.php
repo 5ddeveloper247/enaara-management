@@ -55,23 +55,63 @@
                 </ul>
             </div>
             
+            @php
+                $unreadNotifications = Auth::user()?->unreadNotifications ?? collect();
+                $unreadCount = $unreadNotifications->count();
+            @endphp
             <div class="dropdown">
 
                 <button class="btn btn-link text-decoration-none text-white bg-main rounded-circle position-relative d-flex align-items-center justify-content-center border-0" type="button" data-bs-toggle="dropdown" style="width: 50px; height: 50px;">
                     <i class="bi bi-bell"></i>
-                    <span class="badge bg-danger rounded-pill position-absolute" style="top: -5px; right: -5px; font-size: 0.65rem; min-width: 18px; height: 18px;">3</span>
+                    @if($unreadCount > 0)
+                        <span class="badge bg-danger rounded-pill position-absolute" style="top: -5px; right: -5px; font-size: 0.65rem; min-width: 18px; height: 18px;">
+                            {{ $unreadCount > 9 ? '9+' : $unreadCount }}
+                        </span>
+                    @endif
                 </button>
 
-                <ul class="dropdown-menu dropdown-menu-end">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-0 overflow-hidden" style="width: 320px; border-radius: 12px;">
                     <li>
-                        <h6 class="dropdown-header">Notifications</h6>
+                        <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold">Notifications</h6>
+                            @if($unreadCount > 0)
+                                <form action="{{ route('admin.notifications.mark-all-read') }}" method="POST" class="m-0">
+                                    @csrf
+                                    <button type="submit" class="btn btn-link p-0 text-decoration-none small text-main" style="font-size: 0.75rem;">Mark all read</button>
+                                </form>
+                            @endif
+                        </div>
                     </li>
-                    <li><a class="dropdown-item" href="#">New user registered</a></li>
-                    <li><a class="dropdown-item" href="#">System update available</a></li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li><a class="dropdown-item" href="#">View all</a></li>
+                    <div class="notification-list" style="max-height: 350px; overflow-y: auto;">
+                        @forelse($unreadNotifications->take(10) as $notification)
+                            <li>
+                                <a class="dropdown-item py-3 border-bottom d-flex align-items-start gap-3" href="{{ route('admin.notifications.read', $notification->id) }}">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                                        <i class="bi bi-envelope-paper"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold text-wrap small" style="line-height: 1.2;">{{ $notification->data['title'] ?? 'Notification' }}</div>
+                                        <div class="text-muted small text-wrap mt-1" style="font-size: 0.75rem;">{{ $notification->data['message'] ?? '' }}</div>
+                                        <div class="text-main small mt-2" style="font-size: 0.7rem;">{{ $notification->created_at->diffForHumans() }}</div>
+                                    </div>
+                                </a>
+                            </li>
+                        @empty
+                            <li>
+                                <div class="p-4 text-center text-muted">
+                                    <i class="bi bi-bell-slash fs-3 d-block mb-2"></i>
+                                    <span class="small">No new notifications</span>
+                                </div>
+                            </li>
+                        @endforelse
+                    </div>
+                    @if($unreadCount > 0)
+                        <li>
+                            <a class="dropdown-item text-center py-2 bg-light small fw-semibold text-main" href="{{ route('admin.leave.request.index') }}">
+                                View All Requests
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </div>
             {{-- <div class="dropdown">

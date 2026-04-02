@@ -19,9 +19,12 @@ class AttendanceModelSeeder extends Seeder
         ];
 
         foreach ($orgIds as $orgId) {
+            $departmentIds = DB::table('departments')->where('organization_id', $orgId)->pluck('id')->toArray();
             foreach ($modes as $mode) {
+                $departmentId = !empty($departmentIds) ? ($departmentIds[array_rand($departmentIds)] ?? null) : null;
                 DB::table('attendance_models')->insert([
                     'organization_id' => $orgId,
+                    'department_id' => $departmentId,
                     'name' => $mode['name'],
                     'grace_minutes' => $mode['grace_minutes'],
                     'policy_json' => $mode['policy_json'],

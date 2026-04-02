@@ -41,14 +41,14 @@
                     <a href="{{ route('admin.role.edit', $r->id) }}" class="action-btn border-0 btn btn-success btn-sm" title="Edit">
                         <i class="bi bi-pencil text-white"></i>
                     </a>
-                    <button type="button" class="action-btn border-0 btn btn-danger btn-sm delete-role"
+                    <!-- <button type="button" class="action-btn border-0 btn btn-danger btn-sm delete-role"
                         data-bs-toggle="modal"
                         data-bs-target="#deleteRoleModal"
                         data-role-id="{{ $r->id }}"
                         data-role-name="{{ e($r->name ?? '') }}"
                         title="Delete">
                         <i class="bi bi-trash text-white"></i>
-                    </button>
+                    </button> -->
                 </div>
             </td>
         </tr>

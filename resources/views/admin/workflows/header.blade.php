@@ -38,20 +38,16 @@
         <label class="form-label small fw-semibold text-muted mb-2">Organization</label>
         <select class="form-select form-select-sm" id="filterOrganization">
             <option value="">All Organizations</option>
-            <option value="enaara">Enaara Developers</option>
-            <option value="msr-rawalpindi">Madison Square Mall Rawalpindi</option>
-            <option value="msr-lahore">Madison Square Mall Lahore</option>
-            <option value="royal-swiss">Royal Swiss Lahore</option>
             <option value="global">Global</option>
+            @foreach ($organizations as $org)
+                <option value="{{ $org->id }}">{{ $org->name }}</option>
+            @endforeach
         </select>
     </div>
     <div class="col-md-3">
         <label class="form-label small fw-semibold text-muted mb-2">Branch</label>
         <select class="form-select form-select-sm" id="filterBranch">
             <option value="">All Branches</option>
-            <option value="rawalpindi">Rawalpindi</option>
-            <option value="lahore">Lahore</option>
-            <option value="karachi">Karachi</option>
         </select>
     </div>
     <div class="col-12">
@@ -65,4 +61,3 @@
         </div>
     </div>
 </div>
-

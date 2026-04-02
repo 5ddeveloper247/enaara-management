@@ -152,34 +152,3 @@
         </div>
     </div>
 </div>
-
-<script>
-function showFenceDetails(fenceData) {
-    // Populate detail canvas
-    document.getElementById('detailFenceName').textContent = fenceData.name;
-    document.getElementById('detailFenceAddress').textContent = fenceData.address;
-    document.getElementById('detailFenceCoordinates').textContent = `${fenceData.lat}, ${fenceData.lng}`;
-    document.getElementById('detailFenceRadius').textContent = `${fenceData.radius} ${fenceData.radiusUnit}`;
-    
-    // Fence type badge
-    const typeBadge = fenceData.type === 'hard-lock' 
-        ? '<span class="badge bg-danger">Hard Lock</span>' 
-        : '<span class="badge bg-warning text-dark">Soft Lock</span>';
-    document.getElementById('detailFenceType').innerHTML = typeBadge;
-    
-    // Employee counts
-    document.getElementById('detailFenceInside').textContent = fenceData.insideCount;
-    document.getElementById('detailFenceOutside').textContent = fenceData.outsideCount;
-    
-    // Assigned groups
-    const groupsHtml = fenceData.assignedGroups.map(group => 
-        `<span class="badge bg-secondary me-2 mb-2">${group}</span>`
-    ).join('');
-    document.getElementById('detailFenceGroups').innerHTML = groupsHtml;
-    
-    // Open canvas
-    const canvas = new bootstrap.Offcanvas(document.getElementById('fenceDetailCanvas'));
-    canvas.show();
-}
-</script>
-

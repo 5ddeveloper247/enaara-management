@@ -45,8 +45,11 @@
                         title="View">
                         <i class="bi bi-eye"></i>
                     </button>
-                    <a href="{{ route('admin.module.edit', $m->id) }}" class="action-btn border-0 text-primary bg-primary-subtle" title="Edit">
+                    <!-- <a href="{{ route('admin.module.edit', $m->id) }}" class="action-btn border-0 text-primary bg-primary-subtle" title="Edit">
                         <i class="bi bi-pencil"></i>
+                    </a> -->
+                    <a href="{{ route('admin.module.edit', $m->id) }}" class="action-btn border-0 btn btn-success btn-sm" title="Edit">
+                        <i class="bi bi-pencil text-white"></i>
                     </a>
                     <button type="button" class="action-btn border-0 text-danger bg-danger-subtle delete-module"
                         data-bs-toggle="modal"

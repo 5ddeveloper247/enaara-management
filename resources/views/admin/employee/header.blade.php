@@ -1,19 +1,31 @@
 <!-- Employee Module Header -->
 <div class="row align-items-center p-4">
-    <div class="col-md-6">
+    <div class="d-flex align-items-center gap-2 col-md-6">
         <h5 class="mb-0">Employee Directory</h5>
+        <div class="d-flex mb-2">
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary active" id="btnTableView" onclick="switchView('table')"
+                    title="Table View">
+                    <i class="bi bi-table"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="btnGridView" onclick="switchView('grid')"
+                    title="Grid View">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                </button>
+            </div>
+        </div>
     </div>
+
     <div class="col-md-6 text-end">
         <button type="button" class="btn btn-outline-secondary me-2" id="exportBtn">
             <i class="bi bi-download me-1"></i>Export
         </button>
-        <button type="button" class="btn btn-primary bg-main border-0 me-2" data-bs-toggle="offcanvas"
-            data-bs-target="#addEmployeeCanvas" data-mode="add">
+        <a href="{{ route('admin.register.index') }}" class="btn btn-primary bg-main border-0 me-2">
             <i class="bi bi-person-plus me-1"></i>Add New Employee
-        </button>
+        </a>
         <div class="btn-group">
-            <button type="button" class="btn btn-outline-secondary dropdown-toggle"
-                data-bs-toggle="dropdown" aria-expanded="false" id="filterDropdownBtn">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
+                aria-expanded="false" id="filterDropdownBtn">
                 <i class="bi bi-funnel me-1"></i>Filter
             </button>
             <ul class="dropdown-menu dropdown-menu-end p-3" style="min-width: 320px;">
@@ -62,8 +74,7 @@
                 </li>
                 <li>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary flex-fill"
-                            id="clearFiltersBtn">
+                        <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="clearFiltersBtn">
                             <i class="bi bi-x-circle me-1"></i>Clear
                         </button>
                         <button type="button" class="btn btn-sm btn-primary bg-main border-0 flex-fill"
@@ -76,4 +87,3 @@
         </div>
     </div>
 </div>
-

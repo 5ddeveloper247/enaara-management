@@ -74,10 +74,12 @@
         <!-- Action Buttons -->
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
+            <button type="button" class="btn btn-outline-danger border-1" id="deleteWorkflowBtn">
+                <i class="bi bi-trash me-1"></i>Delete
+            </button>
             <button type="button" class="btn btn-light text-dark border-0" id="editWorkflowBtn">
                 <i class="bi bi-pencil me-1"></i>Edit Workflow
             </button>
         </div>
     </div>
 </div>
-

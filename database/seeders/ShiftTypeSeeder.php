@@ -19,9 +19,12 @@ class ShiftTypeSeeder extends Seeder
         ];
 
         foreach ($orgIds as $orgId) {
+            $departmentIds = DB::table('departments')->where('organization_id', $orgId)->pluck('id')->toArray();
             foreach ($shifts as $shift) {
+                $departmentId = !empty($departmentIds) ? ($departmentIds[array_rand($departmentIds)] ?? null) : null;
                 DB::table('shift_types')->insert([
                     'organization_id' => $orgId,
+                    'department_id' => $departmentId,
                     'name' => $shift['name'],
                     'code' => $shift['code'],
                     'start_time' => $shift['start_time'],

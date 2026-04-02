@@ -11,6 +11,7 @@ class ShiftType extends Model
 
     protected $fillable = [
         'organization_id',
+        'department_id',
         'name',
         'code',
         'start_time',
@@ -28,5 +29,10 @@ class ShiftType extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 }

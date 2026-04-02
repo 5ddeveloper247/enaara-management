@@ -7,7 +7,8 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-        <form id="addEmployeeForm">
+        <form id="addEmployeeForm" method="POST" action="{{ route('admin.employee.store') }}">
+    @csrf
             <!-- Personal Information -->
             <div class="mb-4">
                 <h6 class="mb-3 fw-semibold small">
@@ -42,25 +43,24 @@
                     <i class="bi bi-briefcase me-2"></i>Employment Information
                 </h6>
                 <div class="mb-3">
-                    <label for="employeeOrganization" class="form-label fw-semibold small text-white">SBU <span class="text-danger">*</span></label>
-                    <select class="form-select" id="employeeOrganization" name="organization" required>
+                    <label for="employeeOrganization" class="form-label fw-semibold small text-white">Organization <span class="text-danger">*</span></label>
+                    <select class="form-select" id="employeeOrganization" name="organization_id" required>
+                        <option value="">Select Organization</option>
+                        @foreach($organizations as $org)
+                            <option value="{{ $org->id }}">{{ $org->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="employeeSbu" class="form-label fw-semibold small text-white">SBU <span class="text-danger">*</span></label>
+                    <select class="form-select" id="employeeSbu" name="sbu_id" style="pointer-events:none;opacity:0.5;">
                         <option value="">Select SBU</option>
-                        <option value="Enaara Developers">Enaara Developers</option>
-                        <option value="Madison Square Mall Rawalpindi">Madison Square Mall Rawalpindi</option>
-                        <option value="Madison Square Mall Lahore">Madison Square Mall Lahore</option>
-                        <option value="Royal Swiss Lahore">Royal Swiss Lahore</option>
                     </select>
                 </div>
                 <div class="mb-3">
                     <label for="employeeDepartment" class="form-label fw-semibold small text-white">Department <span class="text-danger">*</span></label>
-                    <select class="form-select" id="employeeDepartment" name="department" required>
+                    <select class="form-select" id="employeeDepartment" name="department_id" style="pointer-events:none;opacity:0.5;">
                         <option value="">Select Department</option>
-                        <option value="Sales">Sales</option>
-                        <option value="IT">IT</option>
-                        <option value="HR">HR</option>
-                        <option value="Operations">Operations</option>
-                        <option value="Finance">Finance</option>
-                        <option value="Legal">Legal</option>
                     </select>
                 </div>
                 <div class="row g-3 mb-3">
@@ -139,7 +139,7 @@
                     <small class="opacity-75 text-white">Leave empty if not linked yet</small>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="syncBiometric" name="sync_biometric" value="1">
+                    <input class="form-check-input" type="checkbox" id="syncBiometric" name="sync_with_biometric" value="1">
                     <label class="form-check-label opacity-75 text-white" for="syncBiometric">
                         Sync with biometric system immediately
                     </label>
@@ -204,3 +204,58 @@
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const organizations = @json($organizations);
+    const orgSelect = document.getElementById('employeeOrganization');
+    const sbuSelect = document.getElementById('employeeSbu');
+    const deptSelect = document.getElementById('employeeDepartment');
+
+    const lockSelect = el => { el.style.pointerEvents='none'; el.style.opacity='0.5'; };
+    const unlockSelect = el => { el.style.pointerEvents=''; el.style.opacity=''; };
+
+    orgSelect.addEventListener('change', function() {
+        const orgId = this.value;
+        sbuSelect.innerHTML = '<option value="">Select SBU</option>';
+        deptSelect.innerHTML = '<option value="">Select Department</option>';
+        lockSelect(sbuSelect);
+        lockSelect(deptSelect);
+
+        if (orgId) {
+            const org = organizations.find(o => o.id == orgId);
+            if (org && org.sbus && org.sbus.length > 0) {
+                org.sbus.forEach(sbu => {
+                    const option = document.createElement('option');
+                    option.value = sbu.id;
+                    option.textContent = sbu.name;
+                    sbuSelect.appendChild(option);
+                });
+                unlockSelect(sbuSelect);
+            }
+        }
+    });
+
+    sbuSelect.addEventListener('change', function() {
+        const sbuId = this.value;
+        const orgId = orgSelect.value;
+        deptSelect.innerHTML = '<option value="">Select Department</option>';
+        lockSelect(deptSelect);
+
+        if (sbuId && orgId) {
+            const org = organizations.find(o => o.id == orgId);
+            if (org && org.sbus) {
+                const sbu = org.sbus.find(s => s.id == sbuId);
+                if (sbu && sbu.departments && sbu.departments.length > 0) {
+                    sbu.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        deptSelect.appendChild(option);
+                    });
+                    unlockSelect(deptSelect);
+                }
+            }
+        }
+    });
+});
+</script>

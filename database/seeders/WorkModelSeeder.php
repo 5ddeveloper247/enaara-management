@@ -19,9 +19,12 @@ class WorkModelSeeder extends Seeder
         ];
 
         foreach ($orgIds as $orgId) {
+            $departmentIds = DB::table('departments')->where('organization_id', $orgId)->pluck('id')->toArray();
             foreach ($models as $model) {
+                $departmentId = !empty($departmentIds) ? ($departmentIds[array_rand($departmentIds)] ?? null) : null;
                 DB::table('work_models')->insert([
                     'organization_id' => $orgId,
+                    'department_id' => $departmentId,
                     'name' => $model['name'],
                     'code' => $model['code'],
                     'default_schedule_json' => $model['default_schedule_json'],
