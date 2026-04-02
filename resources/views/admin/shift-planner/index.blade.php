@@ -188,6 +188,78 @@
             $('#conflictCheckBtn').on('click', function() {
                 checkShiftConflicts();
             });
+
+            // Shift Management Filtering Logic
+            function applyShiftFilters() {
+                const activeFilters = {
+                    status: [],
+                    overtime: []
+                };
+
+                // Get status filters
+                if (!$('#filterShiftStatusAll').is(':checked')) {
+                    if ($('#filterShiftStatusActive').is(':checked')) activeFilters.status.push('active');
+                    if ($('#filterShiftStatusInactive').is(':checked')) activeFilters.status.push('inactive');
+                }
+
+                // Get overtime filters
+                if (!$('#filterOTAll').is(':checked')) {
+                    if ($('#filterOTAllowed').is(':checked')) activeFilters.overtime.push('true');
+                    if ($('#filterOTNotAllowed').is(':checked')) activeFilters.overtime.push('false');
+                }
+
+                $('.shift-card').each(function() {
+                    const card = $(this).closest('.col-md-6, .col-lg-4');
+                    const isActive = $(this).data('is-active'); // 'active' or 'inactive'
+                    const otAllowed = String($(this).data('overtime-allowed')); // 'true' or 'false'
+
+                    let showStatus = activeFilters.status.length === 0 || activeFilters.status.includes(isActive);
+                    let showOT = activeFilters.overtime.length === 0 || activeFilters.overtime.includes(otAllowed);
+
+                    if (showStatus && showOT) {
+                        card.show();
+                    } else {
+                        card.hide();
+                    }
+                });
+            }
+
+            // Handle Checkbox Group Logic
+            function bindCheckboxGroup(allId, specificIds) {
+                $(allId).on('change', function() {
+                    if (this.checked) {
+                        specificIds.forEach(id => $(id).prop('checked', false));
+                        applyShiftFilters();
+                    } else if (specificIds.every(id => !$(id).is(':checked'))) {
+                        // Prevent unchecking all
+                        $(this).prop('checked', true);
+                    }
+                });
+
+                specificIds.forEach(id => {
+                    $(id).on('change', function() {
+                        if (this.checked) {
+                            $(allId).prop('checked', false);
+                        } else if (specificIds.every(sid => !$(sid).is(':checked'))) {
+                            $(allId).prop('checked', true);
+                        }
+                        applyShiftFilters();
+                    });
+                });
+            }
+
+            bindCheckboxGroup('#filterShiftStatusAll', ['#filterShiftStatusActive', '#filterShiftStatusInactive']);
+            bindCheckboxGroup('#filterOTAll', ['#filterOTAllowed', '#filterOTNotAllowed']);
+
+            // Clear Filters Button
+            $('#clearShiftFiltersBtn').on('click', function() {
+                $('#filterShiftStatusAll, #filterOTAll').prop('checked', true);
+                $('#filterShiftStatusActive, #filterShiftStatusInactive, #filterOTAllowed, #filterOTNotAllowed').prop('checked', false);
+                applyShiftFilters();
+            });
+
+            // Initial Filter Run (just in case)
+            applyShiftFilters();
         });
 
         // Conflict checking function

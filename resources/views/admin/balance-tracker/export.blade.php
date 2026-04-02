@@ -32,55 +32,42 @@
     <table>
         <thead>
             <tr>
-                <th colspan="13" style="font-size: 16pt; font-weight: bold; text-align: center;">Employee Leave Balance Report</th>
+                <th colspan="{{ 4 + (count($leaveTypes) * 3) }}" style="font-size: 16pt; font-weight: bold; text-align: center;">Employee Leave Balance Report</th>
             </tr>
             <tr>
-                <th colspan="13" style="text-align: center;">Generated on: {{ now()->format('d M Y H:i') }}</th>
+                <th colspan="{{ 4 + (count($leaveTypes) * 3) }}" style="text-align: center;">Generated on: {{ now()->format('d M Y H:i') }}</th>
             </tr>
-            <tr><th colspan="13"></th></tr>
+            <tr><th colspan="{{ 4 + (count($leaveTypes) * 3) }}"></th></tr>
             <tr>
                 <th rowspan="2" class="header border">Employee Name</th>
                 <th rowspan="2" class="header border">Employee ID</th>
                 <th rowspan="2" class="header border">Organization</th>
                 <th rowspan="2" class="header border">Department</th>
-                <th class="bg-main text-white" colspan="3" style="border: 1px solid #012445; background-color: #012445; color: #ffffff;">Annual Leave</th>
-                <th class="bg-main text-white" colspan="3" style="border: 1px solid #012445; background-color: #012445; color: #ffffff;">Sick Leave</th>
-                <th class="bg-main text-white" colspan="3" style="border: 1px solid #012445; background-color: #012445; color: #ffffff;">Casual Leave</th>
+                @foreach($leaveTypes as $type)
+                    <th class="bg-main text-white" colspan="3" style="border: 1px solid #012445; background-color: #012445; color: #ffffff;">{{ $type->name }}</th>
+                @endforeach
             </tr>
             <tr style="background-color: #f8f9fa;">
-                <th style="border: 1px solid #dee2e6;">Earned</th>
-                <th style="border: 1px solid #dee2e6;">Used</th>
-                <th style="border: 1px solid #dee2e6;">Remaining</th>
-                <th style="border: 1px solid #dee2e6;">Earned</th>
-                <th style="border: 1px solid #dee2e6;">Used</th>
-                <th style="border: 1px solid #dee2e6;">Remaining</th>
-                <th style="border: 1px solid #dee2e6;">Earned</th>
-                <th style="border: 1px solid #dee2e6;">Used</th>
-                <th style="border: 1px solid #dee2e6;">Remaining</th>
+                @foreach($leaveTypes as $type)
+                    <th style="border: 1px solid #dee2e6;">Earned</th>
+                    <th style="border: 1px solid #dee2e6;">Used</th>
+                    <th style="border: 1px solid #dee2e6;">Remaining</th>
+                @endforeach
             </tr>
         </thead>
         <tbody>
             @foreach($balances as $employee)
                 <tr>
-                    <td style="border: 1px solid #dee2e6;">{{ $employee['employeeId'] }}</td>
                     <td style="border: 1px solid #dee2e6;"><strong>{{ $employee['employeeName'] }}</strong></td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['employeeId'] }}</td>
                     <td style="border: 1px solid #dee2e6;">{{ $employee['organization'] }}</td>
                     <td style="border: 1px solid #dee2e6;">{{ $employee['department'] }}</td>
                     
-                    {{-- Annual --}}
-                    <td style="border: 1px solid #dee2e6;">{{ $employee['annual']['earned'] }}</td>
-                    <td style="border: 1px solid #dee2e6;">{{ $employee['annual']['used'] }}</td>
-                    <td style="border: 1px solid #dee2e6; color: #198754; font-weight: bold;">{{ $employee['annual']['remaining'] }}</td>
-                    
-                    {{-- Sick --}}
-                    <td style="border: 1px solid #dee2e6;">{{ $employee['sick']['earned'] }}</td>
-                    <td style="border: 1px solid #dee2e6;">{{ $employee['sick']['used'] }}</td>
-                    <td style="border: 1px solid #dee2e6; color: #198754; font-weight: bold;">{{ $employee['sick']['remaining'] }}</td>
-                    
-                    {{-- Casual --}}
-                    <td style="border: 1px solid #dee2e6;">{{ $employee['casual']['earned'] }}</td>
-                    <td style="border: 1px solid #dee2e6;">{{ $employee['casual']['used'] }}</td>
-                    <td style="border: 1px solid #dee2e6; color: #198754; font-weight: bold;">{{ $employee['casual']['remaining'] }}</td>
+                    @foreach($leaveTypes as $type)
+                        <td style="border: 1px solid #dee2e6;">{{ $employee['quotas'][$type->id]['earned'] }}</td>
+                        <td style="border: 1px solid #dee2e6;">{{ $employee['quotas'][$type->id]['used'] }}</td>
+                        <td style="border: 1px solid #dee2e6; color: #198754; font-weight: bold;">{{ $employee['quotas'][$type->id]['remaining'] }}</td>
+                    @endforeach
                 </tr>
             @endforeach
         </tbody>
