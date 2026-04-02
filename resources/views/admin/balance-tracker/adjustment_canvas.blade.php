@@ -34,23 +34,23 @@
                 <h6 class="fw-semibold mb-3 small">
                     <i class="bi bi-wallet2 me-2"></i>Current Balances
                 </h6>
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-4">
-                        <div class="p-3 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
-                            <small class="opacity-75 text-white d-block mb-2">Annual</small>
-                            <div class="fw-bold fs-5" id="currentAnnualBalance">-</div>
+                        <div class="p-2 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
+                            <small class="opacity-75 text-white d-block mb-1" style="font-size: 10px;">Annual</small>
+                            <div class="fw-bold" style="font-size: 14px;" id="currentAnnualBalance">0.0</div>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="p-3 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
-                            <small class="opacity-75 text-white d-block mb-2">Sick</small>
-                            <div class="fw-bold fs-5" id="currentSickBalance">-</div>
+                        <div class="p-2 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
+                            <small class="opacity-75 text-white d-block mb-1" style="font-size: 10px;">Sick</small>
+                            <div class="fw-bold" style="font-size: 14px;" id="currentSickBalance">0.0</div>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="p-3 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
-                            <small class="opacity-75 text-white d-block mb-2">Casual</small>
-                            <div class="fw-bold fs-5" id="currentCasualBalance">-</div>
+                        <div class="p-2 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
+                            <small class="opacity-75 text-white d-block mb-1" style="font-size: 10px;">Casual</small>
+                            <div class="fw-bold" style="font-size: 14px;" id="currentCasualBalance">0.0</div>
                         </div>
                     </div>
                 </div>
@@ -76,7 +76,7 @@
                 <!-- Leave Type -->
                 <div class="mb-3">
                     <label for="adjustLeaveType" class="form-label fw-semibold small text-white">Leave Type <span class="text-danger">*</span></label>
-                    <select class="form-select" id="adjustLeaveType" required>
+                    <select class="form-select" id="adjustLeaveType" required name="leave_type">
                         <option value="">Select Leave Type</option>
                         <option value="annual">Annual Leave</option>
                         <option value="sick">Sick Leave</option>
@@ -88,29 +88,20 @@
                 <div class="mb-3">
                     <label for="adjustDays" class="form-label fw-semibold small text-white">Number of Days <span class="text-danger">*</span></label>
                     <input type="number" class="form-control" id="adjustDays" min="0.5" step="0.5" placeholder="e.g., 1, 2.5" required>
-                    <small class="opacity-75 text-white">Half days allowed (0.5, 1.5, etc.)</small>
                 </div>
 
                 <!-- Reason -->
                 <div class="mb-3">
                     <label for="adjustReason" class="form-label fw-semibold small text-white">Reason <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="adjustReason" rows="3" placeholder="Enter reason for adjustment (mandatory)" required></textarea>
-                    <small class="opacity-75 text-white">This reason will be logged in the audit trail</small>
+                    <textarea class="form-control" id="adjustReason" rows="3" placeholder="Enter reason for adjustment" required></textarea>
                 </div>
             </div>
 
-            <hr class="my-4" style="border-color: #ffffffab !important">
-
             <!-- Preview -->
             <div class="mb-4">
-                <h6 class="fw-semibold mb-3 small">
-                    <i class="bi bi-eye me-2"></i>Preview
-                </h6>
                 <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
-                    <div class="small">
-                        <div id="previewText" class="opacity-75 text-white">
-                            Select adjustment type and leave type to see preview
-                        </div>
+                    <div id="previewText" class="small opacity-75 text-white text-center">
+                        Select adjustment type and leave type to see preview
                     </div>
                 </div>
             </div>
@@ -126,19 +117,36 @@
     </div>
 </div>
 
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const adjustmentType = document.getElementById('adjustmentType');
         const adjustLeaveType = document.getElementById('adjustLeaveType');
         const adjustDays = document.getElementById('adjustDays');
         const previewText = document.getElementById('previewText');
-        const currentAnnualBalance = document.getElementById('currentAnnualBalance');
-        const currentSickBalance = document.getElementById('currentSickBalance');
-        const currentCasualBalance = document.getElementById('currentCasualBalance');
         const saveBtn = document.getElementById('saveAdjustmentBtn');
+        let currentEmployee = null;
+
+        window.showAdjustmentCanvas = function(employee) {
+            currentEmployee = employee;
+            $('#adjustEmployeeName').text(employee.employeeName);
+            $('#adjustEmployeeId').text(employee.employeeId);
+            $('#adjustEmployeeIdHidden').val(employee.id);
+
+            // Populate current balances
+            $('#currentAnnualBalance').text(employee.annual.remaining);
+            $('#currentSickBalance').text(employee.sick.remaining);
+            $('#currentCasualBalance').text(employee.casual.remaining);
+
+            $('#adjustmentForm')[0].reset();
+            updatePreview();
+
+            const canvas = new bootstrap.Offcanvas(document.getElementById('adjustmentCanvas'));
+            canvas.show();
+        }
 
         function updatePreview() {
-            if (!adjustLeaveType.value || !adjustDays.value) {
+            if (!adjustLeaveType.value || !adjustDays.value || !currentEmployee) {
                 previewText.textContent = 'Select adjustment type and leave type to see preview';
                 return;
             }
@@ -146,106 +154,54 @@
             const type = adjustmentType.value;
             const leaveType = adjustLeaveType.value;
             const days = parseFloat(adjustDays.value);
-            const currentBalance = parseFloat(
-                leaveType === 'annual' ? currentAnnualBalance.textContent :
-                leaveType === 'sick' ? currentSickBalance.textContent :
-                currentCasualBalance.textContent
-            );
+            const currentBalance = currentEmployee[leaveType].remaining;
 
             const newBalance = type === 'add' ? currentBalance + days : currentBalance - days;
-            const action = type === 'add' ? 'Adding to Quota' : 'Subtracting from Quota';
-            const leaveTypeLabel = leaveType === 'annual' ? 'Annual Leave' : leaveType === 'sick' ? 'Sick Leave' : 'Casual Leave';
+            const action = type === 'add' ? 'Adding to' : 'Subtracting from';
 
             previewText.innerHTML = `
-            <div class="mb-2"><strong>${action}</strong>: ${days} day(s) <strong>${type === 'add' ? 'to' : 'from'}</strong> <strong>${leaveTypeLabel}</strong></div>
-            <div class="mb-1">Current Remaining: <strong>${currentBalance}</strong></div>
-            <div>New Remaining: <strong class="${newBalance < 0 ? 'text-danger' : 'text-success'}">${newBalance.toFixed(1)}</strong></div>
-        `;
+                <div class="mb-1">${action} <strong>${leaveType}</strong> quota: <strong>${days} days</strong></div>
+                <div>New balance will be: <strong class="${newBalance < 0 ? 'text-danger' : 'text-success'}">${newBalance.toFixed(1)} days</strong></div>
+            `;
         }
 
         adjustmentType.addEventListener('change', updatePreview);
         adjustLeaveType.addEventListener('change', updatePreview);
         adjustDays.addEventListener('input', updatePreview);
 
-        // Reset form when offcanvas is hidden
-        const adjustmentCanvas = document.getElementById('adjustmentCanvas');
-        if (adjustmentCanvas) {
-            adjustmentCanvas.addEventListener('hidden.bs.offcanvas', function() {
-                document.getElementById('adjustmentForm').reset();
-                previewText.textContent = 'Select adjustment type and leave type to see preview';
-            });
-        }
-
-        // Handle form submission
         if (saveBtn) {
-            saveBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-
+            saveBtn.addEventListener('click', function() {
                 const form = document.getElementById('adjustmentForm');
-
-                if (form && form.checkValidity()) {
-
+                if (form.checkValidity()) {
                     const formData = {
-                        employeeId: document.getElementById('adjustEmployeeIdHidden').value,
-                        adjustmentType: adjustmentType.value,
-                        leaveType: adjustLeaveType.value,
-                        days: parseFloat(adjustDays.value),
-                        reason: document.getElementById('adjustReason').value
+                        employeeId: $('#adjustEmployeeIdHidden').val(),
+                        adjustmentType: $('#adjustmentType').val(),
+                        leave_type: $('#adjustLeaveType').val(),
+                        days: $('#adjustDays').val(),
+                        reason: $('#adjustReason').val(),
+                        _token: '{{ csrf_token() }}'
                     };
 
                     $.ajax({
                         url: "{{ route('admin.balance-tracker.adjust') }}",
                         method: "POST",
-                        data: {
-                            _token: "{{ csrf_token() }}",
-                            ...formData
-                        },
+                        data: formData,
                         success: function(response) {
                             if (response.success) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Success',
-                                    text: response.message
-                                }).then(() => {
-                                    location.reload();
-                                });
+                                Swal.fire('Success', response.message, 'success').then(() => location.reload());
                             } else {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error',
-                                    text: response.message
-                                });
+                                Swal.fire('Error', response.message, 'error');
                             }
                         },
                         error: function(xhr) {
-                            console.error('Adjustment error:', xhr);
-                            let errorMessage = 'Something went wrong!';
-                            
-                            try {
-                                const response = JSON.parse(xhr.responseText);
-                                if (response.errors) {
-                                    // Handle Laravel validation errors
-                                    errorMessage = Object.values(response.errors).flat().join('\n');
-                                } else if (response.message) {
-                                    // Handle direct error messages
-                                    errorMessage = response.message;
-                                }
-                            } catch (e) {
-                                console.error('Error parsing response:', e);
-                            }
-
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Adjustment Failed',
-                                text: errorMessage
-                            });
+                            Swal.fire('Error', 'Adjustment failed. Please try again.', 'error');
                         }
                     });
-
-                } else if (form) {
+                } else {
                     form.reportValidity();
                 }
             });
         }
     });
 </script>
+@endpush

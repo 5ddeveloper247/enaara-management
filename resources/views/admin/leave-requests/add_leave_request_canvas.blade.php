@@ -41,19 +41,16 @@
                 <!-- Leave Balance Display -->
                 <div class="p-3 rounded-3 border mb-3" style="border-color: #ffffff1a !important;">
                     <small class="opacity-75 text-white d-block mb-2">Current Leave Balance</small>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="small">Annual: <strong id="balanceAnnual">0</strong> days</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="small">Sick: <strong id="balanceSick">0</strong> days</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="small">Casual: <strong id="balanceCasual">0</strong> days</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="small">Comp-Off: <strong id="balanceCompOff">0</strong> days</div>
-                        </div>
+                    <div class="row g-2" id="leaveBalanceContainer">
+                        @isset($personalQuota)
+                            @foreach($personalQuota as $quota)
+                                <div class="col-6">
+                                    <div class="small">{{ $quota['type'] }}: <strong>{{ $quota['remaining'] }}</strong> days</div>
+                                </div>
+                            @endforeach
+                        @else
+                            <div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>
+                        @endisset
                     </div>
                 </div>
             </div>

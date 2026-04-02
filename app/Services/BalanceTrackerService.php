@@ -15,11 +15,11 @@ class BalanceTrackerService
     {
         try {
             $currentYear = Carbon::now()->year;
-            // Fetch all quotas for the current year, filtered by Org/Dept if provided
-            $quotas = EmployeeLeaveQuota::with(['employee.organization', 'employee.department', 'leaveType'])
-                ->where('year', $currentYear)
-                ->whereHas('employee', function ($query) use ($organization, $department) {
-                    $query->where('is_active', 1);
+
+            // Fetch all employees based on filter
+            $employees = Employee::with(['organization', 'department'])
+                ->where('is_active', 1)
+                ->where(function ($query) use ($organization, $department) {
                     if ($organization) {
                         $query->whereHas('organization', fn($q) => $q->where('name', $organization));
                     }
@@ -29,39 +29,15 @@ class BalanceTrackerService
                 })
                 ->get();
 
-            // Group quotas by employee to build the expected structure
-            $groupedByEmployee = $quotas->groupBy('employee_id');
+            // Fetch all quotas for the current year
+            $quotas = EmployeeLeaveQuota::with(['leaveType'])
+                ->where('year', $currentYear)
+                ->whereIn('employee_id', $employees->pluck('id'))
+                ->get()
+                ->groupBy('employee_id');
 
-            return $groupedByEmployee->map(function ($employeeQuotas) {
-                $employee = $employeeQuotas->first()->employee;
-                
-                $annual = ['earned' => 0, 'used' => 0, 'remaining' => 0];
-                $sick = ['earned' => 0, 'used' => 0, 'remaining' => 0];
-                $casual = ['earned' => 0, 'used' => 0, 'remaining' => 0];
-
-                foreach ($employeeQuotas as $quota) {
-                    $type = strtolower($quota->leaveType->name ?? '');
-
-                    // Strict matching: Only show if quota's Org/Dept matches employee's current Org/Dept
-                    if ($quota->leaveType->organization_id != $employee->organization_id || 
-                        $quota->leaveType->department_id != $employee->department_id) {
-                        continue;
-                    }
-
-                    $quotaData = [
-                        'earned' => (float) $quota->adjusted_quota,
-                        'used' => (float) $quota->used,
-                        'remaining' => (float) $quota->remaining_balance
-                    ];
-
-                    if (str_contains($type, 'annual')) {
-                        $annual = $quotaData;
-                    } elseif (str_contains($type, 'sick')) {
-                        $sick = $quotaData;
-                    } elseif (str_contains($type, 'casual') || str_contains($type, 'causal')) {
-                        $casual = $quotaData;
-                    }
-                }
+            $balances = $employees->map(function ($employee) use ($quotas) {
+                $employeeQuotas = $quotas->get($employee->id, collect());
 
                 return [
                     'id' => $employee->id,
@@ -70,19 +46,33 @@ class BalanceTrackerService
                     'joinDate' => $employee->join_date ?? $employee->created_at,
                     'organization' => $employee->organization->name ?? 'N/A',
                     'department' => $employee->department->name ?? 'N/A',
-                    'annual' => $annual,
-                    'sick' => $sick,
-                    'casual' => $casual,
+                    
+                    'annual' => $this->getQuotaData($employeeQuotas, 'annual'),
+                    'sick' => $this->getQuotaData($employeeQuotas, 'sick'),
+                    'casual' => $this->getQuotaData($employeeQuotas, 'casual'),
                 ];
-            })->values(); // Reset keys for JSON response
+            });
+
+            return $balances;
+
         } catch (\Exception $e) {
-            Log::error('Error fetching balance tracker data: ' . $e->getMessage(), [
-                'organization' => $organization,
-                'department' => $department,
-                'trace' => $e->getTraceAsString()
-            ]);
-            return collect([]); // Return empty collection on failure
+            Log::error('Error fetching balance tracker data: ' . $e->getMessage());
+            return collect();
         }
+    }
+
+    private function getQuotaData($employeeQuotas, $type)
+    {
+        $quota = $employeeQuotas->filter(function($q) use ($type) {
+            $name = strtolower($q->leaveType->name ?? '');
+            return str_contains($name, $type) || ($type === 'casual' && str_contains($name, 'causal'));
+        })->first();
+
+        return [
+            'earned' => $quota ? (float) $quota->adjusted_quota : 0,
+            'used' => $quota ? (float) $quota->used : 0,
+            'remaining' => $quota ? (float) $quota->remaining_balance : 0
+        ];
     }
 
     public function adjustBalance(array $data)
@@ -93,28 +83,20 @@ class BalanceTrackerService
                 $adjustmentType = $data['adjustmentType'];
                 $days = (float) $data['days'];
                 $reason = $data['reason'];
-                $leaveTypeString = strtolower($data['leaveType']);
+                $leaveTypeSearch = $data['leave_type'];
                 $currentYear = Carbon::now()->year;
                 $employee = Employee::with(['organization', 'department'])->findOrFail($employeeId);
-                
-                // Find correct leave type quota that matches employee's current Org/Dept
-                $targetQuota = EmployeeLeaveQuota::with('leaveType')
-                    ->where('employee_id', $employeeId)
+
+                // Find correct leave type quota
+                $targetQuota = EmployeeLeaveQuota::where('employee_id', $employeeId)
+                    ->whereHas('leaveType', function ($q) use ($leaveTypeSearch) {
+                        $q->where('name', 'like', '%' . $leaveTypeSearch . '%');
+                    })
                     ->where('year', $currentYear)
-                    ->whereHas('leaveType', function($query) use ($employee) {
-                        $query->where('organization_id', $employee->organization_id)
-                              ->where('department_id', $employee->department_id);
-                    })
-                    ->get()
-                    ->filter(function($quota) use ($leaveTypeString) {
-                        $type = strtolower($quota->leaveType->name ?? '');
-                        return str_contains($type, $leaveTypeString) || 
-                               ($leaveTypeString === 'casual' && str_contains($type, 'causal'));
-                    })
                     ->first();
 
                 if (!$targetQuota) {
-                    throw new \Exception("Could not locate active '{$leaveTypeString}' leave quota for this employee in their current department.");
+                    throw new \Exception("Could not locate active '{$leaveTypeSearch}' leave quota for this employee.");
                 }
 
                 $currentEarned = (float) $targetQuota->adjusted_quota;

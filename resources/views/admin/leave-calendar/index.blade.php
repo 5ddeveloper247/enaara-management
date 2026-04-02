@@ -497,7 +497,7 @@
                             empItem.innerHTML = `
                             <div class="user-avatar me-3">${emp.initials}</div>
                             <div class="flex-grow-1">
-                                <div class="small fw-semibold">${emp.name}</div>
+                                <div class="small fw-semibold">${emp.full_name}</div>
                                 <small class="opacity-75 text-white">${emp.id} • ${emp.leaveType}${emp.quota_info ? ` • Quota: ${emp.quota_info}` : ''}</small>
                             </div>
                         `;

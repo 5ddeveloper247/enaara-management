@@ -99,12 +99,12 @@ class LeaveCalenderService
                     ];
                 }
 
-                $nameParts = explode(' ', $employee->name);
+                $nameParts = explode(' ', $employee->full_name);
                 $initials = (isset($nameParts[0]) ? substr($nameParts[0], 0, 1) : '') .
                     (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : '');
 
                 return [
-                    'name' => $employee->name,
+                    'full_name' => $employee->full_name,
                     'id' => $employee->employee_code ?? 'N/A',
                     'initials' => strtoupper($initials),
                     'leaveType' => $entity->leaveType->name ?? 'Leave',

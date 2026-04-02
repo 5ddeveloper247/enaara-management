@@ -6,10 +6,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Role;
+use App\Traits\LogsActivity;
 
 class Employee extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivity;
 
     protected $table = 'employees';
 
@@ -58,4 +59,9 @@ class Employee extends Model
     // {
     //     return $this->belongsTo(Role::class);
     // }
+
+    public function leaveQuotas()
+    {
+        return $this->hasMany(EmployeeLeaveQuota::class, 'employee_id');
+    }
 }

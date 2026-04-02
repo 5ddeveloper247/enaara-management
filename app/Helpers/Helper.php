@@ -70,3 +70,27 @@ function validatePermissions($slug){
 function getLeftMenu($moduleCatId){
     return HasPermissionsTrait::getLeftMenuByCategory($moduleCatId);
 }
+
+// Compare two arrays and return the differences in a format suitable for audit trails
+if (!function_exists('model_changes_for_audit')) {
+    function model_changes_for_audit(array $old, array $new, array $fields = []): array
+    {
+        $changes = [];
+
+        $checkFields = !empty($fields) ? $fields : array_unique(array_merge(array_keys($old), array_keys($new)));
+
+        foreach ($checkFields as $field) {
+            $before = $old[$field] ?? null;
+            $after = $new[$field] ?? null;
+
+            if ((string) $before !== (string) $after) {
+                $changes[$field] = [
+                    'old' => $before,
+                    'new' => $after,
+                ];
+            }
+        }
+
+        return $changes;
+    }
+}

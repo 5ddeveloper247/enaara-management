@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
+use App\Traits\LogsActivity;
+
 class EmployeLeaveRequest extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'from_employee_id',
         'to_employee_id',

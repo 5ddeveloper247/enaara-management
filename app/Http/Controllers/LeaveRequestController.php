@@ -33,24 +33,8 @@ class LeaveRequestController extends Controller
         $personalQuota = $this->leaveRequestService->getPersonalQuotaSummary($employeeId);
         $personalHistory = $this->leaveRequestService->getPersonalLeaveHistory($employeeId);
 
-        // Fallback for UI charts if specific types weren't found in DB
-        $mappedQuota = [
-            'annual' => ['used' => 0, 'total' => 0, 'remaining' => 0],
-            'sick' => ['used' => 0, 'total' => 0, 'remaining' => 0],
-            'casual' => ['used' => 0, 'total' => 0, 'remaining' => 0],
-            'compOff' => ['used' => 0, 'total' => 0, 'remaining' => 0],
-        ];
-
-        foreach ($personalQuota as $q) {
-            $name = strtolower($q['type']);
-            if (str_contains($name, 'annual')) $mappedQuota['annual'] = $q;
-            elseif (str_contains($name, 'sick')) $mappedQuota['sick'] = $q;
-            elseif (str_contains($name, 'casual')) $mappedQuota['casual'] = $q;
-            elseif (str_contains($name, 'comp')) $mappedQuota['compOff'] = $q;
-        }
-
         return view('admin.my-leaves.index', [
-            'personalQuota' => $mappedQuota,
+            'personalQuota' => $personalQuota,
             'personalHistory' => $personalHistory,
             'employees' => Employee::where('is_active', true)->orderBy('full_name')->get(),
             'leaveTypes' => LeaveType::where('is_active', true)->orderBy('name')->get(),

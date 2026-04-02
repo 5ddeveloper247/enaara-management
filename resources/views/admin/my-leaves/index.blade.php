@@ -51,69 +51,22 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-4">
-                            <!-- Annual Leave -->
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="donut-chart-container">
-                                        <canvas id="annualLeaveChart"></canvas>
-                                        <div class="chart-center-text">
-                                            <div class="chart-number" id="annualUsed">{{ $personalQuota['annual']['used'] }}</div>
-                                            <div class="chart-label">Used</div>
-                                            <div class="chart-total">of {{ $personalQuota['annual']['total'] }}</div>
+                            @foreach ($personalQuota as $quota)
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="donut-chart-container">
+                                            <canvas id="leaveChart_{{ $quota['id'] }}"></canvas>
+                                            <div class="chart-center-text">
+                                                <div class="chart-number">{{ $quota['used'] }}</div>
+                                                <div class="chart-label">Used</div>
+                                                <div class="chart-total">of {{ $quota['total'] }}</div>
+                                            </div>
                                         </div>
+                                        <h6 class="mt-3 mb-1">{{ $quota['type'] }}</h6>
+                                        <small class="text-muted">{{ $quota['remaining'] }} days remaining</small>
                                     </div>
-                                    <h6 class="mt-3 mb-1">Annual Leave</h6>
-                                    <small class="text-muted">{{ $personalQuota['annual']['remaining'] }} days remaining</small>
                                 </div>
-                            </div>
-
-                            <!-- Sick Leave -->
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="donut-chart-container">
-                                        <canvas id="sickLeaveChart"></canvas>
-                                        <div class="chart-center-text">
-                                            <div class="chart-number" id="sickUsed">{{ $personalQuota['sick']['used'] }}</div>
-                                            <div class="chart-label">Used</div>
-                                            <div class="chart-total">of {{ $personalQuota['sick']['total'] }}</div>
-                                        </div>
-                                    </div>
-                                    <h6 class="mt-3 mb-1">Sick Leave</h6>
-                                    <small class="text-muted">{{ $personalQuota['sick']['remaining'] }} days remaining</small>
-                                </div>
-                            </div>
-
-                            <!-- Casual Leave -->
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="donut-chart-container">
-                                        <canvas id="casualLeaveChart"></canvas>
-                                        <div class="chart-center-text">
-                                            <div class="chart-number" id="casualUsed">{{ $personalQuota['casual']['used'] }}</div>
-                                            <div class="chart-label">Used</div>
-                                            <div class="chart-total">of {{ $personalQuota['casual']['total'] }}</div>
-                                        </div>
-                                    </div>
-                                    <h6 class="mt-3 mb-1">Casual Leave</h6>
-                                    <small class="text-muted">{{ $personalQuota['casual']['remaining'] }} days remaining</small>
-                                </div>
-                            </div>
-
-                            <!-- Compensatory Off -->
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="donut-chart-container">
-                                        <canvas id="compOffChart"></canvas>
-                                        <div class="chart-center-text">
-                                            <div class="chart-number" id="compOffUsed">{{ $personalQuota['compOff']['used'] }}</div>
-                                            <div class="chart-label">Used</div>
-                                            <div class="chart-total">of {{ $personalQuota['compOff']['total'] }}</div>
-                                        </div>
-                                    </div>
-                                    <h6 class="mt-3 mb-1">Compensatory Off</h6>
-                                    <small class="text-muted">{{ $personalQuota['compOff']['remaining'] }} days available</small>
-                                </div>
-                            </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -169,69 +122,48 @@
         });
 
         function initializeDonutCharts() {
-            // Annual Leave Chart
-            const annualCtx = document.getElementById('annualLeaveChart');
-            if (annualCtx) {
-                annualLeaveChart = new Chart(annualCtx, {
-                    type: 'doughnut',
-                    data: {
-                        datasets: [{
-                            data: [myLeaves.annual.used, myLeaves.annual.remaining], 
-                            backgroundColor: ['#e6c673', '#e9ecef'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: { cutout: '75%', responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
-                });
-            }
+            myLeaves.forEach(quota => {
+                const ctx = document.getElementById(`leaveChart_${quota.id}`);
+                if (!ctx) return;
 
-            // Sick Leave Chart
-            const sickCtx = document.getElementById('sickLeaveChart');
-            if (sickCtx) {
-                sickLeaveChart = new Chart(sickCtx, {
-                    type: 'doughnut',
-                    data: {
-                        datasets: [{
-                            data: [myLeaves.sick.used, myLeaves.sick.remaining],
-                            backgroundColor: ['#dc3545', '#e9ecef'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: { cutout: '75%', responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
-                });
-            }
+                const colors = {
+                    'annual': '#e6c673',
+                    'sick': '#dc3545',
+                    'casual': '#0dcaf0',
+                    'comp': '#ffc107',
+                    'maternity': '#fd7e14',
+                    'unpaid': '#6c757d'
+                };
 
-            // Casual Leave Chart
-            const casualCtx = document.getElementById('casualLeaveChart');
-            if (casualCtx) {
-                casualLeaveChart = new Chart(casualCtx, {
-                    type: 'doughnut',
-                    data: {
-                        datasets: [{
-                            data: [myLeaves.casual.used, myLeaves.casual.remaining],
-                            backgroundColor: ['#0dcaf0', '#e9ecef'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: { cutout: '75%', responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
-                });
-            }
+                const typeLower = quota.type.toLowerCase();
+                let color = '#6c757d'; // default
+                for (const [key, val] of Object.entries(colors)) {
+                    if (typeLower.includes(key)) {
+                        color = val;
+                        break;
+                    }
+                }
 
-            // Compensatory Off Chart
-            const compOffCtx = document.getElementById('compOffChart');
-            if (compOffCtx) {
-                compOffChart = new Chart(compOffCtx, {
+                new Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         datasets: [{
-                            data: [myLeaves.compOff.used, myLeaves.compOff.remaining],
-                            backgroundColor: ['#ffc107', '#e9ecef'],
+                            data: [quota.used, quota.remaining],
+                            backgroundColor: [color, '#e9ecef'],
                             borderWidth: 0
                         }]
                     },
-                    options: { cutout: '75%', responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+                    options: {
+                        cutout: '75%',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        }
+                    }
                 });
-            }
+            });
         }
 
         function populateLeaveTimeline() {

@@ -18,6 +18,7 @@ use App\Models\Organization;
 use App\Models\Sbu;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditTrailService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,13 @@ use Illuminate\Support\Facades\Storage;
 
 class EmployeeService
 {
+    protected $auditTrailService;
+
+    public function __construct(AuditTrailService $auditTrailService)
+    {
+        $this->auditTrailService = $auditTrailService;
+    }
+
     public function index(): View
     {
         $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
@@ -146,6 +154,13 @@ class EmployeeService
             }
 
             Log::info('Employee created', ['id' => $employee->id, 'code' => $code]);
+
+            $this->auditTrailService->log(
+                action: 'created',
+                category: 'Employee',
+                description: "New employee {$employee->full_name} ({$code}) was registered.",
+                auditable: $employee
+            );
 
             return $employee;
         });
@@ -567,9 +582,9 @@ class EmployeeService
             'nok_name'            => $employee->nok_name,
             'nok_cnic'            => $employee->nok_cnic,
             'nok_relation'        => $employee->nok_relation,
-            'nok_dob'             => $employee->nok_dob?->format('Y-m-d'),
+            'nok_dob'             => $employee->nok_dob instanceof \Carbon\Carbon ? $employee->nok_dob->format('Y-m-d') : null,
             'nok_contact'         => $employee->nok_contact,
-            'join_date'           => $employee->join_date?->format('Y-m-d'),
+            'join_date'           => $employee->join_date instanceof \Carbon\Carbon ? $employee->join_date->format('Y-m-d') : null,
             'designation'         => $employee->designation,
             'grade'               => $employee->grade,
             'branch'              => $employee->branch,
