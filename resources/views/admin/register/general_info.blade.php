@@ -393,7 +393,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.category-radio').forEach(function (el) {
+        document.querySelectorAll('input[name="employment_category"]').forEach(function (el) {
             el.addEventListener('change', toggleCategoryBlocks);
         });
         const engagementModeEl = document.getElementById('engagementMode');

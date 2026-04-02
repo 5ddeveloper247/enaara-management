@@ -148,6 +148,7 @@
                 ' data-employee-id="'   + (row.employee_id   || '')     + '"' +
                 ' data-employee-code="'+ escAttr(row.employee_code || '') + '"' +
                 ' data-employee-name="'+ escAttr(row.employee_name || '') + '"' +
+                ' data-role-name="'    + escAttr(row.role || '')          + '"' +
                 ' data-role-id="'     + (row.role_id || '')           + '"' +
                 ' title="Edit"><i class="bi bi-pencil"></i></button>' +
                 '<button type="button" class="action-btn border-0 text-danger bg-danger-subtle delete-user-btn"' +
@@ -198,8 +199,12 @@
                 if (opt.value) {
                     var name  = opt.getAttribute('data-name')  || '';
                     var email = opt.getAttribute('data-email') || '';
+                    var role  = opt.getAttribute('data-role')  || '';
                     if (name)  document.getElementById('userName').value  = name;
                     if (email) document.getElementById('userEmail').value = email;
+                    document.getElementById('userAssignedRole').value = role || '';
+                } else {
+                    document.getElementById('userAssignedRole').value = '';
                 }
             });
 
@@ -213,6 +218,7 @@
             document.getElementById('userCanvasLabel').textContent = 'Add New User';
             document.getElementById('userSubmitBtn').innerHTML     = '<i class="bi bi-person-check me-1"></i>Create User';
             document.getElementById('editUserId').value            = '';
+            document.getElementById('userAssignedRole').value      = '';
             document.getElementById('passwordRequired').style.display = 'inline';
             document.getElementById('passwordHint').textContent   = 'Required. Min. 8 chars with uppercase, lowercase and numbers.';
         }
@@ -229,7 +235,9 @@
             var empId   = btn.dataset.employeeId   || '';
             var empCode = btn.dataset.employeeCode || '';
             var empName = btn.dataset.employeeName || '';
+            var roleName = btn.dataset.roleName || '';
             var empSel  = document.getElementById('userEmployeeSelect');
+            document.getElementById('userAssignedRole').value = roleName === '-' ? '' : roleName;
 
             if (empSel && empId) {
                 var existing = empSel.querySelector('option[value="' + empId + '"]');
@@ -238,6 +246,7 @@
                     opt.value                       = empId;
                     opt.setAttribute('data-name',  empName);
                     opt.setAttribute('data-email', btn.dataset.email || '');
+                    opt.setAttribute('data-role', roleName === '-' ? '' : roleName);
                     opt.textContent                 = empCode + ' — ' + empName;
                     empSel.insertAdjacentElement('afterend', opt);
                     empSel.appendChild(opt);
@@ -250,6 +259,7 @@
         function resetForm() {
             document.getElementById('userForm').reset();
             document.getElementById('editUserId').value = '';
+            document.getElementById('userAssignedRole').value = '';
             clearErrors();
             document.getElementById('userFormAlert').classList.add('d-none');
         }

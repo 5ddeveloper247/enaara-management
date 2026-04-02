@@ -35,7 +35,8 @@ class EmployeeController extends Controller
             Log::info('Employee store request received', ['user_id' => Auth::id(), 'name' => $request->full_name]);
 
             $photos   = $request->hasFile('profile_photo') ? [$request->file('profile_photo')] : [];
-            $employee = $this->employeeService->store($request->validated(), $photos);
+            $attachments = $this->extractAttachments($request);
+            $employee = $this->employeeService->store($request->validated(), $photos, $attachments);
 
             Log::info('Employee stored successfully', ['employee_id' => $employee->id]);
 
@@ -100,7 +101,9 @@ class EmployeeController extends Controller
             Log::info('Employee update request received', ['user_id' => Auth::id(), 'employee_id' => $id]);
 
             $photos   = $request->hasFile('profile_photo') ? [$request->file('profile_photo')] : [];
-            $employee = $this->employeeService->update($id, $request->validated(), $photos);
+            $attachments = $this->extractAttachments($request);
+            $keptAttachmentIds = array_values(array_filter(array_map('intval', $request->input('kept_attachment_ids', []))));
+            $employee = $this->employeeService->update($id, $request->validated(), $photos, $attachments, $keptAttachmentIds);
 
             Log::info('Employee updated successfully', ['employee_id' => $employee->id]);
 
@@ -129,5 +132,27 @@ class EmployeeController extends Controller
             Log::error('Employee delete failed', ['employee_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Something went wrong.'], 500);
         }
+    }
+
+    private function extractAttachments(Request $request): array
+    {
+        $rows = $request->input('attachments', []);
+        $attachments = [];
+
+        foreach ($rows as $idx => $row) {
+            $files = $request->file("attachments.$idx.files", []);
+            if (!is_array($files) || empty($files)) {
+                continue;
+            }
+
+            $attachments[] = [
+                'name' => trim((string) ($row['name'] ?? '')),
+                'type' => trim((string) ($row['type'] ?? '')),
+                'description' => trim((string) ($row['description'] ?? '')),
+                'files' => $files,
+            ];
+        }
+
+        return $attachments;
     }
 }
