@@ -61,9 +61,6 @@
                     <label for="adjustLeaveType" class="form-label fw-semibold small text-white">Leave Type <span class="text-danger">*</span></label>
                     <select class="form-select" id="adjustLeaveType" required name="leave_type">
                         <option value="">Select Leave Type</option>
-                        @foreach($leaveTypes as $type)
-                            <option value="{{ $type->name }}" data-id="{{ $type->id }}">{{ $type->name }}</option>
-                        @endforeach
                     </select>
                 </div>
 
@@ -119,17 +116,26 @@
             // Populate current balances dynamically
             const container = $('#currentBalancesContainer');
             container.empty();
+            
+            // Reset and populate dropdown
+            const typeSelect = $('#adjustLeaveType');
+            typeSelect.html('<option value="">Select Leave Type</option>');
 
             leaveTypes.forEach(type => {
-                const quota = employee.quotas[type.id] || { remaining: 0 };
-                container.append(`
-                    <div class="col-4">
-                        <div class="p-2 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
-                            <small class="opacity-75 text-white d-block mb-1" style="font-size: 10px;">${type.name}</small>
-                            <div class="fw-bold" style="font-size: 14px;">${quota.remaining}</div>
+                const quota = employee.quotas[type.id] || { remaining: 0, earned: 0, used: 0 };
+                
+                if (quota.earned > 0 || quota.used > 0) {
+                    container.append(`
+                        <div class="col-4">
+                            <div class="p-2 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
+                                <small class="opacity-75 text-white d-block mb-1" style="font-size: 10px;">${type.name}</small>
+                                <div class="fw-bold" style="font-size: 14px;">${quota.remaining}</div>
+                            </div>
                         </div>
-                    </div>
-                `);
+                    `);
+                    
+                    typeSelect.append(`<option value="${type.name}" data-id="${type.id}">${type.name}</option>`);
+                }
             });
 
             $('#adjustmentForm')[0].reset();
