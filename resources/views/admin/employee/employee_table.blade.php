@@ -9,8 +9,25 @@
     <table id="employeeTable" class="display nowrap table table-striped" style="width:100%">
         <thead class="bg-main">
             <tr>
+                <th>Employee ID</th>
+                <th>TAS ID</th>
+                <th>Employee No</th>
+                <th>Category</th>
+                <th>Image</th>
+                <th>Name</th>
+                <th>CNIC</th>
+                <th>Nationality</th>
+                <th>Gender</th>
+                <th>Organization</th>
+                <th>SBU</th>
+                <th>Department</th>
+                <th>Role</th>
+                <th>Date of Joining</th>
+                <th>Designation</th>
+                <th>Verification Status</th>
+                <th>Email</th>
+                <th>Cell Number</th>
                 <th>Profile</th>
-                <th>Biometric ID</th>
                 <th>Employment Type</th>
                 <th>Site Assignment</th>
                 <th>Vendor</th>
@@ -59,22 +76,16 @@
         document.querySelectorAll('#employeeTable tbody tr').forEach(row => {
             const cells = row.querySelectorAll('td');
             if (!cells.length) return;
-            const avatarEl = row.querySelector('.user-avatar');
-            const avatar = avatarEl ? avatarEl.textContent.trim() : '??';
-            const name = cells[0].querySelector('.fw-semibold')?.textContent.trim() || '—';
-            const info = cells[0].querySelector('small')?.textContent.trim() || '—';
-            const bioEl = cells[1].querySelector('.badge');
-            const bio = bioEl ? bioEl.textContent.trim() : '—';
-            const typeEl = cells[2].querySelector('.badge');
-            const type = typeEl ? typeEl.textContent.trim() : '—';
-            const site = cells[3].textContent.trim();
-            const vendor = cells[4].textContent.trim();
-            const syncEl = cells[5].querySelector('.badge');
-            const sync = syncEl ? syncEl.innerHTML : '—';
-            const syncCls = syncEl ? syncEl.className : 'badge';
-            const floorEl = cells[6].querySelector('.badge');
-            const floor = floorEl ? floorEl.innerHTML : '<span class="text-muted small">—</span>';
-            const viewBtn = cells[7].querySelector('button');
+
+            const imgEl = cells[4]?.querySelector('img, .user-avatar');
+            const avatarHtml = imgEl ? imgEl.outerHTML : '<div class="user-avatar">??</div>';
+            const name = cells[5]?.textContent.trim() || '—';
+            const empNo = cells[2]?.textContent.trim() || '—';
+            const dept = cells[11]?.textContent.trim() || '—';
+            const org = cells[9]?.textContent.trim() || '—';
+            const verEl = cells[15]?.querySelector('.badge');
+            const ver = verEl ? verEl.outerHTML : '<span class="text-muted small">—</span>';
+            const viewBtn = cells[24]?.querySelector('button');
             const btnAttrs = viewBtn ? viewBtn.outerHTML : '';
 
             grid.insertAdjacentHTML('beforeend', `
@@ -82,21 +93,18 @@
             <div class="card border rounded-3 h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <div class="user-avatar">${avatar}</div>
+                        ${avatarHtml}
                         <div>
                             <div class="fw-semibold small">${name}</div>
-                            <small class="text-muted">${info}</small>
+                            <small class="text-muted">${empNo}</small>
                         </div>
                     </div>
                     <div class="d-flex flex-column gap-1 mb-3">
-                        <small><i class="bi bi-fingerprint me-1 text-muted"></i><span class="badge bg-info rounded-1 px-2">${bio}</span></small>
-                        <small><i class="bi bi-person-badge me-1 text-muted"></i>${type}</small>
-                        <small><i class="bi bi-geo-alt me-1 text-muted"></i>${site}</small>
-                        ${vendor !== '-' ? `<small><i class="bi bi-building me-1 text-muted"></i>${vendor}</small>` : ''}
+                        <small><i class="bi bi-building me-1 text-muted"></i>${org}</small>
+                        <small><i class="bi bi-diagram-3 me-1 text-muted"></i>${dept}</small>
                     </div>
                     <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-                        <span class="${syncCls}">${sync}</span>
-                        ${floor}
+                        ${ver}
                         ${btnAttrs}
                     </div>
                 </div>

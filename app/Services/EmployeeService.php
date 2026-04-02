@@ -450,7 +450,7 @@ class EmployeeService
 
     public function getTableData(): array
     {
-        $employees = Employee::with(['department', 'organization', 'mediaFiles'])
+        $employees = Employee::with(['department', 'organization', 'sbu', 'role', 'mediaFiles', 'policeVerification', 'contact'])
             ->orderByDesc('id')
             ->get();
 
@@ -462,24 +462,35 @@ class EmployeeService
                 : 'Not Linked';
             $employeeType = ($emp->employment_type === 'Third-party') ? 'Third-party' : 'Internal';
 
-            $photo     = $emp->mediaFiles->where('file_type', 'photo')->first();
-            $photoUrl  = $photo ? Storage::url($photo->file_path) : null;
+            $photo    = $emp->mediaFiles->where('file_type', 'photo')->first();
+            $photoUrl = $photo ? Storage::url($photo->file_path) : null;
 
             return [
-                'id'              => $emp->id,
-                'employee_code'   => $emp->employee_code ?? '-',
-                'full_name'       => $emp->full_name ?? '-',
-                'initials'        => $initials,
-                'photo_url'       => $photoUrl,
-                'department'      => $emp->department?->name ?? '-',
-                'organization'    => $emp->organization?->name ?? '-',
-                'employment_type' => $emp->employment_type ?? '-',
-                'employee_type'   => $employeeType,
-                'biometric_id'    => $biometricId,
-                'sync_status'     => $syncStatus,
-                'site'            => $emp->site ?? '-',
-                'floor_access'    => (bool) $emp->floor_access,
-                'is_active'       => (bool) $emp->is_active,
+                'id'                  => $emp->id,
+                'employee_code'       => $emp->employee_code ?? '-',
+                'employment_category' => $emp->employment_category ?? '-',
+                'photo_url'           => $photoUrl,
+                'full_name'           => $emp->full_name ?? '-',
+                'initials'            => $initials,
+                'cnic'                => $emp->cnic ?? '-',
+                'nationality'         => $emp->nationality ?? '-',
+                'gender'              => $emp->gender ?? '-',
+                'organization'        => $emp->organization?->name ?? '-',
+                'sbu'                 => $emp->sbu?->name ?? '-',
+                'department'          => $emp->department?->name ?? '-',
+                'role'                => $emp->role?->name ?? '-',
+                'join_date'           => $emp->join_date?->format('d M Y') ?? '-',
+                'designation'         => $emp->designation ?? '-',
+                'verification_status' => $emp->policeVerification?->verification_status ?? '-',
+                'email'               => $emp->email ?? '-',
+                'cell_no'             => $emp->contact?->cell_no ?? '-',
+                'employment_type'     => $emp->employment_type ?? '-',
+                'employee_type'       => $employeeType,
+                'biometric_id'        => $biometricId,
+                'sync_status'         => $syncStatus,
+                'site'                => $emp->site ?? '-',
+                'floor_access'        => (bool) $emp->floor_access,
+                'is_active'           => (bool) $emp->is_active,
             ];
         })->values()->all();
     }

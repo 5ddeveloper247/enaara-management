@@ -15,7 +15,7 @@ class Employee extends Model
     protected $table = 'employees';
 
     protected $fillable = [
-        'full_name', 'father_name', 'employee_code', 'organization_id', 'sbu_id', 'department_id',
+        'full_name', 'father_name', 'employee_code', 'tas_id', 'organization_id', 'sbu_id', 'department_id',
         'employee_type_id', 'employee_type', 'employment_type', 'designation', 'grade', 'branch',
         'location', 'email', 'phone', 'cnic', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
         'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth',
