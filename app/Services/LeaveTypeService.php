@@ -49,5 +49,16 @@ class LeaveTypeService
 
         return $leaveType->fresh('organization');
     }
+
+    public function destroy(int $id): bool
+    {
+        $leaveType = $this->findById($id);
+        
+        if ($leaveType) {
+            return $leaveType->delete();
+        }
+        
+        return false;
+    }
 }
 

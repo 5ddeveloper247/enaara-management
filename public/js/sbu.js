@@ -415,7 +415,7 @@
             updateSbu();
         });
 
-        $(document).on('click', '#deleteSbuBtn', function(e) {
+        $(document).on('click', '.delete-sbu-btn', function(e) {
             e.preventDefault();
             deleteSbu(this);
         });

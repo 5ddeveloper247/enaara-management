@@ -170,5 +170,40 @@ class LeaveTypeController extends Controller
             throw $e;
         }
     }
+
+    public function destroy(int $id): \Illuminate\Http\JsonResponse|RedirectResponse
+    {
+        try {
+            $deleted = $this->leaveTypeService->destroy($id);
+
+            if (!$deleted) {
+                if (request()->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Leave type not found or could not be deleted'], 404);
+                }
+                return redirect()->route('admin.leave.type.index')
+                    ->with('error', 'Leave type not found or could not be deleted.');
+            }
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Leave type deleted successfully.',
+                ]);
+            }
+
+            return redirect()->route('admin.leave.type.index')
+                ->with('success', 'Leave type deleted successfully.');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'An error occurred while deleting the leave type.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+            return redirect()->route('admin.leave.type.index')
+                ->with('error', 'An error occurred while deleting the leave type.');
+        }
+    }
 }
 

@@ -47,6 +47,11 @@
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </button>
 
+                            <!-- Delete Button -->
+                            <button type="button" class="btn btn-sm btn-outline-danger delete-sbu-btn" data-delete-url="{{ route('admin.sbu.destroy', $sbu->id) }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+
                             <!-- View Button -->
                             <button type="button"
                                 class="btn btn-sm btn-outline-secondary view-sbu-btn"
@@ -63,6 +68,7 @@
                                 <i class="bi bi-eye"></i>
                             </button>
 
+                            
                         </div>
                     </div>
                 </div>

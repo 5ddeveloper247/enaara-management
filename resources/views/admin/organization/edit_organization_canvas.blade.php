@@ -80,15 +80,7 @@
     </div>
 
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
-        <div class="d-flex justify-content-between align-items-center gap-2">
-            <form id="deleteOrganizationForm" method="POST" action="javascript:void(0);" class="m-0">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-outline-danger" id="deleteOrganizationBtn">
-                    <i class="bi bi-trash me-1"></i>Delete
-                </button>
-            </form>
-
+        <div class="d-flex justify-content-end align-items-center gap-2">
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
                 <button type="submit" form="editOrganizationForm" class="btn btn-light text-dark border-0" id="updateOrganizationBtn">
@@ -102,12 +94,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const editForm = document.getElementById('editOrganizationForm');
-    const deleteForm = document.getElementById('deleteOrganizationForm');
     const editCanvas = document.getElementById('organizationEditCanvas');
 
     const updateRouteTemplate = `{{ route('admin.organization.update', ['id' => '__id__']) }}`;
     const editRouteTemplate = `{{ route('admin.organization.edit', ['id' => '__id__']) }}`;
-    const deleteRouteTemplate = `{{ route('admin.organization.destroy', ['id' => '__id__']) }}`;
 
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('.edit-organization-btn');
@@ -136,7 +126,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const org = response.data;
 
             editForm.action = updateRouteTemplate.replace('__id__', org.id);
-            deleteForm.action = deleteRouteTemplate.replace('__id__', org.id);
 
             document.getElementById('editOrgId').value = org.id ?? '';
             document.getElementById('editOrgName').value = org.name ?? '';
@@ -169,38 +158,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    deleteForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        if (!deleteForm.action || deleteForm.action.includes('javascript:void(0)')) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Organization Selected',
-                text: 'Please select an organization first.'
-            });
-            return;
-        }
-
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'This organization will be permanently deleted!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                deleteForm.submit();
-            }
-        });
-    });
-
     if (editCanvas) {
         editCanvas.addEventListener('hidden.bs.offcanvas', function () {
             editForm.reset();
             editForm.action = 'javascript:void(0);';
-            deleteForm.action = 'javascript:void(0);';
 
             document.getElementById('editOrgId').value = '';
             document.getElementById('editOrgStatus').value = '1';

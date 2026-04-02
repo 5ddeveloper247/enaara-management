@@ -26,13 +26,16 @@ class BalanceTrackerController extends Controller
         $organization = $request->query('organization');
         $department = $request->query('department');
 
-        $balances = $this->balanceTrackerService->getBalances($organization, $department);
+        $data = $this->balanceTrackerService->getBalances($organization, $department);
+        $balances = $data['balances'];
+        $leaveTypes = $data['leaveTypes'];
         
         $organizations = Organization::where('is_active', true)->orderBy('name', 'asc')->get();
         $departments = Department::where('is_active', true)->orderBy('name', 'asc')->get();
 
         return view('admin.balance-tracker.index', compact(
             'balances',
+            'leaveTypes',
             'organizations',
             'departments'
         ));
@@ -72,9 +75,11 @@ class BalanceTrackerController extends Controller
         $organization = $request->query('organization');
         $department = $request->query('department');
 
-        $balances = $this->balanceTrackerService->getBalances($organization, $department);
+        $data = $this->balanceTrackerService->getBalances($organization, $department);
+        $balances = $data['balances'];
+        $leaveTypes = $data['leaveTypes'];
 
-        return response()->view('admin.balance-tracker.export', compact('balances'))
+        return response()->view('admin.balance-tracker.export', compact('balances', 'leaveTypes'))
             ->header('Content-Type', 'application/vnd.ms-excel')
             ->header('Content-Disposition', 'attachment; filename="Balance_Tracker_Export_' . now()->format('Y-m-d') . '.xls"');
     }

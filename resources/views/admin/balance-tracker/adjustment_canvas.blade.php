@@ -8,7 +8,7 @@
     </div>
     <div class="offcanvas-body">
         <form id="adjustmentForm">
-            <input type="hidden" id="adjustEmployeeIdHidden" name="employeeId">
+            <input type="hidden" id="adjustEmployeeIdHidden" name="employee_id">
 
             <!-- Employee Information -->
             <div class="mb-4">
@@ -34,25 +34,8 @@
                 <h6 class="fw-semibold mb-3 small">
                     <i class="bi bi-wallet2 me-2"></i>Current Balances
                 </h6>
-                <div class="row g-2">
-                    <div class="col-4">
-                        <div class="p-2 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
-                            <small class="opacity-75 text-white d-block mb-1" style="font-size: 10px;">Annual</small>
-                            <div class="fw-bold" style="font-size: 14px;" id="currentAnnualBalance">0.0</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="p-2 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
-                            <small class="opacity-75 text-white d-block mb-1" style="font-size: 10px;">Sick</small>
-                            <div class="fw-bold" style="font-size: 14px;" id="currentSickBalance">0.0</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="p-2 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
-                            <small class="opacity-75 text-white d-block mb-1" style="font-size: 10px;">Casual</small>
-                            <div class="fw-bold" style="font-size: 14px;" id="currentCasualBalance">0.0</div>
-                        </div>
-                    </div>
+                <div class="row g-2" id="currentBalancesContainer">
+                    <!-- Dynamic balances will be populated here -->
                 </div>
             </div>
 
@@ -78,9 +61,9 @@
                     <label for="adjustLeaveType" class="form-label fw-semibold small text-white">Leave Type <span class="text-danger">*</span></label>
                     <select class="form-select" id="adjustLeaveType" required name="leave_type">
                         <option value="">Select Leave Type</option>
-                        <option value="annual">Annual Leave</option>
-                        <option value="sick">Sick Leave</option>
-                        <option value="casual">Casual Leave</option>
+                        @foreach($leaveTypes as $type)
+                            <option value="{{ $type->name }}" data-id="{{ $type->id }}">{{ $type->name }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -133,10 +116,21 @@
             $('#adjustEmployeeId').text(employee.employeeId);
             $('#adjustEmployeeIdHidden').val(employee.id);
 
-            // Populate current balances
-            $('#currentAnnualBalance').text(employee.annual.remaining);
-            $('#currentSickBalance').text(employee.sick.remaining);
-            $('#currentCasualBalance').text(employee.casual.remaining);
+            // Populate current balances dynamically
+            const container = $('#currentBalancesContainer');
+            container.empty();
+
+            leaveTypes.forEach(type => {
+                const quota = employee.quotas[type.id] || { remaining: 0 };
+                container.append(`
+                    <div class="col-4">
+                        <div class="p-2 rounded-3 border text-center" style="border-color: #ffffff1a !important;">
+                            <small class="opacity-75 text-white d-block mb-1" style="font-size: 10px;">${type.name}</small>
+                            <div class="fw-bold" style="font-size: 14px;">${quota.remaining}</div>
+                        </div>
+                    </div>
+                `);
+            });
 
             $('#adjustmentForm')[0].reset();
             updatePreview();
@@ -152,15 +146,22 @@
             }
 
             const type = adjustmentType.value;
-            const leaveType = adjustLeaveType.value;
+            const selectedOption = $(adjustLeaveType).find(':selected');
+            const leaveTypeId = selectedOption.data('id');
+            const leaveTypeName = selectedOption.text();
             const days = parseFloat(adjustDays.value);
-            const currentBalance = currentEmployee[leaveType].remaining;
+            
+            if (!leaveTypeId || isNaN(days) || !currentEmployee) {
+                previewText.textContent = 'Select adjustment type and leave type to see preview';
+                return;
+            }
 
+            const currentBalance = currentEmployee.quotas[leaveTypeId] ? parseFloat(currentEmployee.quotas[leaveTypeId].remaining) : 0;
             const newBalance = type === 'add' ? currentBalance + days : currentBalance - days;
             const action = type === 'add' ? 'Adding to' : 'Subtracting from';
 
             previewText.innerHTML = `
-                <div class="mb-1">${action} <strong>${leaveType}</strong> quota: <strong>${days} days</strong></div>
+                <div class="mb-1">${action} <strong>${leaveTypeName}</strong> quota: <strong>${days} days</strong></div>
                 <div>New balance will be: <strong class="${newBalance < 0 ? 'text-danger' : 'text-success'}">${newBalance.toFixed(1)} days</strong></div>
             `;
         }
@@ -174,9 +175,9 @@
                 const form = document.getElementById('adjustmentForm');
                 if (form.checkValidity()) {
                     const formData = {
-                        employeeId: $('#adjustEmployeeIdHidden').val(),
-                        adjustmentType: $('#adjustmentType').val(),
+                        employee_id: $('#adjustEmployeeIdHidden').val(),
                         leave_type: $('#adjustLeaveType').val(),
+                        increment_type: $('#adjustmentType').val(),
                         days: $('#adjustDays').val(),
                         reason: $('#adjustReason').val(),
                         _token: '{{ csrf_token() }}'

@@ -155,6 +155,7 @@
 @push('scripts')
     <script>
         const balanceData = @json($balances);
+        const leaveTypes = @json($leaveTypes);
     </script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -259,8 +260,7 @@
             tbody.empty();
 
             balanceData.forEach(employee => {
-                const row = `
-                <tr>
+                let columns = `
                     <td class="dt-control"></td>
                     <td>
                         <div class="d-flex align-items-center">
@@ -274,60 +274,44 @@
                     </td>
                     <td>${employee.organization}</td>
                     <td>${employee.department}</td>
+                `;
+
+                // Add dynamic leave type columns
+                leaveTypes.forEach((type, index) => {
+                    const quota = employee.quotas[type.id] || { earned: 0, used: 0, remaining: 0 };
+                    const progressColor = getProgressColor(type.name);
+                    
+                    columns += `
                     <td>
                         <div class="small mb-1">
                             <div class="d-flex justify-content-between mb-1">
-                                <span>Earned: <strong>${employee.annual.earned}</strong></span>
-                                <span>Used: <strong>${employee.annual.used}</strong></span>
+                                <span>Earned: <strong>${quota.earned}</strong></span>
+                                <span>Used: <strong>${quota.used}</strong></span>
                             </div>
                             <div class="d-flex justify-content-between mb-1">
-                                <span>Remaining: <strong class="text-success">${employee.annual.remaining}</strong></span>
+                                <span>Remaining: <strong class="text-success">${quota.remaining}</strong></span>
                             </div>
                             <div class="progress" style="height: 6px;">
-                                <div class="progress-bar bg-main" role="progressbar" style="width: ${employee.annual.earned > 0 ? (employee.annual.remaining/employee.annual.earned)*100 : 0}%"></div>
+                                <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${quota.earned > 0 ? (quota.remaining / quota.earned) * 100 : 0}%"></div>
                             </div>
                         </div>
                     </td>
-                    <td>
-                        <div class="small mb-1">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Earned: <strong>${employee.sick.earned}</strong></span>
-                                <span>Used: <strong>${employee.sick.used}</strong></span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Remaining: <strong class="text-success">${employee.sick.remaining}</strong></span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar bg-danger" role="progressbar" style="width: ${employee.sick.earned > 0 ? (employee.sick.remaining/employee.sick.earned)*100 : 0}%"></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="small mb-1">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Earned: <strong>${employee.casual.earned}</strong></span>
-                                <span>Used: <strong>${employee.casual.used}</strong></span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Remaining: <strong class="text-success">${employee.casual.remaining}</strong></span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar bg-info" role="progressbar" style="width: ${employee.casual.earned > 0 ? (employee.casual.remaining/employee.casual.earned)*100 : 0}%"></div>
-                            </div>
-                        </div>
-                    </td>
+                    `;
+                });
+
+                columns += `
                     <td class="text-end">
                         <button type="button" class="btn btn-sm btn-outline-primary adjust-balance-btn" 
                                 data-employee-id="${employee.id}" data-bs-toggle="tooltip" title="Adjust Balance">
                             <i class="bi bi-pencil-square"></i>
                         </button>
                     </td>
-                </tr>
                 `;
 
-                tbody.append(row);
+                tbody.append(`<tr>${columns}</tr>`);
             });
 
+            const leafTypeCount = leaveTypes.length;
             balanceTable = initUserDataTable('#balanceTable', {
                 pageLength: 25,
                 lengthMenu: [
@@ -352,7 +336,7 @@
                         responsivePriority: 0
                     },
                     {
-                        targets: 7, // Actions column (control + name + org + dept + 3 leaves + actions)
+                        targets: leafTypeCount + 4, // Actions column (control + 3 standard + leafTypeCount)
                         orderable: false,
                         className: 'no-toggle',
                         responsivePriority: 1
@@ -377,6 +361,14 @@
             });
         }
 
+
+        function getProgressColor(name) {
+            const lowerName = name.toLowerCase();
+            if (lowerName.includes('annual')) return 'bg-main';
+            if (lowerName.includes('sick')) return 'bg-danger';
+            if (lowerName.includes('casual') || lowerName.includes('causal')) return 'bg-info';
+            return 'bg-main'; // Default
+        }
 
         function getInitials(name) {
             return name.split(' ').map(n => n[0]).join('').toUpperCase();

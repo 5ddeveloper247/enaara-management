@@ -421,7 +421,7 @@
             updateFloor();
         });
 
-        $(document).on('click', '#deleteSbuFloorBtn', function(e) {
+        $(document).on('click', '.delete-floor-btn', function(e) {
             e.preventDefault();
             deleteFloor(this);
         });
