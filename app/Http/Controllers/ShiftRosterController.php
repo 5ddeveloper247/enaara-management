@@ -19,6 +19,53 @@ class ShiftRosterController extends Controller
         $this->shiftRosterService = $shiftRosterService;
     }
 
+    private function canAccessShiftPlannerRoster(): bool
+    {
+        return validatePermissions('admin/shift-planner') || validatePermissions('admin/shift-roster');
+    }
+
+    public function grid(Request $request)
+    {
+        if (! $this->canAccessShiftPlannerRoster()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+
+        $year = (int) $request->query('year', date('Y'));
+        $month = (int) $request->query('month', date('n'));
+        $week = (int) $request->query('week', 1);
+
+        if ($month < 1 || $month > 12) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid month.',
+            ], 422);
+        }
+
+        if ($week < 1 || $week > 6) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid week.',
+            ], 422);
+        }
+
+        try {
+            $data = $this->shiftRosterService->getGridData($year, $month, $week);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $data,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function index()
     {
         if (!validatePermissions('admin/shift-roster')) {
@@ -108,7 +155,7 @@ class ShiftRosterController extends Controller
 
     public function update(ShiftRosterRequest $request, $id)
     {
-        if (!validatePermissions('admin/shift-roster')) {
+        if (! $this->canAccessShiftPlannerRoster()) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -175,7 +222,7 @@ class ShiftRosterController extends Controller
 
     public function bulkAssign(BulkShiftRosterRequest $request)
     {
-        if (!validatePermissions('admin/shift-roster')) {
+        if (! $this->canAccessShiftPlannerRoster()) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,

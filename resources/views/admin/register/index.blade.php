@@ -33,16 +33,16 @@
 
     <div class="container">
         <div class="d-flex justify-content-between mb-4 align-items-center">
-            <h5 class="text-center">{{ isset($employee) ? 'Edit Employee — ' . $employee->full_name : 'Employee Information Form' }}</h5>
-            <div class="d-flex gap-3 align-items-center">
-                <a href="{{ route('admin.employee.index') }}" class="btn btn-secondary d-flex align-items-center border-0 px-3 ms-auto">
-                    Go Back
+            <div class="d-flex align-items-center gap-3">
+                <a href="{{ route('admin.employee.index') }}" class="btn btn-secondary d-flex align-items-center border-0 px-3">
+                    <i class="bi bi-arrow-left"></i>
                 </a>
-                <button class="btn btn-link text-decoration-none text-white bg-main d-flex align-items-center border-0 px-3 ms-auto"
-                    type="button" data-bs-toggle="modal" data-bs-target="#attachmentModal">
-                    Attachment
-                </button>
+                <h5 class="mb-0">{{ isset($employee) ? 'Edit Employee — ' . $employee->full_name : 'Employee Information Form' }}</h5>
             </div>
+            <button class="btn btn-link text-decoration-none text-white bg-main d-flex align-items-center border-0 px-3"
+                type="button" data-bs-toggle="modal" data-bs-target="#attachmentModal">
+                Attachment
+            </button>
         </div>
         <div class="card shadow-sm p-4">
 
@@ -54,11 +54,10 @@
                 @csrf
 
                 @include('admin.register.general_info')
+                @include('admin.register.employment_info')
                 @include('admin.register.personal_info')
                 @include('admin.register.ex_employment')
-                @include('admin.register.contact')
                 @include('admin.register.bankdetails')
-                @include('admin.register.familydetails')
                 @include('admin.register.academic')
 
                 {{-- Hidden container for serialized array data --}}
@@ -82,15 +81,109 @@
         const submitLabel = isEditMode ? 'Update Employee' : 'Create Employee';
 
         let current = 1;
-        const total = 7;
-        const icons = ['bi-person-fill', 'bi-shield-fill', 'bi-award-fill', 'bi-telephone-fill', 'bi-bank2', 'bi-people-fill', 'bi-plus'];
+        const total = 6;
+        const icons = ['bi-person-fill', 'bi-briefcase-fill', 'bi-shield-fill', 'bi-award-fill', 'bi-bank2', 'bi-plus'];
 
         function changeStep(dir) {
-            if (dir === 1 && current === total) {
-                submitEmployeeForm();
-                return;
+            if (dir === 1) {
+                if (!validateStep(current)) return;
+                if (current === total) {
+                    submitEmployeeForm();
+                    return;
+                }
             }
             goToStep(current + dir);
+        }
+
+        function clearStepErrors() {
+            document.querySelectorAll('.step-val-error').forEach(e => e.remove());
+            document.querySelectorAll('.is-invalid-step').forEach(e => e.classList.remove('is-invalid-step', 'is-invalid'));
+        }
+
+        function markFieldInvalid(el, msg) {
+            if (!el) return;
+            el.classList.add('is-invalid', 'is-invalid-step');
+            const div = document.createElement('div');
+            div.className = 'step-val-error invalid-feedback d-block';
+            div.textContent = msg;
+            el.insertAdjacentElement('afterend', div);
+        }
+
+        function markRadioInvalid(name, msg) {
+            const group = document.querySelectorAll('[name="' + name + '"]');
+            if (!group.length) return;
+            const wrapper = group[group.length - 1].closest('.d-flex, .form-check, div');
+            if (wrapper) {
+                const div = document.createElement('div');
+                div.className = 'step-val-error text-danger small mt-1';
+                div.textContent = msg;
+                wrapper.insertAdjacentElement('afterend', div);
+            }
+        }
+
+        function validateStep(step) {
+            clearStepErrors();
+            let valid = true;
+            let firstEl = null;
+
+            function req(name, label) {
+                const el = document.querySelector('[name="' + name + '"]');
+                if (!el) return;
+                const val = el.value ? el.value.trim() : '';
+                if (!val) {
+                    markFieldInvalid(el, label + ' is required.');
+                    if (!firstEl) firstEl = el;
+                    valid = false;
+                }
+            }
+
+            function reqRadio(name, label) {
+                const checked = document.querySelector('[name="' + name + '"]:checked');
+                if (!checked) {
+                    markRadioInvalid(name, label + ' is required.');
+                    const first = document.querySelector('[name="' + name + '"]');
+                    if (!firstEl && first) firstEl = first;
+                    valid = false;
+                }
+            }
+
+            if (step === 1) {
+                reqRadio('employment_category', 'Category');
+                req('full_name',     'Name');
+                req('cnic',          'CNIC');
+                req('cnic_expiry',   'CNIC Expiry Date');
+                req('dob',           'Date of Birth');
+                req('nationality',   'Nationality');
+                req('marital_status','Marital Status');
+            } else if (step === 2) {
+                req('organization_id', 'Organization');
+                req('sbu_id',          'SBU');
+                req('department_id',   'Department');
+                req('role_id',         'Role');
+                req('join_date',       'Date of Joining');
+            } else if (step === 3) {
+                reqRadio('verification_status', 'Verification Status');
+            } else if (step === 5) {
+                req('account_title', 'Account Title');
+                req('account_no',    'Account No');
+                req('bank_branch',   'Bank & Branch');
+                reqRadio('account_type', 'A/C Type');
+            } else if (step === 6) {
+                req('cell_no',           'Cell Number');
+                req('contact_email',     'Email');
+                req('present_address',   'Present Address');
+                req('permanent_address', 'Permanent Address');
+                if (!valid) {
+                    const contactBtn = document.querySelector('[data-target="s6-contact"]');
+                    if (contactBtn) showSubSection(contactBtn, 's6-contact');
+                }
+            }
+
+            if (!valid && firstEl) {
+                firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            return valid;
         }
 
         function goToStep(target) {
@@ -338,14 +431,20 @@
             setVal('cnic',              d.cnic);
             setVal('cnic_expiry',       d.cnic_expiry);
             setVal('father_cnic',       d.father_cnic);
-            setVal('nationality',       d.nationality);
+            if (d.nationality) {
+                const natSel = document.getElementById('nationality_select');
+                if (natSel) {
+                    natSel.dataset.prefill = d.nationality;
+                    natSel.value = d.nationality;
+                }
+            }
             setVal('dob',               d.dob);
             setVal('ntn',               d.ntn);
-            setRadio('gender',          d.gender);
+            setSelect('gender',         d.gender);
             setVal('domicile_district', d.domicile_district);
             setVal('domicile_province', d.domicile_province);
             setVal('city_of_birth',     d.city_of_birth);
-            setVal('religion',          d.religion);
+            setSelect('religion',       d.religion);
             setVal('sect',              d.sect);
             setVal('spouse_name',       d.spouse_name);
             setSelect('marital_status', d.marital_status);

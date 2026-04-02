@@ -49,27 +49,3 @@
         </div>
     </div>
 </div>
-
-<script>
-    let rosterCalendar = null;
-    let selectedDates = null;
-
-    // Shift color
-    const shiftColors = {
-        '1': {
-            bg: 'rgba(0, 57, 171, 0.3)',
-            border: '#0a58ca',
-            name: 'Morning Shift'
-        },
-        '2': {
-            bg: 'rgba(13, 202, 240, 0.3)',
-            border: '#0aa2c0',
-            name: 'Night Shift'
-        },
-        '3': {
-            bg: 'rgba(25, 135, 84, 0.3)',
-            border: '#146c43',
-            name: 'Site Sales - Weekend'
-        }
-    }; 
-</script>

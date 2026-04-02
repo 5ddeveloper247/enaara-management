@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\ShiftRoster;
+namespace App\Http\Requests\Admin\ShiftRoster;
 
 use Illuminate\Foundation\Http\FormRequest;
 

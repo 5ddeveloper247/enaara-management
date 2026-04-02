@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Employee;
+use App\Models\ShiftPlanner;
 use App\Models\ShiftRoaster;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -219,5 +221,122 @@ class ShiftRosterService
     private function isWeekend(Carbon $date): bool
     {
         return $date->isSaturday() || $date->isSunday();
+    }
+
+    public function getGridData(int $year, int $month, int $weekIndex): array
+    {
+        $daysInMonth = (int) Carbon::createFromDate($year, $month, 1)->daysInMonth;
+        $startDay = ($weekIndex - 1) * 7 + 1;
+        $endDay = min($startDay + 6, $daysInMonth);
+        if ($startDay > $daysInMonth) {
+            return [
+                'departments' => [],
+                'employees'   => [],
+                'shifts'      => [],
+            ];
+        }
+
+        $startDate = Carbon::createFromDate($year, $month, $startDay)->startOfDay();
+        $endDate = Carbon::createFromDate($year, $month, $endDay)->endOfDay();
+
+        $employees = Employee::with('department')
+            ->where('is_active', 1)
+            ->orderBy('department_id')
+            ->orderBy('full_name')
+            ->get();
+
+        $deptMap = [];
+        foreach ($employees as $e) {
+            $did = (int) ($e->department_id ?? 0);
+            if (! isset($deptMap[$did])) {
+                $deptMap[$did] = [
+                    'id'   => $did,
+                    'name' => $e->department->name ?? 'Unassigned',
+                ];
+            }
+        }
+        $departments = array_values($deptMap);
+        usort($departments, fn ($a, $b) => strcmp($a['name'], $b['name']));
+
+        $empPayload = $employees->map(function (Employee $e) {
+            return [
+                'id'           => $e->id,
+                'name'         => $e->full_name,
+                'departmentId' => (int) ($e->department_id ?? 0),
+            ];
+        })->values()->all();
+
+        $employeeIds = $employees->pluck('id')->all();
+
+        $rosters = ShiftRoaster::with(['shift'])
+            ->whereIn('employee_id', $employeeIds)
+            ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get();
+
+        $shiftsOut = [];
+        foreach ($rosters as $roster) {
+            $sp = $roster->shift;
+            if (! $sp) {
+                continue;
+            }
+            $day = (int) $roster->roster_date->format('d');
+            $shiftType = $this->classifyShiftType($sp);
+            $shiftsOut[] = [
+                'rosterId'       => $roster->id,
+                'employeeId'     => $roster->employee_id,
+                'day'            => $day,
+                'shiftPlannerId' => $roster->shift_planner_id,
+                'shiftType'      => $shiftType,
+                'timeStart'      => $this->formatShiftTime($sp->start_time),
+                'timeEnd'        => $this->formatShiftTime($sp->end_time),
+                'checkIn'        => $this->formatShiftTime($sp->start_time),
+                'checkOut'       => $this->formatShiftTime($sp->end_time),
+                'floor'          => '',
+                'lateCheckIn'    => false,
+                'notes'          => $roster->notes ?? '',
+            ];
+        }
+
+        return [
+            'departments' => $departments,
+            'employees'   => $empPayload,
+            'shifts'      => $shiftsOut,
+        ];
+    }
+
+    private function classifyShiftType(ShiftPlanner $shift): string
+    {
+        $name = strtolower($shift->name ?? '');
+        $code = strtolower($shift->code ?? '');
+        if (str_contains($name, 'morning') || str_contains($code, 'morning')) {
+            return 'morning';
+        }
+        if (str_contains($name, 'evening') || str_contains($code, 'evening')) {
+            return 'evening';
+        }
+        if (str_contains($name, 'night') || str_contains($code, 'night')) {
+            return 'night';
+        }
+        $start = $shift->start_time;
+        if ($start) {
+            $h = (int) Carbon::parse($start)->format('G');
+            if ($h < 12) {
+                return 'morning';
+            }
+            if ($h < 17) {
+                return 'evening';
+            }
+        }
+
+        return 'night';
+    }
+
+    private function formatShiftTime($value): string
+    {
+        if (! $value) {
+            return '09:00';
+        }
+
+        return Carbon::parse($value)->format('H:i');
     }
 }

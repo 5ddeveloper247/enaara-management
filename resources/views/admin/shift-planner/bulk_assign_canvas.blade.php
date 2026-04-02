@@ -34,19 +34,19 @@
                         @forelse($employees ?? [] as $employee)
                             <div class="form-check mb-2 employee-item"
                                  data-department="{{ strtolower($employee->department->name ?? '') }}"
-                                 data-site="{{ strtolower($employee->site_assignment ?? '') }}">
+                                 data-site="{{ strtolower($employee->site ?? '') }}">
                                 <input class="form-check-input"
                                        type="checkbox"
                                        value="{{ $employee->id }}"
                                        id="emp{{ $employee->id }}"
                                        name="employee_ids[]">
                                 <label class="form-check-label text-white" for="emp{{ $employee->id }}">
-                                    {{ $employee->name }}
+                                    {{ $employee->full_name }}
                                     @if(!empty($employee->department->name ?? null))
                                         - {{ $employee->department->name }}
                                     @endif
-                                    @if(!empty($employee->site_assignment ?? null))
-                                        - {{ $employee->site_assignment }}
+                                    @if(!empty($employee->site ?? null))
+                                        - {{ $employee->site }}
                                     @endif
                                 </label>
                             </div>
@@ -412,7 +412,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (result.success) {
+                if (result.success) {
+                if (typeof window.reloadRosterGrid === 'function') {
+                    window.reloadRosterGrid();
+                }
                 if (bulkConflictWarning && result.data?.conflicts?.length > 0) {
                     bulkConflictWarning.style.display = 'block';
                     bulkConflictWarning.innerHTML = `

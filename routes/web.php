@@ -219,13 +219,14 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     })->name('admin.monthly-logs.index');
 
     Route::get('/shift-planner', [ShiftPlannerController::class, 'index'])->name('admin.shift-planner.index');
-    Route::post('/shift-planner', [ShiftPlannerControedller::class, 'store'])->name('admin.shift-planner.store');
+    Route::post('/shift-planner', [ShiftPlannerController::class, 'store'])->name('admin.shift-planner.store');
     Route::get('/shift-planner/{id}', [ShiftPlannerController::class, 'show'])->name('admin.shift-planner.show');
     Route::post('/shift-planner/{id}', [ShiftPlannerController::class, 'update'])->name('admin.shift-planner.update');
     Route::delete('/shift-planner/{id}', [ShiftPlannerController::class, 'destroy'])->name('admin.shift-planner.destroy');
 
     //Shift Roster
     Route::get('/shift-roster', [ShiftRosterController::class, 'index'])->name('admin.shift-roster.index');
+    Route::get('/shift-roster/grid', [ShiftRosterController::class, 'grid'])->name('admin.shift-roster.grid');
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
     Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
         ->name('admin.shift-roster.bulk-assign');

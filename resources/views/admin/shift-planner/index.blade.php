@@ -150,6 +150,11 @@
     <!-- FullCalendar JS -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
     <script src="{{ asset('js/dummy-data.js') }}"></script>
+    <script>
+        window.rosterGridUrl = @json(route('admin.shift-roster.grid'));
+        window.rosterStoreUrl = @json(route('admin.shift-roster.store'));
+        window.rosterUpdateUrlBase = @json(url('/admin/shift-roster'));
+    </script>
     <script src="{{ asset('js/roster-render.js') }}"></script>
 
     <script>
