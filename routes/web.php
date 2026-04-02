@@ -100,6 +100,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/department/add', [DepartmentController::class, 'store'])->name('admin.department.store');
     Route::get('/department/edit/{id}', [DepartmentController::class, 'edit'])->name('admin.department.edit');
     Route::post('/department/edit/{id}', [DepartmentController::class, 'update'])->name('admin.department.update');
+    Route::delete('/department/{id}', [DepartmentController::class, 'destroy'])->name('admin.department.destroy');
 
 
     Route::get('/leave-type', [LeaveTypeController::class, 'index'])->name('admin.leave.type.index');
@@ -107,6 +108,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/leave-type/add', [LeaveTypeController::class, 'store'])->name('admin.leave.type.store');
     Route::get('/leave-type/edit/{id}', [LeaveTypeController::class, 'edit'])->name('admin.leave.type.edit');
     Route::post('/leave-type/edit/{id}', [LeaveTypeController::class, 'update'])->name('admin.leave.type.update');
+    Route::delete('/leave-type/{id}', [LeaveTypeController::class, 'destroy'])->name('admin.leave.type.destroy');
 
     //Leave Requests 
     Route::get('/leave-request', [LeaveRequestController::class, 'index'])->name('admin.leave.request.index');

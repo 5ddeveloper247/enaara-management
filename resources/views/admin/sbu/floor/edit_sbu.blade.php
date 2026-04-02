@@ -76,12 +76,7 @@
     </div>
 
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
-        <div class="d-flex justify-content-between align-items-center gap-2">
-            <button type="button" class="btn btn-outline-danger delete-floor-btn" id="deleteSbuFloorBtn"
-                data-delete-url="">
-                <i class="bi bi-trash me-1"></i>Delete
-            </button>
-
+        <div class="d-flex justify-content-end align-items-center gap-2">
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
                 <button type="button" class="btn btn-light text-dark border-0" id="updateSbuFloorBtn">

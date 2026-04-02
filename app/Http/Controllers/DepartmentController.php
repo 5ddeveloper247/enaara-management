@@ -208,4 +208,41 @@ class DepartmentController extends Controller
             throw $e;
         }
     }
+
+    public function destroy(int $id): RedirectResponse|\Illuminate\Http\JsonResponse
+    {
+        $department = $this->departmentService->findById($id);
+
+        if (!$department) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Department not found.'
+                ], 404);
+            }
+            return redirect()->back()->with('error', 'Department not found.');
+        }
+
+        try {
+            $this->departmentService->destroy($department);
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Department deleted successfully.'
+                ]);
+            }
+
+            return redirect()->route('admin.department.index')->with('success', 'Department deleted successfully.');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete department. ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to delete department. ' . $e->getMessage());
+        }
+    }
 }

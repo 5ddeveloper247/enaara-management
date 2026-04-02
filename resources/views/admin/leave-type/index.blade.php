@@ -134,6 +134,9 @@
                                         <button type="button" class="btn btn-sm btn-outline-primary edit-leave-type-btn" data-bs-toggle="offcanvas" data-bs-target="#leaveTypeEditCanvas" data-leave-type-id="{{ $lt->id }}">
                                             <i class="bi bi-pencil me-1"></i>Edit
                                         </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-leave-type-btn ms-1" data-leave-type-id="{{ $lt->id }}">
+                                            <i class="bi bi-trash me-1"></i>Delete
+                                        </button>
                                     </td>
                                 </tr>
                             @empty
@@ -177,6 +180,68 @@
                     }
                 });
             }
+
+            // Delete Leave Type Handler
+            var leaveTypeDestroyUrl = '{{ route("admin.leave.type.destroy", ":id") }}';
+
+            $(document).on('click', '.delete-leave-type-btn', function(e) {
+                e.preventDefault();
+                
+                const leaveTypeId = $(this).data('leave-type-id');
+                const deleteUrl = leaveTypeDestroyUrl.replace(':id', leaveTypeId);
+                
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: deleteUrl,
+                            type: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        title: 'Deleted!',
+                                        text: response.message || 'Leave type has been deleted successfully.',
+                                        icon: 'success',
+                                        confirmButtonColor: '#3085d6'
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: response.message || 'An error occurred while deleting the leave type.',
+                                        icon: 'error',
+                                        confirmButtonColor: '#3085d6'
+                                    });
+                                }
+                            },
+                            error: function(xhr) {
+                                let errorMessage = 'Failed to delete leave type.';
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: errorMessage,
+                                    icon: 'error',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
             
             function loadDepartments(organizationId, selectedDepartmentId) {
                 if (!organizationId) {

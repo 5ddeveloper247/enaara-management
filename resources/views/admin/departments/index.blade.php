@@ -302,6 +302,84 @@
                     }
                 });
             });
+
+            $(document).on('click', '.delete-department-btn', function(e) {
+                e.preventDefault();
+                var button = this;
+                var deleteUrl = $(button).data('delete-url');
+
+                if (!deleteUrl) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Delete URL not found.'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'This department will be permanently deleted!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+
+                    $.ajax({
+                        url: deleteUrl,
+                        type: 'POST',
+                        data: {
+                            _method: 'DELETE',
+                            _token: csrfToken
+                        },
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        beforeSend: function() {
+                            $(button).prop('disabled', true).html('<i class="bi bi-trash"></i>...');
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Deleted',
+                                    text: response.message || 'Department deleted successfully.',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message || 'Failed to delete department.'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            let msg = 'Failed to delete department.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                msg = xhr.responseJSON.message;
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: msg
+                            });
+                        },
+                        complete: function() {
+                            $(button).prop('disabled', false).html('<i class="bi bi-trash"></i>');
+                        }
+                    });
+                });
+            });
             
             var filterStatus = document.querySelectorAll('.filter-status');
             filterStatus.forEach(function(radio) {

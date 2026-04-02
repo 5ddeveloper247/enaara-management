@@ -10,6 +10,10 @@
         initializeEventHandlers();
     });
 
+    function getCsrfToken() {
+        return $('meta[name="csrf-token"]').attr('content');
+    }
+
     function applyFilters() {
         const status = $('input[name="filterStatus"]:checked').val();
         $('#organizationsGrid .col-md-6').each(function() {
@@ -44,6 +48,88 @@
         $('#editOrganizationBtn').attr('data-org-id', get('data-org-id'));
     }
 
+    function deleteOrganization(button) {
+        const deleteUrl = $(button).data('delete-url');
+
+        if (!deleteUrl) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Delete URL not found.'
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'This organization will be permanently deleted!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            $.ajax({
+                url: deleteUrl,
+                type: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: getCsrfToken()
+                },
+                headers: {
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                beforeSend: function() {
+                    $(button).prop('disabled', true).html('<i class="bi bi-trash"></i>...');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const canvasEl = document.getElementById('organizationEditCanvas');
+                        if (canvasEl) {
+                            const offcanvas = bootstrap.Offcanvas.getInstance(canvasEl);
+                            if (offcanvas) offcanvas.hide();
+                        }
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted',
+                            text: response.message || 'Organization deleted successfully.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'Failed to delete organization.'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    let msg = 'Failed to delete organization.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: msg
+                    });
+                },
+                complete: function() {
+                    $(button).prop('disabled', false).html('<i class="bi bi-trash"></i>');
+                }
+            });
+        });
+    }
+
     function initializeEventHandlers() {
         const organizationDetailCanvas = document.getElementById('organizationDetailCanvas');
         if (organizationDetailCanvas) {
@@ -65,6 +151,11 @@
 
         $('#editOrganizationBtn').on('click', function() {
             const orgId = $(this).attr('data-org-id');
+        });
+
+        $(document).on('click', '.delete-organization-btn', function(e) {
+            e.preventDefault();
+            deleteOrganization(this);
         });
     }
 })();

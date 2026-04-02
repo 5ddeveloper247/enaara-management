@@ -260,6 +260,79 @@
 
             // Initial Filter Run (just in case)
             applyShiftFilters();
+
+            // Card Click Handler
+            $(document).on('click', '.shift-card', function(e) {
+                // Ignore clicks if they originate from inside a button
+                if ($(e.target).closest('.btn').length > 0) return;
+                
+                if (typeof window.populateShiftDetail === 'function') {
+                    window.populateShiftDetail(this);
+                    const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('shiftDetailCanvas'));
+                    bsOffcanvas.show();
+                }
+            });
+
+            // Delete Shift Handler
+            $(document).on('click', '.delete-shift-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const shiftId = $(this).data('shift-id');
+                const deleteUrl = `{{ url('admin/shift-planner') }}/${shiftId}`;
+                
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: deleteUrl,
+                            type: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        title: 'Deleted!',
+                                        text: response.message || 'Shift has been deleted successfully.',
+                                        icon: 'success',
+                                        confirmButtonColor: '#3085d6'
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: response.message || 'An error occurred while deleting the shift.',
+                                        icon: 'error',
+                                        confirmButtonColor: '#3085d6'
+                                    });
+                                }
+                            },
+                            error: function(xhr) {
+                                let errorMessage = 'Failed to delete shift.';
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: errorMessage,
+                                    icon: 'error',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
         });
 
         // Conflict checking function

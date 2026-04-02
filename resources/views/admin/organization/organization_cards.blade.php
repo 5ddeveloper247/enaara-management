@@ -50,6 +50,11 @@
                                 data-org-id="{{ $org->id }}">
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </button>
+
+                            <!-- Delete Button -->
+                            <button type="button" class="btn btn-sm btn-outline-danger flex-grow-1 delete-organization-btn" data-delete-url="{{ route('admin.organization.destroy', $org->id) }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
                             <!-- View Button -->
                             <button type="button"
                                 class="btn btn-sm btn-outline-secondary view-organization-btn"
@@ -66,6 +71,7 @@
                                 data-org-parent="{{ $org->parent ? e($org->parent->name) : '' }}">
                                 <i class="bi bi-eye"></i>
                             </button>
+
 
                         </div>
                     </div>

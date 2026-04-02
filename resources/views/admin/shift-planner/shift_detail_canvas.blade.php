@@ -142,6 +142,9 @@
         <!-- Action Buttons -->
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
+            <button type="button" class="btn btn-outline-danger delete-shift-btn" id="deleteShiftFromDetailBtn" data-shift-id="">
+                <i class="bi bi-trash me-1"></i>Delete Shift
+            </button>
             <button type="button" class="btn btn-light text-dark border-0" id="editShiftFromDetailBtn">
                 <i class="bi bi-pencil me-1"></i>Edit Shift
             </button>
@@ -150,79 +153,92 @@
 </div>
 
 <script>
+window.populateShiftDetail = function(card) {
+    if (!card) return;
+
+    // Extract data from card data attributes
+    const shiftData = {
+        shiftId: card.getAttribute('data-shift-id') || '-',
+        shiftName: card.getAttribute('data-shift-name') || '-',
+        shiftStart: card.getAttribute('data-shift-start') || '-',
+        shiftEnd: card.getAttribute('data-shift-end') || '-',
+        clockInWindow: card.getAttribute('data-clock-in-window') || '-',
+        clockOutWindow: card.getAttribute('data-clock-out-window') || '-',
+        gracePeriod: card.getAttribute('data-grace-period') || '0',
+        breakTime: card.getAttribute('data-break-time') || '0',
+        overtimeAllowed: card.getAttribute('data-overtime-allowed') === 'true',
+        overtimeTrigger: card.getAttribute('data-overtime-trigger') || '0'
+    };
+
+    // Populate shift information
+    const detailShiftName = document.getElementById('detailShiftName');
+    const detailShiftStart = document.getElementById('detailShiftStart');
+    const detailShiftEnd = document.getElementById('detailShiftEnd');
+    const detailClockInWindow = document.getElementById('detailClockInWindow');
+    const detailClockOutWindow = document.getElementById('detailClockOutWindow');
+    const detailGracePeriod = document.getElementById('detailGracePeriod');
+    const detailBreakTime = document.getElementById('detailBreakTime');
+    const detailOTAllowed = document.getElementById('detailOTAllowed');
+    const detailOTBadge = document.getElementById('detailOTBadge');
+    const detailOTTriggerSection = document.getElementById('detailOTTriggerSection');
+    const detailOTTrigger = document.getElementById('detailOTTrigger');
+    const detailTotalHours = document.getElementById('detailTotalHours');
+    const editShiftFromDetailBtn = document.getElementById('editShiftFromDetailBtn');
+    const deleteShiftFromDetailBtn = document.getElementById('deleteShiftFromDetailBtn');
+
+    if (detailShiftName) detailShiftName.textContent = shiftData.shiftName;
+    if (detailShiftStart) detailShiftStart.textContent = shiftData.shiftStart;
+    if (detailShiftEnd) detailShiftEnd.textContent = shiftData.shiftEnd;
+    if (detailClockInWindow) detailClockInWindow.textContent = shiftData.clockInWindow + ' - ' + shiftData.shiftStart;
+    if (detailClockOutWindow) detailClockOutWindow.textContent = shiftData.shiftEnd + ' - ' + shiftData.clockOutWindow;
+    if (detailGracePeriod) detailGracePeriod.textContent = shiftData.gracePeriod + ' mins';
+    if (detailBreakTime) detailBreakTime.textContent = shiftData.breakTime + ' mins';
+
+    // Overtime settings
+    if (shiftData.overtimeAllowed) {
+        if (detailOTAllowed) detailOTAllowed.textContent = 'Yes';
+        if (detailOTBadge) detailOTBadge.innerHTML = '<span class="badge px-3 py-2 rounded-1 bg-success"><i class="bi bi-check-circle me-1"></i>Enabled</span>';
+        if (detailOTTriggerSection) detailOTTriggerSection.style.display = 'block';
+        if (detailOTTrigger) detailOTTrigger.textContent = 'After ' + shiftData.overtimeTrigger + ' hours';
+    } else {
+        if (detailOTAllowed) detailOTAllowed.textContent = 'No';
+        if (detailOTBadge) detailOTBadge.innerHTML = '<span class="badge px-3 py-2 rounded-1 bg-secondary"><i class="bi bi-x-circle me-1"></i>Disabled</span>';
+        if (detailOTTriggerSection) detailOTTriggerSection.style.display = 'none';
+    }
+
+    // Calculate total hours
+    const start = shiftData.shiftStart.split(':');
+    const end = shiftData.shiftEnd.split(':');
+    let startHour = parseInt(start[0]);
+    let endHour = parseInt(end[0]);
+    
+    // Handle overnight shifts
+    if (endHour < startHour) {
+        endHour += 24;
+    }
+    
+    const totalHours = endHour - startHour;
+    if (detailTotalHours) detailTotalHours.textContent = totalHours + 'h';
+
+    // Store shift ID for edit and delete buttons
+    if (editShiftFromDetailBtn) editShiftFromDetailBtn.setAttribute('data-shift-id', shiftData.shiftId);
+    if (deleteShiftFromDetailBtn) deleteShiftFromDetailBtn.setAttribute('data-shift-id', shiftData.shiftId);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Shift Detail Canvas Handler
     const shiftDetailCanvas = document.getElementById('shiftDetailCanvas');
     if (shiftDetailCanvas) {
         shiftDetailCanvas.addEventListener('show.bs.offcanvas', function(event) {
-            const card = event.relatedTarget;
-            if (!card || !card.classList.contains('shift-card')) return;
-
-            // Extract data from card data attributes
-            const shiftData = {
-                shiftId: card.getAttribute('data-shift-id') || '-',
-                shiftName: card.getAttribute('data-shift-name') || '-',
-                shiftStart: card.getAttribute('data-shift-start') || '-',
-                shiftEnd: card.getAttribute('data-shift-end') || '-',
-                clockInWindow: card.getAttribute('data-clock-in-window') || '-',
-                clockOutWindow: card.getAttribute('data-clock-out-window') || '-',
-                gracePeriod: card.getAttribute('data-grace-period') || '0',
-                breakTime: card.getAttribute('data-break-time') || '0',
-                overtimeAllowed: card.getAttribute('data-overtime-allowed') === 'true',
-                overtimeTrigger: card.getAttribute('data-overtime-trigger') || '0'
-            };
-
-            // Populate shift information
-            const detailShiftName = document.getElementById('detailShiftName');
-            const detailShiftStart = document.getElementById('detailShiftStart');
-            const detailShiftEnd = document.getElementById('detailShiftEnd');
-            const detailClockInWindow = document.getElementById('detailClockInWindow');
-            const detailClockOutWindow = document.getElementById('detailClockOutWindow');
-            const detailGracePeriod = document.getElementById('detailGracePeriod');
-            const detailBreakTime = document.getElementById('detailBreakTime');
-            const detailOTAllowed = document.getElementById('detailOTAllowed');
-            const detailOTBadge = document.getElementById('detailOTBadge');
-            const detailOTTriggerSection = document.getElementById('detailOTTriggerSection');
-            const detailOTTrigger = document.getElementById('detailOTTrigger');
-            const detailTotalHours = document.getElementById('detailTotalHours');
-            const editShiftFromDetailBtn = document.getElementById('editShiftFromDetailBtn');
-
-            if (detailShiftName) detailShiftName.textContent = shiftData.shiftName;
-            if (detailShiftStart) detailShiftStart.textContent = shiftData.shiftStart;
-            if (detailShiftEnd) detailShiftEnd.textContent = shiftData.shiftEnd;
-            if (detailClockInWindow) detailClockInWindow.textContent = shiftData.clockInWindow + ' - ' + shiftData.shiftStart;
-            if (detailClockOutWindow) detailClockOutWindow.textContent = shiftData.shiftEnd + ' - ' + shiftData.clockOutWindow;
-            if (detailGracePeriod) detailGracePeriod.textContent = shiftData.gracePeriod + ' mins';
-            if (detailBreakTime) detailBreakTime.textContent = shiftData.breakTime + ' mins';
-
-            // Overtime settings
-            if (shiftData.overtimeAllowed) {
-                if (detailOTAllowed) detailOTAllowed.textContent = 'Yes';
-                if (detailOTBadge) detailOTBadge.innerHTML = '<span class="badge px-3 py-2 rounded-1 bg-success"><i class="bi bi-check-circle me-1"></i>Enabled</span>';
-                if (detailOTTriggerSection) detailOTTriggerSection.style.display = 'block';
-                if (detailOTTrigger) detailOTTrigger.textContent = 'After ' + shiftData.overtimeTrigger + ' hours';
-            } else {
-                if (detailOTAllowed) detailOTAllowed.textContent = 'No';
-                if (detailOTBadge) detailOTBadge.innerHTML = '<span class="badge px-3 py-2 rounded-1 bg-secondary"><i class="bi bi-x-circle me-1"></i>Disabled</span>';
-                if (detailOTTriggerSection) detailOTTriggerSection.style.display = 'none';
-            }
-
-            // Calculate total hours
-            const start = shiftData.shiftStart.split(':');
-            const end = shiftData.shiftEnd.split(':');
-            let startHour = parseInt(start[0]);
-            let endHour = parseInt(end[0]);
+            let card = event.relatedTarget;
             
-            // Handle overnight shifts
-            if (endHour < startHour) {
-                endHour += 24;
+            if (card && !card.classList.contains('shift-card')) {
+                card = card.closest('.shift-card');
             }
             
-            const totalHours = endHour - startHour;
-            if (detailTotalHours) detailTotalHours.textContent = totalHours + 'h';
-
-            // Store shift ID for edit button
-            if (editShiftFromDetailBtn) editShiftFromDetailBtn.setAttribute('data-shift-id', shiftData.shiftId);
+            if (card) {
+                window.populateShiftDetail(card);
+            }
         });
     }
 

@@ -53,4 +53,9 @@ class DepartmentService
         $department->update($data);
         return $department->fresh(['organization', 'sbu', 'parent']);
     }
+
+    public function destroy(Department $department): bool
+    {
+        return $department->delete();
+    }
 }
