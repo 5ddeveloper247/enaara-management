@@ -126,7 +126,7 @@
             </div>
 
             <div class="col-md-6 col-lg-4">
-                <div class="card shift-card border-1 rounded-4 h-100"
+                <div class="card shift-card border-1 rounded-4~ h-100"
                      data-bs-toggle="offcanvas"
                      data-bs-target="#shiftDetailCanvas"
                      data-shift-id="3"
