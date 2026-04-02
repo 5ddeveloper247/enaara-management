@@ -43,44 +43,44 @@
                 <th rowspan="2" class="header border">Employee ID</th>
                 <th rowspan="2" class="header border">Organization</th>
                 <th rowspan="2" class="header border">Department</th>
-                <th colspan="3" class="header border annual">Annual Leave</th>
-                <th colspan="3" class="header border sick">Sick Leave</th>
-                <th colspan="3" class="header border casual">Casual Leave</th>
+                <th class="bg-main text-white" colspan="3" style="border: 1px solid #012445; background-color: #012445; color: #ffffff;">Annual Leave</th>
+                <th class="bg-main text-white" colspan="3" style="border: 1px solid #012445; background-color: #012445; color: #ffffff;">Sick Leave</th>
+                <th class="bg-main text-white" colspan="3" style="border: 1px solid #012445; background-color: #012445; color: #ffffff;">Casual Leave</th>
             </tr>
-            <tr>
-                <th class="subheader border annual">Earned</th>
-                <th class="subheader border annual">Used</th>
-                <th class="subheader border annual">Remaining</th>
-                <th class="subheader border sick">Earned</th>
-                <th class="subheader border sick">Used</th>
-                <th class="subheader border sick">Remaining</th>
-                <th class="subheader border casual">Earned</th>
-                <th class="subheader border casual">Used</th>
-                <th class="subheader border casual">Remaining</th>
+            <tr style="background-color: #f8f9fa;">
+                <th style="border: 1px solid #dee2e6;">Earned</th>
+                <th style="border: 1px solid #dee2e6;">Used</th>
+                <th style="border: 1px solid #dee2e6;">Remaining</th>
+                <th style="border: 1px solid #dee2e6;">Earned</th>
+                <th style="border: 1px solid #dee2e6;">Used</th>
+                <th style="border: 1px solid #dee2e6;">Remaining</th>
+                <th style="border: 1px solid #dee2e6;">Earned</th>
+                <th style="border: 1px solid #dee2e6;">Used</th>
+                <th style="border: 1px solid #dee2e6;">Remaining</th>
             </tr>
         </thead>
         <tbody>
             @foreach($balances as $employee)
                 <tr>
-                    <td class="border">{{ $employee['employeeName'] }}</td>
-                    <td class="border text-center">{{ $employee['employeeId'] }}</td>
-                    <td class="border">{{ $employee['organization'] }}</td>
-                    <td class="border">{{ $employee['department'] }}</td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['employeeId'] }}</td>
+                    <td style="border: 1px solid #dee2e6;"><strong>{{ $employee['employeeName'] }}</strong></td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['organization'] }}</td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['department'] }}</td>
                     
                     {{-- Annual --}}
-                    <td class="border text-center annual">{{ $employee['annual']['earned'] }}</td>
-                    <td class="border text-center annual">{{ $employee['annual']['used'] }}</td>
-                    <td class="border text-center annual text-bold">{{ $employee['annual']['remaining'] }}</td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['annual']['earned'] }}</td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['annual']['used'] }}</td>
+                    <td style="border: 1px solid #dee2e6; color: #198754; font-weight: bold;">{{ $employee['annual']['remaining'] }}</td>
                     
                     {{-- Sick --}}
-                    <td class="border text-center sick">{{ $employee['sick']['earned'] }}</td>
-                    <td class="border text-center sick">{{ $employee['sick']['used'] }}</td>
-                    <td class="border text-center sick text-bold">{{ $employee['sick']['remaining'] }}</td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['sick']['earned'] }}</td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['sick']['used'] }}</td>
+                    <td style="border: 1px solid #dee2e6; color: #198754; font-weight: bold;">{{ $employee['sick']['remaining'] }}</td>
                     
                     {{-- Casual --}}
-                    <td class="border text-center casual">{{ $employee['casual']['earned'] }}</td>
-                    <td class="border text-center casual">{{ $employee['casual']['used'] }}</td>
-                    <td class="border text-center casual text-bold">{{ $employee['casual']['remaining'] }}</td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['casual']['earned'] }}</td>
+                    <td style="border: 1px solid #dee2e6;">{{ $employee['casual']['used'] }}</td>
+                    <td style="border: 1px solid #dee2e6; color: #198754; font-weight: bold;">{{ $employee['casual']['remaining'] }}</td>
                 </tr>
             @endforeach
         </tbody>

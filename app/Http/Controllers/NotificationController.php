@@ -16,9 +16,8 @@ class NotificationController extends Controller
         $notification->markAsRead();
 
         // Target URL is either from the data (e.g. Leave Request dashboard) or a fallback
-        $targetUrl = '/admin/leave-request';
+        $targetUrl = $notification->data['url'] ?? '/admin/leave-request';
         
-        // Add more logic if notifications for different modules are added
         return redirect($targetUrl);
     }
 

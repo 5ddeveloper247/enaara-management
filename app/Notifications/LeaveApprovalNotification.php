@@ -53,6 +53,7 @@ class LeaveApprovalNotification extends Notification implements ShouldQueue
             'end_date' => $this->leaveRequest->end_date,
             'duration' => $this->leaveRequest->duration,
             'status' => $this->leaveRequest->status,
+            'url' => '/admin/leave-request',
         ];
     }
 }

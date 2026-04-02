@@ -14,11 +14,11 @@ class BalanceTrackerAdjustRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employeeId'     => 'required|integer|exists:employees,id',
+            'employeeId'     => 'required|exists:employees,id',
+            'leave_type'     => 'required|in:annual,sick,casual',
             'adjustmentType' => 'required|in:add,subtract',
-            'leaveType'      => 'required|string|in:annual,sick,casual',
             'days'           => 'required|numeric|min:0.5',
-            'reason'         => 'required|string|max:1000',
+            'reason'         => 'required|string|min:5|max:255',
         ];
     }
 
@@ -29,8 +29,8 @@ class BalanceTrackerAdjustRequest extends FormRequest
             'employeeId.exists'       => 'The selected employee does not exist.',
             'adjustmentType.required' => 'Adjustment type is required.',
             'adjustmentType.in'       => 'Adjustment type must be either "add" or "subtract".',
-            'leaveType.required'      => 'Please select a leave type.',
-            'leaveType.in'            => 'Leave type must be Annual, Sick, or Casual.',
+            'leaveTypeId.required'    => 'Please select a leave type.',
+            'leaveTypeId.exists'      => 'The selected leave type does not exist.',
             'days.required'           => 'Number of days is required.',
             'days.min'                => 'Minimum adjustment is 0.5 days.',
             'reason.required'         => 'A reason is mandatory for audit purposes.',

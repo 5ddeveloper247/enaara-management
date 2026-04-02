@@ -5,9 +5,9 @@
             <th>Employee</th>
             <th>Organization</th>
             <th>Department</th>
-            <th>Annual Leave</th>
-            <th>Sick Leave</th>
-            <th>Casual Leave</th>
+            <th>Annual</th>
+            <th>Sick</th>
+            <th>Casual</th>
             <th class="text-end">Actions</th>
         </tr>
     </thead>

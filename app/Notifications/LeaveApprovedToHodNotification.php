@@ -54,6 +54,7 @@ class LeaveApprovedToHodNotification extends Notification implements ShouldQueue
             'employee_name' => $employeeName,
             'status' => $this->leaveRequest->status,
             'actor_name' => $this->actorName,
+            'url' => '/admin/leave-request',
         ];
     }
 }

@@ -17,17 +17,25 @@ class BalanceTrackerController extends Controller
         $this->balanceTrackerService = $balanceTrackerService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         if (!validatePermissions('admin/balance-tracker')) {
             abort(403, 'Unauthorized action.');
         }
 
-        $balances = $this->balanceTrackerService->getBalances();
-        $organizations = Organization::where('is_active', true)->orderBy('name')->get();
-        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $organization = $request->query('organization');
+        $department = $request->query('department');
 
-        return view('admin.balance-tracker.index', compact('balances', 'organizations', 'departments'));
+        $balances = $this->balanceTrackerService->getBalances($organization, $department);
+        
+        $organizations = Organization::where('is_active', true)->orderBy('name', 'asc')->get();
+        $departments = Department::where('is_active', true)->orderBy('name', 'asc')->get();
+
+        return view('admin.balance-tracker.index', compact(
+            'balances',
+            'organizations',
+            'departments'
+        ));
     }
 
     public function adjustBalance(BalanceTrackerAdjustRequest $request)
