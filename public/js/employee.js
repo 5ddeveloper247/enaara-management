@@ -47,7 +47,7 @@
                 { data: null,                  render: renderActions,           orderable: false, className: 'text-end no-toggle' },
             ],
             order: [[0, 'desc']],
-            scrollX: true,
+            scrollX: false,
             responsive: false,
             columnDefs: [
                 { targets: [0, 2, 5], responsivePriority: 1 },
@@ -69,6 +69,7 @@
                 className: 'btn btn-sm border-0 bg-main text-black',
                 columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
             }],
+            dom: '<"row px-4 py-3"<"col-md-6"l><"col-md-6 d-flex justify-content-end gap-2"<B><f>>>r<"employee-datatable-scroll"t><"row px-4 py-2"<"col-md-5"i><"col-md-7"p>>',
         });
     }
 

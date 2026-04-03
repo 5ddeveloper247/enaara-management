@@ -9,6 +9,13 @@
     width: 100% !important;
 }
 
+.employee-datatable-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* Fix for DataTables responsive child rows */
 #employeeTable tbody tr.child ul.dtr-details {
     width: 100%;

@@ -5,8 +5,9 @@
     window.employeeEditUrlBase = "{{ url('admin/employee') }}";
 </script>
 
-<div id="tableViewWrapper" class=" row g-3">
-    <table id="employeeTable" class="display nowrap table table-striped" style="width:100%">
+<div id="tableViewWrapper" class="row g-3">
+    <div class="col-12">
+    <table id="employeeTable" class="display nowrap table table-striped w-100 mb-0">
         <thead class="bg-main">
             <tr>
                 <th>Employee ID</th>
@@ -38,6 +39,7 @@
         </thead>
         <tbody class="bg-transparent"></tbody>
     </table>
+    </div>
 </div>
 
 <div id="gridViewWrapper" class="d-none row g-3 p-3"></div>
