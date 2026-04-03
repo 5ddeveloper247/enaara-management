@@ -281,22 +281,26 @@
                     const quota = employee.quotas[type.id] || { earned: 0, used: 0, remaining: 0 };
                     const progressColor = getProgressColor(type.name);
                     
-                    columns += `
-                    <td>
-                        <div class="small mb-1">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Earned: <strong>${quota.earned}</strong></span>
-                                <span>Used: <strong>${quota.used}</strong></span>
+                    if (quota.earned === 0 && quota.used === 0 && quota.remaining === 0) {
+                        columns += `<td class="text-center align-middle"><span class="text-muted opacity-50">-</span></td>`;
+                    } else {
+                        columns += `
+                        <td>
+                            <div class="small mb-1">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Earned: <strong>${quota.earned}</strong></span>
+                                    <span>Used: <strong>${quota.used}</strong></span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Remaining: <strong class="text-success">${quota.remaining}</strong></span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${quota.earned > 0 ? (quota.remaining / quota.earned) * 100 : 0}%"></div>
+                                </div>
                             </div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Remaining: <strong class="text-success">${quota.remaining}</strong></span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${quota.earned > 0 ? (quota.remaining / quota.earned) * 100 : 0}%"></div>
-                            </div>
-                        </div>
-                    </td>
-                    `;
+                        </td>
+                        `;
+                    }
                 });
 
                 columns += `

@@ -65,11 +65,20 @@ class BalanceTrackerService
                 $employeeQuotas = $quotas->get($employee->id, collect());
                 
                 $quotaData = [];
+                $hasActiveQuota = false;
+                
                 foreach ($leaveTypes as $type) {
                     $quota = $employeeQuotas->where('leave_type_id', $type->id)->first();
+                    $earned = $quota ? (float) $quota->adjusted_quota : 0;
+                    $used = $quota ? (float) $quota->used : 0;
+                    
+                    if ($earned > 0 || $used > 0) {
+                        $hasActiveQuota = true;
+                    }
+
                     $quotaData[$type->id] = [
-                        'earned' => $quota ? (float) $quota->adjusted_quota : 0,
-                        'used' => $quota ? (float) $quota->used : 0,
+                        'earned' => $earned,
+                        'used' => $used,
                         'remaining' => $quota ? (float) $quota->remaining_balance : 0
                     ];
                 }
@@ -81,9 +90,12 @@ class BalanceTrackerService
                     'joinDate' => $employee->join_date ?? $employee->created_at,
                     'organization' => $employee->organization->name ?? 'N/A',
                     'department' => $employee->department->name ?? 'N/A',
-                    'quotas' => $quotaData
+                    'quotas' => $quotaData,
+                    'hasActiveQuota' => $hasActiveQuota
                 ];
-            });
+            })->filter(function($employeeData) {
+                return $employeeData['hasActiveQuota'];
+            })->values();
 
             return [
                 'balances' => $balances,
