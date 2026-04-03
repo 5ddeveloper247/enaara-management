@@ -31,7 +31,14 @@ class ShiftRosterService
             $shiftRoster = ShiftRoaster::create([
                 'employee_id' => $data['employee_id'],
                 'shift_planner_id' => $data['shift_planner_id'],
+                'shift_type' => $data['shift_type'] ?? null,
                 'roster_date' => $data['roster_date'],
+                'start_time' => $data['start_time'] ?? null,
+                'end_time' => $data['end_time'] ?? null,
+                'check_in' => $data['check_in'] ?? null,
+                'check_out' => $data['check_out'] ?? null,
+                'floor' => $data['floor'] ?? null,
+                'late_check_in' => $data['late_check_in'] ?? false,
                 'status' => $data['status'] ?? 1,
                 'notes' => $data['notes'] ?? null,
                 'assigned_by' => auth()->id(),
@@ -69,7 +76,14 @@ class ShiftRosterService
             $shiftRoster->update([
                 'employee_id' => $data['employee_id'],
                 'shift_planner_id' => $data['shift_planner_id'],
+                'shift_type' => $data['shift_type'] ?? $shiftRoster->shift_type,
                 'roster_date' => $data['roster_date'],
+                'start_time' => isset($data['start_time']) ? $data['start_time'] : $shiftRoster->start_time,
+                'end_time' => isset($data['end_time']) ? $data['end_time'] : $shiftRoster->end_time,
+                'check_in' => isset($data['check_in']) ? $data['check_in'] : $shiftRoster->check_in,
+                'check_out' => isset($data['check_out']) ? $data['check_out'] : $shiftRoster->check_out,
+                'floor' => isset($data['floor']) ? $data['floor'] : $shiftRoster->floor,
+                'late_check_in' => isset($data['late_check_in']) ? $data['late_check_in'] : $shiftRoster->late_check_in,
                 'status' => $data['status'] ?? $shiftRoster->status,
                 'notes' => $data['notes'] ?? $shiftRoster->notes,
                 'updated_by' => auth()->id(),
@@ -133,6 +147,20 @@ class ShiftRosterService
             foreach ($employeeIds as $employeeId) {
                 foreach ($dates as $date) {
                     $rosterDate = $date->toDateString();
+                    
+                    // Advanced Conflict Check (Rest Period)
+                    if ($checkConflicts) {
+                        $conflictMessage = $this->checkRestPeriodConflict($employeeId, $rosterDate, $shiftPlannerId);
+                        if ($conflictMessage && !$overrideExisting) {
+                            $conflicts[] = [
+                                'employee_id' => $employeeId,
+                                'roster_date' => $rosterDate,
+                                'message' => $conflictMessage,
+                            ];
+                            $skippedCount++;
+                            continue;
+                        }
+                    }
 
                     $existingRoster = ShiftRoaster::where('employee_id', $employeeId)
                         ->whereDate('roster_date', $rosterDate)
@@ -157,6 +185,14 @@ class ShiftRosterService
                                 'status' => 1,
                                 'notes' => $notes,
                                 'updated_by' => auth()->id(),
+                                // Reset override fields to shift defaults on bulk override
+                                'shift_type' => null,
+                                'start_time' => null,
+                                'end_time' => null,
+                                'check_in' => null,
+                                'check_out' => null,
+                                'floor' => null,
+                                'late_check_in' => false,
                             ]);
 
                             $updatedCount++;
@@ -286,13 +322,13 @@ class ShiftRosterService
                 'employeeId'     => $roster->employee_id,
                 'day'            => $day,
                 'shiftPlannerId' => $roster->shift_planner_id,
-                'shiftType'      => $shiftType,
-                'timeStart'      => $this->formatShiftTime($sp->start_time),
-                'timeEnd'        => $this->formatShiftTime($sp->end_time),
-                'checkIn'        => $this->formatShiftTime($sp->start_time),
-                'checkOut'       => $this->formatShiftTime($sp->end_time),
-                'floor'          => '',
-                'lateCheckIn'    => false,
+                'shiftType'      => $roster->shift_type ?? $this->classifyShiftType($sp),
+                'timeStart'      => $roster->start_time ? $this->formatShiftTime($roster->start_time) : $this->formatShiftTime($sp->start_time),
+                'timeEnd'        => $roster->end_time ? $this->formatShiftTime($roster->end_time) : $this->formatShiftTime($sp->end_time),
+                'checkIn'        => $roster->check_in ? $this->formatShiftTime($roster->check_in) : $this->formatShiftTime($sp->start_time),
+                'checkOut'       => $roster->check_out ? $this->formatShiftTime($roster->check_out) : $this->formatShiftTime($sp->end_time),
+                'floor'          => $roster->floor ?? '',
+                'lateCheckIn'    => (bool) ($roster->late_check_in ?? false),
                 'notes'          => $roster->notes ?? '',
             ];
         }
@@ -338,5 +374,79 @@ class ShiftRosterService
         }
 
         return Carbon::parse($value)->format('H:i');
+    }
+
+    /**
+     * Check for rest period conflicts (minimum 8 hours between shifts).
+     */
+    private function checkRestPeriodConflict(int $employeeId, string $date, int $newShiftId): ?string
+    {
+        $newShift = ShiftPlanner::find($newShiftId);
+        if (!$newShift) return null;
+
+        $newStartTimeRaw = $newShift->getRawOriginal('start_time');
+        $newEndTimeRaw = $newShift->getRawOriginal('end_time');
+        
+        if (!$newStartTimeRaw || !$newEndTimeRaw) return null;
+
+        $newStart = Carbon::parse($date . ' ' . $newStartTimeRaw);
+        $newEnd = Carbon::parse($date . ' ' . $newEndTimeRaw);
+        if ($newEnd->lessThan($newStart)) {
+            $newEnd->addDay();
+        }
+
+        // Check previous day shift
+        $prevDate = Carbon::parse($date)->subDay()->toDateString();
+        $prevRoster = ShiftRoaster::with('shift')
+            ->where('employee_id', $employeeId)
+            ->whereDate('roster_date', $prevDate)
+            ->first();
+
+        if ($prevRoster && ($prevRoster->shift || $prevRoster->start_time)) {
+            $prevEndStr = $prevRoster->end_time ? $prevRoster->getRawOriginal('end_time') : ($prevRoster->shift ? $prevRoster->shift->getRawOriginal('end_time') : null);
+            $prevStartStr = $prevRoster->start_time ? $prevRoster->getRawOriginal('start_time') : ($prevRoster->shift ? $prevRoster->shift->getRawOriginal('start_time') : null);
+            
+            if ($prevEndStr && $prevStartStr) {
+                $prevEnd = Carbon::parse($prevDate . ' ' . $prevEndStr);
+                $prevStart = Carbon::parse($prevDate . ' ' . $prevStartStr);
+                
+                if ($prevEnd->lessThan($prevStart)) {
+                    $prevEnd->addDay();
+                }
+
+                if ($prevEnd->diffInHours($newStart, false) < 8) {
+                    return "Insufficient rest period (less than 8 hours) after previous day's shift.";
+                }
+            }
+        }
+
+        // Check same day shift (if any other than existing)
+        $sameDayRoster = ShiftRoaster::where('employee_id', $employeeId)
+            ->whereDate('roster_date', $date)
+            ->first();
+            
+        if ($sameDayRoster && $sameDayRoster->shift_planner_id != $newShiftId) {
+             return "Employee already assigned to another shift on this day.";
+        }
+
+        // Check next day shift
+        $nextDate = Carbon::parse($date)->addDay()->toDateString();
+        $nextRoster = ShiftRoaster::with('shift')
+            ->where('employee_id', $employeeId)
+            ->whereDate('roster_date', $nextDate)
+            ->first();
+
+        if ($nextRoster && ($nextRoster->shift || $nextRoster->start_time)) {
+            $nextStartStr = $nextRoster->start_time ? $nextRoster->getRawOriginal('start_time') : ($nextRoster->shift ? $nextRoster->shift->getRawOriginal('start_time') : null);
+            
+            if ($nextStartStr) {
+                $nextStart = Carbon::parse($nextDate . ' ' . $nextStartStr);
+                if ($newEnd->diffInHours($nextStart, false) < 8) {
+                    return "Insufficient rest period (less than 8 hours) before next day's shift.";
+                }
+            }
+        }
+
+        return null;
     }
 }

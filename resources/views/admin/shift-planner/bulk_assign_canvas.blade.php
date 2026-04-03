@@ -20,11 +20,21 @@
                 <!-- Quick Selection -->
                 <div class="mb-3">
                     <label class="form-label fw-semibold small text-white">Quick Selection</label>
-                    <div class="d-flex gap-2 flex-wrap">
+                    <div class="d-flex gap-2 flex-wrap mb-2">
                         <button type="button" class="btn btn-sm btn-outline-light" id="selectAllBtn">Select All</button>
                         <button type="button" class="btn btn-sm btn-outline-light" id="selectByDeptBtn">By Department</button>
                         <button type="button" class="btn btn-sm btn-outline-light" id="selectBySiteBtn">By Site</button>
                         <button type="button" class="btn btn-sm btn-outline-light" id="clearSelectionBtn">Clear</button>
+                    </div>
+
+                    <!-- Department Selection Dropdown (Initially hidden) -->
+                    <div id="deptSelectionWrapper" style="display: none;" class="mb-2 animate__animated animate__fadeInDown">
+                        <select class="form-select form-select-sm bg-dark text-white border-secondary" id="deptFilterSelect">
+                            <option value="">Select Department to Filter...</option>
+                            @foreach($departments ?? [] as $dept)
+                                <option value="{{ strtolower($dept->name) }}">{{ $dept->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
 
@@ -202,40 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function addEventsToCalendar(selectedEmployees, shiftId, shiftName, startDate, endDate, excludeWeekends) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
-        selectedEmployees.forEach(function(employee) {
-            const currentDate = new Date(start);
-
-            while (currentDate <= end) {
-                if (excludeWeekends) {
-                    const dayOfWeek = currentDate.getDay();
-                    if (dayOfWeek === 0 || dayOfWeek === 6) {
-                        currentDate.setDate(currentDate.getDate() + 1);
-                        continue;
-                    }
-                }
-
-                if (typeof addRosterEvent === 'function') {
-                    const dateStr = currentDate.toISOString().split('T')[0];
-
-                    addRosterEvent({
-                        id: 'bulk-' + employee.id + '-' + dateStr,
-                        employeeId: employee.id,
-                        employeeName: employee.name,
-                        shiftId: shiftId,
-                        shiftName: shiftName,
-                        start: dateStr,
-                        end: dateStr
-                    });
-                }
-
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-        });
-    }
+    // Removed addEventsToCalendar as reloadRosterGrid handles UI update from server
 
     function resetBulkAssignForm() {
         form.reset();
@@ -280,31 +257,48 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('selectByDeptBtn')?.addEventListener('click', function() {
-        const dept = prompt('Enter department name');
-        if (!dept) return;
+        const wrapper = document.getElementById('deptSelectionWrapper');
+        if (wrapper.style.display === 'none') {
+            wrapper.style.display = 'block';
+        } else {
+            wrapper.style.display = 'none';
+        }
+    });
 
-        const target = dept.trim().toLowerCase();
+    document.getElementById('deptFilterSelect')?.addEventListener('change', function() {
+        const targetDept = this.value;
+        if (!targetDept) return;
 
-        document.querySelectorAll('.employee-item').forEach(function(item) {
+        const list = document.getElementById('employeeList');
+        const items = Array.from(list.querySelectorAll('.employee-item'));
+
+        items.forEach(function(item) {
             const checkbox = item.querySelector(employeeCheckboxesSelector);
-            checkbox.checked = item.dataset.department.includes(target);
+            const itemDept = item.dataset.department || '';
+            const isMatch = itemDept === targetDept;
+            checkbox.checked = isMatch;
+            
+            // Reordering logic: move to top if match
+            if (isMatch) {
+                list.prepend(item);
+            }
         });
 
         updateSelectedCount();
     });
 
     document.getElementById('selectBySiteBtn')?.addEventListener('click', function() {
-        const site = prompt('Enter site name');
-        if (!site) return;
-
-        const target = site.trim().toLowerCase();
-
-        document.querySelectorAll('.employee-item').forEach(function(item) {
-            const checkbox = item.querySelector(employeeCheckboxesSelector);
-            checkbox.checked = item.dataset.site.includes(target);
-        });
-
-        updateSelectedCount();
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Coming Soon!',
+                text: 'The "By Site" filtering feature will be added soon. We are currently finalizing the site-based assignment logic.',
+                icon: 'info',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'Got it!'
+            });
+        } else {
+            alert('This feature will be added soon.');
+        }
     });
 
     document.querySelectorAll('[data-days]').forEach(function(btn) {
@@ -426,6 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     bulkConflictWarning.style.display = 'none';
                 }
 
+                /* 
                 addEventsToCalendar(
                     selectedEmployees,
                     shiftId,
@@ -434,6 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     endDate,
                     excludeWeekends
                 );
+                */
 
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({

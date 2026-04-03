@@ -35,7 +35,10 @@ class ShiftPlannerController extends Controller
         $rosters = ShiftRoaster::with(['employee.department', 'shift'])
             ->orderBy('roster_date', 'asc')
             ->get();
-        return view('admin.shift-planner.index', compact('employees', 'shifts', 'rosters'));
+
+        $departments = \App\Models\Department::orderBy('name')->get();
+
+        return view('admin.shift-planner.index', compact('employees', 'shifts', 'rosters', 'departments'));
     }
 
     public function show($id)
