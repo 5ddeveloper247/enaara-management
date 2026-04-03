@@ -22,7 +22,6 @@ class ShiftRosterRequest extends FormRequest
         return [
             'employee_id' => ['required', 'integer', 'exists:employees,id'],
             'shift_planner_id' => ['required', 'integer', 'exists:shift_planners,id'],
-            'shift_type' => ['nullable', 'string', 'in:general,morning,evening,night'],
             'roster_date' => ['required', 'date'],
 
             'start_time' => ['required', 'date_format:H:i'],

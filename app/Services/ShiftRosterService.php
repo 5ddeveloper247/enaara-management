@@ -31,7 +31,6 @@ class ShiftRosterService
             $shiftRoster = ShiftRoaster::create([
                 'employee_id' => $data['employee_id'],
                 'shift_planner_id' => $data['shift_planner_id'],
-                'shift_type' => $data['shift_type'] ?? null,
                 'roster_date' => $data['roster_date'],
                 'start_time' => $data['start_time'] ?? null,
                 'end_time' => $data['end_time'] ?? null,
@@ -76,7 +75,6 @@ class ShiftRosterService
             $shiftRoster->update([
                 'employee_id' => $data['employee_id'],
                 'shift_planner_id' => $data['shift_planner_id'],
-                'shift_type' => $data['shift_type'] ?? $shiftRoster->shift_type,
                 'roster_date' => $data['roster_date'],
                 'start_time' => isset($data['start_time']) ? $data['start_time'] : $shiftRoster->start_time,
                 'end_time' => isset($data['end_time']) ? $data['end_time'] : $shiftRoster->end_time,
@@ -186,7 +184,6 @@ class ShiftRosterService
                                 'notes' => $notes,
                                 'updated_by' => auth()->id(),
                                 // Reset override fields to shift defaults on bulk override
-                                'shift_type' => null,
                                 'start_time' => null,
                                 'end_time' => null,
                                 'check_in' => null,
@@ -316,13 +313,11 @@ class ShiftRosterService
                 continue;
             }
             $day = (int) $roster->roster_date->format('d');
-            $shiftType = $this->classifyShiftType($sp);
             $shiftsOut[] = [
                 'rosterId'       => $roster->id,
                 'employeeId'     => $roster->employee_id,
                 'day'            => $day,
                 'shiftPlannerId' => $roster->shift_planner_id,
-                'shiftType'      => $roster->shift_type ?? $this->classifyShiftType($sp),
                 'timeStart'      => $roster->start_time ? $this->formatShiftTime($roster->start_time) : $this->formatShiftTime($sp->start_time),
                 'timeEnd'        => $roster->end_time ? $this->formatShiftTime($roster->end_time) : $this->formatShiftTime($sp->end_time),
                 'checkIn'        => $roster->check_in ? $this->formatShiftTime($roster->check_in) : $this->formatShiftTime($sp->start_time),
@@ -338,33 +333,6 @@ class ShiftRosterService
             'employees'   => $empPayload,
             'shifts'      => $shiftsOut,
         ];
-    }
-
-    private function classifyShiftType(ShiftPlanner $shift): string
-    {
-        $name = strtolower($shift->name ?? '');
-        $code = strtolower($shift->code ?? '');
-        if (str_contains($name, 'morning') || str_contains($code, 'morning')) {
-            return 'morning';
-        }
-        if (str_contains($name, 'evening') || str_contains($code, 'evening')) {
-            return 'evening';
-        }
-        if (str_contains($name, 'night') || str_contains($code, 'night')) {
-            return 'night';
-        }
-        $start = $shift->start_time;
-        if ($start) {
-            $h = (int) Carbon::parse($start)->format('G');
-            if ($h < 12) {
-                return 'morning';
-            }
-            if ($h < 17) {
-                return 'evening';
-            }
-        }
-
-        return 'night';
     }
 
     private function formatShiftTime($value): string

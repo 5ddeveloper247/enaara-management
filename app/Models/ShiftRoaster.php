@@ -17,7 +17,6 @@ class ShiftRoaster extends Model
     protected $fillable = [
         'employee_id',
         'shift_planner_id',
-        'shift_type',
         'roster_date',
         'start_time',
         'end_time',

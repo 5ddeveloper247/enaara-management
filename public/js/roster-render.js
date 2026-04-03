@@ -1,10 +1,4 @@
 (function() {
-    var shiftIcons = {
-        morning: { icon: 'bi-sun-fill', iconClass: 'text-warning' },
-        evening: { icon: 'bi-cloud-sun-fill', iconClass: 'text-primary' },
-        night: { icon: 'bi-moon-stars-fill', iconClass: 'text-info' }
-    };
-
     var rosterViewDate = new Date();
     var rosterWeekIndex = 1;
     var rosterData = null;
@@ -45,15 +39,12 @@
     }
 
     function pillHtml(s) {
-        var type = s.shiftType in shiftIcons ? s.shiftType : 'morning';
-        var opt = shiftIcons[type];
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
         var lateBlock = s.lateCheckIn ? '<span class="shift-status-late"><i class="bi bi-exclamation-circle-fill"></i> Late check-in</span>' : '';
         var floor = (s.floor && String(s.floor).trim()) ? s.floor : '—';
-        return '<div class="shift-pill shift-' + type + lateClass + '">' +
+        return '<div class="shift-pill' + lateClass + '">' +
             '<div class="shift-pill-top">' +
             '<span class="shift-time">' + s.timeStart + ' – ' + s.timeEnd + '</span>' +
-            '<span class="shift-icon ' + opt.iconClass + '"><i class="bi ' + opt.icon + '"></i></span>' +
             '</div>' +
             '<div class="shift-pill-meta">' +
             '<span class="shift-check">Check-in ' + s.checkIn + ' • Check-out ' + s.checkOut + '</span>' +
