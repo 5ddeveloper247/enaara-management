@@ -18,6 +18,12 @@ class ShiftRoaster extends Model
         'employee_id',
         'shift_planner_id',
         'roster_date',
+        'start_time',
+        'end_time',
+        'check_in',
+        'check_out',
+        'floor',
+        'late_check_in',
         'status',
         'notes',
         'assigned_by',
@@ -29,6 +35,11 @@ class ShiftRoaster extends Model
      */
     protected $casts = [
         'roster_date' => 'date',
+        'start_time' => 'datetime:H:i',
+        'end_time' => 'datetime:H:i',
+        'check_in' => 'datetime:H:i',
+        'check_out' => 'datetime:H:i',
+        'late_check_in' => 'boolean',
         'status' => 'integer',
     ];
 

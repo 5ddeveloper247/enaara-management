@@ -25,10 +25,48 @@
                 <select class="form-select" id="rosterShiftPlannerId" name="shift_planner_id" required>
                     <option value="">Select Shift</option>
                     @forelse($shifts ?? [] as $shift)
-                        <option value="{{ $shift->id }}">{{ $shift->name }} ({{ optional($shift->start_time)->format('H:i') }} – {{ optional($shift->end_time)->format('H:i') }})</option>
+                        <option value="{{ $shift->id }}" 
+                                data-start="{{ optional($shift->start_time)->format('H:i') }}" 
+                                data-end="{{ optional($shift->end_time)->format('H:i') }}">
+                            {{ $shift->name }} ({{ optional($shift->start_time)->format('H:i') }} – {{ optional($shift->end_time)->format('H:i') }})
+                        </option>
                     @empty
                     @endforelse
                 </select>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="rosterStartTime" class="form-label fw-semibold small text-white">Start Time <span class="text-danger">*</span></label>
+                    <input type="time" class="form-control" id="rosterStartTime" name="start_time" required>
+                </div>
+                <div class="col-6">
+                    <label for="rosterEndTime" class="form-label fw-semibold small text-white">End Time <span class="text-danger">*</span></label>
+                    <input type="time" class="form-control" id="rosterEndTime" name="end_time" required>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="rosterCheckIn" class="form-label fw-semibold small text-white">Check-in</label>
+                    <input type="time" class="form-control" id="rosterCheckIn" name="check_in">
+                </div>
+                <div class="col-6">
+                    <label for="rosterCheckOut" class="form-label fw-semibold small text-white">Check-out</label>
+                    <input type="time" class="form-control" id="rosterCheckOut" name="check_out">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="rosterFloor" class="form-label fw-semibold small text-white">Floor / Location</label>
+                <input type="text" class="form-control" id="rosterFloor" name="floor" placeholder="e.g. Ward A • 3rd Floor">
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="rosterLateCheckIn" name="late_check_in" value="1">
+                    <label class="form-check-label text-white" for="rosterLateCheckIn">Late check-in</label>
+                </div>
             </div>
 
             <div class="mb-3">

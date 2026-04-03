@@ -1,10 +1,4 @@
 (function() {
-    var shiftIcons = {
-        morning: { icon: 'bi-sun-fill', iconClass: 'text-warning' },
-        evening: { icon: 'bi-cloud-sun-fill', iconClass: 'text-primary' },
-        night: { icon: 'bi-moon-stars-fill', iconClass: 'text-info' }
-    };
-
     var rosterViewDate = new Date();
     var rosterWeekIndex = 1;
     var rosterData = null;
@@ -45,15 +39,12 @@
     }
 
     function pillHtml(s) {
-        var type = s.shiftType in shiftIcons ? s.shiftType : 'morning';
-        var opt = shiftIcons[type];
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
         var lateBlock = s.lateCheckIn ? '<span class="shift-status-late"><i class="bi bi-exclamation-circle-fill"></i> Late check-in</span>' : '';
         var floor = (s.floor && String(s.floor).trim()) ? s.floor : '—';
-        return '<div class="shift-pill shift-' + type + lateClass + '">' +
+        return '<div class="shift-pill' + lateClass + '">' +
             '<div class="shift-pill-top">' +
             '<span class="shift-time">' + s.timeStart + ' – ' + s.timeEnd + '</span>' +
-            '<span class="shift-icon ' + opt.iconClass + '"><i class="bi ' + opt.icon + '"></i></span>' +
             '</div>' +
             '<div class="shift-pill-meta">' +
             '<span class="shift-check">Check-in ' + s.checkIn + ' • Check-out ' + s.checkOut + '</span>' +
@@ -275,6 +266,13 @@
         var rosterIdEl = document.getElementById('rosterShiftRosterId');
         var shiftSelect = document.getElementById('rosterShiftPlannerId');
         var notesEl = document.getElementById('rosterShiftNotes');
+        var startTimeEl = document.getElementById('rosterStartTime');
+        var endTimeEl = document.getElementById('rosterEndTime');
+        var checkInEl = document.getElementById('rosterCheckIn');
+        var checkOutEl = document.getElementById('rosterCheckOut');
+        var floorEl = document.getElementById('rosterFloor');
+        var lateCheckInEl = document.getElementById('rosterLateCheckIn');
+
         if (!canvas) return;
         document.getElementById('rosterShiftEmployeeId').value = employeeId;
         document.getElementById('rosterShiftDay').value = day;
@@ -288,6 +286,12 @@
             if (saveBtnText) saveBtnText.textContent = 'Update';
             if (deleteWrap) deleteWrap.style.display = 'block';
             if (shiftSelect) shiftSelect.value = String(shift.shiftPlannerId || '');
+            if (startTimeEl) startTimeEl.value = shift.timeStart || '';
+            if (endTimeEl) endTimeEl.value = shift.timeEnd || '';
+            if (checkInEl) checkInEl.value = shift.checkIn || '';
+            if (checkOutEl) checkOutEl.value = shift.checkOut || '';
+            if (floorEl) floorEl.value = shift.floor || '';
+            if (lateCheckInEl) lateCheckInEl.checked = !!shift.lateCheckIn;
             if (notesEl) notesEl.value = shift.notes || '';
         } else {
             if (rosterIdEl) rosterIdEl.value = '';
@@ -296,6 +300,12 @@
             if (saveBtnText) saveBtnText.textContent = 'Save';
             if (deleteWrap) deleteWrap.style.display = 'none';
             if (shiftSelect) shiftSelect.value = '';
+            if (startTimeEl) startTimeEl.value = '';
+            if (endTimeEl) endTimeEl.value = '';
+            if (checkInEl) checkInEl.value = '';
+            if (checkOutEl) checkOutEl.value = '';
+            if (floorEl) floorEl.value = '';
+            if (lateCheckInEl) lateCheckInEl.checked = false;
             if (notesEl) notesEl.value = '';
         }
         var offcanvas = bootstrap.Offcanvas.getOrCreateInstance(canvas);
@@ -318,7 +328,13 @@
         var payload = {
             employee_id: parseInt(employeeId, 10),
             shift_planner_id: parseInt(shiftPlannerId, 10),
-            roster_date: rosterDateIso(day)
+            roster_date: rosterDateIso(day),
+            start_time: document.getElementById('rosterStartTime').value,
+            end_time: document.getElementById('rosterEndTime').value,
+            check_in: document.getElementById('rosterCheckIn').value,
+            check_out: document.getElementById('rosterCheckOut').value,
+            floor: document.getElementById('rosterFloor').value,
+            late_check_in: document.getElementById('rosterLateCheckIn').checked ? 1 : 0
         };
         if (notes) payload.notes = notes;
 
@@ -443,6 +459,22 @@
         if (deleteBtn && !deleteBtn._rosterBound) {
             deleteBtn._rosterBound = true;
             deleteBtn.addEventListener('click', function() { deleteRosterAssignment(); });
+        }
+        var plannerSelect = document.getElementById('rosterShiftPlannerId');
+        if (plannerSelect && !plannerSelect._rosterBound) {
+            plannerSelect._rosterBound = true;
+            plannerSelect.addEventListener('change', function() {
+                var opt = this.options[this.selectedIndex];
+                if (opt && opt.value) {
+                    var start = opt.getAttribute('data-start');
+                    var end = opt.getAttribute('data-end');
+                    if (start) document.getElementById('rosterStartTime').value = start;
+                    if (end) document.getElementById('rosterEndTime').value = end;
+                    // Default check-in/out to start/end
+                    if (start) document.getElementById('rosterCheckIn').value = start;
+                    if (end) document.getElementById('rosterCheckOut').value = end;
+                }
+            });
         }
     }
 
