@@ -137,6 +137,14 @@
     let employeeAttachments = [];
     let attachmentUploadedFiles = [];
 
+    function escAtt(s) {
+        return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    }
+
+    function escAttrUrl(u) {
+        return String(u ?? '').replace(/"/g, '&quot;');
+    }
+
     function previewAttachmentUpload(input) {
         const preview = document.getElementById('attachmentUploadPreview');
 
@@ -227,6 +235,9 @@
         container.innerHTML = '';
 
         employeeAttachments.forEach(a => {
+            const nameSafe = escAtt(a.name);
+            const typeSafe = escAtt(a.type || '');
+            const descSafe = escAtt(a.desc || '');
             const files = (a.files || []).map(f => ({
                 name: f.name,
                 isImg: (f.type || '').startsWith('image/'),
@@ -239,33 +250,33 @@
             const filesHtml = files.length ?
                 `<div class="mb-2 d-flex flex-wrap gap-1">
                 ${files.map(f => f.isImg
-                    ? `<img src="${f.url}"
+                    ? `<img src="${escAttrUrl(f.url)}"
                         style="height:40px;width:40px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;">`
                     : `<span class="badge bg-light text-muted border" style="font-size:10px;">
-                           <i class="bi bi-paperclip me-1"></i>${f.name}
+                           <i class="bi bi-paperclip me-1"></i>${escAtt(f.name)}
                        </span>`
                 ).join('')}
                </div>` :
                 '';
 
             container.insertAdjacentHTML('beforeend', `
-            <div class="col-md-6 col-lg-4" id="${a.localId}">
+            <div class="col-md-6 col-lg-4" id="${escAtt(a.localId)}">
                    <div class="rounded-3 border p-3 h-100" style="border-color:#ffffff1a !important;background:rgba(255,255,255,.07);">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
-                            <h6 class="mb-0 fw-semibold small text-white">${a.name}</h6>
-                            <small style="color:rgba(255,255,255,.55);">${a.type || '—'}</small>
+                            <h6 class="mb-0 fw-semibold small text-white">${nameSafe}</h6>
+                            <small style="color:rgba(255,255,255,.55);">${typeSafe || '—'}</small>
                         </div>
-                        <span class="badge" style="background:rgba(255,255,255,.15);font-size:10px;">${a.type || '—'}</span>
+                        <span class="badge" style="background:rgba(255,255,255,.15);font-size:10px;">${typeSafe || '—'}</span>
                 </div>
                  ${a.desc ? `
                  <div class="rounded-3 border p-2 mb-2" style="border-color:#ffffff1a !important;">
                      <small class="opacity-75 d-block mb-1">Description</small>
-                     <div class="fw-semibold small">${a.desc}</div>
+                     <div class="fw-semibold small">${descSafe}</div>
                  </div>` : ''}
                     ${filesHtml}
                     <div class="pt-3 mt-2 border-top d-flex gap-2 justify-content-end" style="border-color:#ffffff1a !important;">
-                        <button class="btn btn-sm btn-outline-light" onclick="deleteAttachment('${a.localId}')">
+                        <button class="btn btn-sm btn-outline-light" onclick="deleteAttachment(${JSON.stringify(a.localId)})">
                             <i class="bi bi-trash me-1"></i>Delete
                         </button>
                     </div>

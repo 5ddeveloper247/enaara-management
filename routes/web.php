@@ -32,6 +32,7 @@ use App\Http\Controllers\ShiftPlannerController;
 use App\Http\Controllers\ShiftRosterController;
 use App\Http\Controllers\MonthlySummaryController;
 use App\Http\Controllers\AuditTrailController;
+use App\Http\Middleware\EnsurePasswordIsNotTemporary;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -53,7 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/first-password', [PasswordFirstChangeController::class, 'update'])->name('password.first-change.update');
 });
 
-Route::middleware(['auth', 'password.not_temporary'])->prefix('admin')->group(function () {
+Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
     Route::get('/dashboard/attendance-chart', [DashboardController::class, 'attendanceChart'])->name('admin.dashboard.attendance-chart');

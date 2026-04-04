@@ -20,39 +20,37 @@
                 dataSrc: 'data',
             },
             columns: [
-                { data: null,                  render: renderImage,             orderable: false }, // 0 Image
-                { data: 'full_name',           render: renderName,              orderable: true  }, // 1 Name
-                { data: 'biometric_id',        render: renderBiometric,         orderable: true  }, // 2 TAS ID
-                { data: 'id',                  render: renderEmployeeId,        orderable: true  }, // 3 Employee ID
-                { data: 'employee_code',       render: renderEmployeeNo,        orderable: true  }, // 4 Employee No
-                { data: 'organization',        render: renderSimple,            orderable: true  }, // 5 Organization
-                { data: 'sbu',                 render: renderSimple,            orderable: true  }, // 6 SBU
-                { data: 'department',          render: renderSimple,            orderable: true  }, // 7 Department
-                { data: 'role',                render: renderSimple,            orderable: true  }, // 8 Role
-                { data: 'employment_category', render: renderCategory,          orderable: true  }, // 9 Category
-                { data: 'cnic',                render: renderSimple,            orderable: true  }, // 10 CNIC
-                { data: 'nationality',         render: renderSimple,            orderable: true  }, // 11 Nationality
-                { data: 'gender',              render: renderGender,            orderable: true  }, // 12 Gender
-                { data: 'join_date',           render: renderSimple,            orderable: true  }, // 13 Date of Joining
-                { data: 'designation',         render: renderSimple,            orderable: true  }, // 14 Designation
-                { data: 'verification_status', render: renderVerificationStatus, orderable: true }, // 15 Verification Status
-                { data: 'email',               render: renderEmail,             orderable: true  }, // 16 Email
-                { data: 'cell_no',             render: renderSimple,            orderable: true  }, // 17 Cell Number
-                { data: null,                  render: renderProfile,           orderable: false, visible: false }, // 18 Profile
-                { data: 'employment_type',     render: renderEmploymentType,    orderable: true,  visible: false }, // 19 Employment Type
-                { data: 'site',                render: renderSite,              orderable: true,  visible: false }, // 20 Site Assignment
-                { data: null,                  render: renderVendor,            orderable: false, visible: false }, // 21 Vendor
-                { data: 'sync_status',         render: renderSyncStatus,        orderable: true,  visible: false }, // 22 Sync Status
-                { data: 'floor_access',        render: renderFloorAccess,       orderable: true,  visible: false }, // 23 Floor Access
-                { data: null,                  render: renderActions,           orderable: false, className: 'text-end no-toggle' }, // 24 Actions
+                { data: 'full_name',           render: renderProfileColumn,     orderable: true  }, // 0 Profile
+                { data: 'biometric_id',        render: renderBiometric,         orderable: true  }, // 1 TAS ID
+                { data: 'id',                  render: renderEmployeeId,        orderable: true,  visible: false }, // 2 Employee ID
+                { data: 'employee_code',       render: renderEmployeeNo,        orderable: true  }, // 3 Employee No
+                { data: 'organization',        render: renderSimple,            orderable: true  }, // 4 Organization
+                { data: 'sbu',                 render: renderSimple,            orderable: true  }, // 5 SBU
+                { data: 'department',          render: renderSimple,            orderable: true  }, // 6 Department
+                { data: 'employment_category', render: renderCategory,          orderable: true  }, // 7 Category
+                { data: 'cnic',                render: renderSimple,            orderable: true  }, // 8 CNIC
+                { data: 'nationality',         render: renderSimple,            orderable: true  }, // 9 Nationality
+                { data: 'gender',              render: renderGender,            orderable: true  }, // 10 Gender
+                { data: 'join_date',           render: renderSimple,            orderable: true  }, // 11 Date of Joining
+                { data: 'designation',         render: renderSimple,            orderable: true  }, // 12 Designation
+                { data: 'verification_status', render: renderVerificationStatus, orderable: true }, // 13 Verification Status
+                { data: 'email',               render: renderEmail,             orderable: true  }, // 14 Email
+                { data: 'cell_no',             render: renderSimple,            orderable: true  }, // 15 Cell Number
+                { data: null,                  render: renderSummary,           orderable: false, visible: false }, // 16 Summary
+                { data: 'employment_type',     render: renderEmploymentType,    orderable: true,  visible: false }, // 17 Employment Type
+                { data: 'site',                render: renderSite,              orderable: true,  visible: false }, // 18 Site Assignment
+                { data: null,                  render: renderVendor,            orderable: false, visible: false }, // 19 Vendor
+                { data: 'sync_status',         render: renderSyncStatus,        orderable: true,  visible: false }, // 20 Sync Status
+                { data: 'floor_access',        render: renderFloorAccess,       orderable: true,  visible: false }, // 21 Floor Access
+                { data: null,                  render: renderActions,           orderable: false, className: 'text-end no-toggle' }, // 22 Actions
             ],
-            order: [[3, 'desc']], // sort by Employee ID
+            order: [[2, 'desc']],
             scrollX: false,
             responsive: false,
             columnDefs: [
-                { targets: [1, 2, 3, 4], responsivePriority: 1 }, // key identity columns
-                { targets: [0, 5, 7, 8, 15], responsivePriority: 2 },
-                { targets: [6, 9, 10, 11, 12, 13, 14, 16, 17], responsivePriority: 3 },
+                { targets: [1, 2, 3], responsivePriority: 1 },
+                { targets: [0, 4, 6, 13], responsivePriority: 2 },
+                { targets: [5, 7, 8, 9, 10, 11, 12, 14, 15], responsivePriority: 3 },
             ],
             language: {
                 search: '',
@@ -67,9 +65,15 @@
                 extend: 'colvis',
                 text: 'Select Columns',
                 className: 'btn btn-sm border-0 bg-main text-black',
-                columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+                columns: [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
             }],
             dom: '<"row px-4 py-3"<"col-md-6"l><"col-md-6 d-flex justify-content-end gap-2"<B><f>>>r<"employee-datatable-scroll"t><"row px-4 py-2"<"col-md-5"i><"col-md-7"p>>',
+            drawCallback: function () {
+                var gridBtn = document.getElementById('btnGridView');
+                if (gridBtn && gridBtn.classList.contains('active') && typeof window.buildEmployeeGrid === 'function') {
+                    window.buildEmployeeGrid();
+                }
+            },
         });
     }
 
@@ -101,16 +105,22 @@
         return '<span class="badge px-2 rounded-1 ' + cls + '">' + escHtml(data) + '</span>';
     }
 
-    function renderImage(row) {
-        if (row.photo_url) {
-            return '<img src="' + escAttr(row.photo_url) + '" alt="' + escAttr(row.full_name) + '" class="rounded-circle" style="width:36px;height:36px;object-fit:cover;">';
-        }
-        return '<div class="user-avatar" style="width:36px;height:36px;font-size:0.75rem;">' + escHtml(row.initials) + '</div>';
-    }
-
-    function renderName(data) {
-        if (!data || data === '-') return '<span class="text-muted">-</span>';
-        return '<span class="fw-semibold">' + escHtml(data) + '</span>';
+    function renderProfileColumn(data, type, row) {
+        var avatar = row.photo_url
+            ? '<img src="' + escAttr(row.photo_url) + '" alt="' + escAttr(row.full_name) + '" class="rounded-circle flex-shrink-0" style="width:36px;height:36px;object-fit:cover;">'
+            : '<div class="user-avatar flex-shrink-0" style="width:36px;height:36px;font-size:0.75rem;">' + escHtml(row.initials) + '</div>';
+        var nameHtml = row.full_name && row.full_name !== '-'
+            ? escHtml(row.full_name)
+            : '<span class="text-muted">-</span>';
+        var roleHtml = row.role && row.role !== '-'
+            ? escHtml(row.role)
+            : '<span class="text-muted">-</span>';
+        return '<div class="d-flex align-items-center gap-2 employee-profile-cell">' +
+            avatar +
+            '<div class="min-w-0 flex-grow-1">' +
+            '<div class="employee-profile-name fw-semibold small text-truncate" title="' + escAttr(row.full_name || '') + '">' + nameHtml + '</div>' +
+            '<div class="employee-profile-role small text-muted text-truncate" title="' + escAttr(row.role || '') + '">' + roleHtml + '</div>' +
+            '</div></div>';
     }
 
     function renderGender(data) {
@@ -132,7 +142,7 @@
         return '<a href="mailto:' + escAttr(data) + '" class="text-decoration-none small">' + escHtml(data) + '</a>';
     }
 
-    function renderProfile(row) {
+    function renderSummary(row) {
         var dept    = row.department !== '-' ? row.department : '';
         var code    = row.employee_code !== '-' ? row.employee_code : '';
         var info    = (dept && code) ? (dept + ' - ' + code) : (dept || code || '-');
@@ -212,6 +222,7 @@
             ' data-employee-info="'    + escAttr(info)                   + '"' +
             ' data-department="'       + escAttr(row.department)         + '"' +
             ' data-employment-type="'  + escAttr(row.employment_type)    + '"' +
+            ' data-employment-category="' + escAttr(row.employment_category || '-') + '"' +
             ' data-employee-type="'    + escAttr(row.employee_type)      + '"' +
             ' data-biometric-id="'     + escAttr(row.biometric_id || '-') + '"' +
             ' data-sync-status="'      + escAttr(row.sync_status)        + '"' +
@@ -230,6 +241,7 @@
             info:           button.dataset.employeeInfo   || '-',
             department:     button.dataset.department     || '-',
             employmentType: button.dataset.employmentType || '-',
+            category:       button.dataset.employmentCategory || '-',
             employeeType:   button.dataset.employeeType   || '-',
             biometricId:    button.dataset.biometricId    || '-',
             syncStatus:     button.dataset.syncStatus     || 'Not Linked',
@@ -265,6 +277,21 @@
                     : d.employmentType === 'Contract'  ? 'bg-info'
                     : 'bg-warning';
         $('#detailEmploymentType').html('<span class="badge ' + etClass + '">' + escHtml(d.employmentType) + '</span>');
+
+        var catColorMap = {
+            'Permanent':   'bg-success',
+            'Contract':    'bg-info',
+            'Intern':      'bg-warning text-dark',
+            'Third-party': 'bg-secondary',
+            'Probation':   'bg-primary',
+        };
+        var catCls = catColorMap[d.category] || 'bg-secondary';
+        var catLabel = d.category && d.category !== '-' ? d.category : '-';
+        $('#detailCategory').html(
+            catLabel === '-'
+                ? '<span class="text-muted small">-</span>'
+                : '<span class="badge px-2 rounded-1 ' + catCls + '">' + escHtml(catLabel) + '</span>'
+        );
 
         var typeClass = d.employeeType === 'Internal' ? 'bg-primary' : 'bg-secondary';
         $('#detailEmployeeType').html('<span class="badge ' + typeClass + '">' + escHtml(d.employeeType) + '</span>');
@@ -306,6 +333,16 @@
     }
 
     function initializeEventHandlers() {
+        $('#employeeTable tbody').on('click', 'tr', function (e) {
+            if ($(e.target).closest('a, button, input, select, textarea, label').length) {
+                return;
+            }
+            var btn = $(this).find('.view-employee-btn')[0];
+            if (btn) {
+                btn.click();
+            }
+        });
+
         const detailCanvas = document.getElementById('employeeDetailCanvas');
         if (detailCanvas) {
             detailCanvas.addEventListener('show.bs.offcanvas', function (event) {
@@ -355,6 +392,119 @@
         }
 
         initializeAddEmployeeCanvas();
+
+        $('#applyFiltersBtn').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.employeeFilters.employeeType = ($('#filterEmployeeType').val() || '').trim();
+            window.employeeFilters.department = ($('#filterDepartment').val() || '').trim();
+            window.employeeFilters.vendor = ($('#filterVendor').val() || '').trim();
+            var dd = document.getElementById('filterDropdownBtn');
+            if (dd && window.bootstrap && bootstrap.Dropdown) {
+                bootstrap.Dropdown.getOrCreateInstance(dd).hide();
+            }
+            if (employeeTable) {
+                employeeTable.ajax.reload(null, false);
+            }
+        });
+
+        $('#clearFiltersBtn').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $('#filterEmployeeType').val('');
+            $('#filterDepartment').val('');
+            $('#filterVendor').val('');
+            window.employeeFilters.employeeType = '';
+            window.employeeFilters.department = '';
+            window.employeeFilters.vendor = '';
+            if (employeeTable) {
+                employeeTable.ajax.reload(null, false);
+            }
+        });
+
+        $('#exportBtn').on('click', function () {
+            var params = {
+                filter_employee_type: window.employeeFilters.employeeType || '',
+                filter_department: window.employeeFilters.department || '',
+                filter_vendor: window.employeeFilters.vendor || '',
+            };
+            $.get(window.employeeDataUrl, params, function (res) {
+                if (!res || !res.success || !res.data || !res.data.length) {
+                    alert('No employee data to export.');
+                    return;
+                }
+                exportEmployeesToCsv(res.data);
+            }).fail(function () {
+                alert('Could not export employees. Please try again.');
+            });
+        });
+    }
+
+    function csvEscape(val) {
+        if (val === null || val === undefined) {
+            return '';
+        }
+        var s = String(val).replace(/"/g, '""');
+        if (/[",\r\n]/.test(s)) {
+            return '"' + s + '"';
+        }
+        return s;
+    }
+
+    function exportEmployeesToCsv(rows) {
+        var headers = [
+            'Employee No',
+            'Full Name',
+            'Organization',
+            'SBU',
+            'Department',
+            'Category',
+            'CNIC',
+            'Nationality',
+            'Gender',
+            'Date of Joining',
+            'Designation',
+            'Verification Status',
+            'Email',
+            'Cell Number',
+            'Employment Type',
+            'Employee Type',
+            'TAS ID',
+            'Sync Status',
+            'Site',
+        ];
+        var lines = [headers.join(',')];
+        rows.forEach(function (r) {
+            lines.push([
+                csvEscape(r.employee_code),
+                csvEscape(r.full_name),
+                csvEscape(r.organization),
+                csvEscape(r.sbu),
+                csvEscape(r.department),
+                csvEscape(r.employment_category),
+                csvEscape(r.cnic),
+                csvEscape(r.nationality),
+                csvEscape(r.gender),
+                csvEscape(r.join_date),
+                csvEscape(r.designation),
+                csvEscape(r.verification_status),
+                csvEscape(r.email),
+                csvEscape(r.cell_no),
+                csvEscape(r.employment_type),
+                csvEscape(r.employee_type),
+                csvEscape(r.biometric_id),
+                csvEscape(r.sync_status),
+                csvEscape(r.site),
+            ].join(','));
+        });
+        var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'employees_' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
     }
 
     function initializeAddEmployeeCanvas() {

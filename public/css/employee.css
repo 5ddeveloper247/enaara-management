@@ -9,6 +9,15 @@
     width: 100% !important;
 }
 
+#employeeTable tbody tr:not(.child) {
+    cursor: pointer;
+}
+
+#employeeTable .employee-profile-cell {
+    min-width: 0;
+    max-width: 260px;
+}
+
 .employee-datatable-scroll {
     width: 100%;
     overflow-x: auto;

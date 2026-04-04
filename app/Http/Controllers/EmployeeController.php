@@ -54,12 +54,16 @@ class EmployeeController extends Controller
         }
     }
 
-    public function tableData(): JsonResponse
+    public function tableData(Request $request): JsonResponse
     {
         try {
             return response()->json([
                 'success' => true,
-                'data'    => $this->employeeService->getTableData(),
+                'data'    => $this->employeeService->getTableData([
+                    'filter_employee_type' => $request->query('filter_employee_type'),
+                    'filter_department'    => $request->query('filter_department'),
+                    'filter_vendor'        => $request->query('filter_vendor'),
+                ]),
             ]);
         } catch (\Exception $e) {
             Log::error('Employee table data failed', ['error' => $e->getMessage()]);

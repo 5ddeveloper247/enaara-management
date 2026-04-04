@@ -7,18 +7,16 @@
 
 <div id="tableViewWrapper" class="row g-3">
     <div class="col-12">
-    <table id="employeeTable" class="display nowrap table table-striped w-100 mb-0">
+    <table id="employeeTable" class="display nowrap table table-striped table-hover w-100 mb-0">
         <thead class="bg-main">
             <tr>
-                <th>Image</th>
-                <th>Name</th>
+                <th>Profile</th>
                 <th>TAS ID</th>
                 <th>Employee ID</th>
                 <th>Employee No</th>
                 <th>Organization</th>
                 <th>SBU</th>
                 <th>Department</th>
-                <th>Role</th>
                 <th>Category</th>
                 <th>CNIC</th>
                 <th>Nationality</th>
@@ -28,7 +26,7 @@
                 <th>Verification Status</th>
                 <th>Email</th>
                 <th>Cell Number</th>
-                <th>Profile</th>
+                <th>Summary</th>
                 <th>Employment Type</th>
                 <th>Site Assignment</th>
                 <th>Vendor</th>
@@ -61,7 +59,7 @@
             gridWrapper.classList.remove('d-none');
             btnGrid.classList.add('active');
             btnTable.classList.remove('active');
-            buildGrid();
+            if (typeof window.buildEmployeeGrid === 'function') window.buildEmployeeGrid();
         } else {
             gridWrapper.classList.add('d-none');
             tableWrapper.classList.remove('d-none');
@@ -71,32 +69,30 @@
         }
     }   
 
-    function buildGrid() {
+    window.buildEmployeeGrid = function buildGrid() {
         const grid = document.getElementById('gridViewWrapper');
         grid.innerHTML = '';
 
         const gridFields = [
-            { label: 'TAS ID', idx: 2 },
-            { label: 'Employee ID', idx: 3 },
-            { label: 'Employee No', idx: 4 },
-            { label: 'Organization', idx: 5 },
-            { label: 'SBU', idx: 6 },
-            { label: 'Department', idx: 7 },
-            { label: 'Role', idx: 8 },
-            { label: 'Category', idx: 9 },
-            { label: 'CNIC', idx: 10 },
-            { label: 'Nationality', idx: 11 },
-            { label: 'Gender', idx: 12 },
-            { label: 'Date of Joining', idx: 13 },
-            { label: 'Designation', idx: 14 },
-            { label: 'Email', idx: 16 },
-            { label: 'Cell Number', idx: 17 },
-            { label: 'Profile', idx: 18 },
-            { label: 'Employment Type', idx: 19 },
-            { label: 'Site Assignment', idx: 20 },
-            { label: 'Vendor', idx: 21 },
-            { label: 'Sync Status', idx: 22 },
-            { label: 'Floor Access', idx: 23 },
+            { label: 'TAS ID', idx: 1 },
+            { label: 'Employee No', idx: 3 },
+            { label: 'Organization', idx: 4 },
+            { label: 'SBU', idx: 5 },
+            { label: 'Department', idx: 6 },
+            { label: 'Category', idx: 7 },
+            { label: 'CNIC', idx: 8 },
+            { label: 'Nationality', idx: 9 },
+            { label: 'Gender', idx: 10 },
+            { label: 'Date of Joining', idx: 11 },
+            { label: 'Designation', idx: 12 },
+            { label: 'Email', idx: 14 },
+            { label: 'Cell Number', idx: 15 },
+            { label: 'Summary', idx: 16 },
+            { label: 'Employment Type', idx: 17 },
+            { label: 'Site Assignment', idx: 18 },
+            { label: 'Vendor', idx: 19 },
+            { label: 'Sync Status', idx: 20 },
+            { label: 'Floor Access', idx: 21 },
         ];
 
         document.querySelectorAll('#employeeTable tbody tr').forEach(row => {
@@ -105,13 +101,14 @@
 
             const imgEl = cells[0]?.querySelector('img, .user-avatar');
             const avatarHtml = imgEl ? imgEl.outerHTML : '<div class="user-avatar">??</div>';
-            const name = cells[1]?.textContent.trim() || '—';
-            const empNo = cells[4]?.textContent.trim() || '—';
+            const nameEl = cells[0]?.querySelector('.employee-profile-name');
+            const name = (nameEl && nameEl.textContent.trim()) || cells[0]?.textContent.trim().split(/\s+/).slice(0, 3).join(' ') || '—';
+            const empNo = cells[3]?.textContent.trim() || '—';
             const nameTitle = name.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
-            const verEl = cells[15]?.querySelector('.badge');
+            const verEl = cells[13]?.querySelector('.badge');
             const ver = verEl ? verEl.outerHTML : '<span class="text-muted small">—</span>';
-            const viewBtn = cells[24]?.querySelector('button');
+            const viewBtn = cells[22]?.querySelector('button');
             const btnAttrs = viewBtn ? viewBtn.outerHTML : '';
 
             let detailsHtml = '';
@@ -149,5 +146,5 @@
             </div>
         </div>`);
         });
-    }
+    };
 </script>

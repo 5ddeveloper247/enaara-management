@@ -40,11 +40,19 @@
                         <div class="fw-semibold small" id="detailDepartment">Sales</div>
                     </div>
                 </div>
-                <div class="col-6">
+                <div class="col-6 d-none">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Employment Type</small>
                         <div class="fw-semibold small" id="detailEmploymentType">
                             <span class="badge bg-success">Permanent</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Category</small>
+                        <div class="fw-semibold small" id="detailCategory">
+                            <span class="badge bg-secondary">-</span>
                         </div>
                     </div>
                 </div>
@@ -90,10 +98,10 @@
         <!-- Assignment Information -->
         <div class="mb-4">
             <h6 class="mb-3 fw-semibold small">
-                <i class="bi bi-building me-2"></i>Assignment & SBU
+                <i class="bi bi-door-open me-2"></i>Access
             </h6>
             <div class="row g-3">
-                <div class="col-12">
+                <div class="col-12 d-none">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Site Assignment</small>
                         <div class="fw-semibold" id="detailSiteAssignment">Head Office</div>

@@ -46,6 +46,13 @@
         transition: background .3s;
     }
     .step-connector.is-done { background: var(--bs-primary); }
+
+    .step-item.step-pill-locked {
+        opacity: 0.45;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .step-item.step-pill-locked .step-label { color: #adb5bd; }
 </style>
 
 <div class="p-3 pb-4">
@@ -65,7 +72,7 @@
 
         <div onclick="goToStep(3)" class="step-item" id="step-pill-3">
             <div class="step-bubble" id="circle-3"><i class="bi bi-shield-fill"></i></div>
-            <span class="step-label" id="label-3">Police</span>
+            <span class="step-label" id="label-3">Police Verification</span>
         </div>
         <div class="step-connector" id="con-3"></div>
 
