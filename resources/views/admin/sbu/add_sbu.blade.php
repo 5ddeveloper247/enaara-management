@@ -10,7 +10,7 @@
     </div>
 
     <div class="offcanvas-body">
-        <form id="addSbuForm" data-store-url="{{ route('admin.sbu.store') }}">
+        <form id="addSbuForm" data-store-url="{{ route('admin.sbu.store') }}" novalidate>
             @csrf
 
             <div class="mb-3">

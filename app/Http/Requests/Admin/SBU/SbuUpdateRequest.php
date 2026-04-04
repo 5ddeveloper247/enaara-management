@@ -26,7 +26,7 @@ class SbuUpdateRequest extends FormRequest
 
             'city' => ['nullable', 'string', 'max:255'],
 
-            'address' => ['nullable', 'string'],
+            'address' => ['nullable', 'string', 'max:500'],
 
             'latitude' => [
                 'nullable',
@@ -55,7 +55,10 @@ class SbuUpdateRequest extends FormRequest
 
             'name.required' => 'SBU name is required.',
 
+            'address.max' => 'Address cannot exceed 500 characters.',
+            'latitude.numeric' => 'Latitude must be a valid number.',
             'latitude.between' => 'Latitude must be between -90 and 90.',
+            'longitude.numeric' => 'Longitude must be a valid number.',
             'longitude.between' => 'Longitude must be between -180 and 180.',
 
             'is_active.required' => 'Status is required.',

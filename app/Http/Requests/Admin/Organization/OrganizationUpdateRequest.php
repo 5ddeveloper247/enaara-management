@@ -34,6 +34,7 @@ class OrganizationUpdateRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
+                Rule::unique('organizations', 'name')->ignore($organizationId),
             ],
 
             'code' => [
@@ -53,17 +54,11 @@ class OrganizationUpdateRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:64',
+                Rule::unique('organizations', 'tax_no')->ignore($organizationId),
             ],
 
-            'description' => [
-                'nullable',
-                'string',
-            ],
-
-            'address' => [
-                'nullable',
-                'string',
-            ],
+            'description' => 'nullable|string|max:5000',
+            'address'     => 'nullable|string|max:50',
 
             'is_active' => [
                 'required',
@@ -81,7 +76,9 @@ class OrganizationUpdateRequest extends FormRequest
             'parent_id.exists' => 'Selected parent organization does not exist.',
             'parent_id.different' => 'Organization cannot be its own parent.',
             'name.required' => 'Organization name is required.',
+            'name.unique' => 'This organization name is already registered.',
             'code.unique' => 'This organization code is already taken.',
+            'tax_no.unique' => 'This tax number is already registered.',
             'email.email' => 'Please enter a valid email address.',
             'is_active.required' => 'Status is required.',
             'is_active.boolean' => 'Status must be active or inactive.',
