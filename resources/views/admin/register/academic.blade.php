@@ -299,6 +299,185 @@
 
     function removeRow(btn) { btn.closest('tr').remove(); }
 
+    function escCard(s) {
+        return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    }
+
+    function nextSlot(arr) {
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i] == null) return i;
+        }
+        return arr.length;
+    }
+
+    function resetFamilyTableOneRow() {
+        const tbody = document.getElementById('familyTable');
+        if (!tbody) return;
+        tbody.innerHTML = `
+        <tr>
+            <td>1</td>
+            <td><input type="text" class="form-control form-control-sm fm-name"></td>
+            <td><select class="form-select form-select-sm fm-gender"><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option></select></td>
+            <td><input type="date" class="form-control form-control-sm fm-dob"></td>
+            <td><input type="text" class="form-control form-control-sm fm-relation"></td>
+            <td><input type="text" class="form-control form-control-sm fm-occupation"></td>
+            <td class="d-flex gap-1">
+                <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveFamilyRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
+                <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`;
+    }
+
+    function resetAcademicTableOneRow() {
+        const tbody = document.getElementById('academicTable');
+        if (!tbody) return;
+        tbody.innerHTML = `
+        <tr>
+            <td>1</td>
+            <td><input type="text" class="form-control form-control-sm ac-degree"></td>
+            <td><input type="text" class="form-control form-control-sm ac-grade"></td>
+            <td><input type="date" class="form-control form-control-sm ac-start"></td>
+            <td><input type="date" class="form-control form-control-sm ac-end"></td>
+            <td><input type="text" class="form-control form-control-sm ac-field"></td>
+            <td><input type="text" class="form-control form-control-sm ac-institute"></td>
+            <td class="d-flex gap-1">
+                <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveAcademicRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
+                <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`;
+    }
+
+    function resetEmploymentTableOneRow() {
+        const tbody = document.getElementById('employmentTable');
+        if (!tbody) return;
+        tbody.innerHTML = `
+        <tr>
+            <td>1</td>
+            <td><input type="text" class="form-control form-control-sm em-org"></td>
+            <td><input type="text" class="form-control form-control-sm em-desig"></td>
+            <td><input type="date" class="form-control form-control-sm em-from"></td>
+            <td><input type="date" class="form-control form-control-sm em-to"></td>
+            <td><input type="text" class="form-control form-control-sm em-salary"></td>
+            <td><input type="text" class="form-control form-control-sm em-reason"></td>
+            <td class="d-flex gap-1">
+                <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveEmploymentRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
+                <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`;
+    }
+
+    function resetFamilyTableEmpty() {
+        const tbody = document.getElementById('familyTable');
+        if (tbody) tbody.innerHTML = '';
+    }
+
+    function resetAcademicTableEmpty() {
+        const tbody = document.getElementById('academicTable');
+        if (tbody) tbody.innerHTML = '';
+    }
+
+    function resetEmploymentTableEmpty() {
+        const tbody = document.getElementById('employmentTable');
+        if (tbody) tbody.innerHTML = '';
+    }
+
+    function appendFamilyCard(idx, m) {
+        const name = m.name || '';
+        const gender = m.gender || '';
+        const dob = m.dob || '';
+        const relation = m.relation || '';
+        const occupation = m.occupation || '';
+        const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '—';
+        const dobFormatted = dob ? new Date(dob).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        const id = 'family-card-' + idx;
+        document.getElementById('familyListing').insertAdjacentHTML('beforeend', `
+        <div class="col-md-6 col-lg-4" id="${id}">
+            <div class="card border-1 rounded-3 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width:45px;height:45px;font-size:1.1rem;">${escCard(initials)}</div>
+                            <div><h6 class="mb-0 fw-semibold small">${escCard(name)}</h6><small class="text-muted small">${escCard(relation || '—')}</small></div>
+                        </div>
+                        <span class="badge bg-primary" style="font-size:10px;padding:4px 6px;">${escCard(gender || '—')}</span>
+                    </div>
+                    <div class="mb-2"><i class="bi bi-calendar me-1 text-main small"></i><small class="text-muted small"><strong>DOB:</strong> ${escCard(dobFormatted)}</small></div>
+                    <div class="mb-2"><i class="bi bi-briefcase me-1 text-main small"></i><small class="text-muted small"><strong>Occupation:</strong> ${escCard(occupation || '—')}</small></div>
+                    <div class="mt-3 pt-3 border-top d-flex justify-content-end gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary px-2" title="Edit" onclick="editFamilyCard('${id}', ${idx})"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger px-2" title="Remove" onclick="removeFamilyCard('${id}', ${idx})"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>`);
+    }
+
+    function appendAcademicCard(idx, a) {
+        const degree = a.degree || '';
+        const grade = a.grade_cgpa || '';
+        const start = a.start_date || '';
+        const end = a.end_date || '';
+        const field = a.field_of_study || '';
+        const inst = a.institute || '';
+        const initials = degree.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '—';
+        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        const id = 'academic-card-' + idx;
+        document.getElementById('academicListing').insertAdjacentHTML('beforeend', `
+        <div class="col-sm-6 col-xl-4" id="${id}">
+            <div class="card border rounded-3 h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:.9rem;">${escCard(initials)}</div>
+                        <div class="min-w-0 flex-grow-1">
+                            <h6 class="mb-0 fw-semibold small text-truncate" title="${escCard(degree)}">${escCard(degree)}</h6>
+                            <small class="text-muted d-block text-truncate" title="${escCard(inst || '—')}">${escCard(inst || '—')}</small>
+                        </div>
+                        <span class="badge bg-primary flex-shrink-0" style="font-size:10px;">${escCard(grade || '—')}</span>
+                    </div>
+                    <div class="mb-1 text-truncate"><i class="bi bi-book me-1 text-muted small"></i><small class="text-muted"><strong>Field:</strong> ${escCard(field || '—')}</small></div>
+                    <div class="mb-1"><i class="bi bi-calendar me-1 text-muted small"></i><small class="text-muted"><strong>Period:</strong> ${escCard(fmt(start))} – ${escCard(fmt(end))}</small></div>
+                    <div class="mt-2 pt-2 border-top d-flex justify-content-end gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary px-2" title="Edit" onclick="editAcademicCard('${id}', ${idx})"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger px-2" title="Remove" onclick="removeAcademicCard('${id}', ${idx})"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>`);
+    }
+
+    function appendEmploymentCard(idx, e) {
+        const org = e.organization || '';
+        const desig = e.designation || '';
+        const from = e.from_date || '';
+        const to = e.to_date || '';
+        const salary = e.salary || '';
+        const reason = e.reason_for_leaving || '';
+        const initials = org.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '—';
+        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        const id = 'employment-card-' + idx;
+        document.getElementById('employmentListing').insertAdjacentHTML('beforeend', `
+        <div class="col-md-6 col-lg-4" id="${id}">
+            <div class="card border-1 rounded-3 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width:45px;height:45px;font-size:1.1rem;">${escCard(initials)}</div>
+                            <div><h6 class="mb-0 fw-semibold small">${escCard(org)}</h6><small class="text-muted small">${escCard(desig || '—')}</small></div>
+                        </div>
+                        <span class="badge bg-success" style="font-size:10px;padding:4px 6px;">Past</span>
+                    </div>
+                    <div class="mb-2"><i class="bi bi-calendar me-1 text-main small"></i><small class="text-muted small"><strong>Period:</strong> ${escCard(fmt(from))} – ${escCard(fmt(to))}</small></div>
+                    <div class="mb-2"><i class="bi bi-currency-dollar me-1 text-main small"></i><small class="text-muted small"><strong>Salary:</strong> ${escCard(salary || '—')}</small></div>
+                    <div class="mb-2"><i class="bi bi-door-open me-1 text-main small"></i><small class="text-muted small"><strong>Reason:</strong> ${escCard(reason || '—')}</small></div>
+                    <div class="mt-3 pt-3 border-top d-flex justify-content-end gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary px-2" title="Edit" onclick="editEmploymentCard('${id}', ${idx})"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger px-2" title="Remove" onclick="removeEmploymentCard('${id}', ${idx})"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>`);
+    }
+
     // ── Family ──────────────────────────────────────────────────────────────
     function addFamilyRow() {
         const tbody = document.getElementById('familyTable');
@@ -333,34 +512,39 @@
         if (!relation) rowErrors.push('Relation');
         if (rowErrors.length) { alert('Please fill required fields: ' + rowErrors.join(', ')); return; }
 
-        const idx           = window.familyData.length;
-        window.familyData.push({ name, gender, dob, relation, occupation });
-
-        const initials     = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-        const dobFormatted = dob ? new Date(dob).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-        const id           = 'family-card-' + idx;
-
-        document.getElementById('familyListing').insertAdjacentHTML('beforeend', `
-        <div class="col-md-6 col-lg-4" id="${id}">
-            <div class="card border-1 rounded-3 h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width:45px;height:45px;font-size:1.1rem;">${initials}</div>
-                            <div><h6 class="mb-0 fw-semibold small">${name}</h6><small class="text-muted small">${relation || '—'}</small></div>
-                        </div>
-                        <span class="badge bg-primary" style="font-size:10px;padding:4px 6px;">${gender || '—'}</span>
-                    </div>
-                    <div class="mb-2"><i class="bi bi-calendar me-1 text-main small"></i><small class="text-muted small"><strong>DOB:</strong> ${dobFormatted}</small></div>
-                    <div class="mb-2"><i class="bi bi-briefcase me-1 text-main small"></i><small class="text-muted small"><strong>Occupation:</strong> ${occupation || '—'}</small></div>
-                    <div class="mt-3 pt-3 border-top d-flex justify-content-end">
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFamilyCard('${id}', ${idx})"><i class="bi bi-trash me-1"></i>Remove</button>
-                    </div>
-                </div>
-            </div>
-        </div>`);
+        const idx = nextSlot(window.familyData);
+        window.familyData[idx] = { name, gender, dob, relation, occupation };
+        appendFamilyCard(idx, window.familyData[idx]);
 
         row.remove();
+    }
+
+    function editFamilyCard(id, idx) {
+        const data = window.familyData[idx];
+        if (!data) return;
+        const esc = v => String(v || '').replace(/"/g, '&quot;');
+        const tbody = document.getElementById('familyTable');
+        const count = tbody.rows.length + 1;
+        tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+            <td>${count}</td>
+            <td><input type="text" class="form-control form-control-sm fm-name" value="${esc(data.name)}"></td>
+            <td><select class="form-select form-select-sm fm-gender">
+                <option value="">Select</option>
+                <option value="Male"${data.gender === 'Male' ? ' selected' : ''}>Male</option>
+                <option value="Female"${data.gender === 'Female' ? ' selected' : ''}>Female</option>
+            </select></td>
+            <td><input type="date" class="form-control form-control-sm fm-dob" value="${esc(data.dob)}"></td>
+            <td><input type="text" class="form-control form-control-sm fm-relation" value="${esc(data.relation)}"></td>
+            <td><input type="text" class="form-control form-control-sm fm-occupation" value="${esc(data.occupation)}"></td>
+            <td class="d-flex gap-1">
+                <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveFamilyRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
+                <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`);
+        window.familyData[idx] = null;
+        document.getElementById(id)?.remove();
+        showSubSection(document.querySelector('[data-target="s6-family"]'), 's6-family');
     }
 
     function removeFamilyCard(id, idx) {
@@ -502,35 +686,36 @@
         if (!to)    emErrors.push('To Date');
         if (emErrors.length) { alert('Please fill required fields: ' + emErrors.join(', ')); return; }
 
-        const idx = window.employmentsData.length;
-        window.employmentsData.push({ organization: org, designation: desig, from_date: from, to_date: to, salary, reason_for_leaving: reason });
-
-        const initials = org.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-        const id = 'employment-card-' + idx;
-
-        document.getElementById('employmentListing').insertAdjacentHTML('beforeend', `
-        <div class="col-md-6 col-lg-4" id="${id}">
-            <div class="card border-1 rounded-3 h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width:45px;height:45px;font-size:1.1rem;">${initials}</div>
-                            <div><h6 class="mb-0 fw-semibold small">${org}</h6><small class="text-muted small">${desig || '—'}</small></div>
-                        </div>
-                        <span class="badge bg-success" style="font-size:10px;padding:4px 6px;">Past</span>
-                    </div>
-                    <div class="mb-2"><i class="bi bi-calendar me-1 text-main small"></i><small class="text-muted small"><strong>Period:</strong> ${fmt(from)} – ${fmt(to)}</small></div>
-                    <div class="mb-2"><i class="bi bi-currency-dollar me-1 text-main small"></i><small class="text-muted small"><strong>Salary:</strong> ${salary || '—'}</small></div>
-                    <div class="mb-2"><i class="bi bi-door-open me-1 text-main small"></i><small class="text-muted small"><strong>Reason:</strong> ${reason || '—'}</small></div>
-                    <div class="mt-3 pt-3 border-top d-flex justify-content-end">
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeEmploymentCard('${id}', ${idx})"><i class="bi bi-trash me-1"></i>Remove</button>
-                    </div>
-                </div>
-            </div>
-        </div>`);
+        const idx = nextSlot(window.employmentsData);
+        window.employmentsData[idx] = { organization: org, designation: desig, from_date: from, to_date: to, salary, reason_for_leaving: reason };
+        appendEmploymentCard(idx, window.employmentsData[idx]);
 
         row.remove();
+    }
+
+    function editEmploymentCard(id, idx) {
+        const data = window.employmentsData[idx];
+        if (!data) return;
+        const esc = v => String(v || '').replace(/"/g, '&quot;');
+        const tbody = document.getElementById('employmentTable');
+        const count = tbody.rows.length + 1;
+        tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+            <td>${count}</td>
+            <td><input type="text" class="form-control form-control-sm em-org" value="${esc(data.organization)}"></td>
+            <td><input type="text" class="form-control form-control-sm em-desig" value="${esc(data.designation)}"></td>
+            <td><input type="date" class="form-control form-control-sm em-from" value="${esc(data.from_date)}"></td>
+            <td><input type="date" class="form-control form-control-sm em-to" value="${esc(data.to_date)}"></td>
+            <td><input type="text" class="form-control form-control-sm em-salary" value="${esc(data.salary)}"></td>
+            <td><input type="text" class="form-control form-control-sm em-reason" value="${esc(data.reason_for_leaving)}"></td>
+            <td class="d-flex gap-1">
+                <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveEmploymentRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
+                <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`);
+        window.employmentsData[idx] = null;
+        document.getElementById(id)?.remove();
+        showSubSection(document.querySelector('[data-target="s6-employment"]'), 's6-employment');
     }
 
     function removeEmploymentCard(id, idx) {

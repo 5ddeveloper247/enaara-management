@@ -83,6 +83,21 @@
         let current = 1;
         const total = 6;
         const icons = ['bi-person-fill', 'bi-briefcase-fill', 'bi-shield-fill', 'bi-award-fill', 'bi-bank2', 'bi-plus'];
+        let advancedUnlocked = isEditMode;
+
+        function updateStepGateStyles() {
+            for (let s = 3; s <= 6; s++) {
+                const pill = document.getElementById('step-pill-' + s);
+                if (!pill) continue;
+                if (!isEditMode && !advancedUnlocked) {
+                    pill.classList.add('step-pill-locked');
+                    pill.setAttribute('title', 'Complete General and Employment steps first');
+                } else {
+                    pill.classList.remove('step-pill-locked');
+                    pill.removeAttribute('title');
+                }
+            }
+        }
 
         function changeStep(dir) {
             if (dir === 1) {
@@ -90,6 +105,9 @@
                 if (current === total) {
                     submitEmployeeForm();
                     return;
+                }
+                if (current === 2) {
+                    advancedUnlocked = true;
                 }
             }
             goToStep(current + dir);
@@ -148,7 +166,6 @@
             }
 
             if (step === 1) {
-                reqRadio('employment_category', 'Category');
                 req('full_name',     'Name');
                 req('cnic',          'CNIC');
                 req('cnic_expiry',   'CNIC Expiry Date');
@@ -156,6 +173,7 @@
                 req('nationality',   'Nationality');
                 req('marital_status','Marital Status');
             } else if (step === 2) {
+                reqRadio('employment_category', 'Category');
                 req('organization_id', 'Organization');
                 req('sbu_id',          'SBU');
                 req('department_id',   'Department');
@@ -186,8 +204,7 @@
             return valid;
         }
 
-        function goToStep(target) {
-            if (target < 1 || target > total) return;
+        function applyStepNavigation(target) {
             document.getElementById('step-' + current).classList.remove('active');
             for (let i = 1; i <= total; i++) {
                 if (i < target) updateCircle(i, 'done');
@@ -207,6 +224,30 @@
                 nextBtn.className   = 'btn ms-auto text-decoration-none text-white bg-main rounded-2 d-flex align-items-center border-0 px-3';
                 nextBtn.onclick     = () => changeStep(1);
             }
+            updateStepGateStyles();
+        }
+
+        function goToStep(target) {
+            if (target < 1 || target > total) return;
+
+            if (!isEditMode) {
+                if (target === 2 && current === 1) {
+                    if (!validateStep(1)) return;
+                }
+                if (target >= 3 && !advancedUnlocked) {
+                    if (!validateStep(1)) {
+                        applyStepNavigation(1);
+                        return;
+                    }
+                    if (!validateStep(2)) {
+                        applyStepNavigation(2);
+                        return;
+                    }
+                    advancedUnlocked = true;
+                }
+            }
+
+            applyStepNavigation(target);
         }
 
         function updateCircle(step, state) {
@@ -483,9 +524,6 @@
                 if (preview) { preview.src = d.photo_url; preview.style.display = 'block'; }
                 if (label)   { label.style.display = 'none'; }
             }
-            if (typeof window.setExistingAttachments === 'function') {
-                window.setExistingAttachments(d.attachments || []);
-            }
 
             if (d.police) {
                 setRadio('verification_status',    d.police.verification_status);
@@ -527,71 +565,58 @@
             }
 
             if (d.family && d.family.length) {
-                const tbody = document.getElementById('familyTable');
-                tbody.innerHTML = '';
-                d.family.forEach((m, i) => {
-                    const esc = v => String(v || '').replace(/"/g, '&quot;');
-                    tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td><input type="text" class="form-control form-control-sm fm-name" value="${esc(m.name)}"></td>
-                        <td><select class="form-select form-select-sm fm-gender">
-                            <option value="">Select</option>
-                            <option value="Male"${m.gender==='Male'?' selected':''}>Male</option>
-                            <option value="Female"${m.gender==='Female'?' selected':''}>Female</option>
-                        </select></td>
-                        <td><input type="date" class="form-control form-control-sm fm-dob" value="${esc(m.dob)}"></td>
-                        <td><input type="text" class="form-control form-control-sm fm-relation" value="${esc(m.relation)}"></td>
-                        <td><input type="text" class="form-control form-control-sm fm-occupation" value="${esc(m.occupation)}"></td>
-                        <td class="d-flex gap-1">
-                            <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveFamilyRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
-                            <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
-                        </td>
-                    </tr>`);
+                window.familyData = d.family.map(function (m) {
+                    return {
+                        name: m.name || '',
+                        gender: m.gender || '',
+                        dob: m.dob || '',
+                        relation: m.relation || '',
+                        occupation: m.occupation || '',
+                    };
+                });
+                const famList = document.getElementById('familyListing');
+                if (famList) famList.innerHTML = '';
+                if (typeof resetFamilyTableEmpty === 'function') resetFamilyTableEmpty();
+                window.familyData.forEach(function (m, idx) {
+                    if (m && typeof appendFamilyCard === 'function') appendFamilyCard(idx, m);
                 });
             }
 
             if (d.academics && d.academics.length) {
-                const tbody = document.getElementById('academicTable');
-                tbody.innerHTML = '';
-                d.academics.forEach((a, i) => {
-                    const esc = v => String(v || '').replace(/"/g, '&quot;');
-                    tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td><input type="text" class="form-control form-control-sm ac-degree" value="${esc(a.degree)}"></td>
-                        <td><input type="text" class="form-control form-control-sm ac-grade" value="${esc(a.grade_cgpa)}"></td>
-                        <td><input type="date" class="form-control form-control-sm ac-start" value="${esc(a.start_date)}"></td>
-                        <td><input type="date" class="form-control form-control-sm ac-end" value="${esc(a.end_date)}"></td>
-                        <td><input type="text" class="form-control form-control-sm ac-field" value="${esc(a.field_of_study)}"></td>
-                        <td><input type="text" class="form-control form-control-sm ac-institute" value="${esc(a.institute)}"></td>
-                        <td class="d-flex gap-1">
-                            <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveAcademicRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
-                            <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
-                        </td>
-                    </tr>`);
+                window.academicsData = d.academics.map(function (a) {
+                    return {
+                        degree: a.degree || '',
+                        grade_cgpa: a.grade_cgpa || '',
+                        start_date: a.start_date || '',
+                        end_date: a.end_date || '',
+                        field_of_study: a.field_of_study || '',
+                        institute: a.institute || '',
+                    };
+                });
+                const acList = document.getElementById('academicListing');
+                if (acList) acList.innerHTML = '';
+                if (typeof resetAcademicTableEmpty === 'function') resetAcademicTableEmpty();
+                window.academicsData.forEach(function (a, idx) {
+                    if (a && typeof appendAcademicCard === 'function') appendAcademicCard(idx, a);
                 });
             }
 
             if (d.employments && d.employments.length) {
-                const tbody = document.getElementById('employmentTable');
-                tbody.innerHTML = '';
-                d.employments.forEach((e, i) => {
-                    const esc = v => String(v || '').replace(/"/g, '&quot;');
-                    tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td><input type="text" class="form-control form-control-sm em-org" value="${esc(e.organization)}"></td>
-                        <td><input type="text" class="form-control form-control-sm em-desig" value="${esc(e.designation)}"></td>
-                        <td><input type="date" class="form-control form-control-sm em-from" value="${esc(e.from_date)}"></td>
-                        <td><input type="date" class="form-control form-control-sm em-to" value="${esc(e.to_date)}"></td>
-                        <td><input type="text" class="form-control form-control-sm em-salary" value="${esc(e.salary)}"></td>
-                        <td><input type="text" class="form-control form-control-sm em-reason" value="${esc(e.reason_for_leaving)}"></td>
-                        <td class="d-flex gap-1">
-                            <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveEmploymentRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
-                            <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
-                        </td>
-                    </tr>`);
+                window.employmentsData = d.employments.map(function (e) {
+                    return {
+                        organization: e.organization || '',
+                        designation: e.designation || '',
+                        from_date: e.from_date || '',
+                        to_date: e.to_date || '',
+                        salary: e.salary || '',
+                        reason_for_leaving: e.reason_for_leaving || '',
+                    };
+                });
+                const emList = document.getElementById('employmentListing');
+                if (emList) emList.innerHTML = '';
+                if (typeof resetEmploymentTableEmpty === 'function') resetEmploymentTableEmpty();
+                window.employmentsData.forEach(function (e, idx) {
+                    if (e && typeof appendEmploymentCard === 'function') appendEmploymentCard(idx, e);
                 });
             }
 
@@ -615,5 +640,7 @@
             }
         }
         @endif
+
+        updateStepGateStyles();
     </script>
 @endpush

@@ -14,6 +14,7 @@ use App\Models\EmployeeExEmployment;
 use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
 use App\Models\MediaFile;
+use App\Models\Department;
 use App\Models\Organization;
 use App\Models\Sbu;
 use App\Models\Role;
@@ -448,11 +449,35 @@ class EmployeeService
         ]);
     }
 
-    public function getTableData(): array
+    public function getTableData(array $filters = []): array
     {
-        $employees = Employee::with(['department', 'organization', 'sbu', 'role', 'mediaFiles', 'policeVerification', 'contact'])
-            ->orderByDesc('id')
-            ->get();
+        $query = Employee::with(['department', 'organization', 'sbu', 'role', 'mediaFiles', 'policeVerification', 'contact'])
+            ->orderByDesc('id');
+
+        $type = $filters['filter_employee_type'] ?? null;
+        if (!empty($type)) {
+            if ($type === 'Third-party') {
+                $query->where('employment_type', 'Third-party');
+            } elseif ($type === 'Internal') {
+                $query->where(function ($q) {
+                    $q->whereNull('employment_type')
+                        ->orWhere('employment_type', '!=', 'Third-party');
+                });
+            }
+        }
+
+        $departmentName = $filters['filter_department'] ?? null;
+        if (!empty($departmentName)) {
+            $query->whereHas('department', function ($q) use ($departmentName) {
+                $q->where('name', $departmentName);
+            });
+        }
+
+        if (!empty($filters['filter_vendor'])) {
+            $query->where('employment_type', 'Third-party');
+        }
+
+        $employees = $query->get();
 
         return $employees->map(function (Employee $emp) {
             $initials    = $this->getInitials($emp->full_name ?? '');
