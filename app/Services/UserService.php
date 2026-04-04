@@ -33,7 +33,7 @@ class UserService
 
     public function getTableData(): array
     {
-        $users = User::with(['roles', 'employee.department'])
+        $users = User::with(['roles', 'employee.department', 'employee.sbu', 'employee.mediaFiles'])
             ->orderByDesc('id')
             ->get();
 
@@ -42,6 +42,16 @@ class UserService
             $employee   = $user->employee;
             $department = $employee?->department?->name ?? '-';
             $empCode    = $employee?->employee_code ?? '-';
+            $sbuName    = $employee?->sbu?->name ?? '-';
+            
+            $avatarUrl = null;
+            if ($employee) {
+                $photo = $employee->mediaFiles->where('file_type', 'photo')->first();
+                if ($photo && $photo->file_path) {
+                    $avatarUrl = asset('storage/' . $photo->file_path);
+                }
+            }
+
             $initials   = $this->getInitials($user->name);
 
             return [
@@ -49,9 +59,11 @@ class UserService
                 'name'          => $user->name,
                 'email'         => $user->email,
                 'initials'      => $initials,
+                'avatar_url'    => $avatarUrl,
                 'employee_id'   => $employee?->id,
                 'employee_code' => $empCode,
                 'employee_name' => $employee?->full_name ?? '',
+                'sbu_name'      => $sbuName,
                 'department'    => $department,
                 'role_id'       => $role?->id,
                 'role'          => $role?->name ?? '-',

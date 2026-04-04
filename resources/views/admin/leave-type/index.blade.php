@@ -400,32 +400,50 @@
                     success: function(response) {
                         if (response.success) {
                             var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('leaveTypeEditCanvas'));
-                            if (offcanvas) {
-                                offcanvas.hide();
-                            }
-                            location.reload();
+                            if (offcanvas) offcanvas.hide();
+
+                            Swal.fire({
+                                title: formMode === 'add' ? 'Created!' : 'Updated!',
+                                text: response.message || (formMode === 'add' ? 'Leave type created successfully.' : 'Leave type updated successfully.'),
+                                icon: 'success',
+                                confirmButtonColor: '#012445',
+                                timer: 2000,
+                                timerProgressBar: true,
+                            }).then(function() {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', response.message || 'Something went wrong.', 'error');
                         }
                     },
                     error: function(xhr) {
                         if (xhr.status === 422) {
                             var errors = xhr.responseJSON.errors;
+                            var errorList = '';
                             var fieldMap = {
                                 'organization_id': 'editOrganizationId',
-                                'department_id': 'editDepartmentId',
-                                'name': 'editLeaveTypeName',
-                                'code': 'editLeaveTypeCode',
-                                'annual_quota': 'editAnnualQuota',
-                                'is_active': 'editLeaveTypeIsActive'
+                                'department_id':   'editDepartmentId',
+                                'name':            'editLeaveTypeName',
+                                'code':            'editLeaveTypeCode',
+                                'annual_quota':    'editAnnualQuota',
+                                'is_active':       'editLeaveTypeIsActive'
                             };
                             $.each(errors, function(field, messages) {
                                 var fieldId = '#' + (fieldMap[field] || 'edit' + field);
                                 var errorId = fieldId + 'Error';
                                 $(fieldId).addClass('is-invalid');
                                 $(errorId).text(messages[0]).show();
+                                errorList += '<li>' + messages[0] + '</li>';
+                            });
+                            Swal.fire({
+                                title: 'Please check the following:',
+                                html: '<ul class="text-start ps-3 mb-0">' + errorList + '</ul>',
+                                icon: 'warning',
+                                confirmButtonColor: '#012445',
                             });
                         } else {
                             var errorMsg = formMode === 'add' ? 'Failed to create leave type. Please try again.' : 'Failed to update leave type. Please try again.';
-                            alert(errorMsg);
+                            Swal.fire('Error', errorMsg, 'error');
                         }
                     }
                 });

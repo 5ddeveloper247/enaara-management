@@ -230,8 +230,12 @@ Route::middleware(['auth', 'password.not_temporary'])->prefix('admin')->group(fu
     // })->name('admin.settings');
 
     Route::get('/daily-logs', function () {
-        return view('admin.monthly-logs.index');
+        return redirect()->back()->with([
+            'coming_soon_title' => 'Coming Soon',
+            'coming_soon_message' => 'Daily Logs feature is coming soon.'
+        ]);
     })->name('admin.monthly-logs.index');
+
 
     Route::get('/shift-planner', [ShiftPlannerController::class, 'index'])->name('admin.shift-planner.index');
     Route::post('/shift-planner', [ShiftPlannerController::class, 'store'])->name('admin.shift-planner.store');
@@ -249,9 +253,12 @@ Route::middleware(['auth', 'password.not_temporary'])->prefix('admin')->group(fu
     Route::post('/shift-roster/{id}', [ShiftRosterController::class, 'update'])->name('admin.shift-roster.update');
     Route::delete('/shift-roster/{id}', [ShiftRosterController::class, 'destroy'])->name('admin.shift-roster.destroy');
 
-    // Route::get('/regularization', function () {
-    //     return view('admin.regularization.index');
-    // })->name('admin.regularization.index');
+    Route::get('/regularization', function () {
+        return redirect()->back()->with([
+            'coming_soon_title' => 'Coming Soon',
+            'coming_soon_message' => 'Regularization feature is coming soon.'
+        ]);
+    })->name('admin.regularization.index');
 
     Route::get('/geofencing', [GeofenceController::class, 'index'])->name('admin.geofencing.index');
     Route::post('/geofencing', [GeofenceController::class, 'store'])->name('admin.geofencing.store');
@@ -262,7 +269,7 @@ Route::middleware(['auth', 'password.not_temporary'])->prefix('admin')->group(fu
 
     //Monthly Summary ROutes
     Route::get('/monthly-summary', [MonthlySummaryController::class, 'index'])->name('admin.monthly-summary.index');
-    
+
     // Route::get('/my-leaves', function () {
     //     return view('admin.my-leaves.index');
     // })->name('admin.my-leaves.index');
@@ -279,11 +286,14 @@ Route::middleware(['auth', 'password.not_temporary'])->prefix('admin')->group(fu
         return view('admin.roles-permissions.index');
     })->name('admin.roles.index');
 
-  
+
     Route::get('/overtime-tracker', function () {
-        return view('admin.overtime.index');
+        return redirect()->back()->with([
+            'coming_soon_title' => 'Coming Soon',
+            'coming_soon_message' => 'Overtime Tracker feature is coming soon.'
+        ]);
     })->name('admin.overtime.index');
-  
+
     // Policies Routes
     Route::get('/policies', [PolicyController::class, 'index'])->name('admin.policies.index');
     Route::post('/policies', [PolicyController::class, 'store'])->name('admin.policies.store');

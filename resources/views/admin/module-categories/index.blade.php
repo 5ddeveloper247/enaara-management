@@ -74,25 +74,54 @@
 
             $(document).on('change', '.status-toggle', function() {
                 var checkbox = $(this);
-                var id = checkbox.data('module-category-id');
+                var id       = checkbox.data('module-category-id');
                 var isActive = checkbox.is(':checked');
-                var row = checkbox.closest('tr');
-                $.ajax({
-                    url: moduleCategoryStatusUrl + '/' + id + '/status',
-                    method: 'PATCH',
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                    data: JSON.stringify({ is_active: isActive }),
-                    success: function() {
-                        row.attr('data-status', isActive ? 'active' : 'inactive');
-                        var totalActive = parseInt($('#totalActive').text(), 10) || 0;
-                        var totalInactive = parseInt($('#totalInactive').text(), 10) || 0;
-                        if (isActive) { totalActive += 1; totalInactive -= 1; } else { totalActive -= 1; totalInactive += 1; }
-                        $('#totalActive').text(Math.max(0, totalActive));
-                        $('#totalInactive').text(Math.max(0, totalInactive));
-                    },
-                    error: function() {
-                        checkbox.prop('checked', !isActive);
-                    }
+                var row      = checkbox.closest('tr');
+
+                // Revert until confirmed
+                checkbox.prop('checked', !isActive);
+
+                Swal.fire({
+                    title: isActive ? 'Activate Category?' : 'Deactivate Category?',
+                    text:  isActive ? 'This category will be marked as active.' : 'This category will be marked as inactive.',
+                    icon:  'question',
+                    showCancelButton: true,
+                    confirmButtonColor: isActive ? '#012445' : '#dc3545',
+                    cancelButtonColor:  '#6c757d',
+                    confirmButtonText:  isActive ? 'Yes, activate!' : 'Yes, deactivate!',
+                }).then(function(result) {
+                    if (!result.isConfirmed) return;
+
+                    checkbox.prop('checked', isActive);
+
+                    $.ajax({
+                        url:    moduleCategoryStatusUrl + '/' + id + '/status',
+                        method: 'PATCH',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                        data:   JSON.stringify({ is_active: isActive }),
+                        success: function() {
+                            row.attr('data-status', isActive ? 'active' : 'inactive');
+                            var totalActive   = parseInt($('#totalActive').text(),   10) || 0;
+                            var totalInactive = parseInt($('#totalInactive').text(), 10) || 0;
+                            if (isActive) { totalActive += 1; totalInactive -= 1; }
+                            else          { totalActive -= 1; totalInactive += 1; }
+                            $('#totalActive').text(Math.max(0, totalActive));
+                            $('#totalInactive').text(Math.max(0, totalInactive));
+
+                            Swal.fire({
+                                title: isActive ? 'Activated!' : 'Deactivated!',
+                                text:  isActive ? 'Category has been activated.' : 'Category has been deactivated.',
+                                icon:  'success',
+                                confirmButtonColor: '#012445',
+                                timer: 2000,
+                                timerProgressBar: true,
+                            });
+                        },
+                        error: function() {
+                            checkbox.prop('checked', !isActive);
+                            Swal.fire('Error', 'Status update failed. Please try again.', 'error');
+                        }
+                    });
                 });
             });
 
