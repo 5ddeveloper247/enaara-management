@@ -16,6 +16,7 @@
             <tr>
                 <th>User</th>
                 <th>Employee ID</th>
+                <th>SBU</th>
                 <th>Department</th>
                 <th>Role</th>
                 <th>Last Login</th>

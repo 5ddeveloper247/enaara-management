@@ -43,17 +43,17 @@
             <!-- Main Content Area -->
             <main class="admin-content flex-grow-1">
                 @if (session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
                 @endif
 
                 @if (session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
                 @endif
 
                 @yield('content')
@@ -88,7 +88,20 @@
 
     <!-- Custom Admin JS -->
     <script src="{{ asset('js/app.js') }}"></script>
-
+    <!-- Coming soon msgs -->
+    @if(session('coming_soon_message'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'info',
+                title: @json(session('coming_soon_title', 'Coming Soon')),
+                text: @json(session('coming_soon_message')),
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#0f2a44'
+            });
+        });
+    </script>
+    @endif
 
     @stack('scripts')
 </body>

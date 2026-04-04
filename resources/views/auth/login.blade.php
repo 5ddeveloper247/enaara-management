@@ -1,7 +1,7 @@
 @extends('layouts.auth')
 
 @section('title', 'Login')
-@section('page-title', 'Welcome Back')
+@section('page-title', 'Enara HRMS')
 @section('page-subtitle', 'Please sign in to your account')
 
 @section('content')
@@ -57,10 +57,10 @@
                 <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
             </button>
         </form>
-
+<!-- 
         <div class="auth-footer">
             <p class="mb-0">Don't have an account? <a href="{{ route('register') }}">Sign up here</a></p>
-        </div>
+        </div> -->
     </div>
 
     <script>

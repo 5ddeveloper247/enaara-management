@@ -5,6 +5,11 @@
     </div>
     <div class="offcanvas-body">
 
+        <div class="text-center mb-4">
+            <img id="userCanvasAvatar" src="https://ui-avatars.com/api/?name=User&background=e6c673&color=000&size=80" alt="Avatar" class="rounded-circle border border-2" style="width: 80px; height: 80px; object-fit: cover; border-color: var(--primary-color) !important;">
+            <div class="small mt-2 text-white-50">Profile image is managed via Employee record</div>
+        </div>
+
         <div id="userFormAlert" class="alert d-none mb-3 small fw-semibold" role="alert"></div>
 
         <form id="userForm" novalidate>
@@ -21,17 +26,29 @@
                     @foreach($employees as $emp)
                         @php
                             $prefillEmail = trim((string) ($emp->email ?: $emp->contact?->email ?? ''));
+                            $sbuName      = $emp->sbu?->name ?? '-';
+                            $photo        = $emp->mediaFiles->where('file_type', 'photo')->first();
+                            $avatarUrl    = $photo && $photo->file_path ? asset('storage/' . $photo->file_path) : '';
                         @endphp
                         <option value="{{ $emp->id }}"
                             data-name="{{ $emp->full_name }}"
                             data-email="{{ e($prefillEmail) }}"
+                            data-sbu="{{ e($sbuName) }}"
+                            data-avatar="{{ $avatarUrl }}"
                             data-role="{{ $emp->role?->name ?? '' }}">
                             {{ $emp->employee_code }} — {{ $emp->full_name }}
                         </option>
                     @endforeach
                 </select>
-                <small class="opacity-50">Only employees without an account are listed. Auto-fills name & email.</small>
+                <small class="opacity-50">Only employees without an account are listed. Auto-fills name, email & SBU.</small>
                 <div class="field-error text-danger small mt-1 d-none" id="err_employee_id"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">SBU</label>
+                <input type="text" class="form-control form-control-sm" id="userAssignedSbu"
+                    placeholder="SBU will auto-fill from employee registration"
+                    style="background:transparent;border-color:#ffffff42;color:#fff;" readonly>
             </div>
 
             <hr class="my-3" style="border-color:#ffffff30 !important">

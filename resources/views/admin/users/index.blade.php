@@ -59,7 +59,7 @@
             initDeleteModal();
             initStatusToggles();
             initResetPassword();
-            populateFilterRoles();
+            initFiltersAndExport();
         });
 
         // =============================================
@@ -73,22 +73,23 @@
                     dataSrc: 'data',
                 },
                 columns: [
-                    { data: null,        render: renderUser,       orderable: true  },
-                    { data: 'employee_code', render: renderEmpCode, orderable: true  },
-                    { data: 'department', render: renderDept,      orderable: true  },
-                    { data: 'role',       render: renderRole,      orderable: true  },
-                    { data: 'last_login', render: renderLastLogin, orderable: false },
-                    { data: 'is_active',  render: renderStatus,    orderable: true  },
-                    { data: null,         render: renderActions,   orderable: false, className: 'text-end no-toggle' },
+                    { data: null,             render: renderUser,       orderable: true  },
+                    { data: 'employee_code',  render: renderEmpCode,    orderable: true  },
+                    { data: 'sbu_name',       render: renderSbu,        orderable: true  },
+                    { data: 'department',     render: renderDept,       orderable: true  },
+                    { data: 'role',           render: renderRole,       orderable: true  },
+                    { data: 'last_login',     render: renderLastLogin,  orderable: false },
+                    { data: 'is_active',      render: renderStatus,     orderable: true  },
+                    { data: null,             render: renderActions,    orderable: false, className: 'text-end no-toggle' },
                 ],
                 columnDefs: [
-                    { targets: 6, orderable: false, className: 'no-toggle' },
+                    { targets: 7, orderable: false, className: 'no-toggle' },
                 ],
                 buttons: [{
                     extend: 'colvis',
                     text: 'Select Columns',
                     className: 'btn btn-sm border-0 bg-main text-white',
-                    columns: [0, 1, 2, 3, 4, 5],
+                    columns: [0, 1, 2, 3, 4, 5, 6],
                 }],
                 language: {
                     search: '',
@@ -105,8 +106,12 @@
             var initials = esc(row.initials);
             var name     = esc(row.name);
             var email    = esc(row.email);
+            var avatar = row.avatar_url 
+                ? '<img src="' + escAttr(row.avatar_url) + '" alt="Avatar" class="user-avatar" style="object-fit:cover;">' 
+                : '<div class="user-avatar">' + initials + '</div>';
+                
             return '<div class="d-flex align-items-center">' +
-                '<div class="user-avatar me-3">' + initials + '</div>' +
+                '<div class="me-3">' + avatar + '</div>' +
                 '<div><div class="fw-semibold">' + name + '</div>' +
                 '<small class="text-muted">' + email + '</small></div>' +
                 '</div>';
@@ -115,6 +120,11 @@
         function renderEmpCode(data) {
             if (!data || data === '-') return '<span class="text-muted">-</span>';
             return '<span class="badge px-3 rounded-1 bg-light text-dark">' + esc(data) + '</span>';
+        }
+
+        function renderSbu(data) {
+            if (!data || data === '-') return '<span class="text-muted">-</span>';
+            return '<span class="text-dark fw-medium">' + esc(data) + '</span>';
         }
 
         function renderDept(data) {
@@ -155,6 +165,8 @@
                 ' data-employee-id="'   + (row.employee_id   || '')     + '"' +
                 ' data-employee-code="'+ escAttr(row.employee_code || '') + '"' +
                 ' data-employee-name="'+ escAttr(row.employee_name || '') + '"' +
+                ' data-sbu-name="'    + escAttr(row.sbu_name || '')   + '"' +
+                ' data-avatar-url="'  + escAttr(row.avatar_url || '') + '"' +
                 ' data-role-name="'    + escAttr(row.role || '')          + '"' +
                 ' data-role-id="'     + (row.role_id || '')           + '"' +
                 ' title="Edit"><i class="bi bi-pencil"></i></button>' +
@@ -205,26 +217,35 @@
             document.getElementById('userEmployeeSelect').addEventListener('change', function () {
                 var opt = this.options[this.selectedIndex];
                 var hint = document.getElementById('emailManualHint');
+                var avatarHolder = document.getElementById('userCanvasAvatar');
                 if (opt.value) {
                     var name  = opt.getAttribute('data-name')  || '';
                     var email = opt.getAttribute('data-email') || '';
                     var role  = opt.getAttribute('data-role')  || '';
+                    var sbu   = opt.getAttribute('data-sbu')   || '';
+                    var avatarUrl = opt.getAttribute('data-avatar') || '';
+
                     if (name) document.getElementById('userName').value = name;
                     document.getElementById('userEmail').value = email;
                     document.getElementById('userAssignedRole').value = role || '';
+                    document.getElementById('userAssignedSbu').value = sbu || '';
+
+                    if (avatarHolder) {
+                        avatarHolder.src = avatarUrl ? avatarUrl : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name || 'User') + '&background=e6c673&color=000&size=80';
+                    }
+
                     if (hint) {
                         hint.classList.toggle('d-none', !!email);
                     }
                 } else {
                     document.getElementById('userAssignedRole').value = '';
+                    document.getElementById('userAssignedSbu').value = '';
                     document.getElementById('userEmail').value = '';
+                    if (avatarHolder) {
+                        avatarHolder.src = 'https://ui-avatars.com/api/?name=User&background=e6c673&color=000&size=80';
+                    }
                     if (hint) hint.classList.add('d-none');
                 }
-            });
-
-            document.getElementById('userForm').addEventListener('submit', function (e) {
-                e.preventDefault();
-                submitForm();
             });
         }
 
@@ -233,6 +254,11 @@
             document.getElementById('userSubmitBtn').innerHTML     = '<i class="bi bi-person-check me-1"></i>Create User';
             document.getElementById('editUserId').value            = '';
             document.getElementById('userAssignedRole').value      = '';
+            document.getElementById('userAssignedSbu').value       = '';
+            var avatarHolder = document.getElementById('userCanvasAvatar');
+            if (avatarHolder) {
+                avatarHolder.src = 'https://ui-avatars.com/api/?name=User&background=e6c673&color=000&size=80';
+            }
             document.getElementById('passwordRequired').style.display = 'inline';
             document.getElementById('passwordHint').textContent   = 'Required. Min. 8 chars with uppercase, lowercase and numbers.';
         }
@@ -246,21 +272,32 @@
             var note = document.getElementById('createUserPasswordNote');
             if (note) note.classList.add('d-none');
 
-            var empId   = btn.dataset.employeeId   || '';
-            var empCode = btn.dataset.employeeCode || '';
-            var empName = btn.dataset.employeeName || '';
+            var empId    = btn.dataset.employeeId   || '';
+            var empCode  = btn.dataset.employeeCode || '';
+            var empName  = btn.dataset.employeeName || '';
             var roleName = btn.dataset.roleName || '';
-            var empSel  = document.getElementById('userEmployeeSelect');
+            var sbuName  = btn.dataset.sbuName || '';
+            var avatarUrl = btn.dataset.avatarUrl || '';
+
+            var empSel   = document.getElementById('userEmployeeSelect');
             document.getElementById('userAssignedRole').value = roleName === '-' ? '' : roleName;
+            document.getElementById('userAssignedSbu').value = sbuName === '-' ? '' : sbuName;
+
+            var avatarHolder = document.getElementById('userCanvasAvatar');
+            if (avatarHolder) {
+                avatarHolder.src = avatarUrl ? avatarUrl : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(document.getElementById('userName').value || 'User') + '&background=e6c673&color=000&size=80';
+            }
 
             if (empSel && empId) {
                 var existing = empSel.querySelector('option[value="' + empId + '"]');
                 if (!existing) {
                     var opt = document.createElement('option');
                     opt.value                       = empId;
-                    opt.setAttribute('data-name',  empName);
-                    opt.setAttribute('data-email', btn.dataset.email || '');
-                    opt.setAttribute('data-role', roleName === '-' ? '' : roleName);
+                    opt.setAttribute('data-name',   empName);
+                    opt.setAttribute('data-email',  btn.dataset.email || '');
+                    opt.setAttribute('data-role',   roleName === '-' ? '' : roleName);
+                    opt.setAttribute('data-sbu',    sbuName === '-' ? '' : sbuName);
+                    opt.setAttribute('data-avatar', avatarUrl);
                     opt.textContent                 = empCode + ' — ' + empName;
                     empSel.insertAdjacentElement('afterend', opt);
                     empSel.appendChild(opt);
@@ -274,6 +311,11 @@
             document.getElementById('userForm').reset();
             document.getElementById('editUserId').value = '';
             document.getElementById('userAssignedRole').value = '';
+            document.getElementById('userAssignedSbu').value = '';
+            var avatarHolder = document.getElementById('userCanvasAvatar');
+            if (avatarHolder) {
+                avatarHolder.src = 'https://ui-avatars.com/api/?name=User&background=e6c673&color=000&size=80';
+            }
             var emailHint = document.getElementById('emailManualHint');
             if (emailHint) emailHint.classList.add('d-none');
             clearErrors();
@@ -348,57 +390,104 @@
                 var isActive = this.checked ? 1 : 0;
                 var toggle   = this;
 
-                fetch(window.usersStatusUrl + '/' + userId + '/status', {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept':       'application/json',
-                        'X-CSRF-TOKEN': window.csrfToken,
-                    },
-                    body: JSON.stringify({ is_active: isActive }),
-                })
-                .then(r => r.json())
-                .then(function (data) {
-                    if (!data.success) {
+                // Revert optimistically until confirmed
+                toggle.checked = !toggle.checked;
+
+                Swal.fire({
+                    title: isActive ? 'Activate User?' : 'Deactivate User?',
+                    text: isActive
+                        ? 'This user will be able to log in again.'
+                        : 'This user will be blocked from logging in.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: isActive ? '#012445' : '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: isActive ? 'Yes, activate!' : 'Yes, deactivate!',
+                    cancelButtonText: 'Cancel',
+                }).then(function (result) {
+                    if (!result.isConfirmed) return;
+
+                    // User confirmed — flip it back and make the call
+                    toggle.checked = !!isActive;
+
+                    fetch(window.usersStatusUrl + '/' + userId + '/status', {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept':       'application/json',
+                            'X-CSRF-TOKEN': window.csrfToken,
+                        },
+                        body: JSON.stringify({ is_active: isActive }),
+                    })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.success) {
+                            Swal.fire({
+                                title: isActive ? 'Activated!' : 'Deactivated!',
+                                text: isActive ? 'User has been activated.' : 'User has been deactivated.',
+                                icon: 'success',
+                                confirmButtonColor: '#012445',
+                                timer: 2000,
+                                timerProgressBar: true,
+                            });
+                        } else {
+                            toggle.checked = !toggle.checked;
+                            Swal.fire('Error', data.message || 'Status update failed.', 'error');
+                        }
+                        loadStats();
+                    })
+                    .catch(function () {
                         toggle.checked = !toggle.checked;
-                    }
-                    loadStats();
-                })
-                .catch(function () {
-                    toggle.checked = !toggle.checked;
+                        Swal.fire('Error', 'Network error. Please try again.', 'error');
+                    });
                 });
             });
         }
 
         // =============================================
-        // DELETE
+        // DELETE & RESET PASSWORD
         // =============================================
         function initResetPassword() {
             $('#usersTable').on('click', '.reset-password-btn', function () {
                 var userId = this.getAttribute('data-user-id');
                 if (!userId || !window.usersResetPasswordUrl) return;
-                if (!confirm('Send a new temporary password to this user by email? They must sign in and choose a new password.')) {
-                    return;
-                }
-                fetch(window.usersResetPasswordUrl + '/' + userId + '/reset-password', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept':       'application/json',
-                        'X-CSRF-TOKEN': window.csrfToken,
-                    },
-                    body: JSON.stringify({}),
-                })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (data.success) {
-                        alert(data.message || 'Done.');
-                    } else {
-                        alert(data.message || 'Request failed.');
+
+                Swal.fire({
+                    title: 'Reset Password',
+                    text: 'Send a new temporary password to this user by email? They must sign in and choose a new password.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#012445',
+                    cancelButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes, reset it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(window.usersResetPasswordUrl + '/' + userId + '/reset-password', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept':       'application/json',
+                                'X-CSRF-TOKEN': window.csrfToken,
+                            },
+                            body: JSON.stringify({}),
+                        })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: 'Done!',
+                                    text: data.message || 'Done.',
+                                    icon: 'success',
+                                    confirmButtonColor: '#012445'
+                                });
+                            } else {
+                                Swal.fire('Error', data.message || 'Request failed.', 'error');
+                            }
+                        })
+                        .catch(function () {
+                            Swal.fire('Error', 'Network error.', 'error');
+                        });
                     }
-                })
-                .catch(function () {
-                    alert('Network error.');
                 });
             });
         }
@@ -446,15 +535,101 @@
         }
 
         // =============================================
-        // FILTER ROLES (populate filter dropdown)
+        // FILTER & EXPORT
         // =============================================
+
+        // Custom DataTables search filter for role & status
+        var _filterRole   = '';
+        var _filterStatus = '';
+
+        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+            if (settings.nTable.id !== 'usersTable') return true;
+            var row     = usersTable ? usersTable.row(dataIndex).data() : null;
+            if (!row) return true;
+
+            if (_filterRole && row.role !== _filterRole) return false;
+            if (_filterStatus !== '' && String(row.is_active ? '1' : '0') !== _filterStatus) return false;
+            return true;
+        });
+
+        function initFiltersAndExport() {
+            // Populate role dropdown after first AJAX data load completes
+            if (usersTable) {
+                usersTable.one('init.dt', function () {
+                    populateFilterRoles();
+                });
+            }
+
+            // Apply filters
+            document.getElementById('applyFiltersBtn').addEventListener('click', function () {
+                _filterRole   = document.getElementById('filterRole').value;
+                _filterStatus = document.getElementById('filterStatus').value;
+                usersTable.draw();
+                // Close dropdown
+                var dd = document.querySelector('[data-bs-toggle="dropdown"].dropdown-toggle');
+                if (dd) bootstrap.Dropdown.getInstance(dd.closest('.btn-group').querySelector('.dropdown-toggle'))?.hide();
+            });
+
+            // Clear filters
+            document.getElementById('clearFiltersBtn').addEventListener('click', function () {
+                _filterRole   = '';
+                _filterStatus = '';
+                document.getElementById('filterRole').value   = '';
+                document.getElementById('filterStatus').value = '';
+                usersTable.draw();
+            });
+
+            // Export to Excel (CSV)
+            document.getElementById('exportBtn').addEventListener('click', function () {
+                var rows = usersTable.rows({ search: 'applied' }).data();
+                var BOM  = '\uFEFF'; // UTF-8 BOM for Excel
+                var headers = ['Name', 'Email', 'Employee Code', 'SBU', 'Department', 'Role', 'Status', 'Last Login'];
+                var lines   = [headers.join(',')];
+
+                rows.each(function (row) {
+                    var line = [
+                        csvCell(row.name),
+                        csvCell(row.email),
+                        csvCell(row.employee_code),
+                        csvCell(row.sbu_name),
+                        csvCell(row.department),
+                        csvCell(row.role),
+                        row.is_active ? 'Active' : 'Inactive',
+                        csvCell(row.last_login),
+                    ];
+                    lines.push(line.join(','));
+                });
+
+                var csv  = BOM + lines.join('\n');
+                var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                var link = document.createElement('a');
+                link.href     = URL.createObjectURL(blob);
+                link.download = 'users_' + new Date().toISOString().split('T')[0] + '.csv';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        function csvCell(val) {
+            var s = (val === null || val === undefined || val === '-') ? '' : String(val);
+            s = s.replace(/"/g, '""');
+            return '"' + s + '"';
+        }
+
         function populateFilterRoles() {
-            var sel = document.getElementById('filterRole');
+            var sel  = document.getElementById('filterRole');
             if (!sel) return;
-            document.querySelectorAll('#userRole option').forEach(function (o) {
-                if (!o.value) return;
-                sel.insertAdjacentHTML('beforeend',
-                    '<option value="' + esc(o.value) + '">' + esc(o.textContent) + '</option>');
+            var seen = new Set();
+            usersTable.rows().data().each(function (row) {
+                if (row.role && row.role !== '-' && !seen.has(row.role)) {
+                    seen.add(row.role);
+                    var opt = document.createElement('option');
+                    opt.value       = row.role;
+                    opt.textContent = row.role;
+                    sel.appendChild(opt);
+                }
             });
         }
 
