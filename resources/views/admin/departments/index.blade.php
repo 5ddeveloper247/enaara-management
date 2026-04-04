@@ -236,6 +236,7 @@
                 
                 var formMode = $('#editFormMode').val();
                 var formData = {
+                    id: $('#editDepartmentId').val(),
                     organization_id: $('#editOrganizationId').val(),
                     sbu_id: $('#editSbuId').val(),
                     name: $('#editDepartmentName').val(),
