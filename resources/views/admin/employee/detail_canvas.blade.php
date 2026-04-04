@@ -167,9 +167,6 @@
                 </div>
                 <div class="mt-3 pt-3 border-top" style="border-color: #ffffff1a !important;">
                     <small class="opacity-75 text-white d-block mb-2">This employee does not have a user account yet.</small>
-                    <button type="button" class="btn btn-sm btn-light text-dark border-0 mt-2" id="createUserAccountBtn">
-                        <i class="bi bi-person-plus me-1"></i>Create User Account
-                    </button>
                 </div>
             </div>
             <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important; display: none;" id="hasUserAccountSection">

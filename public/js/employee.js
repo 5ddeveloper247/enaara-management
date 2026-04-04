@@ -20,39 +20,39 @@
                 dataSrc: 'data',
             },
             columns: [
-                { data: 'id',                  render: renderEmployeeId,        orderable: true  },
-                { data: 'biometric_id',        render: renderBiometric,         orderable: true  },
-                { data: 'employee_code',       render: renderEmployeeNo,        orderable: true  },
-                { data: 'employment_category', render: renderCategory,          orderable: true  },
-                { data: null,                  render: renderImage,             orderable: false },
-                { data: 'full_name',           render: renderName,              orderable: true  },
-                { data: 'cnic',                render: renderSimple,            orderable: true  },
-                { data: 'nationality',         render: renderSimple,            orderable: true  },
-                { data: 'gender',              render: renderGender,            orderable: true  },
-                { data: 'organization',        render: renderSimple,            orderable: true  },
-                { data: 'sbu',                 render: renderSimple,            orderable: true  },
-                { data: 'department',          render: renderSimple,            orderable: true  },
-                { data: 'role',                render: renderSimple,            orderable: true  },
-                { data: 'join_date',           render: renderSimple,            orderable: true  },
-                { data: 'designation',         render: renderSimple,            orderable: true  },
-                { data: 'verification_status', render: renderVerificationStatus, orderable: true },
-                { data: 'email',               render: renderEmail,             orderable: true  },
-                { data: 'cell_no',             render: renderSimple,            orderable: true  },
-                { data: null,                  render: renderProfile,           orderable: false, visible: false },
-                { data: 'employment_type',     render: renderEmploymentType,    orderable: true,  visible: false },
-                { data: 'site',                render: renderSite,              orderable: true,  visible: false },
-                { data: null,                  render: renderVendor,            orderable: false, visible: false },
-                { data: 'sync_status',         render: renderSyncStatus,        orderable: true,  visible: false },
-                { data: 'floor_access',        render: renderFloorAccess,       orderable: true,  visible: false },
-                { data: null,                  render: renderActions,           orderable: false, className: 'text-end no-toggle' },
+                { data: null,                  render: renderImage,             orderable: false }, // 0 Image
+                { data: 'full_name',           render: renderName,              orderable: true  }, // 1 Name
+                { data: 'biometric_id',        render: renderBiometric,         orderable: true  }, // 2 TAS ID
+                { data: 'id',                  render: renderEmployeeId,        orderable: true  }, // 3 Employee ID
+                { data: 'employee_code',       render: renderEmployeeNo,        orderable: true  }, // 4 Employee No
+                { data: 'organization',        render: renderSimple,            orderable: true  }, // 5 Organization
+                { data: 'sbu',                 render: renderSimple,            orderable: true  }, // 6 SBU
+                { data: 'department',          render: renderSimple,            orderable: true  }, // 7 Department
+                { data: 'role',                render: renderSimple,            orderable: true  }, // 8 Role
+                { data: 'employment_category', render: renderCategory,          orderable: true  }, // 9 Category
+                { data: 'cnic',                render: renderSimple,            orderable: true  }, // 10 CNIC
+                { data: 'nationality',         render: renderSimple,            orderable: true  }, // 11 Nationality
+                { data: 'gender',              render: renderGender,            orderable: true  }, // 12 Gender
+                { data: 'join_date',           render: renderSimple,            orderable: true  }, // 13 Date of Joining
+                { data: 'designation',         render: renderSimple,            orderable: true  }, // 14 Designation
+                { data: 'verification_status', render: renderVerificationStatus, orderable: true }, // 15 Verification Status
+                { data: 'email',               render: renderEmail,             orderable: true  }, // 16 Email
+                { data: 'cell_no',             render: renderSimple,            orderable: true  }, // 17 Cell Number
+                { data: null,                  render: renderProfile,           orderable: false, visible: false }, // 18 Profile
+                { data: 'employment_type',     render: renderEmploymentType,    orderable: true,  visible: false }, // 19 Employment Type
+                { data: 'site',                render: renderSite,              orderable: true,  visible: false }, // 20 Site Assignment
+                { data: null,                  render: renderVendor,            orderable: false, visible: false }, // 21 Vendor
+                { data: 'sync_status',         render: renderSyncStatus,        orderable: true,  visible: false }, // 22 Sync Status
+                { data: 'floor_access',        render: renderFloorAccess,       orderable: true,  visible: false }, // 23 Floor Access
+                { data: null,                  render: renderActions,           orderable: false, className: 'text-end no-toggle' }, // 24 Actions
             ],
-            order: [[0, 'desc']],
+            order: [[3, 'desc']], // sort by Employee ID
             scrollX: false,
             responsive: false,
             columnDefs: [
-                { targets: [0, 2, 5], responsivePriority: 1 },
-                { targets: [4, 15],   responsivePriority: 2 },
-                { targets: [1, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17], responsivePriority: 3 },
+                { targets: [1, 2, 3, 4], responsivePriority: 1 }, // key identity columns
+                { targets: [0, 5, 7, 8, 15], responsivePriority: 2 },
+                { targets: [6, 9, 10, 11, 12, 13, 14, 16, 17], responsivePriority: 3 },
             ],
             language: {
                 search: '',
@@ -314,10 +314,6 @@
                 populateEmployeeDetail(extractEmployeeData(btn));
             });
         }
-
-        $('#createUserAccountBtn').on('click', function () {
-            new bootstrap.Offcanvas(document.getElementById('createUserAccountCanvas')).show();
-        });
 
         $('#editUserAccountBtn').on('click', function () {
             console.log('Edit user account:', $('#detailEmployeeId').text());

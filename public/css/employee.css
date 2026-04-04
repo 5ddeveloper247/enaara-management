@@ -83,3 +83,23 @@
     }
 }
 
+.employee-grid-card-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-size: 0.8125rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.employee-grid-field-label {
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: 0.65rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.employee-grid-field-value {
+    margin-top: 0.25rem;
+    word-wrap: break-word;
+}
+
