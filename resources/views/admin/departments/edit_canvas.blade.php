@@ -7,7 +7,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-        <form id="editDepartmentForm">
+        <form id="editDepartmentForm" novalidate>
             <input type="hidden" id="editDepartmentId" name="id">
             <input type="hidden" id="editFormMode" name="mode" value="edit">
             
@@ -35,7 +35,7 @@
 
             <div class="mb-3">
                 <label for="editDepartmentCode" class="form-label text-white">Code</label>
-                <input type="text" name="code" id="editDepartmentCode" class="form-control" maxlength="64">
+                <input type="text" name="code" id="editDepartmentCode" class="form-control" maxlength="32">
                 <div class="invalid-feedback" id="editDepartmentCodeError"></div>
             </div>
 

@@ -48,23 +48,23 @@
                                     $menuUrl = route($routePath);
                                     $currentRoute = request()->route() ? request()->route()->getName() : '';
                                     if ($currentRoute) {
-                                        $isActive = $currentRoute === $routePath || strpos($currentRoute, $routePath . '.') === 0;
+                                        $isActive = $currentRoute === $routePath || (request()->routeIs($routePath . '.*') && !str_contains($currentRoute, $routePath . '.floor'));
                                     } else {
                                         $currentPath = request()->path();
                                         $menuPath = ltrim(str_replace('.', '/', $routePath), '/');
-                                        $isActive = $currentPath === $menuPath || strpos($currentPath, $menuPath . '/') === 0;
+                                        $isActive = request()->is($menuPath) || request()->is($menuPath . '/*');
                                     }
                                 } catch (\Exception $e) {
                                     $menuUrl = url('/' . str_replace('.', '/', $routePath));
                                     $currentPath = request()->path();
                                     $menuPath = ltrim(str_replace('.', '/', $routePath), '/');
-                                    $isActive = $currentPath === $menuPath || strpos($currentPath, $menuPath . '/') === 0 || request()->is($menuPath . '*');
+                                    $isActive = request()->is($menuPath) || request()->is($menuPath . '/*');
                                 }
                             } else {
                                 $menuUrl = url($routePath);
                                 $currentPath = request()->path();
                                 $menuPath = ltrim($routePath, '/');
-                                $isActive = $currentPath === $menuPath || strpos($currentPath, $menuPath . '/') === 0 || request()->is($menuPath . '*');
+                                $isActive = request()->is($menuPath) || request()->is($menuPath . '/*');
                             }
                             
                             $iconClass = $menuItem->css_class ?? 'bi bi-people';
