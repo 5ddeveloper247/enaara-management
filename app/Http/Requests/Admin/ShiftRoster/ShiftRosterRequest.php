@@ -24,8 +24,8 @@ class ShiftRosterRequest extends FormRequest
             'shift_planner_id' => ['required', 'integer', 'exists:shift_planners,id'],
             'roster_date' => ['required', 'date'],
 
-            'start_time' => ['required', 'date_format:H:i'],
-            'end_time' => ['required', 'date_format:H:i'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
             'check_in' => ['nullable', 'date_format:H:i'],
             'check_out' => ['nullable', 'date_format:H:i'],
             'floor' => ['nullable', 'string', 'max:255'],

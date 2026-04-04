@@ -16,3 +16,11 @@ Schedule::command('leaves:process-daily')
     ->runInBackground()
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/leaves_process_daily.log'));
+
+Schedule::command('shift-roster:finalize')
+    ->daily()
+    ->at('23:59')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/shift_roster_finalize.log'));

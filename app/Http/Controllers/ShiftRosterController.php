@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ShiftRoaster;
+use App\Models\ShiftRosterEntry;
+use App\Models\ShiftRosterAssignment;
 use App\Models\Employee;
 use App\Models\ShiftPlanner;
 use App\Services\ShiftRosterService;
@@ -37,20 +38,6 @@ class ShiftRosterController extends Controller
         $month = (int) $request->query('month', date('n'));
         $week = (int) $request->query('week', 1);
 
-        if ($month < 1 || $month > 12) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid month.',
-            ], 422);
-        }
-
-        if ($week < 1 || $week > 6) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid week.',
-            ], 422);
-        }
-
         try {
             $data = $this->shiftRosterService->getGridData($year, $month, $week);
 
@@ -72,7 +59,7 @@ class ShiftRosterController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $rosters = ShiftRoaster::with(['employee', 'shift'])
+        $rosters = ShiftRosterEntry::with(['employee', 'shift', 'assignment'])
             ->orderBy('roster_date', 'desc')
             ->orderBy('updated_at', 'desc')
             ->get();
@@ -97,7 +84,7 @@ class ShiftRosterController extends Controller
         }
 
         try {
-            $roster = ShiftRoaster::with(['employee', 'shift'])->findOrFail($id);
+            $roster = ShiftRosterEntry::with(['employee', 'shift', 'assignment'])->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -106,7 +93,7 @@ class ShiftRosterController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Roster not found.'
+                'message' => 'Roster entry not found.'
             ], 404);
         }
     }
@@ -114,84 +101,50 @@ class ShiftRosterController extends Controller
     public function store(ShiftRosterRequest $request)
     {
         if (!validatePermissions('admin/shift-roster')) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized action.'
-                ], 403);
-            }
-
-            abort(403, 'Unauthorized action.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.'
+            ], 403);
         }
 
         try {
             $this->shiftRosterService->store($request->validated());
 
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Shift roster created successfully.',
-                ]);
-            }
-
-            return redirect()
-                ->route('admin.shift-roster.index')
-                ->with('success', 'Shift roster created successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Shift assignment request submitted.',
+            ]);
 
         } catch (\Exception $e) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create shift roster: ' . $e->getMessage(),
-                ], 500);
-            }
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Failed to create shift roster: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create shift assignment: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
     public function update(ShiftRosterRequest $request, $id)
     {
         if (! $this->canAccessShiftPlannerRoster()) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized action.'
-                ], 403);
-            }
-
-            abort(403, 'Unauthorized action.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.'
+            ], 403);
         }
 
         try {
             $this->shiftRosterService->update($request->validated(), $id);
 
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Shift roster updated successfully.',
-                ]);
-            }
-
-            return redirect()
-                ->route('admin.shift-roster.index')
-                ->with('success', 'Shift roster updated successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Shift roster entry updated successfully.',
+            ]);
 
         } catch (\Exception $e) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update shift roster: ' . $e->getMessage(),
-                ], 500);
-            }
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Failed to update shift roster: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update shift roster entry: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -209,13 +162,13 @@ class ShiftRosterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Shift roster deleted successfully.',
+                'message' => 'Shift roster entry deleted successfully.',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete shift roster: ' . $e->getMessage(),
+                'message' => 'Failed to delete shift roster entry: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -223,43 +176,22 @@ class ShiftRosterController extends Controller
     public function bulkAssign(BulkShiftRosterRequest $request)
     {
         if (! $this->canAccessShiftPlannerRoster()) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized action.'
-                ], 403);
-            }
-
-            abort(403, 'Unauthorized action.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.'
+            ], 403);
         }
 
         try {
             $result = $this->shiftRosterService->bulkAssign($request->validated());
 
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Shift roster assigned successfully.',
-                    'data' => $result,
-                ]);
-            }
-
-            return redirect()
-                ->route('admin.shift-roster.index')
-                ->with('success', 'Shift roster assigned successfully.');
+            return response()->json($result, $result['success'] ? 200 : 422);
 
         } catch (\Exception $e) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to assign shift roster: ' . $e->getMessage(),
-                ], 500);
-            }
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Failed to assign shift roster: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign shifts: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

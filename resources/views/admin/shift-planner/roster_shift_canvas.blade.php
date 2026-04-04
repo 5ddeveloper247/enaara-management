@@ -14,6 +14,7 @@
             <div class="mb-3 p-3 rounded-3 border" style="border-color: rgba(255,255,255,0.2) !important">
                 <small class="opacity-75 text-white d-block mb-1">Employee</small>
                 <div class="fw-semibold" id="rosterShiftEmployeeName">—</div>
+                <small class="opacity-50 text-white x-small" id="rosterShiftDepartmentName"></small>
             </div>
             <div class="mb-3 p-3 rounded-3 border" style="border-color: rgba(255,255,255,0.2) !important">
                 <small class="opacity-75 text-white d-block mb-1">Date</small>
@@ -35,25 +36,28 @@
                 </select>
             </div>
 
-            <div class="row g-2 mb-3">
-                <div class="col-6">
-                    <label for="rosterStartTime" class="form-label fw-semibold small text-white">Start Time <span class="text-danger">*</span></label>
-                    <input type="time" class="form-control" id="rosterStartTime" name="start_time" required>
+            <!-- Hidden Time fields (auto-populated from shift selection) -->
+            <div style="display: none;">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="rosterStartTime" class="form-label fw-semibold small text-white">Start Time</label>
+                        <input type="time" class="form-control" id="rosterStartTime" name="start_time">
+                    </div>
+                    <div class="col-6">
+                        <label for="rosterEndTime" class="form-label fw-semibold small text-white">End Time</label>
+                        <input type="time" class="form-control" id="rosterEndTime" name="end_time">
+                    </div>
                 </div>
-                <div class="col-6">
-                    <label for="rosterEndTime" class="form-label fw-semibold small text-white">End Time <span class="text-danger">*</span></label>
-                    <input type="time" class="form-control" id="rosterEndTime" name="end_time" required>
-                </div>
-            </div>
 
-            <div class="row g-2 mb-3">
-                <div class="col-6">
-                    <label for="rosterCheckIn" class="form-label fw-semibold small text-white">Check-in</label>
-                    <input type="time" class="form-control" id="rosterCheckIn" name="check_in">
-                </div>
-                <div class="col-6">
-                    <label for="rosterCheckOut" class="form-label fw-semibold small text-white">Check-out</label>
-                    <input type="time" class="form-control" id="rosterCheckOut" name="check_out">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="rosterCheckIn" class="form-label fw-semibold small text-white">Check-in</label>
+                        <input type="time" class="form-control" id="rosterCheckIn" name="check_in">
+                    </div>
+                    <div class="col-6">
+                        <label for="rosterCheckOut" class="form-label fw-semibold small text-white">Check-out</label>
+                        <input type="time" class="form-control" id="rosterCheckOut" name="check_out">
+                    </div>
                 </div>
             </div>
 
@@ -62,12 +66,12 @@
                 <input type="text" class="form-control" id="rosterFloor" name="floor" placeholder="e.g. Ward A • 3rd Floor">
             </div>
 
-            <div class="mb-3">
+            <!-- <div class="mb-3">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="rosterLateCheckIn" name="late_check_in" value="1">
                     <label class="form-check-label text-white" for="rosterLateCheckIn">Late check-in</label>
                 </div>
-            </div>
+            </div> -->
 
             <div class="mb-3">
                 <label for="rosterShiftNotes" class="form-label fw-semibold small text-white">Notes</label>

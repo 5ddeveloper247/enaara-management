@@ -11,64 +11,61 @@
         <form id="bulkAssignForm" method="POST" action="{{ route('admin.shift-roster.bulk-assign') }}">
             @csrf
 
-            <!-- Employee Selection -->
+            <!-- Assignment Mode & Schedule -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
-                    <i class="bi bi-people me-2"></i>Select Employees
+                    <i class="bi bi-calendar-check me-2"></i>1. Schedule Assignment
                 </h6>
 
-                <!-- Quick Selection -->
+                <!-- Mode Selection -->
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small text-white">Quick Selection</label>
+                    <label class="form-label fw-semibold small text-white d-block mb-2">Selection Mode</label>
+                    <div class="btn-group w-100 shadow-sm" role="group" aria-label="Assignment Mode">
+                        <input type="radio" class="btn-check" name="assign_mode" id="modeDefault" value="default" checked autocomplete="off">
+                        <label class="btn btn-outline-light py-2" for="modeDefault"><i class="bi bi-calendar-week me-1"></i>Default (Weeks)</label>
+
+                        <input type="radio" class="btn-check" name="assign_mode" id="modeCustom" value="custom" autocomplete="off">
+                        <label class="btn btn-outline-light py-2" for="modeCustom"><i class="bi bi-calendar-plus me-1"></i>Custom Range</label>
+                    </div>
+                </div>
+
+                <!-- Default Mode Specifics (Weeks Selection) -->
+                <div id="defaultModeContainer" class="mb-3 animate__animated animate__fadeIn">
+                    <label class="form-label fw-semibold small text-white">Quick Date Selection</label>
                     <div class="d-flex gap-2 flex-wrap mb-2">
-                        <button type="button" class="btn btn-sm btn-outline-light" id="selectAllBtn">Select All</button>
-                        <button type="button" class="btn btn-sm btn-outline-light" id="selectByDeptBtn">By Department</button>
-                        <button type="button" class="btn btn-sm btn-outline-light" id="selectBySiteBtn">By Site</button>
-                        <button type="button" class="btn btn-sm btn-outline-light" id="clearSelectionBtn">Clear</button>
-                    </div>
-
-                    <!-- Department Selection Dropdown (Initially hidden) -->
-                    <div id="deptSelectionWrapper" style="display: none;" class="mb-2 animate__animated animate__fadeInDown">
-                        <select class="form-select form-select-sm bg-dark text-white border-secondary" id="deptFilterSelect">
-                            <option value="">Select Department to Filter...</option>
-                            @foreach($departments ?? [] as $dept)
-                                <option value="{{ strtolower($dept->name) }}">{{ $dept->name }}</option>
-                            @endforeach
-                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-light quick-date-btn" data-mode="this_week">This Week</button>
+                        <button type="button" class="btn btn-sm btn-outline-light quick-date-btn" data-mode="next_week">Next Week</button>
+                        <button type="button" class="btn btn-sm btn-outline-light quick-date-btn" data-mode="next_2_weeks">Next 2 Weeks</button>
+                        <button type="button" class="btn btn-sm btn-outline-light quick-date-btn" data-mode="this_month">This Month</button>
+                        <button type="button" class="btn btn-sm btn-outline-light quick-date-btn" data-mode="next_2_months">Next 2 Months</button>
                     </div>
                 </div>
 
-                <!-- Employee List -->
-                <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; border-color: #ffffff1a !important;">
-                    <div id="employeeList">
-                        @forelse($employees ?? [] as $employee)
-                            <div class="form-check mb-2 employee-item"
-                                 data-department="{{ strtolower($employee->department->name ?? '') }}"
-                                 data-site="{{ strtolower($employee->site ?? '') }}">
-                                <input class="form-check-input"
-                                       type="checkbox"
-                                       value="{{ $employee->id }}"
-                                       id="emp{{ $employee->id }}"
-                                       name="employee_ids[]">
-                                <label class="form-check-label text-white" for="emp{{ $employee->id }}">
-                                    {{ $employee->full_name }}
-                                    @if(!empty($employee->department->name ?? null))
-                                        - {{ $employee->department->name }}
-                                    @endif
-                                    @if(!empty($employee->site ?? null))
-                                        - {{ $employee->site }}
-                                    @endif
-                                </label>
+                <!-- Shared Date Range -->
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label for="bulkStartDate" class="form-label fw-semibold small text-white">Start Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="bulkStartDate" name="start_date" required style="color: #000 !important; background-color: #fff !important;">
+                    </div>
+                    <div class="col-6">
+                        <label for="bulkEndDate" class="form-label fw-semibold small text-white">End Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="bulkEndDate" name="end_date" required style="color: #000 !important; background-color: #fff !important;">
+                    </div>
+                </div>
+
+                <!-- Day Selection -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-white d-block mb-2">Repeat Days</label>
+                    <div class="d-flex flex-wrap gap-2" id="dayCheckboxesContainer">
+                        @php $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; @endphp
+                        @foreach($days as $day)
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day{{ $day }}" name="days[]" value="{{ strtolower($day) }}" checked>
+                                <label class="form-check-label text-white small" for="day{{ $day }}">{{ substr($day, 0, 3) }}</label>
                             </div>
-                        @empty
-                            <div class="text-white-50 small">No employees available.</div>
-                        @endforelse
+                        @endforeach
                     </div>
                 </div>
-
-                <small class="opacity-75 text-white d-block mt-2">
-                    <span id="selectedCount">0</span> employee(s) selected
-                </small>
             </div>
 
             <hr class="my-4" style="border-color: #ffffffab !important">
@@ -83,7 +80,7 @@
                     <label for="bulkShiftSelect" class="form-label fw-semibold small text-white">
                         Shift <span class="text-danger">*</span>
                     </label>
-                    <select class="form-select" id="bulkShiftSelect" name="shift_planner_id" required>
+                    <select class="form-select bg-dark text-white border-secondary" id="bulkShiftSelect" name="shift_planner_id" required>
                         <option value="">Select Shift</option>
                         @forelse($shifts ?? [] as $shift)
                             <option value="{{ $shift->id }}">
@@ -98,33 +95,65 @@
 
             <hr class="my-4" style="border-color: #ffffffab !important">
 
-            <!-- Date Range -->
+            <!-- Employee Selection -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
-                    <i class="bi bi-calendar-range me-2"></i>Date Range
+                    <i class="bi bi-people me-2"></i>3. Select Employees
                 </h6>
 
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <label for="bulkStartDate" class="form-label fw-semibold small text-white">
-                            Start Date <span class="text-danger">*</span>
-                        </label>
-                        <input type="date" class="form-control" id="bulkStartDate" name="start_date" required>
+                <!-- Quick Selection -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-white">Bulk Actions</label>
+                    <div class="d-flex gap-2 flex-wrap mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-light" id="selectAllBtn">Select All</button>
+                        <button type="button" class="btn btn-sm btn-outline-light" id="selectByDeptBtn">By Department</button>
+                        <button type="button" class="btn btn-sm btn-outline-light" id="selectBySiteBtn">By Site</button>
+                        <button type="button" class="btn btn-sm btn-outline-light" id="clearSelectionBtn">Clear</button>
                     </div>
-                    <div class="col-6">
-                        <label for="bulkEndDate" class="form-label fw-semibold small text-white">
-                            End Date <span class="text-danger">*</span>
-                        </label>
-                        <input type="date" class="form-control" id="bulkEndDate" name="end_date" required>
+
+                    <div id="deptSelectionWrapper" style="display: none; transition: all 0.3s ease;" class="mb-2 animate__animated animate__fadeIn">
+                        <select class="form-select form-select-sm bg-dark text-white border-secondary" id="deptFilterSelect">
+                            <option value="">-- Select Department --</option>
+                            @php 
+                                // Fallback for departments if not passed correctly
+                                $depts = $departments ?? \App\Models\Department::orderBy('name')->get();
+                            @endphp
+                            @foreach($depts as $dept)
+                                <option value="{{ strtolower($dept->name) }}">{{ $dept->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
 
-                <!-- Quick Date Selection -->
-                <div class="d-flex gap-2 flex-wrap">
-                    <button type="button" class="btn btn-sm btn-outline-light" data-days="7">This Week</button>
-                    <button type="button" class="btn btn-sm btn-outline-light" data-days="14">Next 2 Weeks</button>
-                    <button type="button" class="btn btn-sm btn-outline-light" data-days="30">This Month</button>
-                    <button type="button" class="btn btn-sm btn-outline-light" data-days="60">Next 2 Months</button>
+                <!-- Employee List -->
+                <div class="border rounded p-3 bg-dark-subtle" style="max-height: 250px; overflow-y: auto; border-color: #ffffff1a !important;">
+                    <div id="employeeList">
+                        @forelse($employees ?? [] as $employee)
+                            <div class="form-check mb-2 employee-item"
+                                 data-department="{{ strtolower($employee->department->name ?? '') }}"
+                                 data-site="{{ strtolower($employee->site ?? '') }}">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       value="{{ $employee->id }}"
+                                       id="emp{{ $employee->id }}"
+                                       name="employee_ids[]">
+                                <label class="form-check-label text-white small" for="emp{{ $employee->id }}">
+                                    {{ $employee->full_name }}
+                                    @if(!empty($employee->department->name ?? null))
+                                        <span class="opacity-50 ms-2">[{{ $employee->department->name }}]</span>
+                                    @endif
+                                </label>
+                            </div>
+                        @empty
+                            <div class="text-white-50 small text-center py-4">No active employees found.</div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                    <small class="opacity-75 text-white">
+                        <span id="selectedCount" class="fw-bold text-info">0</span> employee(s) selected
+                    </small>
                 </div>
             </div>
 
@@ -176,302 +205,195 @@
     </div>
 </div>
 
+@push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('bulkAssignForm');
-    const applyBtn = document.getElementById('applyBulkAssignBtn');
-    const bulkAssignCanvas = document.getElementById('bulkAssignCanvas');
-    const employeeCheckboxesSelector = 'input[name="employee_ids[]"]';
-    const bulkConflictWarning = document.getElementById('bulkConflictWarning');
+$(document).ready(function() {
+    console.log("Roster Canvas JS Init");
 
-    const bulkAssignUrl = @json(route('admin.shift-roster.bulk-assign'));
-    const csrfToken = @json(csrf_token());
+    var $startDateInput = $('#bulkStartDate');
+    var $endDateInput = $('#bulkEndDate');
+    var $form = $('#bulkAssignForm');
+    var $applyBtn = $('#applyBulkAssignBtn');
+    var $canvas = $('#bulkAssignCanvas');
+    var $selectedCount = $('#selectedCount');
 
-    function updateSelectedCount() {
-        const selected = document.querySelectorAll(`${employeeCheckboxesSelector}:checked`).length;
-        document.getElementById('selectedCount').textContent = selected;
+    // Utility: Format Date to YYYY-MM-DD
+    function formatDate(date) {
+        if (!(date instanceof Date)) return '';
+        var year = date.getFullYear();
+        var month = ('0' + (date.getMonth() + 1)).slice(-2);
+        var day = ('0' + date.getDate()).slice(-2);
+        return year + '-' + month + '-' + day;
     }
 
-    function resetDefaultDates() {
-        const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-        document.getElementById('bulkStartDate').value = firstDay.toISOString().split('T')[0];
-        document.getElementById('bulkEndDate').value = lastDay.toISOString().split('T')[0];
+    // Utility: Get Monday of a week
+    function getMonday(d) {
+        d = new Date(d);
+        var day = d.getDay();
+        var diff = d.getDate() - day + (day == 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
     }
 
-    function getSelectedEmployeesForCalendar() {
-        return Array.from(document.querySelectorAll(`${employeeCheckboxesSelector}:checked`)).map(cb => {
-            const label = document.querySelector(`label[for="${cb.id}"]`);
-            const labelText = label ? label.textContent.trim() : '';
-            return {
-                id: cb.value,
-                name: labelText.split(' - ')[0] || labelText
-            };
-        });
-    }
+    // Function to calculate and SET dates
+    window.setBulkDates = function(mode) {
+        console.log("setBulkDates triggered with mode:", mode);
+        var start = new Date();
+        var end = new Date();
+        start.setHours(0,0,0,0);
+        end.setHours(0,0,0,0);
 
-    // Removed addEventsToCalendar as reloadRosterGrid handles UI update from server
-
-    function resetBulkAssignForm() {
-        form.reset();
-
-        document.querySelectorAll(employeeCheckboxesSelector).forEach(function(cb) {
-            cb.checked = false;
-        });
-
-        updateSelectedCount();
-        resetDefaultDates();
-
-        if (bulkConflictWarning) {
-            bulkConflictWarning.style.display = 'none';
-            bulkConflictWarning.innerHTML = `
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                <strong>Warning:</strong> Some employees have conflicting shifts. Review before proceeding.
-            `;
+        switch(mode) {
+            case 'this_week':
+                start = new Date();
+                end = getMonday(new Date());
+                end.setDate(end.getDate() + 6);
+                break;
+            case 'next_week':
+                start = getMonday(new Date());
+                start.setDate(start.getDate() + 7);
+                end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                break;
+            case 'next_2_weeks':
+                start = getMonday(new Date());
+                start.setDate(start.getDate() + 7);
+                end = new Date(start);
+                end.setDate(start.getDate() + 13);
+                break;
+            case 'this_month':
+                start = new Date();
+                end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+                break;
+            case 'next_2_months':
+                start = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+                end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
+                break;
         }
 
-        const checkConflicts = document.getElementById('checkConflicts');
-        if (checkConflicts) {
-            checkConflicts.checked = true;
-        }
-    }
+        var startStr = formatDate(start);
+        var endStr = formatDate(end);
+        
+        console.log("Calculated Dates:", startStr, "to", endStr);
+        
+        $startDateInput.val(startStr);
+        $endDateInput.val(endStr);
+        
+        $('.quick-date-btn').removeClass('btn-light').addClass('btn-outline-light');
+        $('.quick-date-btn[data-mode="' + mode + '"]').removeClass('btn-outline-light').addClass('btn-light');
+    };
 
-    document.querySelectorAll(employeeCheckboxesSelector).forEach(function(checkbox) {
-        checkbox.addEventListener('change', updateSelectedCount);
-    });
-
-    document.getElementById('selectAllBtn')?.addEventListener('click', function() {
-        document.querySelectorAll(employeeCheckboxesSelector).forEach(function(cb) {
-            cb.checked = true;
-        });
-        updateSelectedCount();
-    });
-
-    document.getElementById('clearSelectionBtn')?.addEventListener('click', function() {
-        document.querySelectorAll(employeeCheckboxesSelector).forEach(function(cb) {
-            cb.checked = false;
-        });
-        updateSelectedCount();
-    });
-
-    document.getElementById('selectByDeptBtn')?.addEventListener('click', function() {
-        const wrapper = document.getElementById('deptSelectionWrapper');
-        if (wrapper.style.display === 'none') {
-            wrapper.style.display = 'block';
-        } else {
-            wrapper.style.display = 'none';
-        }
-    });
-
-    document.getElementById('deptFilterSelect')?.addEventListener('change', function() {
-        const targetDept = this.value;
-        if (!targetDept) return;
-
-        const list = document.getElementById('employeeList');
-        const items = Array.from(list.querySelectorAll('.employee-item'));
-
-        items.forEach(function(item) {
-            const checkbox = item.querySelector(employeeCheckboxesSelector);
-            const itemDept = item.dataset.department || '';
-            const isMatch = itemDept === targetDept;
-            checkbox.checked = isMatch;
+    function toggleAssignMode() {
+        var isDefault = $('#modeDefault').is(':checked');
+        console.log("Mode Change: isDefault =", isDefault);
+        
+        $('#defaultModeContainer').toggle(isDefault);
+        
+        if (isDefault) {
+            $startDateInput.prop('readonly', true).css('background-color', '#e9ecef');
+            $endDateInput.prop('readonly', true).css('background-color', '#e9ecef');
             
-            // Reordering logic: move to top if match
-            if (isMatch) {
-                list.prepend(item);
+            // Auto-trigger "This Week" if no dates are set yet
+            if (!$startDateInput.val()) {
+                console.log("Initial load: Triggering This Week");
+                window.setBulkDates('this_week');
             }
-        });
-
-        updateSelectedCount();
-    });
-
-    document.getElementById('selectBySiteBtn')?.addEventListener('click', function() {
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                title: 'Coming Soon!',
-                text: 'The "By Site" filtering feature will be added soon. We are currently finalizing the site-based assignment logic.',
-                icon: 'info',
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'Got it!'
-            });
         } else {
-            alert('This feature will be added soon.');
+            // In Custom mode, dates are NOT readonly
+            $startDateInput.prop('readonly', false).css('background-color', '#fff');
+            $endDateInput.prop('readonly', false).css('background-color', '#fff');
         }
+    }
+
+    // Event Handlers
+    $('input[name="assign_mode"]').on('change', toggleAssignMode);
+
+    $(document).on('click', '.quick-date-btn', function(e) {
+        e.preventDefault();
+        var mode = $(this).data('mode');
+        window.setBulkDates(mode);
     });
 
-    document.querySelectorAll('[data-days]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const days = parseInt(this.getAttribute('data-days'));
-            const startDate = new Date();
-            const endDate = new Date();
-            endDate.setDate(startDate.getDate() + days - 1);
+    $('#selectAllBtn').on('click', function() {
+        $('input[name="employee_ids[]"]').prop('checked', true);
+        $selectedCount.text($('input[name="employee_ids[]"]:checked').length);
+    });
 
-            document.getElementById('bulkStartDate').value = startDate.toISOString().split('T')[0];
-            document.getElementById('bulkEndDate').value = endDate.toISOString().split('T')[0];
+    $('#clearSelectionBtn').on('click', function() {
+        $('input[name="employee_ids[]"]').prop('checked', false);
+        $selectedCount.text(0);
+    });
+
+    $('#deptFilterSelect').on('change', function() {
+        var dept = $(this).val();
+        if(!dept) return;
+        $('.employee-item').each(function() {
+            var $item = $(this);
+            var isMatch = (String($item.data('department')).toLowerCase().trim() === dept.toLowerCase().trim());
+            $item.find('input').prop('checked', isMatch);
+            if(isMatch) $('#employeeList').prepend($item);
         });
+        $selectedCount.text($('input[name="employee_ids[]"]:checked').length);
     });
 
-    resetDefaultDates();
-    updateSelectedCount();
+    $(document).on('change', 'input[name="employee_ids[]"]', function() {
+        $selectedCount.text($('input[name="employee_ids[]"]:checked').length);
+    });
 
-    applyBtn?.addEventListener('click', async function() {
-        if (!form.checkValidity()) {
-            form.reportValidity();
+    $('#applyBulkAssignBtn').on('click', function() {
+        if (!$form[0].checkValidity()) {
+            $form[0].reportValidity();
             return;
         }
 
-        const selectedEmployees = getSelectedEmployeesForCalendar();
-        const shiftSelect = document.getElementById('bulkShiftSelect');
-        const shiftId = shiftSelect.value;
-        const shiftName = shiftSelect.options[shiftSelect.selectedIndex]?.text.split(' (')[0] || '';
-        const startDate = document.getElementById('bulkStartDate').value;
-        const endDate = document.getElementById('bulkEndDate').value;
-        const checkConflicts = document.getElementById('checkConflicts').checked;
-        const overrideExisting = document.getElementById('overrideExisting').checked;
-        const excludeWeekends = document.getElementById('excludeWeekends').checked;
-
-        if (selectedEmployees.length === 0) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Warning',
-                    text: 'Please select at least one employee.'
-                });
-            }
+        var ids = $('input[name="employee_ids[]"]:checked').map(function() { return this.value; }).get();
+        if (ids.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Wait!', text: 'Select at least one employee.' });
             return;
         }
 
-        if (!shiftId) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Warning',
-                    text: 'Please select a shift.'
-                });
-            }
-            return;
-        }
+        $applyBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Applying...');
 
-        applyBtn.disabled = true;
-
-        const originalBtnHtml = applyBtn.innerHTML;
-        applyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Applying...';
-
-        const payload = {
-            employee_ids: selectedEmployees.map(e => e.id),
-            shift_planner_id: shiftId,
-            start_date: startDate,
-            end_date: endDate,
-            check_conflicts: checkConflicts ? 1 : 0,
-            override_existing: overrideExisting ? 1 : 0,
-            exclude_weekends: excludeWeekends ? 1 : 0
+        var payload = {
+            employee_ids: ids,
+            shift_planner_id: $('#bulkShiftSelect').val(),
+            start_date: $startDateInput.val(),
+            end_date: $endDateInput.val(),
+            assign_mode: $('#modeDefault').is(':checked') ? 'default' : 'custom',
+            days: $('.day-checkbox:checked').map(function() { return this.value; }).get(),
+            check_conflicts: $('#checkConflicts').is(':checked') ? 1 : 0,
+            override_existing: $('#overrideExisting').is(':checked') ? 1 : 0,
+            exclude_weekends: $('#excludeWeekends').is(':checked') ? 1 : 0
         };
 
-        try {
-            const response = await fetch(bulkAssignUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                if (response.status === 422 && result.errors) {
-                    const firstError = Object.values(result.errors)[0];
-                    const message = Array.isArray(firstError) ? firstError[0] : 'Validation failed.';
-
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Validation Error',
-                            text: message
-                        });
-                    }
+        $.ajax({
+            url: @json(route('admin.shift-roster.bulk-assign')),
+            method: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            headers: { 'X-CSRF-TOKEN': '@json(csrf_token())' },
+            success: function(res) {
+                if(res.success) {
+                    Swal.fire({ icon: 'success', title: 'Assigned', text: res.message });
+                    bootstrap.Offcanvas.getInstance($canvas[0]).hide();
+                    location.reload(); 
                 } else {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: result.message || 'Failed to assign shift roster.'
-                        });
-                    }
+                    Swal.fire({ icon: 'error', title: 'Conflict', text: res.message });
                 }
-                return;
+            },
+            error: function(xhr) {
+                var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Error processing request';
+                Swal.fire({ icon: 'error', title: 'Error', text: msg });
+            },
+            complete: function() {
+                $applyBtn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i>Apply Assignment');
             }
-
-                if (result.success) {
-                if (typeof window.reloadRosterGrid === 'function') {
-                    window.reloadRosterGrid();
-                }
-                if (bulkConflictWarning && result.data?.conflicts?.length > 0) {
-                    bulkConflictWarning.style.display = 'block';
-                    bulkConflictWarning.innerHTML = `
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Warning:</strong> ${result.data.conflicts.length} conflict(s) found. Some entries were skipped.
-                    `;
-                } else if (bulkConflictWarning) {
-                    bulkConflictWarning.style.display = 'none';
-                }
-
-                /* 
-                addEventsToCalendar(
-                    selectedEmployees,
-                    shiftId,
-                    shiftName,
-                    startDate,
-                    endDate,
-                    excludeWeekends
-                );
-                */
-
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: result.message || 'Shift roster assigned successfully.'
-                    });
-                }
-
-                const offcanvas = bootstrap.Offcanvas.getInstance(bulkAssignCanvas);
-                if (offcanvas) {
-                    offcanvas.hide();
-                }
-            } else {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: result.message || 'Failed to assign shift roster.'
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Bulk assign error:', error);
-
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Something went wrong while assigning shifts.'
-                });
-            }
-        } finally {
-            applyBtn.disabled = false;
-            applyBtn.innerHTML = originalBtnHtml;
-        }
+        });
     });
 
-    if (bulkAssignCanvas) {
-        bulkAssignCanvas.addEventListener('hidden.bs.offcanvas', function() {
-            resetBulkAssignForm();
-        });
-    }
+    $('#selectByDeptBtn').on('click', function() { $('#deptSelectionWrapper').slideToggle(); });
+
+    // Initial Trigger
+    toggleAssignMode();
 });
 </script>
+@endpush

@@ -256,7 +256,7 @@
         return padDay(day) + ' ' + months[month] + ' ' + year + ' (Day ' + day + ')';
     }
 
-    function openRosterShiftCanvas(employeeId, employeeName, day, shift) {
+    function openRosterShiftCanvas(employeeId, employeeName, deptName, day, shift) {
         var year = rosterViewDate.getFullYear();
         var month = rosterViewDate.getMonth();
         var canvas = document.getElementById('rosterShiftCanvas');
@@ -277,6 +277,7 @@
         document.getElementById('rosterShiftEmployeeId').value = employeeId;
         document.getElementById('rosterShiftDay').value = day;
         document.getElementById('rosterShiftEmployeeName').textContent = employeeName;
+        document.getElementById('rosterShiftDepartmentName').textContent = deptName || '';
         document.getElementById('rosterShiftDateLabel').textContent = formatRosterDateLabel(day, year, month);
         var iconEl = document.getElementById('rosterShiftCanvasIcon');
         if (shift) {
@@ -334,13 +335,18 @@
             check_in: document.getElementById('rosterCheckIn').value,
             check_out: document.getElementById('rosterCheckOut').value,
             floor: document.getElementById('rosterFloor').value,
-            late_check_in: document.getElementById('rosterLateCheckIn').checked ? 1 : 0
+            late_check_in: document.getElementById('rosterLateCheckIn')?.checked ? 1 : 0
         };
         if (notes) payload.notes = notes;
 
+        console.log("Submitting Roster Assignment:", payload);
+
         var url = rosterId ? (base + '/' + rosterId) : storeUrl;
         var saveBtn = document.getElementById('rosterShiftSaveBtn');
-        if (saveBtn) saveBtn.disabled = true;
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        }
 
         fetch(url, {
             method: 'POST',
@@ -353,10 +359,24 @@
             body: JSON.stringify(payload),
             credentials: 'same-origin'
         })
-            .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, status: r.status, body: j }; }); })
+            .then(function(r) { 
+                return r.text().then(function(t) {
+                    var j = {};
+                    try { j = JSON.parse(t); } catch(ex) { console.error("Invalid JSON response:", t); }
+                    return { ok: r.ok, status: r.status, body: j };
+                });
+            })
             .then(function(res) {
-                if (saveBtn) saveBtn.disabled = false;
+                console.log("Roster Save Response:", res);
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i><span id="rosterShiftSaveBtnText">' + (rosterId ? 'Update' : 'Save') + '</span>';
+                }
+                
                 if (res.ok && res.body.success) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'success', title: 'Success', text: res.body.message, timer: 1500 });
+                    }
                     var canvas = document.getElementById('rosterShiftCanvas');
                     if (canvas) {
                         var o = bootstrap.Offcanvas.getInstance(canvas);
@@ -364,7 +384,12 @@
                     }
                     loadRosterGrid();
                 } else {
-                    var msg = (res.body && res.body.message) ? res.body.message : 'Could not save assignment.';
+                    var msg = 'Could not save assignment.';
+                    if (res.body && res.body.message) msg = res.body.message;
+                    if (res.status === 422 && res.body.errors) {
+                        msg = Object.values(res.body.errors).flat().join('\n');
+                    }
+                    
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({ icon: 'error', title: 'Error', text: msg });
                     } else {
@@ -372,10 +397,14 @@
                     }
                 }
             })
-            .catch(function() {
-                if (saveBtn) saveBtn.disabled = false;
+            .catch(function(err) {
+                console.error("AJAX Error:", err);
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i><span id="rosterShiftSaveBtnText">' + (rosterId ? 'Update' : 'Save') + '</span>';
+                }
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'Network error.' });
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Network error or script failure.' });
                 }
             });
     }
@@ -438,12 +467,23 @@
                     try { shift = JSON.parse(shiftData); } catch (err) { shift = null; }
                 }
                 var empName = '';
-                var row = td.closest('tr');
-                if (row) {
-                    var nameCell = row.querySelector('td:nth-child(2)');
-                    if (nameCell) empName = nameCell.textContent.trim();
+                var deptName = '';
+                if (rosterData && rosterData.employees) {
+                    var emp = rosterData.employees.find(function(e) { return String(e.id) === String(employeeId); });
+                    if (emp) {
+                        empName = emp.name;
+                        deptName = emp.departmentName;
+                    }
                 }
-                openRosterShiftCanvas(employeeId, empName, day, shift);
+                
+                if (!empName) {
+                    var row = td.closest('tr');
+                    if (row) {
+                        var nameCell = row.querySelector('td:nth-child(2)');
+                        if (nameCell) empName = nameCell.textContent.trim();
+                    }
+                }
+                openRosterShiftCanvas(employeeId, empName, deptName, day, shift);
             });
         }
         var saveBtn = document.getElementById('rosterShiftSaveBtn');
@@ -473,6 +513,11 @@
                     // Default check-in/out to start/end
                     if (start) document.getElementById('rosterCheckIn').value = start;
                     if (end) document.getElementById('rosterCheckOut').value = end;
+                } else {
+                    document.getElementById('rosterStartTime').value = '';
+                    document.getElementById('rosterEndTime').value = '';
+                    document.getElementById('rosterCheckIn').value = '';
+                    document.getElementById('rosterCheckOut').value = '';
                 }
             });
         }

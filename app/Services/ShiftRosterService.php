@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\ShiftPlanner;
-use App\Models\ShiftRoaster;
+use App\Models\ShiftRosterAssignment;
+use App\Models\ShiftRosterEntry;
+use App\Jobs\ProcessShiftAssignment;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
@@ -13,39 +15,32 @@ use Illuminate\Support\Facades\Log;
 class ShiftRosterService
 {
     /**
-     * Store a newly created shift roster.
+     * Store a newly created shift roster (Single Day).
      */
     public function store(array $data)
     {
         DB::beginTransaction();
-
         try {
-            $existingRoster = ShiftRoaster::where('employee_id', $data['employee_id'])
-                ->whereDate('roster_date', $data['roster_date'])
-                ->first();
-
-            if ($existingRoster) {
-                throw new \Exception('A shift is already assigned to this employee for the selected date.');
-            }
-
-            $shiftRoster = ShiftRoaster::create([
-                'employee_id' => $data['employee_id'],
+            // Create a single-day assignment record
+            $assignment = ShiftRosterAssignment::create([
                 'shift_planner_id' => $data['shift_planner_id'],
-                'roster_date' => $data['roster_date'],
-                'start_time' => $data['start_time'] ?? null,
-                'end_time' => $data['end_time'] ?? null,
-                'check_in' => $data['check_in'] ?? null,
-                'check_out' => $data['check_out'] ?? null,
-                'floor' => $data['floor'] ?? null,
-                'late_check_in' => $data['late_check_in'] ?? false,
-                'status' => $data['status'] ?? 1,
-                'notes' => $data['notes'] ?? null,
-                'assigned_by' => auth()->id(),
-                'updated_by' => auth()->id(),
+                'start_date' => $data['roster_date'],
+                'end_date' => $data['roster_date'],
+                'days' => [strtolower(Carbon::parse($data['roster_date'])->format('l'))],
+                'assign_mode' => 'custom',
+                'check_conflicts' => true,
+                'override_existing' => true,
+                'status' => 'pending'
             ]);
 
+            $assignment->employees()->attach($data['employee_id']);
+
             DB::commit();
-            return $shiftRoster;
+
+            // Dispatch job to generate entry
+            ProcessShiftAssignment::dispatch($assignment);
+
+            return $assignment;
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Shift Roster Store Error: ' . $e->getMessage());
@@ -54,66 +49,31 @@ class ShiftRosterService
     }
 
     /**
-     * Update an existing shift roster.
+     * Update an existing shift roster entry.
      */
     public function update(array $data, $id)
     {
-        DB::beginTransaction();
+        $entry = ShiftRosterEntry::findOrFail($id);
+        
+        $entry->update([
+            'shift_planner_id' => $data['shift_planner_id'],
+            'roster_date' => $data['roster_date'],
+            'start_time' => $data['start_time'] ?? $entry->start_time,
+            'end_time' => $data['end_time'] ?? $entry->end_time,
+            'floor' => $data['floor'] ?? $entry->floor,
+            'status' => $data['status'] ?? $entry->status,
+        ]);
 
-        try {
-            $shiftRoster = ShiftRoaster::findOrFail($id);
-
-            $duplicateRoster = ShiftRoaster::where('employee_id', $data['employee_id'])
-                ->whereDate('roster_date', $data['roster_date'])
-                ->where('id', '!=', $id)
-                ->first();
-
-            if ($duplicateRoster) {
-                throw new \Exception('A shift is already assigned to this employee for the selected date.');
-            }
-
-            $shiftRoster->update([
-                'employee_id' => $data['employee_id'],
-                'shift_planner_id' => $data['shift_planner_id'],
-                'roster_date' => $data['roster_date'],
-                'start_time' => isset($data['start_time']) ? $data['start_time'] : $shiftRoster->start_time,
-                'end_time' => isset($data['end_time']) ? $data['end_time'] : $shiftRoster->end_time,
-                'check_in' => isset($data['check_in']) ? $data['check_in'] : $shiftRoster->check_in,
-                'check_out' => isset($data['check_out']) ? $data['check_out'] : $shiftRoster->check_out,
-                'floor' => isset($data['floor']) ? $data['floor'] : $shiftRoster->floor,
-                'late_check_in' => isset($data['late_check_in']) ? $data['late_check_in'] : $shiftRoster->late_check_in,
-                'status' => $data['status'] ?? $shiftRoster->status,
-                'notes' => $data['notes'] ?? $shiftRoster->notes,
-                'updated_by' => auth()->id(),
-            ]);
-
-            DB::commit();
-            return $shiftRoster;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Shift Roster Update Error: ' . $e->getMessage());
-            throw $e;
-        }
+        return $entry;
     }
 
     /**
-     * Delete a shift roster.
+     * Delete a shift roster entry.
      */
     public function destroy($id)
     {
-        DB::beginTransaction();
-
-        try {
-            $shiftRoster = ShiftRoaster::findOrFail($id);
-            $shiftRoster->delete();
-
-            DB::commit();
-            return true;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Shift Roster Delete Error: ' . $e->getMessage());
-            throw $e;
-        }
+        $entry = ShiftRosterEntry::findOrFail($id);
+        return $entry->delete();
     }
 
     /**
@@ -124,103 +84,55 @@ class ShiftRosterService
         DB::beginTransaction();
 
         try {
-            $employeeIds = $data['employee_ids'];
-            $shiftPlannerId = $data['shift_planner_id'];
+            // 1. Pre-validation: Check for existing entries in the range if not overriding
+            if (($data['check_conflicts'] ?? 1) == 1 && !($data['override_existing'] ?? 0)) {
+                $days = $data['days'] ?? [];
+                $conflictingEmployees = ShiftRosterEntry::whereIn('employee_id', $data['employee_ids'])
+                    ->whereBetween('roster_date', [$data['start_date'], $data['end_date']])
+                    ->with('employee')
+                    ->get()
+                    ->filter(function($entry) use ($days) {
+                        return in_array(strtolower($entry->roster_date->format('l')), $days);
+                    })
+                    ->pluck('employee.full_name')
+                    ->unique();
 
-            $startDate = Carbon::parse($data['start_date']);
-            $endDate = Carbon::parse($data['end_date']);
-
-            $checkConflicts = (bool) ($data['check_conflicts'] ?? false);
-            $overrideExisting = (bool) ($data['override_existing'] ?? false);
-            $excludeWeekends = (bool) ($data['exclude_weekends'] ?? false);
-            $notes = $data['notes'] ?? null;
-
-            $createdCount = 0;
-            $updatedCount = 0;
-            $skippedCount = 0;
-            $conflicts = [];
-
-            $dates = $this->generateDateRange($startDate, $endDate, $excludeWeekends);
-
-            foreach ($employeeIds as $employeeId) {
-                foreach ($dates as $date) {
-                    $rosterDate = $date->toDateString();
-                    
-                    // Advanced Conflict Check (Rest Period)
-                    if ($checkConflicts) {
-                        $conflictMessage = $this->checkRestPeriodConflict($employeeId, $rosterDate, $shiftPlannerId);
-                        if ($conflictMessage && !$overrideExisting) {
-                            $conflicts[] = [
-                                'employee_id' => $employeeId,
-                                'roster_date' => $rosterDate,
-                                'message' => $conflictMessage,
-                            ];
-                            $skippedCount++;
-                            continue;
-                        }
-                    }
-
-                    $existingRoster = ShiftRoaster::where('employee_id', $employeeId)
-                        ->whereDate('roster_date', $rosterDate)
-                        ->first();
-
-                    if ($existingRoster) {
-                        if ($checkConflicts && !$overrideExisting) {
-                            $conflicts[] = [
-                                'employee_id' => $employeeId,
-                                'roster_date' => $rosterDate,
-                                'existing_shift_planner_id' => $existingRoster->shift_planner_id,
-                                'message' => 'Existing roster found for employee on this date.',
-                            ];
-
-                            $skippedCount++;
-                            continue;
-                        }
-
-                        if ($overrideExisting) {
-                            $existingRoster->update([
-                                'shift_planner_id' => $shiftPlannerId,
-                                'status' => 1,
-                                'notes' => $notes,
-                                'updated_by' => auth()->id(),
-                                // Reset override fields to shift defaults on bulk override
-                                'start_time' => null,
-                                'end_time' => null,
-                                'check_in' => null,
-                                'check_out' => null,
-                                'floor' => null,
-                                'late_check_in' => false,
-                            ]);
-
-                            $updatedCount++;
-                            continue;
-                        }
-
-                        $skippedCount++;
-                        continue;
-                    }
-
-                    ShiftRoaster::create([
-                        'employee_id' => $employeeId,
-                        'shift_planner_id' => $shiftPlannerId,
-                        'roster_date' => $rosterDate,
-                        'status' => 1,
-                        'notes' => $notes,
-                        'assigned_by' => auth()->id(),
-                        'updated_by' => auth()->id(),
-                    ]);
-
-                    $createdCount++;
+                if ($conflictingEmployees->isNotEmpty()) {
+                    return [
+                        'success' => false,
+                        'message' => 'Some employees already have shifts assigned on the selected days: ' . $conflictingEmployees->implode(', '),
+                        'conflicts' => $conflictingEmployees->values()->all()
+                    ];
                 }
+            }
+
+            // 2. Create the Assignment record (The "Request")
+            $assignment = ShiftRosterAssignment::create([
+                'shift_planner_id' => $data['shift_planner_id'],
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+                'days' => $data['days'] ?? [],
+                'assign_mode' => $data['assign_mode'] ?? 'default',
+                'check_conflicts' => ($data['check_conflicts'] ?? 1) == 1,
+                'override_existing' => ($data['override_existing'] ?? 0) == 1,
+                'exclude_weekends' => ($data['exclude_weekends'] ?? 0) == 1,
+                'status' => 'pending'
+            ]);
+
+            // 3. Link employees
+            if (!empty($data['employee_ids'])) {
+                $assignment->employees()->attach($data['employee_ids']);
             }
 
             DB::commit();
 
+            // 3. Dispatch the background job to process the range
+            ProcessShiftAssignment::dispatch($assignment);
+
             return [
-                'created_count' => $createdCount,
-                'updated_count' => $updatedCount,
-                'skipped_count' => $skippedCount,
-                'conflicts' => $conflicts,
+                'success' => true,
+                'message' => 'Shift assignment request submitted and is being processed in the background.',
+                'assignment_id' => $assignment->id
             ];
         } catch (\Exception $e) {
             DB::rollBack();
@@ -230,43 +142,16 @@ class ShiftRosterService
     }
 
     /**
-     * Generate dates between start and end date.
+     * Get data for the roster grid.
      */
-    private function generateDateRange(Carbon $startDate, Carbon $endDate, bool $excludeWeekends = false): array
-    {
-        $dates = [];
-        $period = CarbonPeriod::create($startDate, $endDate);
-
-        foreach ($period as $date) {
-            if ($excludeWeekends && $this->isWeekend($date)) {
-                continue;
-            }
-
-            $dates[] = $date->copy();
-        }
-
-        return $dates;
-    }
-
-    /**
-     * Check if given date is weekend.
-     */
-    private function isWeekend(Carbon $date): bool
-    {
-        return $date->isSaturday() || $date->isSunday();
-    }
-
     public function getGridData(int $year, int $month, int $weekIndex): array
     {
         $daysInMonth = (int) Carbon::createFromDate($year, $month, 1)->daysInMonth;
         $startDay = ($weekIndex - 1) * 7 + 1;
         $endDay = min($startDay + 6, $daysInMonth);
+        
         if ($startDay > $daysInMonth) {
-            return [
-                'departments' => [],
-                'employees'   => [],
-                'shifts'      => [],
-            ];
+            return ['departments' => [], 'employees' => [], 'shifts' => []];
         }
 
         $startDate = Carbon::createFromDate($year, $month, $startDay)->startOfDay();
@@ -275,146 +160,54 @@ class ShiftRosterService
         $employees = Employee::with('department')
             ->where('is_active', 1)
             ->orderBy('department_id')
-            ->orderBy('full_name')
             ->get();
 
-        $deptMap = [];
-        foreach ($employees as $e) {
-            $did = (int) ($e->department_id ?? 0);
-            if (! isset($deptMap[$did])) {
-                $deptMap[$did] = [
-                    'id'   => $did,
-                    'name' => $e->department->name ?? 'Unassigned',
-                ];
-            }
-        }
-        $departments = array_values($deptMap);
-        usort($departments, fn ($a, $b) => strcmp($a['name'], $b['name']));
-
-        $empPayload = $employees->map(function (Employee $e) {
-            return [
-                'id'           => $e->id,
-                'name'         => $e->full_name,
-                'departmentId' => (int) ($e->department_id ?? 0),
+        // Build Department List
+        $departments = [];
+        $deptIds = $employees->pluck('department_id')->unique();
+        foreach ($deptIds as $did) {
+            $emp = $employees->firstWhere('department_id', $did);
+            $departments[] = [
+                'id' => (int) $did,
+                'name' => $emp->department->name ?? 'Unassigned'
             ];
-        })->values()->all();
+        }
+        usort($departments, fn($a, $b) => strcmp($a['name'], $b['name']));
 
-        $employeeIds = $employees->pluck('id')->all();
+        // Build Employee Payload
+        $empPayload = $employees->map(fn($e) => [
+            'id' => $e->id,
+            'name' => $e->full_name,
+            'departmentId' => (int) $e->department_id,
+            'departmentName' => $e->department->name ?? 'Unassigned'
+        ])->values()->all();
 
-        $rosters = ShiftRoaster::with(['shift'])
-            ->whereIn('employee_id', $employeeIds)
+        // Fetch Entries
+        $entries = ShiftRosterEntry::with('shift')
             ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get();
 
-        $shiftsOut = [];
-        foreach ($rosters as $roster) {
-            $sp = $roster->shift;
-            if (! $sp) {
-                continue;
-            }
-            $day = (int) $roster->roster_date->format('d');
-            $shiftsOut[] = [
-                'rosterId'       => $roster->id,
-                'employeeId'     => $roster->employee_id,
-                'day'            => $day,
-                'shiftPlannerId' => $roster->shift_planner_id,
-                'timeStart'      => $roster->start_time ? $this->formatShiftTime($roster->start_time) : $this->formatShiftTime($sp->start_time),
-                'timeEnd'        => $roster->end_time ? $this->formatShiftTime($roster->end_time) : $this->formatShiftTime($sp->end_time),
-                'checkIn'        => $roster->check_in ? $this->formatShiftTime($roster->check_in) : $this->formatShiftTime($sp->start_time),
-                'checkOut'       => $roster->check_out ? $this->formatShiftTime($roster->check_out) : $this->formatShiftTime($sp->end_time),
-                'floor'          => $roster->floor ?? '',
-                'lateCheckIn'    => (bool) ($roster->late_check_in ?? false),
-                'notes'          => $roster->notes ?? '',
-            ];
-        }
+        $shiftsOut = $entries->map(fn($entry) => [
+            'rosterId' => $entry->id,
+            'employeeId' => $entry->employee_id,
+            'day' => (int) $entry->roster_date->format('d'),
+            'shiftPlannerId' => $entry->shift_planner_id,
+            'timeStart' => $this->formatShiftTime($entry->start_time ?? $entry->shift->start_time),
+            'timeEnd' => $this->formatShiftTime($entry->end_time ?? $entry->shift->end_time),
+            'status' => $entry->status,
+            'isCompensatory' => $entry->is_compensatory_earned
+        ])->all();
 
         return [
             'departments' => $departments,
-            'employees'   => $empPayload,
-            'shifts'      => $shiftsOut,
+            'employees' => $empPayload,
+            'shifts' => $shiftsOut
         ];
     }
 
     private function formatShiftTime($value): string
     {
-        if (! $value) {
-            return '09:00';
-        }
-
+        if (!$value) return '00:00';
         return Carbon::parse($value)->format('H:i');
-    }
-
-    /**
-     * Check for rest period conflicts (minimum 8 hours between shifts).
-     */
-    private function checkRestPeriodConflict(int $employeeId, string $date, int $newShiftId): ?string
-    {
-        $newShift = ShiftPlanner::find($newShiftId);
-        if (!$newShift) return null;
-
-        $newStartTimeRaw = $newShift->getRawOriginal('start_time');
-        $newEndTimeRaw = $newShift->getRawOriginal('end_time');
-        
-        if (!$newStartTimeRaw || !$newEndTimeRaw) return null;
-
-        $newStart = Carbon::parse($date . ' ' . $newStartTimeRaw);
-        $newEnd = Carbon::parse($date . ' ' . $newEndTimeRaw);
-        if ($newEnd->lessThan($newStart)) {
-            $newEnd->addDay();
-        }
-
-        // Check previous day shift
-        $prevDate = Carbon::parse($date)->subDay()->toDateString();
-        $prevRoster = ShiftRoaster::with('shift')
-            ->where('employee_id', $employeeId)
-            ->whereDate('roster_date', $prevDate)
-            ->first();
-
-        if ($prevRoster && ($prevRoster->shift || $prevRoster->start_time)) {
-            $prevEndStr = $prevRoster->end_time ? $prevRoster->getRawOriginal('end_time') : ($prevRoster->shift ? $prevRoster->shift->getRawOriginal('end_time') : null);
-            $prevStartStr = $prevRoster->start_time ? $prevRoster->getRawOriginal('start_time') : ($prevRoster->shift ? $prevRoster->shift->getRawOriginal('start_time') : null);
-            
-            if ($prevEndStr && $prevStartStr) {
-                $prevEnd = Carbon::parse($prevDate . ' ' . $prevEndStr);
-                $prevStart = Carbon::parse($prevDate . ' ' . $prevStartStr);
-                
-                if ($prevEnd->lessThan($prevStart)) {
-                    $prevEnd->addDay();
-                }
-
-                if ($prevEnd->diffInHours($newStart, false) < 8) {
-                    return "Insufficient rest period (less than 8 hours) after previous day's shift.";
-                }
-            }
-        }
-
-        // Check same day shift (if any other than existing)
-        $sameDayRoster = ShiftRoaster::where('employee_id', $employeeId)
-            ->whereDate('roster_date', $date)
-            ->first();
-            
-        if ($sameDayRoster && $sameDayRoster->shift_planner_id != $newShiftId) {
-             return "Employee already assigned to another shift on this day.";
-        }
-
-        // Check next day shift
-        $nextDate = Carbon::parse($date)->addDay()->toDateString();
-        $nextRoster = ShiftRoaster::with('shift')
-            ->where('employee_id', $employeeId)
-            ->whereDate('roster_date', $nextDate)
-            ->first();
-
-        if ($nextRoster && ($nextRoster->shift || $nextRoster->start_time)) {
-            $nextStartStr = $nextRoster->start_time ? $nextRoster->getRawOriginal('start_time') : ($nextRoster->shift ? $nextRoster->shift->getRawOriginal('start_time') : null);
-            
-            if ($nextStartStr) {
-                $nextStart = Carbon::parse($nextDate . ' ' . $nextStartStr);
-                if ($newEnd->diffInHours($nextStart, false) < 8) {
-                    return "Insufficient rest period (less than 8 hours) before next day's shift.";
-                }
-            }
-        }
-
-        return null;
     }
 }
