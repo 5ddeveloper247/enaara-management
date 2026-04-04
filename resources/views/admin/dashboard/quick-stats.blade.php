@@ -7,7 +7,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
                             <small class="text-muted d-block mb-1">Regularization Pending</small>
-                            <h3 class="mb-0 fw-bold text-warning">12</h3>
+                            <h3 class="mb-0 fw-bold text-warning">0</h3>
                         </div>
                         <div>
                             <i class="bi bi-clock-history text-warning fs-4"></i>
@@ -16,7 +16,7 @@
                     <div class="d-flex align-items-center">
                         <small class="text-muted">
                             <i class="bi bi-arrow-up text-warning"></i>
-                            <span class="text-warning">+3</span> vs yesterday
+                            <span class="text-warning">0</span> vs yesterday
                         </small>
                     </div>
                 </div>
@@ -29,7 +29,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
                             <small class="text-muted d-block mb-1">Geofence Violations</small>
-                            <h3 class="mb-0 fw-bold text-danger">3</h3>
+                            <h3 class="mb-0 fw-bold text-danger">0</h3>
                         </div>
                         <div>
                             <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
@@ -38,7 +38,7 @@
                     <div class="d-flex align-items-center">
                         <small class="text-muted">
                             <i class="bi bi-arrow-down text-danger"></i>
-                            <span class="text-danger">-2</span> vs yesterday
+                            <span class="text-danger">0</span> vs yesterday
                         </small>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
                             <small class="text-muted d-block mb-1">Active LWP Cases</small>
-                            <h3 class="mb-0 fw-bold text-danger">7</h3>
+                            <h3 class="mb-0 fw-bold text-danger">0</h3>
                         </div>
                         <div>
                             <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
@@ -60,7 +60,7 @@
                     <div class="d-flex align-items-center">
                         <small class="text-muted">
                             <i class="bi bi-arrow-up text-danger"></i>
-                            <span class="text-danger">+2</span> vs last week
+                            <span class="text-danger">0</span> vs last week
                         </small>
                     </div>
                 </div>
@@ -73,7 +73,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
                             <small class="text-muted d-block mb-1">Pending Encashments</small>
-                            <h3 class="mb-0 fw-bold text-info">18</h3>
+                            <h3 class="mb-0 fw-bold text-info">0</h3>
                         </div>
                         <div>
                             <i class="bi bi-cash-stack text-info fs-4"></i>
@@ -82,7 +82,7 @@
                     <div class="d-flex align-items-center">
                         <small class="text-muted">
                             <i class="bi bi-arrow-down text-info"></i>
-                            <span class="text-info">-3</span> vs last week
+                            <span class="text-info">0</span> vs last week
                         </small>
                     </div>
                 </div>
