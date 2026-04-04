@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Employee;
 
+use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -41,8 +42,8 @@ class EmployeeUpdateRequest extends FormRequest
             'nok_dob'                => ['nullable', 'date'],
             'nok_contact'            => ['nullable', 'string', 'max:15'],
             'organization_id'        => ['required', 'integer', 'exists:organizations,id'],
-            'sbu_id'                 => ['required', 'integer', 'exists:sbus,id'],
-            'department_id'          => ['required', 'integer', 'exists:departments,id'],
+            'sbu_id'                 => ['nullable', 'integer', 'exists:sbus,id', Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected())],
+            'department_id'          => ['nullable', 'integer', 'exists:departments,id', Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected())],
             'role_id'                => ['required', 'integer', 'exists:roles,id'],
             'employee_type'          => ['nullable', 'string', 'max:100'],
             'employment_type'        => ['nullable', 'string', 'max:100'],

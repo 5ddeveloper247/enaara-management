@@ -175,9 +175,17 @@
             } else if (step === 2) {
                 reqRadio('employment_category', 'Category');
                 req('organization_id', 'Organization');
-                req('sbu_id',          'SBU');
-                req('department_id',   'Department');
                 req('role_id',         'Role');
+                var rid = document.querySelector('[name="role_id"]');
+                var role = null;
+                if (rid && rid.value && window._rolesData) {
+                    role = window._rolesData.find(function (r) { return String(r.id) === String(rid.value); });
+                }
+                var needSbuDept = role && role.department_id !== null && role.department_id !== undefined && role.department_id !== '';
+                if (needSbuDept) {
+                    req('sbu_id', 'SBU');
+                    req('department_id', 'Department');
+                }
                 req('join_date',       'Date of Joining');
             } else if (step === 3) {
                 reqRadio('verification_status', 'Verification Status');
@@ -442,29 +450,24 @@
                 const orgSel = document.getElementById('org_select');
                 if (orgSel) {
                     orgSel.value = d.organization_id;
-                    onOrgChange(d.organization_id);
+                    if (typeof onOrgChange === 'function') onOrgChange(d.organization_id);
                 }
             }
-            if (d.sbu_id) {
+            if (d.role_id) {
                 setTimeout(function () {
-                    const sbuSel = document.getElementById('sbu_select');
-                    if (sbuSel) {
-                        sbuSel.value = d.sbu_id;
-                        onSbuChange(d.sbu_id);
+                    setSelect('role_id', d.role_id);
+                    if (typeof window.syncEmploymentRoleUI === 'function') {
+                        window.syncEmploymentRoleUI();
+                    }
+                    if (d.sbu_id) {
+                        const sbuSel = document.getElementById('sbu_select');
+                        if (sbuSel) sbuSel.value = d.sbu_id;
                     }
                     if (d.department_id) {
-                        setTimeout(function () {
-                            const deptSel = document.getElementById('dept_select');
-                            if (deptSel) {
-                                deptSel.value = d.department_id;
-                                if (typeof onDeptChange === 'function') onDeptChange(d.department_id);
-                                if (d.role_id) {
-                                    setTimeout(function () { setSelect('role_id', d.role_id); }, 25);
-                                }
-                            }
-                        }, 50);
+                        const deptSel = document.getElementById('dept_select');
+                        if (deptSel) deptSel.value = d.department_id;
                     }
-                }, 50);
+                }, 80);
             }
 
             setVal('full_name',         d.full_name);
@@ -499,7 +502,6 @@
             setVal('grade',             d.grade);
             setVal('branch',            d.branch);
             setVal('location',          d.location);
-            if (d.role_id) setTimeout(function () { setSelect('role_id', d.role_id); }, 0);
             setVal('biometric_id',      d.biometric_id);
             setRadio('employment_category', d.employment_category);
             setSelect('intern_type',    d.intern_type);

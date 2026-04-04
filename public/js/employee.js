@@ -3,6 +3,12 @@
 
     let employeeTable;
 
+    window.employeeFilters = window.employeeFilters || {
+        employeeType: '',
+        department: '',
+        vendor: '',
+    };
+
     $(document).ready(function () {
         initializeDataTable();
         initializeEventHandlers();
@@ -423,10 +429,11 @@
         });
 
         $('#exportBtn').on('click', function () {
+            var f = window.employeeFilters || {};
             var params = {
-                filter_employee_type: window.employeeFilters.employeeType || '',
-                filter_department: window.employeeFilters.department || '',
-                filter_vendor: window.employeeFilters.vendor || '',
+                filter_employee_type: f.employeeType || '',
+                filter_department: f.department || '',
+                filter_vendor: f.vendor || '',
             };
             $.get(window.employeeDataUrl, params, function (res) {
                 if (!res || !res.success || !res.data || !res.data.length) {

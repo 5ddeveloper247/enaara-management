@@ -2,12 +2,34 @@
 
 namespace App\Http\Requests\Admin\Employee;
 
+use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class EmployeeStoreRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->orgLevelRoleSelected()) {
+            $this->merge([
+                'sbu_id'         => null,
+                'department_id'  => null,
+            ]);
+        }
+    }
+
+    protected function orgLevelRoleSelected(): bool
+    {
+        $roleId = $this->input('role_id');
+        if (! $roleId) {
+            return false;
+        }
+        $role = Role::query()->find($roleId);
+
+        return $role && $role->department_id === null;
+    }
 
     public function rules(): array
     {

@@ -53,6 +53,7 @@ class EmployeeService
     {
         $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
         $roles = Role::where('is_active', true)
+            ->with('department:id,sbu_id')
             ->orderBy('name')
             ->get(['id', 'name', 'organization_id', 'department_id']);
 
@@ -82,20 +83,32 @@ class EmployeeService
     public function store(array $data, array $files = [], array $attachments = []): Employee
     {
         return DB::transaction(function () use ($data, $files, $attachments) {
-            $sbuId = isset($data['sbu_id']) ? (int) $data['sbu_id'] : null;
-            if (!$sbuId) {
-                throw new \InvalidArgumentException('SBU is required to generate employee code.');
+            $role = Role::find($data['role_id'] ?? 0);
+            if (!$role) {
+                throw new \InvalidArgumentException('Invalid role.');
             }
-
-            $code = $this->generateNextCode($sbuId);
+            $orgLevel = $role->department_id === null;
+            if ($orgLevel) {
+                $sbuForCode = Sbu::where('organization_id', (int) ($data['organization_id'] ?? 0))->orderBy('id')->value('id');
+                if (!$sbuForCode) {
+                    throw new \InvalidArgumentException('No SBU found under organization for employee code generation.');
+                }
+                $code = $this->generateNextCode((int) $sbuForCode);
+            } else {
+                $sbuId = isset($data['sbu_id']) ? (int) $data['sbu_id'] : null;
+                if (!$sbuId) {
+                    throw new \InvalidArgumentException('SBU is required to generate employee code.');
+                }
+                $code = $this->generateNextCode($sbuId);
+            }
 
             $employee = Employee::create([
                 'full_name'           => $data['full_name'],
                 'father_name'         => $data['father_name'] ?? null,
                 'employee_code'       => $code,
                 'organization_id'     => $data['organization_id'] ?? null,
-                'sbu_id'              => $data['sbu_id'] ?? null,
-                'department_id'       => $data['department_id'] ?? null,
+                'sbu_id'              => $orgLevel ? null : ($data['sbu_id'] ?? null),
+                'department_id'       => $orgLevel ? null : ($data['department_id'] ?? null),
                 'role_id'             => $data['role_id'] ?? null,
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,
@@ -719,13 +732,15 @@ class EmployeeService
     {
         return DB::transaction(function () use ($id, $data, $files, $attachments, $keptAttachmentIds) {
             $employee = Employee::findOrFail($id);
+            $role      = Role::find($data['role_id'] ?? $employee->role_id);
+            $orgLevel  = $role && $role->department_id === null;
 
             $employee->update([
                 'full_name'           => $data['full_name'],
                 'father_name'         => $data['father_name'] ?? null,
                 'organization_id'     => $data['organization_id'] ?? null,
-                'sbu_id'              => $data['sbu_id'] ?? null,
-                'department_id'       => $data['department_id'] ?? null,
+                'sbu_id'              => $orgLevel ? null : ($data['sbu_id'] ?? null),
+                'department_id'       => $orgLevel ? null : ($data['department_id'] ?? null),
                 'role_id'             => $data['role_id'] ?? null,
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,

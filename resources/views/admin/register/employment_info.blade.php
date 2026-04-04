@@ -89,29 +89,31 @@
         </div>
 
         <div class="col-md-4">
-            <label class="form-label">SBU <span class="text-danger">*</span></label>
-            <select name="sbu_id" id="sbu_select" class="form-select"
-                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;"
-                onchange="onSbuChange(this.value)">
-                <option value="">— Select SBU —</option>
-            </select>
-        </div>
-
-        <div class="col-md-4">
-            <label class="form-label">Department <span class="text-danger">*</span></label>
-            <select name="department_id" id="dept_select" class="form-select"
-                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;"
-                onchange="onDeptChange(this.value)">
-                <option value="">— Select Department —</option>
-            </select>
-        </div>
-
-        <div class="col-md-4">
             <label class="form-label">Role <span class="text-danger">*</span></label>
-            <select name="role_id" id="role_select" class="form-select"
+            <select name="role_id" id="role_select" class="form-select" disabled
                 style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
-                <option value="">— Select Role —</option>
+                <option value="">— Select Organization first —</option>
             </select>
+        </div>
+
+        <div class="col-12" id="sbuDeptSection" style="display:none;">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">SBU <span class="text-danger sbu-dept-req">*</span></label>
+                    <select name="sbu_id" id="sbu_select" class="form-select"
+                        style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;"
+                        onchange="onSbuChange(this.value)">
+                        <option value="">— Select SBU —</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Department <span class="text-danger sbu-dept-req">*</span></label>
+                    <select name="department_id" id="dept_select" class="form-select"
+                        style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
+                        <option value="">— Select Department —</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <div class="col-md-4">
@@ -152,7 +154,10 @@
             orgSel.insertAdjacentHTML('beforeend',
                 '<option value="' + o.id + '">' + escHtmlBasic(o.name) + '</option>');
         });
-        populateRoles();
+        const roleSel = document.getElementById('role_select');
+        if (roleSel) {
+            roleSel.addEventListener('change', onRoleChange);
+        }
     });
 
     function escHtmlBasic(str) {
@@ -163,66 +168,128 @@
             .replace(/"/g, '&quot;');
     }
 
+    function roleById(id) {
+        return (window._rolesData || []).find(function (r) { return String(r.id) === String(id); });
+    }
+
+    function isOrgLevelRole(role) {
+        return role && (role.department_id === null || role.department_id === undefined || role.department_id === '');
+    }
+
     function onOrgChange(orgId) {
         const sbuSel  = document.getElementById('sbu_select');
         const deptSel = document.getElementById('dept_select');
-        sbuSel.innerHTML  = '<option value="">— Select SBU —</option>';
-        deptSel.innerHTML = '<option value="">— Select Department —</option>';
+        const roleSel = document.getElementById('role_select');
+        const section   = document.getElementById('sbuDeptSection');
 
-        if (!orgId) return;
-        const org = (window._orgsData || []).find(o => String(o.id) === String(orgId));
-        if (!org) return;
-        (org.sbus || []).forEach(function (s) {
-            sbuSel.insertAdjacentHTML('beforeend',
-                '<option value="' + s.id + '">' + escHtmlBasic(s.name) + '</option>');
+        if (sbuSel) {
+            sbuSel.innerHTML  = '<option value="">— Select SBU —</option>';
+        }
+        if (deptSel) {
+            deptSel.innerHTML = '<option value="">— Select Department —</option>';
+        }
+        if (section) {
+            section.style.display = 'none';
+        }
+
+        if (roleSel) {
+            roleSel.disabled = !orgId;
+            roleSel.innerHTML = orgId
+                ? '<option value="">— Select Role —</option>'
+                : '<option value="">— Select Organization first —</option>';
+            if (orgId) {
+                populateRolesForOrg(orgId);
+            }
+        }
+    }
+
+    function populateRolesForOrg(orgId) {
+        const roleSel = document.getElementById('role_select');
+        if (!roleSel || !orgId) return;
+        (window._rolesData || []).forEach(function (role) {
+            const ro = role.organization_id != null && role.organization_id !== ''
+                ? String(role.organization_id)
+                : '';
+            if (ro && String(ro) !== String(orgId)) return;
+            if (orgId && !ro) return;
+            roleSel.insertAdjacentHTML('beforeend',
+                '<option value="' + role.id + '">' + escHtmlBasic(role.name) + '</option>');
         });
-        populateRoles();
     }
 
     function onSbuChange(sbuId) {
         const orgId   = document.getElementById('org_select').value;
         const deptSel = document.getElementById('dept_select');
+        if (!deptSel) return;
         deptSel.innerHTML = '<option value="">— Select Department —</option>';
 
         if (!sbuId || !orgId) return;
-        const org = (window._orgsData || []).find(o => String(o.id) === String(orgId));
+        const org = (window._orgsData || []).find(function (o) { return String(o.id) === String(orgId); });
         if (!org) return;
-        const sbu = (org.sbus || []).find(s => String(s.id) === String(sbuId));
+        const sbu = (org.sbus || []).find(function (s) { return String(s.id) === String(sbuId); });
         if (!sbu) return;
         (sbu.departments || []).forEach(function (d) {
             deptSel.insertAdjacentHTML('beforeend',
                 '<option value="' + d.id + '">' + escHtmlBasic(d.name) + '</option>');
         });
-        populateRoles();
     }
 
-    function onDeptChange() {
-        populateRoles();
-    }
+    function applySbuDeptFromRole(role) {
+        const orgId   = document.getElementById('org_select').value;
+        const sbuSel  = document.getElementById('sbu_select');
+        const deptSel = document.getElementById('dept_select');
+        if (!sbuSel || !deptSel || !orgId) return;
 
-    function populateRoles() {
-        const roleSel = document.getElementById('role_select');
-        if (!roleSel) return;
+        sbuSel.innerHTML  = '<option value="">— Select SBU —</option>';
+        deptSel.innerHTML = '<option value="">— Select Department —</option>';
 
-        const selectedRole = roleSel.value;
-        const orgId  = document.getElementById('org_select')?.value  || '';
-        const deptId = document.getElementById('dept_select')?.value || '';
-
-        roleSel.innerHTML = '<option value="">— Select Role —</option>';
-
-        (window._rolesData || []).forEach(function (role) {
-            const roleOrg  = role.organization_id ? String(role.organization_id) : '';
-            const roleDept = role.department_id   ? String(role.department_id)   : '';
-            const orgMatch  = !roleOrg  || !orgId  || roleOrg  === String(orgId);
-            const deptMatch = !roleDept || !deptId || roleDept === String(deptId);
-            if (!orgMatch || !deptMatch) return;
-            roleSel.insertAdjacentHTML('beforeend',
-                '<option value="' + role.id + '">' + escHtmlBasic(role.name) + '</option>');
+        const org = (window._orgsData || []).find(function (o) { return String(o.id) === String(orgId); });
+        if (!org) return;
+        (org.sbus || []).forEach(function (s) {
+            sbuSel.insertAdjacentHTML('beforeend',
+                '<option value="' + s.id + '">' + escHtmlBasic(s.name) + '</option>');
         });
 
-        if (selectedRole && roleSel.querySelector('option[value="' + selectedRole + '"]')) {
-            roleSel.value = selectedRole;
+        if (role.sbu_id) {
+            sbuSel.value = String(role.sbu_id);
+            onSbuChange(String(role.sbu_id));
+            if (role.department_id) {
+                deptSel.value = String(role.department_id);
+            }
         }
+    }
+
+    function onRoleChange() {
+        const roleId = document.getElementById('role_select').value;
+        const section = document.getElementById('sbuDeptSection');
+        const sbuSel  = document.getElementById('sbu_select');
+        const deptSel = document.getElementById('dept_select');
+
+        if (!roleId) {
+            if (section) section.style.display = 'none';
+            if (sbuSel) sbuSel.value = '';
+            if (deptSel) deptSel.value = '';
+            return;
+        }
+
+        const role = roleById(roleId);
+        if (!role) return;
+
+        if (isOrgLevelRole(role)) {
+            if (section) section.style.display = 'none';
+            if (sbuSel) {
+                sbuSel.innerHTML = '<option value="">— Select SBU —</option>';
+                sbuSel.value = '';
+            }
+            if (deptSel) {
+                deptSel.innerHTML = '<option value="">— Select Department —</option>';
+                deptSel.value = '';
+            }
+            return;
+        }
+
+        if (section) section.style.display = '';
+        applySbuDeptFromRole(role);
     }
 
     function toggleCategoryBlocks() {
@@ -248,4 +315,6 @@
         if (engagementModeEl) engagementModeEl.addEventListener('change', toggleCategoryBlocks);
         toggleCategoryBlocks();
     });
+
+    window.syncEmploymentRoleUI = onRoleChange;
 </script>
