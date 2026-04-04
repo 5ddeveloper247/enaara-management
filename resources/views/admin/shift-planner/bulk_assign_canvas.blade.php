@@ -126,7 +126,7 @@
                 </div>
 
                 <!-- Employee List -->
-                <div class="border rounded p-3 bg-dark-subtle" style="max-height: 250px; overflow-y: auto; border-color: #ffffff1a !important;">
+                <div class="border rounded p-3 bg-dark" style="max-height: 250px; overflow-y: auto; border-color: #ffffff1a !important;">
                     <div id="employeeList">
                         @forelse($employees ?? [] as $employee)
                             <div class="form-check mb-2 employee-item"

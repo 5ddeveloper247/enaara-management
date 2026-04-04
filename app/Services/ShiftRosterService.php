@@ -187,16 +187,29 @@ class ShiftRosterService
             ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get();
 
-        $shiftsOut = $entries->map(fn($entry) => [
-            'rosterId' => $entry->id,
-            'employeeId' => $entry->employee_id,
-            'day' => (int) $entry->roster_date->format('d'),
-            'shiftPlannerId' => $entry->shift_planner_id,
-            'timeStart' => $this->formatShiftTime($entry->start_time ?? $entry->shift->start_time),
-            'timeEnd' => $this->formatShiftTime($entry->end_time ?? $entry->shift->end_time),
-            'status' => $entry->status,
-            'isCompensatory' => $entry->is_compensatory_earned
-        ])->all();
+        $shiftsOut = $entries->map(function($entry) {
+            $shiftName = strtolower($entry->shift->name ?? '');
+            $shiftType = 'general';
+            if (str_contains($shiftName, 'morning')) {
+                $shiftType = 'morning';
+            } elseif (str_contains($shiftName, 'evening')) {
+                $shiftType = 'evening';
+            } elseif (str_contains($shiftName, 'night')) {
+                $shiftType = 'night';
+            }
+
+            return [
+                'rosterId' => $entry->id,
+                'employeeId' => $entry->employee_id,
+                'day' => (int) $entry->roster_date->format('d'),
+                'shiftPlannerId' => $entry->shift_planner_id,
+                'shiftType' => $shiftType,
+                'timeStart' => $this->formatShiftTime($entry->start_time ?? $entry->shift->start_time),
+                'timeEnd' => $this->formatShiftTime($entry->end_time ?? $entry->shift->end_time),
+                'status' => $entry->status,
+                'isCompensatory' => $entry->is_compensatory_earned
+            ];
+        })->all();
 
         return [
             'departments' => $departments,

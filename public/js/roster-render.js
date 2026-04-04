@@ -39,10 +39,11 @@
     }
 
     function pillHtml(s) {
+        var typeClass = s.shiftType && s.shiftType !== 'general' ? ' shift-' + s.shiftType : '';
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
         var lateBlock = s.lateCheckIn ? '<span class="shift-status-late"><i class="bi bi-exclamation-circle-fill"></i> Late check-in</span>' : '';
         var floor = (s.floor && String(s.floor).trim()) ? s.floor : '—';
-        return '<div class="shift-pill' + lateClass + '">' +
+        return '<div class="shift-pill' + typeClass + lateClass + '">' +
             '<div class="shift-pill-top">' +
             '<span class="shift-time">' + s.timeStart + ' – ' + s.timeEnd + '</span>' +
             '</div>' +
