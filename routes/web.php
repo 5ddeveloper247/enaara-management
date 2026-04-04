@@ -10,6 +10,7 @@ use App\Http\Controllers\WorkTypeController;
 use App\Http\Controllers\AttendanceModesController;
 use App\Http\Controllers\ShiftTypesController;
 use App\Http\Controllers\SbuController;
+use App\Http\Controllers\ThirdPartyController;
 use App\Http\Controllers\SbuFloorsController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\LeaveTypeController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PasswordFirstChangeController;
 use App\Http\Controllers\WorkflowController;
 
 use App\Http\Controllers\LeaveCalendarController;
@@ -46,7 +48,12 @@ Route::middleware('guest')->group(function () {
 });
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
-Route::middleware('auth')->prefix('admin')->group(function () {
+Route::middleware('auth')->group(function () {
+    Route::get('/first-password', [PasswordFirstChangeController::class, 'show'])->name('password.first-change');
+    Route::post('/first-password', [PasswordFirstChangeController::class, 'update'])->name('password.first-change.update');
+});
+
+Route::middleware(['auth', 'password.not_temporary'])->prefix('admin')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
     Route::get('/dashboard/attendance-chart', [DashboardController::class, 'attendanceChart'])->name('admin.dashboard.attendance-chart');
@@ -68,6 +75,13 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/sbu/edit/{id}', [SbuController::class, 'update'])->name('admin.sbu.update');
     Route::delete('/sbu/delete/{id}', [SbuController::class, 'destroy'])->name('admin.sbu.destroy');
     Route::get('/sbu/{id}/show', [SbuController::class, 'show'])->name('admin.sbu.show');
+    Route::get('/third-party', [ThirdPartyController::class, 'index'])->name('admin.third-party.index');
+    Route::get('/third-party/add', [ThirdPartyController::class, 'create'])->name('admin.third-party.create');
+    Route::post('/third-party/add', [ThirdPartyController::class, 'store'])->name('admin.third-party.store');
+    Route::get('/third-party/edit/{id}', [ThirdPartyController::class, 'edit'])->name('admin.third-party.edit');
+    Route::post('/third-party/edit/{id}', [ThirdPartyController::class, 'update'])->name('admin.third-party.update');
+    Route::delete('/third-party/delete/{id}', [ThirdPartyController::class, 'destroy'])->name('admin.third-party.destroy');
+    Route::get('/third-party/{id}/show', [ThirdPartyController::class, 'show'])->name('admin.third-party.show');
     // Sbu Floor Routes
     Route::get('/sbu-floor', [SbuFloorsController::class, 'index'])->name('admin.sbu.floor.index');
     Route::get('/sbu-floor/add', [SbuFloorsController::class, 'create'])->name('admin.sbu.floor.create');
@@ -175,6 +189,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/users/data', [UserController::class, 'data'])->name('admin.users.data');
     Route::get('/users/stats', [UserController::class, 'stats'])->name('admin.users.stats');
     Route::post('/users/store', [UserController::class, 'store'])->name('admin.users.store');
+    Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('admin.users.reset-password');
     Route::post('/users/{id}/update', [UserController::class, 'update'])->name('admin.users.update');
     Route::patch('/users/{id}/status', [UserController::class, 'updateStatus'])->name('admin.users.status');
     Route::delete('/users/{id}/delete', [UserController::class, 'destroy'])->name('admin.users.destroy');

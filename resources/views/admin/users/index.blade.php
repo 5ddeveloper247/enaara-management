@@ -58,6 +58,7 @@
             initCanvasEvents();
             initDeleteModal();
             initStatusToggles();
+            initResetPassword();
             populateFilterRoles();
         });
 
@@ -139,6 +140,12 @@
         }
 
         function renderActions(row) {
+            var resetBtn = '';
+            if (window.canResetUserPassword) {
+                resetBtn = '<button type="button" class="action-btn border-0 text-dark btn-warning reset-password-btn"' +
+                    ' data-user-id="' + row.id + '"' +
+                    ' title="Email new temporary password"><i class="bi bi-key"></i></button>';
+            }
             return '<div class="btn-group d-flex align-items-center gap-1">' +
                 '<button type="button" class="action-btn border-0 text-white btn-primary edit-user-btn"' +
                 ' data-bs-toggle="offcanvas" data-bs-target="#userCanvas"' +
@@ -151,6 +158,7 @@
                 ' data-role-name="'    + escAttr(row.role || '')          + '"' +
                 ' data-role-id="'     + (row.role_id || '')           + '"' +
                 ' title="Edit"><i class="bi bi-pencil"></i></button>' +
+                resetBtn +
                 '<button type="button" class="action-btn border-0 text-danger bg-danger-subtle delete-user-btn"' +
                 ' data-bs-toggle="modal" data-bs-target="#deleteConfirmModal"' +
                 ' data-id="'    + row.id            + '"' +
@@ -196,15 +204,21 @@
 
             document.getElementById('userEmployeeSelect').addEventListener('change', function () {
                 var opt = this.options[this.selectedIndex];
+                var hint = document.getElementById('emailManualHint');
                 if (opt.value) {
                     var name  = opt.getAttribute('data-name')  || '';
                     var email = opt.getAttribute('data-email') || '';
                     var role  = opt.getAttribute('data-role')  || '';
-                    if (name)  document.getElementById('userName').value  = name;
-                    if (email) document.getElementById('userEmail').value = email;
+                    if (name) document.getElementById('userName').value = name;
+                    document.getElementById('userEmail').value = email;
                     document.getElementById('userAssignedRole').value = role || '';
+                    if (hint) {
+                        hint.classList.toggle('d-none', !!email);
+                    }
                 } else {
                     document.getElementById('userAssignedRole').value = '';
+                    document.getElementById('userEmail').value = '';
+                    if (hint) hint.classList.add('d-none');
                 }
             });
 
@@ -229,8 +243,8 @@
             document.getElementById('editUserId').value            = btn.dataset.id;
             document.getElementById('userName').value              = btn.dataset.name  || '';
             document.getElementById('userEmail').value             = btn.dataset.email || '';
-            document.getElementById('passwordRequired').style.display = 'none';
-            document.getElementById('passwordHint').textContent   = 'Leave blank to keep the current password.';
+            var note = document.getElementById('createUserPasswordNote');
+            if (note) note.classList.add('d-none');
 
             var empId   = btn.dataset.employeeId   || '';
             var empCode = btn.dataset.employeeCode || '';
@@ -260,6 +274,8 @@
             document.getElementById('userForm').reset();
             document.getElementById('editUserId').value = '';
             document.getElementById('userAssignedRole').value = '';
+            var emailHint = document.getElementById('emailManualHint');
+            if (emailHint) emailHint.classList.add('d-none');
             clearErrors();
             document.getElementById('userFormAlert').classList.add('d-none');
         }
@@ -277,8 +293,6 @@
                 name:                 document.getElementById('userName').value.trim(),
                 email:                document.getElementById('userEmail').value.trim(),
                 employee_id:          document.getElementById('userEmployeeSelect').value || null,
-                password:             document.getElementById('userPassword').value,
-                password_confirmation:document.getElementById('userPasswordConfirm').value,
                 _token:               window.csrfToken,
             };
 
@@ -359,6 +373,36 @@
         // =============================================
         // DELETE
         // =============================================
+        function initResetPassword() {
+            $('#usersTable').on('click', '.reset-password-btn', function () {
+                var userId = this.getAttribute('data-user-id');
+                if (!userId || !window.usersResetPasswordUrl) return;
+                if (!confirm('Send a new temporary password to this user by email? They must sign in and choose a new password.')) {
+                    return;
+                }
+                fetch(window.usersResetPasswordUrl + '/' + userId + '/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept':       'application/json',
+                        'X-CSRF-TOKEN': window.csrfToken,
+                    },
+                    body: JSON.stringify({}),
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        alert(data.message || 'Done.');
+                    } else {
+                        alert(data.message || 'Request failed.');
+                    }
+                })
+                .catch(function () {
+                    alert('Network error.');
+                });
+            });
+        }
+
         function initDeleteModal() {
             var modal = document.getElementById('deleteConfirmModal');
             if (!modal) return;

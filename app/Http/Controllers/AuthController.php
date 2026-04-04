@@ -30,7 +30,12 @@ class AuthController extends Controller
 
         if (Auth::attempt($request->only('email', 'password'), $request->filled('remember'))) {
             $request->session()->regenerate();
-            
+
+            $user = Auth::user();
+            if ($user && $user->must_change_password) {
+                return redirect()->route('password.first-change');
+            }
+
             return redirect()->intended(route('admin.dashboard.index'));
         }
 
