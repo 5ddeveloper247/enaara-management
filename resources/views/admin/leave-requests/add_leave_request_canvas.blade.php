@@ -130,9 +130,8 @@
                 <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                     <div class="small opacity-75 text-white mb-2">This request will be routed through:</div>
                     <div class="small">
-                        <div class="mb-1">1. Supervisor → Team workload check</div>
-                        <div class="mb-1">2. HR/Dept Head → Leave balance verification</div>
-                        <div>3. Super Admin → Final approval (if required)</div>
+                        <div class="mb-1">1. Supervisor → Leave Recommendation</div>
+                        <div class="mb-1">2. Dept Head → Leave Approval</div>
                     </div>
                 </div>
             </div>

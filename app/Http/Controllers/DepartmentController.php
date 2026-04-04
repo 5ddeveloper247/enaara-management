@@ -8,6 +8,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use App\Http\Requests\Admin\Department\DepartmentStoreRequest;
+use App\Http\Requests\Admin\Department\DepartmentUpdateRequest;
+use Illuminate\Validation\ValidationException;
 
 class DepartmentController extends Controller
 {
@@ -52,6 +55,7 @@ class DepartmentController extends Controller
             'sbus' => $sbus,
             'totalDepartments' => $counts['total'],
             'activeDepartments' => $counts['active'],
+            'inactiveDepartments' => $counts['inactive'],
             'activePercentage' => $counts['active_percentage'],
         ]);
     }
@@ -77,27 +81,14 @@ class DepartmentController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
+    public function store(DepartmentStoreRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         try {
-            $validated = $request->validate([
-                'organization_id' => 'required|exists:organizations,id',
-                'sbu_id' => 'required|exists:sbus,id',
-                'name' => 'required|string|max:255',
-                'code' => [
-                    'nullable',
-                    'string',
-                    'max:64',
-                    Rule::unique('departments')->where('organization_id', $request->input('organization_id')),
-                ],
-                'parent_department_id' => 'nullable|exists:departments,id',
-                'description' => 'nullable|string',
-                'is_active' => 'boolean',
-            ]);
-            $validated['is_active'] = $request->boolean('is_active');
+            $validated = $request->validated();
+            
             $department = $this->departmentService->create($validated);
             
-            if ($request->expectsJson()) {
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Department created successfully.',
@@ -106,13 +97,21 @@ class DepartmentController extends Controller
             }
             
             return redirect()->route('admin.department.index')->with('success', 'Department created successfully.');
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            if ($request->expectsJson()) {
+        } catch (ValidationException $e) {
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
                     'errors' => $e->errors(),
                 ], 422);
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create department. ' . $e->getMessage(),
+                ], 500);
             }
             throw $e;
         }
@@ -156,54 +155,45 @@ class DepartmentController extends Controller
         ]);
     }
 
-    public function update(Request $request, int $id): RedirectResponse|\Illuminate\Http\JsonResponse
+    public function update(DepartmentUpdateRequest $request, int $id): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $department = $this->departmentService->findById($id);
         if (!$department) {
-            if ($request->expectsJson()) {
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json(['error' => 'Department not found'], 404);
             }
             abort(404);
         }
         
         try {
-            $validated = $request->validate([
-                'organization_id' => 'required|exists:organizations,id',
-                'sbu_id' => 'required|exists:sbus,id',
-                'name' => 'required|string|max:255',
-                'code' => [
-                    'nullable',
-                    'string',
-                    'max:64',
-                    Rule::unique('departments')->where('organization_id', $request->input('organization_id'))->ignore($department->id),
-                ],
-                'parent_department_id' => 'nullable|exists:departments,id',
-                'description' => 'nullable|string',
-                'is_active' => 'boolean',
-            ]);
-            $validated['is_active'] = $request->boolean('is_active');
-            if (isset($validated['parent_department_id']) && $validated['parent_department_id'] == $department->id) {
-                $validated['parent_department_id'] = null;
-            }
+            $validated = $request->validated();
+            
             $this->departmentService->update($department, $validated);
             
-            if ($request->expectsJson()) {
-                $updatedDepartment = $this->departmentService->findById($id);
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Department updated successfully.',
-                    'department' => $updatedDepartment,
+                    'department' => $this->departmentService->findById($id),
                 ]);
             }
             
             return redirect()->route('admin.department.index')->with('success', 'Department updated successfully.');
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            if ($request->expectsJson()) {
+        } catch (ValidationException $e) {
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
                     'errors' => $e->errors(),
                 ], 422);
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update department. ' . $e->getMessage(),
+                ], 500);
             }
             throw $e;
         }

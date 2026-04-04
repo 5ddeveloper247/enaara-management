@@ -236,6 +236,7 @@
                 
                 var formMode = $('#editFormMode').val();
                 var formData = {
+                    id: $('#editDepartmentId').val(),
                     organization_id: $('#editOrganizationId').val(),
                     sbu_id: $('#editSbuId').val(),
                     name: $('#editDepartmentName').val(),
@@ -274,30 +275,56 @@
                             if (offcanvas) {
                                 offcanvas.hide();
                             }
-                            location.reload();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: response.message || 'Department saved successfully.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
                         }
                     },
                     error: function(xhr) {
                         if (xhr.status === 422) {
                             var errors = xhr.responseJSON.errors;
-                            var fieldMap = {
-                                'organization_id': 'editOrganizationId',
-                                'sbu_id': 'editSbuId',
-                                'name': 'editDepartmentName',
-                                'code': 'editDepartmentCode',
-                                'parent_department_id': 'editParentDepartmentId',
-                                'description': 'editDepartmentDescription',
-                                'is_active': 'editDepartmentIsActive'
-                            };
+                            let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
+                            Object.values(errors).flat().forEach(err => {
+                                errorMessage += `<li>${err}</li>`;
+                            });
+                            errorMessage += '</ul></div>';
+
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Please check the following:',
+                                html: errorMessage,
+                                confirmButtonColor: '#1a237e',
+                                confirmButtonText: 'Understood'
+                            });
+
+                            // Also highlight fields and show error text
                             $.each(errors, function(field, messages) {
+                                var fieldMap = {
+                                    'organization_id': 'editOrganizationId',
+                                    'sbu_id': 'editSbuId',
+                                    'name': 'editDepartmentName',
+                                    'code': 'editDepartmentCode',
+                                    'parent_department_id': 'editParentDepartmentId',
+                                    'description': 'editDepartmentDescription',
+                                    'is_active': 'editDepartmentIsActive'
+                                };
                                 var fieldId = '#' + (fieldMap[field] || 'edit' + field);
                                 var errorId = fieldId + 'Error';
                                 $(fieldId).addClass('is-invalid');
                                 $(errorId).text(messages[0]).show();
                             });
                         } else {
-                            var errorMsg = formMode === 'add' ? 'Failed to create department. Please try again.' : 'Failed to update department. Please try again.';
-                            alert(errorMsg);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'System Error',
+                                text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Something went wrong. Please try again.'
+                            });
                         }
                     }
                 });

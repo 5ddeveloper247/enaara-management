@@ -153,14 +153,25 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
-                    showValidationErrors('#addSbuForm', xhr.responseJSON.errors);
+                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
+                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
+                        errorMessage += `<li>${err}</li>`;
+                    });
+                    errorMessage += '</ul></div>';
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Please check the following:',
+                        html: errorMessage,
+                        confirmButtonColor: '#1a237e',
+                        confirmButtonText: 'Understood'
+                    });
                 } else {
-                    showFormMessage(
-                        '#addSbuForm',
-                        (xhr.responseJSON && xhr.responseJSON.message)
-                            ? xhr.responseJSON.message
-                            : 'Failed to create SBU.'
-                    );
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'System Error',
+                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to create SBU.'
+                    });
                 }
             },
             complete: function() {
@@ -269,14 +280,25 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
-                    showValidationErrors('#editSbuForm', xhr.responseJSON.errors);
+                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
+                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
+                        errorMessage += `<li>${err}</li>`;
+                    });
+                    errorMessage += '</ul></div>';
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Please check the following:',
+                        html: errorMessage,
+                        confirmButtonColor: '#1a237e',
+                        confirmButtonText: 'Understood'
+                    });
                 } else {
-                    showFormMessage(
-                        '#editSbuForm',
-                        (xhr.responseJSON && xhr.responseJSON.message)
-                            ? xhr.responseJSON.message
-                            : 'Failed to update SBU.'
-                    );
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'System Error',
+                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update SBU.'
+                    });
                 }
             },
             complete: function() {
@@ -347,12 +369,11 @@
                     }
                 },
                 error: function(xhr) {
-                    showFormMessage(
-                        '#editSbuForm',
-                        (xhr.responseJSON && xhr.responseJSON.message)
-                            ? xhr.responseJSON.message
-                            : 'Failed to delete SBU.'
-                    );
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'System Error',
+                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete SBU.'
+                    });
                 },
                 complete: function() {
                     $('#deleteSbuBtn')

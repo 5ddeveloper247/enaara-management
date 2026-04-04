@@ -10,7 +10,7 @@
     </div>
 
     <div class="offcanvas-body">
-        <form id="editSbuFloorForm" method="POST" action="javascript:void(0);">
+        <form id="editSbuFloorForm" method="POST" action="javascript:void(0);" novalidate>
             @csrf
             <input type="hidden" id="edit_id" name="id">
 

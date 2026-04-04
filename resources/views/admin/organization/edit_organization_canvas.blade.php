@@ -8,7 +8,7 @@
     </div>
 
     <div class="offcanvas-body">
-        <form id="editOrganizationForm" method="POST" action="javascript:void(0);">
+        <form id="editOrganizationForm" method="POST" action="javascript:void(0);" novalidate>
             @csrf
             <input type="hidden" name="id" id="editOrgId">
 
@@ -95,6 +95,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const editForm = document.getElementById('editOrganizationForm');
     const editCanvas = document.getElementById('organizationEditCanvas');
+    const updateBtn = document.getElementById('updateOrganizationBtn');
 
     const updateRouteTemplate = `{{ route('admin.organization.update', ['id' => '__id__']) }}`;
     const editRouteTemplate = `{{ route('admin.organization.edit', ['id' => '__id__']) }}`;
@@ -148,14 +149,87 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     editForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
         if (!editForm.action || editForm.action.includes('javascript:void(0)')) {
-            e.preventDefault();
             Swal.fire({
                 icon: 'warning',
                 title: 'No Organization Selected',
                 text: 'Please select an organization first.'
             });
+            return;
         }
+
+        const formData = new FormData(editForm);
+        const originalHtml = updateBtn.innerHTML;
+
+        updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+        updateBtn.disabled = true;
+
+        fetch(editForm.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json().then(data => ({ status: response.status, data })))
+        .then(({ status, data }) => {
+            if (status === 200 || data.success) {
+                const offcanvas = bootstrap.Offcanvas.getInstance(editCanvas);
+                if (offcanvas) offcanvas.hide();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Updated',
+                    text: data.message || 'Organization updated successfully.',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else if (status === 422) {
+                // Validation errors
+                let errorMessage = '';
+                if (data.errors) {
+                    errorMessage = '<div class="text-start mt-2">';
+                    errorMessage += '<ul class="mb-0">';
+                    Object.values(data.errors).flat().forEach(err => {
+                        errorMessage += `<li>${err}</li>`;
+                    });
+                    errorMessage += '</ul></div>';
+                } else {
+                    errorMessage = data.message || 'Validation failed.';
+                }
+                
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Please check the following:',
+                    html: errorMessage,
+                    confirmButtonColor: '#1a237e',
+                    confirmButtonText: 'Understood'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'System Error',
+                    text: data.message || 'Failed to update organization.'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Update catch error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Something went wrong while updating organization data.'
+            });
+        })
+        .finally(() => {
+            updateBtn.innerHTML = originalHtml;
+            updateBtn.disabled = false;
+        });
     });
 
     if (editCanvas) {

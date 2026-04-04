@@ -8,7 +8,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
                                 <h6 class="mb-1 fw-semibold">{{ $dept->name }}</h6>
-                                <small class="text-muted small">{{ $dept->code ?? '—' }}</small>
+                                <small class="text-muted small text-break">{{ $dept->code ?? '—' }}</small>
                             </div>
                             @if($dept->is_active)
                             <span class="badge bg-success">Active</span>
