@@ -71,10 +71,11 @@ class EmployeeService
         ])->values()->all();
 
         $rolesData = $roles->map(fn($r) => [
-            'id'              => $r->id,
-            'name'            => $r->name,
-            'organization_id' => $r->organization_id,
-            'department_id'   => $r->department_id,
+            'id'                      => $r->id,
+            'name'                    => $r->name,
+            'organization_id'         => $r->organization_id,
+            'department_id'           => $r->department_id,
+            'is_organization_level'   => $r->isOrganizationLevelRole(),
         ])->values()->all();
 
         return compact('organizations', 'orgsData', 'rolesData');
@@ -87,7 +88,7 @@ class EmployeeService
             if (!$role) {
                 throw new \InvalidArgumentException('Invalid role.');
             }
-            $orgLevel = $role->department_id === null;
+            $orgLevel = $role->isOrganizationLevelRole();
             if ($orgLevel) {
                 $sbuForCode = Sbu::where('organization_id', (int) ($data['organization_id'] ?? 0))->orderBy('id')->value('id');
                 if (!$sbuForCode) {
@@ -178,6 +179,35 @@ class EmployeeService
 
             return $employee;
         });
+    }
+
+    public function previewNextEmployeeCode(int $organizationId, int $roleId, ?int $sbuId = null): string
+    {
+        $role = Role::query()->find($roleId);
+        if (! $role) {
+            throw new \InvalidArgumentException('Invalid role.');
+        }
+        if ((int) ($role->organization_id ?? 0) !== $organizationId) {
+            throw new \InvalidArgumentException('Role does not belong to the selected organization.');
+        }
+        $orgLevel = $role->isOrganizationLevelRole();
+        if ($orgLevel) {
+            $sbuForCode = Sbu::query()->where('organization_id', $organizationId)->orderBy('id')->value('id');
+            if (! $sbuForCode) {
+                throw new \InvalidArgumentException('No SBU found under organization for employee code generation.');
+            }
+
+            return $this->peekNextCode((int) $sbuForCode);
+        }
+        if (! $sbuId) {
+            throw new \InvalidArgumentException('SBU is required to preview employee number.');
+        }
+        $sbu = Sbu::query()->find($sbuId);
+        if (! $sbu || (int) $sbu->organization_id !== $organizationId) {
+            throw new \InvalidArgumentException('Invalid SBU for the selected organization.');
+        }
+
+        return $this->peekNextCode($sbuId);
     }
 
     private function peekNextCode(int $sbuId): string
@@ -733,7 +763,7 @@ class EmployeeService
         return DB::transaction(function () use ($id, $data, $files, $attachments, $keptAttachmentIds) {
             $employee = Employee::findOrFail($id);
             $role      = Role::find($data['role_id'] ?? $employee->role_id);
-            $orgLevel  = $role && $role->department_id === null;
+            $orgLevel  = $role && $role->isOrganizationLevelRole();
 
             $employee->update([
                 'full_name'           => $data['full_name'],

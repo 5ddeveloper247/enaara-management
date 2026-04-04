@@ -503,6 +503,14 @@
             setVal('branch',            d.branch);
             setVal('location',          d.location);
             setVal('biometric_id',      d.biometric_id);
+            (function () {
+                const empNumEl = document.getElementById('employee_number_display');
+                if (!empNumEl) return;
+                if (d.employee_code) {
+                    empNumEl.value = d.employee_code;
+                    empNumEl.placeholder = '';
+                }
+            })();
             setRadio('employment_category', d.employment_category);
             setSelect('intern_type',    d.intern_type);
             setVal('intern_duration',   d.intern_duration);
@@ -525,6 +533,10 @@
                 const label   = document.querySelector('label[for="uploadImage"]');
                 if (preview) { preview.src = d.photo_url; preview.style.display = 'block'; }
                 if (label)   { label.style.display = 'none'; }
+            }
+
+            if (Array.isArray(d.attachments) && d.attachments.length && typeof window.setExistingAttachments === 'function') {
+                window.setExistingAttachments(d.attachments);
             }
 
             if (d.police) {

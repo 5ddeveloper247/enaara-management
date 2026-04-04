@@ -84,6 +84,31 @@ class EmployeeController extends Controller
         }
     }
 
+    public function previewEmployeeCode(Request $request): JsonResponse
+    {
+        if (! validatePermissions('admin/employee')) {
+            return response()->json(['success' => false, 'message' => 'You do not have permission to perform this action.'], 403);
+        }
+
+        $validated = $request->validate([
+            'organization_id' => ['required', 'integer', 'exists:organizations,id'],
+            'role_id'         => ['required', 'integer', 'exists:roles,id'],
+            'sbu_id'          => ['nullable', 'integer', 'exists:sbus,id'],
+        ]);
+
+        try {
+            $code = $this->employeeService->previewNextEmployeeCode(
+                (int) $validated['organization_id'],
+                (int) $validated['role_id'],
+                isset($validated['sbu_id']) ? (int) $validated['sbu_id'] : null
+            );
+
+            return response()->json(['success' => true, 'code' => $code]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
     public function edit(int $id)
     {
         try {

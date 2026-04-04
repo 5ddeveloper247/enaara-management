@@ -201,6 +201,14 @@
             var canvas = document.getElementById('userCanvas');
             if (!canvas) return;
 
+            var userForm = document.getElementById('userForm');
+            if (userForm) {
+                userForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    submitForm();
+                });
+            }
+
             canvas.addEventListener('show.bs.offcanvas', function (e) {
                 var btn = e.relatedTarget;
                 if (btn && btn.classList.contains('edit-user-btn')) {
@@ -259,8 +267,8 @@
             if (avatarHolder) {
                 avatarHolder.src = 'https://ui-avatars.com/api/?name=User&background=e6c673&color=000&size=80';
             }
-            document.getElementById('passwordRequired').style.display = 'inline';
-            document.getElementById('passwordHint').textContent   = 'Required. Min. 8 chars with uppercase, lowercase and numbers.';
+            var note = document.getElementById('createUserPasswordNote');
+            if (note) note.classList.remove('d-none');
         }
 
         function openEditMode(btn) {
@@ -352,17 +360,23 @@
                     'Content-Type': 'application/json',
                     'Accept':       'application/json',
                     'X-CSRF-TOKEN': window.csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: JSON.stringify(payload),
             })
-            .then(r => r.json())
-            .then(function (data) {
+            .then(function (r) {
+                return r.json().then(function (data) {
+                    return { ok: r.ok, status: r.status, data: data };
+                });
+            })
+            .then(function (res) {
                 btn.disabled = false;
                 btn.innerHTML = isEdit
                     ? '<i class="bi bi-check-lg me-1"></i>Update User'
                     : '<i class="bi bi-person-check me-1"></i>Create User';
 
-                if (data.success) {
+                var data = res.data;
+                if (res.ok && data.success) {
                     showAlert('success', data.message);
                     usersTable.ajax.reload(null, false);
                     loadStats();
@@ -371,12 +385,16 @@
                     }, 1400);
                 } else if (data.errors) {
                     showFieldErrors(data.errors);
+                    showAlert('danger', data.message || 'Please fix the highlighted fields.');
                 } else {
                     showAlert('danger', data.message || 'Something went wrong.');
                 }
             })
             .catch(function () {
                 btn.disabled = false;
+                btn.innerHTML = isEdit
+                    ? '<i class="bi bi-check-lg me-1"></i>Update User'
+                    : '<i class="bi bi-person-check me-1"></i>Create User';
                 showAlert('danger', 'Network error. Please try again.');
             });
         }

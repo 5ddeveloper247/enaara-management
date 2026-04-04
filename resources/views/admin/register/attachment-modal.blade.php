@@ -241,21 +241,28 @@
             const files = (a.files || []).map(f => ({
                 name: f.name,
                 isImg: (f.type || '').startsWith('image/'),
-                url: (f.type || '').startsWith('image/') ? URL.createObjectURL(f) : null,
+                url: URL.createObjectURL(f),
             })).concat((a.existingFiles || []).map(f => ({
                 name: f.name,
                 isImg: (f.mime_type || '').startsWith('image/'),
                 url: f.url || null,
             })));
             const filesHtml = files.length ?
-                `<div class="mb-2 d-flex flex-wrap gap-1">
-                ${files.map(f => f.isImg
-                    ? `<img src="${escAttrUrl(f.url)}"
-                        style="height:40px;width:40px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;">`
-                    : `<span class="badge bg-light text-muted border" style="font-size:10px;">
+                `<div class="mb-2 d-flex flex-column gap-2">
+                ${files.map(f => {
+                    const preview = f.isImg && f.url
+                        ? `<img src="${escAttrUrl(f.url)}"
+                        style="height:40px;width:40px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,.25);flex-shrink:0;">`
+                        : `<span class="badge bg-light text-muted border" style="font-size:10px;">
                            <i class="bi bi-paperclip me-1"></i>${escAtt(f.name)}
-                       </span>`
-                ).join('')}
+                       </span>`;
+                    const downloadBtn = f.url
+                        ? `<a href="${escAttrUrl(f.url)}" download="${escAtt(f.name)}" class="btn btn-sm btn-outline-light py-0 px-2 align-self-start" style="font-size:11px;">
+                            <i class="bi bi-download me-1"></i>Download
+                        </a>`
+                        : '';
+                    return `<div class="d-flex flex-wrap align-items-center gap-2">${preview}${downloadBtn}</div>`;
+                }).join('')}
                </div>` :
                 '';
 

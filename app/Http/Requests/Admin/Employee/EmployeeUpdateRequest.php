@@ -2,12 +2,14 @@
 
 namespace App\Http\Requests\Admin\Employee;
 
-use App\Models\Role;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeRoleScope;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class EmployeeUpdateRequest extends FormRequest
 {
+    use ValidatesEmployeeRoleScope;
+
     public function authorize(): bool
     {
         return true;
@@ -98,7 +100,7 @@ class EmployeeUpdateRequest extends FormRequest
             'family.*.occupation'            => ['nullable', 'string', 'max:255'],
             'academics'                      => ['nullable', 'array'],
             'academics.*.degree'             => ['required_with:academics.*', 'string', 'max:255'],
-            'academics.*.grade_cgpa'         => ['required_with:academics.*', 'string', 'max:50'],
+            'academics.*.grade_cgpa'         => ['required_with:academics.*', 'string', 'max:100'],
             'academics.*.start_date'         => ['required_with:academics.*', 'date'],
             'academics.*.end_date'           => ['required_with:academics.*', 'date'],
             'academics.*.field_of_study'     => ['nullable', 'string', 'max:255'],
