@@ -596,13 +596,15 @@
 
         if (d.photo_url) {
             const preview = document.getElementById('imgPreview');
-            const label = document.querySelector('label[for="uploadImage"]');
-            if (preview) {
+            const wrapper = document.getElementById('imgPreviewWrapper');
+            const removeBtn = document.getElementById('removeImageBtn');
+            const uploadBox = document.getElementById('uploadImageBox');
+
+            if (preview && wrapper && uploadBox) {
                 preview.src = d.photo_url;
-                preview.style.display = 'block';
-            }
-            if (label) {
-                label.style.display = 'none';
+                wrapper.style.display = 'block';
+                uploadBox.classList.add('d-none');
+                if (removeBtn) removeBtn.classList.remove('d-none');
             }
         }
 

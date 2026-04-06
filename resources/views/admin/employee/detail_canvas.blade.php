@@ -287,7 +287,7 @@
         <hr class="my-4" style="border-color: #ffffffab !important">
 
         <!-- User Account -->
-        <div class="mb-4" id="userAccountSection">
+        <!-- <div class="mb-4" id="userAccountSection">
             <h6 class="mb-3 fw-semibold small">
                 <i class="bi bi-person-badge me-2"></i>User Account
             </h6>
@@ -349,7 +349,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!-- Action Buttons -->
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
