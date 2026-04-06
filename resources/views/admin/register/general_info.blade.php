@@ -7,14 +7,20 @@
         <div class="d-flex align-items-end gap-2">
             <div class="col-2">
                 <label class="form-label">Upload Image</label>
-                <label for="uploadImage" class="d-flex flex-column align-items-center justify-content-center gap-2"
+
+                <label for="uploadImage" id="uploadImageBox" class="d-flex flex-column align-items-center justify-content-center gap-2"
                     style="width:160px; height:160px; border: 2px dashed var(--main-color); border-radius: 10px; cursor:pointer; background:#f8f9fa1a;">
                     <i class="bi bi-cloud-arrow-up fs-1 text-secondary"></i>
                     <span style="font-size:.72rem; color:#6c757d;">Click to upload</span>
                     <input type="file" id="uploadImage" name="profile_photo" accept="image/*" class="d-none" onchange="previewImg(this)">
                 </label>
-                <img id="imgPreview" src="" alt=""
-                    style="display:none; width:160px; height:160px; object-fit:cover; border-radius:10px; margin-top:6px; border:2px solid var(--main-color);">
+
+                <div id="imgPreviewWrapper" style="display:none; position:relative; width:160px; height:160px; margin-top:6px;">
+                    <img id="imgPreview" src="" alt=""
+                        style="width:160px; height:160px; object-fit:cover; border-radius:10px; border:2px solid var(--main-color);">
+                    <button type="button" id="removeImageBtn" onclick="removePreviewImg()" class="d-none" style="  position:absolute; top:6px; right:6px; width:28px; height:28px; border:none; border-radius:50%; background:#dc3545; color:#fff; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.2); padding:0;">
+                        &times; </button>
+                </div>
             </div>
 
             <div class="col-md-5">
@@ -182,13 +188,35 @@
                 });
             });
     });
-
+    // code related to image preview and removal
     function previewImg(input) {
         const preview = document.getElementById('imgPreview');
+        const previewWrapper = document.getElementById('imgPreviewWrapper');
+        const removeBtn = document.getElementById('removeImageBtn');
+        const uploadBox = document.getElementById('uploadImageBox');
+
         if (input.files && input.files[0]) {
             preview.src = URL.createObjectURL(input.files[0]);
-            preview.style.display = 'block';
+
+            previewWrapper.style.display = 'block';
+            uploadBox.classList.add('d-none');
+            removeBtn.classList.remove('d-none');
         }
+    }
+
+    function removePreviewImg() {
+        const input = document.getElementById('uploadImage');
+        const preview = document.getElementById('imgPreview');
+        const previewWrapper = document.getElementById('imgPreviewWrapper');
+        const removeBtn = document.getElementById('removeImageBtn');
+        const uploadBox = document.getElementById('uploadImageBox');
+
+        input.value = '';
+        preview.src = '';
+        previewWrapper.style.display = 'none';
+
+        removeBtn.classList.add('d-none');
+        uploadBox.classList.remove('d-none');
     }
 </script>
 
