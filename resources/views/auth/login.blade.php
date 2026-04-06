@@ -1,11 +1,13 @@
 @extends('layouts.auth')
 
 @section('title', 'Login')
-@section('page-title', 'Welcome Back')
+@section('page-title', 'ENARA HRMS')
 @section('page-subtitle', 'Please sign in to your account')
 
 @section('content')
-    <div>
+
+
+    <div class="w-75" style="z-index: 1000">
         @if ($errors->any())
             <div class="alert alert-danger mb-3">
                 <ul class="mb-0 list-unstyled">
@@ -22,7 +24,8 @@
                 <label for="email" class="form-label">
                     <i class="bi bi-envelope me-2"></i>Email Address <span class="text-danger">*</span>
                 </label>
-                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" placeholder="Enter your email" required>
+                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email"
+                    value="{{ old('email') }}" placeholder="Enter your email" required>
                 @error('email')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -33,8 +36,9 @@
                     <i class="bi bi-lock me-2"></i>Password <span class="text-danger">*</span>
                 </label>
                 <div class="input-group">
-                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Enter your password" required>
-                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password"
+                        name="password" placeholder="Enter your password" required>
+                    <button class="btn btn-secondary" type="button" id="togglePassword">
                         <i class="bi bi-eye" id="togglePasswordIcon"></i>
                     </button>
                 </div>
@@ -45,22 +49,23 @@
 
             <div class="mb-3 d-flex justify-content-between align-items-center">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
+                    <input class="form-check-input" type="checkbox" name="remember" id="remember"
+                        {{ old('remember') ? 'checked' : '' }}>
                     <label class="form-check-label" for="remember">
                         Remember me
                     </label>
                 </div>
-                <a href="{{ route('password.request') }}" class="text-decoration-none">Forgot password?</a>
+                <a href="{{ route('password.request') }}" class="frg">Forgot password?</a>
             </div>
 
-            <button type="submit" class="btn btn-auth w-100 mb-3">
+            <button type="submit" class=" btn-auth w-100 mb-3">
                 <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
             </button>
         </form>
 
-        <div class="auth-footer">
-            <p class="mb-0">Don't have an account? <a href="{{ route('register') }}">Sign up here</a></p>
-        </div>
+        {{-- <div class="auth-footer">
+            <p class="mb-0">Don't have an account? <a href="{{ route('register') }}" class="frg">Sign up here</a></p>
+        </div> --}}
     </div>
 
     <script>
