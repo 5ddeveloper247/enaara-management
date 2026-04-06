@@ -45,8 +45,8 @@ class EmployeeService
         $employees     = Employee::with(['organization', 'department'])
             ->orderByDesc('id')
             ->paginate(20);
-
-        return view('admin.employee.index', compact('organizations', 'employees'));
+        $departments=Department::where('is_active',true)->orderBy('name')->get();
+        return view('admin.employee.index', compact('organizations', 'employees', 'departments'));
     }
 
     public function getFormData(): array
@@ -541,7 +541,7 @@ class EmployeeService
         $total          = $employees->count();
         $active         = $employees->where('is_active', true)->count();
         $hasbiometric   = $employees->whereNotNull('biometric_id');
-        $biometricLinked= $hasbiometric->count();
+        $biometricLinked = $hasbiometric->count();
         $synced         = $hasbiometric->where('sync_with_biometric', true)->count();
         $pending        = $hasbiometric->where('sync_with_biometric', false)->count();
         $internal       = $employees->where('employment_type', '!=', 'Third-party')->count();
@@ -577,9 +577,16 @@ class EmployeeService
     public function edit(int $id): View
     {
         $employee = Employee::with([
-            'policeVerification', 'armedForce', 'contact', 'bankDetail',
-            'familyMembers', 'academics', 'exEmployments', 'medical',
-            'references', 'mediaFiles',
+            'policeVerification',
+            'armedForce',
+            'contact',
+            'bankDetail',
+            'familyMembers',
+            'academics',
+            'exEmployments',
+            'medical',
+            'references',
+            'mediaFiles',
         ])->findOrFail($id);
 
         $formData = $this->getFormData();
