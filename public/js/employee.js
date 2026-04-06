@@ -5,8 +5,11 @@
 
     window.employeeFilters = window.employeeFilters || {
         employeeType: '',
+        organization: '',
+        sbu: '',
         department: '',
-        vendor: '',
+        name: '',
+        cnic: '',
     };
 
     $(document).ready(function () {
@@ -26,6 +29,14 @@
             ajax: {
                 url: window.employeeDataUrl,
                 type: 'GET',
+                data: function (d) {
+                    d.filter_employee_type = window.employeeFilters.employeeType;
+                    d.filter_organization  = window.employeeFilters.organization;
+                    d.filter_sbu           = window.employeeFilters.sbu;
+                    d.filter_department    = window.employeeFilters.department;
+                    d.filter_name          = window.employeeFilters.name;
+                    d.filter_cnic          = window.employeeFilters.cnic;
+                },
                 dataSrc: 'data',
             },
             columns: [{
@@ -692,8 +703,11 @@
             e.stopPropagation();
 
             window.employeeFilters.employeeType = ($('#filterEmployeeType').val() || '').trim();
-            window.employeeFilters.department = ($('#filterDepartment').val() || '').trim();
-            window.employeeFilters.vendor = ($('#filterVendor').val() || '').trim();
+            window.employeeFilters.organization = ($('#filterOrganization').val() || '').trim();
+            window.employeeFilters.sbu          = ($('#filterSbu').val() || '').trim();
+            window.employeeFilters.department   = ($('#filterDepartment').val() || '').trim();
+            window.employeeFilters.name         = ($('#filterName').val() || '').trim();
+            window.employeeFilters.cnic         = ($('#filterCnic').val() || '').trim();
 
             var dd = document.getElementById('filterDropdownBtn');
             if (dd && window.bootstrap && bootstrap.Dropdown) {
@@ -710,12 +724,18 @@
             e.stopPropagation();
 
             $('#filterEmployeeType').val('');
+            $('#filterOrganization').val('');
+            $('#filterSbu').val('');
             $('#filterDepartment').val('');
-            $('#filterVendor').val('');
+            $('#filterName').val('');
+            $('#filterCnic').val('');
 
             window.employeeFilters.employeeType = '';
-            window.employeeFilters.department = '';
-            window.employeeFilters.vendor = '';
+            window.employeeFilters.organization = '';
+            window.employeeFilters.sbu          = '';
+            window.employeeFilters.department   = '';
+            window.employeeFilters.name         = '';
+            window.employeeFilters.cnic         = '';
 
             if (employeeTable) {
                 employeeTable.ajax.reload(null, false);
@@ -726,8 +746,11 @@
             var f = window.employeeFilters || {};
             var params = {
                 filter_employee_type: f.employeeType || '',
+                filter_organization: f.organization || '',
+                filter_sbu: f.sbu || '',
                 filter_department: f.department || '',
-                filter_vendor: f.vendor || '',
+                filter_name: f.name || '',
+                filter_cnic: f.cnic || '',
             };
 
             $.get(window.employeeDataUrl, params, function (res) {

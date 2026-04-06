@@ -46,7 +46,8 @@ class EmployeeService
             ->orderByDesc('id')
             ->paginate(20);
         $departments=Department::where('is_active',true)->orderBy('name')->get();
-        return view('admin.employee.index', compact('organizations', 'employees', 'departments'));
+        $sbus = Sbu::where('is_active', true)->orderBy('name')->get();
+        return view('admin.employee.index', compact('organizations', 'employees', 'departments', 'sbus'));
     }
 
     public function getFormData(): array
@@ -509,15 +510,35 @@ class EmployeeService
             }
         }
 
-        $departmentName = $filters['filter_department'] ?? null;
-        if (!empty($departmentName)) {
+        if (!empty($filters['filter_organization'])) {
+            $orgName = $filters['filter_organization'];
+            $query->whereHas('organization', function ($q) use ($orgName) {
+                $q->where('name', $orgName);
+            });
+        }
+
+        if (!empty($filters['filter_sbu'])) {
+            $sbuName = $filters['filter_sbu'];
+            $query->whereHas('sbu', function ($q) use ($sbuName) {
+                $q->where('name', $sbuName);
+            });
+        }
+
+        if (!empty($filters['filter_department'])) {
+            $departmentName = $filters['filter_department'];
             $query->whereHas('department', function ($q) use ($departmentName) {
                 $q->where('name', $departmentName);
             });
         }
 
-        if (!empty($filters['filter_vendor'])) {
-            $query->where('employment_type', 'Third-party');
+        if (!empty($filters['filter_name'])) {
+            $name = $filters['filter_name'];
+            $query->where('full_name', 'like', '%' . $name . '%');
+        }
+
+        if (!empty($filters['filter_cnic'])) {
+            $cnic = $filters['filter_cnic'];
+            $query->where('cnic', 'like', '%' . $cnic . '%');
         }
 
         $employees = $query->get();

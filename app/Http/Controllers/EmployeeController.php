@@ -61,8 +61,11 @@ class EmployeeController extends Controller
                 'success' => true,
                 'data'    => $this->employeeService->getTableData([
                     'filter_employee_type' => $request->query('filter_employee_type'),
+                    'filter_organization'  => $request->query('filter_organization'),
+                    'filter_sbu'           => $request->query('filter_sbu'),
                     'filter_department'    => $request->query('filter_department'),
-                    'filter_vendor'        => $request->query('filter_vendor'),
+                    'filter_name'          => $request->query('filter_name'),
+                    'filter_cnic'          => $request->query('filter_cnic'),
                 ]),
             ]);
         } catch (\Exception $e) {
