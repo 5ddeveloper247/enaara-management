@@ -17,11 +17,11 @@ class UserService
     {
         $linkedEmployeeIds = User::whereNotNull('employee_id')->pluck('employee_id');
 
-        $employees = Employee::with(['role:id,name', 'contact:id,employee_id,email'])
+        $employees = Employee::with(['role:id,name', 'contact:id,employee_id,email', 'sbu:id,name', 'mediaFiles'])
             ->whereNull('deleted_at')
             ->whereNotIn('id', $linkedEmployeeIds)
             ->orderBy('full_name')
-            ->get(['id', 'full_name', 'employee_code', 'email', 'role_id']);
+            ->get(['id', 'full_name', 'employee_code', 'email', 'role_id', 'sbu_id']);
 
         $allEmployees = Employee::with(['role:id,name', 'contact:id,employee_id,email'])
             ->whereNull('deleted_at')

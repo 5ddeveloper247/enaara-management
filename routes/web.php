@@ -174,6 +174,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/employee', [EmployeeController::class, 'index'])->name('admin.employee.index');
     Route::get('/employee/data', [EmployeeController::class, 'tableData'])->name('admin.employee.data');
     Route::get('/employee/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
+    Route::get('/employee/preview-employee-code', [EmployeeController::class, 'previewEmployeeCode'])->name('admin.employee.preview_code');
     Route::post('/employee/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
     Route::get('/employee/{id}/edit', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
     Route::post('/employee/{id}/update', [EmployeeController::class, 'update'])->name('admin.employee.update');

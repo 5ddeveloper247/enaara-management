@@ -77,4 +77,13 @@ class Role extends Model
     {
         return $this->belongsTo(Organization::class);
     }
+
+    public function isOrganizationLevelRole(): bool
+    {
+        if ($this->department_id === null) {
+            return true;
+        }
+
+        return in_array(strtolower((string) ($this->slug ?? '')), ['super-admin', 'coo', 'ceo'], true);
+    }
 }

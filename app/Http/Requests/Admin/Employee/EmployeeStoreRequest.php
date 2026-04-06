@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\Employee;
 
 use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class EmployeeStoreRequest extends FormRequest
@@ -12,23 +13,41 @@ class EmployeeStoreRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->orgLevelRoleSelected()) {
+        $role = $this->resolveRoleForOrgLevelCheck();
+        $orgLevel = $this->isOrgLevelRole($role);
+        Log::info('EmployeeStoreRequest employment scope', [
+            'role_id'         => $this->input('role_id'),
+            'role_slug'       => $role?->slug,
+            'role_name'       => $role?->name,
+            'role_department_id' => $role?->department_id,
+            'org_level_role'  => $orgLevel,
+        ]);
+        if ($orgLevel) {
             $this->merge([
-                'sbu_id'         => null,
-                'department_id'  => null,
+                'sbu_id'        => null,
+                'department_id' => null,
             ]);
         }
     }
 
     protected function orgLevelRoleSelected(): bool
     {
+        return $this->isOrgLevelRole($this->resolveRoleForOrgLevelCheck());
+    }
+
+    protected function resolveRoleForOrgLevelCheck(): ?Role
+    {
         $roleId = $this->input('role_id');
         if (! $roleId) {
-            return false;
+            return null;
         }
-        $role = Role::query()->find($roleId);
 
-        return $role && $role->department_id === null;
+        return Role::query()->find($roleId);
+    }
+
+    protected function isOrgLevelRole(?Role $role): bool
+    {
+        return $role !== null && $role->isOrganizationLevelRole();
     }
 
     public function rules(): array
@@ -58,8 +77,8 @@ class EmployeeStoreRequest extends FormRequest
             'nok_dob'                => ['nullable', 'date'],
             'nok_contact'            => ['nullable', 'string', 'max:15'],
             'organization_id'        => ['required', 'integer', 'exists:organizations,id'],
-            'sbu_id'                 => ['required', 'integer', 'exists:sbus,id'],
-            'department_id'          => ['required', 'integer', 'exists:departments,id'],
+            'sbu_id'                 => ['nullable', 'integer', 'exists:sbus,id', Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected())],
+            'department_id'          => ['nullable', 'integer', 'exists:departments,id', Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected())],
             'role_id'                => ['required', 'integer', 'exists:roles,id'],
             'employee_type'          => ['nullable', 'string', 'max:100'],
             'employment_type'        => ['nullable', 'string', 'max:100'],
@@ -115,7 +134,7 @@ class EmployeeStoreRequest extends FormRequest
             'family.*.occupation'            => ['nullable', 'string', 'max:255'],
             'academics'                      => ['nullable', 'array'],
             'academics.*.degree'             => ['required_with:academics.*', 'string', 'max:255'],
-            'academics.*.grade_cgpa'         => ['required_with:academics.*', 'string', 'max:50'],
+            'academics.*.grade_cgpa'         => ['required_with:academics.*', 'string', 'max:100'],
             'academics.*.start_date'         => ['required_with:academics.*', 'date'],
             'academics.*.end_date'           => ['required_with:academics.*', 'date'],
             'academics.*.field_of_study'     => ['nullable', 'string', 'max:255'],

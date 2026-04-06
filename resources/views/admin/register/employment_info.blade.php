@@ -8,6 +8,13 @@
             <input type="text" name="biometric_id" class="form-control" placeholder="Biometric ID">
         </div>
 
+        <div class="col-md-4">
+            <label class="form-label">Employee Number</label>
+            <input type="text" id="employee_number_display" class="form-control" disabled readonly
+                placeholder="— Select Organization &amp; Role —"
+                style="opacity:1;background:rgba(255,255,255,.06)!important;cursor:not-allowed;">
+        </div>
+
         <div class="col-12">
             <div class="p-3">
                 <label class="form-label fw-semibold mb-2">Category <span class="text-danger">*</span></label>
@@ -147,6 +154,8 @@
 <script>
     window._orgsData  = @json($orgsData  ?? []);
     window._rolesData = @json($rolesData ?? []);
+    window.__employeeEditMode = @json(isset($employee));
+    window.__previewEmployeeCodeUrl = @json(route('admin.employee.preview_code'));
 
     document.addEventListener('DOMContentLoaded', function () {
         const orgSel = document.getElementById('org_select');
@@ -173,7 +182,55 @@
     }
 
     function isOrgLevelRole(role) {
-        return role && (role.department_id === null || role.department_id === undefined || role.department_id === '');
+        if (!role) return false;
+        if (typeof role.is_organization_level === 'boolean') return role.is_organization_level;
+        return role.department_id === null || role.department_id === undefined || role.department_id === '';
+    }
+
+    function refreshEmployeeNumberPreview() {
+        const el = document.getElementById('employee_number_display');
+        if (!el || window.__employeeEditMode || !window.__previewEmployeeCodeUrl) return;
+
+        const orgId = document.getElementById('org_select') ? document.getElementById('org_select').value : '';
+        const roleId = document.getElementById('role_select') ? document.getElementById('role_select').value : '';
+        const sbuSel = document.getElementById('sbu_select');
+        const sbuId = sbuSel ? sbuSel.value : '';
+
+        if (!orgId || !roleId) {
+            el.value = '';
+            el.placeholder = '— Select Organization & Role —';
+            return;
+        }
+
+        const role = roleById(roleId);
+        const needSbu = role && !isOrgLevelRole(role);
+        if (needSbu && !sbuId) {
+            el.value = '';
+            el.placeholder = '— Select SBU —';
+            return;
+        }
+
+        const params = new URLSearchParams({ organization_id: orgId, role_id: roleId });
+        if (sbuId) params.set('sbu_id', sbuId);
+
+        fetch(window.__previewEmployeeCodeUrl + '?' + params.toString(), {
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success && data.code) {
+                    el.value = data.code;
+                    el.placeholder = '';
+                } else {
+                    el.value = '';
+                    el.placeholder = (data.message || '—').substring(0, 80);
+                }
+            })
+            .catch(function () {
+                el.value = '';
+                el.placeholder = '—';
+            });
     }
 
     function onOrgChange(orgId) {
@@ -201,6 +258,7 @@
                 populateRolesForOrg(orgId);
             }
         }
+        refreshEmployeeNumberPreview();
     }
 
     function populateRolesForOrg(orgId) {
@@ -232,6 +290,7 @@
             deptSel.insertAdjacentHTML('beforeend',
                 '<option value="' + d.id + '">' + escHtmlBasic(d.name) + '</option>');
         });
+        refreshEmployeeNumberPreview();
     }
 
     function applySbuDeptFromRole(role) {
@@ -269,6 +328,7 @@
             if (section) section.style.display = 'none';
             if (sbuSel) sbuSel.value = '';
             if (deptSel) deptSel.value = '';
+            refreshEmployeeNumberPreview();
             return;
         }
 
@@ -285,11 +345,13 @@
                 deptSel.innerHTML = '<option value="">— Select Department —</option>';
                 deptSel.value = '';
             }
+            refreshEmployeeNumberPreview();
             return;
         }
 
         if (section) section.style.display = '';
         applySbuDeptFromRole(role);
+        refreshEmployeeNumberPreview();
     }
 
     function toggleCategoryBlocks() {
@@ -317,4 +379,5 @@
     });
 
     window.syncEmploymentRoleUI = onRoleChange;
+    window.refreshEmployeeNumberPreview = refreshEmployeeNumberPreview;
 </script>
