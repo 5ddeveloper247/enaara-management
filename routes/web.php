@@ -10,6 +10,7 @@ use App\Http\Controllers\WorkTypeController;
 use App\Http\Controllers\AttendanceModesController;
 use App\Http\Controllers\ShiftTypesController;
 use App\Http\Controllers\SbuController;
+use App\Http\Controllers\ThirdPartyController;
 use App\Http\Controllers\SbuFloorsController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\LeaveTypeController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PasswordFirstChangeController;
 use App\Http\Controllers\WorkflowController;
 
 use App\Http\Controllers\LeaveCalendarController;
@@ -28,6 +30,9 @@ use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ShiftPlannerController;
 use App\Http\Controllers\ShiftRosterController;
+use App\Http\Controllers\MonthlySummaryController;
+use App\Http\Controllers\AuditTrailController;
+use App\Http\Middleware\EnsurePasswordIsNotTemporary;
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -44,7 +49,12 @@ Route::middleware('guest')->group(function () {
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
-Route::middleware('auth')->prefix('admin')->group(function () {
+Route::middleware('auth')->group(function () {
+    Route::get('/first-password', [PasswordFirstChangeController::class, 'show'])->name('password.first-change');
+    Route::post('/first-password', [PasswordFirstChangeController::class, 'update'])->name('password.first-change.update');
+});
+
+Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
     Route::get('/dashboard/attendance-chart', [DashboardController::class, 'attendanceChart'])->name('admin.dashboard.attendance-chart');
@@ -66,6 +76,13 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/sbu/edit/{id}', [SbuController::class, 'update'])->name('admin.sbu.update');
     Route::delete('/sbu/delete/{id}', [SbuController::class, 'destroy'])->name('admin.sbu.destroy');
     Route::get('/sbu/{id}/show', [SbuController::class, 'show'])->name('admin.sbu.show');
+    Route::get('/third-party', [ThirdPartyController::class, 'index'])->name('admin.third-party.index');
+    Route::get('/third-party/add', [ThirdPartyController::class, 'create'])->name('admin.third-party.create');
+    Route::post('/third-party/add', [ThirdPartyController::class, 'store'])->name('admin.third-party.store');
+    Route::get('/third-party/edit/{id}', [ThirdPartyController::class, 'edit'])->name('admin.third-party.edit');
+    Route::post('/third-party/edit/{id}', [ThirdPartyController::class, 'update'])->name('admin.third-party.update');
+    Route::delete('/third-party/delete/{id}', [ThirdPartyController::class, 'destroy'])->name('admin.third-party.destroy');
+    Route::get('/third-party/{id}/show', [ThirdPartyController::class, 'show'])->name('admin.third-party.show');
     // Sbu Floor Routes
     Route::get('/sbu-floor', [SbuFloorsController::class, 'index'])->name('admin.sbu.floor.index');
     Route::get('/sbu-floor/add', [SbuFloorsController::class, 'create'])->name('admin.sbu.floor.create');
@@ -98,6 +115,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/department/add', [DepartmentController::class, 'store'])->name('admin.department.store');
     Route::get('/department/edit/{id}', [DepartmentController::class, 'edit'])->name('admin.department.edit');
     Route::post('/department/edit/{id}', [DepartmentController::class, 'update'])->name('admin.department.update');
+    Route::delete('/department/{id}', [DepartmentController::class, 'destroy'])->name('admin.department.destroy');
 
 
     Route::get('/leave-type', [LeaveTypeController::class, 'index'])->name('admin.leave.type.index');
@@ -105,6 +123,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/leave-type/add', [LeaveTypeController::class, 'store'])->name('admin.leave.type.store');
     Route::get('/leave-type/edit/{id}', [LeaveTypeController::class, 'edit'])->name('admin.leave.type.edit');
     Route::post('/leave-type/edit/{id}', [LeaveTypeController::class, 'update'])->name('admin.leave.type.update');
+    Route::delete('/leave-type/{id}', [LeaveTypeController::class, 'destroy'])->name('admin.leave.type.destroy');
 
     //Leave Requests 
     Route::get('/leave-request', [LeaveRequestController::class, 'index'])->name('admin.leave.request.index');
@@ -155,6 +174,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/employee', [EmployeeController::class, 'index'])->name('admin.employee.index');
     Route::get('/employee/data', [EmployeeController::class, 'tableData'])->name('admin.employee.data');
     Route::get('/employee/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
+    Route::get('/employee/preview-employee-code', [EmployeeController::class, 'previewEmployeeCode'])->name('admin.employee.preview_code');
     Route::post('/employee/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
     Route::get('/employee/{id}/edit', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
     Route::post('/employee/{id}/update', [EmployeeController::class, 'update'])->name('admin.employee.update');
@@ -171,6 +191,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/users/data', [UserController::class, 'data'])->name('admin.users.data');
     Route::get('/users/stats', [UserController::class, 'stats'])->name('admin.users.stats');
     Route::post('/users/store', [UserController::class, 'store'])->name('admin.users.store');
+    Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('admin.users.reset-password');
     Route::post('/users/{id}/update', [UserController::class, 'update'])->name('admin.users.update');
     Route::patch('/users/{id}/status', [UserController::class, 'updateStatus'])->name('admin.users.status');
     Route::delete('/users/{id}/delete', [UserController::class, 'destroy'])->name('admin.users.destroy');
@@ -211,17 +232,22 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     // })->name('admin.settings');
 
     Route::get('/daily-logs', function () {
-        return view('admin.monthly-logs.index');
+        return redirect()->back()->with([
+            'coming_soon_title' => 'Coming Soon',
+            'coming_soon_message' => 'Daily Logs feature is coming soon.'
+        ]);
     })->name('admin.monthly-logs.index');
 
+
     Route::get('/shift-planner', [ShiftPlannerController::class, 'index'])->name('admin.shift-planner.index');
-    Route::post('/shift-planner', [ShiftPlannerControedller::class, 'store'])->name('admin.shift-planner.store');
+    Route::post('/shift-planner', [ShiftPlannerController::class, 'store'])->name('admin.shift-planner.store');
     Route::get('/shift-planner/{id}', [ShiftPlannerController::class, 'show'])->name('admin.shift-planner.show');
     Route::post('/shift-planner/{id}', [ShiftPlannerController::class, 'update'])->name('admin.shift-planner.update');
     Route::delete('/shift-planner/{id}', [ShiftPlannerController::class, 'destroy'])->name('admin.shift-planner.destroy');
 
     //Shift Roster
     Route::get('/shift-roster', [ShiftRosterController::class, 'index'])->name('admin.shift-roster.index');
+    Route::get('/shift-roster/grid', [ShiftRosterController::class, 'grid'])->name('admin.shift-roster.grid');
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
     Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
         ->name('admin.shift-roster.bulk-assign');
@@ -229,9 +255,12 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('/shift-roster/{id}', [ShiftRosterController::class, 'update'])->name('admin.shift-roster.update');
     Route::delete('/shift-roster/{id}', [ShiftRosterController::class, 'destroy'])->name('admin.shift-roster.destroy');
 
-    // Route::get('/regularization', function () {
-    //     return view('admin.regularization.index');
-    // })->name('admin.regularization.index');
+    Route::get('/regularization', function () {
+        return redirect()->back()->with([
+            'coming_soon_title' => 'Coming Soon',
+            'coming_soon_message' => 'Regularization feature is coming soon.'
+        ]);
+    })->name('admin.regularization.index');
 
     Route::get('/geofencing', [GeofenceController::class, 'index'])->name('admin.geofencing.index');
     Route::post('/geofencing', [GeofenceController::class, 'store'])->name('admin.geofencing.store');
@@ -240,7 +269,8 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::delete('/geofencing/{id}', [GeofenceController::class, 'destroy'])->name('admin.geofencing.destroy');
     Route::get('/my-leaves', [LeaveRequestController::class, 'myLeaves'])->name('admin.my.leaves.index');
 
-
+    //Monthly Summary ROutes
+    Route::get('/monthly-summary', [MonthlySummaryController::class, 'index'])->name('admin.monthly-summary.index');
 
     // Route::get('/my-leaves', function () {
     //     return view('admin.my-leaves.index');
@@ -258,17 +288,14 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         return view('admin.roles-permissions.index');
     })->name('admin.roles.index');
 
-    Route::get('/monthly-summary', function () {
-        return view('admin.monthly-summary.index');
-    })->name('admin.monthly-summary.index');
 
     Route::get('/overtime-tracker', function () {
-        return view('admin.overtime.index');
+        return redirect()->back()->with([
+            'coming_soon_title' => 'Coming Soon',
+            'coming_soon_message' => 'Overtime Tracker feature is coming soon.'
+        ]);
     })->name('admin.overtime.index');
 
-    Route::get('/audit-trail', function () {
-        return view('admin.audit-trails.index');
-    })->name('admin.audit-trails.index');    
     // Policies Routes
     Route::get('/policies', [PolicyController::class, 'index'])->name('admin.policies.index');
     Route::post('/policies', [PolicyController::class, 'store'])->name('admin.policies.store');
@@ -289,5 +316,8 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     //     return view('admin.dashboard'); // Placeholder - replace with actual reports view
     // })->name('admin.reports');
 
-
+    //Audit Trails Routes
+    Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('admin.audit-trails.index');
+    Route::get('/audit-trails/data', [AuditTrailController::class, 'data'])->name('admin.audit-trails.data');
+    Route::get('/audit-trails/{auditTrail}', [AuditTrailController::class, 'show'])->name('admin.audit-trails.show');
 });

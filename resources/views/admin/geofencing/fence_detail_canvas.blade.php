@@ -146,9 +146,9 @@
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
         <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
-            <button type="button" class="btn btn-light text-dark border-0" id="editFenceBtn">
+            <!-- <button type="button" class="btn btn-light text-dark border-0" id="editFenceBtn">
                 <i class="bi bi-pencil me-1"></i>Edit Fence
-            </button>
+            </button> -->
         </div>
     </div>
 </div>

@@ -5,6 +5,8 @@
     window.usersUpdateUrl = "{{ url('admin/users') }}";
     window.usersStatusUrl = "{{ url('admin/users') }}";
     window.usersDeleteUrl = "{{ url('admin/users') }}";
+    window.usersResetPasswordUrl = "{{ url('admin/users') }}";
+    window.canResetUserPassword = @json(validatePermissions('admin/users'));
     window.csrfToken      = "{{ csrf_token() }}";
 </script>
 
@@ -14,6 +16,7 @@
             <tr>
                 <th>User</th>
                 <th>Employee ID</th>
+                <th>SBU</th>
                 <th>Department</th>
                 <th>Role</th>
                 <th>Last Login</th>

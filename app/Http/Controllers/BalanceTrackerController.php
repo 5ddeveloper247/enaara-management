@@ -17,17 +17,28 @@ class BalanceTrackerController extends Controller
         $this->balanceTrackerService = $balanceTrackerService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         if (!validatePermissions('admin/balance-tracker')) {
             abort(403, 'Unauthorized action.');
         }
 
-        $balances = $this->balanceTrackerService->getBalances();
-        $organizations = Organization::where('is_active', true)->orderBy('name')->get();
-        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $organization = $request->query('organization');
+        $department = $request->query('department');
 
-        return view('admin.balance-tracker.index', compact('balances', 'organizations', 'departments'));
+        $data = $this->balanceTrackerService->getBalances($organization, $department);
+        $balances = $data['balances'];
+        $leaveTypes = $data['leaveTypes'];
+        
+        $organizations = Organization::where('is_active', true)->orderBy('name', 'asc')->get();
+        $departments = Department::where('is_active', true)->orderBy('name', 'asc')->get();
+
+        return view('admin.balance-tracker.index', compact(
+            'balances',
+            'leaveTypes',
+            'organizations',
+            'departments'
+        ));
     }
 
     public function adjustBalance(BalanceTrackerAdjustRequest $request)
@@ -64,9 +75,11 @@ class BalanceTrackerController extends Controller
         $organization = $request->query('organization');
         $department = $request->query('department');
 
-        $balances = $this->balanceTrackerService->getBalances($organization, $department);
+        $data = $this->balanceTrackerService->getBalances($organization, $department);
+        $balances = $data['balances'];
+        $leaveTypes = $data['leaveTypes'];
 
-        return response()->view('admin.balance-tracker.export', compact('balances'))
+        return response()->view('admin.balance-tracker.export', compact('balances', 'leaveTypes'))
             ->header('Content-Type', 'application/vnd.ms-excel')
             ->header('Content-Disposition', 'attachment; filename="Balance_Tracker_Export_' . now()->format('Y-m-d') . '.xls"');
     }

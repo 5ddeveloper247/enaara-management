@@ -7,7 +7,7 @@ use App\Services\ShiftPlannerService;
 use App\Http\Requests\Admin\ShiftPlanner\ShiftPlannerRequest;
 use App\Models\ShiftPlanner;
 use App\Models\Employee;
-use App\Models\ShiftRoaster;
+use App\Models\ShiftRosterEntry;
 class ShiftPlannerController extends Controller
 {
     protected $shiftPlannerService;
@@ -32,10 +32,13 @@ class ShiftPlannerController extends Controller
             ->orderBy('name')
             ->get();
 
-        $rosters = ShiftRoaster::with(['employee.department', 'shift'])
+        $rosters = ShiftRosterEntry::with(['employee.department', 'shift'])
             ->orderBy('roster_date', 'asc')
             ->get();
-        return view('admin.shift-planner.index', compact('employees', 'shifts', 'rosters'));
+
+        $departments = \App\Models\Department::orderBy('name')->get();
+
+        return view('admin.shift-planner.index', compact('employees', 'shifts', 'rosters', 'departments'));
     }
 
     public function show($id)

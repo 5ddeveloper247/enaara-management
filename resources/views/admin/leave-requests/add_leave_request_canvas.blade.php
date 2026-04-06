@@ -41,19 +41,16 @@
                 <!-- Leave Balance Display -->
                 <div class="p-3 rounded-3 border mb-3" style="border-color: #ffffff1a !important;">
                     <small class="opacity-75 text-white d-block mb-2">Current Leave Balance</small>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="small">Annual: <strong id="balanceAnnual">0</strong> days</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="small">Sick: <strong id="balanceSick">0</strong> days</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="small">Casual: <strong id="balanceCasual">0</strong> days</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="small">Comp-Off: <strong id="balanceCompOff">0</strong> days</div>
-                        </div>
+                    <div class="row g-2" id="leaveBalanceContainer">
+                        @isset($personalQuota)
+                            @foreach($personalQuota as $quota)
+                                <div class="col-6">
+                                    <div class="small">{{ $quota['type'] }}: <strong>{{ $quota['remaining'] }}</strong> days</div>
+                                </div>
+                            @endforeach
+                        @else
+                            <div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>
+                        @endisset
                     </div>
                 </div>
             </div>
@@ -133,9 +130,8 @@
                 <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                     <div class="small opacity-75 text-white mb-2">This request will be routed through:</div>
                     <div class="small">
-                        <div class="mb-1">1. Supervisor → Team workload check</div>
-                        <div class="mb-1">2. HR/Dept Head → Leave balance verification</div>
-                        <div>3. Super Admin → Final approval (if required)</div>
+                        <div class="mb-1">1. Supervisor → Leave Recommendation</div>
+                        <div class="mb-1">2. Dept Head → Leave Approval</div>
                     </div>
                 </div>
             </div>

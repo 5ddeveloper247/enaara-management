@@ -1,5 +1,5 @@
-{{-- STEP 3: Armed Forces --}}
-<div class="step" id="step-3">
+{{-- STEP 4: Armed Forces --}}
+<div class="step" id="step-4">
     <div class="section-title">Section C — Serving / Ex Armed Forces Personnel / Deputationist</div>
     <div class="row g-3">
         <div class="col-md-6">

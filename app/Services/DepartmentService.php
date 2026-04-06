@@ -30,10 +30,12 @@ class DepartmentService
     {
         $total = Department::count();
         $active = Department::where('is_active', true)->count();
+        $inactive = Department::where('is_active', false)->count();
 
         return [
             'total' => $total,
             'active' => $active,
+            'inactive' => $inactive,
             'active_percentage' => $total > 0 ? (int) round(($active / $total) * 100) : 0,
         ];
     }
@@ -52,5 +54,10 @@ class DepartmentService
     {
         $department->update($data);
         return $department->fresh(['organization', 'sbu', 'parent']);
+    }
+
+    public function destroy(Department $department): bool
+    {
+        return $department->delete();
     }
 }

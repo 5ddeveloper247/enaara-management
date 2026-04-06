@@ -48,23 +48,23 @@
                                     $menuUrl = route($routePath);
                                     $currentRoute = request()->route() ? request()->route()->getName() : '';
                                     if ($currentRoute) {
-                                        $isActive = $currentRoute === $routePath || strpos($currentRoute, $routePath . '.') === 0;
+                                        $isActive = $currentRoute === $routePath || (request()->routeIs($routePath . '.*') && !str_contains($currentRoute, $routePath . '.floor'));
                                     } else {
                                         $currentPath = request()->path();
                                         $menuPath = ltrim(str_replace('.', '/', $routePath), '/');
-                                        $isActive = $currentPath === $menuPath || strpos($currentPath, $menuPath . '/') === 0;
+                                        $isActive = request()->is($menuPath) || request()->is($menuPath . '/*');
                                     }
                                 } catch (\Exception $e) {
                                     $menuUrl = url('/' . str_replace('.', '/', $routePath));
                                     $currentPath = request()->path();
                                     $menuPath = ltrim(str_replace('.', '/', $routePath), '/');
-                                    $isActive = $currentPath === $menuPath || strpos($currentPath, $menuPath . '/') === 0 || request()->is($menuPath . '*');
+                                    $isActive = request()->is($menuPath) || request()->is($menuPath . '/*');
                                 }
                             } else {
                                 $menuUrl = url($routePath);
                                 $currentPath = request()->path();
                                 $menuPath = ltrim($routePath, '/');
-                                $isActive = $currentPath === $menuPath || strpos($currentPath, $menuPath . '/') === 0 || request()->is($menuPath . '*');
+                                $isActive = request()->is($menuPath) || request()->is($menuPath . '/*');
                             }
                             
                             $iconClass = $menuItem->css_class ?? 'bi bi-people';
@@ -203,11 +203,22 @@
 
     <div class="sidebar-footer p-4">
         <div class="d-flex flex-column align-items-center text-center">
+            @php
+                $currentUser = Auth::user();
+                $avatarImgUrl = null;
+                if ($currentUser && $currentUser->employee) {
+                    $photo = $currentUser->employee->mediaFiles()->where('file_type', 'photo')->first();
+                    if ($photo && $photo->file_path) {
+                        $avatarImgUrl = asset('storage/' . $photo->file_path);
+                    }
+                }
+                $fallbackUrl = 'https://ui-avatars.com/api/?name=' . urlencode($currentUser->name ?? 'User') . '&background=e6c673&color=000&size=80';
+            @endphp
             <div class="mb-2">
-                <img src="{{ asset('images/profile-placeholder.png') }}" alt="Profile"
+                <img src="{{ $avatarImgUrl ?? $fallbackUrl }}" alt="Profile"
                     class="rounded-circle border-2"
                     style="width: 50px; height: 50px; object-fit: cover; border-color: var(--primary-color) !important;"
-                    onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'User') }}&background=e6c673&color=000&size=80'">
+                    onerror="this.src='{{ $fallbackUrl }}'">
             </div>
             <h6 class="text-white fw-normal mb-0 small">{{ Auth::user()->name ?? 'Admin User' }}</h6>
             <a href="{{ route('logout') }}"

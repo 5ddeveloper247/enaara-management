@@ -1,9 +1,9 @@
-{{-- STEP 2: Police Verification --}}
-<div class="step" id="step-2">
+{{-- STEP 3: Police Verification --}}
+<div class="step" id="step-3">
     <div class="section-title">Section B — Police Verification Information <small class="text-muted fw-normal">(Employee Only)</small></div>
     <div class="row g-3">
         <div class="col-12">
-            <label class="form-label">Verification Status</label>
+            <label class="form-label">Verification Status <span class="text-danger">*</span></label>
             <div class="d-flex gap-3 mt-1">
                 <div class="form-check">
                     <input class="check-input" type="radio" name="verification_status" value="Cleared">

@@ -66,26 +66,55 @@
             });
 
             $(document).on('change', '.status-toggle', function() {
-                var checkbox = $(this);
-                var id = checkbox.data('module-id');
-                var showInMenu = checkbox.is(':checked');
-                var row = checkbox.closest('tr');
-                $.ajax({
-                    url: moduleStatusUrl + '/' + id + '/status',
-                    method: 'PATCH',
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                    data: JSON.stringify({ show_in_menu: showInMenu }),
-                    success: function() {
-                        row.attr('data-status', showInMenu ? 'active' : 'inactive');
-                        var totalActive = parseInt($('#totalActive').text(), 10) || 0;
-                        var totalInactive = parseInt($('#totalInactive').text(), 10) || 0;
-                        if (showInMenu) { totalActive += 1; totalInactive -= 1; } else { totalActive -= 1; totalInactive += 1; }
-                        $('#totalActive').text(Math.max(0, totalActive));
-                        $('#totalInactive').text(Math.max(0, totalInactive));
-                    },
-                    error: function() {
-                        checkbox.prop('checked', !showInMenu);
-                    }
+                var checkbox    = $(this);
+                var id          = checkbox.data('module-id');
+                var showInMenu  = checkbox.is(':checked');
+                var row         = checkbox.closest('tr');
+
+                // Revert until confirmed
+                checkbox.prop('checked', !showInMenu);
+
+                Swal.fire({
+                    title: showInMenu ? 'Show in Menu?' : 'Hide from Menu?',
+                    text:  showInMenu ? 'This module will appear in the sidebar menu.' : 'This module will be hidden from the sidebar menu.',
+                    icon:  'question',
+                    showCancelButton: true,
+                    confirmButtonColor: showInMenu ? '#012445' : '#dc3545',
+                    cancelButtonColor:  '#6c757d',
+                    confirmButtonText:  showInMenu ? 'Yes, show it!' : 'Yes, hide it!',
+                }).then(function(result) {
+                    if (!result.isConfirmed) return;
+
+                    checkbox.prop('checked', showInMenu);
+
+                    $.ajax({
+                        url:    moduleStatusUrl + '/' + id + '/status',
+                        method: 'PATCH',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                        data:   JSON.stringify({ show_in_menu: showInMenu }),
+                        success: function() {
+                            row.attr('data-status', showInMenu ? 'active' : 'inactive');
+                            var totalActive   = parseInt($('#totalActive').text(),   10) || 0;
+                            var totalInactive = parseInt($('#totalInactive').text(), 10) || 0;
+                            if (showInMenu) { totalActive += 1; totalInactive -= 1; }
+                            else            { totalActive -= 1; totalInactive += 1; }
+                            $('#totalActive').text(Math.max(0, totalActive));
+                            $('#totalInactive').text(Math.max(0, totalInactive));
+
+                            Swal.fire({
+                                title: showInMenu ? 'Shown in Menu!' : 'Hidden from Menu!',
+                                text:  showInMenu ? 'Module will now appear in the sidebar.' : 'Module is now hidden from the sidebar.',
+                                icon:  'success',
+                                confirmButtonColor: '#012445',
+                                timer: 2000,
+                                timerProgressBar: true,
+                            });
+                        },
+                        error: function() {
+                            checkbox.prop('checked', !showInMenu);
+                            Swal.fire('Error', 'Status update failed. Please try again.', 'error');
+                        }
+                    });
                 });
             });
 

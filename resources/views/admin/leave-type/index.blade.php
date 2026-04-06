@@ -134,6 +134,9 @@
                                         <button type="button" class="btn btn-sm btn-outline-primary edit-leave-type-btn" data-bs-toggle="offcanvas" data-bs-target="#leaveTypeEditCanvas" data-leave-type-id="{{ $lt->id }}">
                                             <i class="bi bi-pencil me-1"></i>Edit
                                         </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-leave-type-btn ms-1" data-leave-type-id="{{ $lt->id }}">
+                                            <i class="bi bi-trash me-1"></i>Delete
+                                        </button>
                                     </td>
                                 </tr>
                             @empty
@@ -177,6 +180,68 @@
                     }
                 });
             }
+
+            // Delete Leave Type Handler
+            var leaveTypeDestroyUrl = '{{ route("admin.leave.type.destroy", ":id") }}';
+
+            $(document).on('click', '.delete-leave-type-btn', function(e) {
+                e.preventDefault();
+                
+                const leaveTypeId = $(this).data('leave-type-id');
+                const deleteUrl = leaveTypeDestroyUrl.replace(':id', leaveTypeId);
+                
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: deleteUrl,
+                            type: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        title: 'Deleted!',
+                                        text: response.message || 'Leave type has been deleted successfully.',
+                                        icon: 'success',
+                                        confirmButtonColor: '#3085d6'
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: response.message || 'An error occurred while deleting the leave type.',
+                                        icon: 'error',
+                                        confirmButtonColor: '#3085d6'
+                                    });
+                                }
+                            },
+                            error: function(xhr) {
+                                let errorMessage = 'Failed to delete leave type.';
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: errorMessage,
+                                    icon: 'error',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
             
             function loadDepartments(organizationId, selectedDepartmentId) {
                 if (!organizationId) {
@@ -335,32 +400,50 @@
                     success: function(response) {
                         if (response.success) {
                             var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('leaveTypeEditCanvas'));
-                            if (offcanvas) {
-                                offcanvas.hide();
-                            }
-                            location.reload();
+                            if (offcanvas) offcanvas.hide();
+
+                            Swal.fire({
+                                title: formMode === 'add' ? 'Created!' : 'Updated!',
+                                text: response.message || (formMode === 'add' ? 'Leave type created successfully.' : 'Leave type updated successfully.'),
+                                icon: 'success',
+                                confirmButtonColor: '#012445',
+                                timer: 2000,
+                                timerProgressBar: true,
+                            }).then(function() {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', response.message || 'Something went wrong.', 'error');
                         }
                     },
                     error: function(xhr) {
                         if (xhr.status === 422) {
                             var errors = xhr.responseJSON.errors;
+                            var errorList = '';
                             var fieldMap = {
                                 'organization_id': 'editOrganizationId',
-                                'department_id': 'editDepartmentId',
-                                'name': 'editLeaveTypeName',
-                                'code': 'editLeaveTypeCode',
-                                'annual_quota': 'editAnnualQuota',
-                                'is_active': 'editLeaveTypeIsActive'
+                                'department_id':   'editDepartmentId',
+                                'name':            'editLeaveTypeName',
+                                'code':            'editLeaveTypeCode',
+                                'annual_quota':    'editAnnualQuota',
+                                'is_active':       'editLeaveTypeIsActive'
                             };
                             $.each(errors, function(field, messages) {
                                 var fieldId = '#' + (fieldMap[field] || 'edit' + field);
                                 var errorId = fieldId + 'Error';
                                 $(fieldId).addClass('is-invalid');
                                 $(errorId).text(messages[0]).show();
+                                errorList += '<li>' + messages[0] + '</li>';
+                            });
+                            Swal.fire({
+                                title: 'Please check the following:',
+                                html: '<ul class="text-start ps-3 mb-0">' + errorList + '</ul>',
+                                icon: 'warning',
+                                confirmButtonColor: '#012445',
                             });
                         } else {
                             var errorMsg = formMode === 'add' ? 'Failed to create leave type. Please try again.' : 'Failed to update leave type. Please try again.';
-                            alert(errorMsg);
+                            Swal.fire('Error', errorMsg, 'error');
                         }
                     }
                 });

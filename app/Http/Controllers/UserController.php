@@ -104,4 +104,24 @@ class UserController extends Controller
             return response()->json(['success' => false, 'message' => 'Something went wrong.'], 500);
         }
     }
+
+    public function resetPassword(Request $request, int $id): JsonResponse
+    {
+        if (! validatePermissions('admin/users')) {
+            return response()->json(['success' => false, 'message' => 'You do not have permission to reset passwords.'], 403);
+        }
+
+        try {
+            $this->userService->sendTemporaryPasswordReset($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'A temporary password has been emailed to the user. They must sign in and set a new password.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('User password reset failed', ['user_id' => $id, 'error' => $e->getMessage()]);
+
+            return response()->json(['success' => false, 'message' => 'Something went wrong: ' . $e->getMessage()], 500);
+        }
+    }
 }

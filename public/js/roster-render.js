@@ -1,13 +1,7 @@
 (function() {
-    var shiftIcons = {
-        morning: { icon: 'bi-sun-fill', iconClass: 'text-warning' },
-        evening: { icon: 'bi-cloud-sun-fill', iconClass: 'text-primary' },
-        night: { icon: 'bi-moon-stars-fill', iconClass: 'text-info' }
-    };
-
     var rosterViewDate = new Date();
     var rosterWeekIndex = 1;
-    var assignmentOverrides = {};
+    var rosterData = null;
 
     function getDaysInMonth(year, month) {
         return new Date(year, month + 1, 0).getDate();
@@ -31,19 +25,31 @@
         return n < 10 ? '0' + n : String(n);
     }
 
+    function rosterDateIso(day) {
+        var y = rosterViewDate.getFullYear();
+        var m = rosterViewDate.getMonth() + 1;
+        var mm = m < 10 ? '0' + m : String(m);
+        var dd = day < 10 ? '0' + day : String(day);
+        return y + '-' + mm + '-' + dd;
+    }
+
+    function csrfToken() {
+        var m = document.querySelector('meta[name="csrf-token"]');
+        return m ? m.getAttribute('content') : '';
+    }
+
     function pillHtml(s) {
-        var type = s.shiftType in shiftIcons ? s.shiftType : 'morning';
-        var opt = shiftIcons[type];
+        var typeClass = s.shiftType && s.shiftType !== 'general' ? ' shift-' + s.shiftType : '';
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
         var lateBlock = s.lateCheckIn ? '<span class="shift-status-late"><i class="bi bi-exclamation-circle-fill"></i> Late check-in</span>' : '';
-        return '<div class="shift-pill shift-' + type + lateClass + '">' +
+        var floor = (s.floor && String(s.floor).trim()) ? s.floor : '—';
+        return '<div class="shift-pill' + typeClass + lateClass + '">' +
             '<div class="shift-pill-top">' +
             '<span class="shift-time">' + s.timeStart + ' – ' + s.timeEnd + '</span>' +
-            '<span class="shift-icon ' + opt.iconClass + '"><i class="bi ' + opt.icon + '"></i></span>' +
             '</div>' +
             '<div class="shift-pill-meta">' +
             '<span class="shift-check">Check-in ' + s.checkIn + ' • Check-out ' + s.checkOut + '</span>' +
-            '<span class="shift-floor">' + s.floor + '</span>' + lateBlock +
+            '<span class="shift-floor">' + floor + '</span>' + lateBlock +
             '</div></div>';
     }
 
@@ -104,7 +110,7 @@
                 var daysInMonth = getDaysInMonth(year, month);
                 rosterWeekIndex = Math.ceil(daysInMonth / 7);
             }
-            renderRosterTable();
+            loadRosterGrid();
         });
         if (nextBtn) nextBtn.addEventListener('click', function() {
             var year = rosterViewDate.getFullYear();
@@ -117,29 +123,29 @@
                 rosterViewDate.setMonth(rosterViewDate.getMonth() + 1);
                 rosterWeekIndex = 1;
             }
-            renderRosterTable();
+            loadRosterGrid();
         });
         if (todayBtn) todayBtn.addEventListener('click', function() {
             var now = new Date();
             rosterViewDate = new Date(now.getFullYear(), now.getMonth(), 1);
             var day = now.getDate();
             rosterWeekIndex = getWeekIndexForDay(day, now.getFullYear(), now.getMonth());
-            renderRosterTable();
+            loadRosterGrid();
         });
     }
 
-    function renderRosterTable() {
-        if (typeof ProjectData === 'undefined' || !ProjectData.roster) return;
-        var r = ProjectData.roster;
+    function renderRosterTableFromData() {
+        var r = rosterData;
+        if (!r || !r.departments || !r.employees) return;
+
         var depts = r.departments;
         var employees = r.employees;
-        var shifts = (typeof r.getShifts === 'function' ? r.getShifts() : r.shifts) || [];
+        var shifts = r.shifts || [];
         var shiftsByEmpDay = {};
         shifts.forEach(function(s) {
             var k = s.employeeId + '-' + s.day;
             if (!shiftsByEmpDay[k]) shiftsByEmpDay[k] = s;
         });
-        for (var ok in assignmentOverrides) shiftsByEmpDay[ok] = assignmentOverrides[ok];
 
         var year = rosterViewDate.getFullYear();
         var month = rosterViewDate.getMonth();
@@ -164,30 +170,31 @@
         depts.forEach(function(dept) {
             var deptTr = document.createElement('tr');
             deptTr.className = 'roster-dept-row';
-            deptTr.setAttribute('data-dept-id', dept.id);
+            deptTr.setAttribute('data-dept-id', String(dept.id));
             deptTr.innerHTML = '<td class="text-center">' +
                 '<button type="button" class="btn btn-sm btn-link p-0 text-dark roster-dept-toggle" data-dept-id="' + dept.id + '" aria-expanded="true" aria-label="Collapse ' + dept.name + '">' +
                 '<i class="bi bi-chevron-down"></i></button></td>' +
                 '<td colspan="' + colspan + '" class="fw-semibold">' + dept.name + '</td>';
             tbody.appendChild(deptTr);
 
-            employees.filter(function(e) { return e.departmentId === dept.id; }).forEach(function(emp) {
+            employees.filter(function(e) { return Number(e.departmentId) === Number(dept.id); }).forEach(function(emp) {
                 var tr = document.createElement('tr');
                 tr.className = 'roster-emp-row';
-                tr.setAttribute('data-dept-id', dept.id);
-                tr.innerHTML = '<td></td><td class="text-muted">' + emp.name + '</td>';
+                tr.setAttribute('data-dept-id', String(dept.id));
+                tr.innerHTML = '<td></td><td class="text-muted">' + escapeHtml(emp.name) + '</td>';
                 days.forEach(function(d) {
                     var k = emp.id + '-' + d;
                     var s = shiftsByEmpDay[k];
                     var td = document.createElement('td');
                     td.className = 'roster-day-cell shift-cell';
-                    td.setAttribute('data-employee-id', emp.id);
-                    td.setAttribute('data-day', d);
+                    td.setAttribute('data-employee-id', String(emp.id));
+                    td.setAttribute('data-day', String(d));
                     if (s) {
                         td.setAttribute('data-shift', JSON.stringify(s));
                         td.innerHTML = pillHtml(s);
                     } else {
                         td.classList.add('roster-day-cell-empty');
+                        td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100" style="min-height:2rem"><i class="bi bi-plus-lg"></i></span>';
                     }
                     tr.appendChild(td);
                 });
@@ -207,88 +214,242 @@
         });
     }
 
+    function escapeHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function loadRosterGrid() {
+        var gridUrl = window.rosterGridUrl;
+        if (!gridUrl) {
+            return;
+        }
+        var year = rosterViewDate.getFullYear();
+        var month = rosterViewDate.getMonth() + 1;
+        var url = gridUrl + '?year=' + year + '&month=' + month + '&week=' + rosterWeekIndex;
+
+        fetch(url, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+        })
+            .then(function(res) { return res.json(); })
+            .then(function(json) {
+                if (!json.success) {
+                    rosterData = { departments: [], employees: [], shifts: [] };
+                    renderRosterTableFromData();
+                    return;
+                }
+                rosterData = json.data;
+                renderRosterTableFromData();
+            })
+            .catch(function() {
+                rosterData = { departments: [], employees: [], shifts: [] };
+                renderRosterTableFromData();
+            });
+    }
+
     function formatRosterDateLabel(day, year, month) {
         var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         return padDay(day) + ' ' + months[month] + ' ' + year + ' (Day ' + day + ')';
     }
 
-    function openRosterShiftCanvas(employeeId, employeeName, day, shift) {
+    function openRosterShiftCanvas(employeeId, employeeName, deptName, day, shift) {
         var year = rosterViewDate.getFullYear();
         var month = rosterViewDate.getMonth();
         var canvas = document.getElementById('rosterShiftCanvas');
         var titleEl = document.getElementById('rosterShiftCanvasTitle');
-        var editModeEl = document.getElementById('rosterShiftEditMode');
         var deleteWrap = document.getElementById('rosterShiftDeleteWrap');
         var saveBtnText = document.getElementById('rosterShiftSaveBtnText');
+        var rosterIdEl = document.getElementById('rosterShiftRosterId');
+        var shiftSelect = document.getElementById('rosterShiftPlannerId');
+        var notesEl = document.getElementById('rosterShiftNotes');
+        var startTimeEl = document.getElementById('rosterStartTime');
+        var endTimeEl = document.getElementById('rosterEndTime');
+        var checkInEl = document.getElementById('rosterCheckIn');
+        var checkOutEl = document.getElementById('rosterCheckOut');
+        var floorEl = document.getElementById('rosterFloor');
+        var lateCheckInEl = document.getElementById('rosterLateCheckIn');
+
         if (!canvas) return;
         document.getElementById('rosterShiftEmployeeId').value = employeeId;
         document.getElementById('rosterShiftDay').value = day;
         document.getElementById('rosterShiftEmployeeName').textContent = employeeName;
+        document.getElementById('rosterShiftDepartmentName').textContent = deptName || '';
         document.getElementById('rosterShiftDateLabel').textContent = formatRosterDateLabel(day, year, month);
         var iconEl = document.getElementById('rosterShiftCanvasIcon');
         if (shift) {
-            editModeEl.value = '1';
+            if (rosterIdEl) rosterIdEl.value = shift.rosterId || '';
             if (iconEl) iconEl.innerHTML = '<i class="bi bi-pencil-square me-2"></i>';
             if (titleEl) titleEl.textContent = 'Edit Shift';
             if (saveBtnText) saveBtnText.textContent = 'Update';
             if (deleteWrap) deleteWrap.style.display = 'block';
-            document.getElementById('rosterShiftType').value = shift.shiftType || 'general';
-            document.getElementById('rosterShiftStartTime').value = shift.timeStart || '09:00';
-            document.getElementById('rosterShiftEndTime').value = shift.timeEnd || '17:00';
-            document.getElementById('rosterShiftCheckIn').value = shift.checkIn || '';
-            document.getElementById('rosterShiftCheckOut').value = shift.checkOut || '';
-            document.getElementById('rosterShiftFloor').value = shift.floor || '';
-            document.getElementById('rosterShiftLateCheckIn').checked = !!shift.lateCheckIn;
+            if (shiftSelect) shiftSelect.value = String(shift.shiftPlannerId || '');
+            if (startTimeEl) startTimeEl.value = shift.timeStart || '';
+            if (endTimeEl) endTimeEl.value = shift.timeEnd || '';
+            if (checkInEl) checkInEl.value = shift.checkIn || '';
+            if (checkOutEl) checkOutEl.value = shift.checkOut || '';
+            if (floorEl) floorEl.value = shift.floor || '';
+            if (lateCheckInEl) lateCheckInEl.checked = !!shift.lateCheckIn;
+            if (notesEl) notesEl.value = shift.notes || '';
         } else {
-            editModeEl.value = '0';
+            if (rosterIdEl) rosterIdEl.value = '';
             if (iconEl) iconEl.innerHTML = '<i class="bi bi-plus-circle me-2"></i>';
             if (titleEl) titleEl.textContent = 'Add Shift';
             if (saveBtnText) saveBtnText.textContent = 'Save';
             if (deleteWrap) deleteWrap.style.display = 'none';
-            var r = typeof ProjectData !== 'undefined' && ProjectData.roster ? ProjectData.roster : null;
-            var t = r && r.shiftTemplates && r.shiftTemplates.general ? r.shiftTemplates.general : { timeStart: '09:00', timeEnd: '17:00', checkInEarly: '08:55', checkInLate: '09:10', checkOutEarly: '17:00', checkOutLate: '17:05' };
-            document.getElementById('rosterShiftType').value = 'general';
-            document.getElementById('rosterShiftStartTime').value = t.timeStart;
-            document.getElementById('rosterShiftEndTime').value = t.timeEnd;
-            document.getElementById('rosterShiftCheckIn').value = t.checkInEarly || '';
-            document.getElementById('rosterShiftCheckOut').value = t.checkOutEarly || '';
-            document.getElementById('rosterShiftFloor').value = '';
-            document.getElementById('rosterShiftLateCheckIn').checked = false;
+            if (shiftSelect) shiftSelect.value = '';
+            if (startTimeEl) startTimeEl.value = '';
+            if (endTimeEl) endTimeEl.value = '';
+            if (checkInEl) checkInEl.value = '';
+            if (checkOutEl) checkOutEl.value = '';
+            if (floorEl) floorEl.value = '';
+            if (lateCheckInEl) lateCheckInEl.checked = false;
+            if (notesEl) notesEl.value = '';
         }
         var offcanvas = bootstrap.Offcanvas.getOrCreateInstance(canvas);
         offcanvas.show();
     }
 
     function saveRosterAssignment() {
+        var base = window.rosterUpdateUrlBase || '';
+        var storeUrl = window.rosterStoreUrl || '';
+        if (!base || !storeUrl) return;
+
         var employeeId = document.getElementById('rosterShiftEmployeeId').value;
         var day = parseInt(document.getElementById('rosterShiftDay').value, 10);
-        if (!employeeId || !day) return;
-        var key = employeeId + '-' + day;
-        assignmentOverrides[key] = {
-            employeeId: employeeId,
-            day: day,
-            shiftType: document.getElementById('rosterShiftType').value,
-            timeStart: document.getElementById('rosterShiftStartTime').value,
-            timeEnd: document.getElementById('rosterShiftEndTime').value,
-            checkIn: document.getElementById('rosterShiftCheckIn').value || document.getElementById('rosterShiftStartTime').value,
-            checkOut: document.getElementById('rosterShiftCheckOut').value || document.getElementById('rosterShiftEndTime').value,
-            floor: document.getElementById('rosterShiftFloor').value || '',
-            lateCheckIn: document.getElementById('rosterShiftLateCheckIn').checked
+        var shiftPlannerId = document.getElementById('rosterShiftPlannerId').value;
+        var rosterId = document.getElementById('rosterShiftRosterId').value;
+        var notes = document.getElementById('rosterShiftNotes').value.trim();
+
+        if (!employeeId || !day || !shiftPlannerId) return;
+
+        var payload = {
+            employee_id: parseInt(employeeId, 10),
+            shift_planner_id: parseInt(shiftPlannerId, 10),
+            roster_date: rosterDateIso(day),
+            start_time: document.getElementById('rosterStartTime').value,
+            end_time: document.getElementById('rosterEndTime').value,
+            check_in: document.getElementById('rosterCheckIn').value,
+            check_out: document.getElementById('rosterCheckOut').value,
+            floor: document.getElementById('rosterFloor').value,
+            late_check_in: document.getElementById('rosterLateCheckIn')?.checked ? 1 : 0
         };
-        renderRosterTable();
-        var canvas = document.getElementById('rosterShiftCanvas');
-        if (canvas) { var o = bootstrap.Offcanvas.getInstance(canvas); if (o) o.hide(); }
+        if (notes) payload.notes = notes;
+
+        console.log("Submitting Roster Assignment:", payload);
+
+        var url = rosterId ? (base + '/' + rosterId) : storeUrl;
+        var saveBtn = document.getElementById('rosterShiftSaveBtn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload),
+            credentials: 'same-origin'
+        })
+            .then(function(r) { 
+                return r.text().then(function(t) {
+                    var j = {};
+                    try { j = JSON.parse(t); } catch(ex) { console.error("Invalid JSON response:", t); }
+                    return { ok: r.ok, status: r.status, body: j };
+                });
+            })
+            .then(function(res) {
+                console.log("Roster Save Response:", res);
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i><span id="rosterShiftSaveBtnText">' + (rosterId ? 'Update' : 'Save') + '</span>';
+                }
+                
+                if (res.ok && res.body.success) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'success', title: 'Success', text: res.body.message, timer: 1500 });
+                    }
+                    var canvas = document.getElementById('rosterShiftCanvas');
+                    if (canvas) {
+                        var o = bootstrap.Offcanvas.getInstance(canvas);
+                        if (o) o.hide();
+                    }
+                    loadRosterGrid();
+                } else {
+                    var msg = 'Could not save assignment.';
+                    if (res.body && res.body.message) msg = res.body.message;
+                    if (res.status === 422 && res.body.errors) {
+                        msg = Object.values(res.body.errors).flat().join('\n');
+                    }
+                    
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    } else {
+                        alert(msg);
+                    }
+                }
+            })
+            .catch(function(err) {
+                console.error("AJAX Error:", err);
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i><span id="rosterShiftSaveBtnText">' + (rosterId ? 'Update' : 'Save') + '</span>';
+                }
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Network error or script failure.' });
+                }
+            });
     }
 
     function deleteRosterAssignment() {
-        var employeeId = document.getElementById('rosterShiftEmployeeId').value;
-        var day = document.getElementById('rosterShiftDay').value;
-        if (!employeeId || !day) return;
-        var key = employeeId + '-' + day;
-        delete assignmentOverrides[key];
-        renderRosterTable();
-        var canvas = document.getElementById('rosterShiftCanvas');
-        if (canvas) { var o = bootstrap.Offcanvas.getInstance(canvas); if (o) o.hide(); }
+        var base = window.rosterUpdateUrlBase || '';
+        var rosterId = document.getElementById('rosterShiftRosterId').value;
+        if (!base || !rosterId) return;
+
+        var url = base + '/' + rosterId;
+        var delBtn = document.getElementById('rosterShiftDeleteBtn');
+        if (delBtn) delBtn.disabled = true;
+
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+            .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
+            .then(function(res) {
+                if (delBtn) delBtn.disabled = false;
+                if (res.ok && res.body.success) {
+                    var canvas = document.getElementById('rosterShiftCanvas');
+                    if (canvas) {
+                        var o = bootstrap.Offcanvas.getInstance(canvas);
+                        if (o) o.hide();
+                    }
+                    loadRosterGrid();
+                } else {
+                    var msg = (res.body && res.body.message) ? res.body.message : 'Could not remove assignment.';
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    } else {
+                        alert(msg);
+                    }
+                }
+            })
+            .catch(function() {
+                if (delBtn) delBtn.disabled = false;
+            });
     }
 
     function bindRosterCanvasAndCells() {
@@ -302,14 +463,28 @@
                 var employeeId = td.getAttribute('data-employee-id');
                 var day = parseInt(td.getAttribute('data-day'), 10);
                 var shiftData = td.getAttribute('data-shift');
-                var shift = shiftData ? JSON.parse(shiftData) : null;
-                var empName = '';
-                var row = td.closest('tr');
-                if (row) {
-                    var nameCell = row.querySelector('td:nth-child(2)');
-                    if (nameCell) empName = nameCell.textContent.trim();
+                var shift = null;
+                if (shiftData) {
+                    try { shift = JSON.parse(shiftData); } catch (err) { shift = null; }
                 }
-                openRosterShiftCanvas(employeeId, empName, day, shift);
+                var empName = '';
+                var deptName = '';
+                if (rosterData && rosterData.employees) {
+                    var emp = rosterData.employees.find(function(e) { return String(e.id) === String(employeeId); });
+                    if (emp) {
+                        empName = emp.name;
+                        deptName = emp.departmentName;
+                    }
+                }
+                
+                if (!empName) {
+                    var row = td.closest('tr');
+                    if (row) {
+                        var nameCell = row.querySelector('td:nth-child(2)');
+                        if (nameCell) empName = nameCell.textContent.trim();
+                    }
+                }
+                openRosterShiftCanvas(employeeId, empName, deptName, day, shift);
             });
         }
         var saveBtn = document.getElementById('rosterShiftSaveBtn');
@@ -326,16 +501,44 @@
             deleteBtn._rosterBound = true;
             deleteBtn.addEventListener('click', function() { deleteRosterAssignment(); });
         }
+        var plannerSelect = document.getElementById('rosterShiftPlannerId');
+        if (plannerSelect && !plannerSelect._rosterBound) {
+            plannerSelect._rosterBound = true;
+            plannerSelect.addEventListener('change', function() {
+                var opt = this.options[this.selectedIndex];
+                if (opt && opt.value) {
+                    var start = opt.getAttribute('data-start');
+                    var end = opt.getAttribute('data-end');
+                    if (start) document.getElementById('rosterStartTime').value = start;
+                    if (end) document.getElementById('rosterEndTime').value = end;
+                    // Default check-in/out to start/end
+                    if (start) document.getElementById('rosterCheckIn').value = start;
+                    if (end) document.getElementById('rosterCheckOut').value = end;
+                } else {
+                    document.getElementById('rosterStartTime').value = '';
+                    document.getElementById('rosterEndTime').value = '';
+                    document.getElementById('rosterCheckIn').value = '';
+                    document.getElementById('rosterCheckOut').value = '';
+                }
+            });
+        }
     }
 
     function renderRoster() {
         var now = new Date();
         rosterViewDate = new Date(now.getFullYear(), now.getMonth(), 1);
         rosterWeekIndex = getWeekIndexForDay(now.getDate(), now.getFullYear(), now.getMonth());
-        bindRosterToolbar();
-        renderRosterTable();
+        if (!window._rosterToolbarBound) {
+            bindRosterToolbar();
+            window._rosterToolbarBound = true;
+        }
         bindRosterCanvasAndCells();
+        loadRosterGrid();
     }
+
+    window.loadRosterGrid = loadRosterGrid;
+    window.reloadRosterGrid = loadRosterGrid;
+    window.initRosterCalendar = loadRosterGrid;
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', renderRoster);

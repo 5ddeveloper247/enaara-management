@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\ShiftRoster;
+namespace App\Http\Requests\Admin\ShiftRoster;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -23,6 +23,13 @@ class ShiftRosterRequest extends FormRequest
             'employee_id' => ['required', 'integer', 'exists:employees,id'],
             'shift_planner_id' => ['required', 'integer', 'exists:shift_planners,id'],
             'roster_date' => ['required', 'date'],
+
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
+            'check_in' => ['nullable', 'date_format:H:i'],
+            'check_out' => ['nullable', 'date_format:H:i'],
+            'floor' => ['nullable', 'string', 'max:255'],
+            'late_check_in' => ['nullable', 'boolean'],
 
             'status' => ['nullable', 'integer', 'in:0,1'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -57,6 +64,7 @@ class ShiftRosterRequest extends FormRequest
     {
         $this->merge([
             'status' => $this->has('status') ? $this->status : 1,
+            'late_check_in' => $this->has('late_check_in') ? true : false,
         ]);
     }
 }

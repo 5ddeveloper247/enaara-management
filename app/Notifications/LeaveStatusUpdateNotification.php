@@ -61,6 +61,7 @@ class LeaveStatusUpdateNotification extends Notification implements ShouldQueue
             'leave_request_id' => $this->leaveRequest->id,
             'status' => $this->leaveRequest->status,
             'actor_name' => $this->actorName,
+            'url' => '/admin/my-leaves',
         ];
     }
 }

@@ -5,6 +5,11 @@
     </div>
     <div class="offcanvas-body">
 
+        <div class="text-center mb-4">
+            <img id="userCanvasAvatar" src="https://ui-avatars.com/api/?name=User&background=e6c673&color=000&size=80" alt="Avatar" class="rounded-circle border border-2" style="width: 80px; height: 80px; object-fit: cover; border-color: var(--primary-color) !important;">
+            <div class="small mt-2 text-white-50">Profile image is managed via Employee record</div>
+        </div>
+
         <div id="userFormAlert" class="alert d-none mb-3 small fw-semibold" role="alert"></div>
 
         <form id="userForm" novalidate>
@@ -19,16 +24,31 @@
                     style="border-color:#ffffff42; background-color:transparent !important;" required>
                     <option value="">— Select an employee —</option>
                     @foreach($employees as $emp)
+                        @php
+                            $prefillEmail = trim((string) ($emp->email ?: $emp->contact?->email ?? ''));
+                            $sbuName      = $emp->sbu?->name ?? '-';
+                            $photo        = $emp->mediaFiles->where('file_type', 'photo')->first();
+                            $avatarUrl    = $photo && $photo->file_path ? asset('storage/' . $photo->file_path) : '';
+                        @endphp
                         <option value="{{ $emp->id }}"
                             data-name="{{ $emp->full_name }}"
-                            data-email="{{ $emp->email ?? '' }}"
+                            data-email="{{ e($prefillEmail) }}"
+                            data-sbu="{{ e($sbuName) }}"
+                            data-avatar="{{ $avatarUrl }}"
                             data-role="{{ $emp->role?->name ?? '' }}">
                             {{ $emp->employee_code }} — {{ $emp->full_name }}
                         </option>
                     @endforeach
                 </select>
-                <small class="opacity-50">Only employees without an account are listed. Auto-fills name & email.</small>
+                <small class="opacity-50">Only employees without an account are listed. Auto-fills name, email & SBU.</small>
                 <div class="field-error text-danger small mt-1 d-none" id="err_employee_id"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">SBU</label>
+                <input type="text" class="form-control form-control-sm" id="userAssignedSbu"
+                    placeholder="SBU will auto-fill from employee registration"
+                    style="background:transparent;border-color:#ffffff42;color:#fff;" readonly>
             </div>
 
             <hr class="my-3" style="border-color:#ffffff30 !important">
@@ -45,8 +65,9 @@
             <div class="mb-3">
                 <label class="form-label small fw-semibold">Email Address <span class="text-danger">*</span></label>
                 <input type="email" class="form-control form-control-sm" id="userEmail" name="email"
-                    placeholder="user@example.com" autocomplete="off"
+                    placeholder="Work email (filled from employee if available)" autocomplete="off"
                     style="background:transparent;border-color:#ffffff42;color:#fff;">
+                <small class="opacity-50 d-none mt-1" id="emailManualHint">No email on employee record — enter one to create the account.</small>
                 <div class="field-error text-danger small mt-1 d-none" id="err_email"></div>
             </div>
 
@@ -57,27 +78,9 @@
                     style="background:transparent;border-color:#ffffff42;color:#fff;" readonly>
             </div>
 
-            <hr class="my-3" style="border-color:#ffffff30 !important">
-
-            {{-- Password --}}
-            <div id="passwordSection">
-                <p class="small fw-semibold mb-2">Password <span id="passwordRequired" class="text-danger">*</span></p>
-                <div class="mb-3">
-                    <label class="form-label small opacity-75">New Password</label>
-                    <input type="password" class="form-control form-control-sm" id="userPassword" name="password"
-                        placeholder="Min. 8 chars, upper+lower+number"
-                        style="background:transparent;border-color:#ffffff42;color:#fff;">
-                    <div class="field-error text-danger small mt-1 d-none" id="err_password"></div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small opacity-75">Confirm Password</label>
-                    <input type="password" class="form-control form-control-sm" id="userPasswordConfirm" name="password_confirmation"
-                        placeholder="Re-enter password"
-                        style="background:transparent;border-color:#ffffff42;color:#fff;">
-                    <div class="field-error text-danger small mt-1 d-none" id="err_password_confirmation"></div>
-                </div>
-                <small class="opacity-50 d-block mb-2" id="passwordHint">Must be at least 8 characters with uppercase, lowercase and numbers.</small>
-            </div>
+            <p class="small opacity-75 mb-0" id="createUserPasswordNote">
+                A temporary password will be emailed to this address. The user must sign in and set a new password.
+            </p>
 
             {{-- Submit --}}
             <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color:#ffffff30 !important">

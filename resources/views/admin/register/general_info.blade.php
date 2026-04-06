@@ -3,99 +3,28 @@
     <div class="section-title">Section A — General Information</div>
     <div class="row g-3">
 
-        <div class="col-md-4">
-            <label class="form-label">TAS ID</label>
-            <input type="text" name="biometric_id" class="form-control" placeholder="Biometric ID">
-        </div>
-
-        <div class="col-12">
-            <div class="p-3">
-                <label class="form-label fw-semibold mb-2">Category</label>
-
-                <div class="d-flex flex-wrap gap-4 mb-3">
-                    <div class="form-check d-flex align-items-center gap-1">
-                        <input class="check-input " type="radio" name="employment_category" id="catIntern" value="intern">
-                        <label class="form-check-label" for="catIntern">Intern</label>
-                    </div>
-                    <div class="form-check d-flex align-items-center gap-1">
-                        <input class="check-input " type="radio" name="employment_category" id="catContractual" value="contractual">
-                        <label class="form-check-label" for="catContractual">Contractual</label>
-                    </div>
-                    <div class="form-check d-flex align-items-center gap-1">
-                        <input class="check-input " type="radio" name="employment_category" id="catEngagement" value="engagement">
-                        <label class="form-check-label" for="catEngagement">Engagement</label>
-                    </div>
-                </div>
-
-                <div class="row g-3" id="internFields" style="display:none;">
-                    <div class="col-md-4">
-                        <label class="form-label">Intern Type</label>
-                        <select name="intern_type" class="form-select">
-                            <option value="">Select</option>
-                            <option value="paid">Paid</option>
-                            <option value="unpaid">Unpaid</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Intern Duration</label>
-                        <input type="text" name="intern_duration" class="form-control" placeholder="e.g. 3 Months">
-                    </div>
-                </div>
-
-                <div class="row g-3" id="contractualFields" style="display:none;">
-                    <div class="col-md-4">
-                        <label class="form-label">Contract Type</label>
-                        <select name="contractual_type" class="form-select">
-                            <option value="">Select</option>
-                            <option value="time_bound">Time Bound</option>
-                            <option value="open">Open</option>
-                            <option value="project_based">Project-Based Consultants</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row g-3" id="engagementFields" style="display:none;">
-                    <div class="col-md-4">
-                        <label class="form-label">Engagement Mode</label>
-                        <select name="engagement_mode" id="engagementMode" class="form-select">
-                            <option value="">Select</option>
-                            <option value="on_site">On-site</option>
-                            <option value="remote">Remote</option>
-                            <option value="shifts">Shifts</option>
-                            <option value="hybrid">Hybrid</option>
-                        </select>
-                    </div>
-                    <div class="col-md-8" id="hybridDaysWrapper" style="display:none;">
-                        <label class="form-label">Hybrid Days</label>
-                        <div class="d-flex flex-wrap gap-3">
-                            @foreach (['mon' => 'M', 'tue' => 'T', 'wed' => 'W', 'thu' => 'T', 'fri' => 'F', 'sat' => 'S', 'sun' => 'S'] as $dayKey => $dayLabel)
-                                <div class="form-check d-flex align-items-center gap-1">
-                                    <input class="form-check-input" type="checkbox" name="hybrid_days[]" id="hybrid_{{ $dayKey }}" value="{{ $dayKey }}">
-                                    <label class="form-check-label" for="hybrid_{{ $dayKey }}">{{ $dayLabel }}</label>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         {{-- Personal --}}
         <div class="d-flex align-items-end gap-2">
             <div class="col-2">
                 <label class="form-label">Upload Image</label>
-                <label for="uploadImage" class="d-flex flex-column align-items-center justify-content-center gap-2"
+
+                <label for="uploadImage" id="uploadImageBox" class="d-flex flex-column align-items-center justify-content-center gap-2"
                     style="width:160px; height:160px; border: 2px dashed var(--main-color); border-radius: 10px; cursor:pointer; background:#f8f9fa1a;">
                     <i class="bi bi-cloud-arrow-up fs-1 text-secondary"></i>
                     <span style="font-size:.72rem; color:#6c757d;">Click to upload</span>
                     <input type="file" id="uploadImage" name="profile_photo" accept="image/*" class="d-none" onchange="previewImg(this)">
                 </label>
-                <img id="imgPreview" src="" alt=""
-                    style="display:none; width:160px; height:160px; object-fit:cover; border-radius:10px; margin-top:6px; border:2px solid var(--main-color);">
+
+                <div id="imgPreviewWrapper" style="display:none; position:relative; width:160px; height:160px; margin-top:6px;">
+                    <img id="imgPreview" src="" alt=""
+                        style="width:160px; height:160px; object-fit:cover; border-radius:10px; border:2px solid var(--main-color);">
+                    <button type="button" id="removeImageBtn" onclick="removePreviewImg()" class="d-none" style="  position:absolute; top:6px; right:6px; width:28px; height:28px; border:none; border-radius:50%; background:#dc3545; color:#fff; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.2); padding:0;">
+                        &times; </button>
+                </div>
             </div>
 
             <div class="col-md-5">
-                <label class="form-label">Name</label>
+                <label class="form-label">Name <span class="text-danger">*</span></label>
                 <input type="text" name="full_name" class="form-control">
             </div>
 
@@ -106,12 +35,12 @@
         </div>
 
         <div class="col-md-4">
-            <label class="form-label">CNIC</label>
+            <label class="form-label">CNIC <span class="text-danger">*</span></label>
             <input type="text" name="cnic" class="form-control" placeholder="00000-0000000-0">
         </div>
 
         <div class="col-md-4">
-            <label class="form-label">CNIC Expiry Date</label>
+            <label class="form-label">CNIC Expiry Date <span class="text-danger">*</span></label>
             <input type="date" name="cnic_expiry" class="form-control">
         </div>
 
@@ -121,12 +50,15 @@
         </div>
 
         <div class="col-md-6">
-            <label class="form-label">Nationality</label>
-            <input type="text" name="nationality" class="form-control">
+            <label class="form-label">Nationality <span class="text-danger">*</span></label>
+            <select name="nationality" id="nationality_select" class="form-select"
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
+                <option value="">— Select Nationality —</option>
+            </select>
         </div>
 
         <div class="col-md-6">
-            <label class="form-label">Date of Birth</label>
+            <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
             <input type="date" name="dob" class="form-control">
         </div>
 
@@ -137,16 +69,13 @@
 
         <div class="col-md-6">
             <label class="form-label">Gender</label>
-            <div class="d-flex gap-3 mt-1">
-                <div class="form-check d-flex align-items-center gap-1">
-                    <input class="check-input" type="radio" name="gender" value="Male">
-                    <label class="form-check-label">Male</label>
-                </div>
-                <div class="form-check d-flex align-items-center gap-1">
-                    <input class="check-input" type="radio" name="gender" value="Female">
-                    <label class="form-check-label">Female</label>
-                </div>
-            </div>
+            <select name="gender" class="form-select"
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
+                <option value="">— Select —</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
         </div>
 
         <div class="col-md-4">
@@ -166,7 +95,17 @@
 
         <div class="col-md-6">
             <label class="form-label">Religion</label>
-            <input type="text" name="religion" class="form-control">
+            <select name="religion" class="form-select"
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
+                <option value="">— Select —</option>
+                <option value="Islam">Islam</option>
+                <option value="Christianity">Christianity</option>
+                <option value="Hinduism">Hinduism</option>
+                <option value="Buddhism">Buddhism</option>
+                <option value="Sikhism">Sikhism</option>
+                <option value="Judaism">Judaism</option>
+                <option value="Other">Other</option>
+            </select>
         </div>
 
         <div class="col-md-6">
@@ -174,25 +113,25 @@
             <input type="text" name="sect" class="form-control">
         </div>
 
+
         <div class="col-md-6">
-            <label class="form-label">Spouse Name & Nationality</label>
-            <input type="text" name="spouse_name" class="form-control">
+            <label class="form-label">Marital Status <span class="text-danger">*</span></label>
+            <select name="marital_status" id="marital_status" class="form-select"
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
+                <option value="">Select</option>
+                <option>Single</option>
+                <option>Married</option>
+                <option>Separated</option>
+                <option>Divorced</option>
+                <option>Widowed</option>
+            </select>
         </div>
 
         <div class="col-md-6">
-            <label class="form-label">Marital Status</label>
-            <div class="position-relative">
-                <select name="marital_status" class="form-select pe-4"
-                    style="background-color: transparent !important; border: 1px solid #012445; box-shadow: 0 0 4px 2px #5a59593d; appearance: none; -webkit-appearance: none;">
-                    <option value="">Select</option>
-                    <option>Single</option>
-                    <option>Married</option>
-                    <option>Separated</option>
-                    <option>Divorced</option>
-                    <option>Widowed</option>
-                </select>
-            </div>
+            <label class="form-label">Spouse Name & Nationality</label>
+            <input type="text" name="spouse_name" id="spouse_name" class="form-control">
         </div>
+
 
         {{-- NOK --}}
         <div class="col-md-3">
@@ -217,187 +156,92 @@
 
         <div class="col-md-6">
             <label class="form-label">NOK Contact No</label>
-            <input type="tel" name="nok_contact" class="form-control">
-        </div>
-
-        {{-- Organization / SBU / Department --}}
-        <div class="col-md-4">
-            <label class="form-label">Organization <span class="text-danger">*</span></label>
-            <select name="organization_id" id="org_select" class="form-select"
-                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;"
-                onchange="onOrgChange(this.value)">
-                <option value="">— Select Organization —</option>
-            </select>
-        </div>
-
-        <div class="col-md-4">
-            <label class="form-label">SBU</label>
-            <select name="sbu_id" id="sbu_select" class="form-select"
-                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;"
-                onchange="onSbuChange(this.value)">
-                <option value="">— Select SBU —</option>
-            </select>
-        </div>
-
-        <div class="col-md-4">
-            <label class="form-label">Department</label>
-            <select name="department_id" id="dept_select" class="form-select"
-                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;"
-                onchange="onDeptChange(this.value)">
-                <option value="">— Select Department —</option>
-            </select>
-        </div>
-
-        <div class="col-md-4">
-            <label class="form-label">Roles</label>
-            <select name="role_id" id="role_select" class="form-select"
-                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
-                <option value="">— Select Role —</option>
-            </select>
-        </div>
-
-        {{-- Employment --}}
-        <div class="col-md-6">
-            <label class="form-label">Date of Joining</label>
-            <input type="date" name="join_date" class="form-control">
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label">Designation</label>
-            <input type="text" name="designation" class="form-control">
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label">Grade</label>
-            <input type="text" name="grade" class="form-control">
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label">Branch</label>
-            <input type="text" name="branch" class="form-control">
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label">Location</label>
-            <input type="text" name="location" class="form-control">
+            <input type="tel" name="nok_contact" class="form-control" maxlength="15">
         </div>
 
     </div>
 </div>
 
 <script>
-    window._orgsData = @json($orgsData ?? []);
-    window._rolesData = @json($rolesData ?? []);
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const orgSel = document.getElementById('org_select');
-        window._orgsData.forEach(function (o) {
-            orgSel.insertAdjacentHTML('beforeend',
-                '<option value="' + o.id + '">' + escHtmlBasic(o.name) + '</option>');
-        });
-        populateRoles();
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('https://cdn.jsdelivr.net/npm/country-list@2.2.0/data.json')
+            .then(function(r) {
+                return r.json();
+            })
+            .then(function(countries) {
+                countries.sort(function(a, b) {
+                    return a.name.localeCompare(b.name);
+                });
+                const sel = document.getElementById('nationality_select');
+                countries.forEach(function(c) {
+                    const opt = document.createElement('option');
+                    opt.value = c.name;
+                    opt.textContent = c.name;
+                    sel.appendChild(opt);
+                });
+                if (sel.dataset.prefill) sel.value = sel.dataset.prefill;
+            })
+            .catch(function() {
+                ['Pakistani', 'Indian', 'British', 'American', 'Other'].forEach(function(n) {
+                    document.getElementById('nationality_select').insertAdjacentHTML('beforeend',
+                        '<option value="' + n + '">' + n + '</option>');
+                });
+            });
     });
-
-    function escHtmlBasic(str) {
-        return String(str || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-    }
-
-    function onOrgChange(orgId) {
-        const sbuSel  = document.getElementById('sbu_select');
-        const deptSel = document.getElementById('dept_select');
-        sbuSel.innerHTML  = '<option value="">— Select SBU —</option>';
-        deptSel.innerHTML = '<option value="">— Select Department —</option>';
-
-        if (!orgId) return;
-        const org = (window._orgsData || []).find(o => String(o.id) === String(orgId));
-        if (!org) return;
-        (org.sbus || []).forEach(function (s) {
-            sbuSel.insertAdjacentHTML('beforeend',
-                '<option value="' + s.id + '">' + escHtmlBasic(s.name) + '</option>');
-        });
-        populateRoles();
-    }
-
-    function onSbuChange(sbuId) {
-        const orgId   = document.getElementById('org_select').value;
-        const deptSel = document.getElementById('dept_select');
-        deptSel.innerHTML = '<option value="">— Select Department —</option>';
-
-        if (!sbuId || !orgId) return;
-        const org = (window._orgsData || []).find(o => String(o.id) === String(orgId));
-        if (!org) return;
-        const sbu = (org.sbus || []).find(s => String(s.id) === String(sbuId));
-        if (!sbu) return;
-        (sbu.departments || []).forEach(function (d) {
-            deptSel.insertAdjacentHTML('beforeend',
-                '<option value="' + d.id + '">' + escHtmlBasic(d.name) + '</option>');
-        });
-        populateRoles();
-    }
-
-    function onDeptChange() {
-        populateRoles();
-    }
-
-    function populateRoles() {
-        const roleSel = document.getElementById('role_select');
-        if (!roleSel) return;
-
-        const selectedRole = roleSel.value;
-        const orgId = document.getElementById('org_select')?.value || '';
-        const deptId = document.getElementById('dept_select')?.value || '';
-
-        roleSel.innerHTML = '<option value="">— Select Role —</option>';
-
-        (window._rolesData || []).forEach(function (role) {
-            const roleOrg = role.organization_id ? String(role.organization_id) : '';
-            const roleDept = role.department_id ? String(role.department_id) : '';
-            const orgMatch = !roleOrg || !orgId || roleOrg === String(orgId);
-            const deptMatch = !roleDept || !deptId || roleDept === String(deptId);
-            if (!orgMatch || !deptMatch) return;
-
-            roleSel.insertAdjacentHTML('beforeend',
-                '<option value="' + role.id + '">' + escHtmlBasic(role.name) + '</option>');
-        });
-
-        if (selectedRole && roleSel.querySelector('option[value="' + selectedRole + '"]')) {
-            roleSel.value = selectedRole;
-        }
-    }
-
+    // code related to image preview and removal
     function previewImg(input) {
         const preview = document.getElementById('imgPreview');
+        const previewWrapper = document.getElementById('imgPreviewWrapper');
+        const removeBtn = document.getElementById('removeImageBtn');
+        const uploadBox = document.getElementById('uploadImageBox');
+
         if (input.files && input.files[0]) {
             preview.src = URL.createObjectURL(input.files[0]);
-            preview.style.display = 'block';
+
+            previewWrapper.style.display = 'block';
+            uploadBox.classList.add('d-none');
+            removeBtn.classList.remove('d-none');
         }
     }
 
-    function toggleCategoryBlocks() {
-        const selectedCategory = document.querySelector('input[name="employment_category"]:checked')?.value || '';
-        const engagementMode = document.getElementById('engagementMode')?.value || '';
+    function removePreviewImg() {
+        const input = document.getElementById('uploadImage');
+        const preview = document.getElementById('imgPreview');
+        const previewWrapper = document.getElementById('imgPreviewWrapper');
+        const removeBtn = document.getElementById('removeImageBtn');
+        const uploadBox = document.getElementById('uploadImageBox');
 
-        const internFields      = document.getElementById('internFields');
-        const contractualFields = document.getElementById('contractualFields');
-        const engagementFields  = document.getElementById('engagementFields');
-        const hybridDaysWrapper = document.getElementById('hybridDaysWrapper');
+        input.value = '';
+        preview.src = '';
+        previewWrapper.style.display = 'none';
 
-        if (internFields) internFields.style.display = selectedCategory === 'intern' ? '' : 'none';
-        if (contractualFields) contractualFields.style.display = selectedCategory === 'contractual' ? '' : 'none';
-        if (engagementFields) engagementFields.style.display = selectedCategory === 'engagement' ? '' : 'none';
-        if (hybridDaysWrapper) hybridDaysWrapper.style.display = (selectedCategory === 'engagement' && engagementMode === 'hybrid') ? '' : 'none';
+        removeBtn.classList.add('d-none');
+        uploadBox.classList.remove('d-none');
     }
+</script>
 
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('input[name="employment_category"]').forEach(function (el) {
-            el.addEventListener('change', toggleCategoryBlocks);
-        });
-        const engagementModeEl = document.getElementById('engagementMode');
-        if (engagementModeEl) engagementModeEl.addEventListener('change', toggleCategoryBlocks);
-        toggleCategoryBlocks();
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const maritalStatus = document.getElementById('marital_status');
+        const spouseField = document.getElementById('spouse_name');
+
+        function toggleSpouseField() {
+            const spouseContainer = spouseField.closest('.col-md-6');
+
+            if (maritalStatus.value === 'Single') {
+                spouseField.value = '';
+                spouseField.disabled = true;
+                spouseContainer.style.display = 'none';
+            } else {
+                spouseField.disabled = false;
+                spouseContainer.style.display = 'block';
+            }
+        }
+
+        maritalStatus.addEventListener('change', toggleSpouseField);
+
+        // page load pe bhi run karo
+        toggleSpouseField();
     });
 </script>

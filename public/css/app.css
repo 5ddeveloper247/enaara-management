@@ -740,3 +740,21 @@ body.modal-open .admin-main {
         display: none !important;
     }
 }
+
+.dataTables_scrollBody thead tr {
+    height: 0 !important;
+}
+
+.dataTables_scrollBody thead th {
+    padding: 0 !important;
+    border: none !important;
+    height: 0 !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+    overflow: hidden;
+    vertical-align: top;
+}
+
+.dataTables_scrollHead {
+    margin-bottom: 0 !important;
+}

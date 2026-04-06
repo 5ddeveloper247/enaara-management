@@ -14,10 +14,12 @@ use App\Models\EmployeeExEmployment;
 use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
 use App\Models\MediaFile;
+use App\Models\Department;
 use App\Models\Organization;
 use App\Models\Sbu;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditTrailService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,13 @@ use Illuminate\Support\Facades\Storage;
 
 class EmployeeService
 {
+    protected $auditTrailService;
+
+    public function __construct(AuditTrailService $auditTrailService)
+    {
+        $this->auditTrailService = $auditTrailService;
+    }
+
     public function index(): View
     {
         $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
@@ -36,14 +45,15 @@ class EmployeeService
         $employees     = Employee::with(['organization', 'department'])
             ->orderByDesc('id')
             ->paginate(20);
-
-        return view('admin.employee.index', compact('organizations', 'employees'));
+        $departments=Department::where('is_active',true)->orderBy('name')->get();
+        return view('admin.employee.index', compact('organizations', 'employees', 'departments'));
     }
 
     public function getFormData(): array
     {
         $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
         $roles = Role::where('is_active', true)
+            ->with('department:id,sbu_id')
             ->orderBy('name')
             ->get(['id', 'name', 'organization_id', 'department_id']);
 
@@ -61,10 +71,11 @@ class EmployeeService
         ])->values()->all();
 
         $rolesData = $roles->map(fn($r) => [
-            'id'              => $r->id,
-            'name'            => $r->name,
-            'organization_id' => $r->organization_id,
-            'department_id'   => $r->department_id,
+            'id'                      => $r->id,
+            'name'                    => $r->name,
+            'organization_id'         => $r->organization_id,
+            'department_id'           => $r->department_id,
+            'is_organization_level'   => $r->isOrganizationLevelRole(),
         ])->values()->all();
 
         return compact('organizations', 'orgsData', 'rolesData');
@@ -73,20 +84,32 @@ class EmployeeService
     public function store(array $data, array $files = [], array $attachments = []): Employee
     {
         return DB::transaction(function () use ($data, $files, $attachments) {
-            $sbuId = isset($data['sbu_id']) ? (int) $data['sbu_id'] : null;
-            if (!$sbuId) {
-                throw new \InvalidArgumentException('SBU is required to generate employee code.');
+            $role = Role::find($data['role_id'] ?? 0);
+            if (!$role) {
+                throw new \InvalidArgumentException('Invalid role.');
             }
-
-            $code = $this->generateNextCode($sbuId);
+            $orgLevel = $role->isOrganizationLevelRole();
+            if ($orgLevel) {
+                $sbuForCode = Sbu::where('organization_id', (int) ($data['organization_id'] ?? 0))->orderBy('id')->value('id');
+                if (!$sbuForCode) {
+                    throw new \InvalidArgumentException('No SBU found under organization for employee code generation.');
+                }
+                $code = $this->generateNextCode((int) $sbuForCode);
+            } else {
+                $sbuId = isset($data['sbu_id']) ? (int) $data['sbu_id'] : null;
+                if (!$sbuId) {
+                    throw new \InvalidArgumentException('SBU is required to generate employee code.');
+                }
+                $code = $this->generateNextCode($sbuId);
+            }
 
             $employee = Employee::create([
                 'full_name'           => $data['full_name'],
                 'father_name'         => $data['father_name'] ?? null,
                 'employee_code'       => $code,
                 'organization_id'     => $data['organization_id'] ?? null,
-                'sbu_id'              => $data['sbu_id'] ?? null,
-                'department_id'       => $data['department_id'] ?? null,
+                'sbu_id'              => $orgLevel ? null : ($data['sbu_id'] ?? null),
+                'department_id'       => $orgLevel ? null : ($data['department_id'] ?? null),
                 'role_id'             => $data['role_id'] ?? null,
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,
@@ -147,8 +170,44 @@ class EmployeeService
 
             Log::info('Employee created', ['id' => $employee->id, 'code' => $code]);
 
+            $this->auditTrailService->log(
+                action: 'created',
+                category: 'Employee',
+                description: "New employee {$employee->full_name} ({$code}) was registered.",
+                auditable: $employee
+            );
+
             return $employee;
         });
+    }
+
+    public function previewNextEmployeeCode(int $organizationId, int $roleId, ?int $sbuId = null): string
+    {
+        $role = Role::query()->find($roleId);
+        if (! $role) {
+            throw new \InvalidArgumentException('Invalid role.');
+        }
+        if ((int) ($role->organization_id ?? 0) !== $organizationId) {
+            throw new \InvalidArgumentException('Role does not belong to the selected organization.');
+        }
+        $orgLevel = $role->isOrganizationLevelRole();
+        if ($orgLevel) {
+            $sbuForCode = Sbu::query()->where('organization_id', $organizationId)->orderBy('id')->value('id');
+            if (! $sbuForCode) {
+                throw new \InvalidArgumentException('No SBU found under organization for employee code generation.');
+            }
+
+            return $this->peekNextCode((int) $sbuForCode);
+        }
+        if (! $sbuId) {
+            throw new \InvalidArgumentException('SBU is required to preview employee number.');
+        }
+        $sbu = Sbu::query()->find($sbuId);
+        if (! $sbu || (int) $sbu->organization_id !== $organizationId) {
+            throw new \InvalidArgumentException('Invalid SBU for the selected organization.');
+        }
+
+        return $this->peekNextCode($sbuId);
     }
 
     private function peekNextCode(int $sbuId): string
@@ -433,11 +492,35 @@ class EmployeeService
         ]);
     }
 
-    public function getTableData(): array
+    public function getTableData(array $filters = []): array
     {
-        $employees = Employee::with(['department', 'organization', 'mediaFiles'])
-            ->orderByDesc('id')
-            ->get();
+        $query = Employee::with(['department', 'organization', 'sbu', 'role', 'mediaFiles', 'policeVerification', 'contact'])
+            ->orderByDesc('id');
+
+        $type = $filters['filter_employee_type'] ?? null;
+        if (!empty($type)) {
+            if ($type === 'Third-party') {
+                $query->where('employment_type', 'Third-party');
+            } elseif ($type === 'Internal') {
+                $query->where(function ($q) {
+                    $q->whereNull('employment_type')
+                        ->orWhere('employment_type', '!=', 'Third-party');
+                });
+            }
+        }
+
+        $departmentName = $filters['filter_department'] ?? null;
+        if (!empty($departmentName)) {
+            $query->whereHas('department', function ($q) use ($departmentName) {
+                $q->where('name', $departmentName);
+            });
+        }
+
+        if (!empty($filters['filter_vendor'])) {
+            $query->where('employment_type', 'Third-party');
+        }
+
+        $employees = $query->get();
 
         return $employees->map(function (Employee $emp) {
             $initials    = $this->getInitials($emp->full_name ?? '');
@@ -447,24 +530,35 @@ class EmployeeService
                 : 'Not Linked';
             $employeeType = ($emp->employment_type === 'Third-party') ? 'Third-party' : 'Internal';
 
-            $photo     = $emp->mediaFiles->where('file_type', 'photo')->first();
-            $photoUrl  = $photo ? Storage::url($photo->file_path) : null;
+            $photo    = $emp->mediaFiles->where('file_type', 'photo')->first();
+            $photoUrl = $photo ? Storage::url($photo->file_path) : null;
 
             return [
-                'id'              => $emp->id,
-                'employee_code'   => $emp->employee_code ?? '-',
-                'full_name'       => $emp->full_name ?? '-',
-                'initials'        => $initials,
-                'photo_url'       => $photoUrl,
-                'department'      => $emp->department?->name ?? '-',
-                'organization'    => $emp->organization?->name ?? '-',
-                'employment_type' => $emp->employment_type ?? '-',
-                'employee_type'   => $employeeType,
-                'biometric_id'    => $biometricId,
-                'sync_status'     => $syncStatus,
-                'site'            => $emp->site ?? '-',
-                'floor_access'    => (bool) $emp->floor_access,
-                'is_active'       => (bool) $emp->is_active,
+                'id'                  => $emp->id,
+                'employee_code'       => $emp->employee_code ?? '-',
+                'employment_category' => $emp->employment_category ?? '-',
+                'photo_url'           => $photoUrl,
+                'full_name'           => $emp->full_name ?? '-',
+                'initials'            => $initials,
+                'cnic'                => $emp->cnic ?? '-',
+                'nationality'         => $emp->nationality ?? '-',
+                'gender'              => $emp->gender ?? '-',
+                'organization'        => $emp->organization?->name ?? '-',
+                'sbu'                 => $emp->sbu?->name ?? '-',
+                'department'          => $emp->department?->name ?? '-',
+                'role'                => $emp->role?->name ?? '-',
+                'join_date'           => $emp->join_date?->format('d M Y') ?? '-',
+                'designation'         => $emp->designation ?? '-',
+                'verification_status' => $emp->policeVerification?->verification_status ?? '-',
+                'email'               => $emp->email ?? '-',
+                'cell_no'             => $emp->contact?->cell_no ?? '-',
+                'employment_type'     => $emp->employment_type ?? '-',
+                'employee_type'       => $employeeType,
+                'biometric_id'        => $biometricId,
+                'sync_status'         => $syncStatus,
+                'site'                => $emp->site ?? '-',
+                'floor_access'        => (bool) $emp->floor_access,
+                'is_active'           => (bool) $emp->is_active,
             ];
         })->values()->all();
     }
@@ -477,7 +571,7 @@ class EmployeeService
         $total          = $employees->count();
         $active         = $employees->where('is_active', true)->count();
         $hasbiometric   = $employees->whereNotNull('biometric_id');
-        $biometricLinked= $hasbiometric->count();
+        $biometricLinked = $hasbiometric->count();
         $synced         = $hasbiometric->where('sync_with_biometric', true)->count();
         $pending        = $hasbiometric->where('sync_with_biometric', false)->count();
         $internal       = $employees->where('employment_type', '!=', 'Third-party')->count();
@@ -513,9 +607,16 @@ class EmployeeService
     public function edit(int $id): View
     {
         $employee = Employee::with([
-            'policeVerification', 'armedForce', 'contact', 'bankDetail',
-            'familyMembers', 'academics', 'exEmployments', 'medical',
-            'references', 'mediaFiles',
+            'policeVerification',
+            'armedForce',
+            'contact',
+            'bankDetail',
+            'familyMembers',
+            'academics',
+            'exEmployments',
+            'medical',
+            'references',
+            'mediaFiles',
         ])->findOrFail($id);
 
         $formData = $this->getFormData();
@@ -567,9 +668,9 @@ class EmployeeService
             'nok_name'            => $employee->nok_name,
             'nok_cnic'            => $employee->nok_cnic,
             'nok_relation'        => $employee->nok_relation,
-            'nok_dob'             => $employee->nok_dob?->format('Y-m-d'),
+            'nok_dob'             => $employee->nok_dob instanceof \Carbon\Carbon ? $employee->nok_dob->format('Y-m-d') : null,
             'nok_contact'         => $employee->nok_contact,
-            'join_date'           => $employee->join_date?->format('Y-m-d'),
+            'join_date'           => $employee->join_date instanceof \Carbon\Carbon ? $employee->join_date->format('Y-m-d') : null,
             'designation'         => $employee->designation,
             'grade'               => $employee->grade,
             'branch'              => $employee->branch,
@@ -668,13 +769,15 @@ class EmployeeService
     {
         return DB::transaction(function () use ($id, $data, $files, $attachments, $keptAttachmentIds) {
             $employee = Employee::findOrFail($id);
+            $role      = Role::find($data['role_id'] ?? $employee->role_id);
+            $orgLevel  = $role && $role->isOrganizationLevelRole();
 
             $employee->update([
                 'full_name'           => $data['full_name'],
                 'father_name'         => $data['father_name'] ?? null,
                 'organization_id'     => $data['organization_id'] ?? null,
-                'sbu_id'              => $data['sbu_id'] ?? null,
-                'department_id'       => $data['department_id'] ?? null,
+                'sbu_id'              => $orgLevel ? null : ($data['sbu_id'] ?? null),
+                'department_id'       => $orgLevel ? null : ($data['department_id'] ?? null),
                 'role_id'             => $data['role_id'] ?? null,
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,

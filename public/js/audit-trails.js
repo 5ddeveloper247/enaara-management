@@ -6,51 +6,90 @@
 (function () {
     'use strict';
 
-    // ============================================
-    // GLOBAL VARIABLES
-    // ============================================
-    let auditTrailsTable;
+    let auditTrailsTable = null;
     let auditTrailsData = [];
-    let customFilterFunction = null;
+    let isLoading = false;
 
-    // ============================================
-    // INITIALIZATION
-    // ============================================
-    $(document).ready(function () {
-        loadAuditTrailsData();
-        initializeDataTable();
+    $(document).ready(async function () {
         initializeEventHandlers();
-        updateCounters();
+        await refreshAuditTrailsTable();
     });
 
-    // ============================================
-    // DATA LOADING
-    // ============================================
-    function loadAuditTrailsData() {
-        if (typeof ProjectData !== 'undefined' && ProjectData.auditTrails) {
-            auditTrailsData = ProjectData.auditTrails.generateSampleData(100);
-        } else {
-            console.warn('ProjectData not found, using empty array');
-            auditTrailsData = [];
+    /**
+     * ============================================
+     * MAIN LOAD / REFRESH
+     * ============================================
+     */
+    async function refreshAuditTrailsTable() {
+        if (isLoading) return;
+
+        isLoading = true;
+
+        try {
+            await loadAuditTrailsData();
+            destroyDataTable();
+            initializeDataTable();
+            updateCounters();
+        } catch (error) {
+            console.error('Failed to refresh audit trails table:', error);
+            showTableError('Unable to load audit trails at the moment.');
+        } finally {
+            isLoading = false;
         }
     }
 
-    // ============================================
-    // DATA TABLE INITIALIZATION
-    // ============================================
+    /**
+     * ============================================
+     * DATA LOADING
+     * ============================================
+     */
+    async function loadAuditTrailsData() {
+        const params = new URLSearchParams({
+            date_from: $('#filterDateFrom').val() || '',
+            date_to: $('#filterDateTo').val() || '',
+            organization_id: $('#filterOrganization').val() || '',
+            action_category: $('#filterCategory').val() || '',
+            severity: $('#filterSeverity').val() || ''
+        });
+
+        const response = await fetch(`/admin/audit-trails/data?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        auditTrailsData = Array.isArray(result.data) ? result.data : [];
+    }
+
+    /**
+     * ============================================
+     * DATATABLE SETUP
+     * ============================================
+     */
     function initializeDataTable() {
         const tbody = $('#auditTrailsTableBody');
         tbody.empty();
 
-        auditTrailsData.forEach(audit => {
-            const row = buildTableRow(audit);
-            tbody.append(row);
-        });
+        if (auditTrailsData.length) {
+            auditTrailsData.forEach(function (audit) {
+                tbody.append(buildTableRow(audit));
+            });
+        }
 
         auditTrailsTable = initUserDataTable('#auditTrailsTable', {
             pageLength: 25,
-            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-            order: [[1, 'desc']], // Sort by Timestamp descending
+            lengthMenu: [
+                [10, 25, 50, 100],
+                [10, 25, 50, 100]
+            ],
+            order: [[1, 'desc']],
             scrollX: false,
             responsive: {
                 details: {
@@ -72,7 +111,7 @@
                 {
                     targets: 7,
                     orderable: false,
-                    className: 'no-toggle',
+                    className: 'no-toggle text-end',
                     responsivePriority: 1
                 },
                 {
@@ -96,118 +135,122 @@
                 infoEmpty: "No activities available",
                 zeroRecords: "No matching activities found"
             },
-            buttons: [{
-                extend: 'colvis',
-                text: 'Select Columns',
-                className: 'btn btn-sm border-0 bg-main text-white',
-                columns: [1, 2, 3, 4, 5, 6]
-            }],
-            drawCallback: function() {
-                $('[data-bs-toggle="tooltip"]').tooltip();
+            buttons: [
+                {
+                    extend: 'colvis',
+                    text: 'Select Columns',
+                    className: 'btn btn-sm border-0 bg-main text-white',
+                    columns: [1, 2, 3, 4, 5, 6]
+                }
+            ],
+            drawCallback: function () {
+                initializeTooltips();
             }
         });
+
+        initializeTooltips();
     }
 
-    // ============================================
-    // TABLE ROW BUILDER
-    // ============================================
-    function buildTableRow(audit) {
-        // Timestamp
-        const timestamp = formatTimestamp(audit.timestamp);
+    function destroyDataTable() {
+        if ($.fn.DataTable.isDataTable('#auditTrailsTable')) {
+            $('#auditTrailsTable').DataTable().destroy();
+        }
+    }
 
-        // User
-        const user = `
+    /**
+     * ============================================
+     * BUILD TABLE ROW
+     * ============================================
+     */
+    function buildTableRow(audit) {
+        const timestamp = formatTimestamp(audit.timestamp);
+        const category = audit.category || 'System';
+        const severity = (audit.severity || 'info').toLowerCase();
+
+        const userName = escapeHtml(audit?.user?.name || 'System');
+        const userRole = escapeHtml(audit?.user?.role || 'N/A');
+        const userAvatar = escapeHtml(audit?.user?.avatar || 'S');
+        const description = escapeHtml(audit.description || '-');
+        const ipAddress = escapeHtml(audit.ipAddress || '-');
+        const device = escapeHtml(audit.device || '-');
+        const organization = escapeHtml(audit.organization || 'N/A');
+        const branch = escapeHtml(audit.branch || 'N/A');
+
+        const categoryColors = {
+            Leave: 'bg-info',
+            Geofence: 'bg-success',
+            Shift: 'bg-primary',
+            Security: 'bg-danger',
+            Employee: 'bg-warning text-dark',
+            System: 'bg-secondary'
+        };
+
+        const categoryIcons = {
+            Leave: 'bi-calendar-event',
+            Geofence: 'bi-geo-alt-fill',
+            Shift: 'bi-calendar-week',
+            Security: 'bi-shield-lock',
+            Employee: 'bi-person',
+            System: 'bi-gear'
+        };
+
+        const colorClass = categoryColors[category] || 'bg-secondary';
+        const categoryIcon = categoryIcons[category] || 'bi-gear';
+
+        const categoryBadge = `
+            <span class="badge px-2 rounded-1 ${colorClass}">
+                <i class="bi ${categoryIcon} me-1"></i>${escapeHtml(category)}
+            </span>
+        `;
+
+        const severityBadge = getSeverityBadge(severity);
+
+        const userBlock = `
             <div class="d-flex align-items-center">
-                <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">${audit.user.avatar}</div>
+                <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                    ${userAvatar}
+                </div>
                 <div>
-                    <div class="fw-semibold small">${audit.user.name}</div>
-                    <small class="text-muted">${audit.user.role}</small>
+                    <div class="fw-semibold small">${userName}</div>
+                    <small class="text-muted">${userRole}</small>
                 </div>
             </div>
         `;
 
-        // Action Category Badge
-        let categoryBadge = '';
-        const categoryColors = {
-            'Leave': 'bg-info',
-            'Geofence': 'bg-success',
-            'Shift': 'bg-primary',
-            'Security': 'bg-danger',
-            'Employee': 'bg-warning text-dark',
-            'System': 'bg-secondary'
-        };
-        const categoryIcon = {
-            'Leave': 'bi-calendar-event',
-            'Geofence': 'bi-geo-alt-fill',
-            'Shift': 'bi-calendar-week',
-            'Security': 'bi-shield-lock',
-            'Employee': 'bi-person',
-            'System': 'bi-gear'
-        };
-        const colorClass = categoryColors[audit.category] || 'bg-secondary';
-        categoryBadge = `<span class="badge px-2 rounded-1 ${colorClass}"><i class="bi ${categoryIcon[audit.category]} me-1"></i>${audit.category}</span>`;
-
-        // Severity Badge
-        let severityBadge = '';
-        if (audit.severity === 'critical') {
-            severityBadge = '<span class="badge px-2 rounded-1 bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>Critical</span>';
-        } else if (audit.severity === 'warning') {
-            severityBadge = '<span class="badge px-2 rounded-1 bg-warning text-dark"><i class="bi bi-exclamation-circle me-1"></i>Warning</span>';
-        } else if (audit.severity === 'info') {
-            severityBadge = '<span class="badge px-2 rounded-1 bg-info"><i class="bi bi-info-circle me-1"></i>Info</span>';
-        } else if (audit.severity === 'success') {
-            severityBadge = '<span class="badge px-2 rounded-1 bg-success"><i class="bi bi-check-circle me-1"></i>Success</span>';
-        }
-
-        // IP/Device
         const ipDevice = `
             <div>
-                <div class="small fw-semibold">${audit.ipAddress}</div>
-                <small class="text-muted">${audit.device}</small>
+                <div class="small fw-semibold">${ipAddress}</div>
+                <small class="text-muted">${device}</small>
             </div>
         `;
 
-        // View Details Button
         const viewDetailsBtn = `
-            <button type="button" 
-                    class="btn btn-sm btn-primary view-detail-btn" 
+            <button type="button"
+                    class="btn btn-sm btn-primary view-detail-btn"
                     data-bs-toggle="modal"
                     data-bs-target="#auditDetailModal"
                     data-audit-id="${audit.id}"
-                    data-timestamp="${audit.timestamp}"
-                    data-user-name="${audit.user.name}"
-                    data-user-role="${audit.user.role}"
-                    data-user-avatar="${audit.user.avatar}"
-                    data-category="${audit.category}"
-                    data-description="${audit.description}"
-                    data-severity="${audit.severity}"
-                    data-ip-address="${audit.ipAddress}"
-                    data-device="${audit.device}"
-                    data-organization="${audit.organization}"
-                    data-branch="${audit.branch}"
-                    data-has-changes="${audit.hasChanges}"
-                    data-changes='${JSON.stringify(audit.changes)}'
-                    data-context="${audit.context || ''}"
                     title="View Details">
                 <i class="bi bi-eye"></i>
             </button>
         `;
 
         return `
-            <tr 
-                data-timestamp="${audit.timestamp}" 
-                data-organization="${audit.organization.toLowerCase()}" 
-                data-category="${audit.category.toLowerCase()}" 
-                data-severity="${audit.severity}">
+            <tr
+                data-id="${audit.id}"
+                data-timestamp="${escapeHtml(audit.timestamp || '')}"
+                data-organization="${organization.toLowerCase()}"
+                data-category="${String(category).toLowerCase()}"
+                data-severity="${severity}">
                 <td class="dt-control"></td>
                 <td>
                     <div class="small fw-semibold">${timestamp.date}</div>
                     <small class="text-muted">${timestamp.time}</small>
                 </td>
-                <td>${user}</td>
+                <td>${userBlock}</td>
                 <td>${categoryBadge}</td>
                 <td>
-                    <div class="small">${audit.description}</div>
+                    <div class="small">${description}</div>
                 </td>
                 <td>${severityBadge}</td>
                 <td>${ipDevice}</td>
@@ -216,245 +259,152 @@
         `;
     }
 
-    // ============================================
-    // EVENT HANDLERS
-    // ============================================
+    /**
+     * ============================================
+     * EVENT HANDLERS
+     * ============================================
+     */
     function initializeEventHandlers() {
-        // Apply filters
-        $('#applyFiltersBtn').on('click', applyFilters);
+        $('#applyFiltersBtn').on('click', async function () {
+            await refreshAuditTrailsTable();
+        });
 
-        // Clear filters
-        $('#clearFiltersBtn').on('click', clearFilters);
+        $('#clearFiltersBtn').on('click', async function () {
+            $('#filterDateFrom').val('');
+            $('#filterDateTo').val('');
+            $('#filterOrganization').val('');
+            $('#filterCategory').val('');
+            $('#filterSeverity').val('');
 
-        // Export button
+            await refreshAuditTrailsTable();
+        });
+
         $('#exportBtn').on('click', handleExport);
 
-        // View Detail Modal
-        $(document).on('click', '.view-detail-btn', function() {
-            const auditId = parseInt($(this).data('audit-id'));
-            const audit = auditTrailsData.find(a => a.id === auditId);
+        $(document).on('click', '.view-detail-btn', function () {
+            const auditId = parseInt($(this).data('audit-id'), 10);
+            const audit = auditTrailsData.find(function (item) {
+                return Number(item.id) === auditId;
+            });
+
             if (audit) {
                 populateDetailModal(audit);
             }
         });
 
-        // Export Detail
-        $('#exportDetailBtn').on('click', function() {
-            alert('Export functionality will be implemented with backend integration.');
+        $('#exportDetailBtn').on('click', function () {
+            alert('Export detail functionality will be implemented with backend integration.');
         });
     }
 
-    // ============================================
-    // FILTER FUNCTIONS
-    // ============================================
-    function applyFilters() {
-        const dateFrom = $('#filterDateFrom').val();
-        const dateTo = $('#filterDateTo').val();
-        const organization = $('#filterOrganization').val();
-        const category = $('#filterCategory').val();
-        const severity = $('#filterSeverity').val();
-
-        // Remove existing custom filter if any
-        if (customFilterFunction) {
-            $.fn.dataTable.ext.search.pop();
-        }
-
-        // Create custom filtering function
-        customFilterFunction = function(settings, data, dataIndex) {
-            // Only apply to audit trails table
-            if (settings.nTable.id !== 'auditTrailsTable') {
-                return true;
-            }
-
-            const row = auditTrailsTable.row(dataIndex).node();
-            
-            // Date filter
-            if (dateFrom || dateTo) {
-                const rowTimestamp = $(row).data('timestamp');
-                if (dateFrom && rowTimestamp < dateFrom + 'T00:00:00') return false;
-                if (dateTo && rowTimestamp > dateTo + 'T23:59:59') return false;
-            }
-            
-            // Organization filter
-            if (organization) {
-                const rowOrg = $(row).data('organization');
-                if (rowOrg !== organization) return false;
-            }
-            
-            // Category filter
-            if (category) {
-                const rowCategory = $(row).data('category');
-                if (rowCategory !== category.toLowerCase()) return false;
-            }
-            
-            // Severity filter
-            if (severity) {
-                const rowSeverity = $(row).data('severity');
-                if (rowSeverity !== severity) return false;
-            }
-            
-            return true;
-        };
-
-        // Add custom filter
-        $.fn.dataTable.ext.search.push(customFilterFunction);
-
-        // Apply filters
-        if (auditTrailsTable) {
-            auditTrailsTable.draw();
-        }
-
-        // Update counters
-        updateCounters();
-    }
-
-    function clearFilters() {
-        $('#filterDateFrom').val('');
-        $('#filterDateTo').val('');
-        $('#filterOrganization').val('');
-        $('#filterCategory').val('');
-        $('#filterSeverity').val('');
-
-        // Remove custom filter
-        if (customFilterFunction) {
-            $.fn.dataTable.ext.search.pop();
-            customFilterFunction = null;
-        }
-
-        if (auditTrailsTable) {
-            auditTrailsTable.draw();
-        }
-
-        updateCounters();
-    }
-
-    // ============================================
-    // DETAIL MODAL POPULATION
-    // ============================================
+    /**
+     * ============================================
+     * DETAIL MODAL
+     * ============================================
+     */
     function populateDetailModal(audit) {
-        // Activity Information
         const timestamp = formatTimestamp(audit.timestamp);
+        const category = audit.category || 'System';
+        const severity = (audit.severity || 'info').toLowerCase();
+
         $('#detailTimestamp').text(`${timestamp.date} at ${timestamp.time}`);
+
         $('#detailUser').html(`
             <div class="d-flex align-items-center">
-                <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">${audit.user.avatar}</div>
+                <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                    ${escapeHtml(audit?.user?.avatar || 'S')}
+                </div>
                 <div>
-                    <div class="fw-semibold">${audit.user.name}</div>
-                    <small class="text-muted">${audit.user.role}</small>
+                    <div class="fw-semibold">${escapeHtml(audit?.user?.name || 'System')}</div>
+                    <small class="text-muted">${escapeHtml(audit?.user?.role || 'N/A')}</small>
                 </div>
             </div>
         `);
 
-        // Category Badge
         const categoryColors = {
-            'Leave': 'bg-info',
-            'Geofence': 'bg-success',
-            'Shift': 'bg-primary',
-            'Security': 'bg-danger',
-            'Employee': 'bg-warning text-dark',
-            'System': 'bg-secondary'
+            Leave: 'bg-info',
+            Geofence: 'bg-success',
+            Shift: 'bg-primary',
+            Security: 'bg-danger',
+            Employee: 'bg-warning text-dark',
+            System: 'bg-secondary'
         };
-        const categoryIcon = {
-            'Leave': 'bi-calendar-event',
-            'Geofence': 'bi-geo-alt-fill',
-            'Shift': 'bi-calendar-week',
-            'Security': 'bi-shield-lock',
-            'Employee': 'bi-person',
-            'System': 'bi-gear'
+
+        const categoryIcons = {
+            Leave: 'bi-calendar-event',
+            Geofence: 'bi-geo-alt-fill',
+            Shift: 'bi-calendar-week',
+            Security: 'bi-shield-lock',
+            Employee: 'bi-person',
+            System: 'bi-gear'
         };
-        const colorClass = categoryColors[audit.category] || 'bg-secondary';
-        $('#detailCategory').html(`<span class="badge px-2 py-1 ${colorClass}"><i class="bi ${categoryIcon[audit.category]} me-1"></i>${audit.category}</span>`);
 
-        // Severity Badge
-        let severityBadge = '';
-        if (audit.severity === 'critical') {
-            severityBadge = '<span class="badge px-2 py-1 bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>Critical</span>';
-        } else if (audit.severity === 'warning') {
-            severityBadge = '<span class="badge px-2 py-1 bg-warning text-dark"><i class="bi bi-exclamation-circle me-1"></i>Warning</span>';
-        } else if (audit.severity === 'info') {
-            severityBadge = '<span class="badge px-2 py-1 bg-info"><i class="bi bi-info-circle me-1"></i>Info</span>';
-        } else if (audit.severity === 'success') {
-            severityBadge = '<span class="badge px-2 py-1 bg-success"><i class="bi bi-check-circle me-1"></i>Success</span>';
-        }
-        $('#detailSeverity').html(severityBadge);
+        const colorClass = categoryColors[category] || 'bg-secondary';
+        const categoryIcon = categoryIcons[category] || 'bi-gear';
 
-        $('#detailDescription').text(audit.description);
+        $('#detailCategory').html(`
+            <span class="badge px-2 py-1 ${colorClass}">
+                <i class="bi ${categoryIcon} me-1"></i>${escapeHtml(category)}
+            </span>
+        `);
 
-        // Device & Network Information
-        $('#detailIPAddress').text(audit.ipAddress);
-        $('#detailDevice').text(audit.device);
-        $('#detailLocation').text(audit.branch);
-        $('#detailOrganization').text(audit.organization);
+        $('#detailSeverity').html(getSeverityBadge(severity, true));
+        $('#detailDescription').text(audit.description || '-');
+        $('#detailIPAddress').text(audit.ipAddress || '-');
+        $('#detailDevice').text(audit.device || '-');
+        $('#detailLocation').text(audit.branch || '-');
+        $('#detailOrganization').text(audit.organization || '-');
 
-        // Before & After Changes
-        if (audit.hasChanges && audit.changes && audit.changes.length > 0) {
+        const changesBody = $('#changesTableBody');
+        changesBody.empty();
+
+        if (audit.hasChanges && Array.isArray(audit.changes) && audit.changes.length > 0) {
             $('#changesSection').show();
-            const changesBody = $('#changesTableBody');
-            changesBody.empty();
-            
-            audit.changes.forEach(change => {
-                const row = `
+
+            audit.changes.forEach(function (change) {
+                changesBody.append(`
                     <tr>
-                        <td><strong>${change.field}</strong></td>
-                        <td><span class="badge bg-secondary">${change.before || '-'}</span></td>
-                        <td><span class="badge bg-primary">${change.after || '-'}</span></td>
+                        <td><strong>${escapeHtml(change.field || '-')}</strong></td>
+                        <td><span class="badge bg-secondary">${escapeHtml(change.before ?? '-')}</span></td>
+                        <td><span class="badge bg-primary">${escapeHtml(change.after ?? '-')}</span></td>
                     </tr>
-                `;
-                changesBody.append(row);
+                `);
             });
         } else {
             $('#changesSection').hide();
         }
 
-        // Additional Context
         if (audit.context) {
             $('#contextSection').show();
-            $('#detailContext').html(`<div class="alert alert-warning mb-0"><small>${audit.context}</small></div>`);
+            $('#detailContext').html(`
+                <div class="alert alert-warning mb-0">
+                    <small>${escapeHtml(audit.context)}</small>
+                </div>
+            `);
         } else {
             $('#contextSection').hide();
+            $('#detailContext').html('-');
         }
     }
 
-    // ============================================
-    // UTILITY FUNCTIONS
-    // ============================================
-    function formatTimestamp(timestamp) {
-        const date = new Date(timestamp);
-        const dateStr = date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
-        });
-        const timeStr = date.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: true
-        });
-        return { date: dateStr, time: timeStr };
-    }
-
-    function handleExport() {
-        alert('Export functionality will be implemented with backend integration.');
-    }
-
-    // ============================================
-    // COUNTERS UPDATE
-    // ============================================
+    /**
+     * ============================================
+     * COUNTERS
+     * ============================================
+     */
     function updateCounters() {
-        if (!auditTrailsTable) return;
-
         let totalActivities = 0;
         let criticalEvents = 0;
         let securityActions = 0;
         const activeUsers = new Set();
 
-        auditTrailsTable.rows({ search: 'applied' }).every(function () {
-            const row = this.node();
-            const severity = $(row).data('severity');
-            const category = $(row).data('category');
-            const userName = $(row).find('.user-avatar').parent().next().find('.fw-semibold').text();
-
+        auditTrailsData.forEach(function (audit) {
             totalActivities++;
+
+            const severity = (audit.severity || '').toLowerCase();
+            const category = (audit.category || '').toLowerCase();
+            const userName = audit?.user?.name || 'System';
+
             activeUsers.add(userName);
 
             if (severity === 'critical') {
@@ -472,5 +422,97 @@
         $('#activeUsers').text(activeUsers.size);
     }
 
-})();
+    /**
+     * ============================================
+     * EXPORT
+     * ============================================
+     */
+    function handleExport() {
+        alert('Export functionality will be implemented with backend integration.');
+    }
 
+    /**
+     * ============================================
+     * HELPERS
+     * ============================================
+     */
+    function formatTimestamp(timestamp) {
+        if (!timestamp) {
+            return {
+                date: '-',
+                time: '-'
+            };
+        }
+
+        const date = new Date(timestamp);
+
+        if (Number.isNaN(date.getTime())) {
+            return {
+                date: '-',
+                time: '-'
+            };
+        }
+
+        return {
+            date: date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            }),
+            time: date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            })
+        };
+    }
+
+    function getSeverityBadge(severity, compact = false) {
+        const cls = compact ? 'px-2 py-1' : 'px-2 rounded-1';
+
+        switch (severity) {
+            case 'critical':
+                return `<span class="badge ${cls} bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>Critical</span>`;
+            case 'warning':
+                return `<span class="badge ${cls} bg-warning text-dark"><i class="bi bi-exclamation-circle me-1"></i>Warning</span>`;
+            case 'success':
+                return `<span class="badge ${cls} bg-success"><i class="bi bi-check-circle me-1"></i>Success</span>`;
+            case 'info':
+            default:
+                return `<span class="badge ${cls} bg-info"><i class="bi bi-info-circle me-1"></i>Info</span>`;
+        }
+    }
+
+    function initializeTooltips() {
+        if (typeof bootstrap === 'undefined') return;
+
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (element) {
+            bootstrap.Tooltip.getOrCreateInstance(element);
+        });
+    }
+
+    function showTableError(message) {
+        destroyDataTable();
+
+        $('#auditTrailsTableBody').empty();
+
+        // Optionally show an alert or toast with the error message
+        console.error('Table Error:', message);
+
+        $('#totalActivities').text(0);
+        $('#criticalEvents').text(0);
+        $('#securityActions').text(0);
+        $('#activeUsers').text(0);
+    }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+})();

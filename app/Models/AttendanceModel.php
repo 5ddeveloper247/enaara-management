@@ -5,8 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use App\Traits\LogsActivity;
+
 class AttendanceModel extends Model
 {
+    use LogsActivity;
     protected $table = 'attendance_models';
 
     protected $fillable = [

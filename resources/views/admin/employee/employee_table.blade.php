@@ -5,12 +5,28 @@
     window.employeeEditUrlBase = "{{ url('admin/employee') }}";
 </script>
 
-<div id="tableViewWrapper" class=" row g-3">
-    <table id="employeeTable" class="display nowrap table table-striped" style="width:100%">
+<div id="tableViewWrapper" class="row g-3">
+    <div class="col-12">
+    <table id="employeeTable" class="display nowrap table table-striped table-hover w-100 mb-0">
         <thead class="bg-main">
             <tr>
                 <th>Profile</th>
-                <th>Biometric ID</th>
+                <th>TAS ID</th>
+                <th>Employee ID</th>
+                <th>Employee No</th>
+                <th>Organization</th>
+                <th>SBU</th>
+                <th>Department</th>
+                <th>Category</th>
+                <th>CNIC</th>
+                <th>Nationality</th>
+                <th>Gender</th>
+                <th>Date of Joining</th>
+                <th>Designation</th>
+                <th>Verification Status</th>
+                <th>Email</th>
+                <th>Cell Number</th>
+                <th>Summary</th>
                 <th>Employment Type</th>
                 <th>Site Assignment</th>
                 <th>Vendor</th>
@@ -21,6 +37,7 @@
         </thead>
         <tbody class="bg-transparent"></tbody>
     </table>
+    </div>
 </div>
 
 <div id="gridViewWrapper" class="d-none row g-3 p-3"></div>
@@ -42,7 +59,7 @@
             gridWrapper.classList.remove('d-none');
             btnGrid.classList.add('active');
             btnTable.classList.remove('active');
-            buildGrid();
+            if (typeof window.buildEmployeeGrid === 'function') window.buildEmployeeGrid();
         } else {
             gridWrapper.classList.add('d-none');
             tableWrapper.classList.remove('d-none');
@@ -52,56 +69,82 @@
         }
     }   
 
-    function buildGrid() {
+    window.buildEmployeeGrid = function buildGrid() {
         const grid = document.getElementById('gridViewWrapper');
         grid.innerHTML = '';
+
+        const gridFields = [
+            { label: 'TAS ID', idx: 1 },
+            { label: 'Employee No', idx: 3 },
+            { label: 'Organization', idx: 4 },
+            { label: 'SBU', idx: 5 },
+            { label: 'Department', idx: 6 },
+            { label: 'Category', idx: 7 },
+            { label: 'CNIC', idx: 8 },
+            { label: 'Nationality', idx: 9 },
+            { label: 'Gender', idx: 10 },
+            { label: 'Date of Joining', idx: 11 },
+            { label: 'Designation', idx: 12 },
+            { label: 'Email', idx: 14 },
+            { label: 'Cell Number', idx: 15 },
+            { label: 'Summary', idx: 16 },
+            { label: 'Employment Type', idx: 17 },
+            { label: 'Site Assignment', idx: 18 },
+            { label: 'Vendor', idx: 19 },
+            { label: 'Sync Status', idx: 20 },
+            { label: 'Floor Access', idx: 21 },
+        ];
 
         document.querySelectorAll('#employeeTable tbody tr').forEach(row => {
             const cells = row.querySelectorAll('td');
             if (!cells.length) return;
-            const avatarEl = row.querySelector('.user-avatar');
-            const avatar = avatarEl ? avatarEl.textContent.trim() : '??';
-            const name = cells[0].querySelector('.fw-semibold')?.textContent.trim() || '—';
-            const info = cells[0].querySelector('small')?.textContent.trim() || '—';
-            const bioEl = cells[1].querySelector('.badge');
-            const bio = bioEl ? bioEl.textContent.trim() : '—';
-            const typeEl = cells[2].querySelector('.badge');
-            const type = typeEl ? typeEl.textContent.trim() : '—';
-            const site = cells[3].textContent.trim();
-            const vendor = cells[4].textContent.trim();
-            const syncEl = cells[5].querySelector('.badge');
-            const sync = syncEl ? syncEl.innerHTML : '—';
-            const syncCls = syncEl ? syncEl.className : 'badge';
-            const floorEl = cells[6].querySelector('.badge');
-            const floor = floorEl ? floorEl.innerHTML : '<span class="text-muted small">—</span>';
-            const viewBtn = cells[7].querySelector('button');
+
+            const imgEl = cells[0]?.querySelector('img, .user-avatar');
+            const avatarHtml = imgEl ? imgEl.outerHTML : '<div class="user-avatar">??</div>';
+            const nameEl = cells[0]?.querySelector('.employee-profile-name');
+            const name = (nameEl && nameEl.textContent.trim()) || cells[0]?.textContent.trim().split(/\s+/).slice(0, 3).join(' ') || '—';
+            const empNo = cells[3]?.textContent.trim() || '—';
+            const nameTitle = name.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+            const verEl = cells[13]?.querySelector('.badge');
+            const ver = verEl ? verEl.outerHTML : '<span class="text-muted small">—</span>';
+            const viewBtn = cells[22]?.querySelector('button');
             const btnAttrs = viewBtn ? viewBtn.outerHTML : '';
+
+            let detailsHtml = '';
+            gridFields.forEach(({ label, idx }) => {
+                const td = cells[idx];
+                const val = td && td.innerHTML.trim()
+                    ? td.innerHTML.trim()
+                    : '<span class="text-muted">—</span>';
+                detailsHtml += `
+                    <div class="employee-grid-field mb-2 pb-2 border-bottom border-light">
+                        <div class="employee-grid-field-label">${label}</div>
+                        <div class="employee-grid-field-value text-break">${val}</div>
+                    </div>`;
+            });
 
             grid.insertAdjacentHTML('beforeend', `
         <div class="col-md-6 col-lg-4 col-xl-3">
             <div class="card border rounded-3 h-100">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <div class="user-avatar">${avatar}</div>
-                        <div>
-                            <div class="fw-semibold small">${name}</div>
-                            <small class="text-muted">${info}</small>
+                <div class="card-body p-3 d-flex flex-column">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        ${avatarHtml}
+                        <div class="min-w-0 flex-grow-1">
+                            <div class="fw-semibold small text-truncate" title="${nameTitle}">${name}</div>
+                            <small class="text-muted">${empNo}</small>
                         </div>
                     </div>
-                    <div class="d-flex flex-column gap-1 mb-3">
-                        <small><i class="bi bi-fingerprint me-1 text-muted"></i><span class="badge bg-info rounded-1 px-2">${bio}</span></small>
-                        <small><i class="bi bi-person-badge me-1 text-muted"></i>${type}</small>
-                        <small><i class="bi bi-geo-alt me-1 text-muted"></i>${site}</small>
-                        ${vendor !== '-' ? `<small><i class="bi bi-building me-1 text-muted"></i>${vendor}</small>` : ''}
+                    <div class="employee-grid-card-scroll flex-grow-1 mb-2">
+                        ${detailsHtml}
                     </div>
-                    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-                        <span class="${syncCls}">${sync}</span>
-                        ${floor}
-                        ${btnAttrs}
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top flex-wrap gap-2 mt-auto">
+                        <div class="d-flex align-items-center gap-1 flex-wrap">${ver}</div>
+                        <div>${btnAttrs}</div>
                     </div>
                 </div>
             </div>
         </div>`);
         });
-    }
+    };
 </script>

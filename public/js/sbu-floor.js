@@ -158,14 +158,25 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
-                    showValidationErrors('#addSbuFloorForm', xhr.responseJSON.errors);
+                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
+                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
+                        errorMessage += `<li>${err}</li>`;
+                    });
+                    errorMessage += '</ul></div>';
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Please check the following:',
+                        html: errorMessage,
+                        confirmButtonColor: '#1a237e',
+                        confirmButtonText: 'Understood'
+                    });
                 } else {
-                    showFormMessage(
-                        '#addSbuFloorForm',
-                        (xhr.responseJSON && xhr.responseJSON.message)
-                            ? xhr.responseJSON.message
-                            : 'Failed to create SBU floor.'
-                    );
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'System Error',
+                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to create SBU floor.'
+                    });
                 }
             },
             complete: function() {
@@ -275,14 +286,25 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
-                    showValidationErrors('#editSbuFloorForm', xhr.responseJSON.errors);
+                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
+                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
+                        errorMessage += `<li>${err}</li>`;
+                    });
+                    errorMessage += '</ul></div>';
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Please check the following:',
+                        html: errorMessage,
+                        confirmButtonColor: '#1a237e',
+                        confirmButtonText: 'Understood'
+                    });
                 } else {
-                    showFormMessage(
-                        '#editSbuFloorForm',
-                        (xhr.responseJSON && xhr.responseJSON.message)
-                            ? xhr.responseJSON.message
-                            : 'Failed to update SBU floor.'
-                    );
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'System Error',
+                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update SBU floor.'
+                    });
                 }
             },
             complete: function() {
@@ -353,12 +375,11 @@
                     }
                 },
                 error: function(xhr) {
-                    showFormMessage(
-                        '#editSbuFloorForm',
-                        (xhr.responseJSON && xhr.responseJSON.message)
-                            ? xhr.responseJSON.message
-                            : 'Failed to delete SBU floor.'
-                    );
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'System Error',
+                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete SBU floor.'
+                    });
                 },
                 complete: function() {
                     $('#deleteSbuFloorBtn')
@@ -421,7 +442,7 @@
             updateFloor();
         });
 
-        $(document).on('click', '#deleteSbuFloorBtn', function(e) {
+        $(document).on('click', '.delete-floor-btn', function(e) {
             e.preventDefault();
             deleteFloor(this);
         });

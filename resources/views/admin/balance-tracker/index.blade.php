@@ -37,13 +37,14 @@
         }
 
         th {
-            padding: 1.3rem 2rem !important;
+            padding: 0.75rem 1rem !important;
             color: var(--light-color) !important;
             white-space: nowrap !important;
+            font-size: 0.85rem !important;
         }
 
         td {
-            padding: 1rem 2rem !important;
+            padding: 0.75rem 1rem !important;
         }
 
         .dt-control {
@@ -84,8 +85,8 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="card border-0 rounded-4 mb-4">
-                    <div class="card-body p-0">
-                        <div class="d-flex justify-content-between align-items-center p-4 border-bottom">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4 pb-4 border-bottom">
                             <h6 class="mb-0 fw-semibold">Master Balance Table</h6>
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn btn-outline-secondary btn-sm" id="exportTableBtn">
@@ -103,7 +104,8 @@
                                                 <select class="form-select form-select-sm" id="filterOrganization">
                                                     <option value="">All Organizations</option>
                                                     @foreach($organizations as $org)
-                                                        <option value="{{ $org->name }}" data-id="{{ $org->id }}">{{ $org->name }}</option>
+                                                        <option value="{{ $org->name }}" data-id="{{ $org->id }}">
+                                                            {{ $org->name }}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
@@ -150,10 +152,11 @@
     @include('admin.balance-tracker.adjustment_canvas')
 @endsection
 
-<script>
-    const balanceData = @json($balances);
-</script>
 @push('scripts')
+    <script>
+        const balanceData = @json($balances);
+        const leaveTypes = @json($leaveTypes);
+    </script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- DataTables JS -->
@@ -173,147 +176,6 @@
     <script>
         // Global variables
         let balanceTable;
-
-        // Sample balance data
-        const sampleBalances = [{
-            id: 1,
-            employeeName: 'Ahmed Ali',
-            employeeId: 'EMP-001',
-            joinDate: '2020-01-15',
-            organization: 'Enaara Construction',
-            department: 'Sales',
-            annual: {
-                earned: 30,
-                used: 5,
-                remaining: 25
-            },
-            sick: {
-                earned: 15,
-                used: 2,
-                remaining: 13
-            },
-            casual: {
-                earned: 10,
-                used: 2,
-                remaining: 8
-            }
-        },
-        {
-            id: 2,
-            employeeName: 'Zainab Malik',
-            employeeId: 'EMP-002',
-            joinDate: '2019-03-20',
-            organization: 'Enaara Construction',
-            department: 'HR',
-            annual: {
-                earned: 30,
-                used: 8,
-                remaining: 22
-            },
-            sick: {
-                earned: 15,
-                used: 3,
-                remaining: 12
-            },
-            casual: {
-                earned: 10,
-                used: 1,
-                remaining: 9
-            }
-        },
-        {
-            id: 3,
-            employeeName: 'Bilal Ahmed',
-            employeeId: 'EMP-003',
-            joinDate: '2021-06-10',
-            organization: 'Enaara Properties',
-            department: 'IT',
-            annual: {
-                earned: 30,
-                used: 12,
-                remaining: 18
-            },
-            sick: {
-                earned: 15,
-                used: 1,
-                remaining: 14
-            },
-            casual: {
-                earned: 10,
-                used: 4,
-                remaining: 6
-            }
-        },
-        {
-            id: 4,
-            employeeName: 'Hira Ali',
-            employeeId: 'EMP-004',
-            joinDate: '2020-11-05',
-            organization: 'Enaara Real Estate',
-            department: 'Operations',
-            annual: {
-                earned: 30,
-                used: 15,
-                remaining: 15
-            },
-            sick: {
-                earned: 15,
-                used: 5,
-                remaining: 10
-            },
-            casual: {
-                earned: 10,
-                used: 3,
-                remaining: 7
-            }
-        },
-        {
-            id: 5,
-            employeeName: 'Hamza Khan',
-            employeeId: 'EMP-005',
-            joinDate: '2018-09-12',
-            organization: 'Enaara Construction',
-            department: 'Sales',
-            annual: {
-                earned: 30,
-                used: 3,
-                remaining: 27
-            },
-            sick: {
-                earned: 15,
-                used: 0,
-                remaining: 15
-            },
-            casual: {
-                earned: 10,
-                used: 1,
-                remaining: 9
-            }
-        },
-        {
-            id: 6,
-            employeeName: 'Sana Sheikh',
-            employeeId: 'EMP-006',
-            joinDate: '2022-02-28',
-            organization: 'Enaara Properties',
-            department: 'Finance',
-            annual: {
-                earned: 30,
-                used: 20,
-                remaining: 10
-            },
-            sick: {
-                earned: 15,
-                used: 8,
-                remaining: 7
-            },
-            casual: {
-                earned: 10,
-                used: 5,
-                remaining: 5
-            }
-        }
-        ];
 
         $(document).ready(function () {
             initializeBalanceTable();
@@ -349,26 +211,26 @@
             });
 
             // Dynamic Department Filtering
-            $('#filterOrganization').on('change', function() {
+            $('#filterOrganization').on('change', function () {
                 const orgId = $(this).find(':selected').data('id');
                 const deptSelect = $('#filterDepartment');
-                
+
                 // Clear existing options except the first one
                 deptSelect.html('<option value="">All Departments</option>');
-                
+
                 // Fetch departments via AJAX
                 const url = "{{ route('admin.role.departmentsByOrganization') }}";
                 $.ajax({
                     url: url,
                     data: { organization_id: orgId },
-                    success: function(response) {
+                    success: function (response) {
                         if (response.success) {
-                            response.departments.forEach(function(dept) {
+                            response.departments.forEach(function (dept) {
                                 deptSelect.append(`<option value="${dept.name}">${dept.name}</option>`);
                             });
                         }
                     },
-                    error: function() {
+                    error: function () {
                         console.error('Failed to fetch departments');
                     }
                 });
@@ -378,17 +240,17 @@
             $('#exportBtn, #exportTableBtn').on('click', function () {
                 const organization = $('#filterOrganization').val();
                 const department = $('#filterDepartment').val();
-                
+
                 let url = "{{ route('admin.balance-tracker.export') }}";
                 const params = new URLSearchParams();
-                
+
                 if (organization) params.append('organization', organization);
                 if (department) params.append('department', department);
-                
+
                 if (params.toString()) {
                     url += '?' + params.toString();
                 }
-                
+
                 window.location.href = url;
             });
         });
@@ -398,12 +260,7 @@
             tbody.empty();
 
             balanceData.forEach(employee => {
-                const annualPercent = employee.annual.earned > 0 ? (employee.annual.remaining / employee.annual.earned) * 100 : 0;
-                const sickPercent = employee.sick.earned > 0 ? (employee.sick.remaining / employee.sick.earned) * 100 : 0;
-                const casualPercent = employee.casual.earned > 0 ? (employee.casual.remaining / employee.casual.earned) * 100 : 0;
-
-                const row = `
-                <tr>
+                let columns = `
                     <td class="dt-control"></td>
                     <td>
                         <div class="d-flex align-items-center">
@@ -417,61 +274,48 @@
                     </td>
                     <td>${employee.organization}</td>
                     <td>${employee.department}</td>
-                    <td>
-                        <div class="small mb-1">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Earned: <strong>${employee.annual.earned}</strong></span>
-                                <span>Used: <strong>${employee.annual.used}</strong></span>
+                `;
+
+                // Add dynamic leave type columns
+                leaveTypes.forEach((type, index) => {
+                    const quota = employee.quotas[type.id] || { earned: 0, used: 0, remaining: 0 };
+                    const progressColor = getProgressColor(type.name);
+                    
+                    if (quota.earned === 0 && quota.used === 0 && quota.remaining === 0) {
+                        columns += `<td class="text-center align-middle"><span class="text-muted opacity-50">-</span></td>`;
+                    } else {
+                        columns += `
+                        <td>
+                            <div class="small mb-1">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Earned: <strong>${quota.earned}</strong></span>
+                                    <span>Used: <strong>${quota.used}</strong></span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Remaining: <strong class="text-success">${quota.remaining}</strong></span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${quota.earned > 0 ? (quota.remaining / quota.earned) * 100 : 0}%"></div>
+                                </div>
                             </div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Remaining: <strong class="text-success">${employee.annual.remaining}</strong></span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar bg-main" role="progressbar" style="width: ${annualPercent}%"></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="small mb-1">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Earned: <strong>${employee.sick.earned}</strong></span>
-                                <span>Used: <strong>${employee.sick.used}</strong></span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Remaining: <strong class="text-success">${employee.sick.remaining}</strong></span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar bg-danger" role="progressbar" style="width: ${sickPercent}%"></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="small mb-1">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Earned: <strong>${employee.casual.earned}</strong></span>
-                                <span>Used: <strong>${employee.casual.used}</strong></span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Remaining: <strong class="text-success">${employee.casual.remaining}</strong></span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar bg-info" role="progressbar" style="width: ${casualPercent}%"></div>
-                            </div>
-                        </div>
-                    </td>
+                        </td>
+                        `;
+                    }
+                });
+
+                columns += `
                     <td class="text-end">
                         <button type="button" class="btn btn-sm btn-outline-primary adjust-balance-btn" 
                                 data-employee-id="${employee.id}" data-bs-toggle="tooltip" title="Adjust Balance">
                             <i class="bi bi-pencil-square"></i>
                         </button>
                     </td>
-                </tr>
                 `;
 
-                tbody.append(row);
+                tbody.append(`<tr>${columns}</tr>`);
             });
 
-            // Initialize DataTable
+            const leafTypeCount = leaveTypes.length;
             balanceTable = initUserDataTable('#balanceTable', {
                 pageLength: 25,
                 lengthMenu: [
@@ -481,25 +325,26 @@
                 order: [
                     [1, 'asc']
                 ],
-                scrollX: false,
+                scrollX: true,
                 responsive: {
                     details: {
                         type: 'column',
                         target: 0
                     }
                 },
-                columnDefs: [{
-                    targets: 0,
-                    orderable: false,
-                    className: 'dt-control',
-                    responsivePriority: 0
-                },
-                {
-                    targets: 7,
-                    orderable: false,
-                    className: 'no-toggle',
-                    responsivePriority: 1
-                }
+                columnDefs: [
+                    {
+                        targets: 0,
+                        orderable: false,
+                        className: 'dt-control',
+                        responsivePriority: 0
+                    },
+                    {
+                        targets: leafTypeCount + 4, // Actions column (control + 3 standard + leafTypeCount)
+                        orderable: false,
+                        className: 'no-toggle',
+                        responsivePriority: 1
+                    }
                 ],
                 language: {
                     search: "",
@@ -512,8 +357,7 @@
                 buttons: [{
                     extend: 'colvis',
                     text: 'Select Columns',
-                    className: 'btn btn-sm border-0 bg-main text-white',
-                    columns: [1, 2, 3, 4, 5, 6]
+                    className: 'btn btn-sm border-0 bg-main text-white'
                 }],
                 drawCallback: function () {
                     $('[data-bs-toggle="tooltip"]').tooltip();
@@ -521,24 +365,13 @@
             });
         }
 
-        function showAdjustmentCanvas(employee) {
-            // Populate adjustment canvas
-            $('#adjustEmployeeName').text(employee.employeeName);
-            $('#adjustEmployeeId').text(employee.employeeId);
-            $('#adjustEmployeeIdHidden').val(employee.id);
 
-            // Set current balances
-            $('#currentAnnualBalance').text(employee.annual.remaining);
-            $('#currentSickBalance').text(employee.sick.remaining);
-            $('#currentCasualBalance').text(employee.casual.remaining);
-
-            // Reset form
-            $('#adjustmentForm')[0].reset();
-            $('#adjustmentType').val('add').trigger('change');
-
-            // Show canvas
-            const canvas = new bootstrap.Offcanvas(document.getElementById('adjustmentCanvas'));
-            canvas.show();
+        function getProgressColor(name) {
+            const lowerName = name.toLowerCase();
+            if (lowerName.includes('annual')) return 'bg-main';
+            if (lowerName.includes('sick')) return 'bg-danger';
+            if (lowerName.includes('casual') || lowerName.includes('causal')) return 'bg-info';
+            return 'bg-main'; // Default
         }
 
         function getInitials(name) {

@@ -6,8 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\LeaveBalanceAdjustment;
 
+use App\Traits\LogsActivity;
+
 class EmployeeLeaveQuota extends Model
 {
+    use LogsActivity;
     protected $table = 'employee_leave_quotas';
 
     protected $fillable = [

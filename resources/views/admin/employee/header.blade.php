@@ -46,12 +46,11 @@
                         <label class="form-label small text-muted mb-1">Department</label>
                         <select class="form-select form-select-sm" id="filterDepartment">
                             <option value="">All Departments</option>
-                            <option value="Sales">Sales</option>
-                            <option value="IT">IT</option>
-                            <option value="HR">HR</option>
-                            <option value="Operations">Operations</option>
-                            <option value="Finance">Finance</option>
-                            <option value="Legal">Legal</option>
+                            @isset($departments)
+                                @foreach ($departments as $dept)
+                                    <option value="{{ $dept->name }}">{{ $dept->name }}</option>
+                                @endforeach
+                            @endisset
                         </select>
                     </div>
                 </li>

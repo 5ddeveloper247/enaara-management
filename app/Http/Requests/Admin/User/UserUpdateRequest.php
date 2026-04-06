@@ -4,7 +4,6 @@ namespace App\Http\Requests\Admin\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class UserUpdateRequest extends FormRequest
 {
@@ -21,7 +20,6 @@ class UserUpdateRequest extends FormRequest
             'name'        => ['required', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
             'email'       => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($id)],
             'employee_id' => ['required', 'integer', Rule::exists('employees', 'id')->whereNotNull('role_id'), Rule::unique('users', 'employee_id')->ignore($id)],
-            'password'    => ['nullable', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
         ];
     }
 
@@ -36,7 +34,6 @@ class UserUpdateRequest extends FormRequest
             'employee_id.required' => 'Please link this user to an employee.',
             'employee_id.exists'   => 'Selected employee does not exist or does not have a role assigned.',
             'employee_id.unique'   => 'This employee already has a user account.',
-            'password.confirmed'=> 'Password confirmation does not match.',
         ];
     }
 }

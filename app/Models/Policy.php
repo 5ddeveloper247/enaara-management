@@ -5,8 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\LogsActivity;
+
 class Policy extends Model
 {
+    use LogsActivity;
     use HasFactory;
 
     protected $fillable = [

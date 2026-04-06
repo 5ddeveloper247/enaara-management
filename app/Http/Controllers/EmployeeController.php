@@ -54,12 +54,16 @@ class EmployeeController extends Controller
         }
     }
 
-    public function tableData(): JsonResponse
+    public function tableData(Request $request): JsonResponse
     {
         try {
             return response()->json([
                 'success' => true,
-                'data'    => $this->employeeService->getTableData(),
+                'data'    => $this->employeeService->getTableData([
+                    'filter_employee_type' => $request->query('filter_employee_type'),
+                    'filter_department'    => $request->query('filter_department'),
+                    'filter_vendor'        => $request->query('filter_vendor'),
+                ]),
             ]);
         } catch (\Exception $e) {
             Log::error('Employee table data failed', ['error' => $e->getMessage()]);
@@ -77,6 +81,31 @@ class EmployeeController extends Controller
         } catch (\Exception $e) {
             Log::error('Employee stats failed', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'stats' => []], 500);
+        }
+    }
+
+    public function previewEmployeeCode(Request $request): JsonResponse
+    {
+        if (! validatePermissions('admin/employee')) {
+            return response()->json(['success' => false, 'message' => 'You do not have permission to perform this action.'], 403);
+        }
+
+        $validated = $request->validate([
+            'organization_id' => ['required', 'integer', 'exists:organizations,id'],
+            'role_id'         => ['required', 'integer', 'exists:roles,id'],
+            'sbu_id'          => ['nullable', 'integer', 'exists:sbus,id'],
+        ]);
+
+        try {
+            $code = $this->employeeService->previewNextEmployeeCode(
+                (int) $validated['organization_id'],
+                (int) $validated['role_id'],
+                isset($validated['sbu_id']) ? (int) $validated['sbu_id'] : null
+            );
+
+            return response()->json(['success' => true, 'code' => $code]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 

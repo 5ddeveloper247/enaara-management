@@ -2,13 +2,13 @@
 <div class="offcanvas offcanvas-end bg-main text-white" tabindex="-1" id="addOrganizationCanvas" aria-labelledby="addOrganizationCanvasLabel" style="width: 600px;">
     <div class="offcanvas-header border-bottom" style="border-color: #ffffff42 !important">
         <h5 class="offcanvas-title" id="addOrganizationCanvasLabel">
-            <i class="bi bi-building-add me-2"></i>Add New Company
+            <i class="bi bi-building-add me-2"></i>Add New Organization
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
 
     <div class="offcanvas-body">
-        <form id="addOrganizationForm" action="{{ route('admin.organization.store') }}" method="POST">
+        <form id="addOrganizationForm" action="{{ route('admin.organization.store') }}" method="POST" novalidate>
             @csrf
 
             <div class="mb-4">
@@ -91,10 +91,90 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const addOrgCanvas = document.getElementById('addOrganizationCanvas');
+        const addOrgForm = document.getElementById('addOrganizationForm');
+        const saveOrgBtn = document.getElementById('saveOrganizationBtn');
+
         if (addOrgCanvas) {
             addOrgCanvas.addEventListener('hidden.bs.offcanvas', function() {
-                document.getElementById('addOrganizationForm').reset();
+                addOrgForm.reset();
                 document.getElementById('orgStatus').value = '1';
+            });
+        }
+
+        if (addOrgForm) {
+            addOrgForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(addOrgForm);
+                const originalHtml = saveOrgBtn.innerHTML;
+
+                saveOrgBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+                saveOrgBtn.disabled = true;
+
+                fetch(addOrgForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json().then(data => ({ status: response.status, data })))
+                .then(({ status, data }) => {
+                    if (status === 200 || data.success) {
+                        const offcanvas = bootstrap.Offcanvas.getInstance(addOrgCanvas);
+                        if (offcanvas) offcanvas.hide();
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: data.message || 'Organization created successfully.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else if (status === 422) {
+                        // Validation errors
+                        let errorMessage = '';
+                        if (data.errors) {
+                            errorMessage = '<div class="text-start mt-2">';
+                            errorMessage += '<ul class="mb-0">';
+                            Object.values(data.errors).flat().forEach(err => {
+                                errorMessage += `<li>${err}</li>`;
+                            });
+                            errorMessage += '</ul></div>';
+                        } else {
+                            errorMessage = data.message || 'Validation failed.';
+                        }
+                        
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Please check the following:',
+                            html: errorMessage,
+                            confirmButtonColor: '#1a237e',
+                            confirmButtonText: 'Understood'
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: data.message || 'Failed to create organization.'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Something went wrong. Please try again.'
+                    });
+                })
+                .finally(() => {
+                    saveOrgBtn.innerHTML = originalHtml;
+                    saveOrgBtn.disabled = false;
+                });
             });
         }
     });

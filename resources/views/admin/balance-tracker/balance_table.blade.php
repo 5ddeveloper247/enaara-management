@@ -5,9 +5,9 @@
             <th>Employee</th>
             <th>Organization</th>
             <th>Department</th>
-            <th>Annual Leave</th>
-            <th>Sick Leave</th>
-            <th>Casual Leave</th>
+            @foreach($leaveTypes as $type)
+                <th>{{ $type->name }}</th>
+            @endforeach
             <th class="text-end">Actions</th>
         </tr>
     </thead>
