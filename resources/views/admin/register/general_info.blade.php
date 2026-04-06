@@ -107,14 +107,10 @@
             <input type="text" name="sect" class="form-control">
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Spouse Name & Nationality</label>
-            <input type="text" name="spouse_name" class="form-control">
-        </div>
 
         <div class="col-md-6">
             <label class="form-label">Marital Status <span class="text-danger">*</span></label>
-            <select name="marital_status" class="form-select"
+            <select name="marital_status" id="marital_status" class="form-select"
                 style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
                 <option value="">Select</option>
                 <option>Single</option>
@@ -124,6 +120,12 @@
                 <option>Widowed</option>
             </select>
         </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Spouse Name & Nationality</label>
+            <input type="text" name="spouse_name" id="spouse_name" class="form-control">
+        </div>
+
 
         {{-- NOK --}}
         <div class="col-md-3">
@@ -155,13 +157,17 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
         fetch('https://cdn.jsdelivr.net/npm/country-list@2.2.0/data.json')
-            .then(function (r) { return r.json(); })
-            .then(function (countries) {
-                countries.sort(function (a, b) { return a.name.localeCompare(b.name); });
+            .then(function(r) {
+                return r.json();
+            })
+            .then(function(countries) {
+                countries.sort(function(a, b) {
+                    return a.name.localeCompare(b.name);
+                });
                 const sel = document.getElementById('nationality_select');
-                countries.forEach(function (c) {
+                countries.forEach(function(c) {
                     const opt = document.createElement('option');
                     opt.value = c.name;
                     opt.textContent = c.name;
@@ -169,8 +175,8 @@
                 });
                 if (sel.dataset.prefill) sel.value = sel.dataset.prefill;
             })
-            .catch(function () {
-                ['Pakistani', 'Indian', 'British', 'American', 'Other'].forEach(function (n) {
+            .catch(function() {
+                ['Pakistani', 'Indian', 'British', 'American', 'Other'].forEach(function(n) {
                     document.getElementById('nationality_select').insertAdjacentHTML('beforeend',
                         '<option value="' + n + '">' + n + '</option>');
                 });
@@ -184,5 +190,30 @@
             preview.style.display = 'block';
         }
     }
+</script>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const maritalStatus = document.getElementById('marital_status');
+        const spouseField = document.getElementById('spouse_name');
+
+        function toggleSpouseField() {
+            const spouseContainer = spouseField.closest('.col-md-6');
+
+            if (maritalStatus.value === 'Single') {
+                spouseField.value = '';
+                spouseField.disabled = true;
+                spouseContainer.style.display = 'none';
+            } else {
+                spouseField.disabled = false;
+                spouseContainer.style.display = 'block';
+            }
+        }
+
+        maritalStatus.addEventListener('change', toggleSpouseField);
+
+        // page load pe bhi run karo
+        toggleSpouseField();
+    });
 </script>
