@@ -550,7 +550,7 @@ class EmployeeService
                 'join_date'           => $emp->join_date?->format('d M Y') ?? '-',
                 'designation'         => $emp->designation ?? '-',
                 'verification_status' => $emp->policeVerification?->verification_status ?? '-',
-                'email'               => $emp->email ?? '-',
+                'email'               => $emp->contact?->email ?? $emp->email ?? '-',
                 'cell_no'             => $emp->contact?->cell_no ?? '-',
                 'employment_type'     => $emp->employment_type ?? '-',
                 'employee_type'       => $employeeType,
