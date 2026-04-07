@@ -671,6 +671,7 @@ class EmployeeService
             'sbu_id'              => $employee->sbu_id,
             'department_id'       => $employee->department_id,
             'role_id'             => $employee->role_id,
+            'employee_code'       => $employee->employee_code,
             'full_name'           => $employee->full_name,
             'father_name'         => $employee->father_name,
             'cnic'                => $employee->cnic,
