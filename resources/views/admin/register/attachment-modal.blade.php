@@ -26,9 +26,10 @@
         box-shadow: none !important;
         color: #fff !important;
     }
-.form-select option{
-    border: none !important;
-}
+
+    .form-select option {
+        border: none !important;
+    }
 </style>
 
 <div class="modal fade" id="attachmentModal" tabindex="-1" aria-labelledby="deleteRoleModalLabel" aria-hidden="true">
@@ -191,13 +192,27 @@
         const desc = document.getElementById('attachmentDesc').value.trim();
 
         if (!name) {
-            alert('Please enter an attachment name.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Field',
+                text: 'Please enter an attachment name.',
+                confirmButtonColor: '#012445',
+                backdrop: true,
+                allowOutsideClick: false
+            });
             return;
         }
 
         const files = attachmentUploadedFiles.filter(Boolean);
         if (!files.length) {
-            alert('Please select at least one file.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Field',
+                text: 'Please select at least one file to upload.',
+                confirmButtonColor: '#012445',
+                backdrop: true,
+                allowOutsideClick: false
+            });
             return;
         }
 
@@ -283,7 +298,7 @@
                  </div>` : ''}
                     ${filesHtml}
                     <div class="pt-3 mt-2 border-top d-flex gap-2 justify-content-end" style="border-color:#ffffff1a !important;">
-                        <button class="btn btn-sm btn-outline-light" onclick="deleteAttachment(${JSON.stringify(a.localId)})">
+                       <button class="btn btn-sm btn-outline-light" onclick="deleteAttachment('${escAtt(a.localId)}')">
                             <i class="bi bi-trash me-1"></i>Delete
                         </button>
                     </div>
@@ -297,17 +312,20 @@
         renderAttachmentListing();
     }
 
-    window.getAttachmentPayload = function () {
+    window.getAttachmentPayload = function() {
         const keptAttachmentIds = employeeAttachments
             .filter(a => !!a.existingId)
             .map(a => a.existingId);
         const newAttachments = employeeAttachments
             .filter(a => !a.existingId && Array.isArray(a.files) && a.files.length);
 
-        return { keptAttachmentIds, newAttachments };
+        return {
+            keptAttachmentIds,
+            newAttachments
+        };
     };
 
-    window.setExistingAttachments = function (attachments) {
+    window.setExistingAttachments = function(attachments) {
         employeeAttachments = (attachments || []).map((a) => ({
             localId: 'existing-' + a.id,
             existingId: a.id,

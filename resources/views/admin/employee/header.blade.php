@@ -32,11 +32,39 @@
                 <!-- Employee Type Filter -->
                 <li>
                     <div class="mb-3">
-                        <label class="form-label small text-muted mb-1">Employee Type</label>
+                        <label class="form-label small text-muted mb-1">Employee Category</label>
                         <select class="form-select form-select-sm" id="filterEmployeeType">
-                            <option value="">All Types</option>
-                            <option value="Internal">Internal</option>
-                            <option value="Third-party">Third-party</option>
+                            <option value="">All Categories</option>
+                            <option value="Internal">Internal (Direct)</option>
+                            <option value="Third-party">Third-party (Outsourced)</option>
+                        </select>
+                    </div>
+                </li>
+                <!-- Organization Filter -->
+                <li>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-1">Organizations</label>
+                        <select class="form-select form-select-sm" id="filterOrganization">
+                            <option value="">All Organizations</option>
+                            @isset($organizations)
+                            @foreach ($organizations as $org)
+                            <option value="{{ $org->name }}">{{ $org->name }}</option>
+                            @endforeach
+                            @endisset
+                        </select>
+                    </div>
+                </li>
+                <!-- SBU Filter -->
+                <li>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-1">SBU'S</label>
+                        <select class="form-select form-select-sm" id="filterSbu">
+                            <option value="">All SBU's</option>
+                            @isset($sbus)
+                            @foreach ($sbus as $sbu)
+                            <option value="{{ $sbu->name }}">{{ $sbu->name }}</option>
+                            @endforeach
+                            @endisset
                         </select>
                     </div>
                 </li>
@@ -47,25 +75,28 @@
                         <select class="form-select form-select-sm" id="filterDepartment">
                             <option value="">All Departments</option>
                             @isset($departments)
-                                @foreach ($departments as $dept)
-                                    <option value="{{ $dept->name }}">{{ $dept->name }}</option>
-                                @endforeach
+                            @foreach ($departments as $dept)
+                            <option value="{{ $dept->name }}">{{ $dept->name }}</option>
+                            @endforeach
                             @endisset
                         </select>
                     </div>
                 </li>
-                <!-- Vendor Filter -->
+
                 <li>
                     <div class="mb-3">
-                        <label class="form-label small text-muted mb-1">Vendor</label>
-                        <select class="form-select form-select-sm" id="filterVendor">
-                            <option value="">All Vendors</option>
-                            <option value="TechStaff Solutions">TechStaff Solutions</option>
-                            <option value="Global Workforce Inc">Global Workforce Inc</option>
-                            <option value="StaffPro Services">StaffPro Services</option>
-                            <option value="Manpower Group">Manpower Group</option>
-                            <option value="Adecco">Adecco</option>
-                        </select>
+                        <label class="form-label small text-muted mb-1">Name</label>
+                        <input type="text" class="form-control form-control-sm" id="filterName"
+                            placeholder="Enter employee name">
+                    </div>
+                </li>
+
+                <!-- CNIC Filter -->
+                <li>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-1">CNIC</label>
+                        <input type="text" class="form-control form-control-sm" id="filterCnic"
+                            placeholder="Enter CNIC">
                     </div>
                 </li>
                 <li>

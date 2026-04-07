@@ -5,7 +5,7 @@
 @section('page-subtitle', 'Set a new password for your account')
 
 @section('content')
-    <div>
+    <div class="w-75">
         @if ($errors->any())
             <div class="alert alert-danger mb-3">
                 <ul class="mb-0 list-unstyled">
@@ -40,7 +40,7 @@
 
                 <div class="input-group">
                     <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Enter your new password" required>
-                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                    <button class="btn btn-secondary" type="button" id="togglePassword">
                         <i class="bi bi-eye" id="togglePasswordIcon"></i>
                     </button>
                 </div>
@@ -62,12 +62,12 @@
                 @enderror
             </div>
 
-            <button type="submit" class="btn btn-auth w-100 mb-3">
+            <button type="submit" class=" btn-auth w-100 mb-3">
                 <i class="bi bi-arrow-repeat me-2"></i>Reset Password
             </button>
 
             <div class="auth-footer">
-                <p class="mb-0">Remembered your password? <a href="{{ route('login') }}">Back to login</a></p>
+                <p class="mb-0">Remembered your password? <a href="{{ route('login') }}" class="frg">Back to login</a></p>
             </div>
         </form>
 

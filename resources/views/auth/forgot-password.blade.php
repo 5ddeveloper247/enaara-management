@@ -5,7 +5,7 @@
 @section('page-subtitle', 'Enter your email to get a reset link')
 
 @section('content')
-    <div>
+    <div class="w-75" style="z-index: 1000">
         @if ($errors->any())
             <div class="alert alert-danger mb-3">
                 <ul class="mb-0 list-unstyled">
@@ -37,12 +37,12 @@
                 @enderror
             </div>
 
-            <button type="submit" class="btn btn-auth w-100 mb-3">
+            <button type="submit" class=" btn-auth w-100 mb-3">
                 <i class="bi bi-send me-2"></i>Send Reset Link
             </button>
 
             <div class="auth-footer">
-                <p class="mb-0">Remembered your password? <a href="{{ route('login') }}">Back to login</a></p>
+                <p class="mb-0">Remembered your password? <a href="{{ route('login') }}" class="frg">Back to login</a></p>
             </div>
         </form>
     </div>

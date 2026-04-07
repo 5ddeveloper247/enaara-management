@@ -65,7 +65,7 @@
                                 <th>Date of Birth <span class="text-danger">*</span></th>
                                 <th>Relation <span class="text-danger">*</span></th>
                                 <th>Occupation</th>
-                                <th></th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="familyTable">
@@ -116,7 +116,7 @@
                                 <th>End Date <span class="text-danger">*</span></th>
                                 <th>Field of Study</th>
                                 <th>University / Board / Institute</th>
-                                <th></th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="academicTable">
@@ -160,7 +160,7 @@
                                 <th>To <span class="text-danger">*</span></th>
                                 <th>Salary</th>
                                 <th>Reason for Leaving</th>
-                                <th></th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="employmentTable">

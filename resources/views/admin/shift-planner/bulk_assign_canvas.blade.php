@@ -370,7 +370,7 @@ $(document).ready(function() {
             method: 'POST',
             data: JSON.stringify(payload),
             contentType: 'application/json',
-            headers: { 'X-CSRF-TOKEN': '@json(csrf_token())' },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function(res) {
                 if(res.success) {
                     Swal.fire({ icon: 'success', title: 'Assigned', text: res.message });

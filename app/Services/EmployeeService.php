@@ -45,8 +45,9 @@ class EmployeeService
         $employees     = Employee::with(['organization', 'department'])
             ->orderByDesc('id')
             ->paginate(20);
-
-        return view('admin.employee.index', compact('organizations', 'employees'));
+        $departments=Department::where('is_active',true)->orderBy('name')->get();
+        $sbus = Sbu::where('is_active', true)->orderBy('name')->get();
+        return view('admin.employee.index', compact('organizations', 'employees', 'departments', 'sbus'));
     }
 
     public function getFormData(): array
@@ -509,15 +510,35 @@ class EmployeeService
             }
         }
 
-        $departmentName = $filters['filter_department'] ?? null;
-        if (!empty($departmentName)) {
+        if (!empty($filters['filter_organization'])) {
+            $orgName = $filters['filter_organization'];
+            $query->whereHas('organization', function ($q) use ($orgName) {
+                $q->where('name', $orgName);
+            });
+        }
+
+        if (!empty($filters['filter_sbu'])) {
+            $sbuName = $filters['filter_sbu'];
+            $query->whereHas('sbu', function ($q) use ($sbuName) {
+                $q->where('name', $sbuName);
+            });
+        }
+
+        if (!empty($filters['filter_department'])) {
+            $departmentName = $filters['filter_department'];
             $query->whereHas('department', function ($q) use ($departmentName) {
                 $q->where('name', $departmentName);
             });
         }
 
-        if (!empty($filters['filter_vendor'])) {
-            $query->where('employment_type', 'Third-party');
+        if (!empty($filters['filter_name'])) {
+            $name = $filters['filter_name'];
+            $query->where('full_name', 'like', '%' . $name . '%');
+        }
+
+        if (!empty($filters['filter_cnic'])) {
+            $cnic = $filters['filter_cnic'];
+            $query->where('cnic', 'like', '%' . $cnic . '%');
         }
 
         $employees = $query->get();
@@ -571,7 +592,7 @@ class EmployeeService
         $total          = $employees->count();
         $active         = $employees->where('is_active', true)->count();
         $hasbiometric   = $employees->whereNotNull('biometric_id');
-        $biometricLinked= $hasbiometric->count();
+        $biometricLinked = $hasbiometric->count();
         $synced         = $hasbiometric->where('sync_with_biometric', true)->count();
         $pending        = $hasbiometric->where('sync_with_biometric', false)->count();
         $internal       = $employees->where('employment_type', '!=', 'Third-party')->count();
@@ -607,9 +628,16 @@ class EmployeeService
     public function edit(int $id): View
     {
         $employee = Employee::with([
-            'policeVerification', 'armedForce', 'contact', 'bankDetail',
-            'familyMembers', 'academics', 'exEmployments', 'medical',
-            'references', 'mediaFiles',
+            'policeVerification',
+            'armedForce',
+            'contact',
+            'bankDetail',
+            'familyMembers',
+            'academics',
+            'exEmployments',
+            'medical',
+            'references',
+            'mediaFiles',
         ])->findOrFail($id);
 
         $formData = $this->getFormData();

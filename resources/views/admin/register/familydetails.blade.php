@@ -11,7 +11,7 @@
                     <th>Date of Birth</th>
                     <th>Relation</th>
                     <th>Occupation</th>
-                    <th></th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody id="familyTable">

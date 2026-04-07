@@ -7,14 +7,20 @@
         <div class="d-flex align-items-end gap-2">
             <div class="col-2">
                 <label class="form-label">Upload Image</label>
-                <label for="uploadImage" class="d-flex flex-column align-items-center justify-content-center gap-2"
+
+                <label for="uploadImage" id="uploadImageBox" class="d-flex flex-column align-items-center justify-content-center gap-2"
                     style="width:160px; height:160px; border: 2px dashed var(--main-color); border-radius: 10px; cursor:pointer; background:#f8f9fa1a;">
                     <i class="bi bi-cloud-arrow-up fs-1 text-secondary"></i>
                     <span style="font-size:.72rem; color:#6c757d;">Click to upload</span>
                     <input type="file" id="uploadImage" name="profile_photo" accept="image/*" class="d-none" onchange="previewImg(this)">
                 </label>
-                <img id="imgPreview" src="" alt=""
-                    style="display:none; width:160px; height:160px; object-fit:cover; border-radius:10px; margin-top:6px; border:2px solid var(--main-color);">
+
+                <div id="imgPreviewWrapper" style="display:none; position:relative; width:160px; height:160px; margin-top:6px;">
+                    <img id="imgPreview" src="" alt=""
+                        style="width:160px; height:160px; object-fit:cover; border-radius:10px; border:2px solid var(--main-color);">
+                    <button type="button" id="removeImageBtn" onclick="removePreviewImg()" class="d-none" style="  position:absolute; top:6px; right:6px; width:28px; height:28px; border:none; border-radius:50%; background:#dc3545; color:#fff; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.2); padding:0;">
+                        &times; </button>
+                </div>
             </div>
 
             <div class="col-md-5">
@@ -107,14 +113,10 @@
             <input type="text" name="sect" class="form-control">
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Spouse Name & Nationality</label>
-            <input type="text" name="spouse_name" class="form-control">
-        </div>
 
         <div class="col-md-6">
             <label class="form-label">Marital Status <span class="text-danger">*</span></label>
-            <select name="marital_status" class="form-select"
+            <select name="marital_status" id="marital_status" class="form-select"
                 style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
                 <option value="">Select</option>
                 <option>Single</option>
@@ -124,6 +126,12 @@
                 <option>Widowed</option>
             </select>
         </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Spouse Name & Nationality</label>
+            <input type="text" name="spouse_name" id="spouse_name" class="form-control">
+        </div>
+
 
         {{-- NOK --}}
         <div class="col-md-3">
@@ -155,13 +163,17 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
         fetch('https://cdn.jsdelivr.net/npm/country-list@2.2.0/data.json')
-            .then(function (r) { return r.json(); })
-            .then(function (countries) {
-                countries.sort(function (a, b) { return a.name.localeCompare(b.name); });
+            .then(function(r) {
+                return r.json();
+            })
+            .then(function(countries) {
+                countries.sort(function(a, b) {
+                    return a.name.localeCompare(b.name);
+                });
                 const sel = document.getElementById('nationality_select');
-                countries.forEach(function (c) {
+                countries.forEach(function(c) {
                     const opt = document.createElement('option');
                     opt.value = c.name;
                     opt.textContent = c.name;
@@ -169,20 +181,67 @@
                 });
                 if (sel.dataset.prefill) sel.value = sel.dataset.prefill;
             })
-            .catch(function () {
-                ['Pakistani', 'Indian', 'British', 'American', 'Other'].forEach(function (n) {
+            .catch(function() {
+                ['Pakistani', 'Indian', 'British', 'American', 'Other'].forEach(function(n) {
                     document.getElementById('nationality_select').insertAdjacentHTML('beforeend',
                         '<option value="' + n + '">' + n + '</option>');
                 });
             });
     });
-
+    // code related to image preview and removal
     function previewImg(input) {
         const preview = document.getElementById('imgPreview');
+        const previewWrapper = document.getElementById('imgPreviewWrapper');
+        const removeBtn = document.getElementById('removeImageBtn');
+        const uploadBox = document.getElementById('uploadImageBox');
+
         if (input.files && input.files[0]) {
             preview.src = URL.createObjectURL(input.files[0]);
-            preview.style.display = 'block';
+
+            previewWrapper.style.display = 'block';
+            uploadBox.classList.add('d-none');
+            removeBtn.classList.remove('d-none');
         }
     }
 
+    function removePreviewImg() {
+        const input = document.getElementById('uploadImage');
+        const preview = document.getElementById('imgPreview');
+        const previewWrapper = document.getElementById('imgPreviewWrapper');
+        const removeBtn = document.getElementById('removeImageBtn');
+        const uploadBox = document.getElementById('uploadImageBox');
+
+        input.value = '';
+        preview.src = '';
+        previewWrapper.style.display = 'none';
+
+        removeBtn.classList.add('d-none');
+        uploadBox.classList.remove('d-none');
+    }
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const maritalStatus = document.getElementById('marital_status');
+        const spouseField = document.getElementById('spouse_name');
+
+        function toggleSpouseField() {
+            const spouseContainer = spouseField.closest('.col-md-6');
+
+            if (maritalStatus.value === 'Single') {
+                spouseField.value = '';
+                spouseField.disabled = true;
+                spouseContainer.style.display = 'none';
+            } else {
+                spouseField.disabled = false;
+                spouseContainer.style.display = 'block';
+            }
+        }
+
+        maritalStatus.addEventListener('change', toggleSpouseField);
+
+        // page load pe bhi run karo
+        toggleSpouseField();
+    });
 </script>
