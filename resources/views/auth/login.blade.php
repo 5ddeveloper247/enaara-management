@@ -1,7 +1,7 @@
 @extends('layouts.auth')
 
 @section('title', 'Login')
-@section('page-title', 'Enara HRMS')
+@section('page-title', 'Enaara HRMS')
 @section('page-subtitle', 'Please sign in to your account')
 
 @section('content')
