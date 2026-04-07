@@ -264,12 +264,18 @@
     function populateRolesForOrg(orgId) {
         const roleSel = document.getElementById('role_select');
         if (!roleSel || !orgId) return;
+
+        const addedNames = new Set();
         (window._rolesData || []).forEach(function (role) {
             const ro = role.organization_id != null && role.organization_id !== ''
                 ? String(role.organization_id)
                 : '';
             if (ro && String(ro) !== String(orgId)) return;
             if (orgId && !ro) return;
+
+            if (addedNames.has(role.name)) return;
+            addedNames.add(role.name);
+
             roleSel.insertAdjacentHTML('beforeend',
                 '<option value="' + role.id + '">' + escHtmlBasic(role.name) + '</option>');
         });
