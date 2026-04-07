@@ -14,7 +14,6 @@ class LeaveType extends Model
 
     protected $fillable = [
         'organization_id',
-        'department_id',
         'name',
         'code',
         'annual_quota',
@@ -31,9 +30,9 @@ class LeaveType extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function department(): BelongsTo
+    public function departments(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsTo(Department::class);
+        return $this->belongsToMany(Department::class, 'leave_type_department');
     }
 }
 

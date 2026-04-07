@@ -116,10 +116,18 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($lt->department)
-                                            <span class="badge px-3 rounded-1 bg-info">{{ $lt->department->name }}</span>
+                                        @php $deptCount = $lt->departments->count(); @endphp
+                                        @if($deptCount == 0)
+                                            <span class="text-muted small">—</span>
+                                        @elseif($deptCount == 1)
+                                            <span class="badge px-3 rounded-1 bg-info">{{ $lt->departments->first()->name }}</span>
                                         @else
-                                            <span class="text-muted">—</span>
+                                            <button type="button" class="btn btn-sm btn-info text-white rounded-pill px-3 py-0 border-0 view-depts-btn" 
+                                                    data-bs-toggle="modal" data-bs-target="#departmentsModal" 
+                                                    data-leave-type-name="{{ $lt->name }}"
+                                                    data-departments="{{ $lt->departments->pluck('name')->implode(',') }}">
+                                                Multiple ({{ $deptCount }})
+                                            </button>
                                         @endif
                                     </td>
                                     <td>{{ number_format((float) $lt->annual_quota, 2) }}</td>
@@ -146,6 +154,27 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for viewing multiple departments -->
+    <div class="modal fade" id="departmentsModal" tabindex="-1" aria-labelledby="departmentsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="departmentsModalLabel">Affected Departments</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Leave Type: <span id="modalLeaveTypeName" class="fw-bold text-dark"></span></p>
+                    <div id="modalDepartmentsList" class="d-flex flex-wrap gap-2">
+                        <!-- Departments will be injected here -->
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -243,11 +272,29 @@
                 });
             });
             
-            function loadDepartments(organizationId, selectedDepartmentId) {
+            // View Departments Modal Handler
+            $(document).on('click', '.view-depts-btn', function() {
+                const name = $(this).data('leave-type-name');
+                const depts = $(this).data('departments').split(',');
+                
+                $('#modalLeaveTypeName').text(name);
+                const list = $('#modalDepartmentsList');
+                list.empty();
+                depts.forEach(function(dept) {
+                    list.append(`<span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-2 rounded-pill">${dept}</span>`);
+                });
+            });
+
+            function loadDepartments(organizationId, selectedDepartmentIds) {
+                var container = $('#departmentCheckboxes');
+                selectedDepartmentIds = selectedDepartmentIds || [];
+                
                 if (!organizationId) {
-                    $('#editDepartmentId').empty().append('<option value="">Select Department</option>');
+                    container.empty().append('<div class="text-muted small">Select an organization first...</div>');
                     return;
                 }
+                
+                container.empty().append('<div class="text-muted small">Loading departments...</div>');
                 
                 $.ajax({
                     url: '{{ url("/admin/department") }}',
@@ -257,27 +304,48 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     success: function(response) {
-                        var departmentSelect = $('#editDepartmentId');
-                        departmentSelect.empty().append('<option value="">Select Department</option>');
+                        container.empty();
                         
-                        if (response.departments) {
+                        if (response.departments && response.departments.length > 0) {
+                            var anyAdded = false;
                             response.departments.forEach(function(dept) {
                                 if (dept.organization_id == organizationId) {
-                                    var selected = dept.id == selectedDepartmentId ? 'selected' : '';
-                                    departmentSelect.append('<option value="' + dept.id + '" ' + selected + '>' + dept.name + '</option>');
+                                    var checked = selectedDepartmentIds.includes(dept.id) ? 'checked' : '';
+                                    var html = `
+                                        <div class="form-check mb-1">
+                                            <input class="form-check-input dept-checkbox" type="checkbox" value="${dept.id}" id="deptCheck_${dept.id}" ${checked}>
+                                            <label class="form-check-label small text-dark" for="deptCheck_${dept.id}">
+                                                ${dept.name}
+                                            </label>
+                                        </div>
+                                    `;
+                                    container.append(html);
+                                    anyAdded = true;
                                 }
                             });
+                            if (!anyAdded) {
+                                container.append('<div class="text-muted small">No departments found for this organization.</div>');
+                            }
+                        } else {
+                            container.append('<div class="text-muted small">No departments available.</div>');
                         }
                     },
                     error: function() {
-                        $('#editDepartmentId').empty().append('<option value="">Select Department</option>');
+                        container.empty().append('<div class="text-danger small">Error loading departments.</div>');
                     }
                 });
             }
             
             $('#editOrganizationId').on('change', function() {
                 var orgId = $(this).val();
+                $('#selectAllDepartments').prop('checked', false);
                 loadDepartments(orgId, null);
+            });
+
+            // Select All Departments Handler
+            $('#selectAllDepartments').on('change', function() {
+                var isChecked = $(this).is(':checked');
+                $('.dept-checkbox').prop('checked', isChecked);
             });
             
             function loadLeaveTypeForAdd() {
@@ -305,10 +373,12 @@
                         $('#editLeaveTypeCode').val('');
                         $('#editAnnualQuota').val('0');
                         $('#editLeaveTypeIsActive').prop('checked', true);
-                        $('#editDepartmentId').empty().append('<option value="">Select Department</option>');
+                        $('#editDepartmentId').empty();
+                        $('#departmentCheckboxes').empty().append('<div class="text-muted small">Select an organization first...</div>');
                         
                         $('.invalid-feedback').text('').hide();
                         $('.form-select, .form-control').removeClass('is-invalid');
+                        $('#selectAllDepartments').prop('checked', false);
                     },
                     error: function(xhr) {
                         console.error('Error loading data for add:', xhr);
@@ -346,7 +416,7 @@
                         });
                         
                         if (response.leaveType.organization_id) {
-                            loadDepartments(response.leaveType.organization_id, response.leaveType.department_id);
+                            loadDepartments(response.leaveType.organization_id, response.department_ids);
                         } else {
                             $('#editDepartmentId').empty().append('<option value="">Select Department</option>');
                         }
@@ -365,9 +435,14 @@
                 e.preventDefault();
                 
                 var formMode = $('#editFormMode').val();
+                var selectedDepts = [];
+                $('.dept-checkbox:checked').each(function() {
+                    selectedDepts.push($(this).val());
+                });
+
                 var formData = {
                     organization_id: $('#editOrganizationId').val(),
-                    department_id: $('#editDepartmentId').val() || null,
+                    department_ids: selectedDepts,
                     name: $('#editLeaveTypeName').val(),
                     code: $('#editLeaveTypeCode').val(),
                     annual_quota: $('#editAnnualQuota').val(),

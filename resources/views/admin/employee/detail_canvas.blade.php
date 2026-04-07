@@ -189,7 +189,7 @@
             <div class="row g-3">
                 <div class="col-6">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
-                        <small class="opacity-75 text-white d-block mb-2">Employment Type</small>
+                        <small class="opacity-75 text-white d-block mb-2">Category</small>
                         <div class="fw-semibold small" id="detailEmploymentType">-</div>
                     </div>
                 </div>

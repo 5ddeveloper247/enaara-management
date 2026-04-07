@@ -6,7 +6,8 @@ use App\Models\LeaveType;
 use App\Services\LeaveTypeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Rule;
 use Illuminate\View\View;
 
 class LeaveTypeController extends Controller
@@ -50,32 +51,54 @@ class LeaveTypeController extends Controller
         try {
             $validated = $request->validate([
                 'organization_id' => 'required|exists:organizations,id',
-                'department_id' => 'nullable|exists:departments,id',
+                'department_ids' => 'nullable|array',
+                'department_ids.*' => 'exists:departments,id',
                 'name' => 'required|string|max:255',
-                'code' => [
-                    'nullable',
-                    'string',
-                    'max:64',
-                    Rule::unique('leave_types')->where('organization_id', $request->input('organization_id')),
-                ],
+                'code' => 'nullable|string|max:64',
                 'annual_quota' => 'required|numeric|min:0|max:999.99',
                 'is_active' => 'boolean',
             ]);
 
-            $validated['is_active'] = $request->boolean('is_active');
+            $isActive = $request->boolean('is_active');
+            $deptIds = $request->input('department_ids', []);
+            $orgId = $validated['organization_id'];
 
-            $leaveType = $this->leaveTypeService->create($validated);
-            
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Leave type created successfully.',
-                    'leaveType' => $leaveType,
+            try {
+                DB::beginTransaction();
+                
+                $lt = $this->leaveTypeService->create([
+                    'organization_id' => $orgId,
+                    'name' => $validated['name'],
+                    'code' => $validated['code'],
+                    'annual_quota' => $validated['annual_quota'],
+                    'is_active' => $isActive,
                 ]);
-            }
 
-            return redirect()->route('admin.leave.type.index')
-                ->with('success', 'Leave type created successfully.');
+                if (!empty($deptIds)) {
+                    $lt->departments()->sync($deptIds);
+                }
+
+                DB::commit();
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Leave type created successfully.',
+                    ]);
+                }
+
+                return redirect()->route('admin.leave.type.index')
+                    ->with('success', 'Leave type created successfully.');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to create leave type: ' . $e->getMessage()
+                    ], 500);
+                }
+                throw $e;
+            }
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -104,6 +127,7 @@ class LeaveTypeController extends Controller
             
             return response()->json([
                 'leaveType' => $leaveType,
+                'department_ids' => $leaveType->departments->pluck('id')->toArray(),
                 'organizations' => $organizations,
             ]);
         }
@@ -130,35 +154,53 @@ class LeaveTypeController extends Controller
         try {
             $validated = $request->validate([
                 'organization_id' => 'required|exists:organizations,id',
-                'department_id' => 'nullable|exists:departments,id',
+                'department_ids' => 'nullable|array',
+                'department_ids.*' => 'exists:departments,id',
                 'name' => 'required|string|max:255',
-                'code' => [
-                    'nullable',
-                    'string',
-                    'max:64',
-                    Rule::unique('leave_types')
-                        ->where('organization_id', $request->input('organization_id'))
-                        ->ignore($leaveType->id),
-                ],
+                'code' => 'nullable|string|max:64',
                 'annual_quota' => 'required|numeric|min:0|max:999.99',
                 'is_active' => 'boolean',
             ]);
 
-            $validated['is_active'] = $request->boolean('is_active');
+            $isActive = $request->boolean('is_active');
+            $deptIds = $request->input('department_ids', []);
+            $orgId = $validated['organization_id'];
 
-            $this->leaveTypeService->update($leaveType, $validated);
-            
-            if ($request->expectsJson()) {
-                $updatedLeaveType = $this->leaveTypeService->findById($id);
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Leave type updated successfully.',
-                    'leaveType' => $updatedLeaveType,
+            try {
+                DB::beginTransaction();
+
+                $this->leaveTypeService->update($leaveType, [
+                    'organization_id' => $orgId,
+                    'name' => $validated['name'],
+                    'code' => $validated['code'],
+                    'annual_quota' => $validated['annual_quota'],
+                    'is_active' => $isActive,
                 ]);
-            }
 
-            return redirect()->route('admin.leave.type.index')
-                ->with('success', 'Leave type updated successfully.');
+                // Sync departments (replaces old ones with new selection)
+                $leaveType->departments()->sync($deptIds);
+
+                DB::commit();
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Leave type updated successfully.',
+                    ]);
+                }
+
+                return redirect()->route('admin.leave.type.index')
+                    ->with('success', 'Leave type updated successfully.');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to update leave type: ' . $e->getMessage()
+                    ], 500);
+                }
+                throw $e;
+            }
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->expectsJson()) {
                 return response()->json([

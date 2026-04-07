@@ -20,11 +20,17 @@
             </div>
 
             <div class="mb-3">
-                <label for="editDepartmentId" class="form-label text-white">Department</label>
-                <select name="department_id" id="editDepartmentId" class="form-select">
-                    <option value="">Select Department</option>
-                </select>
-                <div class="invalid-feedback" id="editDepartmentIdError"></div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label text-white mb-0">Departments</label>
+                    <div class="form-check form-check-inline small">
+                        <input class="form-check-input" type="checkbox" id="selectAllDepartments">
+                        <label class="form-check-label text-white-50" for="selectAllDepartments" style="font-size: 0.8rem;">Select All</label>
+                    </div>
+                </div>
+                <div id="departmentCheckboxes" class="form-control bg-light text-dark overflow-auto" style="height: 150px; padding: 10px;">
+                    <div class="text-muted small">Select an organization first...</div>
+                </div>
+                <div class="invalid-feedback d-block" id="editDepartmentIdError"></div>
             </div>
 
             <div class="mb-3">

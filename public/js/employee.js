@@ -525,18 +525,20 @@
             '<span class="badge px-2 rounded-1 ' + verificationCls + '">' + escHtml(verification) + '</span>'
         );
 
-        var etClass = d.employmentType === 'Permanent' ?
-            'bg-success' :
-            d.employmentType === 'Contract' ?
-            'bg-info' :
-            d.employmentType === '-' ?
-            'bg-secondary' :
-            'bg-warning';
+        var catColorMap = {
+            'Permanent': 'bg-success',
+            'Contract': 'bg-info',
+            'Intern': 'bg-warning text-dark',
+            'Third-party': 'bg-secondary',
+            'Probation': 'bg-primary',
+        };
+        var catCls = catColorMap[d.category] || 'bg-secondary';
+        var catLabel = normalizeValue(d.category);
 
         $('#detailEmploymentType').html(
-            d.employmentType === '-' ?
+            catLabel === '-' ?
             '<span class="text-muted small">-</span>' :
-            '<span class="badge ' + etClass + '">' + escHtml(d.employmentType) + '</span>'
+            '<span class="badge px-2 rounded-1 ' + catCls + '">' + escHtml(catLabel) + '</span>'
         );
 
         var catColorMap = {
