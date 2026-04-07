@@ -527,7 +527,10 @@
                 }
                 if (d.sbu_id) {
                     const sbuSel = document.getElementById('sbu_select');
-                    if (sbuSel) sbuSel.value = d.sbu_id;
+                    if (sbuSel) {
+                        sbuSel.value = d.sbu_id;
+                        if (typeof onSbuChange === 'function') onSbuChange(d.sbu_id);
+                    }
                 }
                 if (d.department_id) {
                     const deptSel = document.getElementById('dept_select');

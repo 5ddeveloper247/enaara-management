@@ -76,6 +76,7 @@ class EmployeeService
             'name'                    => $r->name,
             'organization_id'         => $r->organization_id,
             'department_id'           => $r->department_id,
+            'sbu_id'                  => $r->department?->sbu_id,
             'is_organization_level'   => $r->isOrganizationLevelRole(),
         ])->values()->all();
 
