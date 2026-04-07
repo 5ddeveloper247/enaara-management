@@ -101,6 +101,10 @@
             action="{{ isset($employee) ? route('admin.employee.update', $employee->id) : route('admin.employee.store') }}"
             enctype="multipart/form-data" novalidate>
             @csrf
+            
+            @if(isset($employee))
+                <input type="hidden" name="employee_id" id="saved_employee_id" value="{{ $employee->id }}">
+            @endif
 
             @include('admin.register.general_info')
             @include('admin.register.employment_info')
@@ -151,15 +155,172 @@
     function changeStep(dir) {
         if (dir === 1) {
             if (!validateStep(current)) return;
-            if (current === total) {
-                submitEmployeeForm();
-                return;
-            }
-            if (current === 2) {
-                advancedUnlocked = true;
-            }
+            
+            processStepSave(current, function() {
+                if (current === total) {
+                    window.location.href = '{{ route("admin.employee.index") }}';
+                    return;
+                }
+                if (current === 2) {
+                    advancedUnlocked = true;
+                }
+                goToStep(current + dir);
+            });
+            return;
         }
         goToStep(current + dir);
+    }
+
+    function processStepSave(step, onSuccess) {
+        if (typeof serializeArrayData === 'function') serializeArrayData();
+
+        const form = document.getElementById('employeeForm');
+        const formData = new FormData();
+        formData.append('step', step);
+
+        const activeStepDiv = document.getElementById('step-' + step);
+        if (activeStepDiv) {
+            const inputs = activeStepDiv.querySelectorAll('input[name], select[name], textarea[name]');
+            inputs.forEach(input => {
+                const name = input.getAttribute('name');
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    if (input.checked) formData.append(name, input.value);
+                } else if (input.type === 'file') {
+                    // Handled locally or separately, but included for completeness
+                    if (input.files && input.files.length > 0) {
+                        for(let i=0; i<input.files.length; i++) {
+                            formData.append(name, input.files[i]);
+                        }
+                    }
+                } else {
+                    formData.append(name, input.value);
+                }
+            });
+        }
+
+        // Include any dynamically serialized arrays (Family, Academics, Employments)
+        const hiddenArrayContainer = document.getElementById('hiddenArrayInputs');
+        if (hiddenArrayContainer) {
+            const hiddenInputs = hiddenArrayContainer.querySelectorAll('input[name]');
+            hiddenInputs.forEach(input => {
+                formData.append(input.name, input.value);
+            });
+        }
+
+        const storedEmployeeId = document.getElementById('saved_employee_id')?.value;
+        if (storedEmployeeId) {
+            formData.append('employee_id', storedEmployeeId);
+        }
+
+        const nextBtn = document.getElementById('nextBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const originalText = nextBtn.textContent;
+        nextBtn.disabled = true;
+        prevBtn.disabled = true;
+        nextBtn.textContent = 'Saving…';
+
+        const attachmentPayload = typeof window.getAttachmentPayload === 'function' ?
+            window.getAttachmentPayload() :
+            {
+                keptAttachmentIds: [],
+                newAttachments: []
+            };
+
+        (attachmentPayload.keptAttachmentIds || []).forEach((id) => {
+            formData.append('kept_attachment_ids[]', id);
+        });
+
+        (attachmentPayload.newAttachments || []).forEach((a, idx) => {
+            formData.append(`attachments[${idx}][name]`, a.name || '');
+            formData.append(`attachments[${idx}][type]`, a.type || '');
+            formData.append(`attachments[${idx}][description]`, a.desc || '');
+            (a.files || []).forEach((file) => {
+                formData.append(`attachments[${idx}][files][]`, file);
+            });
+        });
+
+        fetch('{{ route("admin.employee.save_step") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+            },
+            body: formData,
+        })
+        .then(r => r.json())
+        .then(data => {
+            nextBtn.disabled = false;
+            prevBtn.disabled = false;
+            nextBtn.textContent = originalText;
+
+            if (data.success) {
+                if (data.employee_id) {
+                    let hiddenId = document.getElementById('saved_employee_id');
+                    if (!hiddenId) {
+                        hiddenId = document.createElement('input');
+                        hiddenId.type = 'hidden';
+                        hiddenId.id = 'saved_employee_id';
+                        hiddenId.name = 'employee_id';
+                        form.appendChild(hiddenId);
+                    }
+                    hiddenId.value = data.employee_id;
+                }
+                
+                // If it's the final step, show success and don't require dismissal
+                if (step === total) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Completed',
+                        text: 'Employee registration completed successfully!',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        if (onSuccess) onSuccess();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Saved',
+                        text: data.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        if (onSuccess) onSuccess();
+                    });
+                }
+                
+            } else if (data.errors) {
+                showFieldErrors(data.errors);
+                let errorHtml = '<div class="text-danger text-start mt-2" style="font-size: 0.95em;">';
+                errorHtml += '<ul class="mb-0 ps-3">';
+                Object.values(data.errors).flat().forEach(msg => {
+                    errorHtml += `<li>${msg}</li>`;
+                });
+                errorHtml += '</ul></div>';
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    html: `Please check the highlighted fields and errors below:${errorHtml}`,
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Something went wrong.'
+                });
+            }
+        })
+        .catch((e) => {
+            nextBtn.disabled = false;
+            prevBtn.disabled = false;
+            nextBtn.textContent = originalText;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Network error or server error occurred.'
+            });
+        });
     }
 
     function clearStepErrors() {
@@ -280,7 +441,7 @@
         if (current === total) {
             nextBtn.textContent = submitLabel;
             nextBtn.className = 'btn btn-success ms-auto px-4';
-            nextBtn.onclick = submitEmployeeForm;
+            nextBtn.onclick = () => changeStep(1);
         } else {
             nextBtn.textContent = 'Next';
             nextBtn.className = 'btn ms-auto text-decoration-none text-white bg-main rounded-2 d-flex align-items-center border-0 px-3';
@@ -428,69 +589,17 @@
     }
 
     function submitEmployeeForm() {
-        serializeArrayData();
-
-        const form = document.getElementById('employeeForm');
-        const formData = new FormData(form);
-        const nextBtn = document.getElementById('nextBtn');
-        const attachmentPayload = typeof window.getAttachmentPayload === 'function' ?
-            window.getAttachmentPayload() :
-            {
-                keptAttachmentIds: [],
-                newAttachments: []
-            };
-
-        (attachmentPayload.keptAttachmentIds || []).forEach((id) => {
-            formData.append('kept_attachment_ids[]', id);
-        });
-
-        (attachmentPayload.newAttachments || []).forEach((a, idx) => {
-            formData.append(`attachments[${idx}][name]`, a.name || '');
-            formData.append(`attachments[${idx}][type]`, a.type || '');
-            formData.append(`attachments[${idx}][description]`, a.desc || '');
-            (a.files || []).forEach((file) => {
-                formData.append(`attachments[${idx}][files][]`, file);
-            });
-        });
-
-        nextBtn.disabled = true;
-        nextBtn.textContent = 'Saving…';
-
-        fetch(form.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json',
-                },
-                body: formData,
-            })
-            .then(r => r.json())
-            .then(data => {
-                nextBtn.disabled = false;
-                nextBtn.textContent = submitLabel;
-
-                if (data.success) {
-                    showToast('success', data.message);
-                    setTimeout(() => {
-                        window.location.href = data.redirect || '{{ route("admin.employee.index") }}';
-                    }, 1800);
-                } else if (data.errors) {
-                    showFieldErrors(data.errors);
-                    showToast('error', 'Please fix the highlighted errors.');
-                } else {
-                    showToast('error', data.message || 'Something went wrong.');
-                }
-            })
-            .catch(() => {
-                nextBtn.disabled = false;
-                nextBtn.textContent = submitLabel;
-                showToast('error', 'Network error. Please try again.');
-            });
+        // Obsolete, handled by processStepSave
     }
 
     @if(isset($employee) && isset($editData))
     document.addEventListener('DOMContentLoaded', function() {
-        prefillForm(@json($editData));
+        // Small timeout ensures that all blade partial scripts (academic.blade.php,
+        // familydetails.blade.php, etc.) have registered their JS helper functions
+        // before prefillForm attempts to call appendFamilyCard, appendAcademicCard etc.
+        setTimeout(function() {
+            prefillForm(@json($editData));
+        }, 150);
     });
 
     function prefillForm(d) {

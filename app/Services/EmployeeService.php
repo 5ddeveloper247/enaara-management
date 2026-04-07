@@ -87,22 +87,24 @@ class EmployeeService
     {
         return DB::transaction(function () use ($data, $files, $attachments) {
             $role = Role::find($data['role_id'] ?? 0);
-            if (!$role) {
-                throw new \InvalidArgumentException('Invalid role.');
-            }
-            $orgLevel = $role->isOrganizationLevelRole();
-            if ($orgLevel) {
-                $sbuForCode = Sbu::where('organization_id', (int) ($data['organization_id'] ?? 0))->orderBy('id')->value('id');
-                if (!$sbuForCode) {
-                    throw new \InvalidArgumentException('No SBU found under organization for employee code generation.');
+            $code = null;
+            $orgLevel = false;
+
+            if ($role) {
+                $orgLevel = $role->isOrganizationLevelRole();
+                if ($orgLevel) {
+                    $sbuForCode = Sbu::where('organization_id', (int) ($data['organization_id'] ?? 0))->orderBy('id')->value('id');
+                    if (!$sbuForCode) {
+                        throw new \InvalidArgumentException('No SBU found under organization for employee code generation.');
+                    }
+                    $code = $this->generateNextCode((int) $sbuForCode);
+                } else {
+                    $sbuId = isset($data['sbu_id']) ? (int) $data['sbu_id'] : null;
+                    if (!$sbuId) {
+                        throw new \InvalidArgumentException('SBU is required to generate employee code.');
+                    }
+                    $code = $this->generateNextCode($sbuId);
                 }
-                $code = $this->generateNextCode((int) $sbuForCode);
-            } else {
-                $sbuId = isset($data['sbu_id']) ? (int) $data['sbu_id'] : null;
-                if (!$sbuId) {
-                    throw new \InvalidArgumentException('SBU is required to generate employee code.');
-                }
-                $code = $this->generateNextCode($sbuId);
             }
 
             $employee = Employee::create([
@@ -795,52 +797,58 @@ class EmployeeService
             $role      = Role::find($data['role_id'] ?? $employee->role_id);
             $orgLevel  = $role && $role->isOrganizationLevelRole();
 
-            $employee->update([
-                'full_name'           => $data['full_name'],
-                'father_name'         => $data['father_name'] ?? null,
-                'organization_id'     => $data['organization_id'] ?? null,
-                'sbu_id'              => $orgLevel ? null : ($data['sbu_id'] ?? null),
-                'department_id'       => $orgLevel ? null : ($data['department_id'] ?? null),
-                'role_id'             => $data['role_id'] ?? null,
-                'employee_type'       => $data['employee_type'] ?? null,
-                'employment_type'     => $data['employment_type'] ?? null,
-                'designation'         => $data['designation'] ?? null,
-                'grade'               => $data['grade'] ?? null,
-                'branch'              => $data['branch'] ?? null,
-                'location'            => $data['location'] ?? null,
-                'email'               => $data['email'] ?? $data['contact_email'] ?? $employee->email,
-                'phone'               => $data['phone'] ?? null,
-                'cnic'                => $data['cnic'] ?? null,
-                'cnic_expiry'         => !empty($data['cnic_expiry']) ? $data['cnic_expiry'] : null,
-                'father_cnic'         => $data['father_cnic'] ?? null,
-                'ntn'                 => $data['ntn'] ?? null,
-                'gender'              => $data['gender'] ?? null,
-                'nationality'         => $data['nationality'] ?? null,
-                'dob'                 => !empty($data['dob']) ? $data['dob'] : null,
-                'domicile_district'   => $data['domicile_district'] ?? null,
-                'domicile_province'   => $data['domicile_province'] ?? null,
-                'city_of_birth'       => $data['city_of_birth'] ?? null,
-                'religion'            => $data['religion'] ?? null,
-                'sect'                => $data['sect'] ?? null,
-                'marital_status'      => $data['marital_status'] ?? null,
-                'spouse_name'         => $data['spouse_name'] ?? null,
-                'nok_name'            => $data['nok_name'] ?? null,
-                'nok_cnic'            => $data['nok_cnic'] ?? null,
-                'nok_relation'        => $data['nok_relation'] ?? null,
-                'nok_dob'             => !empty($data['nok_dob']) ? $data['nok_dob'] : null,
-                'nok_contact'         => $data['nok_contact'] ?? null,
-                'site'                => $data['site'] ?? null,
-                'join_date'           => !empty($data['join_date']) ? $data['join_date'] : null,
-                'floor_access'        => isset($data['floor_access']) ? (bool) $data['floor_access'] : false,
-                'biometric_id'        => $data['biometric_id'] ?? null,
-                'employment_category' => $data['employment_category'] ?? null,
-                'intern_type'         => $data['intern_type'] ?? null,
-                'intern_duration'     => $data['intern_duration'] ?? null,
-                'contractual_type'    => $data['contractual_type'] ?? null,
-                'engagement_mode'     => $data['engagement_mode'] ?? null,
-                'hybrid_days'         => $data['hybrid_days'] ?? null,
-                'sync_with_biometric' => isset($data['sync_with_biometric']) ? (bool) $data['sync_with_biometric'] : false,
-            ]);
+            $code = $employee->employee_code;
+            if (!$code && $role) {
+                if ($orgLevel) {
+                    $sbuForCode = Sbu::where('organization_id', (int) ($data['organization_id'] ?? $employee->organization_id))->orderBy('id')->value('id');
+                    if ($sbuForCode) {
+                        $code = $this->generateNextCode((int) $sbuForCode);
+                    }
+                } else {
+                    $sbuId = isset($data['sbu_id']) ? (int) $data['sbu_id'] : $employee->sbu_id;
+                    if ($sbuId) {
+                        $code = $this->generateNextCode((int) $sbuId);
+                    }
+                }
+            }
+
+            $fields = [
+                'full_name', 'father_name', 'employee_type', 'employment_type', 'designation', 'grade', 
+                'branch', 'location', 'phone', 'cnic', 'cnic_expiry', 'father_cnic', 'ntn', 'gender', 
+                'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth', 'religion', 
+                'sect', 'marital_status', 'spouse_name', 'nok_name', 'nok_cnic', 'nok_relation', 'nok_dob', 
+                'nok_contact', 'site', 'join_date', 'floor_access', 'biometric_id', 'sync_with_biometric', 
+                'verification_status', 'msr_letter_no', 'addressee', 'verifying_authority', 'verification_letter_no', 
+                'next_verification_date', 'police_remarks', 'service_no', 'rank', 'medical_category', 
+                'date_of_commissioning', 'date_of_retirement', 'reason_of_retirement', 'corps_regiment', 
+                'ex_army_unit', 'trade', 'pma_lc_ots', 'residence_phone', 'emergency_contact', 'cell_no', 
+                'present_address', 'permanent_address', 'account_title', 'account_no', 
+                'bank_branch', 'account_type', 'last_fitness_test', 'has_disability', 'blood_group', 
+                'disability_type', 'disability_description', 'ref1_name', 'ref1_designation', 'ref1_organization', 
+                'ref1_contact', 'ref1_relationship', 'ref2_name', 'ref2_designation', 'ref2_organization', 
+                'ref2_contact', 'ref2_relationship', 'employment_category', 'intern_type', 'intern_duration', 
+                'contractual_type', 'engagement_mode', 'hybrid_days'
+            ];
+
+            $updatePayload = [];
+            foreach ($fields as $field) {
+                if (array_key_exists($field, $data)) {
+                    $updatePayload[$field] = $data[$field] === '' ? null : $data[$field];
+                }
+            }
+
+            if (array_key_exists('organization_id', $data)) $updatePayload['organization_id'] = $data['organization_id'];
+            if (array_key_exists('role_id', $data)) $updatePayload['role_id'] = $data['role_id'];
+            if (array_key_exists('sbu_id', $data)) $updatePayload['sbu_id'] = $orgLevel ? null : $data['sbu_id'];
+            if (array_key_exists('department_id', $data)) $updatePayload['department_id'] = $orgLevel ? null : $data['department_id'];
+            
+            if (array_key_exists('email', $data) || array_key_exists('contact_email', $data)) {
+                $updatePayload['email'] = $data['email'] ?? $data['contact_email'] ?? $employee->email;
+            }
+            
+            $updatePayload['employee_code'] = $code;
+
+            $employee->update($updatePayload);
 
             // Sync with associated user account if it exists
             if ($employee->user) {
@@ -861,25 +869,50 @@ class EmployeeService
                 }
             }
 
-            $employee->policeVerification()->delete();
-            $employee->armedForce()->delete();
-            $employee->contact()->delete();
-            $employee->bankDetail()->delete();
-            $employee->familyMembers()->delete();
-            $employee->academics()->delete();
-            $employee->exEmployments()->delete();
-            $employee->medical()->delete();
-            $employee->references()->delete();
+            $step = (int) ($data['step'] ?? 0);
 
-            $this->savePoliceVerification($employee->id, $data);
-            $this->saveArmedForce($employee->id, $data);
-            $this->saveContact($employee->id, $data);
-            $this->saveBankDetail($employee->id, $data);
-            $this->saveFamilyMembers($employee->id, $data['family'] ?? []);
-            $this->saveAcademics($employee->id, $data['academics'] ?? []);
-            $this->saveExEmployments($employee->id, $data['employments'] ?? []);
-            $this->saveMedical($employee->id, $data);
-            $this->saveReferences($employee->id, $data);
+            // Step 1 - General Info (no child relations for this step)
+
+            // Step 2 - Employment (no child relations for this step)
+
+            // Step 3 - Police Verification
+            if ($step === 3 || $step === 0) {
+                $employee->policeVerification()->delete();
+                $this->savePoliceVerification($employee->id, $data);
+            }
+
+            // Step 4 - Armed Forces Details
+            if ($step === 4 || $step === 0) {
+                $employee->armedForce()->delete();
+                $this->saveArmedForce($employee->id, $data);
+            }
+
+            // Step 5 - Bank Details
+            if ($step === 5 || $step === 0) {
+                $employee->bankDetail()->delete();
+                $this->saveBankDetail($employee->id, $data);
+            }
+
+            // Step 6 - More (Family, Academics, Employment History, Medical, References, Contact)
+            if ($step === 6 || $step === 0) {
+                $employee->contact()->delete();
+                $this->saveContact($employee->id, $data);
+
+                $employee->familyMembers()->delete();
+                $this->saveFamilyMembers($employee->id, $data['family'] ?? []);
+
+                $employee->academics()->delete();
+                $this->saveAcademics($employee->id, $data['academics'] ?? []);
+
+                $employee->exEmployments()->delete();
+                $this->saveExEmployments($employee->id, $data['employments'] ?? []);
+
+                $employee->medical()->delete();
+                $this->saveMedical($employee->id, $data);
+
+                $employee->references()->delete();
+                $this->saveReferences($employee->id, $data);
+            }
 
             if (!empty($files)) {
                 $employee->mediaFiles()->where('file_type', 'photo')->delete();

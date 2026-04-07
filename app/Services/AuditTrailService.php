@@ -121,6 +121,9 @@ class AuditTrailService
             }
         }
 
+        // Prevent database Exception 1406 (Data too long for column 'description')
+        $description = \Illuminate\Support\Str::limit($description, 250);
+
         return $this->log(
             action: $action,
             category: $category,

@@ -151,6 +151,53 @@ class EmployeeController extends Controller
         }
     }
 
+    public function saveStep(\App\Http\Requests\Admin\Employee\EmployeeStepRequest $request)
+    {
+        if (!validatePermissions('admin/employee')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        try {
+            $step = (int) $request->input('step');
+            $employeeId = $request->input('employee_id');
+            $data = $request->except(['_token', 'employee_id', 'kept_attachment_ids', 'attachments', 'profile_photo']);
+
+            $photos   = $request->hasFile('profile_photo') ? [$request->file('profile_photo')] : [];
+            $attachments = $this->extractAttachments($request);
+            $keptAttachmentIds = array_values(array_filter(array_map('intval', $request->input('kept_attachment_ids', []))));
+
+            $moduleNames = [
+                1 => 'General Information',
+                2 => 'Employment Information',
+                3 => 'Verification Details',
+                4 => 'Armed Forces Details',
+                5 => 'Bank Details',
+                6 => 'Contact & Account Details',
+            ];
+            $moduleName = $moduleNames[$step] ?? "Step $step";
+
+            if ($step === 1 && !$employeeId) {
+                // Initial creation
+                $employee = $this->employeeService->store($data, $photos, $attachments);
+                $message = $moduleName . ' saved successfully.';
+            } else {
+                // Update existing record
+                $employee = $this->employeeService->update((int)$employeeId, $data, $photos, $attachments, $keptAttachmentIds);
+                $message = $moduleName . ' saved successfully.';
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'employee_id' => $employee->id,
+                'next_step' => $step + 1
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Employee saveStep failed', ['step' => $request->input('step'), 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function destroy(Request $request, int $id)
     {
         if (!validatePermissions('admin/employee')) {

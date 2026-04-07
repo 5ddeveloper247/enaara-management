@@ -176,6 +176,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/employee/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
     Route::get('/employee/preview-employee-code', [EmployeeController::class, 'previewEmployeeCode'])->name('admin.employee.preview_code');
     Route::post('/employee/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
+    Route::post('/employee/save-step', [EmployeeController::class, 'saveStep'])->name('admin.employee.save_step');
     Route::get('/employee/{id}/edit', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
     Route::post('/employee/{id}/update', [EmployeeController::class, 'update'])->name('admin.employee.update');
     Route::delete('/employee/{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
