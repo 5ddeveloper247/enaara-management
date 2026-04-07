@@ -23,7 +23,7 @@
 
     <style>
         body {
-            background: black;
+            /* background: black; */
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -33,8 +33,8 @@
             font-family: 'Instrument Sans';
         }
 
-        .auth-container {
-            max-width: 450px;
+        .wrapper {
+            /* max-width: 450px; */
             width: 100%;
             height: 100%;
             background-image: url(https://images.unsplash.com/photo-1554469384-e58fac16e23a?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D);
@@ -75,36 +75,44 @@
             margin-bottom: 0.5rem;
         }
 
-        .form-control {
-            padding: 0.75rem 1rem;
-            border: 1px solid #dee2e6;
-            border-radius: 0.5rem;
+
+
+        form input,
+        form textarea,
+        {
+        background: transparent !important;
+        box-shadow: 0 0 7px 4px #5a59593d !important;
+        display: block;
+        width: 100%;
+        padding: .375rem .75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529 !important;
+        border-radius: var(--bs-border-radius);
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out !important;
         }
 
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        input:focus {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
         }
 
         .btn-auth {
-            padding: 0.75rem 1rem;
+            padding: 0.75rem;
             font-weight: 600;
-            border-radius: 0.6rem;
-
-            /* Dark blue gradient like dashboard */
-            background: linear-gradient(135deg, #0f2a44 0%, #133a5a 100%);
-
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-
-            /* Soft glow effect */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
-            transition: all 0.25s ease;
+            border-radius: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #E6C671;
+            border: none;
+            color: #fff;
+            color: #012445;
+            transition: transform 0.2s;
         }
 
         .btn-auth:hover {
-            transform: translateY(-2px) !important  ;
+            transform: translateY(-2px) !important;
         }
 
         .auth-footer {
@@ -114,13 +122,13 @@
             border-top: 1px solid #dee2e6;
         }
 
-        .auth-footer a {
-            color: #667eea;
+        .frg {
+            color: #E6C671;
             text-decoration: none;
             font-weight: 500;
         }
 
-        .auth-footer a:hover {
+        .frg:hover {
             text-decoration: underline;
         }
 
