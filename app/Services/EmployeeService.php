@@ -119,7 +119,7 @@ class EmployeeService
                 'grade'               => $data['grade'] ?? null,
                 'branch'              => $data['branch'] ?? null,
                 'location'            => $data['location'] ?? null,
-                'email'               => !empty($data['email']) ? $data['email'] : null,
+                'email'               => $data['email'] ?? $data['contact_email'] ?? null,
                 'phone'               => $data['phone'] ?? null,
                 'cnic'                => $data['cnic'] ?? null,
                 'cnic_expiry'         => !empty($data['cnic_expiry']) ? $data['cnic_expiry'] : null,
@@ -808,7 +808,7 @@ class EmployeeService
                 'grade'               => $data['grade'] ?? null,
                 'branch'              => $data['branch'] ?? null,
                 'location'            => $data['location'] ?? null,
-                'email'               => !empty($data['email']) ? $data['email'] : null,
+                'email'               => $data['email'] ?? $data['contact_email'] ?? $employee->email,
                 'phone'               => $data['phone'] ?? null,
                 'cnic'                => $data['cnic'] ?? null,
                 'cnic_expiry'         => !empty($data['cnic_expiry']) ? $data['cnic_expiry'] : null,
@@ -841,6 +841,25 @@ class EmployeeService
                 'hybrid_days'         => $data['hybrid_days'] ?? null,
                 'sync_with_biometric' => isset($data['sync_with_biometric']) ? (bool) $data['sync_with_biometric'] : false,
             ]);
+
+            // Sync with associated user account if it exists
+            if ($employee->user) {
+                $userUpdateData = [];
+                $emailToSync = $data['email'] ?? $data['contact_email'] ?? null;
+
+                if ($emailToSync) {
+                    $userUpdateData['email'] = $emailToSync;
+                }
+
+                if (!empty($data['full_name'])) {
+                    $userUpdateData['name'] = $data['full_name'];
+                }
+
+                if (!empty($userUpdateData)) {
+                    $employee->user->update($userUpdateData);
+                    Log::info('Associated user account synced', ['user_id' => $employee->user->id, 'updates' => array_keys($userUpdateData), 'email' => $emailToSync ?? 'no change']);
+                }
+            }
 
             $employee->policeVerification()->delete();
             $employee->armedForce()->delete();
