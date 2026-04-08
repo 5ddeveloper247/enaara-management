@@ -95,9 +95,35 @@
             { label: 'Floor Access', idx: 21 },
         ];
 
-        document.querySelectorAll('#employeeTable tbody tr').forEach(row => {
-            const cells = row.querySelectorAll('td');
-            if (!cells.length) return;
+        const tableApi = window.employeeTableRef;
+        if (!tableApi) return;
+        const rowsData = tableApi.rows({ search: 'applied' }).data().toArray();
+        rowsData.forEach((row) => {
+            const name = norm(row.full_name);
+            const empNo = norm(row.employee_code);
+            const orgName = norm(row.organization);
+            const category = norm(row.employment_category);
+            const employmentType = norm(row.employment_type);
+            const department = norm(row.department);
+            const sbu = norm(row.sbu);
+            const designation = norm(row.designation);
+            const joinDate = norm(row.join_date);
+            const verification = norm(row.verification_status);
+            const initials = norm(row.initials, '??');
+            const photoUrl = norm(row.photo_url, '');
+            const dbId = norm(row.id, '');
+            const tasId = norm(row.biometric_id);
+            const syncStatus = norm(row.sync_status, 'Not Linked');
+            const site = norm(row.site);
+            const vendor = norm(row.vendor);
+            const cnic = norm(row.cnic);
+            const nationality = norm(row.nationality);
+            const gender = norm(row.gender);
+            const email = norm(row.email);
+            const cell = norm(row.cell_no);
+            const employeeType = norm(row.employee_type);
+            const summary = norm(row.summary, `${name} - ${empNo}`);
+            const employeeInfo = [department !== '—' ? department : '', empNo !== '—' ? empNo : ''].filter(Boolean).join(' - ') || '—';
 
             const imgEl = cells[0]?.querySelector('img, .user-avatar');
             const avatarHtml = imgEl ? imgEl.outerHTML : '<div class="user-avatar">??</div>';

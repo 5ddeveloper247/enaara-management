@@ -10,6 +10,19 @@ class EmployeeUpdateRequest extends FormRequest
 {
     use ValidatesEmployeeRoleScope;
 
+    protected function maxWordsRule(int $maxWords, string $fieldLabel): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($maxWords, $fieldLabel) {
+            if ($value === null || trim((string) $value) === '') {
+                return;
+            }
+            $wordCount = count(preg_split('/\s+/', trim((string) $value)));
+            if ($wordCount > $maxWords) {
+                $fail("{$fieldLabel} can be at most {$maxWords} words.");
+            }
+        };
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -23,10 +36,10 @@ class EmployeeUpdateRequest extends FormRequest
             'full_name'              => ['required', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
             'father_name'            => ['nullable', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
             'email'                  => ['nullable', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($id)],
-            'phone'                  => ['nullable', 'string', 'max:15'],
+            'phone'                  => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]+$/'],
             'cnic'                   => ['required', 'string', 'max:20'],
             'cnic_expiry'            => ['required', 'date'],
-            'father_cnic'            => ['nullable', 'string', 'max:20'],
+            'father_cnic'            => ['nullable', 'string', 'max:20', 'regex:/^[0-9-]+$/'],
             'ntn'                    => ['nullable', 'string', 'max:50'],
             'gender'                 => ['nullable', Rule::in(['Male', 'Female', 'Other'])],
             'nationality'            => ['required', 'string', 'max:100'],
@@ -42,7 +55,7 @@ class EmployeeUpdateRequest extends FormRequest
             'nok_cnic'               => ['nullable', 'string', 'max:20'],
             'nok_relation'           => ['nullable', 'string', 'max:100'],
             'nok_dob'                => ['nullable', 'date'],
-            'nok_contact'            => ['nullable', 'string', 'max:15'],
+            'nok_contact'            => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]+$/'],
             'organization_id'        => ['required', 'integer', 'exists:organizations,id'],
             'sbu_id'                 => ['nullable', 'integer', 'exists:sbus,id', Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected())],
             'department_id'          => ['nullable', 'integer', 'exists:departments,id', Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected())],
@@ -82,14 +95,14 @@ class EmployeeUpdateRequest extends FormRequest
             'ex_army_unit'           => ['nullable', 'string', 'max:255'],
             'trade'                  => ['nullable', 'string', 'max:100'],
             'pma_lc_ots'             => ['nullable', 'string', 'max:255'],
-            'residence_phone'        => ['nullable', 'string', 'max:15'],
-            'emergency_contact'      => ['nullable', 'string', 'max:15'],
-            'cell_no'                => ['required', 'string', 'max:15'],
+            'residence_phone'        => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]+$/'],
+            'emergency_contact'      => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]+$/'],
+            'cell_no'                => ['required', 'string', 'max:15', 'regex:/^[0-9+\-\s()]+$/'],
             'contact_email'          => ['required', 'email', 'max:255'],
             'present_address'        => ['required', 'string', 'max:1000'],
             'permanent_address'      => ['required', 'string', 'max:1000'],
             'account_title'          => ['required', 'string', 'max:255'],
-            'account_no'             => ['required', 'string', 'max:100'],
+            'account_no'             => ['required', 'string', 'max:100', 'regex:/^[0-9]+$/'],
             'bank_branch'            => ['required', 'string', 'max:255'],
             'account_type'           => ['required', Rule::in(['Saving', 'Current'])],
             'family'                         => ['nullable', 'array'],
@@ -99,12 +112,12 @@ class EmployeeUpdateRequest extends FormRequest
             'family.*.relation'              => ['required_with:family.*', 'string', 'max:100'],
             'family.*.occupation'            => ['nullable', 'string', 'max:255'],
             'academics'                      => ['nullable', 'array'],
-            'academics.*.degree'             => ['required_with:academics.*', 'string', 'max:255'],
-            'academics.*.grade_cgpa'         => ['required_with:academics.*', 'string', 'max:100'],
+            'academics.*.degree'             => ['required_with:academics.*', 'string', $this->maxWordsRule(10, 'Certificate / degree')],
+            'academics.*.grade_cgpa'         => ['required_with:academics.*', 'string', $this->maxWordsRule(5, 'Grade / CGPA')],
             'academics.*.start_date'         => ['required_with:academics.*', 'date'],
             'academics.*.end_date'           => ['required_with:academics.*', 'date'],
-            'academics.*.field_of_study'     => ['nullable', 'string', 'max:255'],
-            'academics.*.institute'          => ['nullable', 'string', 'max:255'],
+            'academics.*.field_of_study'     => ['nullable', 'string', 'max:80'],
+            'academics.*.institute'          => ['nullable', 'string', $this->maxWordsRule(10, 'University / board / institute')],
             'employments'                    => ['nullable', 'array'],
             'employments.*.organization'     => ['required_with:employments.*', 'string', 'max:255'],
             'employments.*.designation'      => ['required_with:employments.*', 'string', 'max:255'],
@@ -120,12 +133,12 @@ class EmployeeUpdateRequest extends FormRequest
             'ref1_name'         => ['nullable', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
             'ref1_designation'  => ['nullable', 'string', 'max:255'],
             'ref1_organization' => ['nullable', 'string', 'max:255'],
-            'ref1_contact'      => ['nullable', 'string', 'max:15'],
+            'ref1_contact'      => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]+$/'],
             'ref1_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
             'ref2_name'         => ['nullable', 'string', 'max:255', 'regex:/[a-zA-Z]/'],
             'ref2_designation'  => ['nullable', 'string', 'max:255'],
             'ref2_organization' => ['nullable', 'string', 'max:255'],
-            'ref2_contact'      => ['nullable', 'string', 'max:15'],
+            'ref2_contact'      => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]+$/'],
             'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
             'profile_photo'       => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png'],
             'kept_attachment_ids'   => ['nullable', 'array'],
@@ -181,10 +194,20 @@ class EmployeeUpdateRequest extends FormRequest
             'academics.*.grade_cgpa.required_with'  => 'Grade / CGPA is required.',
             'academics.*.start_date.required_with'  => 'Academic start date is required.',
             'academics.*.end_date.required_with'    => 'Academic end date is required.',
+            'academics.*.field_of_study.max'        => 'Field of study can be at most 80 characters.',
             'employments.*.organization.required_with'  => 'Organization name is required.',
             'employments.*.designation.required_with'   => 'Designation is required.',
             'employments.*.from_date.required_with'     => 'From date is required.',
             'employments.*.to_date.required_with'       => 'To date is required.',
+            'phone.regex'                       => 'Phone number can only contain digits and + - ( ) symbols.',
+            'nok_contact.regex'                 => 'NOK contact can only contain digits and + - ( ) symbols.',
+            'residence_phone.regex'             => 'Residence phone can only contain digits and + - ( ) symbols.',
+            'emergency_contact.regex'           => 'Emergency contact can only contain digits and + - ( ) symbols.',
+            'cell_no.regex'                     => 'Cell number can only contain digits and + - ( ) symbols.',
+            'ref1_contact.regex'                => 'Reference 1 contact can only contain digits and + - ( ) symbols.',
+            'ref2_contact.regex'                => 'Reference 2 contact can only contain digits and + - ( ) symbols.',
+            'father_cnic.regex'                 => 'Father CNIC can only contain digits and hyphen (-).',
+            'account_no.regex'                  => 'Account number must contain digits only.',
         ];
     }
 }

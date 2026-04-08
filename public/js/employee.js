@@ -213,6 +213,7 @@
                 }
             },
         });
+        window.employeeTableRef = employeeTable;
     }
 
     function normalizeValue(value, fallback) {

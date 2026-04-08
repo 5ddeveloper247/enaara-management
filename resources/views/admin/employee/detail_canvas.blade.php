@@ -45,12 +45,12 @@
                     </div>
                 </div>
 
-                <div class="col-6">
+                <!-- <div class="col-6">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Employee No</small>
                         <div class="fw-semibold small" id="detailEmployeeNo">-</div>
                     </div>
-                </div>
+                </div> -->
 
                 <div class="col-6">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
@@ -59,12 +59,12 @@
                     </div>
                 </div>
 
-                <div class="col-12">
+                <!-- <div class="col-12">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Summary</small>
                         <div class="fw-semibold small" id="detailSummary">-</div>
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
 
@@ -200,20 +200,20 @@
                         <div class="fw-semibold small" id="detailEmployeeType">-</div>
                     </div>
                 </div>
-
+<!-- 
                 <div class="col-12">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Site Assignment</small>
                         <div class="fw-semibold small" id="detailSiteAssignment">-</div>
                     </div>
-                </div>
+                </div> -->
 
-                <div class="col-12" id="detailVendorContainer" style="display: none;">
+                <!-- <div class="col-12" id="detailVendorContainer" style="display: none;">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Vendor</small>
                         <div class="fw-semibold small" id="detailVendor">-</div>
                     </div>
-                </div>
+                </div> -->
 
                 <div class="col-12">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
