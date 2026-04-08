@@ -7,40 +7,40 @@
 
 <div id="tableViewWrapper" class="row g-3">
     <div class="col-12">
-        <table id="employeeTable" class="display nowrap table table-striped table-hover w-100 mb-0">
-            <thead class="bg-main">
-                <tr>
-                    <th>Profile</th>
-                    <th>TAS ID</th>
-                    <th>Employee ID</th>
-                    <th>Employee No</th>
-                    <th>Organization</th>
-                    <th>SBU</th>
-                    <th>Department</th>
-                    <th>Category</th>
-                    <th>CNIC</th>
-                    <th>Nationality</th>
-                    <th>Gender</th>
-                    <th>Date of Joining</th>
-                    <th>Designation</th>
-                    <th>Verification Status</th>
-                    <th>Email</th>
-                    <th>Cell Number</th>
-                    <th>Summary</th>
-                    <th>Employment Type</th>
-                    <th>Site Assignment</th>
-                    <th>Vendor</th>
-                    <th>Sync Status</th>
-                    <th>Floor Access</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-transparent"></tbody>
-        </table>
+    <table id="employeeTable" class="display nowrap table table-striped table-hover w-100 mb-0">
+        <thead class="bg-main">
+            <tr>
+                <th>Profile</th>
+                <th>TAS ID</th>
+                <th>Employee ID</th>
+                <th>Employee No</th>
+                <th>Organization</th>
+                <th>SBU</th>
+                <th>Department</th>
+                <th>Category</th>
+                <th>CNIC</th>
+                <th>Nationality</th>
+                <th>Gender</th>
+                <th>Date of Joining</th>
+                <th>Designation</th>
+                <th>Verification Status</th>
+                <th>Email</th>
+                <th>Cell Number</th>
+                <th>Summary</th>
+                <th>Employment Type</th>
+                <th>Site Assignment</th>
+                <th>Vendor</th>
+                <th>Sync Status</th>
+                <th>Floor Access</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-transparent"></tbody>
+    </table>
     </div>
 </div>
 
-<div id="gridViewWrapper" class="d-none row g-4 p-3"></div>
+<div id="gridViewWrapper" class="d-none row g-3 p-3"></div>
 
 
 <script>
@@ -72,15 +72,27 @@
     window.buildEmployeeGrid = function buildGrid() {
         const grid = document.getElementById('gridViewWrapper');
         grid.innerHTML = '';
-        const attrSafe = (val) => String(val ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/</g, '&lt;');
 
-        const compactFields = [
-            { label: 'Department', idx: 6, icon: 'bi-diagram-3' },
-            { label: 'Designation', idx: 12, icon: 'bi-briefcase' },
-            { label: 'Joining', idx: 11, icon: 'bi-calendar3' },
+        const gridFields = [
+            { label: 'TAS ID', idx: 1 },
+            { label: 'Employee No', idx: 3 },
+            { label: 'Organization', idx: 4 },
+            { label: 'SBU', idx: 5 },
+            { label: 'Department', idx: 6 },
+            { label: 'Category', idx: 7 },
+            { label: 'CNIC', idx: 8 },
+            { label: 'Nationality', idx: 9 },
+            { label: 'Gender', idx: 10 },
+            { label: 'Date of Joining', idx: 11 },
+            { label: 'Designation', idx: 12 },
+            { label: 'Email', idx: 14 },
+            { label: 'Cell Number', idx: 15 },
+            { label: 'Summary', idx: 16 },
+            { label: 'Employment Type', idx: 17 },
+            { label: 'Site Assignment', idx: 18 },
+            { label: 'Vendor', idx: 19 },
+            { label: 'Sync Status', idx: 20 },
+            { label: 'Floor Access', idx: 21 },
         ];
 
         document.querySelectorAll('#employeeTable tbody tr').forEach(row => {
@@ -93,117 +105,46 @@
             const name = (nameEl && nameEl.textContent.trim()) || cells[0]?.textContent.trim().split(/\s+/).slice(0, 3).join(' ') || '—';
             const empNo = cells[3]?.textContent.trim() || '—';
             const nameTitle = name.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-            const orgName = cells[4]?.textContent.trim() || '—';
-            const category = cells[7]?.textContent.trim() || '—';
-            const employmentType = cells[17]?.textContent.trim() || '—';
 
             const verEl = cells[13]?.querySelector('.badge');
             const ver = verEl ? verEl.outerHTML : '<span class="text-muted small">—</span>';
-            const viewBtn = cells[22]?.querySelector('.view-employee-btn, [data-bs-target="#employeeDetailCanvas"]');
-            let btnAttrs = '';
-            if (viewBtn) {
-                const clonedBtn = viewBtn.cloneNode(true);
-                // Ensure same detail canvas behavior in grid view.
-                clonedBtn.setAttribute('type', 'button');
-                clonedBtn.setAttribute('data-bs-toggle', 'offcanvas');
-                clonedBtn.setAttribute('data-bs-target', '#employeeDetailCanvas');
-                clonedBtn.classList.add('view-employee-btn');
-                clonedBtn.classList.remove('border-0', 'text-white', 'btn-primary', 'btn-link');
-                clonedBtn.classList.add('btn', 'btn-sm', 'btn-outline-secondary', 'employee-grid-view-btn');
-                clonedBtn.innerHTML = '<i class="bi bi-eye"></i>';
-                btnAttrs = clonedBtn.outerHTML;
-            } else {
-                const fallbackDepartment = cells[6]?.textContent.trim() || '—';
-                const fallbackSbu = cells[5]?.textContent.trim() || '—';
-                const fallbackCell = cells[15]?.textContent.trim() || '—';
-                const fallbackEmail = cells[14]?.textContent.trim() || '—';
-                const fallbackCnic = cells[8]?.textContent.trim() || '—';
-                const fallbackNationality = cells[9]?.textContent.trim() || '—';
-                const fallbackGender = cells[10]?.textContent.trim() || '—';
-                const fallbackJoin = cells[11]?.textContent.trim() || '—';
-                const fallbackDesignation = cells[12]?.textContent.trim() || '—';
-                const fallbackVerification = cells[13]?.textContent.trim() || '—';
-                const fallbackFloor = cells[21]?.textContent.trim() && cells[21]?.textContent.trim() !== '—' ? '1' : '0';
-                btnAttrs = `<button type="button"
-                    class="btn btn-sm btn-outline-secondary employee-grid-view-btn view-employee-btn"
-                    data-bs-toggle="offcanvas"
-                    data-bs-target="#employeeDetailCanvas"
-                    title="View Details"
-                    data-db-id=""
-                    data-tas-id="${attrSafe(cells[1]?.textContent.trim() || '—')}"
-                    data-employee-id="${attrSafe(empNo)}"
-                    data-employee-name="${attrSafe(name)}"
-                    data-employee-avatar="${attrSafe((name || '??').split(/\s+/).slice(0, 2).map(s => s[0] || '').join('').toUpperCase() || '??')}"
-                    data-photo-url=""
-                    data-employee-info="${attrSafe([fallbackDepartment, empNo].filter(Boolean).join(' - '))}"
-                    data-organization="${attrSafe(orgName)}"
-                    data-sbu="${attrSafe(fallbackSbu)}"
-                    data-department="${attrSafe(fallbackDepartment)}"
-                    data-employment-type="${attrSafe(employmentType)}"
-                    data-employment-category="${attrSafe(category)}"
-                    data-employee-type="-"
-                    data-biometric-id="${attrSafe(cells[1]?.textContent.trim() || '—')}"
-                    data-sync-status="${attrSafe(cells[20]?.textContent.trim() || 'Not Linked')}"
-                    data-site-assignment="${attrSafe(cells[18]?.textContent.trim() || '—')}"
-                    data-vendor="${attrSafe(cells[19]?.textContent.trim() || '—')}"
-                    data-floor-access="${fallbackFloor}"
-                    data-verification-status="${attrSafe(fallbackVerification)}"
-                    data-email="${attrSafe(fallbackEmail)}"
-                    data-cell="${attrSafe(fallbackCell)}"
-                    data-cnic="${attrSafe(fallbackCnic)}"
-                    data-nationality="${attrSafe(fallbackNationality)}"
-                    data-gender="${attrSafe(fallbackGender)}"
-                    data-join-date="${attrSafe(fallbackJoin)}"
-                    data-designation="${attrSafe(fallbackDesignation)}"
-                    data-summary="${attrSafe(`${name} - ${empNo}`)}"
-                ><i class="bi bi-eye"></i></button>`;
-            }
+            const viewBtn = cells[22]?.querySelector('button');
+            const btnAttrs = viewBtn ? viewBtn.outerHTML : '';
 
             let detailsHtml = '';
-            compactFields.forEach(({ label, idx, icon }) => {
+            gridFields.forEach(({ label, idx }) => {
                 const td = cells[idx];
                 const val = td && td.innerHTML.trim()
                     ? td.innerHTML.trim()
                     : '<span class="text-muted">—</span>';
                 detailsHtml += `
-                    <div class="mb-1">
-                        <i class="bi ${icon} me-1 text-main small"></i>
-                        <small class="text-muted me-1">${label}:</small>
-                        <small class="employee-grid-field-value text-break">${val}</small>
+                    <div class="employee-grid-field mb-2 pb-2 border-bottom border-light">
+                        <div class="employee-grid-field-label">${label}</div>
+                        <div class="employee-grid-field-value text-break">${val}</div>
                     </div>`;
             });
 
             grid.insertAdjacentHTML('beforeend', `
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="card employee-grid-card border-1 rounded-3 h-100">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div class="d-flex align-items-center min-w-0">
-                                <div class="me-2 employee-grid-avatar-wrap">${avatarHtml}</div>
-                                <div class="min-w-0">
-                                    <h6 class="mb-0 fw-semibold small text-truncate" title="${nameTitle}">${name}</h6>
-                                    <small class="text-muted small d-block">${empNo}</small>
-                                    <small class="text-muted small d-block text-truncate">${orgName}</small>
-                                </div>
-                            </div>
-                            <div>${ver}</div>
-                        </div>
-
-                        <div class="d-flex flex-wrap gap-1 mb-2">
-                            <span class="badge bg-light text-dark border">${category}</span>
-                            <span class="badge bg-light text-dark border">${employmentType}</span>
-                        </div>
-
-                        <div class="employee-grid-card-scroll">
-                            ${detailsHtml}
-                        </div>
-
-                        <div class="mt-2 pt-2 border-top d-flex justify-content-end">
-                            <div>${btnAttrs}</div>
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card border rounded-3 h-100">
+                <div class="card-body p-3 d-flex flex-column">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        ${avatarHtml}
+                        <div class="min-w-0 flex-grow-1">
+                            <div class="fw-semibold small text-truncate" title="${nameTitle}">${name}</div>
+                            <small class="text-muted">${empNo}</small>
                         </div>
                     </div>
+                    <div class="employee-grid-card-scroll flex-grow-1 mb-2">
+                        ${detailsHtml}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top flex-wrap gap-2 mt-auto">
+                        <div class="d-flex align-items-center gap-1 flex-wrap">${ver}</div>
+                        <div>${btnAttrs}</div>
+                    </div>
                 </div>
-            </div>`);
+            </div>
+        </div>`);
         });
     };
 </script>
