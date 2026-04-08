@@ -18,14 +18,16 @@
 <div class="row g-3 px-4 pb-3">
     <div class="col-md-3">
         <label class="form-label small fw-semibold text-muted mb-2">Select Month</label>
-        <input type="month" class="form-control form-control-sm" id="filterMonth" value="{{ date('Y-m') }}">
+        <input type="month" class="form-control form-control-sm" id="filterMonth" value="{{ $month ?? date('Y-m') }}">
     </div>
     <div class="col-md-3">
         <label class="form-label small fw-semibold text-muted mb-2">SBU</label>
         <select class="form-select form-select-sm" id="filterSBU">
             <option value="">All SBUs</option>
             @foreach ($sbus as $sbu)
-                <option value="{{$sbu->id}}">{{$sbu->name}}</option>
+                <option value="{{ $sbu->id }}" {{ (string) request('sbu_id') === (string) $sbu->id ? 'selected' : '' }}>
+                    {{ $sbu->name }}
+                </option>
             @endforeach
         </select>
     </div>
@@ -34,7 +36,9 @@
         <select class="form-select form-select-sm" id="filterBranch">
             <option value="">All Departments</option>
             @foreach ($departments as $dpt)
-                <option value="{{$dpt->id}}">{{$dpt->name}}</option>
+                <option value="{{ $dpt->id }}" {{ (string) request('department_id') === (string) $dpt->id ? 'selected' : '' }}>
+                    {{ $dpt->name }}
+                </option>
             @endforeach
         </select>
     </div>

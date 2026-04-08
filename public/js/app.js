@@ -61,5 +61,34 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // ============================================
+    // GLOBAL BACKDROP SAFETY CLEANUP
+    // Prevent rare stuck black overlay that blocks clicks
+    // ============================================
+    function cleanupOrphanBackdrops() {
+        const hasOpenModal = !!document.querySelector('.modal.show');
+        const hasOpenOffcanvas = !!document.querySelector('.offcanvas.show');
+
+        // If nothing is open, any remaining backdrop is orphaned and should be removed.
+        if (!hasOpenModal && !hasOpenOffcanvas) {
+            document.querySelectorAll('.modal-backdrop, .offcanvas-backdrop').forEach(function(backdrop) {
+                backdrop.remove();
+            });
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        }
+    }
+
+    // Run cleanup on lifecycle events where stale backdrops are commonly observed.
+    cleanupOrphanBackdrops();
+    window.addEventListener('pageshow', cleanupOrphanBackdrops);
+    window.addEventListener('load', cleanupOrphanBackdrops);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') cleanupOrphanBackdrops();
+    });
+    document.addEventListener('hidden.bs.modal', cleanupOrphanBackdrops);
+    document.addEventListener('hidden.bs.offcanvas', cleanupOrphanBackdrops);
 });
 

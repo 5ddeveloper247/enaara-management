@@ -21,6 +21,7 @@
         loadMonthlySummaryData();
         initializeDataTable();
         initializeEventHandlers();
+        initializeFloorFilter();
         updateCounters();
     });
 
@@ -137,7 +138,7 @@
             : '<span class="text-muted">-</span>';
     
         return `
-            <tr>
+            <tr data-floor="${String(employee.floor_name || '').toLowerCase()}">
                 <td class="dt-control"></td>
                 <td>
                     <div class="d-flex align-items-center">
@@ -197,12 +198,6 @@
     // EVENT HANDLERS
     // ============================================
     function initializeEventHandlers() {
-        // Month filter
-        $('#filterMonth').on('change', function () {
-            selectedMonth = $(this).val();
-            applyFilters();
-        });
-
         // Apply filters
         $('#applyFiltersBtn').on('click', applyFilters);
 
@@ -227,47 +222,58 @@
     // FILTER FUNCTIONS
     // ============================================
     function applyFilters() {
+        selectedMonth = ($('#filterMonth').val() || selectedMonth);
         const sbu = $('#filterSBU').val();
         const branch = $('#filterBranch').val();
-        const floor = $('#filterFloor').val();
+        const floor = ($('#filterFloor').val() || '').trim().toLowerCase();
 
-        // Build filter string
-        let filterString = '';
-        if (sbu) filterString += sbu;
-        if (branch) filterString += (filterString ? ' ' : '') + branch;
-        if (floor) filterString += (filterString ? ' ' : '') + floor;
+        // Server-backed filters (month, sbu, department) to keep results accurate.
+        const params = new URLSearchParams();
+        if (selectedMonth) params.set('month', selectedMonth);
+        if (sbu) params.set('sbu_id', sbu);
+        if (branch) params.set('department_id', branch);
+        if (floor) params.set('floor', floor);
 
-        // Apply DataTable search
-        if (monthlySummaryTable) {
-            monthlySummaryTable.search(filterString).draw();
-        }
-
-        // Update counters
-        updateCounters();
+        const target = `${window.location.pathname}?${params.toString()}`;
+        window.location.href = target;
     }
 
     function clearFilters() {
-        $('#filterSBU').val('');
-        $('#filterBranch').val('');
-        $('#filterFloor').val('');
-        $('#filterMonth').val(selectedMonth);
-
-        if (monthlySummaryTable) {
-            monthlySummaryTable.search('').draw();
-        }
-
-        updateCounters();
+        window.location.href = window.location.pathname;
     }
 
     // ============================================
     // EXPORT FUNCTIONS (Prototype - Placeholder)
     // ============================================
     function handleExportExcel() {
-        alert('Excel export functionality will be implemented with backend integration.');
+        const rows = getExportRows();
+        if (!rows.length) {
+            if (window.Swal) Swal.fire('Info', 'No rows available to export.', 'info');
+            return;
+        }
+
+        const headers = ['Employee', 'Employee Code', 'Department', 'SBU', 'Total Days', 'Present', 'Absent', 'Half-days', 'Annual Leave', 'Sick Leave', 'Casual Leave', 'Late Arrivals', 'Early Departures', 'Zone-2 Verification', 'Regularization'];
+        let csv = headers.join(',') + '\n';
+        rows.forEach(function (row) {
+            csv += row.map(csvEscape).join(',') + '\n';
+        });
+        downloadCsv(csv, `monthly_summary_${selectedMonth || 'report'}.csv`);
     }
 
     function handleExportPdf() {
-        alert('PDF export functionality will be implemented with backend integration.');
+        const rows = getExportRows();
+        if (!rows.length) {
+            if (window.Swal) Swal.fire('Info', 'No rows available to export.', 'info');
+            return;
+        }
+
+        const html = buildPrintableHtml(rows);
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
     }
 
     function handleExportEmployeeReport() {
@@ -412,6 +418,128 @@
         $('#totalAbsents').text(totalAbsent);
         $('#totalLateArrivals').text(totalLate);
         $('#totalGeofenceViolations').text('0'); // Placeholder for prototype
+    }
+
+    function initializeFloorFilter() {
+        // Floor filter is client-side only (month/sbu/department are server-side).
+        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+            if (!settings.nTable || settings.nTable.id !== 'monthlySummaryTable') return true;
+
+            const selectedFloor = ($('#filterFloor').val() || '').toLowerCase();
+            if (!selectedFloor) return true;
+
+            const rowNode = settings.aoData[dataIndex]?.nTr;
+            const rowFloor = (rowNode?.getAttribute('data-floor') || '').toLowerCase();
+            return rowFloor === selectedFloor;
+        });
+
+        // Reapply floor filter on change without page reload.
+        $('#filterFloor').on('change', function () {
+            if (monthlySummaryTable) {
+                monthlySummaryTable.draw();
+                updateCounters();
+            }
+        });
+
+        // Apply initial floor query param if present.
+        const queryFloor = new URLSearchParams(window.location.search).get('floor');
+        if (queryFloor) {
+            $('#filterFloor').val(queryFloor);
+            if (monthlySummaryTable) monthlySummaryTable.draw();
+        }
+    }
+
+    function getExportRows() {
+        if (!monthlySummaryTable) return [];
+        const rows = [];
+        monthlySummaryTable.rows({ search: 'applied' }).every(function () {
+            const rowNode = this.node();
+            const $row = $(rowNode);
+            const employeeInfo = $row.find('td:eq(1)');
+            const employeeName = employeeInfo.find('.fw-semibold').first().text().trim();
+            const metaText = employeeInfo.find('small.text-muted').first().text().trim();
+            const parts = metaText.split('|').map(s => s.trim());
+            const employeeCode = parts[0] || '';
+            const department = parts[1] || '';
+            const sbuFloor = employeeInfo.find('.badge').first().text().trim();
+
+            rows.push([
+                employeeName,
+                employeeCode,
+                department,
+                sbuFloor,
+                $row.find('td:eq(2)').text().trim(),
+                $row.find('td:eq(3)').text().trim(),
+                $row.find('td:eq(4)').text().trim(),
+                $row.find('td:eq(5)').text().trim(),
+                $row.find('td:eq(6)').text().trim(),
+                $row.find('td:eq(7)').text().trim(),
+                $row.find('td:eq(8)').text().trim(),
+                $row.find('td:eq(9)').text().trim(),
+                $row.find('td:eq(10)').text().trim(),
+                $row.find('td:eq(11)').text().trim(),
+                $row.find('td:eq(12)').text().trim()
+            ]);
+        });
+        return rows;
+    }
+
+    function buildPrintableHtml(rows) {
+        const head = `
+            <tr>
+                <th>Employee</th><th>Code</th><th>Department</th><th>SBU/Floor</th>
+                <th>Total</th><th>Present</th><th>Absent</th><th>Half</th>
+                <th>Annual</th><th>Sick</th><th>Casual</th><th>Late</th>
+                <th>Early</th><th>Zone-2</th><th>Regularization</th>
+            </tr>`;
+        const body = rows.map(function (r) {
+            return '<tr>' + r.map(function (c) { return `<td>${escapeHtml(c)}</td>`; }).join('') + '</tr>';
+        }).join('');
+
+        return `
+            <html>
+            <head>
+                <title>Monthly Summary ${escapeHtml(selectedMonth || '')}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 16px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+                    th { background: #f3f4f6; }
+                </style>
+            </head>
+            <body>
+                <h3>Monthly Summary (${escapeHtml(selectedMonth || '')})</h3>
+                <table><thead>${head}</thead><tbody>${body}</tbody></table>
+            </body>
+            </html>
+        `;
+    }
+
+    function csvEscape(value) {
+        const text = String(value ?? '');
+        return '"' + text.replace(/"/g, '""') + '"';
+    }
+
+    function downloadCsv(csv, fileName) {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
 })();

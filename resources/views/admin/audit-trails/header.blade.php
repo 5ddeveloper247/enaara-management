@@ -25,10 +25,11 @@
         <label class="form-label small fw-semibold text-muted mb-2">Organization</label>
         <select class="form-select form-select-sm" id="filterOrganization">
             <option value="">All Organizations</option>
-            <option value="enaara">Enaara Developers</option>
-            <option value="msr-rawalpindi">Madison Square Mall Rawalpindi</option>
-            <option value="msr-lahore">Madison Square Mall Lahore</option>
-            <option value="royal-swiss">Royal Swiss Lahore</option>
+            @isset($organizations)
+                @foreach ($organizations as $organization)
+                    <option value="{{ $organization->id }}">{{ $organization->name }}</option>
+                @endforeach
+            @endisset
         </select>
     </div>
     <div class="col-md-3">

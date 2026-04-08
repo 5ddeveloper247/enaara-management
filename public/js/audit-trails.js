@@ -428,7 +428,32 @@
      * ============================================
      */
     function handleExport() {
-        alert('Export functionality will be implemented with backend integration.');
+        if (!auditTrailsData.length) {
+            if (window.Swal) Swal.fire('Info', 'No audit trail records to export.', 'info');
+            return;
+        }
+
+        const headers = ['Timestamp', 'User', 'Role', 'Category', 'Description', 'Severity', 'IP Address', 'Device', 'Organization', 'Branch'];
+        let csv = headers.join(',') + '\n';
+
+        auditTrailsData.forEach(function (audit) {
+            const row = [
+                audit.timestamp || '',
+                audit?.user?.name || 'System',
+                audit?.user?.role || 'N/A',
+                audit.category || '',
+                audit.description || '',
+                audit.severity || '',
+                audit.ipAddress || '',
+                audit.device || '',
+                audit.organization || '',
+                audit.branch || ''
+            ].map(csvEscape);
+
+            csv += row.join(',') + '\n';
+        });
+
+        downloadCsv(csv, 'audit_trails_' + new Date().toISOString().split('T')[0] + '.csv');
     }
 
     /**
@@ -514,5 +539,23 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+    function csvEscape(value) {
+        const text = String(value ?? '');
+        return '"' + text.replace(/"/g, '""') + '"';
+    }
+
+    function downloadCsv(csv, fileName) {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
 })();
