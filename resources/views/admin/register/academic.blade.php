@@ -315,6 +315,22 @@
 
     function removeRow(btn) { btn.closest('tr').remove(); }
 
+    function showRowValidationError(fields) {
+        const message = 'Please fill required fields: ' + fields.join(', ');
+        if (window.Swal) {
+            const listHtml = fields.map(f => `<li>${f}</li>`).join('');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                html: `Please complete the following required fields:<ul class="text-start mt-2 mb-0">${listHtml}</ul>`,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#1a237e'
+            });
+        } else {
+            alert(message);
+        }
+    }
+
     function escCard(s) {
         return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
     }
@@ -445,8 +461,8 @@
                     <div class="d-flex align-items-start gap-2 mb-2">
                         <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:.9rem;">${escCard(initials)}</div>
                         <div class="min-w-0 flex-grow-1">
-                            <h6 class="mb-0 fw-semibold small text-truncate" title="${escCard(degree)}">${escCard(degree)}</h6>
-                            <small class="text-muted d-block text-truncate" title="${escCard(inst || '—')}">${escCard(inst || '—')}</small>
+                            <h6 class="mb-0 fw-semibold small" title="${escCard(degree)}">${escCard(degree)}</h6>
+                            <small class="text-muted" title="${escCard(inst || '—')}">${escCard(inst || '—')}</small>
                         </div>
                         <span class="badge bg-primary flex-shrink-0" style="font-size:10px;">${escCard(grade || '—')}</span>
                     </div>
@@ -526,7 +542,7 @@
         if (!gender)   rowErrors.push('Gender');
         if (!dob)      rowErrors.push('Date of Birth');
         if (!relation) rowErrors.push('Relation');
-        if (rowErrors.length) { alert('Please fill required fields: ' + rowErrors.join(', ')); return; }
+        if (rowErrors.length) { showRowValidationError(rowErrors); return; }
 
         const idx = nextSlot(window.familyData);
         window.familyData[idx] = { name, gender, dob, relation, occupation };
@@ -602,7 +618,7 @@
         if (!grade)  acErrors.push('Grade / CGPA');
         if (!start)  acErrors.push('Start Date');
         if (!end)    acErrors.push('End Date');
-        if (acErrors.length) { alert('Please fill required fields: ' + acErrors.join(', ')); return; }
+        if (acErrors.length) { showRowValidationError(acErrors); return; }
 
         const idx = window.academicsData.length;
         window.academicsData.push({ degree, grade_cgpa: grade, start_date: start, end_date: end, field_of_study: field, institute: inst });
@@ -618,8 +634,8 @@
                     <div class="d-flex align-items-start gap-2 mb-2">
                         <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:.9rem;">${initials}</div>
                         <div class="min-w-0 flex-grow-1">
-                            <h6 class="mb-0 fw-semibold small text-truncate" title="${degree}">${degree}</h6>
-                            <small class="text-muted d-block text-truncate" title="${inst || '—'}">${inst || '—'}</small>
+                            <h6 class="mb-0 fw-semibold small" title="${degree}">${degree}</h6>
+                            <small class="text-muted" title="${inst || '—'}">${inst || '—'}</small>
                         </div>
                         <span class="badge bg-primary flex-shrink-0" style="font-size:10px;">${grade || '—'}</span>
                     </div>
@@ -700,7 +716,7 @@
         if (!desig) emErrors.push('Designation');
         if (!from)  emErrors.push('From Date');
         if (!to)    emErrors.push('To Date');
-        if (emErrors.length) { alert('Please fill required fields: ' + emErrors.join(', ')); return; }
+        if (emErrors.length) { showRowValidationError(emErrors); return; }
 
         const idx = nextSlot(window.employmentsData);
         window.employmentsData[idx] = { organization: org, designation: desig, from_date: from, to_date: to, salary, reason_for_leaving: reason };
