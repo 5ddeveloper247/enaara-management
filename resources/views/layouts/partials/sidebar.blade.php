@@ -70,11 +70,25 @@
                             $iconClass = $menuItem->css_class ?? 'bi bi-people';
                         @endphp
                         
+                        @php
+                            $comingSoonModules = ['Daily Logs', 'Regularization', 'Overtime Tracker'];
+                            $isComingSoon = in_array($menuItem->module_name, $comingSoonModules);
+                        @endphp
+
                         <li class="mb-1 mx-3">
-                            <a href="{{ $menuUrl }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ $isActive ? 'active' : '' }}">
-                                <i class="{{ $iconClass }} me-2"></i>
-                                <span>{{ $menuItem->module_name }}</span>
-                            </a>
+                            @if($isComingSoon)
+                                <span class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill"
+                                      style="opacity: 0.45; cursor: not-allowed; pointer-events: none;" title="Coming Soon">
+                                    <i class="{{ $iconClass }} me-2"></i>
+                                    <span>{{ $menuItem->module_name }}</span>
+                                    <span class="ms-auto badge rounded-pill text-black fw-semibold" style="font-size:0.6rem; background:#e6c673; letter-spacing:0.03em;">Soon</span>
+                                </span>
+                            @else
+                                <a href="{{ $menuUrl }}" class="nav-link d-flex align-items-center text-white text-decoration-none px-3 py-2 rounded-pill {{ $isActive ? 'active' : '' }}">
+                                    <i class="{{ $iconClass }} me-2"></i>
+                                    <span>{{ $menuItem->module_name }}</span>
+                                </a>
+                            @endif
                         </li>
                     @endforeach
                 @endif

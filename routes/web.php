@@ -233,10 +233,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     // })->name('admin.settings');
 
     Route::get('/daily-logs', function () {
-        return redirect()->back()->with([
-            'coming_soon_title' => 'Coming Soon',
-            'coming_soon_message' => 'Daily Logs feature is coming soon.'
-        ]);
+        return redirect()->route('admin.dashboard.index');
     })->name('admin.monthly-logs.index');
 
 
@@ -257,10 +254,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::delete('/shift-roster/{id}', [ShiftRosterController::class, 'destroy'])->name('admin.shift-roster.destroy');
 
     Route::get('/regularization', function () {
-        return redirect()->back()->with([
-            'coming_soon_title' => 'Coming Soon',
-            'coming_soon_message' => 'Regularization feature is coming soon.'
-        ]);
+        return redirect()->route('admin.dashboard.index');
     })->name('admin.regularization.index');
 
     Route::get('/geofencing', [GeofenceController::class, 'index'])->name('admin.geofencing.index');
@@ -291,10 +285,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
 
 
     Route::get('/overtime-tracker', function () {
-        return redirect()->back()->with([
-            'coming_soon_title' => 'Coming Soon',
-            'coming_soon_message' => 'Overtime Tracker feature is coming soon.'
-        ]);
+        return redirect()->route('admin.dashboard.index');
     })->name('admin.overtime.index');
 
     // Policies Routes
