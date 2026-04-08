@@ -711,11 +711,6 @@
             window.employeeFilters.name         = ($('#filterName').val() || '').trim();
             window.employeeFilters.cnic         = ($('#filterCnic').val() || '').trim();
 
-            var dd = document.getElementById('filterDropdownBtn');
-            if (dd && window.bootstrap && bootstrap.Dropdown) {
-                bootstrap.Dropdown.getOrCreateInstance(dd).hide();
-            }
-
             if (employeeTable) {
                 employeeTable.ajax.reload(null, false);
             }
@@ -738,6 +733,12 @@
             window.employeeFilters.department   = '';
             window.employeeFilters.name         = '';
             window.employeeFilters.cnic         = '';
+
+            // Close dropdown only on Clear
+            var dd = document.getElementById('filterDropdownBtn');
+            if (dd && window.bootstrap && bootstrap.Dropdown) {
+                bootstrap.Dropdown.getOrCreateInstance(dd).hide();
+            }
 
             if (employeeTable) {
                 employeeTable.ajax.reload(null, false);
