@@ -1,20 +1,21 @@
 {{-- STEP 6: More (Contact, Family, Academic, Employment, Medical, References) --}}
 <div class="step" id="step-6">
-    <div class="d-flex gap-3">
+    <div class="d-flex gap-3 align-items-start">
 
         {{-- Left Vertical Nav --}}
-        <div class="d-flex flex-column gap-1" style="min-width:160px">
-            <button type="button" class="btn btn-primary btn-sm text-start sub-nav-btn active-sub"
+        <div class="d-flex flex-column gap-2 p-2 rounded-3 border bg-light bg-opacity-25" style="min-width:180px">
+            <div class="small fw-semibold text-uppercase text-muted px-1">Additional Details</div>
+            <button type="button" class="btn btn-primary btn-sm text-start sub-nav-btn active-sub rounded-2"
                 data-target="s6-contact" onclick="showSubSection(this, 's6-contact')">Contact</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-family" onclick="showSubSection(this, 's6-family')">Family</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-academic" onclick="showSubSection(this, 's6-academic')">Academic</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-employment" onclick="showSubSection(this, 's6-employment')">Employment</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-medical" onclick="showSubSection(this, 's6-medical')">Medical</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-references" onclick="showSubSection(this, 's6-references')">References</button>
         </div>
 
@@ -23,40 +24,46 @@
 
             {{-- Contact --}}
             <div class="sub-section" id="s6-contact">
-                <div class="section-title">Section D — Contact Details</div>
-                <div class="row g-3">
-                    <div class="col-md-6">
+                <div class="p-3 rounded-3 border bg-white">
+                    <div class="section-title d-flex align-items-center justify-content-between">
+                        <span>Section D — Contact Details</span>
+                        <small class="text-muted">Primary communication information</small>
+                    </div>
+                <div class="row g-2">
+                    <div class="col-md-4">
                         <label class="form-label">Residence Phone</label>
                         <input type="tel" name="residence_phone" class="form-control" maxlength="15">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">In Case of Emergency Contact No</label>
                         <input type="tel" name="emergency_contact" class="form-control" maxlength="15">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">Cell No <span class="text-danger">*</span></label>
                         <input type="tel" name="cell_no" class="form-control" maxlength="15">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">Email <span class="text-danger">*</span></label>
                         <input type="email" name="contact_email" class="form-control">
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-4">
                         <label class="form-label">Present Address <span class="text-danger">*</span></label>
-                        <textarea name="present_address" class="form-control" rows="2"></textarea>
+                        <textarea name="present_address" class="form-control" rows="1" style="min-height:38px;"></textarea>
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-4">
                         <label class="form-label">Permanent Address <span class="text-danger">*</span></label>
-                        <textarea name="permanent_address" class="form-control" rows="2"></textarea>
+                        <textarea name="permanent_address" class="form-control" rows="1" style="min-height:38px;"></textarea>
                     </div>
+                </div>
                 </div>
             </div>
 
             {{-- Family --}}
             <div class="sub-section d-none" id="s6-family">
-                <div class="section-title">Section F — Family Details <small class="text-muted fw-normal">(Wife/Husband / Children / Parents / Brothers / Sisters)</small></div>
+                <div class="p-3 rounded-3 border bg-white">
+                <div class="section-title d-flex align-items-center justify-content-between">Section F — Family Details <small class="text-muted fw-normal">(Wife/Husband / Children / Parents / Brothers / Sisters)</small></div>
                 <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
+                    <table class="table table-bordered align-middle table-sm">
                         <thead class="bg-main">
                             <tr>
                                 <th>#</th>
@@ -98,15 +105,17 @@
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addFamilyRow()">+ Add Member</button>
                 <div id="familyListing" class="row g-3 mt-3"></div>
+                </div>
             </div>
 
             {{-- Academic --}}
             <div class="sub-section d-none" id="s6-academic">
+                <div class="p-3 rounded-3 border bg-white">
                 <div class="section-title">Section G — Academic Background / Professional Trainings / Certification
                     <small class="text-muted fw-normal">(Start from Recent)</small>
                 </div>
                 <div class="table-responsive mb-2">
-                    <table class="table table-bordered align-middle">
+                    <table class="table table-bordered align-middle table-sm">
                         <thead class="bg-main">
                             <tr>
                                 <th>#</th>
@@ -144,13 +153,15 @@
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addAcademicRow()">+ Add Row</button>
                 <div id="academicListing" class="row g-3 mt-3"></div>
+                </div>
             </div>
 
             {{-- Employment History --}}
             <div class="sub-section d-none" id="s6-employment">
+                <div class="p-3 rounded-3 border bg-white">
                 <div class="section-title">Section H — Employment History <small class="text-muted fw-normal">(Start from Recent)</small></div>
                 <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
+                    <table class="table table-bordered align-middle table-sm">
                         <thead class="bg-main">
                             <tr>
                                 <th>#</th>
@@ -188,17 +199,19 @@
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEmploymentRow()">+ Add Row</button>
                 <div id="employmentListing" class="row g-3 mt-3"></div>
+                </div>
             </div>
 
             {{-- Medical --}}
-            <div class="sub-section px-3 pb-2 d-none" id="s6-medical">
+            <div class="sub-section d-none" id="s6-medical">
+                <div class="p-3 rounded-3 border bg-white">
                 <div class="section-title">Section I — Medical Ailment / History / Disability</div>
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-12">
                         <label class="form-label">Last Medical Fitness Test — Date & Results</label>
                         <textarea name="last_fitness_test" class="form-control" rows="2"></textarea>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Do you have any disability?</label>
                         <div class="d-flex gap-3 mt-1">
                             <div class="form-check">
@@ -211,11 +224,11 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Blood Group</label>
                         <input type="text" name="blood_group" class="form-control" maxlength="10">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">If Yes (Disability Type)</label>
                         <select name="disability_type" class="form-select">
                             <option value="">Select</option>
@@ -228,12 +241,14 @@
                         <textarea name="disability_description" class="form-control" rows="2"></textarea>
                     </div>
                 </div>
+                </div>
             </div>
 
             {{-- References --}}
-            <div class="sub-section px-3 pb-2 d-none" id="s6-references">
+            <div class="sub-section d-none" id="s6-references">
+                <div class="p-3 rounded-3 border bg-white">
                 <div class="section-title">Section J — References</div>
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-6">
                         <p class="fw-semibold mb-2 text-primary">Reference 1</p>
                         <div class="row g-2">
@@ -274,6 +289,7 @@
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
 

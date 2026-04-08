@@ -2,6 +2,7 @@
     'use strict';
 
     let employeeTable;
+    const TABLE_CELL_WORD_LIMIT = 4;
 
     window.employeeFilters = window.employeeFilters || {
         employeeType: '',
@@ -47,7 +48,8 @@
                 {
                     data: 'biometric_id',
                     render: renderBiometric,
-                    orderable: true
+                    orderable: true,
+                    visible: false
                 }, // 1 TAS ID
                 {
                     data: 'id',
@@ -58,22 +60,25 @@
                 {
                     data: 'employee_code',
                     render: renderEmployeeNo,
-                    orderable: true
+                    orderable: true,
+                    visible: false
                 }, // 3 Employee No
                 {
                     data: 'organization',
-                    render: renderSimple,
+                    render: renderOrgStructure,
                     orderable: true
                 }, // 4 Organization
                 {
                     data: 'sbu',
                     render: renderSimple,
-                    orderable: true
+                    orderable: true,
+                    visible: false
                 }, // 5 SBU
                 {
                     data: 'department',
                     render: renderSimple,
-                    orderable: true
+                    orderable: true,
+                    visible: false
                 }, // 6 Department
                 {
                     data: 'employment_category',
@@ -83,12 +88,14 @@
                 {
                     data: 'cnic',
                     render: renderSimple,
-                    orderable: true
+                    orderable: true,
+                    visible: false
                 }, // 8 CNIC
                 {
                     data: 'nationality',
                     render: renderSimple,
-                    orderable: true
+                    orderable: true,
+                    visible: false
                 }, // 9 Nationality
                 {
                     data: 'gender',
@@ -98,7 +105,7 @@
                 {
                     data: 'join_date',
                     render: renderSimple,
-                    orderable: true
+                    orderable: false
                 }, // 11 Date of Joining
                 {
                     data: 'designation',
@@ -108,17 +115,19 @@
                 {
                     data: 'verification_status',
                     render: renderVerificationStatus,
-                    orderable: true
+                    orderable: false
                 }, // 13 Verification Status
                 {
                     data: 'email',
                     render: renderEmail,
-                    orderable: true
+                    orderable: true,
+                    visible: false
                 }, // 14 Email
                 {
                     data: 'cell_no',
                     render: renderSimple,
-                    orderable: true
+                    orderable: false,
+                    visible: false
                 }, // 15 Cell Number
                 {
                     data: null,
@@ -194,7 +203,7 @@
                 extend: 'colvis',
                 text: 'Select Columns',
                 className: 'btn btn-sm border-0 bg-main text-black',
-                columns: [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+                columns: [0, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
             }],
             dom: '<"row px-4 py-3"<"col-md-6"l><"col-md-6 d-flex justify-content-end gap-2"<B><f>>>r<"employee-datatable-scroll"t><"row px-4 py-2"<"col-md-5"i><"col-md-7"p>>',
             drawCallback: function () {
@@ -222,10 +231,41 @@
         return value;
     }
 
+    function limitWords(value, maxWords) {
+        var text = normalizeValue(value, '');
+        if (!text) return '-';
+
+        var words = String(text).trim().split(/\s+/);
+        if (words.length <= maxWords) {
+            return String(text).trim();
+        }
+        return words.slice(0, maxWords).join(' ') + '...';
+    }
+
     function renderSimple(data) {
         data = normalizeValue(data);
         if (data === '-') return '<span class="text-muted">-</span>';
-        return escHtml(data);
+        var shortText = limitWords(data, TABLE_CELL_WORD_LIMIT);
+        return '<span title="' + escAttr(data) + '">' + escHtml(shortText) + '</span>';
+    }
+
+    function renderOrgStructure(data, type, row) {
+        var organization = normalizeValue(row.organization);
+        var sbu = normalizeValue(row.sbu);
+        var department = normalizeValue(row.department);
+        var organizationShort = limitWords(organization, TABLE_CELL_WORD_LIMIT);
+        var sbuShort = limitWords(sbu, TABLE_CELL_WORD_LIMIT);
+        var departmentShort = limitWords(department, TABLE_CELL_WORD_LIMIT);
+
+        if (organization === '-' && sbu === '-' && department === '-') {
+            return '<span class="text-muted">-</span>';
+        }
+
+        return '<div class="small">' +
+            '<div class="fw-semibold text-truncate" title="' + escAttr(organization === '-' ? '' : organization) + '">' + (organization === '-' ? '<span class="text-muted">-</span>' : escHtml(organizationShort)) + '</div>' +
+            '<div class="text-muted text-truncate" title="' + escAttr(sbu === '-' ? '' : sbu) + '">SBU: ' + escHtml(sbuShort) + '</div>' +
+            '<div class="text-muted text-truncate" title="' + escAttr(department === '-' ? '' : department) + '">Dept: ' + escHtml(departmentShort) + '</div>' +
+            '</div>';
     }
 
     function renderEmployeeId(data) {
@@ -259,6 +299,8 @@
     function renderProfileColumn(data, type, row) {
         var fullName = normalizeValue(row.full_name);
         var role = normalizeValue(row.role);
+        var employeeNo = normalizeValue(row.employee_code);
+        var tasId = normalizeValue(row.biometric_id);
         var initials = normalizeValue(row.initials, '??');
         var photoUrl = normalizeValue(row.photo_url, '');
 
@@ -268,17 +310,24 @@
 
         var nameHtml = fullName !== '-' ?
             escHtml(fullName) :
-            '<span class="text-muted">-</span>';
+            '<span class="text-black font-bold">-</span>';
 
         var roleHtml = role !== '-' ?
             escHtml(role) :
             '<span class="text-muted">-</span>';
 
+        var employeeNoHtml = employeeNo !== '-' ? escHtml(employeeNo) : '-';
+        var tasIdHtml = tasId !== '-' ? escHtml(tasId) : '-';
+
         return '<div class="d-flex align-items-center gap-2 employee-profile-cell">' +
             avatar +
             '<div class="min-w-0 flex-grow-1">' +
-            '<div class="employee-profile-name fw-semibold small text-truncate" title="' + escAttr(fullName === '-' ? '' : fullName) + '">' + nameHtml + '</div>' +
+            '<div class="employee-profile-name fw-semibold text-truncate" title="' + escAttr(fullName === '-' ? '' : fullName) + '">' + nameHtml + '</div>' +
             '<div class="employee-profile-role small text-muted text-truncate" title="' + escAttr(role === '-' ? '' : role) + '">' + roleHtml + '</div>' +
+            '<div class="employee-profile-meta mt-1">' +
+            '<span class="employee-meta-chip">' + employeeNoHtml + '</span>' +
+            '<span class="employee-meta-chip">TAS: ' + tasIdHtml + '</span>' +
+            '</div>' +
             '</div></div>';
     }
 
