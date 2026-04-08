@@ -42,13 +42,16 @@
 
                 <!-- Address Search -->
                 <div class="mb-3">
-                    <label for="editFenceAddress" class="form-label fw-semibold small">Address <span class="text-danger">*</span></label>
+                    <label for="editFenceAddress" class="form-label fw-semibold small">
+                        Address (Search for the address or press Enter to drop a pin) <span class="text-danger">*</span>
+                    </label>
                     <div class="input-group">
                         <input type="text" class="form-control" id="editFenceAddress" required>
                         <button type="button" class="btn btn-outline-secondary" id="editSearchAddressBtn">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
+                    <small class="text-muted">Coordinates are required to save. Search by Enter/Search or click "Drop Pin" on the map.</small>
                 </div>
 
                 <!-- Map Preview -->
@@ -159,6 +162,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let editPreviewMap = null;
     let editPreviewMarker = null;
 
+    const editFormEl = document.getElementById('editFenceForm');
+    // Prevent accidental form submission when user presses Enter in an input.
+    editFormEl?.addEventListener('submit', function(e) {
+        e.preventDefault();
+    });
+
     const editMapContainer = document.getElementById('editFenceMapPreview');
     const editFenceCanvasEl = document.getElementById('editFenceCanvas');
 
@@ -214,6 +223,30 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error:', error));
     }
 
+    function showValidationErrors(response) {
+        const errors = response?.errors || {};
+        const messages = [];
+
+        for (const value of Object.values(errors)) {
+            if (Array.isArray(value) && value.length > 0) {
+                messages.push(value[0]);
+            } else if (typeof value === 'string' && value.trim() !== '') {
+                messages.push(value);
+            }
+        }
+
+        if (messages.length === 0 && response?.message) {
+            messages.push(response.message);
+        }
+
+        const uniqueMessages = [...new Set(messages)];
+        Swal.fire({
+            icon: 'warning',
+            title: 'Validation Error',
+            html: uniqueMessages.join('<br>')
+        });
+    }
+
     document.getElementById('editDropPinBtn')?.addEventListener('click', function() {
         if (editMapContainer) {
             editMapContainer.style.cursor = 'crosshair';
@@ -262,6 +295,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
+    // Pressing Enter in the address field should behave like clicking "Search".
+    const editAddressInput = document.getElementById('editFenceAddress');
+    const editSearchBtn = document.getElementById('editSearchAddressBtn');
+    editAddressInput?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (editSearchBtn && !editSearchBtn.disabled) editSearchBtn.click();
+        }
+    });
+
     function editUpdateLocation(lat, lng) {
         document.getElementById('editFenceLat').value = lat;
         document.getElementById('editFenceLng').value = lng;
@@ -276,59 +320,74 @@ document.addEventListener('DOMContentLoaded', function() {
     if (updateBtn) {
         updateBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const form = document.getElementById('editFenceForm');
-            if (form && form.checkValidity()) {
-                const id = document.getElementById('editFenceId').value;
-                const formData = {
-                    siteName: document.getElementById('editFenceSiteName').value,
-                    address: document.getElementById('editFenceAddress').value,
-                    lat: document.getElementById('editFenceLat').value,
-                    lng: document.getElementById('editFenceLng').value,
-                    radius: document.getElementById('editFenceRadius').value,
-                    radiusUnit: document.getElementById('editFenceRadiusUnit').value,
-                    type: document.getElementById('editFenceType').value,
-                    sbu_id: document.getElementById('editFenceSbu').value,
-                    status: document.getElementById('editFenceStatus').value,
-                    antiSpoofing: document.getElementById('editEnableAntiSpoofing').checked ? 1 : 0,
-                    offlineSync: document.getElementById('editEnableOfflineSync').checked ? 1 : 0,
-                    autoCheckIn: document.getElementById('editEnableAutoCheckIn').checked ? 1 : 0,
-                    _token: '{{ csrf_token() }}'
-                };
-                
-                const originalHtml = updateBtn.innerHTML;
-                updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
-                updateBtn.disabled = true;
+            const lat = document.getElementById('editFenceLat').value;
+            const lng = document.getElementById('editFenceLng').value;
 
-                $.ajax({
-                    url: `/admin/geofencing/${id}`,
-                    method: 'POST', // Using POST for form submission though technically a PUT/PATCH could be used via method spoofing if needed. Controller accepts POST based on route setup
-                    data: formData,
-                    success: function(response) {
-                        if (response.success) {
-                            const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('editFenceCanvas'));
-                            if (offcanvas) offcanvas.hide();
+            const hasValidLatLng = lat !== '' && lng !== '' && !isNaN(lat) && !isNaN(lng);
 
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success',
-                                text: response.message || 'Geofence updated successfully.',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        updateBtn.innerHTML = originalHtml;
-                        updateBtn.disabled = false;
-                        const err = xhr.responseJSON?.message || 'Error occurred while updating the geofence.';
-                        Swal.fire('Error', err, 'error');
-                    }
-                });
-            } else if (form) {
-                form.reportValidity();
+            if (!hasValidLatLng) {
+                Swal.fire(
+                    'Warning',
+                    'Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.',
+                    'warning'
+                );
+                document.getElementById('editFenceAddress').focus();
+                return;
             }
+
+            const id = document.getElementById('editFenceId').value;
+            const formData = {
+                siteName: document.getElementById('editFenceSiteName').value,
+                address: document.getElementById('editFenceAddress').value,
+                lat: document.getElementById('editFenceLat').value,
+                lng: document.getElementById('editFenceLng').value,
+                radius: document.getElementById('editFenceRadius').value,
+                radiusUnit: document.getElementById('editFenceRadiusUnit').value,
+                type: document.getElementById('editFenceType').value,
+                sbu_id: document.getElementById('editFenceSbu').value,
+                status: document.getElementById('editFenceStatus').value,
+                antiSpoofing: document.getElementById('editEnableAntiSpoofing').checked ? 1 : 0,
+                offlineSync: document.getElementById('editEnableOfflineSync').checked ? 1 : 0,
+                autoCheckIn: document.getElementById('editEnableAutoCheckIn').checked ? 1 : 0,
+                _token: '{{ csrf_token() }}'
+            };
+            
+            const originalHtml = updateBtn.innerHTML;
+            updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+            updateBtn.disabled = true;
+
+            $.ajax({
+                url: `/admin/geofencing/${id}`,
+                method: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('editFenceCanvas'));
+                        if (offcanvas) offcanvas.hide();
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: response.message || 'Geofence updated successfully.',
+                            timer: 650,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    updateBtn.innerHTML = originalHtml;
+                    updateBtn.disabled = false;
+                    const response = xhr.responseJSON;
+                    if (xhr.status === 422) {
+                        showValidationErrors(response);
+                        return;
+                    }
+                    const err = response?.message || 'Error occurred while updating the geofence.';
+                    Swal.fire('Error', err, 'error');
+                }
+            });
         });
     }
 });

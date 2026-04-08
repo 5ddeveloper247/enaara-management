@@ -40,14 +40,16 @@
 
                 <!-- Address Search -->
                 <div class="mb-3">
-                    <label for="fenceAddress" class="form-label fw-semibold small">Address <span class="text-danger">*</span></label>
+                    <label for="fenceAddress" class="form-label fw-semibold small">
+                        Address (Search for the address or press Enter to drop a pin) <span class="text-danger">*</span>
+                    </label>
                     <div class="input-group">
                         <input type="text" class="form-control" id="fenceAddress" placeholder="Search address or drop pin on map" required>
                         <button type="button" class="btn btn-outline-secondary" id="searchAddressBtn">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
-                    <small class="text-muted">Search for address or click "Drop Pin" to place on map</small>
+                    <small class="text-muted">Coordinates are required to save. Search by Enter/Search or click "Drop Pin" on the map.</small>
                 </div>
 
                 <!-- Map Preview -->
@@ -201,6 +203,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     let previewMap = null;
     let previewMarker = null;
+    let saveBtn = null;
+
+    const formEl = document.getElementById('addFenceForm');
+    // Prevent accidental form submission when user presses Enter in an input.
+    formEl?.addEventListener('submit', function(e) {
+        e.preventDefault();
+    });
 
     // Initialize preview map - Rawalpindi, Pakistan
     const mapContainer = document.getElementById('fenceMapPreview');
@@ -232,6 +241,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => console.error('Error in reverse geocoding:', error));
+    }
+
+    function showValidationErrors(response) {
+        const errors = response?.errors || {};
+        const messages = [];
+
+        for (const value of Object.values(errors)) {
+            if (Array.isArray(value) && value.length > 0) {
+                messages.push(value[0]);
+            } else if (typeof value === 'string' && value.trim() !== '') {
+                messages.push(value);
+            }
+        }
+
+        if (messages.length === 0 && response?.message) {
+            messages.push(response.message);
+        }
+
+        const uniqueMessages = [...new Set(messages)];
+        Swal.fire({
+            icon: 'warning',
+            title: 'Validation Error',
+            html: uniqueMessages.join('<br>')
+        });
     }
 
     // Drop pin button
@@ -305,6 +338,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
+    // Pressing Enter in the address field should behave like clicking "Search".
+    const addressInput = document.getElementById('fenceAddress');
+    const searchBtn = document.getElementById('searchAddressBtn');
+    addressInput?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (searchBtn && !searchBtn.disabled) searchBtn.click();
+        }
+    });
+
     function updateLocation(lat, lng) {
         document.getElementById('fenceLat').value = lat;
         document.getElementById('fenceLng').value = lng;
@@ -322,6 +366,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset form when offcanvas is hidden
     const addFenceCanvas = document.getElementById('addFenceCanvas');
     if (addFenceCanvas) {
+        addFenceCanvas.addEventListener('shown.bs.offcanvas', function() {
+            if (previewMap) {
+                previewMap.invalidateSize();
+                const lat = parseFloat(document.getElementById('fenceLat').value);
+                const lng = parseFloat(document.getElementById('fenceLng').value);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    previewMap.setView([lat, lng], 15);
+                }
+            }
+        });
+
         addFenceCanvas.addEventListener('hidden.bs.offcanvas', function() {
             document.getElementById('addFenceForm').reset();
             if (previewMarker) {
@@ -332,62 +387,77 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Handle form submission
-    const saveBtn = document.getElementById('saveFenceBtn');
+    saveBtn = document.getElementById('saveFenceBtn');
     if (saveBtn) {
         saveBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const form = document.getElementById('addFenceForm');
-            if (form && form.checkValidity()) {
-                const formData = {
-                    siteName: document.getElementById('fenceSiteName').value,
-                    address: document.getElementById('fenceAddress').value,
-                    lat: document.getElementById('fenceLat').value,
-                    lng: document.getElementById('fenceLng').value,
-                    radius: document.getElementById('fenceRadius').value,
-                    radiusUnit: document.getElementById('fenceRadiusUnit').value,
-                    type: document.getElementById('fenceType').value,
-                    sbu_id: document.getElementById('fenceSbu').value,
-                    antiSpoofing: document.getElementById('enableAntiSpoofing').checked ? 1 : 0,
-                    offlineSync: document.getElementById('enableOfflineSync').checked ? 1 : 0,
-                    autoCheckIn: document.getElementById('enableAutoCheckIn').checked ? 1 : 0,
-                    _token: '{{ csrf_token() }}'
-                };
-                
-                const originalHtml = saveBtn.innerHTML;
-                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
-                saveBtn.disabled = true;
+            const lat = document.getElementById('fenceLat').value;
+            const lng = document.getElementById('fenceLng').value;
 
-                $.ajax({
-                    url: '{{ route("admin.geofencing.store") }}',
-                    method: 'POST',
-                    data: formData,
-                    success: function(response) {
-                        if (response.success) {
-                            // Close offcanvas
-                            const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('addFenceCanvas'));
-                            if (offcanvas) offcanvas.hide();
+            const hasValidLatLng = lat !== '' && lng !== '' && !isNaN(lat) && !isNaN(lng);
 
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success',
-                                text: response.message || 'Geofence created successfully.',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        saveBtn.innerHTML = originalHtml;
-                        saveBtn.disabled = false;
-                        const err = xhr.responseJSON?.message || 'Error occurred while saving the geofence.';
-                        Swal.fire('Error', err, 'error');
-                    }
-                });
-            } else if (form) {
-                form.reportValidity();
+            if (!hasValidLatLng) {
+                Swal.fire(
+                    'Warning',
+                    'Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.',
+                    'warning'
+                );
+                document.getElementById('fenceAddress').focus();
+                return;
             }
+
+            const formData = {
+                siteName: document.getElementById('fenceSiteName').value,
+                address: document.getElementById('fenceAddress').value,
+                lat: document.getElementById('fenceLat').value,
+                lng: document.getElementById('fenceLng').value,
+                radius: document.getElementById('fenceRadius').value,
+                radiusUnit: document.getElementById('fenceRadiusUnit').value,
+                type: document.getElementById('fenceType').value,
+                sbu_id: document.getElementById('fenceSbu').value,
+                antiSpoofing: document.getElementById('enableAntiSpoofing').checked ? 1 : 0,
+                offlineSync: document.getElementById('enableOfflineSync').checked ? 1 : 0,
+                autoCheckIn: document.getElementById('enableAutoCheckIn').checked ? 1 : 0,
+                _token: '{{ csrf_token() }}'
+            };
+            
+            const originalHtml = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+            saveBtn.disabled = true;
+
+            $.ajax({
+                url: '{{ route("admin.geofencing.store") }}',
+                method: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        // Close offcanvas
+                        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('addFenceCanvas'));
+                        if (offcanvas) offcanvas.hide();
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: response.message || 'Geofence created successfully.',
+                                timer: 650,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    saveBtn.innerHTML = originalHtml;
+                    saveBtn.disabled = false;
+                    const response = xhr.responseJSON;
+                    if (xhr.status === 422) {
+                        showValidationErrors(response);
+                        return;
+                    }
+                    const err = response?.message || 'Error occurred while saving the geofence.';
+                    Swal.fire('Error', err, 'error');
+                }
+            });
         });
     }
 });
