@@ -178,18 +178,20 @@
 
             grid.insertAdjacentHTML('beforeend', `
             <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="card employee-grid-card border-1 rounded-3 h-100">
+                <div class="card employee-grid-card border-1 rounded-3 h-100 position-relative">
                     <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div class="d-flex align-items-center min-w-0">
-                                <div class="me-2 employee-grid-avatar-wrap">${avatarHtml}</div>
-                                <div class="min-w-0">
-                                    <h6 class="mb-0 fw-semibold small text-truncate" title="${attrSafe(name)}">${textSafe(name)}</h6>
-                                    <small class="text-muted small d-block">${textSafe(empNo)}</small>
-                                    <small class="text-muted small d-block text-truncate">${textSafe(orgName)}</small>
-                                </div>
+                        <!-- Absolute Status Badge -->
+                        <div class="position-absolute top-0 end-0 m-1" style="z-index: 5;">
+                            ${verificationBadge}
+                        </div>
+
+                        <div class="d-flex align-items-start gap-2 mb-3 pe-4">
+                            <div class="flex-shrink-0">${avatarHtml}</div>
+                            <div class="flex-grow-1 min-w-0">
+                                <h6 class="mb-0 fw-semibold small" style="white-space: normal; word-break: break-all;" title="${attrSafe(name)}">${textSafe(name)}</h6>
+                                <small class="text-muted small d-block">${textSafe(empNo)}</small>
+                                <small class="text-muted small d-block" style="white-space: normal; word-break: break-all;" title="${attrSafe(orgName)}">${textSafe(orgName)}</small>
                             </div>
-                            <div>${verificationBadge}</div>
                         </div>
 
                         <div class="d-flex flex-wrap gap-1 mb-2">
