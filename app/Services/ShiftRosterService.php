@@ -146,16 +146,13 @@ class ShiftRosterService
      */
     public function getGridData(int $year, int $month, int $weekIndex): array
     {
-        $daysInMonth = (int) Carbon::createFromDate($year, $month, 1)->daysInMonth;
-        $startDay = ($weekIndex - 1) * 7 + 1;
-        $endDay = min($startDay + 6, $daysInMonth);
-        
-        if ($startDay > $daysInMonth) {
-            return ['departments' => [], 'employees' => [], 'shifts' => []];
-        }
+        // Calendar week range: always Monday -> Sunday
+        // Week 1 starts from the Monday of the week that contains the first day of the month.
+        $monthStart = Carbon::createFromDate($year, $month, 1)->startOfDay();
+        $firstWeekStart = $monthStart->copy()->startOfWeek(Carbon::MONDAY);
 
-        $startDate = Carbon::createFromDate($year, $month, $startDay)->startOfDay();
-        $endDate = Carbon::createFromDate($year, $month, $endDay)->endOfDay();
+        $startDate = $firstWeekStart->copy()->addWeeks($weekIndex - 1)->startOfDay();
+        $endDate = $startDate->copy()->addDays(6)->endOfDay();
 
         $employees = Employee::with('department')
             ->where('is_active', 1)
@@ -201,6 +198,9 @@ class ShiftRosterService
             return [
                 'rosterId' => $entry->id,
                 'employeeId' => $entry->employee_id,
+                // Full date is used by the front-end to correctly align Mon->Sun columns.
+                'rosterDate' => $entry->roster_date->toDateString(),
+                // Kept for backward compatibility/fallbacks.
                 'day' => (int) $entry->roster_date->format('d'),
                 'shiftPlannerId' => $entry->shift_planner_id,
                 'shiftType' => $shiftType,
