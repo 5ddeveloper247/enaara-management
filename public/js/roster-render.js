@@ -21,6 +21,18 @@
         return Math.ceil(day / 7);
     }
 
+    // Reorder the 7 consecutive days so that the table always shows:
+    // Monday ... Sunday (based on actual weekday of each day-of-month).
+    function orderDaysMondayFirst(days, year, month) {
+        if (!Array.isArray(days) || days.length === 0) return [];
+        return days.slice().sort(function(a, b) {
+            // JS getDay(): 0=Sun ... 6=Sat
+            var aKey = (new Date(year, month, a).getDay() + 6) % 7; // Mon=0 ... Sun=6
+            var bKey = (new Date(year, month, b).getDay() + 6) % 7;
+            return aKey - bKey;
+        });
+    }
+
     function padDay(n) {
         return n < 10 ? '0' + n : String(n);
     }
@@ -72,11 +84,13 @@
         var year = rosterViewDate.getFullYear();
         var month = rosterViewDate.getMonth();
         var range = getWeekRange(rosterWeekIndex, year, month);
+        var orderedDays = orderDaysMondayFirst(range.days, year, month);
         if (weekLabelEl) weekLabelEl.textContent = 'Week ' + rosterWeekIndex;
         if (weekDatesEl) {
             if (range.days.length === 0) {
                 weekDatesEl.textContent = '';
             } else {
+                // Keep chronological label (avoid wrap like "02 to 01").
                 weekDatesEl.textContent = padDay(range.start) + ' to ' + padDay(range.end);
             }
         }
@@ -155,7 +169,7 @@
         if (rosterWeekIndex < 1) rosterWeekIndex = 1;
 
         var range = getWeekRange(rosterWeekIndex, year, month);
-        var days = range.days;
+        var days = orderDaysMondayFirst(range.days, year, month);
 
         buildTheadRow(days.length ? days : [1, 2, 3, 4, 5, 6, 7], year, month);
         updateRosterWeekDisplay();
