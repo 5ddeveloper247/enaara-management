@@ -3,22 +3,66 @@
     var rosterWeekIndex = 1;
     var rosterData = null;
 
-    function getDaysInMonth(year, month) {
-        return new Date(year, month + 1, 0).getDate();
+    function stripTime(d) {
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
     }
 
-    function getWeekRange(weekIndex, year, month) {
-        var daysInMonth = getDaysInMonth(year, month);
-        var start = (weekIndex - 1) * 7 + 1;
-        var end = Math.min(start + 6, daysInMonth);
-        if (start > daysInMonth) return { start: 1, end: 0, days: [] };
+    function pad2(n) {
+        return n < 10 ? '0' + n : String(n);
+    }
+
+    // Format date as YYYY-MM-DD using local date parts (avoids UTC date shifting).
+    function dateToISO(date) {
+        return date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate());
+    }
+
+    function parseISODate(iso) {
+        // iso: YYYY-MM-DD
+        var parts = String(iso).split('-');
+        if (parts.length !== 3) return new Date(NaN);
+        var y = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10) - 1;
+        var d = parseInt(parts[2], 10);
+        return new Date(y, m, d);
+    }
+
+    // Calendar week range: Monday -> Sunday.
+    // Week 1 = week containing the 1st day of the month (starting from Monday).
+    function getFirstMondayOfMonth(year, month1) {
+        // month1 is 1-based (1..12)
+        var monthStart = new Date(year, month1 - 1, 1);
+        // JS day: 0=Sun ... 6=Sat. Convert to "days since Monday".
+        var offset = (monthStart.getDay() + 6) % 7; // Mon=0 ... Sun=6
+        return new Date(year, month1 - 1, 1 - offset);
+    }
+
+    function getWeekStartDate(year, month1, weekIndex) {
+        var firstMonday = getFirstMondayOfMonth(year, month1);
+        return new Date(firstMonday.getFullYear(), firstMonday.getMonth(), firstMonday.getDate() + (weekIndex - 1) * 7);
+    }
+
+    function getWeekDays(year, month1, weekIndex) {
+        var ws = getWeekStartDate(year, month1, weekIndex);
         var days = [];
-        for (var d = start; d <= end; d++) days.push(d);
-        return { start: start, end: end, days: days };
+        for (var i = 0; i < 7; i++) {
+            var d = new Date(ws);
+            d.setDate(ws.getDate() + i);
+            days.push(d);
+        }
+        return days;
     }
 
-    function getWeekIndexForDay(day, year, month) {
-        return Math.ceil(day / 7);
+    function getWeekIndexForDate(date, year, month1) {
+        var firstMonday = getFirstMondayOfMonth(year, month1);
+        var diffDays = Math.floor((stripTime(date).getTime() - stripTime(firstMonday).getTime()) / 86400000);
+        return Math.floor(diffDays / 7) + 1;
+    }
+
+    function getWeekMaxIndexForMonth(year, month1) {
+        var firstMonday = getFirstMondayOfMonth(year, month1);
+        var monthEnd = new Date(year, month1, 0); // last day of month
+        var diffDays = Math.floor((stripTime(monthEnd).getTime() - stripTime(firstMonday).getTime()) / 86400000);
+        return Math.floor(diffDays / 7) + 1;
     }
 
     // Reorder the 7 consecutive days so that the table always shows:
@@ -37,12 +81,11 @@
         return n < 10 ? '0' + n : String(n);
     }
 
+    // Backward compat (unused after Mon->Sun rewrite):
     function rosterDateIso(day) {
         var y = rosterViewDate.getFullYear();
         var m = rosterViewDate.getMonth() + 1;
-        var mm = m < 10 ? '0' + m : String(m);
-        var dd = day < 10 ? '0' + day : String(day);
-        return y + '-' + mm + '-' + dd;
+        return y + '-' + pad2(m) + '-' + pad2(day);
     }
 
     function csrfToken() {
@@ -72,9 +115,8 @@
 
     var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    function getDayName(year, month, day) {
-        var d = new Date(year, month, day);
-        return dayNames[d.getDay()];
+    function getDayName(date) {
+        return dayNames[date.getDay()];
     }
 
     function updateRosterWeekDisplay() {
@@ -82,30 +124,37 @@
         var weekDatesEl = document.getElementById('rosterWeekDates');
         var monthEl = document.getElementById('rosterMonthYear');
         var year = rosterViewDate.getFullYear();
-        var month = rosterViewDate.getMonth();
-        var range = getWeekRange(rosterWeekIndex, year, month);
-        var orderedDays = orderDaysMondayFirst(range.days, year, month);
+        var month1 = rosterViewDate.getMonth() + 1;
+        var weekStart = getWeekStartDate(year, month1, rosterWeekIndex);
+        var weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
         if (weekLabelEl) weekLabelEl.textContent = 'Week ' + rosterWeekIndex;
         if (weekDatesEl) {
-            if (range.days.length === 0) {
-                weekDatesEl.textContent = '';
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            if (weekStart.getFullYear() === weekEnd.getFullYear() && weekStart.getMonth() === weekEnd.getMonth()) {
+                weekDatesEl.textContent = padDay(weekStart.getDate()) + ' to ' + padDay(weekEnd.getDate());
             } else {
-                // Keep chronological label (avoid wrap like "02 to 01").
-                weekDatesEl.textContent = padDay(range.start) + ' to ' + padDay(range.end);
+                weekDatesEl.textContent = padDay(weekStart.getDate()) + ' ' + months[weekStart.getMonth()] +
+                    ' to ' + padDay(weekEnd.getDate()) + ' ' + months[weekEnd.getMonth()];
             }
         }
         if (monthEl) monthEl.textContent = formatRosterMonthYear(rosterViewDate);
     }
 
-    function buildTheadRow(days, year, month) {
+    function buildTheadRow(days) {
         var tr = document.getElementById('rosterTheadRow');
         if (!tr) return;
         var existing = tr.querySelectorAll('.roster-col-day');
         existing.forEach(function(el) { el.remove(); });
+        var viewMonth = rosterViewDate.getMonth();
+        var viewYear = rosterViewDate.getFullYear();
         days.forEach(function(d) {
             var th = document.createElement('th');
             th.className = 'roster-col-day';
-            th.textContent = getDayName(year, month, d) + ' ' + d;
+            th.textContent = getDayName(d) + ' ' + d.getDate();
+            if (d.getMonth() !== viewMonth || d.getFullYear() !== viewYear) {
+                th.style.opacity = '0.55';
+            }
             tr.appendChild(th);
         });
     }
@@ -115,25 +164,21 @@
         var nextBtn = document.getElementById('rosterNextWeek');
         var todayBtn = document.getElementById('rosterTodayBtn');
         if (prevBtn) prevBtn.addEventListener('click', function() {
-            if (rosterWeekIndex > 1) {
-                rosterWeekIndex--;
-            } else {
+            if (rosterWeekIndex > 1) rosterWeekIndex--;
+            else {
                 rosterViewDate.setMonth(rosterViewDate.getMonth() - 1);
                 var year = rosterViewDate.getFullYear();
-                var month = rosterViewDate.getMonth();
-                var daysInMonth = getDaysInMonth(year, month);
-                rosterWeekIndex = Math.ceil(daysInMonth / 7);
+                var month1 = rosterViewDate.getMonth() + 1;
+                rosterWeekIndex = getWeekMaxIndexForMonth(year, month1);
             }
             loadRosterGrid();
         });
         if (nextBtn) nextBtn.addEventListener('click', function() {
             var year = rosterViewDate.getFullYear();
-            var month = rosterViewDate.getMonth();
-            var daysInMonth = getDaysInMonth(year, month);
-            var maxWeek = Math.ceil(daysInMonth / 7);
-            if (rosterWeekIndex < maxWeek) {
-                rosterWeekIndex++;
-            } else {
+            var month1 = rosterViewDate.getMonth() + 1;
+            var maxWeek = getWeekMaxIndexForMonth(year, month1);
+            if (rosterWeekIndex < maxWeek) rosterWeekIndex++;
+            else {
                 rosterViewDate.setMonth(rosterViewDate.getMonth() + 1);
                 rosterWeekIndex = 1;
             }
@@ -142,8 +187,7 @@
         if (todayBtn) todayBtn.addEventListener('click', function() {
             var now = new Date();
             rosterViewDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            var day = now.getDate();
-            rosterWeekIndex = getWeekIndexForDay(day, now.getFullYear(), now.getMonth());
+            rosterWeekIndex = getWeekIndexForDate(now, now.getFullYear(), now.getMonth() + 1);
             loadRosterGrid();
         });
     }
@@ -157,21 +201,20 @@
         var shifts = r.shifts || [];
         var shiftsByEmpDay = {};
         shifts.forEach(function(s) {
-            var k = s.employeeId + '-' + s.day;
+            var dayKey = s.rosterDate ? s.rosterDate : rosterDateIso(s.day);
+            var k = s.employeeId + '-' + dayKey;
             if (!shiftsByEmpDay[k]) shiftsByEmpDay[k] = s;
         });
 
         var year = rosterViewDate.getFullYear();
-        var month = rosterViewDate.getMonth();
-        var daysInMonth = getDaysInMonth(year, month);
-        var maxWeek = Math.ceil(daysInMonth / 7);
+        var month1 = rosterViewDate.getMonth() + 1;
+        var maxWeek = getWeekMaxIndexForMonth(year, month1);
         if (rosterWeekIndex > maxWeek) rosterWeekIndex = maxWeek;
         if (rosterWeekIndex < 1) rosterWeekIndex = 1;
 
-        var range = getWeekRange(rosterWeekIndex, year, month);
-        var days = orderDaysMondayFirst(range.days, year, month);
+        var days = getWeekDays(year, month1, rosterWeekIndex);
 
-        buildTheadRow(days.length ? days : [1, 2, 3, 4, 5, 6, 7], year, month);
+        buildTheadRow(days);
         updateRosterWeekDisplay();
 
         var tbody = document.getElementById('rosterTableBody');
@@ -197,12 +240,17 @@
                 tr.setAttribute('data-dept-id', String(dept.id));
                 tr.innerHTML = '<td></td><td class="text-muted">' + escapeHtml(emp.name) + '</td>';
                 days.forEach(function(d) {
-                    var k = emp.id + '-' + d;
+                    var iso = dateToISO(d);
+                    var k = emp.id + '-' + iso;
                     var s = shiftsByEmpDay[k];
                     var td = document.createElement('td');
                     td.className = 'roster-day-cell shift-cell';
                     td.setAttribute('data-employee-id', String(emp.id));
-                    td.setAttribute('data-day', String(d));
+                    td.setAttribute('data-roster-date', iso);
+                    td.setAttribute('data-day', String(d.getDate()));
+                    if (d.getMonth() !== rosterViewDate.getMonth() || d.getFullYear() !== rosterViewDate.getFullYear()) {
+                        td.style.opacity = '0.55';
+                    }
                     if (s) {
                         td.setAttribute('data-shift', JSON.stringify(s));
                         td.innerHTML = pillHtml(s);
@@ -266,14 +314,12 @@
             });
     }
 
-    function formatRosterDateLabel(day, year, month) {
+    function formatRosterDateLabel(dateObj) {
         var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return padDay(day) + ' ' + months[month] + ' ' + year + ' (Day ' + day + ')';
+        return padDay(dateObj.getDate()) + ' ' + months[dateObj.getMonth()] + ' ' + dateObj.getFullYear();
     }
 
-    function openRosterShiftCanvas(employeeId, employeeName, deptName, day, shift) {
-        var year = rosterViewDate.getFullYear();
-        var month = rosterViewDate.getMonth();
+    function openRosterShiftCanvas(employeeId, employeeName, deptName, rosterDate, shift) {
         var canvas = document.getElementById('rosterShiftCanvas');
         var titleEl = document.getElementById('rosterShiftCanvasTitle');
         var deleteWrap = document.getElementById('rosterShiftDeleteWrap');
@@ -290,10 +336,15 @@
 
         if (!canvas) return;
         document.getElementById('rosterShiftEmployeeId').value = employeeId;
-        document.getElementById('rosterShiftDay').value = day;
+        document.getElementById('rosterShiftDay').value = rosterDate;
         document.getElementById('rosterShiftEmployeeName').textContent = employeeName;
         document.getElementById('rosterShiftDepartmentName').textContent = deptName || '';
-        document.getElementById('rosterShiftDateLabel').textContent = formatRosterDateLabel(day, year, month);
+        var dateObj = parseISODate(rosterDate);
+        if (!isNaN(dateObj.getTime())) {
+            document.getElementById('rosterShiftDateLabel').textContent = formatRosterDateLabel(dateObj);
+        } else {
+            document.getElementById('rosterShiftDateLabel').textContent = rosterDate;
+        }
         var iconEl = document.getElementById('rosterShiftCanvasIcon');
         if (shift) {
             if (rosterIdEl) rosterIdEl.value = shift.rosterId || '';
@@ -334,17 +385,17 @@
         if (!base || !storeUrl) return;
 
         var employeeId = document.getElementById('rosterShiftEmployeeId').value;
-        var day = parseInt(document.getElementById('rosterShiftDay').value, 10);
+        var rosterDate = document.getElementById('rosterShiftDay').value;
         var shiftPlannerId = document.getElementById('rosterShiftPlannerId').value;
         var rosterId = document.getElementById('rosterShiftRosterId').value;
         var notes = document.getElementById('rosterShiftNotes').value.trim();
 
-        if (!employeeId || !day || !shiftPlannerId) return;
+        if (!employeeId || !rosterDate || !shiftPlannerId) return;
 
         var payload = {
             employee_id: parseInt(employeeId, 10),
             shift_planner_id: parseInt(shiftPlannerId, 10),
-            roster_date: rosterDateIso(day),
+            roster_date: rosterDate,
             start_time: document.getElementById('rosterStartTime').value,
             end_time: document.getElementById('rosterEndTime').value,
             check_in: document.getElementById('rosterCheckIn').value,
@@ -475,7 +526,7 @@
                 if (!td) return;
                 e.preventDefault();
                 var employeeId = td.getAttribute('data-employee-id');
-                var day = parseInt(td.getAttribute('data-day'), 10);
+                var rosterDate = td.getAttribute('data-roster-date');
                 var shiftData = td.getAttribute('data-shift');
                 var shift = null;
                 if (shiftData) {
@@ -498,7 +549,7 @@
                         if (nameCell) empName = nameCell.textContent.trim();
                     }
                 }
-                openRosterShiftCanvas(employeeId, empName, deptName, day, shift);
+                openRosterShiftCanvas(employeeId, empName, deptName, rosterDate, shift);
             });
         }
         var saveBtn = document.getElementById('rosterShiftSaveBtn');
@@ -541,7 +592,7 @@
     function renderRoster() {
         var now = new Date();
         rosterViewDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        rosterWeekIndex = getWeekIndexForDay(now.getDate(), now.getFullYear(), now.getMonth());
+        rosterWeekIndex = getWeekIndexForDate(now, now.getFullYear(), now.getMonth() + 1);
         if (!window._rosterToolbarBound) {
             bindRosterToolbar();
             window._rosterToolbarBound = true;
