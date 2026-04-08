@@ -1,20 +1,21 @@
 {{-- STEP 6: More (Contact, Family, Academic, Employment, Medical, References) --}}
 <div class="step" id="step-6">
-    <div class="d-flex gap-3">
+    <div class="d-flex gap-3 align-items-start">
 
         {{-- Left Vertical Nav --}}
-        <div class="d-flex flex-column gap-1" style="min-width:160px">
-            <button type="button" class="btn btn-primary btn-sm text-start sub-nav-btn active-sub"
+        <div class="d-flex flex-column gap-2 p-2 rounded-3 border bg-light bg-opacity-25" style="min-width:180px">
+            <div class="small fw-semibold text-uppercase text-muted px-1">Additional Details</div>
+            <button type="button" class="btn btn-primary btn-sm text-start sub-nav-btn active-sub rounded-2"
                 data-target="s6-contact" onclick="showSubSection(this, 's6-contact')">Contact</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-family" onclick="showSubSection(this, 's6-family')">Family</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-academic" onclick="showSubSection(this, 's6-academic')">Academic</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-employment" onclick="showSubSection(this, 's6-employment')">Employment</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-medical" onclick="showSubSection(this, 's6-medical')">Medical</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm text-start sub-nav-btn rounded-2"
                 data-target="s6-references" onclick="showSubSection(this, 's6-references')">References</button>
         </div>
 
@@ -23,40 +24,46 @@
 
             {{-- Contact --}}
             <div class="sub-section" id="s6-contact">
-                <div class="section-title">Section D — Contact Details</div>
-                <div class="row g-3">
-                    <div class="col-md-6">
+                <div class="p-3 rounded-3 border bg-white">
+                    <div class="section-title d-flex align-items-center justify-content-between">
+                        <span>Section D — Contact Details</span>
+                        <small class="text-muted">Primary communication information</small>
+                    </div>
+                <div class="row g-2">
+                    <div class="col-md-4">
                         <label class="form-label">Residence Phone</label>
                         <input type="tel" name="residence_phone" class="form-control" maxlength="15">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">In Case of Emergency Contact No</label>
                         <input type="tel" name="emergency_contact" class="form-control" maxlength="15">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">Cell No <span class="text-danger">*</span></label>
                         <input type="tel" name="cell_no" class="form-control" maxlength="15">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">Email <span class="text-danger">*</span></label>
                         <input type="email" name="contact_email" class="form-control">
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-4">
                         <label class="form-label">Present Address <span class="text-danger">*</span></label>
-                        <textarea name="present_address" class="form-control" rows="2"></textarea>
+                        <textarea name="present_address" class="form-control" rows="1" style="min-height:38px;"></textarea>
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-4">
                         <label class="form-label">Permanent Address <span class="text-danger">*</span></label>
-                        <textarea name="permanent_address" class="form-control" rows="2"></textarea>
+                        <textarea name="permanent_address" class="form-control" rows="1" style="min-height:38px;"></textarea>
                     </div>
+                </div>
                 </div>
             </div>
 
             {{-- Family --}}
             <div class="sub-section d-none" id="s6-family">
-                <div class="section-title">Section F — Family Details <small class="text-muted fw-normal">(Wife/Husband / Children / Parents / Brothers / Sisters)</small></div>
+                <div class="p-3 rounded-3 border bg-white">
+                <div class="section-title d-flex align-items-center justify-content-between">Section F — Family Details <small class="text-muted fw-normal">(Wife/Husband / Children / Parents / Brothers / Sisters)</small></div>
                 <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
+                    <table class="table table-bordered align-middle table-sm">
                         <thead class="bg-main">
                             <tr>
                                 <th>#</th>
@@ -98,15 +105,17 @@
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addFamilyRow()">+ Add Member</button>
                 <div id="familyListing" class="row g-3 mt-3"></div>
+                </div>
             </div>
 
             {{-- Academic --}}
             <div class="sub-section d-none" id="s6-academic">
+                <div class="p-3 rounded-3 border bg-white">
                 <div class="section-title">Section G — Academic Background / Professional Trainings / Certification
                     <small class="text-muted fw-normal">(Start from Recent)</small>
                 </div>
                 <div class="table-responsive mb-2">
-                    <table class="table table-bordered align-middle">
+                    <table class="table table-bordered align-middle table-sm">
                         <thead class="bg-main">
                             <tr>
                                 <th>#</th>
@@ -144,13 +153,15 @@
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addAcademicRow()">+ Add Row</button>
                 <div id="academicListing" class="row g-3 mt-3"></div>
+                </div>
             </div>
 
             {{-- Employment History --}}
             <div class="sub-section d-none" id="s6-employment">
+                <div class="p-3 rounded-3 border bg-white">
                 <div class="section-title">Section H — Employment History <small class="text-muted fw-normal">(Start from Recent)</small></div>
                 <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
+                    <table class="table table-bordered align-middle table-sm">
                         <thead class="bg-main">
                             <tr>
                                 <th>#</th>
@@ -188,17 +199,19 @@
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEmploymentRow()">+ Add Row</button>
                 <div id="employmentListing" class="row g-3 mt-3"></div>
+                </div>
             </div>
 
             {{-- Medical --}}
-            <div class="sub-section px-3 pb-2 d-none" id="s6-medical">
+            <div class="sub-section d-none" id="s6-medical">
+                <div class="p-3 rounded-3 border bg-white">
                 <div class="section-title">Section I — Medical Ailment / History / Disability</div>
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-12">
                         <label class="form-label">Last Medical Fitness Test — Date & Results</label>
                         <textarea name="last_fitness_test" class="form-control" rows="2"></textarea>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Do you have any disability?</label>
                         <div class="d-flex gap-3 mt-1">
                             <div class="form-check">
@@ -211,11 +224,11 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Blood Group</label>
                         <input type="text" name="blood_group" class="form-control" maxlength="10">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">If Yes (Disability Type)</label>
                         <select name="disability_type" class="form-select">
                             <option value="">Select</option>
@@ -228,12 +241,14 @@
                         <textarea name="disability_description" class="form-control" rows="2"></textarea>
                     </div>
                 </div>
+                </div>
             </div>
 
             {{-- References --}}
-            <div class="sub-section px-3 pb-2 d-none" id="s6-references">
+            <div class="sub-section d-none" id="s6-references">
+                <div class="p-3 rounded-3 border bg-white">
                 <div class="section-title">Section J — References</div>
-                <div class="row g-3">
+                <div class="row g-2">
                     <div class="col-md-6">
                         <p class="fw-semibold mb-2 text-primary">Reference 1</p>
                         <div class="row g-2">
@@ -275,6 +290,7 @@
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
 
         </div>
@@ -298,6 +314,22 @@
     }
 
     function removeRow(btn) { btn.closest('tr').remove(); }
+
+    function showRowValidationError(fields) {
+        const message = 'Please fill required fields: ' + fields.join(', ');
+        if (window.Swal) {
+            const listHtml = fields.map(f => `<li>${f}</li>`).join('');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                html: `Please complete the following required fields:<ul class="text-start mt-2 mb-0">${listHtml}</ul>`,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#1a237e'
+            });
+        } else {
+            alert(message);
+        }
+    }
 
     function escCard(s) {
         return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -429,8 +461,8 @@
                     <div class="d-flex align-items-start gap-2 mb-2">
                         <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:.9rem;">${escCard(initials)}</div>
                         <div class="min-w-0 flex-grow-1">
-                            <h6 class="mb-0 fw-semibold small text-truncate" title="${escCard(degree)}">${escCard(degree)}</h6>
-                            <small class="text-muted d-block text-truncate" title="${escCard(inst || '—')}">${escCard(inst || '—')}</small>
+                            <h6 class="mb-0 fw-semibold small" title="${escCard(degree)}">${escCard(degree)}</h6>
+                            <small class="text-muted" title="${escCard(inst || '—')}">${escCard(inst || '—')}</small>
                         </div>
                         <span class="badge bg-primary flex-shrink-0" style="font-size:10px;">${escCard(grade || '—')}</span>
                     </div>
@@ -510,7 +542,7 @@
         if (!gender)   rowErrors.push('Gender');
         if (!dob)      rowErrors.push('Date of Birth');
         if (!relation) rowErrors.push('Relation');
-        if (rowErrors.length) { alert('Please fill required fields: ' + rowErrors.join(', ')); return; }
+        if (rowErrors.length) { showRowValidationError(rowErrors); return; }
 
         const idx = nextSlot(window.familyData);
         window.familyData[idx] = { name, gender, dob, relation, occupation };
@@ -586,7 +618,7 @@
         if (!grade)  acErrors.push('Grade / CGPA');
         if (!start)  acErrors.push('Start Date');
         if (!end)    acErrors.push('End Date');
-        if (acErrors.length) { alert('Please fill required fields: ' + acErrors.join(', ')); return; }
+        if (acErrors.length) { showRowValidationError(acErrors); return; }
 
         const idx = window.academicsData.length;
         window.academicsData.push({ degree, grade_cgpa: grade, start_date: start, end_date: end, field_of_study: field, institute: inst });
@@ -602,8 +634,8 @@
                     <div class="d-flex align-items-start gap-2 mb-2">
                         <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:.9rem;">${initials}</div>
                         <div class="min-w-0 flex-grow-1">
-                            <h6 class="mb-0 fw-semibold small text-truncate" title="${degree}">${degree}</h6>
-                            <small class="text-muted d-block text-truncate" title="${inst || '—'}">${inst || '—'}</small>
+                            <h6 class="mb-0 fw-semibold small" title="${degree}">${degree}</h6>
+                            <small class="text-muted" title="${inst || '—'}">${inst || '—'}</small>
                         </div>
                         <span class="badge bg-primary flex-shrink-0" style="font-size:10px;">${grade || '—'}</span>
                     </div>
@@ -684,7 +716,7 @@
         if (!desig) emErrors.push('Designation');
         if (!from)  emErrors.push('From Date');
         if (!to)    emErrors.push('To Date');
-        if (emErrors.length) { alert('Please fill required fields: ' + emErrors.join(', ')); return; }
+        if (emErrors.length) { showRowValidationError(emErrors); return; }
 
         const idx = nextSlot(window.employmentsData);
         window.employmentsData[idx] = { organization: org, designation: desig, from_date: from, to_date: to, salary, reason_for_leaving: reason };

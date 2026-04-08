@@ -18,6 +18,43 @@
     max-width: 260px;
 }
 
+#employeeTable .employee-profile-name {
+    font-size: 0.8rem;
+    font-weight: 800 !important;
+    color: #1f2937;
+    line-height: 1.2;
+}
+
+#employeeTable .employee-profile-role {
+    font-size: 0.7rem;
+    line-height: 1.15;
+}
+
+#employeeTable .employee-profile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+#employeeTable .employee-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    /* border: 1px solid #dbe3eb; */
+    background-color: #01244534;
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.65rem;
+    font-weight: 300 !important;
+    line-height: 100%;
+    white-space: nowrap;
+}
+
+#employeeTable .employee-meta-chip i {
+    font-size: 0.68rem;
+    opacity: 0.8;
+}
+
 .employee-datatable-scroll {
     width: 100%;
     overflow-x: auto;
@@ -90,25 +127,52 @@
     .nav-pills .nav-link {
         text-align: left;
     }
+
+    #employeeTable .employee-profile-cell {
+        max-width: 220px;
+    }
+
+    #employeeTable .employee-profile-name {
+        font-size: 0.82rem;
+    }
+
+    #employeeTable .employee-meta-chip {
+        font-size: 0.64rem;
+    }
+}
+
+.employee-grid-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.employee-grid-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.employee-grid-avatar-wrap .user-avatar,
+.employee-grid-avatar-wrap img {
+    width: 40px;
+    height: 40px;
 }
 
 .employee-grid-card-scroll {
-    max-height: 320px;
+    max-height: 88px;
     overflow-y: auto;
     overflow-x: hidden;
-    font-size: 0.8125rem;
+    font-size: 0.76rem;
     -webkit-overflow-scrolling: touch;
 }
 
 .employee-grid-field-label {
     color: var(--bs-secondary-color, #6c757d);
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
 }
 
 .employee-grid-field-value {
-    margin-top: 0.25rem;
+    margin-top: 0.1rem;
     word-wrap: break-word;
 }
 

@@ -1,55 +1,58 @@
 {{-- STEP 1: General Information --}}
 <div class="step active" id="step-1">
-    <div class="section-title">Section A — General Information</div>
-    <div class="row g-3">
+    <div class="section-title d-flex align-items-center justify-content-between">
+        <span>Section A — General Information</span>
+        <small class="text-muted">Basic profile, identity and family details</small>
+    </div>
+    <div class="row">
 
         {{-- Personal --}}
-        <div class="d-flex align-items-end gap-2">
-            <div class="col-2">
+        <div class="d-flex align-items-end gap-2 mb-2 p-2 rounded-3">
+            <div class="col-md-2 col-sm-3">
                 <label class="form-label">Upload Image</label>
 
                 <label for="uploadImage" id="uploadImageBox" class="d-flex flex-column align-items-center justify-content-center gap-2"
-                    style="width:160px; height:160px; border: 2px dashed var(--main-color); border-radius: 10px; cursor:pointer; background:#f8f9fa1a;">
+                    style="width:160px; height:100px; border:2px dashed var(--main-color); border-radius:10px; cursor:pointer; background:#f8f9fa1a;">
                     <i class="bi bi-cloud-arrow-up fs-1 text-secondary"></i>
                     <span style="font-size:.72rem; color:#6c757d;">Click to upload</span>
                     <input type="file" id="uploadImage" name="profile_photo" accept="image/*" class="d-none" onchange="previewImg(this)">
                 </label>
 
-                <div id="imgPreviewWrapper" style="display:none; position:relative; width:160px; height:160px; margin-top:6px;">
+                <div id="imgPreviewWrapper" style="display:none; position:relative; width:130px; height:130px; margin-top:6px;">
                     <img id="imgPreview" src="" alt=""
-                        style="width:160px; height:160px; object-fit:cover; border-radius:10px; border:2px solid var(--main-color);">
+                        style="width:130px; height:130px; object-fit:cover; border-radius:10px; border:2px solid var(--main-color);">
                     <button type="button" id="removeImageBtn" onclick="removePreviewImg()" class="d-none" style="  position:absolute; top:6px; right:6px; width:28px; height:28px; border:none; border-radius:50%; background:#dc3545; color:#fff; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.2); padding:0;">
                         &times; </button>
                 </div>
             </div>
 
-            <div class="col-md-5">
+            <div class="col-md-5 col-sm-4">
                 <label class="form-label">Name <span class="text-danger">*</span></label>
                 <input type="text" name="full_name" class="form-control">
             </div>
 
-            <div class="col-md-5">
+            <div class="col-md-5 col-sm-5">
                 <label class="form-label">Father Name</label>
                 <input type="text" name="father_name" class="form-control">
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">CNIC <span class="text-danger">*</span></label>
             <input type="text" name="cnic" class="form-control" placeholder="00000-0000000-0">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">CNIC Expiry Date <span class="text-danger">*</span></label>
             <input type="date" name="cnic_expiry" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">Father CNIC</label>
             <input type="text" name="father_cnic" class="form-control" placeholder="00000-0000000-0">
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-3">
             <label class="form-label">Nationality <span class="text-danger">*</span></label>
             <select name="nationality" id="nationality_select" class="form-select"
                 style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
@@ -57,17 +60,17 @@
             </select>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-3">
             <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
             <input type="date" name="dob" class="form-control">
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-3">
             <label class="form-label">NTN #</label>
             <input type="text" name="ntn" class="form-control">
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-3">
             <label class="form-label">Gender</label>
             <select name="gender" class="form-select"
                 style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
@@ -78,22 +81,22 @@
             </select>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">Domicile (District)</label>
             <input type="text" name="domicile_district" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">Domicile (Province)</label>
             <input type="text" name="domicile_province" class="form-control">
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">Town / City of Birth</label>
             <input type="text" name="city_of_birth" class="form-control">
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-3">
             <label class="form-label">Religion</label>
             <select name="religion" class="form-select"
                 style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
@@ -108,13 +111,13 @@
             </select>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-3">
             <label class="form-label">Sect</label>
             <input type="text" name="sect" class="form-control">
         </div>
 
 
-        <div class="col-md-6">
+        <div class="col-md-3">
             <label class="form-label">Marital Status <span class="text-danger">*</span></label>
             <select name="marital_status" id="marital_status" class="form-select"
                 style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
@@ -127,13 +130,17 @@
             </select>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-3">
             <label class="form-label">Spouse Name & Nationality</label>
             <input type="text" name="spouse_name" id="spouse_name" class="form-control">
         </div>
 
 
         {{-- NOK --}}
+        <div class="col-12 mt-2">
+            <div class="small fw-semibold text-uppercase text-muted">Next of Kin (NOK)</div>
+        </div>
+
         <div class="col-md-3">
             <label class="form-label">Name of Next of Kin (NOK)</label>
             <input type="text" name="nok_name" class="form-control">
@@ -154,7 +161,7 @@
             <input type="date" name="nok_dob" class="form-control">
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-3">
             <label class="form-label">NOK Contact No</label>
             <input type="tel" name="nok_contact" class="form-control" maxlength="15">
         </div>
