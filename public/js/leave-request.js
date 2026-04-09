@@ -36,12 +36,7 @@
   }
 
   function showFormError(form, message) {
-    var container = form.querySelector('[data-form-errors]');
-    if (!container) return;
-    container.textContent = message || 'Something went wrong.';
-    container.classList.remove('d-none');
-    // Make sure user sees it
-    container.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    showError(message || 'Something went wrong.');
   }
 
   function clearFormError(form) {
@@ -224,11 +219,12 @@
         processData: false,
         contentType: false,
         success: function () {
+          showSuccess('Leave request submitted successfully!', 'Submitted');
           var offcanvas = bootstrap.Offcanvas.getInstance(canvasEl) || new bootstrap.Offcanvas(canvasEl);
           offcanvas.hide();
           window.setTimeout(function () {
             window.location.reload();
-          }, 700);
+          }, 1500);
         },
         error: function (xhr) {
           setSubmitting(submitBtn, false);

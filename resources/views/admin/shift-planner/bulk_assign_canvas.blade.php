@@ -347,7 +347,12 @@ $(document).ready(function() {
 
         var ids = $('input[name="employee_ids[]"]:checked').map(function() { return this.value; }).get();
         if (ids.length === 0) {
-            Swal.fire({ icon: 'warning', title: 'Wait!', text: 'Select at least one employee.' });
+            Swal.fire({ 
+                icon: 'warning', 
+                title: 'Wait!', 
+                text: 'Select at least one employee.',
+                confirmButtonColor: '#1a237e'
+            });
             return;
         }
 
@@ -373,16 +378,16 @@ $(document).ready(function() {
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function(res) {
                 if(res.success) {
-                    Swal.fire({ icon: 'success', title: 'Assigned', text: res.message });
-                    bootstrap.Offcanvas.getInstance($canvas[0]).hide();
-                    location.reload(); 
+                    showSuccess(res.message, 'Assigned').then(() => {
+                        location.reload(); 
+                    });
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Conflict', text: res.message });
+                    showError(res.message, 'Conflict');
                 }
             },
             error: function(xhr) {
                 var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Error processing request';
-                Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                showError(msg);
             },
             complete: function() {
                 $applyBtn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i>Apply Assignment');

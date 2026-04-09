@@ -243,7 +243,8 @@ document.addEventListener('DOMContentLoaded', function() {
         Swal.fire({
             icon: 'warning',
             title: 'Validation Error',
-            html: uniqueMessages.join('<br>')
+            html: uniqueMessages.join('<br>'),
+            confirmButtonColor: '#1a237e'
         });
     }
 
@@ -326,11 +327,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const hasValidLatLng = lat !== '' && lng !== '' && !isNaN(lat) && !isNaN(lng);
 
             if (!hasValidLatLng) {
-                Swal.fire(
-                    'Warning',
-                    'Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.',
-                    'warning'
-                );
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Warning',
+                    text: 'Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.',
+                    confirmButtonColor: '#1a237e'
+                });
                 document.getElementById('editFenceAddress').focus();
                 return;
             }
@@ -365,13 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('editFenceCanvas'));
                         if (offcanvas) offcanvas.hide();
 
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: response.message || 'Geofence updated successfully.',
-                            timer: 650,
-                            showConfirmButton: false
-                        }).then(() => {
+                        showSuccess(response.message || 'Geofence updated successfully.').then(() => {
                             window.location.reload();
                         });
                     }
@@ -385,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     const err = response?.message || 'Error occurred while updating the geofence.';
-                    Swal.fire('Error', err, 'error');
+                    showError(err);
                 }
             });
         });

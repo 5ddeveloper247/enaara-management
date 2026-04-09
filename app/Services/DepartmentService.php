@@ -23,7 +23,7 @@ class DepartmentService
 
     public function getSbusForFilter(): Collection
     {
-        return Sbu::orderBy('name')->get(['id', 'name']);
+        return Sbu::orderBy('name')->get(['id', 'name', 'organization_id']);
     }
 
     public function getCounts(): array

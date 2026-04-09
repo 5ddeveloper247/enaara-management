@@ -63,12 +63,6 @@
             </div>
         </div>
 
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
 
         <!-- Summary Metrics Row -->
         @include('admin.departments.counters')
@@ -129,6 +123,35 @@
                 });
             }
             
+            var allSbus = [];
+
+            $('#editOrganizationId').on('change', function() {
+                updateSbuDropdown($(this).val());
+            });
+
+            function updateSbuDropdown(orgId, selectedSbuId = null) {
+                var sbuSelect = $('#editSbuId');
+                sbuSelect.empty().append('<option value="">Select SBU</option>');
+                
+                if (orgId) {
+                    var filteredSbus = allSbus.filter(function(sbu) {
+                        return sbu.organization_id == orgId;
+                    });
+                    
+                    filteredSbus.forEach(function(sbu) {
+                        var isSelected = (selectedSbuId != null && String(sbu.id) === String(selectedSbuId));
+                        var selectedAttr = isSelected ? 'selected="selected"' : '';
+                        sbuSelect.append('<option value="' + sbu.id + '" ' + selectedAttr + '>' + sbu.name + '</option>');
+                    });
+                    sbuSelect.prop('disabled', false).attr('title', '');
+                    if (selectedSbuId != null) {
+                        sbuSelect.val(selectedSbuId);
+                    }
+                } else {
+                    sbuSelect.prop('disabled', true).attr('title', 'Please select the organization first');
+                }
+            }
+            
             function loadDepartmentForAdd() {
                 $('#editFormMode').val('add');
                 $('#editDepartmentId').val('');
@@ -150,11 +173,8 @@
                             orgSelect.append('<option value="' + org.id + '">' + org.name + '</option>');
                         });
                         
-                        var sbuSelect = $('#editSbuId');
-                        sbuSelect.empty().append('<option value="">Select SBU</option>');
-                        response.sbus.forEach(function(sbu) {
-                            sbuSelect.append('<option value="' + sbu.id + '">' + sbu.name + '</option>');
-                        });
+                        allSbus = response.sbus;
+                        updateSbuDropdown('');
                         
                         var parentSelect = $('#editParentDepartmentId');
                         parentSelect.empty().append('<option value="">None</option>');
@@ -206,12 +226,8 @@
                             orgSelect.append('<option value="' + org.id + '" ' + selected + '>' + org.name + '</option>');
                         });
                         
-                        var sbuSelect = $('#editSbuId');
-                        sbuSelect.empty().append('<option value="">Select SBU</option>');
-                        response.sbus.forEach(function(sbu) {
-                            var selected = sbu.id == response.department.sbu_id ? 'selected' : '';
-                            sbuSelect.append('<option value="' + sbu.id + '" ' + selected + '>' + sbu.name + '</option>');
-                        });
+                        allSbus = response.sbus;
+                        updateSbuDropdown(response.department.organization_id, response.department.sbu_id);
                         
                         var parentSelect = $('#editParentDepartmentId');
                         parentSelect.empty().append('<option value="">None</option>');
@@ -275,13 +291,7 @@
                             if (offcanvas) {
                                 offcanvas.hide();
                             }
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success',
-                                text: response.message || 'Department saved successfully.',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
+                            showSuccess(response.message || 'Department saved successfully.').then(() => {
                                 location.reload();
                             });
                         }
@@ -300,7 +310,7 @@
                                 title: 'Please check the following:',
                                 html: errorMessage,
                                 confirmButtonColor: '#1a237e',
-                                confirmButtonText: 'Understood'
+                                confirmButtonText: 'Dismiss'
                             });
 
                             // Also highlight fields and show error text
@@ -320,11 +330,7 @@
                                 $(errorId).text(messages[0]).show();
                             });
                         } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'System Error',
-                                text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Something went wrong. Please try again.'
-                            });
+                            showError((xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Something went wrong. Please try again.', 'System Error');
                         }
                     }
                 });
@@ -336,11 +342,7 @@
                 var deleteUrl = $(button).data('delete-url');
 
                 if (!deleteUrl) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Delete URL not found.'
-                    });
+                    showError('Delete URL not found.');
                     return;
                 }
 
@@ -373,21 +375,11 @@
                         },
                         success: function(response) {
                             if (response.success) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Deleted',
-                                    text: response.message || 'Department deleted successfully.',
-                                    timer: 1500,
-                                    showConfirmButton: false
-                                }).then(() => {
+                                showSuccess(response.message || 'Department deleted successfully.', 'Deleted').then(() => {
                                     location.reload();
                                 });
                             } else {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error',
-                                    text: response.message || 'Failed to delete department.'
-                                });
+                                showError(response.message || 'Failed to delete department.');
                             }
                         },
                         error: function(xhr) {
@@ -395,11 +387,7 @@
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 msg = xhr.responseJSON.message;
                             }
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: msg
-                            });
+                            showError(msg);
                         },
                         complete: function() {
                             $(button).prop('disabled', false).html('<i class="bi bi-trash"></i>');

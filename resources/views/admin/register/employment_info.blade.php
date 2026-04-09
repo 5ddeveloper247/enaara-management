@@ -136,22 +136,22 @@
 
         <div class="col-md-3">
             <label class="form-label">Designation</label>
-            <input type="text" name="designation" class="form-control">
+            <input type="text" name="designation" class="form-control" placeholder="e.g. Software Engineer">
         </div>
 
         <div class="col-md-3">
             <label class="form-label">Grade</label>
-            <input type="text" name="grade" class="form-control">
+            <input type="text" name="grade" class="form-control" placeholder="e.g. G1">
         </div>
 
         <div class="col-md-3">
             <label class="form-label">Branch</label>
-            <input type="text" name="branch" class="form-control">
+            <input type="text" name="branch" class="form-control" placeholder="e.g. Islamabad">
         </div>
 
         <div class="col-md-3">
             <label class="form-label">Location</label>
-            <input type="text" name="location" class="form-control">
+            <input type="text" name="location" class="form-control" placeholder="e.g. Ground Floor">
         </div>
 
     </div>
@@ -247,9 +247,11 @@
 
         if (sbuSel) {
             sbuSel.innerHTML  = '<option value="">— Select SBU —</option>';
+            sbuSel.setAttribute('title', 'Please select organization first');
         }
         if (deptSel) {
             deptSel.innerHTML = '<option value="">— Select Department —</option>';
+            deptSel.setAttribute('title', 'Please select SBU first');
         }
         if (section) {
             section.style.display = 'none';
@@ -257,6 +259,11 @@
 
         if (roleSel) {
             roleSel.disabled = !orgId;
+            if (roleSel.disabled) {
+                roleSel.setAttribute('title', 'Please select organization first');
+            } else {
+                roleSel.removeAttribute('title');
+            }
             roleSel.innerHTML = orgId
                 ? '<option value="">— Select Role —</option>'
                 : '<option value="">— Select Organization first —</option>';
@@ -298,6 +305,9 @@
         if (!org) return;
         const sbu = (org.sbus || []).find(function (s) { return String(s.id) === String(sbuId); });
         if (!sbu) return;
+        if (sbu) {
+            deptSel.removeAttribute('title');
+        }
         (sbu.departments || []).forEach(function (d) {
             deptSel.insertAdjacentHTML('beforeend',
                 '<option value="' + d.id + '">' + escHtmlBasic(d.name) + '</option>');
@@ -323,9 +333,11 @@
 
         if (role.sbu_id) {
             sbuSel.value = String(role.sbu_id);
+            sbuSel.removeAttribute('title');
             onSbuChange(String(role.sbu_id));
             if (role.department_id) {
                 deptSel.value = String(role.department_id);
+                deptSel.removeAttribute('title');
             }
         }
     }

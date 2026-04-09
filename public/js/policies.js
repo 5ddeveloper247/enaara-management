@@ -468,13 +468,7 @@
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createPolicyModal'));
                     if (modal) modal.hide();
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: isEditMode ? 'Updated!' : 'Created!',
-                        text: response.message,
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
+                    showSuccess(response.message).then(() => {
                         window.location.reload();
                     });
                 }
@@ -488,7 +482,7 @@
                         errorMsg = xhr.responseJSON.message;
                     }
                 }
-                Swal.fire('Error', errorMsg, 'error');
+                showError(errorMsg);
             },
             complete: function() {
                 submitBtn.prop('disabled', false).html(originalBtnText);
@@ -543,7 +537,7 @@
                 }
             },
             error: function() {
-                Swal.fire('Error', 'Unable to fetch policy details.', 'error');
+                showError('Unable to fetch policy details.');
             }
         });
     }
@@ -580,20 +574,14 @@
                     },
                     success: function(response) {
                         if (response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Deleted!',
-                                text: response.message || 'Policy has been deleted.',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
+                            showSuccess(response.message || 'Policy has been deleted.').then(() => {
                                 window.location.reload();
                             });
                         }
                     },
                     error: function(xhr) {
                         const err = xhr.responseJSON?.message || 'Error occurred while deleting the policy.';
-                        Swal.fire('Error', err, 'error');
+                        showError(err);
                     }
                 });
             }
@@ -616,7 +604,7 @@
                 }
             },
             error: function() {
-                Swal.fire('Error', 'Unable to fetch policy details.', 'error');
+                showError('Unable to fetch policy details.');
             }
         });
     }

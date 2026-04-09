@@ -626,7 +626,7 @@
                     }
                 },
                 error: function(xhr) {
-                    Swal.fire('Error', 'Unable to fetch geofence details.', 'error');
+                    showError('Unable to fetch geofence details.');
                 },
                 complete: function() {
                     btn.html(originalIcon);
@@ -657,14 +657,14 @@
                         },
                         success: function(response) {
                             if (response.success) {
-                                Swal.fire('Deleted!', response.message || 'Geofence has been deleted.', 'success').then(() => {
+                                showSuccess(response.message || 'Geofence has been deleted.', 'Deleted!').then(() => {
                                     window.location.reload();
                                 });
                             }
                         },
                         error: function(xhr) {
                             const err = xhr.responseJSON?.message || 'Error occurred while deleting the geofence.';
-                            Swal.fire('Error', err, 'error');
+                            showError(err);
                         }
                     });
                 }

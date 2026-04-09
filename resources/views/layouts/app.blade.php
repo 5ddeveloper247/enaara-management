@@ -43,18 +43,55 @@
             <!-- Main Content Area -->
             <main class="admin-content flex-grow-1">
                 @if (session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: "{{ session('success') }}",
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        });
+                    </script>
                 @endif
 
                 @if (session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: "{{ session('error') }}",
+                                confirmButtonColor: '#1a237e',
+                                confirmButtonText: 'Dismiss'
+                            });
+                        });
+                    </script>
                 @endif
+
+                <script>
+                    // Global helper functions for SweetAlert
+                    window.showAlert = function(icon, title, message, timer = 2000) {
+                        return Swal.fire({
+                            icon: icon,
+                            title: title,
+                            text: message,
+                            timer: icon === 'success' ? timer : null,
+                            showConfirmButton: icon !== 'success',
+                            confirmButtonColor: '#1a237e',
+                            confirmButtonText: 'Dismiss'
+                        });
+                    };
+
+                    window.showSuccess = function(message, title = 'Saved') {
+                        return window.showAlert('success', title, message);
+                    };
+
+                    window.showError = function(message, title = 'Error') {
+                        return window.showAlert('error', title, message);
+                    };
+                </script>
 
                 @yield('content')
             </main>

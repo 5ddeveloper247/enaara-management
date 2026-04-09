@@ -196,7 +196,7 @@
                 icon: 'warning',
                 title: 'Missing Field',
                 text: 'Please enter an attachment name.',
-                confirmButtonColor: '#012445',
+                confirmButtonColor: '#1a237e',
                 backdrop: true,
                 allowOutsideClick: false
             });
@@ -209,7 +209,7 @@
                 icon: 'warning',
                 title: 'Missing Field',
                 text: 'Please select at least one file to upload.',
-                confirmButtonColor: '#012445',
+                confirmButtonColor: '#1a237e',
                 backdrop: true,
                 allowOutsideClick: false
             });

@@ -66,14 +66,14 @@
             <button type="button" class="btn btn-outline-secondary me-2" id="exportBtn">
                 <i class="bi bi-download me-1"></i>Export
             </button>
-            <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="offcanvas"
+            <!-- <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="offcanvas"
                 data-bs-target="#leavePolicyCanvas">
                 <i class="bi bi-gear me-1"></i>Leave Policy
             </button>
             <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                 data-bs-target="#addLeaveRequestCanvas">
                 <i class="bi bi-plus-circle me-1"></i>New Leave Request
-            </button>
+            </button> -->
         </div>
     </div>
 

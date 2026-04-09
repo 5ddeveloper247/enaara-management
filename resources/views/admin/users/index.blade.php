@@ -171,12 +171,12 @@
                 ' data-role-id="'     + (row.role_id || '')           + '"' +
                 ' title="Edit"><i class="bi bi-pencil"></i></button>' +
                 resetBtn +
-                '<button type="button" class="action-btn border-0 text-danger bg-danger-subtle delete-user-btn"' +
-                ' data-bs-toggle="modal" data-bs-target="#deleteConfirmModal"' +
-                ' data-id="'    + row.id            + '"' +
-                ' data-name="'  + escAttr(row.name) + '"' +
-                ' data-email="' + escAttr(row.email)+ '"' +
-                ' title="Delete"><i class="bi bi-trash"></i></button>' +
+                // '<button type="button" class="action-btn border-0 text-danger bg-danger-subtle delete-user-btn"' +
+                // ' data-bs-toggle="modal" data-bs-target="#deleteConfirmModal"' +
+                // ' data-id="'    + row.id            + '"' +
+                // ' data-name="'  + escAttr(row.name) + '"' +
+                // ' data-email="' + escAttr(row.email)+ '"' +
+                // ' title="Delete"><i class="bi bi-trash"></i></button>'+
                 '</div>';
         }
 
@@ -377,7 +377,7 @@
 
                 var data = res.data;
                 if (res.ok && data.success) {
-                    showAlert('success', data.message);
+                    showSuccess(data.message);
                     usersTable.ajax.reload(null, false);
                     loadStats();
                     setTimeout(function () {
@@ -385,9 +385,9 @@
                     }, 1400);
                 } else if (data.errors) {
                     showFieldErrors(data.errors);
-                    showAlert('danger', data.message || 'Please fix the highlighted fields.');
+                    showError(data.message || 'Please fix the highlighted fields.');
                 } else {
-                    showAlert('danger', data.message || 'Something went wrong.');
+                    showError(data.message || 'Something went wrong.');
                 }
             })
             .catch(function () {
@@ -395,7 +395,7 @@
                 btn.innerHTML = isEdit
                     ? '<i class="bi bi-check-lg me-1"></i>Update User'
                     : '<i class="bi bi-person-check me-1"></i>Create User';
-                showAlert('danger', 'Network error. Please try again.');
+                showError('Network error. Please try again.');
             });
         }
 
@@ -440,23 +440,16 @@
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         if (data.success) {
-                            Swal.fire({
-                                title: isActive ? 'Activated!' : 'Deactivated!',
-                                text: isActive ? 'User has been activated.' : 'User has been deactivated.',
-                                icon: 'success',
-                                confirmButtonColor: '#012445',
-                                timer: 2000,
-                                timerProgressBar: true,
-                            });
+                            showSuccess(isActive ? 'User has been activated.' : 'User has been deactivated.', isActive ? 'Activated!' : 'Deactivated!');
                         } else {
                             toggle.checked = !toggle.checked;
-                            Swal.fire('Error', data.message || 'Status update failed.', 'error');
+                            showError(data.message || 'Status update failed.');
                         }
                         loadStats();
                     })
                     .catch(function () {
                         toggle.checked = !toggle.checked;
-                        Swal.fire('Error', 'Network error. Please try again.', 'error');
+                        showError('Network error. Please try again.');
                     });
                 });
             });
@@ -492,18 +485,13 @@
                         .then(function (r) { return r.json(); })
                         .then(function (data) {
                             if (data.success) {
-                                Swal.fire({
-                                    title: 'Done!',
-                                    text: data.message || 'Done.',
-                                    icon: 'success',
-                                    confirmButtonColor: '#012445'
-                                });
+                                showSuccess(data.message || 'Done.', 'Done!');
                             } else {
-                                Swal.fire('Error', data.message || 'Request failed.', 'error');
+                                showError(data.message || 'Request failed.');
                             }
                         })
                         .catch(function () {
-                            Swal.fire('Error', 'Network error.', 'error');
+                            showError('Network error.');
                         });
                     }
                 });
@@ -654,12 +642,6 @@
         // =============================================
         // HELPERS
         // =============================================
-        function showAlert(type, msg) {
-            var el = document.getElementById('userFormAlert');
-            el.className = 'alert alert-' + type + ' small fw-semibold';
-            el.textContent = msg;
-            el.classList.remove('d-none');
-        }
 
         function showFieldErrors(errors) {
             Object.entries(errors).forEach(function ([field, messages]) {

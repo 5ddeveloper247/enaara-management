@@ -101,18 +101,11 @@
                             $('#totalActive').text(Math.max(0, totalActive));
                             $('#totalInactive').text(Math.max(0, totalInactive));
 
-                            Swal.fire({
-                                title: showInMenu ? 'Shown in Menu!' : 'Hidden from Menu!',
-                                text:  showInMenu ? 'Module will now appear in the sidebar.' : 'Module is now hidden from the sidebar.',
-                                icon:  'success',
-                                confirmButtonColor: '#012445',
-                                timer: 2000,
-                                timerProgressBar: true,
-                            });
+                            showSuccess(showInMenu ? 'Module will now appear in the sidebar.' : 'Module is now hidden from the sidebar.', showInMenu ? 'Shown in Menu!' : 'Hidden from Menu!');
                         },
                         error: function() {
                             checkbox.prop('checked', !showInMenu);
-                            Swal.fire('Error', 'Status update failed. Please try again.', 'error');
+                            showError('Status update failed. Please try again.');
                         }
                     });
                 });

@@ -440,9 +440,7 @@
                 }
                 
                 if (res.ok && res.body.success) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'success', title: 'Success', text: res.body.message, timer: 1500 });
-                    }
+                    showSuccess(res.body.message);
                     var canvas = document.getElementById('rosterShiftCanvas');
                     if (canvas) {
                         var o = bootstrap.Offcanvas.getInstance(canvas);
@@ -453,14 +451,10 @@
                     var msg = 'Could not save assignment.';
                     if (res.body && res.body.message) msg = res.body.message;
                     if (res.status === 422 && res.body.errors) {
-                        msg = Object.values(res.body.errors).flat().join('\n');
+                        msg = Object.values(res.body.errors).flat().join('<br>'); // showSuccess/showError supports HTML
                     }
                     
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
-                    } else {
-                        alert(msg);
-                    }
+                    showError(msg);
                 }
             })
             .catch(function(err) {
@@ -469,9 +463,7 @@
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i><span id="rosterShiftSaveBtnText">' + (rosterId ? 'Update' : 'Save') + '</span>';
                 }
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'Network error or script failure.' });
-                }
+                showError('Network error or script failure.');
             });
     }
 
@@ -505,11 +497,7 @@
                     loadRosterGrid();
                 } else {
                     var msg = (res.body && res.body.message) ? res.body.message : 'Could not remove assignment.';
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
-                    } else {
-                        alert(msg);
-                    }
+                    showError(msg);
                 }
             })
             .catch(function() {

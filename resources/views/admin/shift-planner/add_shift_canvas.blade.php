@@ -271,12 +271,12 @@
 
                                     toggleOvertimeSection();
                                 } else {
-                                    alert(response.message || 'Unable to load shift data.');
+                                    showError(response.message || 'Unable to load shift data.');
                                 }
                             })
                             .catch(error => {
                                 console.error(error);
-                                alert('Failed to load shift data.');
+                                showError('Failed to load shift data.');
                             });
                     } else {
                         resetShiftForm();

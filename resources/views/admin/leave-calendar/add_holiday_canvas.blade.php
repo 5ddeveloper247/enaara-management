@@ -304,13 +304,7 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success',
-                                text: data.message,
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
+                            showSuccess(data.message).then(() => {
                                 location.reload();
                             });
                         } else if (data.errors) {
@@ -329,12 +323,12 @@
                                 }
                             });
                         } else {
-                            Swal.fire('Error', data.message || 'Something went wrong.', 'error');
+                            showError(data.message || 'Something went wrong.');
                         }
                     })
                     .catch((error) => {
                         console.error('Error:', error);
-                        Swal.fire('Network Error', 'Please try again.', 'error');
+                        showError('Please try again.', 'Network Error');
                     })
                     .finally(() => {
                         if (submitBtn) submitBtn.disabled = false;
@@ -369,14 +363,14 @@
                             .then(res => res.json())
                             .then(data => {
                                 if (data.success) {
-                                    Swal.fire('Deleted!', data.message, 'success').then(() => location.reload());
+                                    showSuccess(data.message, 'Deleted!').then(() => location.reload());
                                 } else {
-                                    Swal.fire('Error', data.message || 'Failed to delete holiday.', 'error');
+                                    showError(data.message || 'Failed to delete holiday.');
                                 }
                             })
                             .catch(error => {
                                 console.error('Delete error:', error);
-                                Swal.fire('Error', 'Network error. Please try again.', 'error');
+                                showError('Network error. Please try again.');
                             });
                     }
                 });

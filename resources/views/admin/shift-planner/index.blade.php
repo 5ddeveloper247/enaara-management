@@ -305,21 +305,11 @@
                             },
                             success: function(response) {
                                 if (response.success) {
-                                    Swal.fire({
-                                        title: 'Deleted!',
-                                        text: response.message || 'Shift has been deleted successfully.',
-                                        icon: 'success',
-                                        confirmButtonColor: '#3085d6'
-                                    }).then(() => {
+                                    showSuccess(response.message || 'Shift has been deleted successfully.', 'Deleted!').then(() => {
                                         location.reload();
                                     });
                                 } else {
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: response.message || 'An error occurred while deleting the shift.',
-                                        icon: 'error',
-                                        confirmButtonColor: '#3085d6'
-                                    });
+                                    showError(response.message || 'An error occurred while deleting the shift.');
                                 }
                             },
                             error: function(xhr) {
@@ -327,12 +317,7 @@
                                 if (xhr.responseJSON && xhr.responseJSON.message) {
                                     errorMessage = xhr.responseJSON.message;
                                 }
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: errorMessage,
-                                    icon: 'error',
-                                    confirmButtonColor: '#3085d6'
-                                });
+                                showError(errorMessage);
                             }
                         });
                     }

@@ -116,11 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json())
         .then(response => {
             if (!response.success) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: response.message || 'Failed to load organization data.'
-                });
+                showError(response.message || 'Failed to load organization data.');
                 return;
             }
 
@@ -140,11 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .catch(error => {
             console.error('Edit fetch error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Something went wrong while loading organization data.'
-            });
+            showError('Something went wrong while loading organization data.');
         });
     });
 
@@ -155,7 +147,8 @@ document.addEventListener('DOMContentLoaded', function () {
             Swal.fire({
                 icon: 'warning',
                 title: 'No Organization Selected',
-                text: 'Please select an organization first.'
+                text: 'Please select an organization first.',
+                confirmButtonColor: '#1a237e'
             });
             return;
         }
@@ -180,13 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const offcanvas = bootstrap.Offcanvas.getInstance(editCanvas);
                 if (offcanvas) offcanvas.hide();
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Updated',
-                    text: data.message || 'Organization updated successfully.',
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(() => {
+                showSuccess(data.message || 'Organization updated successfully.').then(() => {
                     window.location.reload();
                 });
             } else if (status === 422) {
@@ -208,23 +195,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     title: 'Please check the following:',
                     html: errorMessage,
                     confirmButtonColor: '#1a237e',
-                    confirmButtonText: 'Understood'
+                    confirmButtonText: 'Dismiss'
                 });
             } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'System Error',
-                    text: data.message || 'Failed to update organization.'
-                });
+                showError(data.message || 'Failed to update organization.');
             }
         })
         .catch(error => {
             console.error('Update catch error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Something went wrong while updating organization data.'
-            });
+            showError('Something went wrong while updating organization data.');
         })
         .finally(() => {
             updateBtn.innerHTML = originalHtml;

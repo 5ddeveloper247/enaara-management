@@ -765,7 +765,7 @@
                         <button class="btn btn-outline-primary btn-sm rounded-pill"
                                 style="font-size: 9px !important; padding: 2px 8px; height: 22px;"
                                 onclick="editHoliday(${holiday.id})">
-                            Details
+                            Edit
                         </button>
                     `;
                     upcomingHolidaysContainer.appendChild(item);
@@ -804,7 +804,7 @@
             })
             .then(data => {
                 if (!data.success) {
-                    Swal.fire('Error', data.message || 'Could not fetch holiday details.', 'error');
+                    showError(data.message || 'Could not fetch holiday details.', 'Error');
                     return;
                 }
 
@@ -903,7 +903,7 @@
             })
             .catch(err => {
                 console.error('Edit fetch error:', err);
-                Swal.fire('Error', 'Detail: ' + err.message, 'error');
+                showError('Detail: ' + err.message, 'Error');
             });
     };
 
@@ -934,16 +934,16 @@
                     })
                     .then(data => {
                         if (data.success) {
-                            Swal.fire('Deleted!', data.message, 'success').then(() => {
+                            showSuccess(data.message, 'Deleted!').then(() => {
                                 window.location.reload();
                             });
                         } else {
-                            Swal.fire('Error', data.message, 'error');
+                            showError(data.message);
                         }
                     })
                     .catch(err => {
                         console.error('Delete error:', err);
-                        Swal.fire('Error', 'An unexpected error occurred.', 'error');
+                        showError('An unexpected error occurred.');
                     });
             }
         });
@@ -981,7 +981,7 @@
                 <button class="btn btn-outline-primary btn-sm rounded-pill"
                         style="font-size: 9px !important; padding: 2px 8px; height: 22px;"
                         onclick="window.editHoliday(${holiday.id})">
-                    Details
+                    Edit
                 </button>
             `;
             container.appendChild(item);

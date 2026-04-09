@@ -293,7 +293,7 @@
         });
 
         $('#exportDetailBtn').on('click', function () {
-            alert('Export detail functionality will be implemented with backend integration.');
+            showSuccess('Export detail functionality will be implemented with backend integration.');
         });
     }
 
@@ -429,7 +429,7 @@
      */
     function handleExport() {
         if (!auditTrailsData.length) {
-            if (window.Swal) Swal.fire('Info', 'No audit trail records to export.', 'info');
+            showError('No audit trail records to export.', 'Info');
             return;
         }
 

@@ -195,13 +195,13 @@
                         data: formData,
                         success: function(response) {
                             if (response.success) {
-                                Swal.fire('Success', response.message, 'success').then(() => location.reload());
+                                showSuccess(response.message).then(() => location.reload());
                             } else {
-                                Swal.fire('Error', response.message, 'error');
+                                showError(response.message);
                             }
                         },
                         error: function(xhr) {
-                            Swal.fire('Error', 'Adjustment failed. Please try again.', 'error');
+                            showError('Adjustment failed. Please try again.');
                         }
                     });
                 } else {

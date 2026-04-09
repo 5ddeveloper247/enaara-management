@@ -267,25 +267,13 @@
                     hiddenId.value = data.employee_id;
                 }
                 
-                // If it's the final step, show success and don't require dismissal
+                // If it's the final step, show success
                 if (step === total) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Completed',
-                        text: 'Employee registration completed successfully!',
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
+                    showSuccess('Employee registration completed successfully!', 'Completed').then(() => {
                         if (onSuccess) onSuccess();
                     });
                 } else {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Saved',
-                        text: data.message,
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
+                    showSuccess(data.message, 'Saved').then(() => {
                         if (onSuccess) onSuccess();
                     });
                 }
@@ -303,24 +291,18 @@
                     icon: 'error',
                     title: 'Validation Error',
                     html: `Please check the highlighted fields and errors below:${errorHtml}`,
+                    confirmButtonColor: '#1a237e',
+                    confirmButtonText: 'Dismiss'
                 });
             } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message || 'Something went wrong.'
-                });
+                showError(data.message || 'Something went wrong.');
             }
         })
         .catch((e) => {
             nextBtn.disabled = false;
             prevBtn.disabled = false;
             nextBtn.textContent = originalText;
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Network error or server error occurred.'
-            });
+            showError('Network error or server error occurred.');
         });
     }
 

@@ -263,7 +263,8 @@ document.addEventListener('DOMContentLoaded', function() {
         Swal.fire({
             icon: 'warning',
             title: 'Validation Error',
-            html: uniqueMessages.join('<br>')
+            html: uniqueMessages.join('<br>'),
+            confirmButtonColor: '#1a237e'
         });
     }
 
@@ -286,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.add('text-white');
             }, 3000);
         } else {
-            Swal.fire('Unavailable', 'Map is not available right now.', 'info');
+            showError('Map is not available right now.', 'Unavailable');
         }
     });
 
@@ -307,7 +308,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('searchAddressBtn')?.addEventListener('click', function() {
         const address = document.getElementById('fenceAddress').value;
         if (!address) {
-            Swal.fire('Warning', 'Please enter an address to search.', 'warning');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Warning',
+                text: 'Please enter an address to search.',
+                confirmButtonColor: '#1a237e'
+            });
             return;
         }
 
@@ -325,12 +331,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateLocation(lat, lng);
                     document.getElementById('fenceAddress').value = data[0].display_name;
                 } else {
-                    Swal.fire('Not Found', 'Location not found. Please try a different search term.', 'warning');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Not Found',
+                        text: 'Location not found. Please try a different search term.',
+                        confirmButtonColor: '#1a237e'
+                    });
                 }
             })
             .catch(error => {
                 console.error('Error during geocoding:', error);
-                Swal.fire('Error', 'Error searching for location. Please try again.', 'error');
+                showError('Error searching for location. Please try again.');
             })
             .finally(() => {
                 btn.innerHTML = originalHtml;
@@ -397,11 +408,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const hasValidLatLng = lat !== '' && lng !== '' && !isNaN(lat) && !isNaN(lng);
 
             if (!hasValidLatLng) {
-                Swal.fire(
-                    'Warning',
-                    'Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.',
-                    'warning'
-                );
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Warning',
+                    text: 'Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.',
+                    confirmButtonColor: '#1a237e'
+                });
                 document.getElementById('fenceAddress').focus();
                 return;
             }
@@ -435,13 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('addFenceCanvas'));
                         if (offcanvas) offcanvas.hide();
 
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: response.message || 'Geofence created successfully.',
-                                timer: 650,
-                            showConfirmButton: false
-                        }).then(() => {
+                        showSuccess(response.message || 'Geofence created successfully.').then(() => {
                             window.location.reload();
                         });
                     }
@@ -455,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     const err = response?.message || 'Error occurred while saving the geofence.';
-                    Swal.fire('Error', err, 'error');
+                    showError(err);
                 }
             });
         });

@@ -29,13 +29,13 @@
 
             <div class="mb-3">
                 <label for="editDepartmentName" class="form-label text-white">Name <span class="text-danger">*</span></label>
-                <input type="text" name="name" id="editDepartmentName" class="form-control" required maxlength="255">
+                <input type="text" name="name" id="editDepartmentName" class="form-control" required maxlength="255" placeholder="Enter department name">
                 <div class="invalid-feedback" id="editDepartmentNameError"></div>
             </div>
 
             <div class="mb-3">
                 <label for="editDepartmentCode" class="form-label text-white">Code</label>
-                <input type="text" name="code" id="editDepartmentCode" class="form-control" maxlength="32">
+                <input type="text" name="code" id="editDepartmentCode" class="form-control" maxlength="32" placeholder="Enter department code (e.g. DEPT-001)">
                 <div class="invalid-feedback" id="editDepartmentCodeError"></div>
             </div>
 
@@ -49,7 +49,7 @@
 
             <div class="mb-3">
                 <label for="editDepartmentDescription" class="form-label text-white">Description</label>
-                <textarea name="description" id="editDepartmentDescription" class="form-control" rows="3"></textarea>
+                <textarea name="description" id="editDepartmentDescription" class="form-control" rows="3" placeholder="Enter department description"></textarea>
                 <div class="invalid-feedback" id="editDepartmentDescriptionError"></div>
             </div>
 

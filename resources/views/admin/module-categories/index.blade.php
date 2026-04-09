@@ -108,18 +108,11 @@
                             $('#totalActive').text(Math.max(0, totalActive));
                             $('#totalInactive').text(Math.max(0, totalInactive));
 
-                            Swal.fire({
-                                title: isActive ? 'Activated!' : 'Deactivated!',
-                                text:  isActive ? 'Category has been activated.' : 'Category has been deactivated.',
-                                icon:  'success',
-                                confirmButtonColor: '#012445',
-                                timer: 2000,
-                                timerProgressBar: true,
-                            });
+                            showSuccess(isActive ? 'Category has been activated.' : 'Category has been deactivated.', isActive ? 'Activated!' : 'Deactivated!');
                         },
                         error: function() {
                             checkbox.prop('checked', !isActive);
-                            Swal.fire('Error', 'Status update failed. Please try again.', 'error');
+                            showError('Status update failed. Please try again.');
                         }
                     });
                 });

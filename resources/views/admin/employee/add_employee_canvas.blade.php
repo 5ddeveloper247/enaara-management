@@ -16,12 +16,12 @@
                 </h6>
                 <div class="mb-3">
                     <label for="employeeFullName" class="form-label fw-semibold small text-white">Full Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="employeeFullName" name="full_name" required>
+                    <input type="text" class="form-control" id="employeeFullName" name="full_name" required placeholder="Enter full name">
                 </div>
                 <div class="row g-3 mb-3">
                     <div class="col-6">
                         <label for="employeeEmail" class="form-label fw-semibold small text-white">Email Address <span class="text-danger">*</span></label>
-                        <input type="email" class="form-control" id="employeeEmail" name="email" required>
+                        <input type="email" class="form-control" id="employeeEmail" name="email" required placeholder="e.g. employee@enaara.com">
                     </div>
                     <div class="col-6">
                         <label for="employeePhone" class="form-label fw-semibold small text-white">Phone Number</label>
@@ -211,15 +211,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const sbuSelect = document.getElementById('employeeSbu');
     const deptSelect = document.getElementById('employeeDepartment');
 
-    const lockSelect = el => { el.style.pointerEvents='none'; el.style.opacity='0.5'; };
-    const unlockSelect = el => { el.style.pointerEvents=''; el.style.opacity=''; };
+    const lockSelect = (el, msg = 'Please select the parent first') => { 
+        el.style.pointerEvents='none'; 
+        el.style.opacity='0.5'; 
+        el.setAttribute('title', msg);
+    };
+    const unlockSelect = el => { 
+        el.style.pointerEvents=''; 
+        el.style.opacity=''; 
+        el.removeAttribute('title');
+    };
 
     orgSelect.addEventListener('change', function() {
         const orgId = this.value;
         sbuSelect.innerHTML = '<option value="">Select SBU</option>';
         deptSelect.innerHTML = '<option value="">Select Department</option>';
-        lockSelect(sbuSelect);
-        lockSelect(deptSelect);
+        lockSelect(sbuSelect, 'Please select the organization first');
+        lockSelect(deptSelect, 'Please select the SBU first');
 
         if (orgId) {
             const org = organizations.find(o => o.id == orgId);

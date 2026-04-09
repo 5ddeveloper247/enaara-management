@@ -125,13 +125,7 @@
                         const offcanvas = bootstrap.Offcanvas.getInstance(addOrgCanvas);
                         if (offcanvas) offcanvas.hide();
 
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: data.message || 'Organization created successfully.',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
+                        showSuccess(data.message || 'Organization created successfully.').then(() => {
                             window.location.reload();
                         });
                     } else if (status === 422) {
@@ -153,23 +147,15 @@
                             title: 'Please check the following:',
                             html: errorMessage,
                             confirmButtonColor: '#1a237e',
-                            confirmButtonText: 'Understood'
+                            confirmButtonText: 'Dismiss'
                         });
                     } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'System Error',
-                            text: data.message || 'Failed to create organization.'
-                        });
+                        showError(data.message || 'Failed to create organization.', 'System Error');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Something went wrong. Please try again.'
-                    });
+                    showError('Something went wrong. Please try again.');
                 })
                 .finally(() => {
                     saveOrgBtn.innerHTML = originalHtml;
