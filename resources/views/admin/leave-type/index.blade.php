@@ -118,29 +118,19 @@
                                 @endif
                             </td>
                             <td>
-                                @php
-                                $deptCount = $lt->departments->count();
-                                $firstDept = $lt->departments->first();
-                                $remainingCount = $deptCount > 1 ? $deptCount - 1 : 0;
-                                @endphp
-
+                                @php $deptCount = $lt->departments->count(); @endphp
                                 @if($deptCount == 0)
                                 <span class="text-muted small">—</span>
                                 @elseif($deptCount == 1)
-                                <span class="badge px-3 rounded-1 bg-info">{{ $firstDept->name }}</span>
+                                <span class="badge px-3 rounded-1 bg-info">{{ $lt->departments->first()->name }}</span>
                                 @else
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <span class="badge px-3 rounded-1 bg-info">{{ $firstDept->name }}</span>
-
-                                    <button type="button"
-                                        class="btn btn-sm btn-info text-white rounded-pill px-3 py-0 border-0 view-depts-btn"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#departmentsModal"
-                                        data-leave-type-name="{{ $lt->name }}"
-                                        data-departments="{{ $lt->departments->pluck('name')->implode(',') }}">
-                                        +{{ $remainingCount }}
-                                    </button>
-                                </div>
+                                <button type="button" class="badge bg-info text-white rounded-1 border-0 px-3 view-depts-btn"
+                                    style="font-size: inherit; vertical-align: baseline;"
+                                    data-bs-toggle="modal" data-bs-target="#departmentsModal"
+                                    data-leave-type-name="{{ $lt->name }}"
+                                    data-departments="{{ $lt->departments->pluck('name')->implode(',') }}">
+                                    Multiple ({{ $deptCount }})
+                                </button>
                                 @endif
                             </td>
                             <td>{{ number_format((float) $lt->annual_quota, 2) }}</td>
@@ -290,7 +280,7 @@
 
         function loadSbus(organizationId, selectedSbuId) {
             var sbuSelect = $('#editSbuId');
-            
+
             if (!organizationId) {
                 sbuSelect.empty().append('<option value="">Please select Organization first...</option>');
                 return;
@@ -301,7 +291,9 @@
             $.ajax({
                 url: '{{ route("admin.sbu.index") }}',
                 method: 'GET',
-                data: { organization_id: organizationId },
+                data: {
+                    organization_id: organizationId
+                },
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
@@ -334,7 +326,9 @@
             $.ajax({
                 url: '{{ url("/admin/department") }}',
                 method: 'GET',
-                data: { sbu_id: sbuId },
+                data: {
+                    sbu_id: sbuId
+                },
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
