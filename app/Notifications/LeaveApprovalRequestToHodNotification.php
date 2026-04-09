@@ -8,12 +8,13 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class LeaveApprovalNotification extends Notification implements ShouldQueue
+class LeaveApprovalRequestToHodNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     public function __construct(
-        public EmployeLeaveRequest $leaveRequest
+        public EmployeLeaveRequest $leaveRequest,
+        public string $recommendedBy = 'Pending Review'
     ) {
         $this->onQueue('notifications');
     }
@@ -31,8 +32,8 @@ class LeaveApprovalNotification extends Notification implements ShouldQueue
         $deptName     = optional($employee?->department)->name ?? '-';
 
         return (new MailMessage)
-            ->subject('Leave Request Approval Required')
-            ->view('admin.emails.leave_recommendation', [
+            ->subject('Leave Approval Request - Final Action Required')
+            ->view('admin.emails.leave_approval_hod_request', [
                 'recipientName'  => $notifiable->name,
                 'senderName'     => $employeeName,
                 'employeeId'     => $employeeId,
@@ -41,7 +42,7 @@ class LeaveApprovalNotification extends Notification implements ShouldQueue
                 'startDate'      => $this->leaveRequest->start_date?->format('d M, Y') ?? $this->leaveRequest->start_date,
                 'endDate'        => $this->leaveRequest->end_date?->format('d M, Y') ?? $this->leaveRequest->end_date,
                 'duration'       => (float) $this->leaveRequest->duration,
-                'reason'         => $this->leaveRequest->reason ?? 'No reason provided.',
+                'recommendedBy'  => $this->recommendedBy,
                 'actionUrl'      => url('/admin/leave-request'),
             ]);
     }
@@ -49,8 +50,8 @@ class LeaveApprovalNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'title' => 'Leave Request Approval Required',
-            'message' => (optional($this->leaveRequest->fromEmployee)->name ?? 'An employee') . ' submitted a leave request for approval.',
+            'title' => 'Leave Approval Request Required',
+            'message' => (optional($this->leaveRequest->fromEmployee)->name ?? 'An employee') . ' leave request has been recommended by ' . $this->recommendedBy . ' and awaits your final approval.',
             'leave_request_id' => $this->leaveRequest->id,
             'from_employee_id' => $this->leaveRequest->from_employee_id,
             'to_employee_id' => $this->leaveRequest->to_employee_id,

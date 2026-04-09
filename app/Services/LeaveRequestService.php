@@ -362,8 +362,11 @@ class LeaveRequestService
             'leaveType:id,name',
         ]);
 
-        if ($hodEmployee) {
-            $this->notifyApprover($finalLeaveRequest, $hodEmployee);
+        if ($hodUser) {
+            $hodUser->notify(
+                (new \App\Notifications\LeaveApprovalRequestToHodNotification($finalLeaveRequest))
+                    ->delay(now()->addSeconds(5))
+            );
         }
 
         $createdRequests[] = $finalLeaveRequest;
@@ -533,6 +536,30 @@ class LeaveRequestService
             );
         }
 
+        // 1. Notify HOD only after a manager recommends (status 1)
+        if ((int) $leaveRequest->action_type === 1 && (int) $newStatus === 1) {
+            $fromEmployee = $leaveRequest->fromEmployee;
+            if ($fromEmployee) {
+                // Find the final approval row (action_type 2) for this same request
+                $finalRow = EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
+                    ->where('leave_type_id', $leaveRequest->leave_type_id)
+                    ->where('start_date', $leaveRequest->start_date)
+                    ->where('end_date', $leaveRequest->end_date)
+                    ->where('action_type', 2)
+                    ->first();
+                
+                if ($finalRow && $finalRow->to_user_id) {
+                    $hodUser = User::find($finalRow->to_user_id);
+                    if ($hodUser) {
+                        $hodUser->notify(
+                            (new \App\Notifications\LeaveApprovalRequestToHodNotification($finalRow, $actorName))
+                                ->delay(now()->addSeconds(5))
+                        );
+                    }
+                }
+            }
+        }
+
         // Notify HOD only when final/master row is approved
         if ((int) $leaveRequest->action_type === 2 && (int) $newStatus === 3) {
             $fromEmployee = $leaveRequest->fromEmployee;
@@ -572,26 +599,18 @@ class LeaveRequestService
 
     private function resolveHeadOfDepartment(Employee $employee): ?User
     {
-        if (!$employee->department_id || !$employee->organization_id) {
+        if (!$employee->department_id) {
             return null;
         }
 
         $hodEmployee = Employee::query()
             ->where('is_active', true)
             ->where('id', '!=', $employee->id)
-            ->where('organization_id', $employee->organization_id)
             ->where('department_id', $employee->department_id)
-            ->whereHas('role', function ($roleQuery) use ($employee) {
-                $roleQuery
-                    ->where('organization_id', $employee->organization_id)
-                    ->where('department_id', $employee->department_id)
-                    ->whereNotNull('parent_role_id')
-                    ->whereHas('parentRole', function ($parentQuery) use ($employee) {
-                        $parentQuery
-                            ->where('organization_id', $employee->organization_id)
-                            ->whereNull('department_id')
-                            ->whereNull('parent_role_id');
-                    });
+            ->whereHas('role', function ($roleQuery) {
+                $roleQuery->whereHas('parentRole', function ($parentQuery) {
+                    $parentQuery->whereNull('department_id');
+                });
             })
             ->orderBy('id')
             ->first();

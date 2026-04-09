@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Leave Status Update – Enaara HRMS</title>
+  <title>Leave Recommendation Request – Enaara HRMS</title>
   <style>
     body { margin: 0; padding: 0; background-color: #f0f2f5; font-family: Arial, sans-serif; }
     .wrapper { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 10px; overflow: hidden; border: 1px solid #dde3ec; }
@@ -16,11 +16,6 @@
     .body p { font-size: 14px; color: #444444; line-height: 1.75; margin: 0 0 14px; }
     .btn-wrap { text-align: center; margin: 26px 0; }
     .btn { display: inline-block; background-color: #D4A843; color: #1B3A5C; padding: 13px 36px; border-radius: 6px; font-size: 15px; font-weight: 700; text-decoration: none; }
-    .status-wrap { text-align: center; margin: 22px 0; }
-    .badge { display: inline-block; padding: 7px 24px; border-radius: 20px; font-size: 14px; font-weight: 700; text-transform: capitalize; }
-    .badge-approved { background-color: #e6f4ea; color: #2e7d32; }
-    .badge-rejected { background-color: #fdecea; color: #c62828; }
-    .badge-pending  { background-color: #fff8e1; color: #b45a00; }
     .highlight { background: #f4f7fb; border-left: 3px solid #1B3A5C; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 20px 0; }
     .highlight strong { display: block; color: #1B3A5C; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
     .info-row { display: flex; justify-content: space-between; font-size: 13px; padding: 7px 0; border-bottom: 1px solid #eaeaea; color: #444; }
@@ -38,33 +33,22 @@
       <div class="tagline">Human Resource Management System</div>
     </div>
     <div class="body">
-      <h2>Your leave request has been updated</h2>
+      <h2>Leave recommendation request</h2>
       <p>Hi <strong>{{ $recipientName }}</strong>,</p>
-      <p>Your leave request has been reviewed by <strong>{{ $actorName }}</strong>. Here is the current status:</p>
-
-      @php
-        $badgeClass = 'badge-pending';
-        $lowerStatus = strtolower($statusLabel);
-        if(str_contains($lowerStatus, 'approved')) $badgeClass = 'badge-approved';
-        elseif(str_contains($lowerStatus, 'rejected') || str_contains($lowerStatus, 'not')) $badgeClass = 'badge-rejected';
-      @endphp
-
-      <div class="status-wrap">
-        <span class="badge {{ $badgeClass }}">{{ $statusLabel }}</span>
-      </div>
-
+      <p>A leave request has been submitted and requires your recommendation before proceeding to final approval. Please review the details below.</p>
       <div class="highlight">
         <strong>Leave Details</strong>
+        <div class="info-row"><span class="label">Employee</span><span>{{ $senderName }} — {{ $employeeId }}</span></div>
+        <div class="info-row"><span class="label">Department</span><span>{{ $departmentName }}</span></div>
         <div class="info-row"><span class="label">Leave Type</span><span>{{ $leaveType }}</span></div>
         <div class="info-row"><span class="label">From</span><span>{{ $startDate }}</span></div>
         <div class="info-row"><span class="label">To</span><span>{{ $endDate }}</span></div>
-        <div class="info-row"><span class="label">Total Days</span><span>{{ (float)$duration }} days</span></div>
-        <div class="info-row"><span class="label">Status</span><span style="font-weight: 700;">{{ $statusLabel }}</span></div>
-        <div class="info-row"><span class="label">Action By</span><span>{{ $actorName }}</span></div>
+        <div class="info-row"><span class="label">Total Days</span><span>{{ $duration }} days</span></div>
+        <div class="info-row"><span class="label">Reason</span><span>{{ $reason }}</span></div>
       </div>
-      <p>For more details, please log in to your Enaara HRMS account.</p>
+      <p>Please log in to Enaara HRMS to review and provide your recommendation.</p>
       <div class="btn-wrap">
-        <a href="{{ $actionUrl }}" class="btn">View My Leave</a>
+        <a href="{{ $actionUrl }}" class="btn">Review &amp; Recommend</a>
       </div>
     </div>
     <div class="footer">

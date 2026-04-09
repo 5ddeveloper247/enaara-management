@@ -26,20 +26,25 @@ class LeaveApprovedToHodNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $employeeName = optional($this->leaveRequest->fromEmployee)->full_name ?? 'Employee';
-        $leaveType = optional($this->leaveRequest->leaveType)->name ?? '-';
+        $employee     = $this->leaveRequest->fromEmployee;
+        $employeeId   = $employee?->employee_code ?? '-';
+        $employeeName = $employee?->full_name ?? $employee?->name ?? 'An employee';
+        $deptName     = optional($employee?->department)->name ?? '-';
 
         return (new MailMessage)
             ->subject('Employee Leave Approved Notification')
-            ->greeting('Hello ' . ($notifiable->name ?? 'Sir/Madam') . ',')
-            ->line("{$employeeName}'s leave request has been approved.")
-            ->line("Leave Type: {$leaveType}")
-            ->line("Start Date: {$this->leaveRequest->start_date}")
-            ->line("End Date: {$this->leaveRequest->end_date}")
-            ->line("Duration: {$this->leaveRequest->duration} day(s)")
-            ->line("The employee will be absent during this period.")
-            ->line("Approved by: {$this->actorName}");
-            // ->action('View Leave Requests', url('/admin/leave-requests'));
+            ->view('admin.emails.leave_approved_hod', [
+                'recipientName'  => $notifiable->name,
+                'senderName'     => $employeeName,
+                'employeeId'     => $employeeId,
+                'departmentName' => $deptName,
+                'leaveType'      => optional($this->leaveRequest->leaveType)->name ?? '-',
+                'startDate'      => $this->leaveRequest->start_date?->format('d M, Y') ?? $this->leaveRequest->start_date,
+                'endDate'        => $this->leaveRequest->end_date?->format('d M, Y') ?? $this->leaveRequest->end_date,
+                'duration'       => (float) $this->leaveRequest->duration,
+                'actorName'      => $this->actorName,
+                'actionUrl'      => url('/admin/leave-request'),
+            ]);
     }
 
     public function toArray(object $notifiable): array

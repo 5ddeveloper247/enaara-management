@@ -36,7 +36,13 @@ class LeaveStatusUpdateNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $statusLabel = $this->statusLabels[$this->leaveRequest->status] ?? 'Updated';
-        
+        $startDate = $this->leaveRequest->start_date instanceof \Illuminate\Support\Carbon 
+            ? $this->leaveRequest->start_date->format('d M, Y') 
+            : $this->leaveRequest->start_date;
+        $endDate = $this->leaveRequest->end_date instanceof \Illuminate\Support\Carbon 
+            ? $this->leaveRequest->end_date->format('d M, Y') 
+            : $this->leaveRequest->end_date;
+
         return (new MailMessage)
             ->subject('Leave Request Status Update: ' . $statusLabel)
             ->view('admin.emails.leave_status_update', [
@@ -44,8 +50,8 @@ class LeaveStatusUpdateNotification extends Notification implements ShouldQueue
                 'actorName' => $this->actorName,
                 'statusLabel' => $statusLabel,
                 'leaveType' => optional($this->leaveRequest->leaveType)->name ?? '-',
-                'startDate' => $this->leaveRequest->start_date,
-                'endDate' => $this->leaveRequest->end_date,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
                 'duration' => $this->leaveRequest->duration,
                 'actionUrl' => url('/admin/my-leaves'),
             ]);
