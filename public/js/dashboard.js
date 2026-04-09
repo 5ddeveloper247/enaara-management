@@ -196,21 +196,26 @@
         loadAttendanceData(period) {
             if (!this.attendanceChart) return;
 
-            const url = (window._dashRoutes && window._dashRoutes.attendanceChart)
-                ? window._dashRoutes.attendanceChart + '?period=' + period
-                : '/admin/dashboard/attendance-chart?period=' + period;
+            const url = (window._dashRoutes && window._dashRoutes.attendanceChart) ?
+                window._dashRoutes.attendanceChart + '?period=' + period :
+                '/admin/dashboard/attendance-chart?period=' + period;
 
             fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-            })
-                .then(function (res) { return res.json(); })
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function (res) {
+                    return res.json();
+                })
                 .then(function (json) {
                     if (!json.success) return;
                     const data = json.data;
-                    DashboardCharts.attendanceChart.data.labels              = data.labels;
-                    DashboardCharts.attendanceChart.data.datasets[0].data    = data.present;
-                    DashboardCharts.attendanceChart.data.datasets[1].data    = data.absent;
-                    DashboardCharts.attendanceChart.data.datasets[2].data    = data.onLeave;
+                    DashboardCharts.attendanceChart.data.labels = data.labels;
+                    DashboardCharts.attendanceChart.data.datasets[0].data = data.present;
+                    DashboardCharts.attendanceChart.data.datasets[1].data = data.absent;
+                    DashboardCharts.attendanceChart.data.datasets[2].data = data.onLeave;
                     DashboardCharts.attendanceChart.update();
                 })
                 .catch(function (err) {
@@ -225,7 +230,9 @@
             const periodButtons = document.querySelectorAll('.period-btn');
             periodButtons.forEach(function (button) {
                 button.addEventListener('click', function () {
-                    periodButtons.forEach(function (btn) { btn.classList.remove('active'); });
+                    periodButtons.forEach(function (btn) {
+                        btn.classList.remove('active');
+                    });
                     this.classList.add('active');
                     const period = parseInt(this.getAttribute('data-period'));
                     DashboardCharts.loadAttendanceData(period);
@@ -389,18 +396,18 @@
          */
         updateWorkforceStrength() {
             const stats = window._dashStats || {};
-            const percentage = stats.workforcePercent !== undefined
-                ? stats.workforcePercent
-                : 0;
-            const activeEmployees = stats.activeEmployees !== undefined
-                ? stats.activeEmployees
-                : 0;
-            const totalEmployees = stats.totalEmployees !== undefined
-                ? stats.totalEmployees
-                : 0;
+            const percentage = stats.workforcePercent !== undefined ?
+                stats.workforcePercent :
+                0;
+            const activeEmployees = stats.activeEmployees !== undefined ?
+                stats.activeEmployees :
+                0;
+            const totalEmployees = stats.totalEmployees !== undefined ?
+                stats.totalEmployees :
+                0;
 
             const percentageEl = document.getElementById('workforcePercentage');
-            const subtextEl    = document.getElementById('workforceSubtext');
+            const subtextEl = document.getElementById('workforceSubtext');
             const progressBarEl = document.getElementById('workforceProgressBar');
 
             if (percentageEl) percentageEl.textContent = percentage + '%';
@@ -416,14 +423,19 @@
         currentLeaveId: null,
 
         loadPendingApprovals() {
-            const url = (window._dashRoutes && window._dashRoutes.pendingApprovals)
-                ? window._dashRoutes.pendingApprovals
-                : '/admin/dashboard/pending-approvals';
+            const url = (window._dashRoutes && window._dashRoutes.pendingApprovals) ?
+                window._dashRoutes.pendingApprovals :
+                '/admin/dashboard/pending-approvals';
 
             fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-            })
-                .then(function (res) { return res.json(); })
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function (res) {
+                    return res.json();
+                })
                 .then(function (json) {
                     const loader = document.getElementById('approvalsLoader');
                     if (loader) loader.remove();
@@ -458,34 +470,34 @@
                 div.setAttribute('data-approval-id', item.id);
                 div.innerHTML =
                     '<div class="d-flex align-items-center justify-content-between">' +
-                        '<div class="d-flex align-items-center flex-grow-1">' +
-                            '<input type="checkbox" class="form-check-input approval-checkbox approval-item-checkbox" value="' + item.id + '">' +
-                            '<div class="employee-avatar me-2">' + DashboardApprovals.esc(item.initials) + '</div>' +
-                            '<div class="flex-grow-1">' +
-                                '<h6 class="mb-0 small">' + DashboardApprovals.esc(item.name) + '</h6>' +
-                                '<small class="text-muted">' + DashboardApprovals.esc(item.leave_type) + '</small>' +
-                                '<div class="small text-muted">Requested: ' + DashboardApprovals.esc(item.request_date) + '</div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="d-flex gap-2">' +
-                            '<button class="btn btn-sm btn-outline-secondary rounded-3 border view-btn" title="View Reason"' +
-                                ' data-id="' + item.id + '"' +
-                                ' data-name="' + DashboardApprovals.esc(item.name) + '"' +
-                                ' data-initials="' + DashboardApprovals.esc(item.initials) + '"' +
-                                ' data-leave-type="' + DashboardApprovals.esc(item.leave_type) + '"' +
-                                ' data-request-date="' + DashboardApprovals.esc(item.request_date) + '"' +
-                                ' data-start-date="' + DashboardApprovals.esc(item.start_date) + '"' +
-                                ' data-end-date="' + DashboardApprovals.esc(item.end_date) + '"' +
-                                ' data-reason="' + DashboardApprovals.esc(item.reason) + '">' +
-                                '<i class="bi bi-eye"></i>' +
-                            '</button>' +
-                            '<button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn" data-id="' + item.id + '" title="Approve">' +
-                                '<i class="bi bi-check-lg"></i>' +
-                            '</button>' +
-                            '<button class="btn btn-sm btn-danger border-0 bg-main rounded-3 reject-btn" data-id="' + item.id + '" title="Reject">' +
-                                '<i class="bi bi-x-lg"></i>' +
-                            '</button>' +
-                        '</div>' +
+                    '<div class="d-flex align-items-center flex-grow-1">' +
+                    '<input type="checkbox" class="form-check-input approval-checkbox approval-item-checkbox" value="' + item.id + '">' +
+                    '<div class="employee-avatar me-2">' + DashboardApprovals.esc(item.initials) + '</div>' +
+                    '<div class="flex-grow-1">' +
+                    '<h6 class="mb-0 small">' + DashboardApprovals.esc(item.name) + '</h6>' +
+                    '<small class="text-muted">' + DashboardApprovals.esc(item.leave_type) + '</small>' +
+                    '<div class="small text-muted">Requested: ' + DashboardApprovals.esc(item.request_date) + '</div>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="d-flex gap-2">' +
+                    '<button class="btn btn-sm btn-outline-secondary rounded-3 border view-btn" title="View Reason"' +
+                    ' data-id="' + item.id + '"' +
+                    ' data-name="' + DashboardApprovals.esc(item.name) + '"' +
+                    ' data-initials="' + DashboardApprovals.esc(item.initials) + '"' +
+                    ' data-leave-type="' + DashboardApprovals.esc(item.leave_type) + '"' +
+                    ' data-request-date="' + DashboardApprovals.esc(item.request_date) + '"' +
+                    ' data-start-date="' + DashboardApprovals.esc(item.start_date) + '"' +
+                    ' data-end-date="' + DashboardApprovals.esc(item.end_date) + '"' +
+                    ' data-reason="' + DashboardApprovals.esc(item.reason) + '">' +
+                    '<i class="bi bi-eye"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn" data-id="' + item.id + '" title="Approve">' +
+                    '<i class="bi bi-check-lg"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-sm btn-danger border-0 bg-main rounded-3 reject-btn" data-id="' + item.id + '" title="Reject">' +
+                    '<i class="bi bi-x-lg"></i>' +
+                    '</button>' +
+                    '</div>' +
                     '</div>';
                 list.appendChild(div);
             });
@@ -516,7 +528,9 @@
             const bulkApproveBtn = document.getElementById('bulkApproveBtn');
             if (bulkApproveBtn) {
                 bulkApproveBtn.onclick = function () {
-                    const ids = Array.from(document.querySelectorAll('.approval-checkbox:checked')).map(function (cb) { return cb.value; });
+                    const ids = Array.from(document.querySelectorAll('.approval-checkbox:checked')).map(function (cb) {
+                        return cb.value;
+                    });
                     if (ids.length === 0) return;
                     if (ids.length > 10) {
                         DashboardUtils.showAlert('You can only approve up to 10 requests at once.');
@@ -534,21 +548,33 @@
             const bulkBtn = document.getElementById('bulkApproveBtn');
             const countSpan = document.getElementById('selectedCount');
             if (checked > 0) {
-                if (bulkBtn) { bulkBtn.classList.remove('d-none'); bulkBtn.disabled = false; }
+                if (bulkBtn) {
+                    bulkBtn.classList.remove('d-none');
+                    bulkBtn.disabled = false;
+                }
                 if (countSpan) countSpan.textContent = checked;
             } else {
-                if (bulkBtn) { bulkBtn.classList.add('d-none'); bulkBtn.disabled = true; }
+                if (bulkBtn) {
+                    bulkBtn.classList.add('d-none');
+                    bulkBtn.disabled = true;
+                }
             }
         },
 
         updateSelectAllCheckbox() {
-            const total   = document.querySelectorAll('.approval-checkbox').length;
+            const total = document.querySelectorAll('.approval-checkbox').length;
             const checked = document.querySelectorAll('.approval-checkbox:checked').length;
             const selectAll = document.getElementById('bulkApproveAll');
             if (!selectAll) return;
-            if (checked === 0) { selectAll.indeterminate = false; selectAll.checked = false; }
-            else if (checked === total) { selectAll.indeterminate = false; selectAll.checked = true; }
-            else { selectAll.indeterminate = true; }
+            if (checked === 0) {
+                selectAll.indeterminate = false;
+                selectAll.checked = false;
+            } else if (checked === total) {
+                selectAll.indeterminate = false;
+                selectAll.checked = true;
+            } else {
+                selectAll.indeterminate = true;
+            }
         },
 
         initApprovalButtons() {
@@ -594,23 +620,27 @@
         },
 
         updateStatusApi(id, status) {
-            const baseUrl = (window._dashRoutes && window._dashRoutes.leaveRequestStatus)
-                ? window._dashRoutes.leaveRequestStatus
-                : '/admin/leave-request/{id}/status';
-            const url  = baseUrl.replace('{id}', id);
+            const baseUrl = (window._dashRoutes && window._dashRoutes.leaveRequestStatus) ?
+                window._dashRoutes.leaveRequestStatus :
+                '/admin/leave-request/{id}/status';
+            const url = baseUrl.replace('{id}', id);
             const csrf = window._csrfToken || '';
 
             fetch(url, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ status: status })
-            })
-                .then(function (res) { return res.json(); })
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: status
+                    })
+                })
+                .then(function (res) {
+                    return res.json();
+                })
                 .then(function (json) {
                     if (json.success !== false) {
                         DashboardApprovals.removeItem(id);
@@ -649,9 +679,9 @@
         },
 
         updatePendingCount() {
-            const items  = document.querySelectorAll('.approval-item').length;
-            const badge  = document.getElementById('pendingApprovalsBadge');
-            const empty  = document.getElementById('pendingApprovalsEmpty');
+            const items = document.querySelectorAll('.approval-item').length;
+            const badge = document.getElementById('pendingApprovalsBadge');
+            const empty = document.getElementById('pendingApprovalsEmpty');
             const header = document.getElementById('bulkApproveHeader');
 
             if (badge) badge.textContent = items;
@@ -667,34 +697,34 @@
 
         viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason) {
             this.currentLeaveId = id;
-            var avatarEl      = document.getElementById('slideEmployeeAvatar');
-            var nameEl        = document.getElementById('slideEmployeeName');
-            var typeEl        = document.getElementById('slideLeaveType');
+            var avatarEl = document.getElementById('slideEmployeeAvatar');
+            var nameEl = document.getElementById('slideEmployeeName');
+            var typeEl = document.getElementById('slideLeaveType');
             var requestDateEl = document.getElementById('slideRequestDate');
-            var startDateEl   = document.getElementById('slideStartDate');
-            var endDateEl     = document.getElementById('slideEndDate');
-            var reasonEl      = document.getElementById('slideReason');
+            var startDateEl = document.getElementById('slideStartDate');
+            var endDateEl = document.getElementById('slideEndDate');
+            var reasonEl = document.getElementById('slideReason');
 
-            if (avatarEl)      avatarEl.textContent      = initials || '';
-            if (nameEl)        nameEl.textContent        = name || '';
-            if (typeEl)        typeEl.textContent        = leaveType || '';
+            if (avatarEl) avatarEl.textContent = initials || '';
+            if (nameEl) nameEl.textContent = name || '';
+            if (typeEl) typeEl.textContent = leaveType || '';
             if (requestDateEl) requestDateEl.textContent = requestDate || '';
-            if (startDateEl)   startDateEl.textContent   = startDate || '';
-            if (endDateEl)     endDateEl.textContent     = endDate || '';
-            if (reasonEl)      reasonEl.textContent      = reason || '';
+            if (startDateEl) startDateEl.textContent = startDate || '';
+            if (endDateEl) endDateEl.textContent = endDate || '';
+            if (reasonEl) reasonEl.textContent = reason || '';
 
             var backdrop = document.getElementById('slideOverBackdrop');
-            var panel    = document.getElementById('slideOverPanel');
+            var panel = document.getElementById('slideOverPanel');
             if (backdrop) backdrop.classList.add('show');
-            if (panel)    panel.classList.add('show');
-            document.body.style.overflow = 'hidden';
+            if (panel) panel.classList.add('show');
+            document.body.style.overflow = '';
         },
 
         closeSlideOver() {
             var backdrop = document.getElementById('slideOverBackdrop');
-            var panel    = document.getElementById('slideOverPanel');
+            var panel = document.getElementById('slideOverPanel');
             if (backdrop) backdrop.classList.remove('show');
-            if (panel)    panel.classList.remove('show');
+            if (panel) panel.classList.remove('show');
             document.body.style.overflow = '';
             this.currentLeaveId = null;
         },
@@ -717,7 +747,9 @@
 
         initSlideOverKeyboard() {
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') { DashboardApprovals.closeSlideOver(); }
+                if (e.key === 'Escape') {
+                    DashboardApprovals.closeSlideOver();
+                }
             });
         }
     };
@@ -727,9 +759,9 @@
     // ============================================
     const DashboardHolidays = {
         load(period) {
-            const url = (window._dashRoutes && window._dashRoutes.upcomingHolidays)
-                ? window._dashRoutes.upcomingHolidays + '?period=' + period
-                : '/admin/dashboard/upcoming-holidays?period=' + period;
+            const url = (window._dashRoutes && window._dashRoutes.upcomingHolidays) ?
+                window._dashRoutes.upcomingHolidays + '?period=' + period :
+                '/admin/dashboard/upcoming-holidays?period=' + period;
 
             const list = document.getElementById('holidaysList');
             if (list) {
@@ -741,9 +773,14 @@
             if (empty) empty.classList.add('d-none');
 
             fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-            })
-                .then(function (res) { return res.json(); })
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function (res) {
+                    return res.json();
+                })
                 .then(function (json) {
                     if (!json.success) return;
                     DashboardHolidays.render(json.data);
@@ -756,7 +793,7 @@
         },
 
         render(items) {
-            const list  = document.getElementById('holidaysList');
+            const list = document.getElementById('holidaysList');
             const badge = document.getElementById('holidaysBadge');
             const empty = document.getElementById('holidaysEmpty');
             if (!list) return;
@@ -772,28 +809,28 @@
             if (empty) empty.classList.add('d-none');
 
             items.forEach(function (item, idx) {
-                var isLast     = idx === items.length - 1;
-                var borderCls  = isLast ? '' : 'border-bottom';
-                var div        = document.createElement('div');
-                div.className  = 'holiday-item ' + borderCls + ' p-3';
-                var ongoingBadge = item.is_ongoing
-                    ? '<span class="badge bg-success ms-1">Ongoing</span>'
-                    : '';
-                div.innerHTML  =
+                var isLast = idx === items.length - 1;
+                var borderCls = isLast ? '' : 'border-bottom';
+                var div = document.createElement('div');
+                div.className = 'holiday-item ' + borderCls + ' p-3';
+                var ongoingBadge = item.is_ongoing ?
+                    '<span class="badge bg-success ms-1">Ongoing</span>' :
+                    '';
+                div.innerHTML =
                     '<div class="d-flex align-items-center justify-content-between">' +
-                        '<div class="d-flex align-items-center">' +
-                            '<div class="holiday-date me-3 text-center">' +
-                                '<div class="fw-bold text-main">' + DashboardHolidays.esc(item.day) + '</div>' +
-                                '<small class="text-muted">' + DashboardHolidays.esc(item.month) + '</small>' +
-                            '</div>' +
-                            '<div>' +
-                                '<h6 class="mb-0 small">' + DashboardHolidays.esc(item.name) + ongoingBadge + '</h6>' +
-                                '<small class="text-muted">' + DashboardHolidays.esc(item.type) + '</small>' +
-                            '</div>' +
-                        '</div>' +
-                        '<span class="badge ' + DashboardHolidays.esc(item.badge_class) + '">' +
-                            DashboardHolidays.esc(item.scope_label) +
-                        '</span>' +
+                    '<div class="d-flex align-items-center">' +
+                    '<div class="holiday-date me-3 text-center">' +
+                    '<div class="fw-bold text-main">' + DashboardHolidays.esc(item.day) + '</div>' +
+                    '<small class="text-muted">' + DashboardHolidays.esc(item.month) + '</small>' +
+                    '</div>' +
+                    '<div>' +
+                    '<h6 class="mb-0 small">' + DashboardHolidays.esc(item.name) + ongoingBadge + '</h6>' +
+                    '<small class="text-muted">' + DashboardHolidays.esc(item.type) + '</small>' +
+                    '</div>' +
+                    '</div>' +
+                    '<span class="badge ' + DashboardHolidays.esc(item.badge_class) + '">' +
+                    DashboardHolidays.esc(item.scope_label) +
+                    '</span>' +
                     '</div>';
                 list.appendChild(div);
             });
@@ -1021,4 +1058,23 @@
     } else {
         initDashboard();
     }
+
+    //helper function for page reload
+    function forceCloseSlideOver() {
+        const backdrop = document.getElementById('slideOverBackdrop');
+        const panel = document.getElementById('slideOverPanel');
+
+        if (backdrop) backdrop.classList.remove('show');
+        if (panel) panel.classList.remove('show');
+
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        forceCloseSlideOver();
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        forceCloseSlideOver();
+    });
 })();
