@@ -42,7 +42,7 @@
             <div class="mb-3">
                 <label for="editParentDepartmentId" class="form-label text-white">Parent Department</label>
                 <select name="parent_department_id" id="editParentDepartmentId" class="form-select">
-                    <option value="">None</option>
+                    <option value="">Please select SBU first...</option>
                 </select>
                 <div class="invalid-feedback" id="editParentDepartmentIdError"></div>
             </div>

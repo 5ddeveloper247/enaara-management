@@ -124,9 +124,14 @@
             }
             
             var allSbus = [];
+            var allParentDepartments = [];
 
             $('#editOrganizationId').on('change', function() {
                 updateSbuDropdown($(this).val());
+            });
+
+            $('#editSbuId').on('change', function() {
+                updateParentDepartmentDropdown($(this).val());
             });
 
             function updateSbuDropdown(orgId, selectedSbuId = null) {
@@ -150,6 +155,32 @@
                     }
                 } else {
                     sbuSelect.prop('disabled', true);
+                }
+                
+                // When Organization changes, reset Parent Department dropdown
+                updateParentDepartmentDropdown('');
+            }
+
+            function updateParentDepartmentDropdown(sbuId, selectedParentId = null) {
+                var parentSelect = $('#editParentDepartmentId');
+                var currentDeptId = $('#editDepartmentId').val(); // Don't show current dept as its own parent
+
+                parentSelect.empty().append('<option value="">Please select SBU first...</option>');
+                
+                if (sbuId) {
+                    parentSelect.empty().append('<option value="">None</option>');
+                    var filteredDepts = allParentDepartments.filter(function(dept) {
+                        return dept.sbu_id == sbuId && dept.id != currentDeptId;
+                    });
+                    
+                    filteredDepts.forEach(function(dept) {
+                        var isSelected = (selectedParentId != null && String(dept.id) === String(selectedParentId));
+                        var selectedAttr = isSelected ? 'selected="selected"' : '';
+                        parentSelect.append('<option value="' + dept.id + '" ' + selectedAttr + '>' + dept.name + '</option>');
+                    });
+                    parentSelect.prop('disabled', false);
+                } else {
+                    parentSelect.prop('disabled', true);
                 }
             }
             
@@ -175,14 +206,10 @@
                         });
                         
                         allSbus = response.sbus;
-                        updateSbuDropdown('');
+                        allParentDepartments = response.parentDepartments;
                         
-                        var parentSelect = $('#editParentDepartmentId');
-                        parentSelect.empty().append('<option value="">None</option>');
-                        response.parentDepartments.forEach(function(parent) {
-                            var orgName = parent.organization ? ' (' + parent.organization.name + ')' : '';
-                            parentSelect.append('<option value="' + parent.id + '">' + parent.name + orgName + '</option>');
-                        });
+                        updateSbuDropdown('');
+                        updateParentDepartmentDropdown('');
                         
                         $('#editDepartmentName').val('');
                         $('#editDepartmentCode').val('');
@@ -228,15 +255,10 @@
                         });
                         
                         allSbus = response.sbus;
-                        updateSbuDropdown(response.department.organization_id, response.department.sbu_id);
+                        allParentDepartments = response.parentDepartments;
                         
-                        var parentSelect = $('#editParentDepartmentId');
-                        parentSelect.empty().append('<option value="">None</option>');
-                        response.parentDepartments.forEach(function(parent) {
-                            var selected = parent.id == response.department.parent_department_id ? 'selected' : '';
-                            var orgName = parent.organization ? ' (' + parent.organization.name + ')' : '';
-                            parentSelect.append('<option value="' + parent.id + '" ' + selected + '>' + parent.name + orgName + '</option>');
-                        });
+                        updateSbuDropdown(response.department.organization_id, response.department.sbu_id);
+                        updateParentDepartmentDropdown(response.department.sbu_id, response.department.parent_department_id);
                         
                         $('.invalid-feedback').text('').hide();
                         $('.form-select, .form-control').removeClass('is-invalid');

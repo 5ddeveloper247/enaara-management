@@ -79,7 +79,7 @@ class DepartmentController extends Controller
     {
         $organizations = $this->departmentService->getOrganizationsForFilter();
         $sbus = $this->departmentService->getSbusForFilter();
-        $departments = Department::with('organization')->orderBy('name')->get(['id', 'name', 'organization_id']);
+        $departments = Department::with('organization')->orderBy('name')->get(['id', 'name', 'organization_id', 'sbu_id']);
         
         if (request()->expectsJson()) {
             return response()->json([
@@ -148,7 +148,7 @@ class DepartmentController extends Controller
             $parentDepartments = Department::with('organization')
                 ->where('id', '!=', $id)
                 ->orderBy('name')
-                ->get(['id', 'name', 'organization_id']);
+                ->get(['id', 'name', 'organization_id', 'sbu_id']);
             
             return response()->json([
                 'department' => $department,
