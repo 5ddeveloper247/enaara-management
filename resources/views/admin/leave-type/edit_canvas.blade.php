@@ -20,6 +20,14 @@
             </div>
 
             <div class="mb-3">
+                <label for="editSbuId" class="form-label text-white">SBU <span class="text-danger">*</span></label>
+                <select name="sbu_id" id="editSbuId" class="form-select" required>
+                    <option value="">Please select Organization first...</option>
+                </select>
+                <div class="invalid-feedback" id="editSbuIdError"></div>
+            </div>
+
+            <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <label class="form-label text-white mb-0">Departments</label>
                     <div class="form-check form-check-inline small">

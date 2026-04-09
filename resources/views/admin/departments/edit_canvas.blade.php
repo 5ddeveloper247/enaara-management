@@ -22,7 +22,7 @@
             <div class="mb-3">
                 <label for="editSbuId" class="form-label text-white">SBU <span class="text-danger">*</span></label>
                 <select name="sbu_id" id="editSbuId" class="form-select" required>
-                    <option value="">Select SBU</option>
+                    <option value="">Please select Organization first...</option>
                 </select>
                 <div class="invalid-feedback" id="editSbuIdError"></div>
             </div>

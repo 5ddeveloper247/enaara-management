@@ -85,6 +85,7 @@
                             <th>Name</th>
                             <th>Code</th>
                             <th>Organization</th>
+                            <th>SBU</th>
                             <th>Department</th>
                             <th>Annual Quota</th>
                             <th>Status</th>
@@ -105,6 +106,13 @@
                             <td>
                                 @if($lt->organization)
                                 <span class="badge px-3 rounded-1 bg-primary">{{ $lt->organization->name }}</span>
+                                @else
+                                <span class="text-muted">—</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($lt->sbu)
+                                <span class="badge px-3 rounded-1 bg-secondary">{{ $lt->sbu->name }}</span>
                                 @else
                                 <span class="text-muted">—</span>
                                 @endif
@@ -280,12 +288,44 @@
             });
         });
 
-        function loadDepartments(organizationId, selectedDepartmentIds) {
+        function loadSbus(organizationId, selectedSbuId) {
+            var sbuSelect = $('#editSbuId');
+            
+            if (!organizationId) {
+                sbuSelect.empty().append('<option value="">Please select Organization first...</option>');
+                return;
+            }
+
+            sbuSelect.empty().append('<option value="">Loading SBUs...</option>');
+
+            $.ajax({
+                url: '{{ route("admin.sbu.index") }}',
+                method: 'GET',
+                data: { organization_id: organizationId },
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    sbuSelect.empty().append('<option value="">Select SBU</option>');
+                    if (response.sbus) {
+                        response.sbus.forEach(function(sbu) {
+                            var selected = sbu.id == selectedSbuId ? 'selected' : '';
+                            sbuSelect.append('<option value="' + sbu.id + '" ' + selected + '>' + sbu.name + '</option>');
+                        });
+                    }
+                }
+            });
+        }
+
+        function loadDepartments(sbuId, selectedDepartmentIds) {
             var container = $('#departmentCheckboxes');
             selectedDepartmentIds = selectedDepartmentIds || [];
 
-            if (!organizationId) {
-                container.empty().append('<div class="text-muted small">Select an organization first...</div>');
+            if (!sbuId) {
+                var orgId = $('#editOrganizationId').val();
+                var msg = orgId ? 'Select an SBU first...' : 'Select an organization first...';
+                container.empty().append('<div class="text-muted small">' + msg + '</div>');
                 return;
             }
 
@@ -294,6 +334,7 @@
             $.ajax({
                 url: '{{ url("/admin/department") }}',
                 method: 'GET',
+                data: { sbu_id: sbuId },
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
@@ -302,27 +343,20 @@
                     container.empty();
 
                     if (response.departments && response.departments.length > 0) {
-                        var anyAdded = false;
                         response.departments.forEach(function(dept) {
-                            if (dept.organization_id == organizationId) {
-                                var checked = selectedDepartmentIds.includes(dept.id) ? 'checked' : '';
-                                var html = `
-                                        <div class="form-check mb-1">
-                                            <input class="form-check-input dept-checkbox" type="checkbox" value="${dept.id}" id="deptCheck_${dept.id}" ${checked}>
-                                            <label class="form-check-label small text-dark" for="deptCheck_${dept.id}">
-                                                ${dept.name}
-                                            </label>
-                                        </div>
-                                    `;
-                                container.append(html);
-                                anyAdded = true;
-                            }
+                            var checked = selectedDepartmentIds.includes(dept.id) ? 'checked' : '';
+                            var html = `
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input dept-checkbox" type="checkbox" value="${dept.id}" id="deptCheck_${dept.id}" ${checked}>
+                                        <label class="form-check-label small text-dark" for="deptCheck_${dept.id}">
+                                            ${dept.name}
+                                        </label>
+                                    </div>
+                                `;
+                            container.append(html);
                         });
-                        if (!anyAdded) {
-                            container.append('<div class="text-muted small">No departments found for this organization.</div>');
-                        }
                     } else {
-                        container.append('<div class="text-muted small">No departments available.</div>');
+                        container.append('<div class="text-muted small">No departments found for this SBU.</div>');
                     }
                 },
                 error: function() {
@@ -333,8 +367,15 @@
 
         $('#editOrganizationId').on('change', function() {
             var orgId = $(this).val();
+            loadSbus(orgId, null);
+            $('#editSbuId').empty().append('<option value="">Select SBU</option>');
+            $('#departmentCheckboxes').empty().append('<div class="text-muted small">Select an SBU first...</div>');
+        });
+
+        $('#editSbuId').on('change', function() {
+            var sbuId = $(this).val();
             $('#selectAllDepartments').prop('checked', false);
-            loadDepartments(orgId, null);
+            loadDepartments(sbuId, null);
         });
 
         // Select All Departments Handler
@@ -368,7 +409,7 @@
                     $('#editLeaveTypeCode').val('');
                     $('#editAnnualQuota').val('0');
                     $('#editLeaveTypeIsActive').prop('checked', true);
-                    $('#editDepartmentId').empty();
+                    $('#editSbuId').empty().append('<option value="">Please select Organization first...</option>');
                     $('#departmentCheckboxes').empty().append('<div class="text-muted small">Select an organization first...</div>');
 
                     $('.invalid-feedback').text('').hide();
@@ -411,9 +452,12 @@
                     });
 
                     if (response.leaveType.organization_id) {
-                        loadDepartments(response.leaveType.organization_id, response.department_ids);
+                        loadSbus(response.leaveType.organization_id, response.leaveType.sbu_id);
+                    }
+                    if (response.leaveType.sbu_id) {
+                        loadDepartments(response.leaveType.sbu_id, response.department_ids);
                     } else {
-                        $('#editDepartmentId').empty().append('<option value="">Select Department</option>');
+                        $('#departmentCheckboxes').empty().append('<div class="text-muted small">Select an SBU first...</div>');
                     }
 
                     $('.invalid-feedback').text('').hide();
@@ -437,6 +481,7 @@
 
             var formData = {
                 organization_id: $('#editOrganizationId').val(),
+                sbu_id: $('#editSbuId').val(),
                 department_ids: selectedDepts,
                 name: $('#editLeaveTypeName').val(),
                 code: $('#editLeaveTypeCode').val(),
@@ -485,7 +530,8 @@
                         var errorList = '';
                         var fieldMap = {
                             'organization_id': 'editOrganizationId',
-                            'department_id': 'editDepartmentId',
+                            'sbu_id': 'editSbuId',
+                            'department_ids': 'editDepartmentId',
                             'name': 'editLeaveTypeName',
                             'code': 'editLeaveTypeCode',
                             'annual_quota': 'editAnnualQuota',

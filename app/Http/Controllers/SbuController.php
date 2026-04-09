@@ -14,11 +14,28 @@ class SbuController extends Controller
         private SbuService $sbuService
     ) {}
 
-    public function index(): View
+    public function index(): View|\Illuminate\Http\JsonResponse
     {
         $sbus = $this->sbuService->getList();
         $counts = $this->sbuService->getCounts();
         $organizations = Organization::orderBy('name')->get();
+
+        if (request()->expectsJson() || request()->ajax()) {
+            $organizationId = request()->get('organization_id');
+            if ($organizationId) {
+                $filteredSbus = $sbus->filter(function($sbu) use ($organizationId) {
+                    return $sbu->organization_id == $organizationId;
+                })->map(function($sbu) {
+                    return [
+                        'id' => $sbu->id,
+                        'name' => $sbu->name,
+                        'organization_id' => $sbu->organization_id,
+                    ];
+                })->values();
+                return response()->json(['sbus' => $filteredSbus]);
+            }
+            return response()->json(['sbus' => $sbus]);
+        }
 
         return view('admin.sbu.index', [
             'sbus' => $sbus,

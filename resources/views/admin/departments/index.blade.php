@@ -131,9 +131,10 @@
 
             function updateSbuDropdown(orgId, selectedSbuId = null) {
                 var sbuSelect = $('#editSbuId');
-                sbuSelect.empty().append('<option value="">Select SBU</option>');
+                sbuSelect.empty().append('<option value="">Please select Organization first...</option>');
                 
                 if (orgId) {
+                    sbuSelect.empty().append('<option value="">Select SBU</option>');
                     var filteredSbus = allSbus.filter(function(sbu) {
                         return sbu.organization_id == orgId;
                     });
@@ -148,7 +149,7 @@
                         sbuSelect.val(selectedSbuId);
                     }
                 } else {
-                    sbuSelect.prop('disabled', true).attr('title', 'Please select the organization first');
+                    sbuSelect.prop('disabled', true);
                 }
             }
             

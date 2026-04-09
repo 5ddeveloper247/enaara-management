@@ -51,6 +51,7 @@ class LeaveTypeController extends Controller
         try {
             $validated = $request->validate([
                 'organization_id' => 'required|exists:organizations,id',
+                'sbu_id' => 'required|exists:sbus,id',
                 'department_ids' => 'nullable|array',
                 'department_ids.*' => 'exists:departments,id',
                 'name' => 'required|string|max:255',
@@ -68,6 +69,7 @@ class LeaveTypeController extends Controller
                 
                 $lt = $this->leaveTypeService->create([
                     'organization_id' => $orgId,
+                    'sbu_id' => $validated['sbu_id'],
                     'name' => $validated['name'],
                     'code' => $validated['code'],
                     'annual_quota' => $validated['annual_quota'],
@@ -154,6 +156,7 @@ class LeaveTypeController extends Controller
         try {
             $validated = $request->validate([
                 'organization_id' => 'required|exists:organizations,id',
+                'sbu_id' => 'required|exists:sbus,id',
                 'department_ids' => 'nullable|array',
                 'department_ids.*' => 'exists:departments,id',
                 'name' => 'required|string|max:255',
@@ -171,6 +174,7 @@ class LeaveTypeController extends Controller
 
                 $this->leaveTypeService->update($leaveType, [
                     'organization_id' => $orgId,
+                    'sbu_id' => $validated['sbu_id'],
                     'name' => $validated['name'],
                     'code' => $validated['code'],
                     'annual_quota' => $validated['annual_quota'],

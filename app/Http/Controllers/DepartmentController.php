@@ -27,6 +27,21 @@ class DepartmentController extends Controller
         
         if (request()->expectsJson() || request()->wantsJson()) {
             $organizationId = request()->get('organization_id');
+            $sbuId = request()->get('sbu_id');
+            
+            if ($sbuId) {
+                $filteredDepartments = $departments->filter(function($dept) use ($sbuId) {
+                    return $dept->sbu_id == $sbuId;
+                })->map(function($dept) {
+                    return [
+                        'id' => $dept->id,
+                        'name' => $dept->name,
+                        'sbu_id' => $dept->sbu_id,
+                    ];
+                })->values();
+                return response()->json(['departments' => $filteredDepartments]);
+            }
+            
             if ($organizationId) {
                 $filteredDepartments = $departments->filter(function($dept) use ($organizationId) {
                     return $dept->organization_id == $organizationId;
