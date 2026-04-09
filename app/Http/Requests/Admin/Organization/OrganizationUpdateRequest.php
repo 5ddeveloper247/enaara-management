@@ -33,14 +33,14 @@ class OrganizationUpdateRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:255',
+                'max:50',
                 Rule::unique('organizations', 'name')->ignore($organizationId),
             ],
 
             'code' => [
                 'nullable',
                 'string',
-                'max:64',
+                'max:10',
                 Rule::unique('organizations', 'code')->ignore($organizationId),
             ],
 
@@ -53,12 +53,12 @@ class OrganizationUpdateRequest extends FormRequest
             'tax_no' => [
                 'nullable',
                 'string',
-                'max:64',
+                'max:10',
                 Rule::unique('organizations', 'tax_no')->ignore($organizationId),
             ],
 
-            'description' => 'nullable|string|max:5000',
-            'address'     => 'nullable|string|max:50',
+            'description' => 'nullable|string|max:255',
+            'address'     => 'nullable|string|max:255',
 
             'is_active' => [
                 'required',
@@ -82,6 +82,8 @@ class OrganizationUpdateRequest extends FormRequest
             'email.email' => 'Please enter a valid email address.',
             'is_active.required' => 'Status is required.',
             'is_active.boolean' => 'Status must be active or inactive.',
+            'description.max' => 'Description must not exceed 255 characters.',
+            'address.max' => 'Address must not exceed 255 characters.',
         ];
     }
 }

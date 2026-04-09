@@ -22,9 +22,9 @@ class SbuFloorStoreRequest extends FormRequest
         return [
             'sbu_id' => ['required', 'integer', 'exists:sbus,id'],
 
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:50'],
 
-            'floor_number' => ['nullable', 'numeric', 'min:-10', 'max:1000'],
+            'floor_number' => ['nullable', 'numeric', 'min:-10', 'max:10'],
 
             'floor_type' => [
                 'required',

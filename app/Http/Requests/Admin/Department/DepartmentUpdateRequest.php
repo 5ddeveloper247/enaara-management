@@ -22,7 +22,7 @@ class DepartmentUpdateRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:255',
+                'max:50',
                 Rule::unique('departments')
                     ->where(function ($query) {
                         return $query->where('organization_id', $this->organization_id);
@@ -32,7 +32,7 @@ class DepartmentUpdateRequest extends FormRequest
             'code' => [
                 'nullable',
                 'string',
-                'max:32',
+                'max:10',
                 Rule::unique('departments')
                     ->where(function ($query) {
                         return $query->where('organization_id', $this->organization_id);
@@ -48,7 +48,7 @@ class DepartmentUpdateRequest extends FormRequest
                     }
                 },
             ],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

@@ -6,34 +6,25 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class OrganizationStoreRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return true; // IMPORTANT: allow request
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     */
     public function rules(): array
     {
         return [
-            'parent_id'   => 'nullable|exists:organizations,id',
-            'name'        => 'required|string|max:255|unique:organizations,name',
-            'code'        => 'nullable|string|max:64|unique:organizations,code',
-            'email'       => 'nullable|email|max:255',
-            'tax_no'      => 'nullable|string|max:64|unique:organizations,tax_no',
-            'description' => 'nullable|string|max:5000',
-            'address'     => 'nullable|string|max:500',
-            'is_active'   => 'required|boolean',
+            'parent_id'   => ['nullable', 'exists:organizations,id'],
+            'name'        => ['required', 'string', 'max:50', 'unique:organizations,name'],
+            'code'        => ['nullable', 'string', 'max:10', 'unique:organizations,code'],
+            'email'       => ['nullable', 'email', 'max:255'],
+            'tax_no'      => ['nullable', 'string', 'max:10', 'unique:organizations,tax_no'],
+            'description' => ['nullable', 'string', 'max:255'], // ✅ limit applied
+            'address'     => ['nullable', 'string', 'max:255'],
+            'is_active'   => ['required', 'boolean'],
         ];
     }
 
-    /**
-     * Custom messages (optional but good practice)
-     */
     public function messages(): array
     {
         return [
@@ -43,6 +34,9 @@ class OrganizationStoreRequest extends FormRequest
             'tax_no.unique' => 'This tax number is already registered.',
             'parent_id.exists' => 'Selected parent company does not exist.',
             'email.email'   => 'Please enter a valid email address.',
+
+            // ✅ NEW MESSAGE
+            'description.max' => 'Description must not exceed 255 characters.',
         ];
     }
 }

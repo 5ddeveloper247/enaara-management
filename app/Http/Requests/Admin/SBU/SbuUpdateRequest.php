@@ -22,11 +22,11 @@ class SbuUpdateRequest extends FormRequest
         return [
             'organization_id' => ['required', 'integer', 'exists:organizations,id'],
 
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:50'],
 
-            'city' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:50'],
 
-            'address' => ['nullable', 'string', 'max:500'],
+            'address' => ['nullable', 'string', 'max:255'],
 
             'latitude' => [
                 'nullable',
