@@ -24,28 +24,43 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+            'email' => ['required', 'email'],
+            'password' => ['required'],
         ]);
 
-        if (Auth::attempt([
-            'email' => $request->email,
-            'password' => $request->password,
-            'is_active' => 1,
-        ], $request->filled('remember'))) {
-            $request->session()->regenerate();
+        $user = User::where('email', $request->email)->first();
 
-            $user = Auth::user();
-            if ($user && $user->must_change_password) {
-                return redirect()->route('password.first-change');
-            }
-
-            return redirect()->intended(route('admin.dashboard.index'));
+        // ❌ User not found
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials do not match our records.'],
+            ]);
         }
 
-        throw ValidationException::withMessages([
-            'email' => ['The provided credentials do not match our records.'],
-        ]);
+        // ❌ Inactive user
+        if (! $user->is_active) {
+            throw ValidationException::withMessages([
+                'email' => ['Your account is inactive. Please contact admin.'],
+            ]);
+        }
+
+        // ❌ Wrong password
+        if (! Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials do not match our records.'],
+            ]);
+        }
+
+        // ✅ Login
+        Auth::login($user, $request->boolean('remember'));
+
+        $request->session()->regenerate();
+
+        if ($user->must_change_password) {
+            return redirect()->route('password.first-change');
+        }
+
+        return redirect()->intended(route('admin.dashboard.index'));
     }
 
     /**
