@@ -28,7 +28,11 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($request->only('email', 'password'), $request->filled('remember'))) {
+        if (Auth::attempt([
+            'email' => $request->email,
+            'password' => $request->password,
+            'is_active' => 1,
+        ], $request->filled('remember'))) {
             $request->session()->regenerate();
 
             $user = Auth::user();
@@ -87,4 +91,3 @@ class AuthController extends Controller
         return redirect()->route('login')->with('success', 'You have been logged out successfully.');
     }
 }
-
