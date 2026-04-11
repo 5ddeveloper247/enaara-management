@@ -83,7 +83,7 @@
                         <tbody id="familyTable">
                             <tr>
                                 <td>1</td>
-                                <td><input type="text" class="form-control form-control-sm fm-name"></td>
+                                <td><input type="text" class="form-control form-control-sm fm-name" maxlength="70"></td>
                                 <td>
                                     <select class="form-select form-select-sm fm-gender">
                                         <option value="">Select</option>
@@ -92,9 +92,9 @@
                                     </select>
                                 </td>
                                 <td><input type="date" class="form-control form-control-sm fm-dob"></td>
-                                <td><input type="text" class="form-control form-control-sm fm-relation"></td>
-                                <td><input type="text" class="form-control form-control-sm fm-occupation"></td>
-                                <td class="d-flex gap-1">
+                                <td><input type="text" class="form-control form-control-sm fm-relation" maxlength="50"></td>
+                                <td><input type="text" class="form-control form-control-sm fm-occupation" maxlength="100"></td>
+                                <td class="d-flex gap-1 align-items-start justify-content-center">
                                     <button type="button" class="action-btn border-0 text-success bg-success-subtle"
                                         onclick="saveFamilyRow(this)" title="Save">
                                         <i class="bi bi-floppy"></i>
@@ -136,13 +136,13 @@
                         <tbody id="academicTable">
                             <tr>
                                 <td>1</td>
-                                <td><input type="text" class="form-control form-control-sm ac-degree"></td>
-                                <td><input type="text" class="form-control form-control-sm ac-grade"></td>
+                                <td><input type="text" class="form-control form-control-sm ac-degree" maxlength="100"></td>
+                                <td><input type="text" class="form-control form-control-sm ac-grade" maxlength="50"></td>
                                 <td><input type="date" class="form-control form-control-sm ac-start"></td>
                                 <td><input type="date" class="form-control form-control-sm ac-end"></td>
-                                <td><input type="text" class="form-control form-control-sm ac-field"></td>
-                                <td><input type="text" class="form-control form-control-sm ac-institute"></td>
-                                <td class="d-flex gap-1">
+                                <td><input type="text" class="form-control form-control-sm ac-field" maxlength="100"></td>
+                                <td><input type="text" class="form-control form-control-sm ac-institute" maxlength="150"></td>
+                                <td class="d-flex gap-1 align-items-start justify-content-center">
                                     <button type="button" class="action-btn border-0 text-success bg-success-subtle"
                                         onclick="saveAcademicRow(this)" title="Save">
                                         <i class="bi bi-floppy"></i>
@@ -182,13 +182,13 @@
                         <tbody id="employmentTable">
                             <tr>
                                 <td>1</td>
-                                <td><input type="text" class="form-control form-control-sm em-org"></td>
-                                <td><input type="text" class="form-control form-control-sm em-desig"></td>
+                                <td><input type="text" class="form-control form-control-sm em-org" maxlength="150"></td>
+                                <td><input type="text" class="form-control form-control-sm em-desig" maxlength="100"></td>
                                 <td><input type="date" class="form-control form-control-sm em-from"></td>
                                 <td><input type="date" class="form-control form-control-sm em-to"></td>
-                                <td><input type="text" class="form-control form-control-sm em-salary"></td>
-                                <td><input type="text" class="form-control form-control-sm em-reason"></td>
-                                <td class="d-flex gap-1">
+                                <td><input type="text" class="form-control form-control-sm em-salary number-only" maxlength="15" placeholder="0"></td>
+                                <td><input type="text" class="form-control form-control-sm em-reason" maxlength="200"></td>
+                                <td class="d-flex gap-1 align-items-start justify-content-center">
                                     <button type="button" class="action-btn border-0 text-success bg-success-subtle"
                                         onclick="saveEmploymentRow(this)" title="Save">
                                         <i class="bi bi-floppy"></i>
@@ -374,7 +374,7 @@
             <td><input type="date" class="form-control form-control-sm fm-dob"></td>
             <td><input type="text" class="form-control form-control-sm fm-relation"></td>
             <td><input type="text" class="form-control form-control-sm fm-occupation"></td>
-            <td class="d-flex gap-1">
+            <td class="d-flex gap-1 align-items-start justify-content-center">
                 <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveFamilyRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
                 <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
             </td>
@@ -393,7 +393,7 @@
             <td><input type="date" class="form-control form-control-sm ac-end"></td>
             <td><input type="text" class="form-control form-control-sm ac-field"></td>
             <td><input type="text" class="form-control form-control-sm ac-institute"></td>
-            <td class="d-flex gap-1">
+            <td class="d-flex gap-1 align-items-start justify-content-center">
                 <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveAcademicRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
                 <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
             </td>
@@ -410,9 +410,9 @@
             <td><input type="text" class="form-control form-control-sm em-desig"></td>
             <td><input type="date" class="form-control form-control-sm em-from"></td>
             <td><input type="date" class="form-control form-control-sm em-to"></td>
-            <td><input type="text" class="form-control form-control-sm em-salary"></td>
+            <td><input type="text" class="form-control form-control-sm em-salary number-only" maxlength="15" placeholder="0"></td>
             <td><input type="text" class="form-control form-control-sm em-reason"></td>
-            <td class="d-flex gap-1">
+            <td class="d-flex gap-1 align-items-start justify-content-center">
                 <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveEmploymentRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
                 <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
             </td>
@@ -444,21 +444,22 @@
         const dobFormatted = dob ? new Date(dob).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
         const id = 'family-card-' + idx;
         document.getElementById('familyListing').insertAdjacentHTML('beforeend', `
-        <div class="col-md-6 col-lg-4" id="${id}" data-db-id="${dbId || ''}">
-            <div class="card border-1 rounded-3 h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width:45px;height:45px;font-size:1.1rem;">${escCard(initials)}</div>
-                            <div><h6 class="mb-0 fw-semibold small">${escCard(name)}</h6><small class="text-muted small">${escCard(relation || '—')}</small></div>
+        <div class="col-sm-6 col-xl-4" id="${id}" data-db-id="${dbId || ''}">
+            <div class="card border rounded-3 h-100 shadow-none">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:0.9rem;">${escCard(initials)}</div>
+                        <div class="min-w-0 flex-grow-1">
+                            <h6 class="mb-0 fw-semibold small text-dark" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2;" title="${escCard(name)}">${escCard(name)}</h6>
+                            <small class="text-primary d-block mt-1 fw-medium" style="font-size:10px;text-transform:uppercase;letter-spacing:0.02em;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;" title="${escCard(relation || '—')}">${escCard(relation || '—')}</small>
                         </div>
-                        <span class="badge bg-primary" style="font-size:10px;padding:4px 6px;">${escCard(gender || '—')}</span>
+                        <span class="badge bg-secondary flex-shrink-0 align-self-start ms-2" style="font-size:9px;max-width:60px;overflow:hidden;text-overflow:ellipsis;">${escCard(gender || '—')}</span>
                     </div>
-                    <div class="mb-2"><i class="bi bi-calendar me-1 text-main small"></i><small class="text-muted small"><strong>DOB:</strong> ${escCard(dobFormatted)}</small></div>
-                    <div class="mb-2"><i class="bi bi-briefcase me-1 text-main small"></i><small class="text-muted small"><strong>Occupation:</strong> ${escCard(occupation || '—')}</small></div>
-                    <div class="mt-3 pt-3 border-top d-flex justify-content-end gap-1">
-                        <button type="button" class="btn btn-sm btn-outline-primary px-2" title="Edit" onclick="editFamilyCard('${id}', ${idx})"><i class="bi bi-pencil"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger px-2" title="Remove" onclick="removeFamilyCard('${id}', ${idx})"><i class="bi bi-trash"></i></button>
+                    <div class="mb-1 d-flex align-items-center"><i class="bi bi-calendar me-2 text-muted" style="font-size:11px"></i><small class="text-muted" style="font-size:11px"><strong>DOB:</strong> ${escCard(dobFormatted)}</small></div>
+                    <div class="mb-1 d-flex align-items-start"><i class="bi bi-briefcase me-2 text-muted mt-1" style="font-size:11px"></i><small class="text-muted" style="font-size:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="${escCard(occupation || '—')}"><strong>Occupation:</strong> ${escCard(occupation || '—')}</small></div>
+                    <div class="mt-2 pt-2 border-top d-flex justify-content-end gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary px-2 py-0" style="font-size:11px" title="Edit" onclick="editFamilyCard('${id}', ${idx})"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger px-2 py-0" style="font-size:11px" title="Remove" onclick="removeFamilyCard('${id}', ${idx})"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
             </div>
@@ -482,11 +483,11 @@
                 <div class="card-body p-3">
                     <div class="d-flex align-items-start gap-2 mb-2">
                         <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:.9rem;">${escCard(initials)}</div>
-                        <div class="min-w-0 flex-grow-1">
-                            <h6 class="mb-0 fw-semibold small" title="${escCard(degree)}">${escCard(degree)}</h6>
-                            <small class="text-muted" title="${escCard(inst || '—')}">${escCard(inst || '—')}</small>
+                        <div class="min-w-0 flex-grow-1 overflow-hidden">
+                            <h6 class="mb-0 fw-semibold small" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2;" title="${escCard(degree)}">${escCard(degree)}</h6>
+                            <small class="text-muted text-truncate d-block mt-1" title="${escCard(inst || '—')}">${escCard(inst || '—')}</small>
                         </div>
-                        <span class="badge bg-primary flex-shrink-0" style="font-size:10px;">${escCard(grade || '—')}</span>
+                        <span class="badge bg-primary flex-shrink-0 align-self-start ms-2" style="font-size:10px; max-width: 70px; overflow: hidden; text-overflow: ellipsis;">${escCard(grade || '—')}</span>
                     </div>
                     <div class="mb-1 text-truncate"><i class="bi bi-book me-1 text-muted small"></i><small class="text-muted"><strong>Field:</strong> ${escCard(field || '—')}</small></div>
                     <div class="mb-1"><i class="bi bi-calendar me-1 text-muted small"></i><small class="text-muted"><strong>Period:</strong> ${escCard(fmt(start))} – ${escCard(fmt(end))}</small></div>
@@ -510,22 +511,23 @@
         const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
         const id = 'employment-card-' + idx;
         document.getElementById('employmentListing').insertAdjacentHTML('beforeend', `
-        <div class="col-md-6 col-lg-4" id="${id}" data-db-id="${dbId || ''}">
-            <div class="card border-1 rounded-3 h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width:45px;height:45px;font-size:1.1rem;">${escCard(initials)}</div>
-                            <div><h6 class="mb-0 fw-semibold small">${escCard(org)}</h6><small class="text-muted small">${escCard(desig || '—')}</small></div>
+        <div class="col-sm-6 col-xl-4" id="${id}" data-db-id="${dbId || ''}">
+            <div class="card border rounded-3 h-100 shadow-none">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:0.9rem;">${escCard(initials)}</div>
+                        <div class="min-w-0 flex-grow-1">
+                            <h6 class="mb-0 fw-semibold small text-dark" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2;" title="${escCard(org)}">${escCard(org)}</h6>
+                            <small class="text-primary d-block mt-1 fw-medium" style="font-size:10px;text-transform:uppercase;letter-spacing:0.02em;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;" title="${escCard(desig || '—')}">${escCard(desig || '—')}</small>
                         </div>
-                        <span class="badge bg-success" style="font-size:10px;padding:4px 6px;">Past</span>
+                        <span class="badge bg-success flex-shrink-0 align-self-start ms-2" style="font-size:9px;">Past</span>
                     </div>
-                    <div class="mb-2"><i class="bi bi-calendar me-1 text-main small"></i><small class="text-muted small"><strong>Period:</strong> ${escCard(fmt(from))} – ${escCard(fmt(to))}</small></div>
-                    <div class="mb-2"><i class="bi bi-currency-dollar me-1 text-main small"></i><small class="text-muted small"><strong>Salary:</strong> ${escCard(salary || '—')}</small></div>
-                    <div class="mb-2"><i class="bi bi-door-open me-1 text-main small"></i><small class="text-muted small"><strong>Reason:</strong> ${escCard(reason || '—')}</small></div>
-                    <div class="mt-3 pt-3 border-top d-flex justify-content-end gap-1">
-                        <button type="button" class="btn btn-sm btn-outline-primary px-2" title="Edit" onclick="editEmploymentCard('${id}', ${idx})"><i class="bi bi-pencil"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger px-2" title="Remove" onclick="removeEmploymentCard('${id}', ${idx})"><i class="bi bi-trash"></i></button>
+                    <div class="mb-1 d-flex align-items-center"><i class="bi bi-calendar me-2 text-muted" style="font-size:11px"></i><small class="text-muted" style="font-size:11px"><strong>Period:</strong> ${escCard(fmt(from))} – ${escCard(fmt(to))}</small></div>
+                    <div class="mb-1 d-flex align-items-center"><i class="bi bi-wallet2 me-2 text-muted" style="font-size:11px"></i><small class="text-muted" style="font-size:11px"><strong>Salary:</strong> ${escCard(salary || '—')}</small></div>
+                    <div class="mb-1 d-flex align-items-start"><i class="bi bi-door-open me-2 text-muted mt-1" style="font-size:11px"></i><small class="text-muted" style="font-size:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="${escCard(reason || '—')}"><strong>Reason:</strong> ${escCard(reason || '—')}</small></div>
+                    <div class="mt-2 pt-2 border-top d-flex justify-content-end gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary px-2 py-0" style="font-size:11px" title="Edit" onclick="editEmploymentCard('${id}', ${idx})"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger px-2 py-0" style="font-size:11px" title="Remove" onclick="removeEmploymentCard('${id}', ${idx})"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
             </div>
@@ -544,7 +546,7 @@
             <td><input type="date" class="form-control form-control-sm fm-dob"></td>
             <td><input type="text" class="form-control form-control-sm fm-relation"></td>
             <td><input type="text" class="form-control form-control-sm fm-occupation"></td>
-            <td class="d-flex gap-1">
+            <td class="d-flex gap-1 align-items-start justify-content-center">
                 <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveFamilyRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
                 <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
             </td>
@@ -620,7 +622,7 @@
             <td><input type="date" class="form-control form-control-sm ac-end"></td>
             <td><input type="text" class="form-control form-control-sm ac-field"></td>
             <td><input type="text" class="form-control form-control-sm ac-institute"></td>
-            <td class="d-flex gap-1">
+            <td class="d-flex gap-1 align-items-start justify-content-center">
                 <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveAcademicRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
                 <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
             </td>
@@ -691,9 +693,9 @@
             <td><input type="text" class="form-control form-control-sm em-desig"></td>
             <td><input type="date" class="form-control form-control-sm em-from"></td>
             <td><input type="date" class="form-control form-control-sm em-to"></td>
-            <td><input type="text" class="form-control form-control-sm em-salary"></td>
+            <td><input type="text" class="form-control form-control-sm em-salary number-only" maxlength="15" placeholder="0"></td>
             <td><input type="text" class="form-control form-control-sm em-reason"></td>
-            <td class="d-flex gap-1">
+            <td class="d-flex gap-1 align-items-start justify-content-center">
                 <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveEmploymentRow(this)" title="Save"><i class="bi bi-floppy"></i></button>
                 <button type="button" class="action-btn border-0 text-danger bg-danger-subtle" onclick="removeRow(this)" title="Delete"><i class="bi bi-trash"></i></button>
             </td>
@@ -715,7 +717,7 @@
             <td><input type="text" class="form-control form-control-sm em-desig" value="${esc(data.designation)}"></td>
             <td><input type="date" class="form-control form-control-sm em-from" value="${esc(data.from_date)}"></td>
             <td><input type="date" class="form-control form-control-sm em-to" value="${esc(data.to_date)}"></td>
-            <td><input type="text" class="form-control form-control-sm em-salary" value="${esc(data.salary)}"></td>
+            <td><input type="text" class="form-control form-control-sm em-salary number-only" value="${esc(data.salary)}" maxlength="15"></td>
             <td><input type="text" class="form-control form-control-sm em-reason" value="${esc(data.reason_for_leaving)}"></td>
             <td class="d-flex gap-1">
                 <button type="button" class="action-btn border-0 text-success bg-success-subtle" onclick="saveEmploymentRow(this)" title="Save"><i class="bi bi-floppy"></i></button>

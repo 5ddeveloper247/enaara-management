@@ -318,12 +318,18 @@ class EmployeeController extends Controller
         try {
             $attachments = $request->input('attachments', []);
             $attachmentData = $attachments[0] ?? [];
-            if ($request->hasFile('attachments.0.files')) {
-                $attachmentData['files'] = $request->file('attachments.0.files');
+            
+            if (!$request->hasFile('attachments.0.files')) {
+                return response()->json(['success' => false, 'message' => 'No files were uploaded.'], 422);
             }
 
+            $attachmentData['files'] = $request->file('attachments.0.files');
             $savedFiles = $this->employeeService->saveSingleAttachment((int)$employeeId, $attachmentData);
             
+            if (empty($savedFiles)) {
+                return response()->json(['success' => false, 'message' => 'No files could be saved.'], 500);
+            }
+
             // Format for JS response
             $formattedFiles = array_map(function($f) {
                 return [
@@ -338,11 +344,18 @@ class EmployeeController extends Controller
                 'success' => true,
                 'message' => 'Attachment saved successfully.',
                 'files' => $formattedFiles,
-                'attachment_id' => $savedFiles[0]->id ?? null // Use first file id for tracking
+                'attachment_id' => $savedFiles[0]->id ?? null
             ]);
         } catch (\Exception $e) {
-            Log::error('Employee saveAttachment failed', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to save attachment.'], 500);
+            Log::error('Employee saveAttachment failed', [
+                'employee_id' => $employeeId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
         }
     }
 

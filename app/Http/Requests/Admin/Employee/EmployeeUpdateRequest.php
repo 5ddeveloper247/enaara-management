@@ -145,16 +145,23 @@ class EmployeeUpdateRequest extends FormRequest
             'sect' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widowed'])],
             'spouse_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
-            'nok_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
-            'nok_cnic' => ['bail', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
-            'nok_relation' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
-            'nok_dob' => ['nullable', 'date', 'before:today'],
-            'nok_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+            'spouse_cnic' => [
+                'required_if:marital_status,Married', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'
+            ],
+            'spouse_nationality' => [
+                'required_if:marital_status,Married', 'nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()
+            ],
+            'nok_name' => ['required', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
+            'nok_cnic' => ['bail', 'required', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
+            'nok_cnic_expiry_date' => ['required', 'date', 'after:today'],
+            'nok_relation' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
+            'nok_dob' => ['required', 'date', 'before:today'],
+            'nok_contact' => ['required', 'string', 'regex:' . $this->contactRegex()],
 
             // Section B — Employment
             'organization_id' => ['required', 'integer', 'exists:organizations,id'],
-            'sbu_id' => ['nullable', 'integer', 'exists:sbus,id', Rule::requiredIf(fn() => !$this->orgLevelRoleSelected())],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id', Rule::requiredIf(fn() => !$this->orgLevelRoleSelected())],
+            'sbu_id' => ['nullable', 'integer', 'exists:sbus,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'role_id' => ['required', 'integer', 'exists:roles,id'],
             'employee_type' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'employment_type' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
@@ -314,17 +321,21 @@ class EmployeeUpdateRequest extends FormRequest
             'sect.regex' => 'Sect may only contain letters and standard punctuation.',
 
             'marital_status.required' => 'Marital status is required.',
+            'spouse_cnic.regex' => 'Spouse CNIC must be in a valid format (XXXXX-XXXXXXX-X).',
 
-            'spouse_name.regex' => 'Spouse name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
-            'nok_name.regex' => 'Next of kin name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
-
-            'nok_cnic.regex' => 'Next of kin CNIC must be numerical like 3443XXXXXXX with sample 13 digit CNIC.',
-            'nok_cnic.min' => 'Next of kin CNIC must be at least 13 digits.',
-            'nok_cnic.max' => 'Next of kin CNIC must not exceed 15 digits.',
-
-            'nok_relation.regex' => 'Next of kin relation may only contain letters and standard punctuation.',
-            'nok_dob.before' => 'Next of kin date of birth must be before today.',
-            'nok_contact.regex' => 'NOK contact must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
+            // NOK
+            'nok_name.required' => 'The Next of Kin (NOK) name is mandatory.',
+            'nok_name.regex' => 'The Next of Kin (NOK) name may only contain letters and standard punctuation.',
+            'nok_cnic.required' => 'The Next of Kin (NOK) CNIC is mandatory.',
+            'nok_cnic.regex' => 'The Next of Kin (NOK) CNIC must be in a valid format (XXXXX-XXXXXXX-X).',
+            'nok_cnic_expiry_date.required' => 'The Next of Kin (NOK) CNIC expiry date is mandatory.',
+            'nok_cnic_expiry_date.after' => 'The Next of Kin (NOK) CNIC must not be expired.',
+            'nok_relation.required' => 'The relationship with the Next of Kin (NOK) is mandatory.',
+            'nok_relation.regex' => 'The Next of Kin (NOK) relation may only contain letters and punctuation.',
+            'nok_dob.required' => 'The Next of Kin (NOK) date of birth is mandatory.',
+            'nok_dob.before' => 'The Next of Kin (NOK) date of birth must be a past date.',
+            'nok_contact.required' => 'The Next of Kin (NOK) contact number is mandatory.',
+            'nok_contact.regex' => 'The Next of Kin (NOK) contact number must be a valid phone number.',
 
             // Employment
             'organization_id.required' => 'Organization is required.',

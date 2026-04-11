@@ -19,8 +19,8 @@ class Employee extends Model
         'employee_type_id', 'employee_type', 'employment_type', 'designation', 'grade', 'branch',
         'location', 'email', 'phone', 'cnic', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
         'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth',
-        'religion', 'sect', 'marital_status', 'spouse_name', 'nok_name', 'nok_cnic',
-        'nok_relation', 'nok_dob', 'nok_contact', 'line_manager_id', 'is_manager',
+        'religion', 'sect', 'marital_status', 'spouse_name', 'spouse_cnic', 'spouse_nationality', 'nok_name', 'nok_cnic',
+        'nok_relation', 'nok_dob', 'nok_contact', 'nok_cnic_expiry_date', 'line_manager_id', 'is_manager',
         'is_active', 'role_id', 'site', 'join_date', 'floor_access',
         'biometric_id', 'sync_with_biometric',
         'employment_category', 'intern_type', 'intern_duration', 'contractual_type',
@@ -30,6 +30,7 @@ class Employee extends Model
     protected $casts = [
         'dob'                 => 'date',
         'nok_dob'             => 'date',
+        'nok_cnic_expiry_date' => 'date',
         'cnic_expiry'         => 'date',
         'join_date'           => 'date',
         'floor_access'        => 'boolean',

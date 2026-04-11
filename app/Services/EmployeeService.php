@@ -137,8 +137,11 @@ class EmployeeService
                 'sect'                => $data['sect'] ?? null,
                 'marital_status'      => $data['marital_status'] ?? null,
                 'spouse_name'         => $data['spouse_name'] ?? null,
+                'spouse_cnic'         => $data['spouse_cnic'] ?? null,
+                'spouse_nationality'  => $data['spouse_nationality'] ?? null,
                 'nok_name'            => $data['nok_name'] ?? null,
                 'nok_cnic'            => $data['nok_cnic'] ?? null,
+                'nok_cnic_expiry_date' => !empty($data['nok_cnic_expiry_date']) ? $data['nok_cnic_expiry_date'] : null,
                 'nok_relation'        => $data['nok_relation'] ?? null,
                 'nok_dob'             => !empty($data['nok_dob']) ? $data['nok_dob'] : null,
                 'nok_contact'         => $data['nok_contact'] ?? null,
@@ -955,7 +958,7 @@ class EmployeeService
                 'disability_type', 'disability_description', 'ref1_name', 'ref1_designation', 'ref1_organization', 
                 'ref1_contact', 'ref1_relationship', 'ref2_name', 'ref2_designation', 'ref2_organization', 
                 'ref2_contact', 'ref2_relationship', 'employment_category', 'intern_type', 'intern_duration', 
-                'contractual_type', 'engagement_mode', 'hybrid_days'
+                'contractual_type', 'engagement_mode', 'hybrid_days', 'spouse_cnic', 'spouse_nationality', 'nok_cnic_expiry_date'
             ];
 
             $updatePayload = [];

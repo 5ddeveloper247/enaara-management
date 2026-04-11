@@ -23,6 +23,7 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PasswordFirstChangeController;
 use App\Http\Controllers\WorkflowController;
+use App\Http\Controllers\LocationController;
 
 use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\BalanceTrackerController;
@@ -187,6 +188,11 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/employee/{id}/edit', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
     Route::post('/employee/{id}/update', [EmployeeController::class, 'update'])->name('admin.employee.update');
     Route::delete('/employee/{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
+
+    // Location Routes for Registration
+    Route::get('/locations/countries', [LocationController::class, 'getCountries'])->name('admin.locations.countries');
+    Route::get('/locations/provinces/{countryName}', [LocationController::class, 'getProvinces'])->name('admin.locations.provinces');
+    Route::get('/locations/districts/{countryName}/{provinceName}', [LocationController::class, 'getDistricts'])->name('admin.locations.districts');
 
 
 

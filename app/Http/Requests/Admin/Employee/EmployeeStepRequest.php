@@ -39,7 +39,7 @@ class EmployeeStepRequest extends FormRequest
             ]);
         }
 
-        $cnicFields = ['cnic', 'father_cnic', 'nok_cnic'];
+        $cnicFields = ['cnic', 'father_cnic', 'nok_cnic', 'spouse_cnic'];
 
         foreach ($cnicFields as $field) {
             if ($this->filled($field)) {
@@ -175,8 +175,11 @@ class EmployeeStepRequest extends FormRequest
             'sect' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'marital_status' => ['nullable', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widowed'])],
             'spouse_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
+            'spouse_cnic' => ['nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
+            'spouse_nationality' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'nok_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
             'nok_cnic' => ['bail', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
+            'nok_cnic_expiry_date' => ['nullable', 'date', 'after:today'],
             'nok_relation' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'nok_dob' => ['nullable', 'date', 'before:today'],
             'nok_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
@@ -322,6 +325,18 @@ class EmployeeStepRequest extends FormRequest
                 'dob' => ['required', 'date', 'before:today'],
                 'nationality' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
                 'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widowed'])],
+                'spouse_cnic' => [
+                    'required_if:marital_status,Married', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'
+                ],
+                'spouse_nationality' => [
+                    'required_if:marital_status,Married', 'nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()
+                ],
+                'nok_name' => ['required', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
+                'nok_cnic' => ['bail', 'required', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
+                'nok_cnic_expiry_date' => ['required', 'date', 'after:today'],
+                'nok_relation' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
+                'nok_dob' => ['required', 'date', 'before:today'],
+                'nok_contact' => ['required', 'string', 'regex:' . $this->contactRegex()],
 
                 'family.*.name' => ['required_with:family.*', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
                 'family.*.gender' => ['required_with:family.*', Rule::in(['Male', 'Female'])],
@@ -348,35 +363,35 @@ class EmployeeStepRequest extends FormRequest
                     'nullable',
                     'integer',
                     'exists:sbus,id',
-                    Rule::requiredIf(fn() => !$this->orgLevelRoleSelected()),
+                    Rule::requiredIf(!$this->orgLevelRoleSelected()),
                 ],
                 'department_id' => [
                     'nullable',
                     'integer',
                     'exists:departments,id',
-                    Rule::requiredIf(fn() => !$this->orgLevelRoleSelected()),
+                    Rule::requiredIf(!$this->orgLevelRoleSelected()),
                 ],
                 'join_date' => ['required', 'date', 'before_or_equal:today'],
                 'intern_type' => [
                     'nullable',
                     Rule::in(['paid', 'unpaid']),
-                    Rule::requiredIf(fn() => $this->input('employment_category') === 'intern'),
+                    'required_if:employment_category,intern',
                 ],
                 'intern_duration' => [
                     'nullable',
                     'string',
                     'max:100',
-                    Rule::requiredIf(fn() => $this->input('employment_category') === 'intern'),
+                    'required_if:employment_category,intern',
                 ],
                 'contractual_type' => [
                     'nullable',
                     Rule::in(['time_bound', 'open', 'project_based']),
-                    Rule::requiredIf(fn() => $this->input('employment_category') === 'contractual'),
+                    'required_if:employment_category,contractual',
                 ],
                 'engagement_mode' => [
                     'nullable',
                     Rule::in(['on_site', 'remote', 'shifts', 'hybrid']),
-                    Rule::requiredIf(fn() => $this->input('employment_category') === 'engagement'),
+                    'required_if:employment_category,engagement',
                 ],
                 'hybrid_days' => [
                     'nullable',
@@ -452,31 +467,31 @@ class EmployeeStepRequest extends FormRequest
 
             case 'family_row':
                 return array_merge($rules, [
-                    'name'       => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
+                    'name'       => ['required', 'string', 'min:2', 'max:70', 'regex:' . $this->alphaNumericTextRegex()],
                     'gender'     => ['required', Rule::in(['Male', 'Female'])],
                     'dob'        => ['required', 'date', 'before:today'],
-                    'relation'   => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
-                    'occupation' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
+                    'relation'   => ['required', 'string', 'min:2', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
+                    'occupation' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
                 ]);
 
             case 'academic_row':
                 return array_merge($rules, [
-                    'degree'         => ['required', 'string', 'max:255', $this->maxWordsRule(20, 'Certificate / Degree')],
+                    'degree'         => ['required', 'string', 'max:100', $this->maxWordsRule(20, 'Certificate / Degree')],
                     'grade_cgpa'     => ['required', 'string', 'max:50', $this->maxWordsRule(10, 'Grade / CGPA')],
                     'start_date'     => ['required', 'date'],
                     'end_date'       => ['required', 'date', 'after_or_equal:start_date'],
-                    'field_of_study' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
-                    'institute'      => ['nullable', 'string', 'max:255', $this->maxWordsRule(20, 'University')],
+                    'field_of_study' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
+                    'institute'      => ['nullable', 'string', 'max:150', $this->maxWordsRule(20, 'University')],
                 ]);
 
             case 'employment_row':
                 return array_merge($rules, [
-                    'organization'       => ['required', 'string', 'max:255'],
-                    'designation'        => ['required', 'string', 'max:255'],
+                    'organization'       => ['required', 'string', 'max:150'],
+                    'designation'        => ['required', 'string', 'max:100'],
                     'from_date'          => ['required', 'date', 'before_or_equal:today'],
                     'to_date'            => ['required', 'date', 'after_or_equal:from_date'],
-                    'salary'             => ['nullable', 'numeric', 'min:0'],
-                    'reason_for_leaving' => ['nullable', 'string', 'max:1000'],
+                    'salary'             => ['nullable', 'string', 'max:15'],
+                    'reason_for_leaving' => ['nullable', 'string', 'max:200'],
                 ]);
 
             case 'medical':
@@ -523,31 +538,26 @@ class EmployeeStepRequest extends FormRequest
 
             'father_name.string' => "Father name must be a valid text value.",
             'father_name.min' => "Father name must be at least 3 characters.",
-            'father_name.max' => "Father name must not exceed 50 characters.",
-            'father_name.regex' => "Father name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.",
-
-            'email.email' => 'Please enter a valid email address.',
-            'email.unique' => 'This email is already registered.',
-            'email.max' => 'Email must not exceed 100 characters.',
-
-            'phone.regex' => 'Phone number must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
-
             'cnic.required' => 'CNIC is required.',
-            'cnic.string' => 'CNIC must be a valid string.',
-            'cnic.min' => 'CNIC must be at least 13 digits.',
-            'cnic.max' => 'CNIC must not exceed 15 digits.',
-            'cnic.regex' => 'CNIC must be numerical like 3443XXXXXXX with sample 13 digit CNIC.',
+            'cnic.regex' => 'CNIC must be in the standard format (XXXXX-XXXXXXX-X).',
             'cnic.unique' => 'This CNIC is already registered.',
-
-            'cnic_expiry.required' => 'CNIC expiry date is required.',
-            'cnic_expiry.date' => 'CNIC expiry date must be a valid date.',
-            'cnic_expiry.after' => 'CNIC expiry date must be a future date.',
-
-            'father_cnic.min' => 'Father CNIC must be at least 13 digits.',
-            'father_cnic.max' => 'Father CNIC must not exceed 15 digits.',
-            'father_cnic.regex' => 'Father CNIC must be numerical like 3443XXXXXXX with sample 13 digit CNIC.',
-
+            'spouse_cnic.required_if' => 'Spouse CNIC is required when status is Married.',
+            'spouse_cnic.regex' => 'Spouse CNIC must be in the standard format (XXXXX-XXXXXXX-X).',
             'ntn.regex' => 'NTN must be either 7 digits or 13 digits.',
+
+            // NOK
+            'nok_name.required' => 'The Next of Kin (NOK) name is mandatory.',
+            'nok_name.regex' => 'The Next of Kin (NOK) name may only contain letters and standard punctuation.',
+            'nok_cnic.required' => 'The Next of Kin (NOK) CNIC is mandatory.',
+            'nok_cnic.regex' => 'The Next of Kin (NOK) CNIC must be in a valid format (XXXXX-XXXXXXX-X).',
+            'nok_cnic_expiry_date.required' => 'The Next of Kin (NOK) CNIC expiry date is mandatory.',
+            'nok_cnic_expiry_date.after' => 'The Next of Kin (NOK) CNIC must not be expired.',
+            'nok_relation.required' => 'The relationship with the Next of Kin (NOK) is mandatory.',
+            'nok_relation.regex' => 'The Next of Kin (NOK) relation must contain text only.',
+            'nok_dob.required' => 'The Next of Kin (NOK) date of birth is mandatory.',
+            'nok_dob.before' => 'The Next of Kin (NOK) date of birth must be a past date.',
+            'nok_contact.required' => 'The Next of Kin (NOK) contact number is mandatory.',
+            'nok_contact.regex' => 'The Next of Kin (NOK) contact number must be a valid phone number.',
 
             'nationality.required' => 'Nationality is required.',
             'nationality.regex' => 'Nationality must contain text only.',
@@ -574,15 +584,6 @@ class EmployeeStepRequest extends FormRequest
             'marital_status.required' => 'Marital status is required.',
 
             'spouse_name.regex' => 'Spouse name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
-            'nok_name.regex' => 'Next of kin name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
-
-            'nok_cnic.min' => 'Next of kin CNIC must be at least 13 digits.',
-            'nok_cnic.max' => 'Next of kin CNIC must not exceed 15 digits.',
-            'nok_cnic.regex' => 'Next of kin CNIC must be numerical like 3443XXXXXXX with sample 13 digit CNIC.',
-
-            'nok_relation.regex' => 'Next of kin relation must contain text only.',
-            'nok_dob.before' => 'Next of kin date of birth must be before today.',
-            'nok_contact.regex' => 'Next of kin contact number must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
 
             // Employment
             'organization_id.required' => 'Organization is required.',
@@ -672,9 +673,7 @@ class EmployeeStepRequest extends FormRequest
             'family.*.dob.required_with' => 'Family member date of birth is required.',
             'family.*.dob.before' => 'Family member date of birth must be before today.',
             'family.*.relation.required_with' => 'Family member relation is required.',
-            'family.*.relation.max' => 'Family member relation must not exceed 255 characters.',
-            'family.*.relation.regex' => 'Family member relation contains invalid characters.',
-            'family.*.occupation.max' => 'Family member occupation must not exceed 255 characters.',
+
             'family.*.occupation.regex' => 'Family member occupation contains invalid characters.',
 
             // Academics

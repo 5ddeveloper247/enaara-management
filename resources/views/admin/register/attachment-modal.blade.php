@@ -229,7 +229,22 @@
             },
             body: formData
         })
-        .then(response => response.json())
+        .then(async response => {
+            const isJson = response.headers.get('content-type')?.includes('application/json');
+            const data = isJson ? await response.json() : null;
+
+            if (!response.ok) {
+                if (data && data.errors) {
+                    return { success: false, errors: data.errors };
+                }
+                if (data && data.message) {
+                    return { success: false, message: data.message };
+                }
+                const errorText = !isJson ? await response.text() : 'Unknown server error';
+                throw new Error(errorText.substring(0, 200));
+            }
+            return data;
+        })
         .then(data => {
             if (data.success) {
                 const attachment = {
@@ -246,7 +261,7 @@
                 renderAttachmentListing();
                 resetAttachmentForm();
                 
-                showToast(data.message, 'success');
+                showToast(data.message || 'Attachment saved successfully', 'success');
                 document.querySelector('[data-bs-target="#tab-list"]').click();
             } else {
                 if (data.errors) {
@@ -261,7 +276,7 @@
                         } else if (key.includes('description')) {
                             targetElement = document.getElementById('attachmentDesc');
                         } else if (key.includes('files')) {
-                            targetElement = document.getElementById('attachmentUpload').closest('.col-12'); // Using the col-12 container
+                            targetElement = document.getElementById('attachmentUpload').closest('.col-12');
                         }
 
                         if (targetElement) {
@@ -276,7 +291,6 @@
                                 targetElement.classList.add('is-invalid');
                             }
                         } else {
-                            // Fallback if mapping fails
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Validation Error',
@@ -299,8 +313,8 @@
             console.error('Error saving attachment:', error);
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: 'Server error while saving attachment.',
+                title: 'Server Error',
+                text: 'Details: ' + error.message,
                 confirmButtonColor: '#1a237e'
             });
         });
