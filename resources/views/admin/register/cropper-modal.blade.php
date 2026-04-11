@@ -26,13 +26,13 @@
 
     function openCropper(inputFile) {
         if (!inputFile.files || !inputFile.files[0]) return;
-        
+
         const file = inputFile.files[0];
-        
+
         // Basic validation before opening
         const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg'];
         const extension = file.name.split('.').pop().toLowerCase();
-        
+
         if (!allowedExtensions.includes(extension)) {
             Swal.fire({
                 icon: 'error',
@@ -43,7 +43,7 @@
             inputFile.value = '';
             return;
         }
-        
+
         const maxSize = 2 * 1024 * 1024; // 2MB
         if (file.size > maxSize) {
             Swal.fire({
@@ -58,14 +58,14 @@
 
         originalFileName = file.name;
         const reader = new FileReader();
-        
+
         reader.onload = function(e) {
             const cropperImage = document.getElementById('cropperImage');
             cropperImage.src = e.target.result;
-            
+
             const modal = new bootstrap.Modal(document.getElementById('cropperModal'));
             modal.show();
-            
+
             // Wait for modal transition then init cropper
             document.getElementById('cropperModal').addEventListener('shown.bs.modal', function onShown() {
                 if (cropper) cropper.destroy();
@@ -96,40 +96,40 @@
         // If we cancel, we might want to clear the input if no image was previously cropped
         if (!croppedImageBlob) {
             const inp = document.getElementById('uploadImage');
-            if(inp) inp.value = '';
+            if (inp) inp.value = '';
         }
     }
 
     document.getElementById('cropBtn').addEventListener('click', function() {
         if (!cropper) return;
-        
+
         // Get cropped canvas
         const canvas = cropper.getCroppedCanvas({
-            width: 500,  // Higher res for quality
+            width: 500, // Higher res for quality
             height: 500,
             imageSmoothingEnabled: true,
             imageSmoothingQuality: 'high',
         });
-        
+
         canvas.toBlob(function(blob) {
             croppedImageBlob = blob;
-            
+
             // Update preview
             const preview = document.getElementById('imgPreview');
             const previewWrapper = document.getElementById('imgPreviewWrapper');
             const removeBtn = document.getElementById('removeImageBtn');
             const uploadBox = document.getElementById('uploadImageBox');
-            
+
             preview.src = URL.createObjectURL(blob);
             previewWrapper.style.display = 'block';
             uploadBox.classList.add('d-none');
             removeBtn.classList.remove('d-none');
-            
+
             // Close modal
             const modalEl = document.getElementById('cropperModal');
             const modalInstance = bootstrap.Modal.getInstance(modalEl);
             modalInstance.hide();
-            
+
             cropper.destroy();
             cropper = null;
 
@@ -144,30 +144,48 @@
                 formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
                 fetch('{{ route("admin.employee.save_subsection") }}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        if (typeof showToast === 'function') {
-                            showToast(data.message || 'Profile photo saved successfully.', 'success');
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
                         }
-                    } else {
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end', // right top corner
+                                icon: 'success',
+                                title: data.message || 'Profile photo saved successfully.',
+                                showConfirmButton: false, // ❌ no OK button
+                                timer: 3000, // auto close in 3 sec
+                                timerProgressBar: true
+                            });
+                        } else {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'error',
+                                title: data.message || 'Failed to save photo.',
+                                showConfirmButton: false,
+                                timer: 3000,
+                                timerProgressBar: true
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error saving photo:', error);
                         Swal.fire({
+                            toast: true,
+                            position: 'top-end',
                             icon: 'error',
-                            title: 'Error',
-                            text: data.message || 'Failed to save photo.'
+                            title: 'Error saving profile photo.',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
                         });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error saving photo:', error);
-                    if (typeof showToast === 'function') showToast('Error saving profile photo.', 'error');
-                });
+                    });
             }
 
         }, 'image/jpeg', 0.9);

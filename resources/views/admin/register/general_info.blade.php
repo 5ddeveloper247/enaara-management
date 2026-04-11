@@ -239,22 +239,31 @@
                     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
                     fetch('{{ route("admin.employee.delete_photo") }}', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast(data.message, 'success');
-                            resetPreviewUI(input, preview, previewWrapper, removeBtn, uploadBox);
-                        } else {
-                            showToast(data.message || 'Error deleting photo.', 'error');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        showToast('Error deleting photo. Please try again.', 'error');
-                    });
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                resetPreviewUI(input, preview, previewWrapper, removeBtn, uploadBox);
+
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'success',
+                                    title: data.message || 'Profile photo deleted successfully.',
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true
+                                });
+                            } else {
+                                showToast('error', data.message || 'Error deleting photo.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showToast('Error deleting photo. Please try again.', 'error');
+                        });
                 }
             });
         } else {
