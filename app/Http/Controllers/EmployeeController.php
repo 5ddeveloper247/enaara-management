@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Models\Employee;
 
 class EmployeeController extends Controller
 {
@@ -195,6 +196,197 @@ class EmployeeController extends Controller
         } catch (\Exception $e) {
             Log::error('Employee saveStep failed', ['step' => $request->input('step'), 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function saveSubsection(\App\Http\Requests\Admin\Employee\EmployeeStepRequest $request)
+    {
+        if (!validatePermissions('admin/employee')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        try {
+            $employeeId = $request->input('employee_id');
+            $subsection = $request->input('subsection');
+            $data = $request->all();
+
+            if (!$employeeId) {
+                return response()->json(['success' => false, 'message' => 'Employee ID is required.'], 422);
+            }
+
+            switch ($subsection) {
+                case 'contact':
+                    $this->employeeService->saveContact((int)$employeeId, $data);
+                    // Also update main employee record if email was provided
+                    if (!empty($data['contact_email'])) {
+                        Employee::where('id', $employeeId)->update(['email' => $data['contact_email']]);
+                    }
+                    $message = 'Contact Information saved successfully.';
+                    break;
+                case 'family_row':
+                    $record = $this->employeeService->saveFamilyMember((int)$employeeId, $data);
+                    $message = 'Family member added successfully.';
+                    $responseData = ['id' => $record?->id];
+                    break;
+                case 'academic_row':
+                    $record = $this->employeeService->saveAcademic((int)$employeeId, $data);
+                    $message = 'Academic record added successfully.';
+                    $responseData = ['id' => $record?->id];
+                    break;
+                case 'employment_row':
+                    $record = $this->employeeService->saveExEmployment((int)$employeeId, $data);
+                    $message = 'Employment history record added successfully.';
+                    $responseData = ['id' => $record?->id];
+                    break;
+                case 'medical':
+                    $this->employeeService->saveMedical((int)$employeeId, $data);
+                    $message = 'Medical Information saved successfully.';
+                    break;
+                case 'references':
+                    $this->employeeService->saveReferences((int)$employeeId, $data);
+                    $message = 'References saved successfully.';
+                    break;
+                case 'photo':
+                    if ($request->hasFile('profile_photo')) {
+                        $this->employeeService->savePhoto((int)$employeeId, $request->file('profile_photo'));
+                        $message = 'Profile photo saved successfully.';
+                    } else {
+                        return response()->json(['success' => false, 'message' => 'No photo uploaded.'], 422);
+                    }
+                    break;
+                default:
+                    return response()->json(['success' => false, 'message' => 'Invalid subsection type.'], 422);
+            }
+
+            return response()->json(array_merge([
+                'success' => true,
+                'message' => $message,
+                'employee_id' => $employeeId,
+                'subsection' => $subsection
+            ], $responseData ?? []));
+
+        } catch (\Exception $e) {
+            Log::error('Employee saveSubsection failed', ['subsection' => $request->input('subsection'), 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteFamily(Request $request)
+    {
+        return $this->processDeletion($request, 'family_row');
+    }
+
+    public function deleteAcademic(Request $request)
+    {
+        return $this->processDeletion($request, 'academic_row');
+    }
+
+    public function deleteEmployment(Request $request)
+    {
+        return $this->processDeletion($request, 'employment_row');
+    }
+
+    public function deletePhoto(Request $request)
+    {
+        if (!validatePermissions('admin/employee')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $id = $request->input('id');
+        if (!$id) {
+            return response()->json(['success' => false, 'message' => 'Validation failed. Missing ID.'], 422);
+        }
+
+        try {
+            $success = $this->employeeService->deletePhoto((int)$id);
+            if ($success) {
+                return response()->json(['success' => true, 'message' => 'Profile photo deleted successfully.']);
+            }
+            return response()->json(['success' => false, 'message' => 'Record not found or already deleted.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Internal server error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function saveAttachment(\App\Http\Requests\Admin\Employee\EmployeeStepRequest $request)
+    {
+        $employeeId = $request->input('employee_id');
+        if (!$employeeId) {
+            return response()->json(['success' => false, 'message' => 'Employee must be saved before adding attachments.'], 422);
+        }
+
+        try {
+            $attachments = $request->input('attachments', []);
+            $attachmentData = $attachments[0] ?? [];
+            if ($request->hasFile('attachments.0.files')) {
+                $attachmentData['files'] = $request->file('attachments.0.files');
+            }
+
+            $savedFiles = $this->employeeService->saveSingleAttachment((int)$employeeId, $attachmentData);
+            
+            // Format for JS response
+            $formattedFiles = array_map(function($f) {
+                return [
+                    'id' => $f->id,
+                    'name' => $f->file_name,
+                    'mime_type' => $f->mime_type,
+                    'url' => asset('storage/' . $f->file_path),
+                ];
+            }, $savedFiles);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attachment saved successfully.',
+                'files' => $formattedFiles,
+                'attachment_id' => $savedFiles[0]->id ?? null // Use first file id for tracking
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Employee saveAttachment failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to save attachment.'], 500);
+        }
+    }
+
+    public function deleteAttachment(Request $request)
+    {
+        if (!validatePermissions('admin/employee')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $id = $request->input('id');
+        if (!$id) {
+            return response()->json(['success' => false, 'message' => 'Missing attachment ID.'], 422);
+        }
+
+        try {
+            $success = $this->employeeService->deleteAttachment((int)$id);
+            if ($success) {
+                return response()->json(['success' => true, 'message' => 'Attachment deleted successfully.']);
+            }
+            return response()->json(['success' => false, 'message' => 'Attachment not found.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Internal server error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function processDeletion(Request $request, string $type)
+    {
+        if (!validatePermissions('admin/employee')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $id = $request->input('id');
+        if (!$id) {
+            return response()->json(['success' => false, 'message' => 'Validation failed. Missing ID.'], 422);
+        }
+
+        try {
+            $success = $this->employeeService->deleteSubsectionRow($type, (int)$id);
+            if ($success) {
+                return response()->json(['success' => true, 'message' => 'Record deleted successfully.']);
+            }
+            return response()->json(['success' => false, 'message' => 'Record not found or already deleted.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Internal server error: ' . $e->getMessage()], 500);
         }
     }
 

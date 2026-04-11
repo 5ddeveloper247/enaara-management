@@ -54,6 +54,11 @@
                         <label class="form-label">Permanent Address <span class="text-danger">*</span></label>
                         <textarea name="permanent_address" class="form-control" rows="1" style="min-height:38px;"></textarea>
                     </div>
+                    <div class="col-12 text-end mt-2 d-none">
+                        <button type="button" class="btn bg-main text-white rounded-2 d-flex align-items-center border-0 px-3 ms-auto" id="internalSaveContactBtn" onclick="saveContactSubsection()">
+                            Save Contact
+                        </button>
+                    </div>
                 </div>
                 </div>
             </div>
@@ -240,6 +245,11 @@
                         <label class="form-label">Disease / Disability Description</label>
                         <textarea name="disability_description" class="form-control" rows="2"></textarea>
                     </div>
+                    <div class="col-12 text-end mt-2 d-none">
+                        <button type="button" class="btn bg-main text-white rounded-2 d-flex align-items-center border-0 px-3 ms-auto" id="internalSaveMedicalBtn" onclick="saveMedicalSubsection()">
+                            Save Medical
+                        </button>
+                    </div>
                 </div>
                 </div>
             </div>
@@ -289,6 +299,11 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 text-end mt-3 d-none">
+                        <button type="button" class="btn btn-success rounded-2 d-flex align-items-center border-0 px-4 ms-auto" id="internalSaveReferencesBtn" onclick="saveReferencesSubsection()">
+                            Finish & Save References
+                        </button>
+                    </div>
                 </div>
                 </div>
             </div>
@@ -303,14 +318,20 @@
     window.employmentsData = window.employmentsData || [];
 
     function showSubSection(btn, targetId) {
-        document.querySelectorAll('#step-6 .sub-section').forEach(s => s.classList.add('d-none'));
+        if (typeof clearStepErrors === 'function') clearStepErrors();
+        document.querySelectorAll('.sub-section').forEach(s => s.classList.add('d-none'));
         document.querySelectorAll('#step-6 .sub-nav-btn').forEach(b => {
-            b.classList.remove('btn-primary');
+            b.classList.remove('btn-primary', 'active-sub');
             b.classList.add('btn-outline-secondary');
         });
         document.getElementById(targetId).classList.remove('d-none');
         btn.classList.remove('btn-outline-secondary');
-        btn.classList.add('btn-primary');
+        btn.classList.add('btn-primary', 'active-sub');
+        
+        // Update global navigation buttons (Next/Submit text)
+        if (typeof applyStepNavigation === 'function') {
+            applyStepNavigation(6);
+        }
     }
 
     function removeRow(btn) { btn.closest('tr').remove(); }
@@ -413,7 +434,7 @@
         if (tbody) tbody.innerHTML = '';
     }
 
-    function appendFamilyCard(idx, m) {
+    function appendFamilyCard(idx, m, dbId = null) {
         const name = m.name || '';
         const gender = m.gender || '';
         const dob = m.dob || '';
@@ -423,7 +444,7 @@
         const dobFormatted = dob ? new Date(dob).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
         const id = 'family-card-' + idx;
         document.getElementById('familyListing').insertAdjacentHTML('beforeend', `
-        <div class="col-md-6 col-lg-4" id="${id}">
+        <div class="col-md-6 col-lg-4" id="${id}" data-db-id="${dbId || ''}">
             <div class="card border-1 rounded-3 h-100">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -444,18 +465,19 @@
         </div>`);
     }
 
-    function appendAcademicCard(idx, a) {
+    function appendAcademicCard(idx, a, dbId = null) {
         const degree = a.degree || '';
+        const inst = a.institute || '';
         const grade = a.grade_cgpa || '';
         const start = a.start_date || '';
         const end = a.end_date || '';
         const field = a.field_of_study || '';
-        const inst = a.institute || '';
         const initials = degree.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '—';
         const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
         const id = 'academic-card-' + idx;
+
         document.getElementById('academicListing').insertAdjacentHTML('beforeend', `
-        <div class="col-sm-6 col-xl-4" id="${id}">
+        <div class="col-sm-6 col-xl-4" id="${id}" data-db-id="${dbId || ''}">
             <div class="card border rounded-3 h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-start gap-2 mb-2">
@@ -477,7 +499,7 @@
         </div>`);
     }
 
-    function appendEmploymentCard(idx, e) {
+    function appendEmploymentCard(idx, e, dbId = null) {
         const org = e.organization || '';
         const desig = e.designation || '';
         const from = e.from_date || '';
@@ -488,7 +510,7 @@
         const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
         const id = 'employment-card-' + idx;
         document.getElementById('employmentListing').insertAdjacentHTML('beforeend', `
-        <div class="col-md-6 col-lg-4" id="${id}">
+        <div class="col-md-6 col-lg-4" id="${id}" data-db-id="${dbId || ''}">
             <div class="card border-1 rounded-3 h-100">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -529,27 +551,7 @@
         </tr>`);
     }
 
-    function saveFamilyRow(btn) {
-        const row        = btn.closest('tr');
-        const name       = row.querySelector('.fm-name').value.trim();
-        const gender     = row.querySelector('.fm-gender').value;
-        const dob        = row.querySelector('.fm-dob').value;
-        const relation   = row.querySelector('.fm-relation').value.trim();
-        const occupation = row.querySelector('.fm-occupation').value.trim();
 
-        const rowErrors = [];
-        if (!name)     rowErrors.push('Name');
-        if (!gender)   rowErrors.push('Gender');
-        if (!dob)      rowErrors.push('Date of Birth');
-        if (!relation) rowErrors.push('Relation');
-        if (rowErrors.length) { showRowValidationError(rowErrors); return; }
-
-        const idx = nextSlot(window.familyData);
-        window.familyData[idx] = { name, gender, dob, relation, occupation };
-        appendFamilyCard(idx, window.familyData[idx]);
-
-        row.remove();
-    }
 
     function editFamilyCard(id, idx) {
         const data = window.familyData[idx];
@@ -580,8 +582,29 @@
     }
 
     function removeFamilyCard(id, idx) {
-        document.getElementById(id)?.remove();
-        window.familyData[idx] = null;
+        const dbId = document.getElementById(id)?.dataset.dbId;
+        
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This family member will be permanently removed.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (dbId) {
+                    ajaxDeleteFamily(dbId, () => {
+                        document.getElementById(id)?.remove();
+                        window.familyData[idx] = null;
+                    });
+                } else {
+                    document.getElementById(id)?.remove();
+                    window.familyData[idx] = null;
+                }
+            }
+        });
     }
 
     // ── Academic ─────────────────────────────────────────────────────────────
@@ -604,53 +627,7 @@
         </tr>`);
     }
 
-    function saveAcademicRow(btn) {
-        const row    = btn.closest('tr');
-        const degree = row.querySelector('.ac-degree').value.trim();
-        const grade  = row.querySelector('.ac-grade').value.trim();
-        const start  = row.querySelector('.ac-start').value;
-        const end    = row.querySelector('.ac-end').value;
-        const field  = row.querySelector('.ac-field').value.trim();
-        const inst   = row.querySelector('.ac-institute').value.trim();
 
-        const acErrors = [];
-        if (!degree) acErrors.push('Degree');
-        if (!grade)  acErrors.push('Grade / CGPA');
-        if (!start)  acErrors.push('Start Date');
-        if (!end)    acErrors.push('End Date');
-        if (acErrors.length) { showRowValidationError(acErrors); return; }
-
-        const idx = window.academicsData.length;
-        window.academicsData.push({ degree, grade_cgpa: grade, start_date: start, end_date: end, field_of_study: field, institute: inst });
-
-        const initials = degree.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-        const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-        const id  = 'academic-card-' + idx;
-
-        document.getElementById('academicListing').insertAdjacentHTML('beforeend', `
-        <div class="col-sm-6 col-xl-4" id="${id}">
-            <div class="card border rounded-3 h-100">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-start gap-2 mb-2">
-                        <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:38px;height:38px;font-size:.9rem;">${initials}</div>
-                        <div class="min-w-0 flex-grow-1">
-                            <h6 class="mb-0 fw-semibold small" title="${degree}">${degree}</h6>
-                            <small class="text-muted" title="${inst || '—'}">${inst || '—'}</small>
-                        </div>
-                        <span class="badge bg-primary flex-shrink-0" style="font-size:10px;">${grade || '—'}</span>
-                    </div>
-                    <div class="mb-1 text-truncate"><i class="bi bi-book me-1 text-muted small"></i><small class="text-muted"><strong>Field:</strong> ${field || '—'}</small></div>
-                    <div class="mb-1"><i class="bi bi-calendar me-1 text-muted small"></i><small class="text-muted"><strong>Period:</strong> ${fmt(start)} – ${fmt(end)}</small></div>
-                    <div class="mt-2 pt-2 border-top d-flex justify-content-end gap-1">
-                        <button type="button" class="btn btn-sm btn-outline-primary px-2" title="Edit" onclick="editAcademicCard('${id}', ${idx})"><i class="bi bi-pencil"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger px-2" title="Remove" onclick="removeAcademicCard('${id}', ${idx})"><i class="bi bi-trash"></i></button>
-                    </div>
-                </div>
-            </div>
-        </div>`);
-
-        row.remove();
-    }
 
     function editAcademicCard(id, idx) {
         const data = window.academicsData[idx];
@@ -678,8 +655,29 @@
     }
 
     function removeAcademicCard(id, idx) {
-        document.getElementById(id)?.remove();
-        window.academicsData[idx] = null;
+        const dbId = document.getElementById(id)?.dataset.dbId;
+        
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This academic record will be permanently removed.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (dbId) {
+                    ajaxDeleteAcademic(dbId, () => {
+                        document.getElementById(id)?.remove();
+                        window.academicsData[idx] = null;
+                    });
+                } else {
+                    document.getElementById(id)?.remove();
+                    window.academicsData[idx] = null;
+                }
+            }
+        });
     }
 
     // ── Employment History ───────────────────────────────────────────────────
@@ -702,28 +700,7 @@
         </tr>`);
     }
 
-    function saveEmploymentRow(btn) {
-        const row    = btn.closest('tr');
-        const org    = row.querySelector('.em-org').value.trim();
-        const desig  = row.querySelector('.em-desig').value.trim();
-        const from   = row.querySelector('.em-from').value;
-        const to     = row.querySelector('.em-to').value;
-        const salary = row.querySelector('.em-salary').value.trim();
-        const reason = row.querySelector('.em-reason').value.trim();
 
-        const emErrors = [];
-        if (!org)   emErrors.push('Organization');
-        if (!desig) emErrors.push('Designation');
-        if (!from)  emErrors.push('From Date');
-        if (!to)    emErrors.push('To Date');
-        if (emErrors.length) { showRowValidationError(emErrors); return; }
-
-        const idx = nextSlot(window.employmentsData);
-        window.employmentsData[idx] = { organization: org, designation: desig, from_date: from, to_date: to, salary, reason_for_leaving: reason };
-        appendEmploymentCard(idx, window.employmentsData[idx]);
-
-        row.remove();
-    }
 
     function editEmploymentCard(id, idx) {
         const data = window.employmentsData[idx];
@@ -751,7 +728,279 @@
     }
 
     function removeEmploymentCard(id, idx) {
-        document.getElementById(id)?.remove();
-        window.employmentsData[idx] = null;
+        const dbId = document.getElementById(id)?.dataset.dbId;
+        
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This employment record will be permanently removed.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (dbId) {
+                    ajaxDeleteEmployment(dbId, () => {
+                        document.getElementById(id)?.remove();
+                        window.employmentsData[idx] = null;
+                    });
+                } else {
+                    document.getElementById(id)?.remove();
+                    window.employmentsData[idx] = null;
+                }
+            }
+        });
+    }
+
+    async function ajaxDeleteFamily(id, onDeleted) {
+        await genericSpecificDelete(id, '{{ route("admin.employee.delete_family") }}', onDeleted);
+    }
+    async function ajaxDeleteAcademic(id, onDeleted) {
+        await genericSpecificDelete(id, '{{ route("admin.employee.delete_academic") }}', onDeleted);
+    }
+    async function ajaxDeleteEmployment(id, onDeleted) {
+        await genericSpecificDelete(id, '{{ route("admin.employee.delete_employment") }}', onDeleted);
+    }
+
+    async function genericSpecificDelete(id, url, onDeleted) {
+        const formData = new FormData();
+        formData.append('id', id);
+
+        try {
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const contentType = resp.headers.get("content-type");
+            const isJson = contentType && contentType.indexOf("application/json") !== -1;
+            
+            if (resp.ok && isJson) {
+                const result = await resp.json();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: result.message,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                if (onDeleted) onDeleted();
+            } else if (isJson) {
+                const result = await resp.json();
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'Deletion failed.' });
+            } else {
+                const text = await resp.text();
+                console.error("Delete Error:", text);
+                Swal.fire({ icon: 'error', title: 'Server Error', text: 'Server returned an invalid response.' });
+            }
+        } catch (e) {
+            console.error("Delete AJAX Error:", e);
+            Swal.fire({ icon: 'error', title: 'Connection Error', text: 'Failed to delete record.' });
+        }
+    }
+    
+    // ── AJAX Save Handlers ──────────────────────────────────────────────────
+    async function ajaxSaveSubsection(subsection, data, extraCallback, context = document) {
+        const employeeId = document.getElementById('saved_employee_id')?.value;
+        if (!employeeId) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Employee Not Ready',
+                text: 'Please save General Information first.',
+                confirmButtonColor: '#1a237e'
+            });
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('employee_id', employeeId);
+        formData.append('subsection', subsection);
+        formData.append('step', '6');
+        for (const key in data) {
+            formData.append(key, data[key]);
+        }
+
+        try {
+            const resp = await fetch('{{ route("admin.employee.save_subsection") }}', {
+                method: 'POST',
+                headers: { 
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const contentType = resp.headers.get("content-type");
+            const isJson = contentType && contentType.indexOf("application/json") !== -1;
+            
+            if (resp.ok && isJson) {
+                const result = await resp.json();
+                
+                // Clear errors on success
+                if (typeof showFieldErrors === 'function') {
+                    showFieldErrors({}, context);
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Saved!',
+                    text: result.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                if (extraCallback) extraCallback(result);
+            } else if (resp.status === 422 && isJson) {
+                const result = await resp.json();
+                if (typeof showFieldErrors === 'function') {
+                    showFieldErrors(result.errors, context);
+                } else {
+                    let errHtml = '<ul class="text-start mt-2">';
+                    for (const field in result.errors) {
+                        result.errors[field].forEach(msg => { errHtml += `<li>${msg}</li>`; });
+                    }
+                    errHtml += '</ul>';
+                    Swal.fire({ icon: 'error', title: 'Validation Error', html: errHtml });
+                }
+            } else {
+                const text = await resp.text();
+                console.error("Server response:", text);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Server Error',
+                    text: 'The server returned an error (' + resp.status + '). Please check the logs.',
+                    confirmButtonColor: '#d33'
+                });
+            }
+        } catch (e) {
+            console.error("AJAX Error:", e);
+            Swal.fire({
+                icon: 'error',
+                title: 'Connection Error',
+                text: 'Failed to communicate with the server. Please check your internet connection.',
+                confirmButtonColor: '#d33'
+            });
+        }
+    }
+
+    function saveContactSubsection(callback) {
+        const data = {
+            residence_phone:   document.querySelector('[name="residence_phone"]').value,
+            emergency_contact: document.querySelector('[name="emergency_contact"]').value,
+            cell_no:           document.querySelector('[name="cell_no"]').value,
+            contact_email:     document.querySelector('[name="contact_email"]').value,
+            present_address:   document.querySelector('[name="present_address"]').value,
+            permanent_address: document.querySelector('[name="permanent_address"]').value
+        };
+        ajaxSaveSubsection('contact', data, callback);
+    }
+
+    function saveMedicalSubsection(callback) {
+        const data = {
+            last_fitness_test:       document.querySelector('[name="last_fitness_test"]').value,
+            has_disability:          document.querySelector('[name="has_disability"]:checked')?.value || '',
+            blood_group:             document.querySelector('[name="blood_group"]').value,
+            disability_type:         document.querySelector('[name="disability_type"]').value,
+            disability_description:  document.querySelector('[name="disability_description"]').value
+        };
+        ajaxSaveSubsection('medical', data, callback);
+    }
+
+    function saveReferencesSubsection() {
+        const data = {
+            ref1_name:         document.querySelector('[name="ref1_name"]').value,
+            ref1_designation:  document.querySelector('[name="ref1_designation"]').value,
+            ref1_organization: document.querySelector('[name="ref1_organization"]').value,
+            ref1_contact:      document.querySelector('[name="ref1_contact"]').value,
+            ref1_relationship: document.querySelector('[name="ref1_relationship"]').value,
+            ref2_name:         document.querySelector('[name="ref2_name"]').value,
+            ref2_designation:  document.querySelector('[name="ref2_designation"]').value,
+            ref2_organization: document.querySelector('[name="ref2_organization"]').value,
+            ref2_contact:      document.querySelector('[name="ref2_contact"]').value,
+            ref2_relationship: document.querySelector('[name="ref2_relationship"]').value
+        };
+        ajaxSaveSubsection('references', data, () => {
+            setTimeout(() => {
+                window.location.href = "{{ route('admin.employee.index') }}";
+            }, 1000);
+        });
+    }
+
+    function saveFamilyRow(btn) {
+        const row        = btn.closest('tr');
+        const name       = row.querySelector('.fm-name').value.trim();
+        const gender     = row.querySelector('.fm-gender').value;
+        const dob        = row.querySelector('.fm-dob').value;
+        const relation   = row.querySelector('.fm-relation').value.trim();
+        const occupation = row.querySelector('.fm-occupation').value.trim();
+
+        const rowErrors = [];
+        if (!name)     rowErrors.push('Name');
+        if (!gender)   rowErrors.push('Gender');
+        if (!dob)      rowErrors.push('Date of Birth');
+        if (!relation) rowErrors.push('Relation');
+        if (rowErrors.length) { showRowValidationError(rowErrors); return; }
+
+        const data = { name, gender, dob, relation, occupation };
+        ajaxSaveSubsection('family_row', data, (res) => {
+            const idx = nextSlot(window.familyData);
+            window.familyData[idx] = data;
+            appendFamilyCard(idx, data, res.id);
+            row.remove();
+        }, row);
+    }
+
+    function saveAcademicRow(btn) {
+        const row    = btn.closest('tr');
+        const degree = row.querySelector('.ac-degree').value.trim();
+        const grade  = row.querySelector('.ac-grade').value.trim();
+        const start  = row.querySelector('.ac-start').value;
+        const end    = row.querySelector('.ac-end').value;
+        const field  = row.querySelector('.ac-field').value.trim();
+        const inst   = row.querySelector('.ac-institute').value.trim();
+
+        const acErrors = [];
+        if (!degree) acErrors.push('Degree');
+        if (!grade)  acErrors.push('Grade / CGPA');
+        if (!start)  acErrors.push('Start Date');
+        if (!end)    acErrors.push('End Date');
+        if (acErrors.length) { showRowValidationError(acErrors); return; }
+
+        const data = { degree, grade_cgpa: grade, start_date: start, end_date: end, field_of_study: field, institute: inst };
+        ajaxSaveSubsection('academic_row', data, (res) => {
+            const idx = window.academicsData.length;
+            window.academicsData.push(data);
+            appendAcademicCard(idx, data, res.id);
+            row.remove();
+        }, row);
+    }
+
+    function saveEmploymentRow(btn) {
+        const row    = btn.closest('tr');
+        const org    = row.querySelector('.em-org').value.trim();
+        const desig  = row.querySelector('.em-desig').value.trim();
+        const from   = row.querySelector('.em-from').value;
+        const to     = row.querySelector('.em-to').value;
+        const salary = row.querySelector('.em-salary').value.trim();
+        const reason = row.querySelector('.em-reason').value.trim();
+
+        const emErrors = [];
+        if (!org)   emErrors.push('Organization');
+        if (!desig) emErrors.push('Designation');
+        if (!from)  emErrors.push('From Date');
+        if (!to)    emErrors.push('To Date');
+        if (emErrors.length) { showRowValidationError(emErrors); return; }
+
+        const data = { organization: org, designation: desig, from_date: from, to_date: to, salary, reason_for_leaving: reason };
+        ajaxSaveSubsection('employment_row', data, (res) => {
+            const idx = nextSlot(window.employmentsData);
+            window.employmentsData[idx] = data;
+            appendEmploymentCard(idx, data, res.id);
+            row.remove();
+        }, row);
     }
 </script>

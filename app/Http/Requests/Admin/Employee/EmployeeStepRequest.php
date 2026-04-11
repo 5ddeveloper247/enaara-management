@@ -85,6 +85,13 @@ class EmployeeStepRequest extends FormRequest
                 'contact_email' => strtolower(trim((string)$this->input('contact_email'))),
             ]);
         }
+
+        $trimFields = ['full_name', 'father_name', 'name', 'present_address', 'permanent_address', 'relation', 'occupation'];
+        foreach ($trimFields as $tf) {
+            if ($this->filled($tf)) {
+                $this->merge([$tf => trim((string)$this->input($tf))]);
+            }
+        }
     }
 
     protected function nameRegex(): string
@@ -126,6 +133,11 @@ class EmployeeStepRequest extends FormRequest
     {
         $step = (int)$this->input('step');
         $employeeId = $this->input('employee_id');
+        $subsection = $this->input('subsection');
+
+        if ($subsection) {
+            return $this->getSubsectionRules($subsection, $employeeId);
+        }
 
         $baseRules = [
             'step' => ['required', 'integer', 'min:1', 'max:6'],
@@ -222,30 +234,30 @@ class EmployeeStepRequest extends FormRequest
             'emergency_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
             'cell_no' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
             'contact_email' => ['nullable', 'email:rfc,dns', 'max:255'],
-            'present_address' => ['nullable', 'string', 'min:10', 'max:50'],
-            'permanent_address' => ['nullable', 'string', 'min:10', 'max:50'],
+            'present_address' => ['nullable', 'string', 'min:10', 'max:1000'],
+            'permanent_address' => ['nullable', 'string', 'min:10', 'max:1000'],
 
-            'account_title' => ['nullable', 'string', 'min:3', 'max:50', 'regex:' . $this->nameRegex()],
+            'account_title' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->nameRegex()],
             'account_no' => ['nullable', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
-            'bank_branch' => ['nullable', 'string', 'min:2', 'max:50'],
+            'bank_branch' => ['nullable', 'string', 'min:2', 'max:255'],
             'account_type' => ['nullable', Rule::in(['Saving', 'Current'])],
 
             // Family
             'family' => ['nullable', 'array'],
-            'family.*.name' => ['nullable', 'string', 'min:3', 'max:50', 'regex:' . $this->nameRegex()],
+            'family.*.name' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
             'family.*.gender' => ['nullable', Rule::in(['Male', 'Female'])],
             'family.*.dob' => ['nullable', 'date', 'before:today'],
-            'family.*.relation' => ['nullable', 'string', 'min:2', 'max:20', 'regex:' . $this->alphaTextRegex()],
-            'family.*.occupation' => ['nullable', 'string', 'min:2', 'max:20', 'regex:' . $this->alphaTextRegex()],
+            'family.*.relation' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
+            'family.*.occupation' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
 
             // Academics
             'academics' => ['nullable', 'array'],
-            'academics.*.degree' => ['nullable', 'string', 'max:50', $this->maxWordsRule(10, 'Certificate / Degree')],
-            'academics.*.grade_cgpa' => ['nullable', 'string', 'max:10', $this->maxWordsRule(5, 'Grade / CGPA')],
+            'academics.*.degree' => ['nullable', 'string', 'max:255'],
+            'academics.*.grade_cgpa' => ['nullable', 'string', 'max:50'],
             'academics.*.start_date' => ['nullable', 'date'],
             'academics.*.end_date' => ['nullable', 'date'],
-            'academics.*.field_of_study' => ['nullable', 'string', 'max:80', 'regex:' . $this->alphaTextRegex()],
-            'academics.*.institute' => ['nullable', 'string', 'max:100', $this->maxWordsRule(10, 'University / Board / Institute')],
+            'academics.*.field_of_study' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
+            'academics.*.institute' => ['nullable', 'string', 'max:255'],
 
             // Previous Employments
             'employments' => ['nullable', 'array'],
@@ -277,7 +289,7 @@ class EmployeeStepRequest extends FormRequest
             'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
 
             // Attachments
-            'profile_photo' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png'],
+            'profile_photo' => ['nullable', 'file', 'max:2048', 'mimes:jpg,jpeg,png,gif,svg'],
             'kept_attachment_ids' => ['nullable', 'array'],
             'kept_attachment_ids.*' => ['integer', 'exists:media_files,id'],
             'attachments' => ['nullable', 'array'],
@@ -404,6 +416,99 @@ class EmployeeStepRequest extends FormRequest
         }
 
         return array_merge($baseRules, $stepRules);
+    }
+
+    protected function getSubsectionRules(string $subsection, $employeeId): array
+    {
+        $rules = [
+            'employee_id' => ['required', 'integer', 'exists:employees,id'],
+            'subsection'  => ['required', 'string'],
+        ];
+
+        switch ($subsection) {
+            case 'photo':
+                return array_merge($rules, [
+                    'profile_photo' => ['required', 'file', 'max:2048', 'mimes:jpg,jpeg,png,gif,svg'],
+                ]);
+
+            case 'attachment':
+                return array_merge($rules, [
+                    'attachments.*.name' => ['required', 'string', 'max:255'],
+                    'attachments.*.type' => ['nullable', 'string', 'max:100'],
+                    'attachments.*.description' => ['nullable', 'string', 'max:1000'],
+                    'attachments.*.files' => ['required', 'array', 'min:1'],
+                    'attachments.*.files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx'],
+                ]);
+
+            case 'contact':
+                return array_merge($rules, [
+                    'cell_no'           => ['required', 'string', 'regex:' . $this->contactRegex()],
+                    'contact_email'     => ['required', 'email:rfc,dns', 'max:255'],
+                    'present_address'   => ['required', 'string', 'min:10', 'max:1000'],
+                    'permanent_address' => ['required', 'string', 'min:10', 'max:1000'],
+                    'residence_phone'   => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                    'emergency_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                ]);
+
+            case 'family_row':
+                return array_merge($rules, [
+                    'name'       => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
+                    'gender'     => ['required', Rule::in(['Male', 'Female'])],
+                    'dob'        => ['required', 'date', 'before:today'],
+                    'relation'   => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
+                    'occupation' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
+                ]);
+
+            case 'academic_row':
+                return array_merge($rules, [
+                    'degree'         => ['required', 'string', 'max:255', $this->maxWordsRule(20, 'Certificate / Degree')],
+                    'grade_cgpa'     => ['required', 'string', 'max:50', $this->maxWordsRule(10, 'Grade / CGPA')],
+                    'start_date'     => ['required', 'date'],
+                    'end_date'       => ['required', 'date', 'after_or_equal:start_date'],
+                    'field_of_study' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
+                    'institute'      => ['nullable', 'string', 'max:255', $this->maxWordsRule(20, 'University')],
+                ]);
+
+            case 'employment_row':
+                return array_merge($rules, [
+                    'organization'       => ['required', 'string', 'max:255'],
+                    'designation'        => ['required', 'string', 'max:255'],
+                    'from_date'          => ['required', 'date', 'before_or_equal:today'],
+                    'to_date'            => ['required', 'date', 'after_or_equal:from_date'],
+                    'salary'             => ['nullable', 'numeric', 'min:0'],
+                    'reason_for_leaving' => ['nullable', 'string', 'max:1000'],
+                ]);
+
+            case 'medical':
+                return array_merge($rules, [
+                    'last_fitness_test'      => ['nullable', 'string', 'max:500'],
+                    'has_disability'         => ['required', Rule::in(['yes', 'no'])],
+                    'blood_group'            => ['nullable', 'string', 'max:10', 'regex:' . $this->bloodGroupRegex()],
+                    'disability_type'        => ['nullable', 'string', 'max:100'],
+                    'disability_description' => ['nullable', 'string', 'max:1000'],
+                ]);
+
+            case 'references':
+                return array_merge($rules, [
+                    'ref1_name'         => ['nullable', 'string', 'max:50', 'regex:' . $this->nameRegex()],
+                    'ref1_designation'  => ['nullable', 'string', 'max:50'],
+                    'ref1_organization' => ['nullable', 'string', 'max:100'],
+                    'ref1_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                    'ref1_relationship' => ['nullable', 'string', 'max:50'],
+                    'ref2_name'         => ['nullable', 'string', 'max:50', 'regex:' . $this->nameRegex()],
+                    'ref2_designation'  => ['nullable', 'string', 'max:50'],
+                    'ref2_organization' => ['nullable', 'string', 'max:100'],
+                    'ref2_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                    'ref2_relationship' => ['nullable', 'string', 'max:50'],
+                ]);
+        }
+
+        return $rules;
+    }
+
+    protected function bloodGroupRegex(): string
+    {
+        return '/^(A|B|AB|O)[\+\-]$/';
     }
 
     public function messages(): array
@@ -560,27 +665,36 @@ class EmployeeStepRequest extends FormRequest
 
             // Family
             'family.*.name.required_with' => 'Family member name is required.',
-            'family.*.name.regex' => 'Family member name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
+            'family.*.name.min' => 'Family member name must be at least 2 characters.',
+            'family.*.name.max' => 'Family member name must not exceed 255 characters.',
+            'family.*.name.regex' => 'Family member name contains invalid characters.',
             'family.*.gender.required_with' => 'Family member gender is required.',
             'family.*.dob.required_with' => 'Family member date of birth is required.',
             'family.*.dob.before' => 'Family member date of birth must be before today.',
             'family.*.relation.required_with' => 'Family member relation is required.',
-            'family.*.relation.regex' => 'Family member relation must contain valid text only.',
-            'family.*.occupation.regex' => 'Family member occupation must contain valid text only.',
+            'family.*.relation.max' => 'Family member relation must not exceed 255 characters.',
+            'family.*.relation.regex' => 'Family member relation contains invalid characters.',
+            'family.*.occupation.max' => 'Family member occupation must not exceed 255 characters.',
+            'family.*.occupation.regex' => 'Family member occupation contains invalid characters.',
 
             // Academics
             'academics.*.degree.required_with' => 'Degree / certificate is required.',
+            'academics.*.degree.max' => 'Degree / certificate must not exceed 255 characters.',
             'academics.*.grade_cgpa.required_with' => 'Grade / CGPA is required.',
+            'academics.*.grade_cgpa.max' => 'Grade / CGPA must not exceed 50 characters.',
             'academics.*.start_date.required_with' => 'Academic start date is required.',
             'academics.*.end_date.required_with' => 'Academic end date is required.',
             'academics.*.start_date.date' => 'Academic start date must be a valid date.',
             'academics.*.end_date.date' => 'Academic end date must be a valid date.',
-            'academics.*.field_of_study.max' => 'Field of study must not exceed 80 characters.',
-            'academics.*.field_of_study.regex' => 'Field of study must contain valid text only.',
+            'academics.*.field_of_study.max' => 'Field of study must not exceed 255 characters.',
+            'academics.*.field_of_study.regex' => 'Field of study contains invalid characters.',
+            'academics.*.institute.max' => 'Institute name must not exceed 255 characters.',
 
             // Previous Employments
             'employments.*.organization.required_with' => 'Previous employment organization name is required.',
+            'employments.*.organization.max' => 'Previous employment organization must not exceed 255 characters.',
             'employments.*.designation.required_with' => 'Previous employment designation is required.',
+            'employments.*.designation.max' => 'Employment history row #:position: designation must not exceed 255 characters.',
             'employments.*.from_date.required_with' => 'Previous employment from date is required.',
             'employments.*.to_date.required_with' => 'Previous employment to date is required.',
             'employments.*.from_date.date' => 'Previous employment from date must be a valid date.',
@@ -588,6 +702,7 @@ class EmployeeStepRequest extends FormRequest
             'employments.*.salary.numeric' => 'Salary must be a valid number.',
             'employments.*.salary.min' => 'Salary cannot be negative.',
             'employments.*.salary.max' => 'Salary is too large.',
+            'employments.*.reason_for_leaving.max' => 'Reason for leaving must not exceed 1000 characters.',
 
             // Medical
             'blood_group.regex' => 'Blood group must be in a valid format like A+, O-, or AB+.',
@@ -600,11 +715,19 @@ class EmployeeStepRequest extends FormRequest
             'ref2_contact.regex' => 'Reference 2 contact number must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
 
             // Files
-            'profile_photo.mimes' => 'Profile photo must be a JPG, JPEG, or PNG file.',
-            'profile_photo.max' => 'Profile photo must not exceed 5 MB.',
+            'profile_photo.mimes' => 'Profile photo must be a JPG, JPEG, PNG, GIF, or SVG file.',
+            'profile_photo.max' => 'Profile photo must not exceed 2 MB.',
 
+            'attachments.*.name.required' => 'Attachment name is required.',
             'attachments.*.name.required_with' => 'Attachment name is required.',
-            'attachments.*.files.required_with' => 'At least one file is required for each attachment group.',
+            'attachments.*.name.string' => 'Attachment name must be a valid text string.',
+            'attachments.*.name.max' => 'Attachment name must not exceed 255 characters.',
+            'attachments.*.type.max' => 'Attachment type must not exceed 100 characters.',
+            'attachments.*.description.max' => 'Attachment description must not exceed 1000 characters.',
+            'attachments.*.files.required' => 'Please upload at least one valid file.',
+            'attachments.*.files.required_with' => 'Please upload at least one valid file.',
+            'attachments.*.files.array' => 'Uploaded files must be processed as an array.',
+            'attachments.*.files.min' => 'Please upload at least one valid file.',
             'attachments.*.files.*.mimes' => 'Attachment file must be of type: jpg, jpeg, png, pdf, doc, or docx.',
             'attachments.*.files.*.max' => 'Each attachment file must not exceed 10 MB.',
 

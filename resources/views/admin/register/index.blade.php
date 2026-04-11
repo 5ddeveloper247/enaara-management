@@ -66,11 +66,29 @@
     .swal2-popup {
         z-index: 999999 !important;
     }
+    
+    /* Compact error messages */
+    .field-error-msg {
+        font-size: 0.72rem;
+        font-weight: 500;
+        line-height: 1.1;
+        margin-top: 4px;
+        display: block;
+        width: 100%;
+        color: #dc3545; /* Bootstrap danger red */
+    }
+    .is-invalid-step { border-color: #dc3545 !important; }
+    
+    /* Cropper Styles */
+    .cropper-container { max-height: 400px !important; }
+    #cropperImage { max-width: 100%; display: block; }
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 @endpush
 
 @section('content')
 @include('admin.register.attachment-modal')
+@include('admin.register.cropper-modal')
 
 {{-- Toast --}}
 <div id="formToast" class="toast align-items-center border-0 hide" role="alert" aria-live="assertive" aria-atomic="true">
@@ -119,7 +137,7 @@
         </form>
 
         {{-- Navigation --}}
-        <div class="d-flex justify-content-between mt-4">
+        <div class="d-flex justify-content-between mt-4" id="wizard-navigation">
             <button class="btn btn-outline-secondary" id="prevBtn" onclick="changeStep(-1)" style="display:none">Back</button>
             <button class="btn ms-auto text-decoration-none text-white bg-main rounded-2 d-flex align-items-center border-0 px-3"
                 id="nextBtn" onclick="changeStep(1)">Next</button>
@@ -130,6 +148,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 <script>
    const isEditMode = {{ isset($employee) ? 'true' : 'false' }};
     const submitLabel = isEditMode ? 'Update Employee' : 'Create Employee';
@@ -157,6 +176,38 @@
         if (dir === 1) {
             if (!validateStep(current)) return;
             
+            // --- Step 6 Subsection Logic ---
+            if (current === 6) {
+                const subSections = ['s6-contact', 's6-family', 's6-academic', 's6-employment', 's6-medical', 's6-references'];
+                const activeSub = document.querySelector('#step-6 .sub-section:not(.d-none)')?.id;
+                const activeIdx = subSections.indexOf(activeSub);
+
+                if (activeIdx !== -1 && activeIdx < subSections.length - 1) {
+                    const nextSubId = subSections[activeIdx + 1];
+                    const nextBtnInSidebar = document.querySelector(`[data-target="${nextSubId}"]`);
+
+                    // Trigger save for current subsection if needed
+                    if (activeSub === 's6-contact') {
+                        saveContactSubsection(() => { if(nextBtnInSidebar) nextBtnInSidebar.click(); });
+                    } else if (activeSub === 's6-medical') {
+                        saveMedicalSubsection(() => { if(nextBtnInSidebar) nextBtnInSidebar.click(); });
+                    } else {
+                        // Table-based sections just move forward as rows are saved individually
+                        if(nextBtnInSidebar) nextBtnInSidebar.click();
+                    }
+                    return;
+                } else if (activeSub === 's6-references') {
+                    serializeArrayData();
+                    saveReferencesSubsection();
+                    return;
+                }
+            }
+            // -------------------------------
+
+            if (current === 6) {
+                serializeArrayData();
+            }
+            
             processStepSave(current, function() {
                 if (current === total) {
                     window.location.href = '{{ route("admin.employee.index") }}';
@@ -169,12 +220,24 @@
             });
             return;
         }
+
+        // --- Step 6 Subsection Back Logic ---
+        if (dir === -1 && current === 6) {
+            const subSections = ['s6-contact', 's6-family', 's6-academic', 's6-employment', 's6-medical', 's6-references'];
+            const activeSub = document.querySelector('#step-6 .sub-section:not(.d-none)')?.id;
+            const activeIdx = subSections.indexOf(activeSub);
+            if (activeIdx > 0) {
+                const prevSubId = subSections[activeIdx - 1];
+                document.querySelector(`[data-target="${prevSubId}"]`)?.click();
+                return;
+            }
+        }
+        // ------------------------------------
+
         goToStep(current + dir);
     }
 
     function processStepSave(step, onSuccess) {
-        if (typeof serializeArrayData === 'function') serializeArrayData();
-
         const form = document.getElementById('employeeForm');
         const formData = new FormData();
         formData.append('step', step);
@@ -188,6 +251,12 @@
                     if (input.checked) formData.append(name, input.value);
                 } else if (input.type === 'file') {
                     // Handled locally or separately, but included for completeness
+                    // If it's profile_photo and we have a cropped blob, we SKIP it here
+                    // because we'll add the cropped version later.
+                    if (name === 'profile_photo' && (typeof croppedImageBlob !== 'undefined' && croppedImageBlob)) {
+                        return;
+                    }
+
                     if (input.files && input.files.length > 0) {
                         for(let i=0; i<input.files.length; i++) {
                             formData.append(name, input.files[i]);
@@ -197,6 +266,11 @@
                     formData.append(name, input.value);
                 }
             });
+        }
+
+        // Add cropped profile photo if exists
+        if (typeof croppedImageBlob !== 'undefined' && croppedImageBlob) {
+            formData.append('profile_photo', croppedImageBlob, originalFileName || 'profile_photo.jpg');
         }
 
         // Include any dynamically serialized arrays (Family, Academics, Employments)
@@ -215,10 +289,12 @@
 
         const nextBtn = document.getElementById('nextBtn');
         const prevBtn = document.getElementById('prevBtn');
-        const originalText = nextBtn.textContent;
-        nextBtn.disabled = true;
-        prevBtn.disabled = true;
-        nextBtn.textContent = 'Saving…';
+        const originalText = nextBtn ? nextBtn.textContent : 'Save';
+        if (nextBtn) {
+            nextBtn.disabled = true;
+            nextBtn.textContent = 'Saving…';
+        }
+        if (prevBtn) prevBtn.disabled = true;
 
         const attachmentPayload = typeof window.getAttachmentPayload === 'function' ?
             window.getAttachmentPayload() :
@@ -248,13 +324,28 @@
             },
             body: formData,
         })
-        .then(r => r.json())
+        .then(async r => {
+            const isJson = r.headers.get('content-type')?.includes('application/json');
+            const data = isJson ? await r.json() : null;
+
+            if (!r.ok) {
+                if (r.status === 422 && data && data.errors) {
+                    return { success: false, errors: data.errors };
+                }
+                throw new Error(data?.message || `Server error: ${r.status}`);
+            }
+            return data;
+        })
         .then(data => {
-            nextBtn.disabled = false;
-            prevBtn.disabled = false;
-            nextBtn.textContent = originalText;
+            if (nextBtn) {
+                nextBtn.disabled = false;
+                nextBtn.textContent = originalText;
+            }
+            if (prevBtn) prevBtn.disabled = false;
 
             if (data.success) {
+                clearStepErrors(); // Clear errors on success
+
                 if (data.employee_id) {
                     let hiddenId = document.getElementById('saved_employee_id');
                     if (!hiddenId) {
@@ -267,7 +358,6 @@
                     hiddenId.value = data.employee_id;
                 }
                 
-                // If it's the final step, show success
                 if (step === total) {
                     showSuccess('Employee registration completed successfully!', 'Completed').then(() => {
                         if (onSuccess) onSuccess();
@@ -280,20 +370,6 @@
                 
             } else if (data.errors) {
                 showFieldErrors(data.errors);
-                let errorHtml = '<div class="text-danger text-start mt-2" style="font-size: 0.95em;">';
-                errorHtml += '<ul class="mb-0 ps-3">';
-                Object.values(data.errors).flat().forEach(msg => {
-                    errorHtml += `<li>${msg}</li>`;
-                });
-                errorHtml += '</ul></div>';
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Validation Error',
-                    html: `Please check the highlighted fields and errors below:${errorHtml}`,
-                    confirmButtonColor: '#1a237e',
-                    confirmButtonText: 'Dismiss'
-                });
             } else {
                 showError(data.message || 'Something went wrong.');
             }
@@ -307,8 +383,8 @@
     }
 
     function clearStepErrors() {
-        document.querySelectorAll('.step-val-error').forEach(e => e.remove());
-        document.querySelectorAll('.is-invalid-step').forEach(e => e.classList.remove('is-invalid-step', 'is-invalid'));
+        document.querySelectorAll('.step-val-error, .field-error-msg').forEach(e => e.remove());
+        document.querySelectorAll('.is-invalid-step, .is-invalid').forEach(e => e.classList.remove('is-invalid-step', 'is-invalid'));
     }
 
     function markFieldInvalid(el, msg) {
@@ -411,6 +487,7 @@
     }
 
     function applyStepNavigation(target) {
+        clearStepErrors(); // Always clear errors when switching steps
         document.getElementById('step-' + current).classList.remove('active');
         for (let i = 1; i <= total; i++) {
             if (i < target) updateCircle(i, 'done');
@@ -419,16 +496,35 @@
         }
         current = target;
         document.getElementById('step-' + current).classList.add('active');
-        document.getElementById('prevBtn').style.display = current === 1 ? 'none' : 'inline-block';
+        
+        // Hide Back button on Step 6 (user preference)
+        document.getElementById('prevBtn').style.display = (current === 1 || current === 6) ? 'none' : 'inline-block';
+        
         const nextBtn = document.getElementById('nextBtn');
+        const navContainer = document.getElementById('wizard-navigation');
+        if (navContainer) navContainer.style.display = 'flex';
+
         if (current === total) {
-            nextBtn.textContent = submitLabel;
-            nextBtn.className = 'btn btn-success ms-auto px-4';
-            nextBtn.onclick = () => changeStep(1);
+            const activeSub = document.querySelector('#step-6 .sub-section:not(.d-none)')?.id;
+            if (activeSub === 's6-references') {
+                nextBtn.style.display = 'inline-block';
+                nextBtn.textContent = 'Submit Registration';
+                nextBtn.className = 'btn ms-auto text-decoration-none text-white btn-success rounded-2 d-flex align-items-center border-0 px-3';
+                nextBtn.onclick = () => changeStep(1);
+            } else {
+                nextBtn.style.display = 'inline-block';
+                nextBtn.textContent = 'Next Section';
+                nextBtn.className = 'btn ms-auto text-decoration-none text-white bg-main rounded-2 d-flex align-items-center border-0 px-3';
+                nextBtn.onclick = () => changeStep(1);
+            }
         } else {
-            nextBtn.textContent = 'Next';
-            nextBtn.className = 'btn ms-auto text-decoration-none text-white bg-main rounded-2 d-flex align-items-center border-0 px-3';
-            nextBtn.onclick = () => changeStep(1);
+            if (navContainer) navContainer.style.display = 'flex';
+            if (nextBtn) {
+                nextBtn.style.display = 'inline-block';
+                nextBtn.textContent = 'Next';
+                nextBtn.className = 'btn ms-auto text-decoration-none text-white bg-main rounded-2 d-flex align-items-center border-0 px-3';
+                nextBtn.onclick = () => changeStep(1);
+            }
         }
         updateStepGateStyles();
     }
@@ -551,24 +647,90 @@
         }).show();
     }
 
-    function showFieldErrors(errors) {
-        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-        document.querySelectorAll('.field-error-msg').forEach(el => el.remove());
-        Object.entries(errors).forEach(([field, messages]) => {
-            const input = document.querySelector(`[name="${field}"]`);
+    function showFieldErrors(errors, context = document) {
+        context.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid', 'is-invalid-step'));
+        context.querySelectorAll('.field-error-msg, .step-val-error').forEach(el => el.remove());
+
+        let highlightedCount = 0;
+        const errorEntries = Object.entries(errors);
+
+        errorEntries.forEach(([field, messages]) => {
+            let fieldName = field;
+            if (field.includes('.')) {
+                const parts = field.split('.');
+                fieldName = parts[0] + parts.slice(1).map(p => `[${p}]`).join('');
+            }
+
+            // Try exact name, then name with [], then class-based (fm-, ac-, em-), then ID
+            let input = context.querySelector(`[name="${fieldName}"]`) || 
+                        context.querySelector(`[name="${fieldName}[]"]`) ||
+                        context.querySelector(`.fm-${fieldName}`) ||
+                        context.querySelector(`.ac-${fieldName}`) ||
+                        context.querySelector(`.em-${fieldName}`) ||
+                        (context === document ? document.getElementById(fieldName) : null);
+
             if (input) {
-                input.classList.add('is-invalid');
+                highlightedCount++;
+                let targetEl = input;
+                if (field === 'profile_photo') {
+                    const box = document.getElementById('uploadImageBox');
+                    if (box) targetEl = box;
+                }
+
+                targetEl.classList.add('is-invalid', 'is-invalid-step');
                 const err = document.createElement('div');
-                err.className = 'field-error-msg text-danger small mt-1';
+                err.className = 'field-error-msg text-danger small';
                 err.textContent = messages[0];
-                input.insertAdjacentElement('afterend', err);
+                
+                if (field === 'profile_photo' || fieldName === 'profile_photo') {
+                    const col = targetEl.closest('div[class*="col-"]');
+                    if (col) {
+                        col.appendChild(err);
+                    } else {
+                        targetEl.insertAdjacentElement('afterend', err);
+                    }
+                } else if (targetEl.type === 'radio' || targetEl.type === 'checkbox') {
+                    const parentGroup = targetEl.closest('.d-flex, .form-check, div');
+                    if (parentGroup) {
+                        parentGroup.insertAdjacentElement('afterend', err);
+                    } else {
+                        targetEl.insertAdjacentElement('afterend', err);
+                    }
+                } else {
+                    // If it's a table input, ensure it doesn't break the cell layout
+                    const parentTd = targetEl.closest('td');
+                    if (parentTd) {
+                        parentTd.appendChild(err);
+                    } else {
+                        targetEl.insertAdjacentElement('afterend', err);
+                    }
+                }
             }
         });
+
+        // Fallback to Swal if no fields were highlighted or if requested
+        if (highlightedCount === 0 && errorEntries.length > 0) {
+            let errorHtml = '<div class="text-danger text-start mt-2"><ul>';
+            Object.values(errors).flat().forEach(msg => {
+                errorHtml += `<li>${msg}</li>`;
+            });
+            errorHtml += '</ul></div>';
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                html: errorHtml,
+                confirmButtonColor: '#1a237e'
+            });
+        }
+
         const firstError = document.querySelector('.is-invalid');
-        if (firstError) firstError.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-        });
+        if (firstError) {
+            firstError.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
     }
 
     function submitEmployeeForm() {
@@ -749,6 +911,7 @@
         if (d.family && d.family.length) {
             window.familyData = d.family.map(function(m) {
                 return {
+                    id: m.id || null,
                     name: m.name || '',
                     gender: m.gender || '',
                     dob: m.dob || '',
@@ -760,13 +923,14 @@
             if (famList) famList.innerHTML = '';
             if (typeof resetFamilyTableEmpty === 'function') resetFamilyTableEmpty();
             window.familyData.forEach(function(m, idx) {
-                if (m && typeof appendFamilyCard === 'function') appendFamilyCard(idx, m);
+                if (m && typeof appendFamilyCard === 'function') appendFamilyCard(idx, m, m.id);
             });
         }
 
         if (d.academics && d.academics.length) {
             window.academicsData = d.academics.map(function(a) {
                 return {
+                    id: a.id || null,
                     degree: a.degree || '',
                     grade_cgpa: a.grade_cgpa || '',
                     start_date: a.start_date || '',
@@ -779,13 +943,14 @@
             if (acList) acList.innerHTML = '';
             if (typeof resetAcademicTableEmpty === 'function') resetAcademicTableEmpty();
             window.academicsData.forEach(function(a, idx) {
-                if (a && typeof appendAcademicCard === 'function') appendAcademicCard(idx, a);
+                if (a && typeof appendAcademicCard === 'function') appendAcademicCard(idx, a, a.id);
             });
         }
 
         if (d.employments && d.employments.length) {
             window.employmentsData = d.employments.map(function(e) {
                 return {
+                    id: e.id || null,
                     organization: e.organization || '',
                     designation: e.designation || '',
                     from_date: e.from_date || '',
@@ -798,7 +963,7 @@
             if (emList) emList.innerHTML = '';
             if (typeof resetEmploymentTableEmpty === 'function') resetEmploymentTableEmpty();
             window.employmentsData.forEach(function(e, idx) {
-                if (e && typeof appendEmploymentCard === 'function') appendEmploymentCard(idx, e);
+                if (e && typeof appendEmploymentCard === 'function') appendEmploymentCard(idx, e, e.id);
             });
         }
 
@@ -824,5 +989,24 @@
     @endif
 
     updateStepGateStyles();
+    applyStepNavigation(current);
+    // Real-time error clearing
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('is-invalid') || e.target.classList.contains('is-invalid-step')) {
+            e.target.classList.remove('is-invalid', 'is-invalid-step');
+            
+            // Clear standard errors
+            let err = e.target.nextElementSibling;
+            if (err && (err.classList.contains('field-error-msg') || err.classList.contains('step-val-error') || err.classList.contains('invalid-feedback'))) {
+                err.remove();
+            }
+            
+            // Handle radio/checkbox group errors
+            const parent = e.target.closest('.d-flex, .form-check, div');
+            if (parent && parent.nextElementSibling && (parent.nextElementSibling.classList.contains('field-error-msg') || parent.nextElementSibling.classList.contains('step-val-error'))) {
+                parent.nextElementSibling.remove();
+            }
+        }
+    });
 </script>
 @endpush

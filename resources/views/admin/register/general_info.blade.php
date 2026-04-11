@@ -15,7 +15,7 @@
                     style="width:160px; height:100px; border:2px dashed var(--main-color); border-radius:10px; cursor:pointer; background:#f8f9fa1a;">
                     <i class="bi bi-cloud-arrow-up fs-1 text-secondary"></i>
                     <span style="font-size:.72rem; color:#6c757d;">Click to upload</span>
-                    <input type="file" id="uploadImage" name="profile_photo" accept="image/*" class="d-none" onchange="previewImg(this)">
+                    <input type="file" id="uploadImage" name="profile_photo" accept="image/*" class="d-none" onchange="openCropper(this)">
                 </label>
 
                 <div id="imgPreviewWrapper" style="display:none; position:relative; width:130px; height:130px; margin-top:6px;">
@@ -23,6 +23,9 @@
                         style="width:130px; height:130px; object-fit:cover; border-radius:10px; border:2px solid var(--main-color);">
                     <button type="button" id="removeImageBtn" onclick="removePreviewImg()" class="d-none" style="  position:absolute; top:6px; right:6px; width:28px; height:28px; border:none; border-radius:50%; background:#dc3545; color:#fff; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.2); padding:0;">
                         &times; </button>
+                </div>
+                <div class="mt-1">
+                    <small class="text-muted" style="font-size: 0.65rem;">Allowed: JPG, PNG, GIF, SVG. Max 2MB</small>
                 </div>
             </div>
 
@@ -218,12 +221,59 @@
         const removeBtn = document.getElementById('removeImageBtn');
         const uploadBox = document.getElementById('uploadImageBox');
 
+        const employeeId = document.querySelector('input[name="employee_id"]').value;
+
+        if (employeeId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You are about to delete the profile photo.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#012445',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('id', employeeId);
+                    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+                    fetch('{{ route("admin.employee.delete_photo") }}', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            resetPreviewUI(input, preview, previewWrapper, removeBtn, uploadBox);
+                        } else {
+                            showToast(data.message || 'Error deleting photo.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('Error deleting photo. Please try again.', 'error');
+                    });
+                }
+            });
+        } else {
+            resetPreviewUI(input, preview, previewWrapper, removeBtn, uploadBox);
+        }
+    }
+
+    function resetPreviewUI(input, preview, previewWrapper, removeBtn, uploadBox) {
         input.value = '';
         preview.src = '';
         previewWrapper.style.display = 'none';
 
         removeBtn.classList.add('d-none');
         uploadBox.classList.remove('d-none');
+
+        // Clear cropped blob
+        if (typeof croppedImageBlob !== 'undefined') {
+            croppedImageBlob = null;
+        }
     }
 </script>
 

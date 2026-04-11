@@ -308,63 +308,71 @@ class EmployeeService
         return substr(implode('', $letters), 0, 4);
     }
 
-    private function savePoliceVerification(int $id, array $d): void
+    public function savePoliceVerification(int $id, array $d): void
     {
         if (empty($d['verification_status']) && empty($d['msr_letter_no'])) return;
-        EmployeePoliceVerification::create([
-            'employee_id'            => $id,
-            'verification_status'    => $d['verification_status'] ?? null,
-            'msr_letter_no'          => $d['msr_letter_no'] ?? null,
-            'addressee'              => $d['addressee'] ?? null,
-            'verifying_authority'    => $d['verifying_authority'] ?? null,
-            'verification_letter_no' => $d['verification_letter_no'] ?? null,
-            'next_verification_date' => !empty($d['next_verification_date']) ? $d['next_verification_date'] : null,
-            'remarks'                => $d['police_remarks'] ?? null,
-        ]);
+        EmployeePoliceVerification::updateOrCreate(
+            ['employee_id' => $id],
+            [
+                'verification_status'    => $d['verification_status'] ?? null,
+                'msr_letter_no'          => $d['msr_letter_no'] ?? null,
+                'addressee'              => $d['addressee'] ?? null,
+                'verifying_authority'    => $d['verifying_authority'] ?? null,
+                'verification_letter_no' => $d['verification_letter_no'] ?? null,
+                'next_verification_date' => !empty($d['next_verification_date']) ? $d['next_verification_date'] : null,
+                'remarks'                => $d['police_remarks'] ?? null,
+            ]
+        );
     }
 
-    private function saveArmedForce(int $id, array $d): void
+    public function saveArmedForce(int $id, array $d): void
     {
         if (empty($d['service_no']) && empty($d['rank'])) return;
-        EmployeeArmedForce::create([
-            'employee_id'           => $id,
-            'service_no'            => $d['service_no'] ?? null,
-            'rank'                  => $d['rank'] ?? null,
-            'medical_category'      => $d['medical_category'] ?? null,
-            'date_of_commissioning' => !empty($d['date_of_commissioning']) ? $d['date_of_commissioning'] : null,
-            'date_of_retirement'    => !empty($d['date_of_retirement']) ? $d['date_of_retirement'] : null,
-            'reason_of_retirement'  => $d['reason_of_retirement'] ?? null,
-            'corps_regiment'        => $d['corps_regiment'] ?? null,
-            'ex_army_unit'          => $d['ex_army_unit'] ?? null,
-            'trade'                 => $d['trade'] ?? null,
-            'pma_lc_ots'            => $d['pma_lc_ots'] ?? null,
-        ]);
+        EmployeeArmedForce::updateOrCreate(
+            ['employee_id' => $id],
+            [
+                'service_no'            => $d['service_no'] ?? null,
+                'rank'                  => $d['rank'] ?? null,
+                'medical_category'      => $d['medical_category'] ?? null,
+                'date_of_commissioning' => !empty($d['date_of_commissioning']) ? $d['date_of_commissioning'] : null,
+                'date_of_retirement'    => !empty($d['date_of_retirement']) ? $d['date_of_retirement'] : null,
+                'reason_of_retirement'  => $d['reason_of_retirement'] ?? null,
+                'corps_regiment'        => $d['corps_regiment'] ?? null,
+                'ex_army_unit'          => $d['ex_army_unit'] ?? null,
+                'trade'                 => $d['trade'] ?? null,
+                'pma_lc_ots'            => $d['pma_lc_ots'] ?? null,
+            ]
+        );
     }
 
-    private function saveContact(int $id, array $d): void
+    public function saveContact(int $id, array $d): void
     {
         if (empty($d['residence_phone']) && empty($d['cell_no']) && empty($d['present_address'])) return;
-        EmployeeContact::create([
-            'employee_id'       => $id,
-            'residence_phone'   => $d['residence_phone'] ?? null,
-            'emergency_contact' => $d['emergency_contact'] ?? null,
-            'cell_no'           => $d['cell_no'] ?? null,
-            'email'             => $d['contact_email'] ?? null,
-            'present_address'   => $d['present_address'] ?? null,
-            'permanent_address' => $d['permanent_address'] ?? null,
-        ]);
+        EmployeeContact::updateOrCreate(
+            ['employee_id' => $id],
+            [
+                'residence_phone'   => $d['residence_phone'] ?? null,
+                'emergency_contact' => $d['emergency_contact'] ?? null,
+                'cell_no'           => $d['cell_no'] ?? null,
+                'email'             => $d['contact_email'] ?? null,
+                'present_address'   => $d['present_address'] ?? null,
+                'permanent_address' => $d['permanent_address'] ?? null,
+            ]
+        );
     }
 
-    private function saveBankDetail(int $id, array $d): void
+    public function saveBankDetail(int $id, array $d): void
     {
         if (empty($d['account_title']) && empty($d['account_no'])) return;
-        EmployeeBankDetail::create([
-            'employee_id'   => $id,
-            'account_title' => $d['account_title'] ?? null,
-            'account_no'    => $d['account_no'] ?? null,
-            'bank_branch'   => $d['bank_branch'] ?? null,
-            'account_type'  => $d['account_type'] ?? null,
-        ]);
+        EmployeeBankDetail::updateOrCreate(
+            ['employee_id' => $id],
+            [
+                'account_title' => $d['account_title'] ?? null,
+                'account_no'    => $d['account_no'] ?? null,
+                'bank_branch'   => $d['bank_branch'] ?? null,
+                'account_type'  => $d['account_type'] ?? null,
+            ]
+        );
     }
 
     private function saveFamilyMembers(int $id, array $rows): void
@@ -414,32 +422,113 @@ class EmployeeService
         }
     }
 
-    private function saveMedical(int $id, array $d): void
+    public function saveMedical(int $id, array $d): void
     {
         if (empty($d['last_fitness_test']) && empty($d['blood_group'])) return;
-        EmployeeMedical::create([
-            'employee_id'            => $id,
-            'last_fitness_test'      => $d['last_fitness_test'] ?? null,
-            'has_disability'         => $d['has_disability'] ?? null,
-            'blood_group'            => $d['blood_group'] ?? null,
-            'disability_type'        => $d['disability_type'] ?? null,
-            'disability_description' => $d['disability_description'] ?? null,
-        ]);
+        EmployeeMedical::updateOrCreate(
+            ['employee_id' => $id],
+            [
+                'last_fitness_test'      => $d['last_fitness_test'] ?? null,
+                'has_disability'         => $d['has_disability'] ?? null,
+                'blood_group'            => $d['blood_group'] ?? null,
+                'disability_type'        => $d['disability_type'] ?? null,
+                'disability_description' => $d['disability_description'] ?? null,
+            ]
+        );
     }
 
-    private function saveReferences(int $id, array $d): void
+    public function savePhoto(int $id, $file): void
+    {
+        // Remove existing photo first to ensure only one profile photo exists
+        $this->deletePhoto($id);
+        $this->saveMediaFiles($id, [$file]);
+    }
+
+    public function deletePhoto(int $id): bool
+    {
+        $photo = MediaFile::where('module_name', 'employee')
+            ->where('module_id', $id)
+            ->where('file_type', 'photo')
+            ->first();
+
+        if ($photo) {
+            if (Storage::disk('public')->exists($photo->file_path)) {
+                Storage::disk('public')->delete($photo->file_path);
+            }
+            return $photo->delete();
+        }
+        return false;
+    }
+
+    public function saveReferences(int $id, array $d): void
     {
         for ($i = 1; $i <= 2; $i++) {
             if (empty($d["ref{$i}_name"])) continue;
-            EmployeeReference::create([
-                'employee_id'  => $id,
-                'ref_number'   => $i,
-                'name'         => $d["ref{$i}_name"],
-                'designation'  => $d["ref{$i}_designation"] ?? null,
-                'organization' => $d["ref{$i}_organization"] ?? null,
-                'contact_no'   => $d["ref{$i}_contact"] ?? null,
-                'relationship' => $d["ref{$i}_relationship"] ?? null,
-            ]);
+            EmployeeReference::updateOrCreate(
+                ['employee_id' => $id, 'ref_number' => $i],
+                [
+                    'name'         => $d["ref{$i}_name"],
+                    'designation'  => $d["ref{$i}_designation"] ?? null,
+                    'organization' => $d["ref{$i}_organization"] ?? null,
+                    'contact_no'   => $d["ref{$i}_contact"] ?? null,
+                    'relationship' => $d["ref{$i}_relationship"] ?? null,
+                ]
+            );
+        }
+    }
+
+    public function saveFamilyMember(int $id, array $row)
+    {
+        if (empty($row['name'])) return null;
+        return EmployeeFamilyMember::create([
+            'employee_id' => $id,
+            'name'        => $row['name'],
+            'gender'      => $row['gender'] ?? null,
+            'dob'         => !empty($row['dob']) ? $row['dob'] : null,
+            'relation'    => $row['relation'] ?? null,
+            'occupation'  => $row['occupation'] ?? null,
+        ]);
+    }
+
+    public function saveAcademic(int $id, array $row)
+    {
+        if (empty($row['degree'])) return null;
+        return EmployeeAcademic::create([
+            'employee_id'    => $id,
+            'degree'         => $row['degree'],
+            'grade_cgpa'     => $row['grade_cgpa'] ?? null,
+            'start_date'     => !empty($row['start_date']) ? $row['start_date'] : null,
+            'end_date'       => !empty($row['end_date']) ? $row['end_date'] : null,
+            'field_of_study' => $row['field_of_study'] ?? null,
+            'institute'      => $row['institute'] ?? null,
+        ]);
+    }
+
+    public function saveExEmployment(int $id, array $row)
+    {
+        if (empty($row['organization'])) return null;
+        return EmployeeExEmployment::create([
+            'employee_id'        => $id,
+            'organization'       => $row['organization'],
+            'designation'        => $row['designation'] ?? null,
+            'from_date'          => !empty($row['from_date']) ? $row['from_date'] : null,
+            'to_date'            => !empty($row['to_date']) ? $row['to_date'] : null,
+            'salary'             => $row['salary'] ?? null,
+            'reason_for_leaving' => $row['reason_for_leaving'] ?? null,
+        ]);
+    }
+
+    public function deleteSubsectionRow(string $type, int $id): bool
+    {
+        switch ($type) {
+            case 'family_row':
+                return EmployeeFamilyMember::where('id', $id)->delete() > 0;
+            case 'academic_row':
+                return EmployeeAcademic::where('id', $id)->delete() > 0;
+            case 'employment_row':
+                return EmployeeExEmployment::where('id', $id)->delete() > 0;
+            default:
+                return false;
         }
     }
 
@@ -483,6 +572,42 @@ class EmployeeService
                 ]);
             }
         }
+    }
+
+    public function saveSingleAttachment(int $id, array $attachmentData): array
+    {
+        $savedFiles = [];
+        $files = $attachmentData['files'] ?? [];
+        foreach ($files as $file) {
+            $path = $file->store("employees/{$id}/attachments", 'public');
+            $savedFile = MediaFile::create([
+                'module_name'     => 'employee',
+                'module_id'       => $id,
+                'file_type'       => 'attachment',
+                'attachment_type' => $attachmentData['type'] ?: null,
+                'title'           => $attachmentData['name'] ?: null,
+                'description'     => $attachmentData['description'] ?: null,
+                'file_path'       => $path,
+                'file_name'       => $file->getClientOriginalName(),
+                'mime_type'       => $file->getMimeType(),
+                'uploaded_by'     => Auth::id(),
+            ]);
+            $savedFiles[] = $savedFile;
+        }
+        return $savedFiles;
+    }
+
+    public function deleteAttachment(int $id): bool
+    {
+        $attachment = MediaFile::where('file_type', 'attachment')->find($id);
+
+        if ($attachment) {
+            if (Storage::disk('public')->exists($attachment->file_path)) {
+                Storage::disk('public')->delete($attachment->file_path);
+            }
+            return $attachment->delete();
+        }
+        return false;
     }
 
     private function createUserAccount(Employee $employee, array $data): void
@@ -745,6 +870,7 @@ class EmployeeService
                 'account_type'  => $bank->account_type,
             ] : null,
             'family' => $employee->familyMembers->map(fn($m) => [
+                'id'         => $m->id,
                 'name'       => $m->name,
                 'gender'     => $m->gender,
                 'dob'        => $m->dob?->format('Y-m-d'),
@@ -752,6 +878,7 @@ class EmployeeService
                 'occupation' => $m->occupation,
             ])->values()->all(),
             'academics' => $employee->academics->map(fn($a) => [
+                'id'             => $a->id,
                 'degree'         => $a->degree,
                 'grade_cgpa'     => $a->grade_cgpa,
                 'start_date'     => $a->start_date?->format('Y-m-d'),
@@ -760,6 +887,7 @@ class EmployeeService
                 'institute'      => $a->institute,
             ])->values()->all(),
             'employments' => $employee->exEmployments->map(fn($e) => [
+                'id'                 => $e->id,
                 'organization'       => $e->organization,
                 'designation'        => $e->designation,
                 'from_date'          => $e->from_date?->format('Y-m-d'),

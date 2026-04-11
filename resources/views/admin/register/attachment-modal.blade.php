@@ -99,9 +99,9 @@
                                     class="d-flex flex-column align-items-center justify-content-center gap-2 w-100"
                                     style="height:130px;border:2px dashed rgba(255,255,255,.3);border-radius:10px;cursor:pointer;background:rgba(255,255,255,.07);">
                                     <i class="bi bi-cloud-arrow-up fs-1" style="color:rgba(255,255,255,.4);"></i>
-                                    <span class="small" style="color:rgba(255,255,255,.5);">Click to upload (multiple
-                                        allowed)</span>
-                                    <input type="file" id="attachmentUpload" accept="image/*,.pdf,.doc,.docx"
+                                    <span class="small" style="color:rgba(255,255,255,.5);">Click to upload (multiple allowed)</span>
+                                    <span class="small" style="color:rgba(255,255,255,.5); font-size: 0.75rem;">(Allowed: JPG, PNG, PDF, DOC, DOCX up to 10MB)</span>
+                                    <input type="file" id="attachmentUpload" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
                                         class="d-none" multiple onchange="previewAttachmentUpload(this)">
                                 </label>
                                 <div id="attachmentUploadPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
@@ -190,54 +190,133 @@
         const name = document.getElementById('attachmentName').value.trim();
         const type = document.getElementById('attachmentType').value;
         const desc = document.getElementById('attachmentDesc').value.trim();
+        const employeeId = document.getElementById('saved_employee_id')?.value;
 
-        if (!name) {
+        // Clear previous validation errors
+        document.querySelectorAll('.attachment-error-msg').forEach(el => el.remove());
+        document.querySelectorAll('#addAttachmentModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+        if (!employeeId) {
             Swal.fire({
                 icon: 'warning',
-                title: 'Missing Field',
-                text: 'Please enter an attachment name.',
-                confirmButtonColor: '#1a237e',
-                backdrop: true,
-                allowOutsideClick: false
+                title: 'Employee Not Saved',
+                text: 'Please complete step 1 and save the employee before uploading attachments.',
+                confirmButtonColor: '#1a237e'
             });
             return;
         }
 
         const files = attachmentUploadedFiles.filter(Boolean);
-        if (!files.length) {
+        
+        const formData = new FormData();
+        formData.append('employee_id', employeeId);
+        formData.append('step', 6);
+        formData.append('subsection', 'attachment');
+        formData.append('attachments[0][name]', name);
+        formData.append('attachments[0][type]', type);
+        formData.append('attachments[0][description]', desc);
+        
+        files.forEach(f => {
+            formData.append('attachments[0][files][]', f);
+        });
+        
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+        fetch('{{ route("admin.employee.save_attachment") }}', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const attachment = {
+                    localId: 'existing-' + data.attachment_id,
+                    existingId: data.attachment_id,
+                    name,
+                    type,
+                    desc,
+                    files: [],
+                    existingFiles: data.files || []
+                };
+
+                employeeAttachments.push(attachment);
+                renderAttachmentListing();
+                resetAttachmentForm();
+                
+                showToast(data.message, 'success');
+                document.querySelector('[data-bs-target="#tab-list"]').click();
+            } else {
+                if (data.errors) {
+                    for (const key in data.errors) {
+                        const errorText = data.errors[key][0];
+                        let targetElement;
+                        
+                        if (key.includes('name')) {
+                            targetElement = document.getElementById('attachmentName');
+                        } else if (key.includes('type')) {
+                            targetElement = document.getElementById('attachmentType');
+                        } else if (key.includes('description')) {
+                            targetElement = document.getElementById('attachmentDesc');
+                        } else if (key.includes('files')) {
+                            targetElement = document.getElementById('attachmentUpload').closest('.col-12'); // Using the col-12 container
+                        }
+
+                        if (targetElement) {
+                            const errorSpan = document.createElement('span');
+                            errorSpan.className = 'text-danger small attachment-error-msg d-block mt-1';
+                            errorSpan.textContent = errorText;
+                            
+                            if (key.includes('files')) {
+                                targetElement.appendChild(errorSpan);
+                            } else {
+                                targetElement.parentElement.appendChild(errorSpan);
+                                targetElement.classList.add('is-invalid');
+                            }
+                        } else {
+                            // Fallback if mapping fails
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: errorText,
+                                confirmButtonColor: '#1a237e'
+                            });
+                        }
+                    }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'Failed to save attachment.',
+                        confirmButtonColor: '#1a237e'
+                    });
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error saving attachment:', error);
             Swal.fire({
-                icon: 'warning',
-                title: 'Missing Field',
-                text: 'Please select at least one file to upload.',
-                confirmButtonColor: '#1a237e',
-                backdrop: true,
-                allowOutsideClick: false
+                icon: 'error',
+                title: 'Error',
+                text: 'Server error while saving attachment.',
+                confirmButtonColor: '#1a237e'
             });
-            return;
-        }
-
-        const attachment = {
-            localId: 'att-' + Date.now(),
-            name,
-            type,
-            desc,
-            files,
-            existingId: null,
-        };
-
-        employeeAttachments.push(attachment);
-        renderAttachmentListing();
-        resetAttachmentForm();
-        document.querySelector('[data-bs-target="#tab-list"]').click();
+        });
     }
 
     function resetAttachmentForm() {
         document.getElementById('attachmentName').value = '';
-        document.getElementById('attachmentType').value = '';
+        document.getElementById('attachmentType').value = 'Document';
         document.getElementById('attachmentDesc').value = '';
         document.getElementById('attachmentUpload').value = '';
         document.getElementById('attachmentUploadPreview').innerHTML = '';
         attachmentUploadedFiles = [];
+
+        // Clear errors
+        document.querySelectorAll('.attachment-error-msg').forEach(el => el.remove());
+        document.querySelectorAll('#addAttachmentModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
     }
 
     function renderAttachmentListing() {
@@ -307,9 +386,53 @@
         });
     }
 
-    function deleteAttachment(localId) {
-        employeeAttachments = employeeAttachments.filter(x => x.localId !== localId);
-        renderAttachmentListing();
+    function deleteAttachment(localId, dbId = null) {
+        if (!dbId && !localId.startsWith('existing-')) {
+            // It's a local un-saved attachment (should rarely happen now)
+            employeeAttachments = employeeAttachments.filter(x => x.localId !== localId);
+            renderAttachmentListing();
+            return;
+        }
+
+        const actualDbId = dbId || localId.replace('existing-', '');
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You are about to permanently delete this attachment.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#012445',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const formData = new FormData();
+                formData.append('id', actualDbId);
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+                fetch('{{ route("admin.employee.delete_attachment") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        employeeAttachments = employeeAttachments.filter(x => x.localId !== localId);
+                        renderAttachmentListing();
+                        showToast(data.message, 'success');
+                    } else {
+                        showToast(data.message || 'Error deleting attachment.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Server error while deleting attachment.', 'error');
+                });
+            }
+        });
     }
 
     window.getAttachmentPayload = function() {
