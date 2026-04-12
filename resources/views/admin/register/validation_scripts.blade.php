@@ -93,8 +93,17 @@
     }
 
     function showFieldErrors(errors, context = document) {
-        context.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid', 'is-invalid-step'));
-        context.querySelectorAll('.field-error-msg, .step-val-error').forEach(el => el.remove());
+        // Always clear ALL previous field errors document-wide to avoid stale red marks
+        document.querySelectorAll('.is-invalid-step').forEach(el => {
+            el.classList.remove('is-invalid', 'is-invalid-step');
+            el.style.borderColor = '';
+            el.style.paddingRight = '';
+            el.style.backgroundImage = '';
+            el.style.backgroundRepeat = '';
+            el.style.backgroundPosition = '';
+            el.style.backgroundSize = '';
+        });
+        document.querySelectorAll('.field-error-msg, .step-val-error').forEach(el => el.remove());
 
         const errorEntries = Object.entries(errors);
         if (errorEntries.length === 0) return;
@@ -157,10 +166,19 @@
                 }
 
                 targetEl.classList.add('is-invalid', 'is-invalid-step');
+                targetEl.style.borderColor = '#dc3545';
+                targetEl.style.paddingRight = 'calc(1.5em + 0.75rem)';
+                targetEl.style.backgroundImage = 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 12 12\' width=\'12\' height=\'12\' fill=\'none\' stroke=\'%23dc3545\'%3e%3ccircle cx=\'6\' cy=\'6\' r=\'4.5\'/%3e%3cpath stroke-linejoin=\'round\' d=\'M5.8 3.6h.4L6 6.5z\'/%3e%3ccircle cx=\'6\' cy=\'8.2\' r=\'.6\' fill=\'%23dc3545\' stroke=\'none\'/%3e%3c/svg%3e")';
+                targetEl.style.backgroundRepeat = 'no-repeat';
+                targetEl.style.backgroundPosition = 'right calc(0.375em + 0.1875rem) center';
+                targetEl.style.backgroundSize = 'calc(0.75em + 0.375rem) calc(0.75em + 0.375rem)';
+                
                 const err = document.createElement('div');
-                err.className = 'field-error-msg text-danger small';
+                err.className = 'field-error-msg text-danger small mt-1 fw-bold';
+                err.style.display = 'block';
                 err.textContent = messages[0];
                 
+                // Find best insertion parent: profile_photo box, radio group parent, or nearest col-* wrapper
                 if (field === 'profile_photo' || fieldName === 'profile_photo') {
                     const col = targetEl.closest('div[class*="col-"]');
                     if (col) col.appendChild(err);
@@ -170,10 +188,19 @@
                     if (parentGroup) parentGroup.insertAdjacentElement('afterend', err);
                     else targetEl.insertAdjacentElement('afterend', err);
                 } else {
-                    targetEl.insertAdjacentElement('afterend', err);
+                    // Append inside the nearest col-* wrapper so it stays visible in the layout
+                    const col = targetEl.closest('div[class*="col-"]');
+                    if (col) col.appendChild(err);
+                    else targetEl.insertAdjacentElement('afterend', err);
                 }
             }
         });
+        
+        // Scroll to the first error so it is impossible to miss
+        const firstError = context.querySelector('.is-invalid-step');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
 
         if (highlightedCount === 0 && errorEntries.length > 0) {
             let errorHtml = '<div class="text-danger text-start mt-2"><ul>';

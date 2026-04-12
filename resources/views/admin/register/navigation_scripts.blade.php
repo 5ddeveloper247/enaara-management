@@ -108,6 +108,21 @@
                                 window.saveMedicalSubsection(() => { if(nextBtnInSidebar) nextBtnInSidebar.click(); });
                                 return;
                             }
+                        } else if (activeSub === 's6-family') {
+                            if (typeof window.savePendingFamilyRows === 'function') {
+                                window.savePendingFamilyRows(() => { if(nextBtnInSidebar) nextBtnInSidebar.click(); });
+                                return;
+                            }
+                        } else if (activeSub === 's6-academic') {
+                            if (typeof window.savePendingAcademicRows === 'function') {
+                                window.savePendingAcademicRows(() => { if(nextBtnInSidebar) nextBtnInSidebar.click(); });
+                                return;
+                            }
+                        } else if (activeSub === 's6-employment') {
+                            if (typeof window.savePendingEmploymentRows === 'function') {
+                                window.savePendingEmploymentRows(() => { if(nextBtnInSidebar) nextBtnInSidebar.click(); });
+                                return;
+                            }
                         }
                         
                         if (nextBtnInSidebar) nextBtnInSidebar.click();

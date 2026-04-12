@@ -132,7 +132,7 @@ class EmployeeStepRequest extends FormRequest
     public function rules(): array
     {
         $step = (int)$this->input('step');
-        $employeeId = $this->input('employee_id');
+        $employeeId = (int)$this->input('employee_id') ?: null;
         $subsection = $this->input('subsection');
 
         if ($subsection) {
@@ -416,7 +416,12 @@ class EmployeeStepRequest extends FormRequest
         elseif ($step === 6) {
             $stepRules = [
                 'cell_no' => ['required', 'string', 'regex:' . $this->contactRegex()],
-                'contact_email' => ['required', 'email:rfc,dns', 'max:255'],
+                'contact_email' => [
+                    'required',
+                    'email:rfc',
+                    'max:255',
+                    Rule::unique('employee_contacts', 'email')->ignore($employeeId, 'employee_id'),
+                ],
                 'present_address' => ['required', 'string', 'min:10', 'max:1000'],
                 'permanent_address' => ['required', 'string', 'min:10', 'max:1000'],
                 'password' => [
@@ -436,7 +441,7 @@ class EmployeeStepRequest extends FormRequest
     protected function getSubsectionRules(string $subsection, $employeeId): array
     {
         $rules = [
-            'employee_id' => ['required', 'integer', 'exists:employees,id'],
+            'employee_id' => ['required', 'integer', 'exists:employees,id,deleted_at,NULL'],
             'subsection'  => ['required', 'string'],
         ];
 
@@ -458,7 +463,12 @@ class EmployeeStepRequest extends FormRequest
             case 'contact':
                 return array_merge($rules, [
                     'cell_no'           => ['required', 'string', 'regex:' . $this->contactRegex()],
-                    'contact_email'     => ['required', 'email:rfc,dns', 'max:255'],
+                    'contact_email'     => [
+                        'required', 
+                        'email:rfc', 
+                        'max:255',
+                        Rule::unique('employee_contacts', 'email')->ignore($employeeId, 'employee_id'),
+                    ],
                     'present_address'   => ['required', 'string', 'min:10', 'max:1000'],
                     'permanent_address' => ['required', 'string', 'min:10', 'max:1000'],
                     'residence_phone'   => ['nullable', 'string', 'regex:' . $this->contactRegex()],
@@ -646,7 +656,8 @@ class EmployeeStepRequest extends FormRequest
             'cell_no.regex' => 'Cell number must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
 
             'contact_email.required' => 'Contact email is required.',
-            'contact_email.email' => 'Please enter a valid contact email address.',
+            'contact_email.email'    => 'Please enter a valid contact email address.',
+            'contact_email.unique'   => 'This email address is already registered to another employee.',
 
             'present_address.required' => 'Present address is required.',
             'present_address.min' => 'Present address must be at least 10 characters.',

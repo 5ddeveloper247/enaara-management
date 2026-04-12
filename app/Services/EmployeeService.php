@@ -1031,14 +1031,20 @@ class EmployeeService
                 $employee->contact()->delete();
                 $this->saveContact($employee->id, $data);
 
-                $employee->familyMembers()->delete();
-                $this->saveFamilyMembers($employee->id, $data['family'] ?? []);
+                if (isset($data['family'])) {
+                    $employee->familyMembers()->delete();
+                    $this->saveFamilyMembers($employee->id, $data['family']);
+                }
 
-                $employee->academics()->delete();
-                $this->saveAcademics($employee->id, $data['academics'] ?? []);
-
-                $employee->exEmployments()->delete();
-                $this->saveExEmployments($employee->id, $data['employments'] ?? []);
+                if (isset($data['academics'])) {
+                    $employee->academics()->delete();
+                    $this->saveAcademics($employee->id, $data['academics']);
+                }
+                
+                if (isset($data['employments'])) {
+                    $employee->exEmployments()->delete();
+                    $this->saveExEmployments($employee->id, $data['employments']);
+                }
 
                 $employee->medical()->delete();
                 $this->saveMedical($employee->id, $data);

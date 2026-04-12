@@ -819,6 +819,24 @@
             return;
         }
 
+        let loadingBtn = null;
+        let originalContent = '';
+        if (context && context.nodeType === 1 && context.tagName === 'TR') {
+            loadingBtn = context.querySelector('.action-btn.text-success');
+        } else {
+            loadingBtn = document.getElementById('nextBtn');
+        }
+
+        if (loadingBtn) {
+            loadingBtn.disabled = true;
+            originalContent = loadingBtn.innerHTML;
+            if (loadingBtn.id === 'nextBtn') {
+                loadingBtn.innerHTML = 'Saving...';
+            } else {
+                loadingBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+            }
+        }
+
         const formData = new FormData();
         formData.append('employee_id', employeeId);
         formData.append('subsection', subsection);
@@ -858,15 +876,16 @@
                 if (extraCallback) extraCallback(result);
             } else if (resp.status === 422 && isJson) {
                 const result = await resp.json();
+                // Always show a Swal so user cannot miss the error
+                let errHtml = '<ul class="text-start mt-2">';
+                for (const field in result.errors) {
+                    result.errors[field].forEach(msg => { errHtml += `<li>${msg}</li>`; });
+                }
+                errHtml += '</ul>';
+                Swal.fire({ icon: 'error', title: 'Validation Error', html: errHtml, confirmButtonColor: '#1a237e' });
+                // Also try to highlight the fields
                 if (typeof showFieldErrors === 'function') {
                     showFieldErrors(result.errors, context);
-                } else {
-                    let errHtml = '<ul class="text-start mt-2">';
-                    for (const field in result.errors) {
-                        result.errors[field].forEach(msg => { errHtml += `<li>${msg}</li>`; });
-                    }
-                    errHtml += '</ul>';
-                    Swal.fire({ icon: 'error', title: 'Validation Error', html: errHtml });
                 }
             } else {
                 const text = await resp.text();
@@ -886,10 +905,19 @@
                 text: 'Failed to communicate with the server. Please check your internet connection.',
                 confirmButtonColor: '#d33'
             });
+        } finally {
+            if (loadingBtn) {
+                loadingBtn.disabled = false;
+                loadingBtn.innerHTML = originalContent;
+                if (loadingBtn.id === 'nextBtn' && typeof applyStepNavigation === 'function') {
+                    applyStepNavigation(6); // Ensure correct text is restored if step changed
+                }
+            }
         }
     }
 
     function saveContactSubsection(callback) {
+        const contactSection = document.getElementById('s6-contact') || document;
         const data = {
             residence_phone:   document.querySelector('[name="residence_phone"]').value,
             emergency_contact: document.querySelector('[name="emergency_contact"]').value,
@@ -898,10 +926,11 @@
             present_address:   document.querySelector('[name="present_address"]').value,
             permanent_address: document.querySelector('[name="permanent_address"]').value
         };
-        ajaxSaveSubsection('contact', data, callback);
+        ajaxSaveSubsection('contact', data, callback, contactSection);
     }
 
     function saveMedicalSubsection(callback) {
+        const medicalSection = document.getElementById('s6-medical') || document;
         const data = {
             last_fitness_test:       document.querySelector('[name="last_fitness_test"]').value,
             has_disability:          document.querySelector('[name="has_disability"]:checked')?.value || '',
@@ -909,7 +938,7 @@
             disability_type:         document.querySelector('[name="disability_type"]').value,
             disability_description:  document.querySelector('[name="disability_description"]').value
         };
-        ajaxSaveSubsection('medical', data, callback);
+        ajaxSaveSubsection('medical', data, callback, medicalSection);
     }
 
     function saveReferencesSubsection() {
@@ -1005,4 +1034,158 @@
             row.remove();
         }, row);
     }
+    // ── Auto-save helpers for Next Section navigation ───────────────────────
+    // Each function saves all pending filled rows sequentially.
+    // If any row fails (validation or server error), navigation STOPS and the
+    // user stays on the current section to fix the issue.
+
+    function collectPendingFamilyRows() {
+        const rows = [];
+        document.querySelectorAll('#familyTable tr').forEach(function(row) {
+            const name = row.querySelector('.fm-name')?.value.trim();
+            if (name) {
+                rows.push({
+                    row,
+                    data: {
+                        name,
+                        gender:     row.querySelector('.fm-gender')?.value || '',
+                        dob:        row.querySelector('.fm-dob')?.value || '',
+                        relation:   row.querySelector('.fm-relation')?.value.trim() || '',
+                        occupation: row.querySelector('.fm-occupation')?.value.trim() || ''
+                    }
+                });
+            }
+        });
+        return rows;
+    }
+
+    function collectPendingAcademicRows() {
+        const rows = [];
+        document.querySelectorAll('#academicTable tr').forEach(function(row) {
+            const degree = row.querySelector('.ac-degree')?.value.trim();
+            if (degree) {
+                rows.push({
+                    row,
+                    data: {
+                        degree,
+                        grade_cgpa:     row.querySelector('.ac-grade')?.value.trim() || '',
+                        start_date:     row.querySelector('.ac-start')?.value || '',
+                        end_date:       row.querySelector('.ac-end')?.value || '',
+                        field_of_study: row.querySelector('.ac-field')?.value.trim() || '',
+                        institute:      row.querySelector('.ac-institute')?.value.trim() || ''
+                    }
+                });
+            }
+        });
+        return rows;
+    }
+
+    function collectPendingEmploymentRows() {
+        const rows = [];
+        document.querySelectorAll('#employmentTable tr').forEach(function(row) {
+            const org = row.querySelector('.em-org')?.value.trim();
+            if (org) {
+                rows.push({
+                    row,
+                    data: {
+                        organization:       org,
+                        designation:        row.querySelector('.em-desig')?.value.trim() || '',
+                        from_date:          row.querySelector('.em-from')?.value || '',
+                        to_date:            row.querySelector('.em-to')?.value || '',
+                        salary:             row.querySelector('.em-salary')?.value.trim() || '',
+                        reason_for_leaving: row.querySelector('.em-reason')?.value.trim() || ''
+                    }
+                });
+            }
+        });
+        return rows;
+    }
+
+    function saveRowsSequentially(subsection, items, appendCallback, onAllDone) {
+        if (items.length === 0) { onAllDone(); return; }
+        let allSaved = true;
+
+        function saveOne(i) {
+            if (i >= items.length) {
+                if (allSaved) onAllDone();
+                return;
+            }
+            const item = items[i];
+            const employeeId = document.getElementById('saved_employee_id')?.value;
+            if (!employeeId) return;
+
+            const formData = new FormData();
+            formData.append('employee_id', employeeId);
+            formData.append('subsection', subsection);
+            formData.append('step', '6');
+            for (const key in item.data) {
+                formData.append(key, item.data[key]);
+            }
+
+            fetch('{{ route("admin.employee.save_subsection") }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                body: formData
+            })
+            .then(async (resp) => {
+                const contentType = resp.headers.get("content-type");
+                const isJson = contentType && contentType.indexOf("application/json") !== -1;
+                if (resp.ok && isJson) {
+                    const result = await resp.json();
+                    if (appendCallback) appendCallback(item.row, item.data, result.id);
+                    item.row.remove();
+                    saveOne(i + 1);
+                } else if (resp.status === 422 && isJson) {
+                    allSaved = false;
+                    const result = await resp.json();
+                    let errHtml = '<ul class="text-start mt-2">';
+                    for (const field in result.errors) {
+                        result.errors[field].forEach(msg => { errHtml += `<li>${msg}</li>`; });
+                    }
+                    errHtml += '</ul>';
+                    Swal.fire({ icon: 'error', title: 'Row Validation Error', html: errHtml, confirmButtonColor: '#1a237e' });
+                    // Stop — don't navigate, don't save more rows
+                } else {
+                    allSaved = false;
+                    Swal.fire({ icon: 'error', title: 'Server Error', text: 'A row could not be saved. Please try again.', confirmButtonColor: '#d33' });
+                }
+            })
+            .catch(() => {
+                allSaved = false;
+                Swal.fire({ icon: 'error', title: 'Connection Error', text: 'Failed to save row. Please check your connection.', confirmButtonColor: '#d33' });
+            });
+        }
+
+        saveOne(0);
+    }
+
+    window.savePendingFamilyRows = function(onDone) {
+        const items = collectPendingFamilyRows();
+        if (items.length === 0) { onDone(); return; }
+        saveRowsSequentially('family_row', items, function(row, data, dbId) {
+            const idx = nextSlot(window.familyData);
+            window.familyData[idx] = data;
+            appendFamilyCard(idx, data, dbId);
+        }, onDone);
+    };
+
+    window.savePendingAcademicRows = function(onDone) {
+        const items = collectPendingAcademicRows();
+        if (items.length === 0) { onDone(); return; }
+        saveRowsSequentially('academic_row', items, function(row, data, dbId) {
+            const idx = window.academicsData.length;
+            window.academicsData.push(data);
+            appendAcademicCard(idx, data, dbId);
+        }, onDone);
+    };
+
+    window.savePendingEmploymentRows = function(onDone) {
+        const items = collectPendingEmploymentRows();
+        if (items.length === 0) { onDone(); return; }
+        saveRowsSequentially('employment_row', items, function(row, data, dbId) {
+            const idx = nextSlot(window.employmentsData);
+            window.employmentsData[idx] = data;
+            appendEmploymentCard(idx, data, dbId);
+        }, onDone);
+    };
 </script>

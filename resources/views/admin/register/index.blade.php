@@ -355,6 +355,7 @@
             window.familyData = d.family;
             const famList = document.getElementById('familyListing');
             if (famList) famList.innerHTML = '';
+            if (typeof resetFamilyTableEmpty === 'function') resetFamilyTableEmpty();
             window.familyData.forEach(function(m, idx) {
                 if (m && typeof appendFamilyCard === 'function') appendFamilyCard(idx, m, m.id);
             });
@@ -364,6 +365,7 @@
             window.academicsData = d.academics;
             const acList = document.getElementById('academicListing');
             if (acList) acList.innerHTML = '';
+            if (typeof resetAcademicTableEmpty === 'function') resetAcademicTableEmpty();
             window.academicsData.forEach(function(a, idx) {
                 if (a && typeof appendAcademicCard === 'function') appendAcademicCard(idx, a, a.id);
             });
@@ -373,6 +375,7 @@
             window.employmentsData = d.employments;
             const emList = document.getElementById('employmentListing');
             if (emList) emList.innerHTML = '';
+            if (typeof resetEmploymentTableEmpty === 'function') resetEmploymentTableEmpty();
             window.employmentsData.forEach(function(e, idx) {
                 if (e && typeof appendEmploymentCard === 'function') appendEmploymentCard(idx, e, e.id);
             });
