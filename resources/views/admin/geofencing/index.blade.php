@@ -177,11 +177,13 @@
         <!-- Counters -->
         @include('admin.geofencing.counters')
 
-        <!-- Map Container -->
-        @include('admin.geofencing.map')
+       
 
         <!-- Fences List -->
         @include('admin.geofencing.fence_table')
+
+         <!-- Map Container -->
+         @include('admin.geofencing.map')
     </div>
 
     <!-- Add Fence Canvas -->

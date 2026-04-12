@@ -6,6 +6,19 @@
 
 @push('styles')
 <link href="{{ asset('css/organization.css') }}" rel="stylesheet">
+<style>
+.floor-number-badge {
+    width: 45px;
+    height: 45px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+    line-height: 1;
+    padding: 0 4px;
+}
+</style>
 @endpush
 
 @section('content')

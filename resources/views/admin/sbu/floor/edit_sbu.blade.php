@@ -38,7 +38,7 @@
                 <label for="edit_floor_number" class="form-label fw-semibold small text-white">
                     Floor Number
                 </label>
-                <input type="number" class="form-control" id="edit_floor_number" name="floor_number"
+                <input type="text" class="form-control" id="edit_floor_number" name="floor_number"
                     placeholder="Enter floor number">
             </div>
 

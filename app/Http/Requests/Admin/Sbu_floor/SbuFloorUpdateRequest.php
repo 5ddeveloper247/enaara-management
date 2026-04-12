@@ -24,7 +24,7 @@ class SbuFloorUpdateRequest extends FormRequest
 
             'name' => ['required', 'string', 'max:50'],
 
-            'floor_number' => ['nullable', 'numeric', 'min:-10', 'max:1000'],
+            'floor_number' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9\s\-]+$/'],
 
             'floor_type' => [
                 'required',
@@ -48,9 +48,9 @@ class SbuFloorUpdateRequest extends FormRequest
 
             'name.required' => 'Floor name is required.',
 
-            'floor_number.numeric' => 'Floor number must be a valid number.',
-            'floor_number.min' => 'Floor number cannot be less than -10.',
-            'floor_number.max' => 'Floor number cannot be greater than 1000.',
+            'floor_number.string' => 'Floor number must be valid text.',
+            'floor_number.max' => 'Floor number may not exceed 50 characters.',
+            'floor_number.regex' => 'Floor number may only contain letters, numbers, spaces, and hyphens.',
 
             'floor_type.required' => 'Floor type is required.',
             'floor_type.in' => 'Invalid floor type selected.',

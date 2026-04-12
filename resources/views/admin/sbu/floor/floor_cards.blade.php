@@ -7,9 +7,9 @@
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="d-flex align-items-center">
-                                <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; font-size: 1.1rem;">
-                                    {{ $floor->floor_number !== null ? $floor->floor_number : 'F' }}
-                                </div>
+                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold floor-number-badge">
+    {{ $floor->floor_number !== null ? $floor->floor_number : 'F' }}
+</div>
                                 <div>
                                     <h6 class="mb-0 fw-semibold small">{{ $floor->name }}</h6>
                                     <small class="text-muted small">{{ ucfirst($floor->floor_type) }}</small>
