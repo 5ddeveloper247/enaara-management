@@ -817,6 +817,8 @@ class EmployeeService
             'religion'            => $employee->religion,
             'sect'                => $employee->sect,
             'spouse_name'         => $employee->spouse_name,
+            'spouse_cnic'         => $employee->spouse_cnic,
+            'spouse_nationality'  => $employee->spouse_nationality,
             'marital_status'      => $employee->marital_status,
             'nok_name'            => $employee->nok_name,
             'nok_cnic'            => $employee->nok_cnic,

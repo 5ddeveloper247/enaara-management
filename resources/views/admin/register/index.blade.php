@@ -257,7 +257,19 @@
         setSelect('religion', d.religion);
         setVal('sect', d.sect);
         setVal('spouse_name', d.spouse_name);
+        setVal('spouse_cnic', d.spouse_cnic);
+        if (d.spouse_nationality) {
+            const spouseNatSel = document.getElementById('spouse_nationality');
+            if (spouseNatSel) {
+                spouseNatSel.dataset.prefill = d.spouse_nationality;
+                spouseNatSel.value = d.spouse_nationality;
+            }
+        }
         setSelect('marital_status', d.marital_status);
+        const msEl = document.getElementById('marital_status');
+        if (msEl) {
+            msEl.dispatchEvent(new Event('change'));
+        }
         setVal('nok_name', d.nok_name);
         setVal('nok_cnic', d.nok_cnic);
         setVal('nok_relation', d.nok_relation);
