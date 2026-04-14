@@ -21,7 +21,7 @@
                 <select class="form-select" id="edit_organization_id" name="organization_id" required>
                     <option value="">Select Organization</option>
                     @foreach ($organizations as $org)
-                        <option value="{{ $org->id }}">{{ $org->name }}</option>
+                        <option value="{{ $org->id }}" data-working-days="{{ implode(',', $org->working_days ?? []) }}" data-working-start-time="{{ $org->working_start_time ? substr((string) $org->working_start_time, 0, 5) : '' }}" data-working-end-time="{{ $org->working_end_time ? substr((string) $org->working_end_time, 0, 5) : '' }}" data-opening-grace-period="{{ $org->opening_grace_period ?? '' }}" data-closing-grace-period="{{ $org->closing_grace_period ?? '' }}">{{ $org->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -61,6 +61,52 @@
                 </label>
                 <input type="number" step="0.00000001" class="form-control" id="edit_longitude" name="longitude"
                     placeholder="e.g. 73.04788480">
+            </div>
+
+            <div id="editSbuScheduleModeSection" class="mb-3 d-none">
+                <label class="form-label fw-semibold small text-white">Selection Mode</label>
+                <div class="btn-group w-100" role="group" aria-label="Selection Mode">
+                    <input type="radio" class="btn-check" name="schedule_mode" id="editSbuScheduleModeStandard" value="standard" checked>
+                    <label class="btn btn-outline-light" for="editSbuScheduleModeStandard">Standard</label>
+                    <input type="radio" class="btn-check" name="schedule_mode" id="editSbuScheduleModeCustom" value="custom">
+                    <label class="btn btn-outline-light" for="editSbuScheduleModeCustom">Custom</label>
+                </div>
+            </div>
+
+            <div id="editSbuWorkingScheduleFields">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-white">Working Days</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        @php($days = ['monday' => 'Mon', 'tuesday' => 'Tue', 'wednesday' => 'Wed', 'thursday' => 'Thu', 'friday' => 'Fri', 'saturday' => 'Sat', 'sunday' => 'Sun'])
+                        @foreach($days as $dayValue => $dayLabel)
+                            <div class="form-check">
+                                <input class="form-check-input edit-sbu-working-day" type="checkbox" id="editSbuWorkingDay_{{ $dayValue }}" name="working_days[]" value="{{ $dayValue }}">
+                                <label class="form-check-label small text-white" for="editSbuWorkingDay_{{ $dayValue }}">{{ $dayLabel }}</label>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="editSbuWorkingStartTime" class="form-label fw-semibold small text-white">Working Start Time</label>
+                        <input type="time" class="form-control" id="editSbuWorkingStartTime" name="working_start_time">
+                    </div>
+                    <div class="col-6">
+                        <label for="editSbuWorkingEndTime" class="form-label fw-semibold small text-white">Working End Time</label>
+                        <input type="time" class="form-control" id="editSbuWorkingEndTime" name="working_end_time">
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="editSbuOpeningGracePeriod" class="form-label fw-semibold small text-white">Opening Grace Period (min)</label>
+                        <input type="number" min="0" max="600" class="form-control" id="editSbuOpeningGracePeriod" name="opening_grace_period">
+                    </div>
+                    <div class="col-6">
+                        <label for="editSbuClosingGracePeriod" class="form-label fw-semibold small text-white">Closing Grace Period (min)</label>
+                        <input type="number" min="0" max="600" class="form-control" id="editSbuClosingGracePeriod" name="closing_grace_period">
+                    </div>
+                </div>
             </div>
 
             <div class="mb-3">

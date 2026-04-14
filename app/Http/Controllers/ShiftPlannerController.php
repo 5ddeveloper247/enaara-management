@@ -25,6 +25,7 @@ class ShiftPlannerController extends Controller
 
         $employees = Employee::with('department')
             ->where('is_active', 1)
+            ->shiftBasedWorkArrangement()
             ->orderBy('full_name')
             ->get();
 
@@ -33,6 +34,7 @@ class ShiftPlannerController extends Controller
             ->get();
 
         $rosters = ShiftRosterEntry::with(['employee.department', 'shift'])
+            ->whereHas('employee', fn ($q) => $q->where('engagement_mode', 'shifts'))
             ->orderBy('roster_date', 'asc')
             ->get();
 

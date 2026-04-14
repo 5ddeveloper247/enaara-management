@@ -156,8 +156,11 @@ class ShiftRosterService
 
         $employees = Employee::with('department')
             ->where('is_active', 1)
+            ->shiftBasedWorkArrangement()
             ->orderBy('department_id')
             ->get();
+
+        $shiftEmployeeIds = $employees->pluck('id')->all();
 
         // Build Department List
         $departments = [];
@@ -179,10 +182,14 @@ class ShiftRosterService
             'departmentName' => $e->department->name ?? 'Unassigned'
         ])->values()->all();
 
-        // Fetch Entries
-        $entries = ShiftRosterEntry::with('shift')
-            ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->get();
+        $entriesQuery = ShiftRosterEntry::with('shift')
+            ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()]);
+        if ($shiftEmployeeIds !== []) {
+            $entriesQuery->whereIn('employee_id', $shiftEmployeeIds);
+        } else {
+            $entriesQuery->whereRaw('1 = 0');
+        }
+        $entries = $entriesQuery->get();
 
         $shiftsOut = $entries->map(function($entry) {
             $shiftName = strtolower($entry->shift->name ?? '');

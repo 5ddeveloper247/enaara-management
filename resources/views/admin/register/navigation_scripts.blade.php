@@ -60,11 +60,63 @@
             }
         }
         updateStepGateStyles();
+        (function syncArmedBridge(target) {
+            var bridge = document.getElementById('con-skip-armed');
+            var seg = document.getElementById('armedStepperSegment');
+            if (!bridge || !seg) return;
+            if (seg.classList.contains('d-none')) {
+                bridge.classList.remove('is-done');
+                if (target > 3) bridge.classList.add('is-done');
+            } else {
+                bridge.classList.remove('is-done');
+            }
+        })(target);
     }
+
+    window.isExArmedForceEnabled = function () {
+        var el = document.getElementById('is_ex_armed_force');
+        return !!(el && el.checked);
+    };
+
+    window.syncArmedForcesStepVisibility = function () {
+        var seg = document.getElementById('armedStepperSegment');
+        var bridge = document.getElementById('con-skip-armed');
+        var step4 = document.getElementById('step-4');
+        if (!seg || !bridge || !step4) return;
+        if (window.isExArmedForceEnabled()) {
+            seg.classList.remove('d-none');
+            bridge.classList.add('d-none');
+            bridge.classList.remove('is-done');
+            step4.classList.remove('d-none');
+        } else {
+            seg.classList.add('d-none');
+            bridge.classList.remove('d-none');
+            step4.classList.add('d-none');
+            if (typeof current !== 'undefined' && current === 4) {
+                applyStepNavigation(3);
+            }
+        }
+        if (typeof updateStepperUI === 'function' && typeof current !== 'undefined') {
+            updateStepperUI(current);
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var cb = document.getElementById('is_ex_armed_force');
+        if (cb) {
+            cb.addEventListener('change', function () {
+                window.syncArmedForcesStepVisibility();
+            });
+        }
+        if (typeof window.syncArmedForcesStepVisibility === 'function') {
+            window.syncArmedForcesStepVisibility();
+        }
+    });
 
     window.goToStep = function(target) {
         try {
             if (target < 1 || target > total) return;
+            if (target === 4 && !window.isExArmedForceEnabled()) return;
             if (!isEditMode) {
                 if (target === 2 && current === 1) {
                     if (!window.validateStep(1)) return;
@@ -148,7 +200,10 @@
             }
 
             // Normal Step Navigation
-            const target = current + dir;
+            let target = current + dir;
+            if (target === 4 && !window.isExArmedForceEnabled()) {
+                target = dir > 0 ? 5 : 3;
+            }
             if (target < 1 || target > total) return;
             
             if (dir > 0) {

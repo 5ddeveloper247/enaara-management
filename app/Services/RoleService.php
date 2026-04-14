@@ -16,6 +16,8 @@ class RoleService
             ->with([
                 'modules' => fn ($q) => $q->orderBy('module_name')->limit(5),
                 'organization:id,name',
+                'sbu:id,name',
+                'sbus:id,name',
                 'department:id,name',
                 'parentRole:id,name',
             ])
@@ -37,6 +39,8 @@ class RoleService
         return Role::with([
             'modules',
             'organization:id,name',
+            'sbu:id,name',
+            'sbus:id,name',
             'department:id,name',
             'parentRole:id,name',
         ])->find($id);
@@ -55,25 +59,32 @@ class RoleService
     public function create(array $data): Role
     {
         if (empty($data['slug']) && !empty($data['name'])) {
-            $data['slug'] = Role::slugFromName($data['name']);
+            $data['slug'] = $this->buildUniqueSlug(Role::slugFromName($data['name']));
         }
 
         $moduleIds = $data['module_ids'] ?? [];
+        $sbuIds = $data['sbu_ids'] ?? (!empty($data['sbu_id']) ? [$data['sbu_id']] : []);
         unset($data['module_ids']);
+        unset($data['sbu_ids']);
 
         $data['is_active'] = (bool) ($data['is_active'] ?? false);
         $data['is_primary'] = (bool) ($data['is_primary'] ?? false);
         $data['organization_id'] = $data['organization_id'] ?? null;
+        $sbuIds = array_values(array_filter(array_unique(array_map('intval', $sbuIds))));
+        $data['sbu_id'] = $sbuIds[0] ?? null;
         $data['department_id'] = $data['department_id'] ?? null;
         $data['parent_role_id'] = $data['parent_role_id'] ?? null;
 
         $role = Role::create($data);
 
         $this->syncRolePrivileges($role->id, $moduleIds);
+        $this->syncRoleSbus($role, $sbuIds);
 
         return $role->fresh([
             'modules',
             'organization:id,name',
+            'sbu:id,name',
+            'sbus:id,name',
             'department:id,name',
             'parentRole:id,name',
         ]);
@@ -82,15 +93,23 @@ class RoleService
     public function update(Role $role, array $data): Role
     {
         if (array_key_exists('name', $data) && (empty($data['slug']) || $data['slug'] === $role->slug)) {
-            $data['slug'] = Role::slugFromName($data['name']);
+            $data['slug'] = $this->buildUniqueSlug(Role::slugFromName($data['name']), $role->id);
         }
 
         $moduleIds = $data['module_ids'] ?? null;
+        $sbuIds = $data['sbu_ids'] ?? (array_key_exists('sbu_id', $data) ? [$data['sbu_id']] : null);
         unset($data['module_ids']);
+        unset($data['sbu_ids']);
 
         $data['is_active'] = (bool) ($data['is_active'] ?? false);
         $data['is_primary'] = (bool) ($data['is_primary'] ?? false);
         $data['organization_id'] = $data['organization_id'] ?? null;
+        if ($sbuIds !== null) {
+            $sbuIds = array_values(array_filter(array_unique(array_map('intval', $sbuIds))));
+            $data['sbu_id'] = $sbuIds[0] ?? null;
+        } else {
+            $data['sbu_id'] = $data['sbu_id'] ?? null;
+        }
         $data['department_id'] = $data['department_id'] ?? null;
         $data['parent_role_id'] = $data['parent_role_id'] ?? null;
 
@@ -105,10 +124,15 @@ class RoleService
         if ($moduleIds !== null) {
             $this->syncRolePrivileges($role->id, $moduleIds);
         }
+        if ($sbuIds !== null) {
+            $this->syncRoleSbus($role, $sbuIds);
+        }
 
         return $role->fresh([
             'modules',
             'organization:id,name',
+            'sbu:id,name',
+            'sbus:id,name',
             'department:id,name',
             'parentRole:id,name',
         ]);
@@ -126,6 +150,31 @@ class RoleService
                 'module_id' => $moduleId,
             ]);
         }
+    }
+
+    protected function syncRoleSbus(Role $role, array $sbuIds): void
+    {
+        $sbuIds = array_values(array_filter(array_unique(array_map('intval', $sbuIds))));
+        $role->sbus()->sync($sbuIds);
+    }
+
+    protected function buildUniqueSlug(string $baseSlug, ?int $ignoreRoleId = null): string
+    {
+        $baseSlug = trim($baseSlug) !== '' ? $baseSlug : 'role';
+        $candidate = $baseSlug;
+        $suffix = 2;
+
+        while (
+            Role::query()
+                ->where('slug', $candidate)
+                ->when($ignoreRoleId, fn ($q) => $q->where('id', '!=', $ignoreRoleId))
+                ->exists()
+        ) {
+            $candidate = $baseSlug . '-' . $suffix;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 
     public function updateStatus(int $id, bool $isActive): ?Role

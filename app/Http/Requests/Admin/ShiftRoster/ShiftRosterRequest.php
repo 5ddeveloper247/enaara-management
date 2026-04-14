@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\ShiftRoster;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ShiftRosterRequest extends FormRequest
 {
@@ -20,7 +21,11 @@ class ShiftRosterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'integer', 'exists:employees,id'],
+            'employee_id' => [
+                'required',
+                'integer',
+                Rule::exists('employees', 'id')->where(fn ($q) => $q->where('engagement_mode', 'shifts')),
+            ],
             'shift_planner_id' => ['required', 'integer', 'exists:shift_planners,id'],
             'roster_date' => ['required', 'date'],
 
@@ -43,7 +48,7 @@ class ShiftRosterRequest extends FormRequest
     {
         return [
             'employee_id.required' => 'Employee is required.',
-            'employee_id.exists' => 'Selected employee does not exist.',
+            'employee_id.exists' => 'Selected employee does not exist or is not on shift-based work arrangement.',
 
             'shift_planner_id.required' => 'Shift is required.',
             'shift_planner_id.exists' => 'Selected shift does not exist.',

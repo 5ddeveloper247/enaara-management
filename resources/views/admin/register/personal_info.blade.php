@@ -23,27 +23,27 @@
             </div>
         </div>
         <div class="col-md-4">
-            <label class="form-label">MSR Letter No & Date</label>
+            <label class="form-label">MSR Letter No & Date <span class="text-danger police-detail-req">*</span></label>
             <input type="text" name="msr_letter_no" class="form-control">
         </div>
         <div class="col-md-4">
-            <label class="form-label">Addressee</label>
+            <label class="form-label">Addressee <span class="text-danger police-detail-req">*</span></label>
             <input type="text" name="addressee" class="form-control">
         </div>
         <div class="col-md-4">
-            <label class="form-label">Verifying Authority</label>
+            <label class="form-label">Verifying Authority <span class="text-danger police-detail-req">*</span></label>
             <input type="text" name="verifying_authority" class="form-control">
         </div>
         <div class="col-md-4">
-            <label class="form-label">Verification Letter No & Date</label>
+            <label class="form-label">Verification Letter No & Date <span class="text-danger police-detail-req">*</span></label>
             <input type="text" name="verification_letter_no" class="form-control">
         </div>
         <div class="col-md-4">
-            <label class="form-label">Next Verification Date</label>
+            <label class="form-label">Next Verification Date <span class="text-danger police-detail-req">*</span></label>
             <input type="date" name="next_verification_date" class="form-control">
         </div>
         <div class="col-md-4">
-            <label class="form-label">Remarks</label>
+            <label class="form-label">Remarks <span class="text-danger police-detail-req">*</span></label>
             <textarea name="police_remarks" class="form-control" rows="1" style="min-height:38px;"></textarea>
         </div>
     </div>

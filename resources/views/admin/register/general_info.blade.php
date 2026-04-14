@@ -1,4 +1,89 @@
 {{-- STEP 1: General Information --}}
+<style>
+    .ex-armed-force-panel {
+        border-color: rgba(1, 36, 69, 0.18) !important;
+        background: linear-gradient(135deg, rgba(1, 36, 69, 0.04) 0%, rgba(1, 36, 69, 0.01) 100%);
+        box-shadow: 0 1px 2px rgba(1, 36, 69, 0.06);
+    }
+    .ex-armed-force-panel__accent {
+        width: 5px;
+        min-height: 100%;
+        background: linear-gradient(180deg, var(--bs-primary, #0d6efd) 0%, rgba(1, 36, 69, 0.85) 100%);
+        flex-shrink: 0;
+    }
+    .ex-armed-force-panel__icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(1, 36, 69, 0.08);
+        color: var(--main-color, #012445);
+        font-size: 1.35rem;
+    }
+    .ex-armed-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        user-select: none;
+        margin: 0;
+    }
+    .ex-armed-toggle__input:focus {
+        outline: none;
+    }
+    .ex-armed-toggle:focus-within .ex-armed-toggle__track {
+        box-shadow: 0 0 0 3px rgba(1, 36, 69, 0.22);
+    }
+    .ex-armed-toggle__state {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        min-width: 1.75rem;
+        text-align: center;
+        color: #adb5bd;
+        transition: color 0.2s, opacity 0.2s;
+    }
+    .ex-armed-toggle__input:not(:checked) ~ .ex-armed-toggle__state--off {
+        color: var(--main-color, #012445);
+    }
+    .ex-armed-toggle__input:checked ~ .ex-armed-toggle__state--off {
+        color: #adb5bd;
+        font-weight: 500;
+    }
+    .ex-armed-toggle__input:checked ~ .ex-armed-toggle__track ~ .ex-armed-toggle__state--on {
+        color: #198754;
+    }
+    .ex-armed-toggle__input:not(:checked) ~ .ex-armed-toggle__track ~ .ex-armed-toggle__state--on {
+        color: #ced4da;
+        font-weight: 500;
+    }
+    .ex-armed-toggle__track {
+        position: relative;
+        width: 3.25rem;
+        height: 1.75rem;
+        border-radius: 999px;
+        background: #e9ecef;
+        border: 2px solid #adb5bd;
+        transition: background 0.2s, border-color 0.2s;
+        flex-shrink: 0;
+    }
+    .ex-armed-toggle__thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: calc(1.75rem - 8px);
+        height: calc(1.75rem - 8px);
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        transition: transform 0.22s ease;
+    }
+    .ex-armed-toggle__input:checked ~ .ex-armed-toggle__track {
+        background: #198754;
+        border-color: #157347;
+    }
+    .ex-armed-toggle__input:checked ~ .ex-armed-toggle__track .ex-armed-toggle__thumb {
+        transform: translateX(calc(3.25rem - 1.75rem));
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    }
+</style>
 <div class="step active" id="step-1">
     <div class="section-title d-flex align-items-center justify-content-between">
         <span>Section A — General Information</span>
@@ -18,10 +103,10 @@
                     <input type="file" id="uploadImage" name="profile_photo" accept="image/*" class="d-none" onchange="openCropper(this)">
                 </label>
 
-                <div id="imgPreviewWrapper" style="display:none; position:relative; width:130px; height:130px; margin-top:6px;">
+                <div id="imgPreviewWrapper" class="employee-img-preview-wrap" style="display:none; position:relative; width:130px; height:130px; margin-top:6px;">
                     <img id="imgPreview" src="" alt=""
                         style="width:130px; height:130px; object-fit:cover; border-radius:10px; border:2px solid var(--main-color);">
-                    <button type="button" id="removeImageBtn" onclick="removePreviewImg()" class="d-none" style="  position:absolute; top:6px; right:6px; width:28px; height:28px; border:none; border-radius:50%; background:#dc3545; color:#fff; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.2); padding:0;">
+                    <button type="button" id="removeImageBtn" onclick="removePreviewImg()" class="d-none employee-img-remove-btn" style="position:absolute; top:6px; right:6px; width:28px; height:28px; border:none; border-radius:50%; background:#dc3545; color:#fff; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.2); padding:0; z-index:2;">
                         &times; </button>
                 </div>
                 <div class="mt-1">
@@ -35,7 +120,7 @@
             </div>
 
             <div class="col-md-5 col-sm-5">
-                <label class="form-label">Father Name</label>
+                <label class="form-label">Father Name <span class="text-danger">*</span></label>
                 <input type="text" name="father_name" class="form-control">
             </div>
         </div>
@@ -51,7 +136,7 @@
         </div>
 
         <div class="col-md-3">
-            <label class="form-label">Father CNIC</label>
+            <label class="form-label">Father CNIC <span class="text-danger">*</span></label>
             <input type="text" name="father_cnic" class="form-control cnic-mask" placeholder="XXXXX-XXXXXXX-X">
         </div>
 
@@ -71,11 +156,11 @@
 
         <div class="col-md-3">
             <label class="form-label">NTN #</label>
-            <input type="text" name="ntn" class="form-control">
+            <input type="text" name="ntn" class="form-control number-only" maxlength="13" inputmode="numeric" autocomplete="off">
         </div>
 
         <div class="col-md-3">
-            <label class="form-label">Gender</label>
+            <label class="form-label">Gender <span class="text-danger">*</span></label>
             <select name="gender" class="form-select"
                 style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
                 <option value="">— Select —</option>
@@ -86,7 +171,7 @@
         </div>
 
         <div class="col-md-3">
-            <label class="form-label">Province</label>
+            <label class="form-label">Province <span class="text-danger">*</span></label>
             <div id="province_wrapper">
                 <select name="domicile_province" id="province_select" class="form-select"
                     data-prefill="{{ $employee->domicile_province ?? '' }}"
@@ -97,7 +182,7 @@
         </div>
 
         <div class="col-md-3">
-            <label class="form-label">District</label>
+            <label class="form-label">District <span class="text-danger">*</span></label>
             <div id="district_wrapper">
                 <select name="domicile_district" id="district_select" class="form-select"
                     data-prefill="{{ $employee->domicile_district ?? '' }}"
@@ -113,7 +198,7 @@
         </div>
 
         <div class="col-md-3">
-            <label class="form-label">Religion</label>
+            <label class="form-label">Religion <span class="text-danger">*</span></label>
             <select name="religion" class="form-select"
                 style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
                 <option value="">— Select —</option>
@@ -128,7 +213,7 @@
         </div>
 
         <div class="col-md-3">
-            <label class="form-label">Sect</label>
+            <label class="form-label">Sect <span class="text-danger">*</span></label>
             <input type="text" name="sect" class="form-control">
         </div>
 
@@ -146,12 +231,16 @@
             </select>
         </div>
 
-        <div id="spouse_fields_wrapper" class="row col-md-6" style="display: none;">
-            <div class="col-md-6">
+        <div id="spouse_fields_wrapper" class="row col-md-9" style="display: none;">
+            <div class="col-md-4">
+                <label class="form-label">Spouse Name <span class="text-danger">*</span></label>
+                <input type="text" name="spouse_name" id="spouse_name" class="form-control" value="{{ $employee->spouse_name ?? '' }}">
+            </div>
+            <div class="col-md-4">
                 <label class="form-label">Spouse CNIC <span class="text-danger">*</span></label>
                 <input type="text" name="spouse_cnic" id="spouse_cnic" class="form-control cnic-mask" placeholder="XXXXX-XXXXXXX-X" value="{{ $employee->spouse_cnic ?? '' }}">
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="form-label">Spouse Nationality <span class="text-danger">*</span></label>
                 <select name="spouse_nationality" id="spouse_nationality" class="form-select"
                     data-prefill="{{ $employee->spouse_nationality ?? '' }}"
@@ -187,8 +276,28 @@
 
         <div class="col-md-3">
             <label class="form-label">Relation with NOK <span class="text-danger">*</span></label>
-            <input type="text" name="nok_relation" class="form-control" value="{{ $employee->nok_relation ?? '' }}" required>
+            <select name="nok_relation_type" id="nok_relation_type" class="form-select"
+                style="background-color:transparent !important; border:1px solid #012445; box-shadow:0 0 4px 2px #5a59593d; appearance:none; -webkit-appearance:none;">
+                <option value="">— Select —</option>
+                <option value="Father">Father</option>
+                <option value="Mother">Mother</option>
+                <option value="Husband">Husband</option>
+                <option value="Wife">Wife</option>
+                <option value="Son">Son</option>
+                <option value="Daughter">Daughter</option>
+                <option value="Brother">Brother</option>
+                <option value="Sister">Sister</option>
+                <option value="Other">Other</option>
+            </select>
+            @error('nok_relation_type') <div class="text-danger small">{{ $message }}</div> @enderror
             @error('nok_relation') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="col-md-3" id="nok_relation_other_wrapper" style="display:none;">
+            <label class="form-label">Specify relation <span class="text-danger">*</span></label>
+            <input type="text" name="nok_relation_other" id="nok_relation_other" class="form-control" maxlength="100" autocomplete="off"
+                value="">
+            @error('nok_relation_other') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
 
         <div class="col-md-3">
@@ -203,171 +312,42 @@
             @error('nok_contact') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
 
+        <div class="col-12 mt-3">
+            <div class="ex-armed-force-panel border rounded-3 d-flex flex-md-row flex-column align-items-stretch overflow-hidden">
+                <div class="ex-armed-force-panel__accent d-none d-md-block" aria-hidden="true"></div>
+                <div class="d-flex flex-grow-1 align-items-center gap-3 flex-wrap p-3 p-md-4">
+                    <div class="ex-armed-force-panel__icon rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" aria-hidden="true">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-semibold text-body mb-1">Ex-armed forces employee</div>
+                        <p class="small text-muted mb-0 lh-sm">Turn this on if the person has served or is associated with armed forces. The registration wizard will then include the armed forces details step.</p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 ms-md-auto flex-shrink-0">
+                        <span class="small text-muted d-none d-sm-inline">Include armed forces step</span>
+                        <label class="ex-armed-toggle" for="is_ex_armed_force">
+                            <input class="ex-armed-toggle__input visually-hidden" type="checkbox" name="is_ex_armed_force" value="1" id="is_ex_armed_force" aria-label="Ex-armed forces employee — include armed forces step">
+                            <span class="ex-armed-toggle__state ex-armed-toggle__state--off">Off</span>
+                            <span class="ex-armed-toggle__track" aria-hidden="true"><span class="ex-armed-toggle__thumb"></span></span>
+                            <span class="ex-armed-toggle__state ex-armed-toggle__state--on">On</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            @error('is_ex_armed_force') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
+        </div>
+
     </div>
 </div>
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        // --- Location Dependency Logic ---
-        const natSelect = document.getElementById('nationality_select');
-        const provSelect = document.getElementById('province_select');
-        const distSelect = document.getElementById('district_select');
-        const spouseNatSelect = document.getElementById('spouse_nationality');
-
-        function loadCountries() {
-            fetch('{{ route('admin.locations.countries') }}')
-                .then(r => r.json())
-                .then(countries => {
-                    countries.forEach(c => {
-                        const opt1 = document.createElement('option');
-                        opt1.value = c.name; opt1.textContent = c.name;
-                        natSelect.appendChild(opt1);
-
-                        const opt2 = document.createElement('option');
-                        opt2.value = c.name; opt2.textContent = c.name;
-                        spouseNatSelect.appendChild(opt2);
-                    });
-                    
-                    if (natSelect.dataset.prefill) {
-                        natSelect.value = natSelect.dataset.prefill;
-                        loadProvinces(natSelect.dataset.prefill);
-                    }
-                    if (spouseNatSelect.dataset.prefill) {
-                        spouseNatSelect.value = spouseNatSelect.dataset.prefill;
-                    }
-                });
-        }
-
-        function loadProvinces(countryName) {
-            provSelect.innerHTML = '<option value="">— Select Province —</option>';
-            distSelect.innerHTML = '<option value="">— Select District —</option>';
-            if (!countryName) return;
-
-            fetch(`/admin/locations/provinces/${encodeURIComponent(countryName)}`)
-                .then(r => r.json())
-                .then(provinces => {
-                    provinces.forEach(p => {
-                        const opt = document.createElement('option');
-                        opt.value = p.name; opt.textContent = p.name;
-                        provSelect.appendChild(opt);
-                    });
-                    if (provSelect.dataset.prefill) {
-                        provSelect.value = provSelect.dataset.prefill;
-                        loadDistricts(countryName, provSelect.dataset.prefill);
-                    }
-                });
-        }
-
-        function loadDistricts(countryName, provinceName) {
-            distSelect.innerHTML = '<option value="">— Select District —</option>';
-            if (!countryName || !provinceName) return;
-
-            fetch(`/admin/locations/districts/${encodeURIComponent(countryName)}/${encodeURIComponent(provinceName)}`)
-                .then(r => r.json())
-                .then(districts => {
-                    districts.forEach(d => {
-                        const opt = document.createElement('option');
-                        opt.value = d.name; opt.textContent = d.name;
-                        distSelect.appendChild(opt);
-                    });
-                    if (distSelect.dataset.prefill) {
-                        distSelect.value = distSelect.dataset.prefill;
-                    }
-                });
-        }
-
-        loadCountries();
-
-        natSelect.addEventListener('change', function() { loadProvinces(this.value); });
-        provSelect.addEventListener('change', function() { loadDistricts(natSelect.value, this.value); });
-
-        // --- Spouse Logic ---
-        const maritalStatusSelect = document.getElementById('marital_status');
-        const spouseFieldsWrapper = document.getElementById('spouse_fields_wrapper');
-
-        function toggleSpouseFields() {
-            const isMarried = (maritalStatusSelect.value === 'Married');
-            if (spouseFieldsWrapper) {
-                spouseFieldsWrapper.style.display = isMarried ? 'flex' : 'none';
-            }
-            
-            if (!isMarried) {
-                if (document.getElementById('spouse_cnic')) document.getElementById('spouse_cnic').value = '';
-                if (document.getElementById('spouse_nationality')) document.getElementById('spouse_nationality').value = '';
-            }
-        }
-
-        maritalStatusSelect.addEventListener('change', toggleSpouseFields);
-        toggleSpouseFields(); // Init
-        
-        // Initial mask application (if any values are pre-rendered by Laravel)
-        if (typeof applyCnicMasks === 'function') {
-            applyCnicMasks();
-        }
-    });
-
-    // Profile Photo Logic (Vanilla)
-    function previewImg(input) {
-        const preview = document.getElementById('imgPreview');
-        const previewWrapper = document.getElementById('imgPreviewWrapper');
-        const removeBtn = document.getElementById('removeImageBtn');
-        const uploadBox = document.getElementById('uploadImageBox');
-        if (input.files && input.files[0]) {
-            preview.src = URL.createObjectURL(input.files[0]);
-            previewWrapper.style.display = 'block';
-            uploadBox.classList.add('d-none');
-            removeBtn.classList.remove('d-none');
-        }
-    }
-
-    function removePreviewImg() {
-        const input = document.getElementById('uploadImage');
-        const preview = document.getElementById('imgPreview');
-        const previewWrapper = document.getElementById('imgPreviewWrapper');
-        const removeBtn = document.getElementById('removeImageBtn');
-        const uploadBox = document.getElementById('uploadImageBox');
-        const employeeIdInput = document.querySelector('input[name="employee_id"]');
-        const employeeId = employeeIdInput ? employeeIdInput.value : '';
-
-        if (employeeId) {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You are about to delete the profile photo.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#012445',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const formData = new FormData();
-                    formData.append('id', employeeId);
-                    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-                    fetch('{{ route("admin.employee.delete_photo") }}', { method: 'POST', body: formData })
-                        .then(r => r.json())
-                        .then(data => {
-                            if (data.success) {
-                                resetPreviewUI(input, preview, previewWrapper, removeBtn, uploadBox);
-                                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message, showConfirmButton: false, timer: 3000 });
-                            } else {
-                                Swal.fire('Error', data.message || 'Error deleting photo.', 'error');
-                            }
-                        });
-                }
-            });
-        } else {
-            resetPreviewUI(input, preview, previewWrapper, removeBtn, uploadBox);
-        }
-    }
-
-    function resetPreviewUI(input, preview, previewWrapper, removeBtn, uploadBox) {
-        if (input) input.value = '';
-        if (preview) preview.src = '';
-        if (previewWrapper) previewWrapper.style.display = 'none';
-        if (removeBtn) removeBtn.classList.add('d-none');
-        if (uploadBox) uploadBox.classList.remove('d-none');
-        if (typeof croppedImageBlob !== 'undefined') croppedImageBlob = null;
-    }
+    window.__employeeRegisterGeneral = {
+        countriesUrl: @json(route('admin.locations.countries')),
+        provincesBase: @json(rtrim(url('/admin/locations/provinces'), '/')),
+        districtsBase: @json(rtrim(url('/admin/locations/districts'), '/')),
+        deletePhotoUrl: @json(route('admin.employee.delete_photo')),
+    };
 </script>
+<script src="{{ asset('js/employee-register-general.js') }}" defer></script>
 @endpush

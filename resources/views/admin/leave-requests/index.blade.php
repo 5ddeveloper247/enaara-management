@@ -222,6 +222,11 @@
             const requestId = $(this).data('request-id');
             const action = $(this).data('action');
 
+            if (!requestId || action === undefined) {
+                window.showError('Request data is missing. Please refresh and try again.');
+                return;
+            }
+
             handleLeaveAction(requestId, action);
         });
         // Initialize DataTables on the server-rendered table
@@ -335,7 +340,7 @@
             const action = $(this).data('action');
 
             if (!requestId || action === undefined) {
-                alert('Request data missing');
+                window.showError('Request data is missing. Please refresh and try again.');
                 return;
             }
 
@@ -349,7 +354,7 @@
             const action = $(this).data('action');
 
             if (!requestId || action === undefined) {
-                alert('Request data missing');
+                window.showError('Request data is missing. Please refresh and try again.');
                 return;
             }
 
@@ -448,23 +453,113 @@
         });
     }
 
-    function handleLeaveAction(requestId, actionCode) {
-        $.ajax({
-            url: `/admin/leave-request/${requestId}/status`,
-            type: 'PATCH',
-            data: {
-                status: actionCode,
-                _token: '{{ csrf_token() }}'
+    function getActionMeta(actionCode) {
+        const action = Number(actionCode);
+        const actionMap = {
+            1: {
+                label: 'Recommend',
+                successMessage: 'Leave request recommended successfully.',
+                requiresConfirmation: false
             },
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                }
+            2: {
+                label: 'Not Recommend',
+                successMessage: 'Leave request marked as not recommended.',
+                requiresConfirmation: false
             },
-            error: function(err) {
-                alert('Error updating status');
+            3: {
+                label: 'Approve',
+                successMessage: 'Leave request approved successfully.',
+                requiresConfirmation: true
+            },
+            4: {
+                label: 'Reject',
+                successMessage: 'Leave request rejected successfully.',
+                requiresConfirmation: true
+            },
+            5: {
+                label: 'Cancel',
+                successMessage: 'Leave request cancelled successfully.',
+                requiresConfirmation: true
             }
-        });
+        };
+
+        return actionMap[action] || null;
+    }
+
+    function extractApiErrorMessage(err, fallbackMessage) {
+        if (err?.responseJSON?.message) {
+            return err.responseJSON.message;
+        }
+
+        const validationErrors = err?.responseJSON?.errors;
+        if (validationErrors && typeof validationErrors === 'object') {
+            const firstKey = Object.keys(validationErrors)[0];
+            if (firstKey && Array.isArray(validationErrors[firstKey]) && validationErrors[firstKey][0]) {
+                return validationErrors[firstKey][0];
+            }
+        }
+
+        if (err?.responseText) {
+            return err.responseText;
+        }
+
+        return fallbackMessage;
+    }
+
+    function handleLeaveAction(requestId, actionCode) {
+        const actionMeta = getActionMeta(actionCode);
+
+        if (!requestId || !actionMeta) {
+            window.showError('Invalid leave action request. Please refresh and try again.');
+            return;
+        }
+
+        const performStatusUpdate = function() {
+            $.ajax({
+                url: `/admin/leave-request/${requestId}/status`,
+                type: 'PATCH',
+                data: {
+                    status: Number(actionCode),
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (!response || response.success !== true) {
+                        window.showError(response?.message || 'Unable to update leave status right now.');
+                        return;
+                    }
+
+                    window.showSuccess(response.message || actionMeta.successMessage, 'Success')
+                        .then(function() {
+                            location.reload();
+                        });
+                },
+                error: function(err) {
+                    window.showError(
+                        extractApiErrorMessage(err, `Failed to ${actionMeta.label.toLowerCase()} leave request.`)
+                    );
+                }
+            });
+        };
+
+        if (actionMeta.requiresConfirmation) {
+            Swal.fire({
+                icon: 'warning',
+                title: `${actionMeta.label} Leave Request?`,
+                text: `Are you sure you want to ${actionMeta.label.toLowerCase()} this leave request?`,
+                showCancelButton: true,
+                confirmButtonText: `Yes, ${actionMeta.label}`,
+                cancelButtonText: 'No',
+                confirmButtonColor: '#1a237e',
+                cancelButtonColor: '#6c757d'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    performStatusUpdate();
+                }
+            });
+            return;
+        }
+
+        performStatusUpdate();
     }
 
     function showLeaveDetails(request) {

@@ -182,6 +182,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/employee/delete-family', [EmployeeController::class, 'deleteFamily'])->name('admin.employee.delete_family');
     Route::post('/employee/delete-academic', [EmployeeController::class, 'deleteAcademic'])->name('admin.employee.delete_academic');
     Route::post('/employee/delete-employment', [EmployeeController::class, 'deleteEmployment'])->name('admin.employee.delete_employment');
+    Route::post('/employee/delete-bank-detail', [EmployeeController::class, 'deleteBankDetail'])->name('admin.employee.delete_bank_detail');
     Route::post('/employee/delete-photo', [EmployeeController::class, 'deletePhoto'])->name('admin.employee.delete_photo');
     Route::post('/employee/save-attachment', [EmployeeController::class, 'saveAttachment'])->name('admin.employee.save_attachment');
     Route::post('/employee/delete-attachment', [EmployeeController::class, 'deleteAttachment'])->name('admin.employee.delete_attachment');

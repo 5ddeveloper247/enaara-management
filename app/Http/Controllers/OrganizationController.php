@@ -115,6 +115,11 @@ class OrganizationController extends Controller
                     'tax_no' => $organization->tax_no,
                     'description' => $organization->description,
                     'address' => $organization->address,
+                    'working_days' => $organization->working_days,
+                    'working_start_time' => $organization->working_start_time,
+                    'working_end_time' => $organization->working_end_time,
+                    'opening_grace_period' => $organization->opening_grace_period,
+                    'closing_grace_period' => $organization->closing_grace_period,
                     'is_active' => $organization->is_active,
                 ]
             ]);

@@ -6,6 +6,9 @@
                 console.error('employeeForm not found');
                 return;
             }
+            if (step === 5 && typeof window.syncBankHiddenRowsFromCardSnapshots === 'function') {
+                window.syncBankHiddenRowsFromCardSnapshots();
+            }
             const formData = new FormData();
             console.log('FormData initialized');
             formData.append('step', step);
@@ -21,6 +24,7 @@
             if (activeStepDiv) {
                 const inputs = activeStepDiv.querySelectorAll('input[name], select[name], textarea[name]');
                 inputs.forEach(input => {
+                    if (input.disabled) return;
                     const name = input.getAttribute('name');
                     if (!name) return;
                     if (input.type === 'checkbox' || input.type === 'radio') {
@@ -34,6 +38,10 @@
                                 formData.append(name, input.files[i]);
                             }
                         }
+                    } else if (input.tagName === 'SELECT' && input.multiple) {
+                        Array.from(input.selectedOptions || []).forEach(function (opt) {
+                            if (opt.value) formData.append(name, opt.value);
+                        });
                     } else {
                         formData.append(name, input.value);
                     }

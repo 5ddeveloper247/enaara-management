@@ -60,11 +60,13 @@ class ShiftRosterController extends Controller
         }
 
         $rosters = ShiftRosterEntry::with(['employee', 'shift', 'assignment'])
+            ->whereHas('employee', fn ($q) => $q->where('engagement_mode', 'shifts'))
             ->orderBy('roster_date', 'desc')
             ->orderBy('updated_at', 'desc')
             ->get();
 
         $employees = Employee::where('is_active', 1)
+            ->shiftBasedWorkArrangement()
             ->orderBy('full_name')
             ->get();
         $shifts = ShiftPlanner::where('is_active', 1)

@@ -150,6 +150,11 @@ class SbuController extends Controller
                     'address' => $sbu->address,
                     'latitude' => $sbu->latitude,
                     'longitude' => $sbu->longitude,
+                    'working_days' => $sbu->working_days,
+                    'working_start_time' => $sbu->working_start_time,
+                    'working_end_time' => $sbu->working_end_time,
+                    'opening_grace_period' => $sbu->opening_grace_period,
+                    'closing_grace_period' => $sbu->closing_grace_period,
                     'is_active' => $sbu->is_active,
                 ]
             ]);

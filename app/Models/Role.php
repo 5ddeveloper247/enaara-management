@@ -18,6 +18,7 @@ class Role extends Model
         'slug',
         'description',
         'organization_id',
+        'sbu_id',
         'department_id',
         'parent_role_id',
         'is_active',
@@ -78,12 +79,32 @@ class Role extends Model
         return $this->belongsTo(Organization::class);
     }
 
+    public function sbu()
+    {
+        return $this->belongsTo(Sbu::class);
+    }
+
+    public function sbus(): BelongsToMany
+    {
+        return $this->belongsToMany(Sbu::class, 'role_sbu', 'role_id', 'sbu_id')->withTimestamps();
+    }
+
     public function isOrganizationLevelRole(): bool
     {
-        if ($this->department_id === null) {
-            return true;
+        if ($this->department_id !== null) {
+            return false;
         }
 
-        return in_array(strtolower((string) ($this->slug ?? '')), ['super-admin', 'coo', 'ceo'], true);
+        if ($this->sbu_id !== null) {
+            return false;
+        }
+
+        if ($this->relationLoaded('sbus')) {
+            return $this->sbus->isEmpty();
+        }
+
+        return ! $this->sbus()->exists();
     }
+
+
 }

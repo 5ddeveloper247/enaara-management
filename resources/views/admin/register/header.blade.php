@@ -74,13 +74,16 @@
             <div class="step-bubble" id="circle-3"><i class="bi bi-shield-fill"></i></div>
             <span class="step-label" id="label-3">Police Verification</span>
         </div>
-        <div class="step-connector" id="con-3"></div>
 
-        <div onclick="goToStep(4)" class="step-item" id="step-pill-4">
-            <div class="step-bubble" id="circle-4"><i class="bi bi-award-fill"></i></div>
-            <span class="step-label" id="label-4">Armed</span>
+        <div class="d-flex align-items-center flex-grow-1" id="armedStepperSegment" style="min-width:0;">
+            <div class="step-connector" id="con-3"></div>
+            <div onclick="goToStep(4)" class="step-item" id="step-pill-4">
+                <div class="step-bubble" id="circle-4"><i class="bi bi-award-fill"></i></div>
+                <span class="step-label" id="label-4">Armed</span>
+            </div>
+            <div class="step-connector" id="con-4"></div>
         </div>
-        <div class="step-connector" id="con-4"></div>
+        <div class="step-connector d-none flex-grow-1" id="con-skip-armed" style="min-width:8px;"></div>
 
         <div onclick="goToStep(5)" class="step-item" id="step-pill-5">
             <div class="step-bubble" id="circle-5"><i class="bi bi-bank2"></i></div>

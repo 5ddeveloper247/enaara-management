@@ -91,6 +91,7 @@
                         @endforelse
                     </select>
                 </div>
+
             </div>
 
             <hr class="my-4" style="border-color: #ffffffab !important">
@@ -302,6 +303,7 @@ $(document).ready(function() {
             $startDateInput.prop('readonly', false).css('background-color', '#fff');
             $endDateInput.prop('readonly', false).css('background-color', '#fff');
         }
+
     }
 
     // Event Handlers

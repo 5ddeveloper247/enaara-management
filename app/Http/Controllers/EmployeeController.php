@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use App\Models\Employee;
 
 class EmployeeController extends Controller
@@ -254,6 +256,38 @@ class EmployeeController extends Controller
                         return response()->json(['success' => false, 'message' => 'No photo uploaded.'], 422);
                     }
                     break;
+                case 'bank_row':
+                    $validated = $request->validated();
+                    $row = Arr::only($validated, [
+                        'account_category', 'account_title', 'account_no', 'bank_name',
+                        'branch_code', 'branch_address', 'iban', 'account_type', 'is_salary_account',
+                    ]);
+                    try {
+                        $record = $this->employeeService->saveBankDetailRow(
+                            (int) $employeeId,
+                            $row,
+                            ! empty($validated['bank_detail_id']) ? (int) $validated['bank_detail_id'] : null
+                        );
+                    } catch (\InvalidArgumentException $e) {
+                        return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
+                    }
+                    $message = 'Bank account saved successfully.';
+                    $responseData = [
+                        'bank' => [
+                            'id'                 => $record->id,
+                            'account_category'   => $record->account_category,
+                            'account_title'      => $record->account_title,
+                            'account_no'         => $record->account_no,
+                            'bank_name'          => $record->bank_name,
+                            'branch_code'        => $record->branch_code,
+                            'branch_address'     => $record->branch_address,
+                            'iban'               => $record->iban,
+                            'account_type'       => $record->account_type,
+                            'is_salary_account'  => (bool) $record->is_salary_account,
+                        ],
+                        'salary_bank_id' => $this->employeeService->salaryBankIdForEmployee((int) $employeeId),
+                    ];
+                    break;
                 default:
                     return response()->json(['success' => false, 'message' => 'Invalid subsection type.'], 422);
             }
@@ -284,6 +318,40 @@ class EmployeeController extends Controller
     public function deleteEmployment(Request $request)
     {
         return $this->processDeletion($request, 'employment_row');
+    }
+
+    public function deleteBankDetail(Request $request)
+    {
+        if (! validatePermissions('admin/employee')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'employee_id' => ['required', 'integer', Rule::exists('employees', 'id')],
+                'id'          => [
+                    'required',
+                    'integer',
+                    Rule::exists('employee_bank_details', 'id')->where('employee_id', (int) $request->input('employee_id')),
+                ],
+            ]);
+            $deleted = $this->employeeService->deleteBankDetailRow((int) $validated['employee_id'], (int) $validated['id']);
+            if (! $deleted) {
+                return response()->json(['success' => false, 'message' => 'Record not found or already deleted.'], 404);
+            }
+
+            return response()->json([
+                'success'        => true,
+                'message'        => 'Bank account deleted successfully.',
+                'salary_bank_id' => $this->employeeService->salaryBankIdForEmployee((int) $validated['employee_id']),
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('deleteBankDetail failed', ['error' => $e->getMessage()]);
+
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function deletePhoto(Request $request)

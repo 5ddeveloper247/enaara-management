@@ -15,16 +15,19 @@ class Employee extends Model
     protected $table = 'employees';
 
     protected $fillable = [
-        'full_name', 'father_name', 'employee_code', 'tas_id', 'organization_id', 'sbu_id', 'department_id',
+        'full_name', 'father_name', 'employee_code', 'tas_id', 'organization_id', 'sbu_id', 'department_id', 'department_ids',
         'employee_type_id', 'employee_type', 'employment_type', 'designation', 'grade', 'branch',
         'location', 'email', 'phone', 'cnic', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
         'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth',
         'religion', 'sect', 'marital_status', 'spouse_name', 'spouse_cnic', 'spouse_nationality', 'nok_name', 'nok_cnic',
-        'nok_relation', 'nok_dob', 'nok_contact', 'nok_cnic_expiry_date', 'line_manager_id', 'is_manager',
+        'nok_relation', 'nok_dob', 'nok_contact', 'nok_cnic_expiry_date', 'is_ex_armed_force', 'line_manager_id', 'is_manager',
         'is_active', 'role_id', 'site', 'join_date', 'floor_access',
         'biometric_id', 'sync_with_biometric',
         'employment_category', 'intern_type', 'intern_duration', 'contractual_type',
+        'contract_start_date', 'contract_end_date',
         'engagement_mode', 'hybrid_days',
+        'standard_schedule_mode', 'working_days', 'working_start_time', 'working_end_time',
+        'opening_grace_period', 'closing_grace_period',
     ];
 
     protected $casts = [
@@ -33,11 +36,16 @@ class Employee extends Model
         'nok_cnic_expiry_date' => 'date',
         'cnic_expiry'         => 'date',
         'join_date'           => 'date',
+        'contract_start_date' => 'date',
+        'contract_end_date'   => 'date',
         'floor_access'        => 'boolean',
         'sync_with_biometric' => 'boolean',
         'is_manager'          => 'boolean',
         'is_active'           => 'boolean',
+        'is_ex_armed_force'   => 'boolean',
         'hybrid_days'         => 'array',
+        'department_ids'      => 'array',
+        'working_days'        => 'array',
     ];
 
     public function organization()      { return $this->belongsTo(Organization::class); }
@@ -48,7 +56,7 @@ class Employee extends Model
     public function policeVerification(){ return $this->hasOne(EmployeePoliceVerification::class); }
     public function armedForce()        { return $this->hasOne(EmployeeArmedForce::class); }
     public function contact()           { return $this->hasOne(EmployeeContact::class); }
-    public function bankDetail()        { return $this->hasOne(EmployeeBankDetail::class); }
+    public function bankDetails()       { return $this->hasMany(EmployeeBankDetail::class)->orderByDesc('id'); }
     public function familyMembers()     { return $this->hasMany(EmployeeFamilyMember::class); }
     public function academics()         { return $this->hasMany(EmployeeAcademic::class); }
     public function exEmployments()     { return $this->hasMany(EmployeeExEmployment::class); }
@@ -64,5 +72,10 @@ class Employee extends Model
     public function leaveQuotas()
     {
         return $this->hasMany(EmployeeLeaveQuota::class, 'employee_id');
+    }
+
+    public function scopeShiftBasedWorkArrangement($query)
+    {
+        return $query->where('engagement_mode', 'shifts');
     }
 }

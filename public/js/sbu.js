@@ -77,6 +77,8 @@
 
         clearFormMessages('#addSbuForm');
         $('#is_active').val('1');
+        $('#sbuScheduleModeStandard').prop('checked', true);
+        toggleAddSbuScheduleMode();
     }
 
     function resetEditSbuForm() {
@@ -90,6 +92,107 @@
         $('#edit_is_active').val('1');
         $('#editSbuForm').attr('data-update-url', '');
         $('#deleteSbuBtn').attr('data-delete-url', '');
+        $('#editSbuScheduleModeStandard').prop('checked', true);
+        toggleEditSbuScheduleMode();
+    }
+
+    function getAddSelectedOrganizationOption() {
+        const select = document.getElementById('organization_id');
+        if (!select) return null;
+        return select.options[select.selectedIndex] || null;
+    }
+
+    function getEditSelectedOrganizationOption() {
+        const select = document.getElementById('edit_organization_id');
+        if (!select) return null;
+        return select.options[select.selectedIndex] || null;
+    }
+
+    function getScheduleFromOption(option) {
+        if (!option || !option.value) {
+            return {
+                workingDays: [],
+                workingStartTime: '',
+                workingEndTime: '',
+                openingGracePeriod: '',
+                closingGracePeriod: ''
+            };
+        }
+        return {
+            workingDays: (option.dataset.workingDays || '').split(',').filter(Boolean),
+            workingStartTime: option.dataset.workingStartTime || '',
+            workingEndTime: option.dataset.workingEndTime || '',
+            openingGracePeriod: option.dataset.openingGracePeriod || '',
+            closingGracePeriod: option.dataset.closingGracePeriod || ''
+        };
+    }
+
+    function applyAddOrganizationSchedule() {
+        const option = getAddSelectedOrganizationOption();
+        const schedule = getScheduleFromOption(option);
+        $('.sbu-working-day').each(function() {
+            this.checked = schedule.workingDays.includes(this.value);
+        });
+        $('#sbuWorkingStartTime').val(schedule.workingStartTime);
+        $('#sbuWorkingEndTime').val(schedule.workingEndTime);
+        $('#sbuOpeningGracePeriod').val(schedule.openingGracePeriod);
+        $('#sbuClosingGracePeriod').val(schedule.closingGracePeriod);
+    }
+
+    function toggleAddSbuScheduleMode() {
+        const hasOrganization = ($('#organization_id').val() || '') !== '';
+        if (!hasOrganization) {
+            $('#sbuScheduleModeSection').addClass('d-none');
+            $('#sbuWorkingScheduleFields').removeClass('pe-none opacity-50');
+            return;
+        }
+        $('#sbuScheduleModeSection').removeClass('d-none');
+        if ($('#sbuScheduleModeStandard').is(':checked')) {
+            applyAddOrganizationSchedule();
+            $('#sbuWorkingScheduleFields').addClass('pe-none opacity-50');
+        } else {
+            $('#sbuWorkingScheduleFields').removeClass('pe-none opacity-50');
+        }
+    }
+
+    function applyEditOrganizationSchedule() {
+        const option = getEditSelectedOrganizationOption();
+        const schedule = getScheduleFromOption(option);
+        $('.edit-sbu-working-day').each(function() {
+            this.checked = schedule.workingDays.includes(this.value);
+        });
+        $('#editSbuWorkingStartTime').val(schedule.workingStartTime);
+        $('#editSbuWorkingEndTime').val(schedule.workingEndTime);
+        $('#editSbuOpeningGracePeriod').val(schedule.openingGracePeriod);
+        $('#editSbuClosingGracePeriod').val(schedule.closingGracePeriod);
+    }
+
+    function schedulesMatchParentForEdit(currentWorkingDays, currentStartTime, currentEndTime, currentOpeningGracePeriod, currentClosingGracePeriod) {
+        const option = getEditSelectedOrganizationOption();
+        const schedule = getScheduleFromOption(option);
+        const current = [...currentWorkingDays].sort().join(',');
+        const parent = [...schedule.workingDays].sort().join(',');
+        return current === parent
+            && (currentStartTime || '') === schedule.workingStartTime
+            && (currentEndTime || '') === schedule.workingEndTime
+            && (currentOpeningGracePeriod || '') === schedule.openingGracePeriod
+            && (currentClosingGracePeriod || '') === schedule.closingGracePeriod;
+    }
+
+    function toggleEditSbuScheduleMode() {
+        const hasOrganization = ($('#edit_organization_id').val() || '') !== '';
+        if (!hasOrganization) {
+            $('#editSbuScheduleModeSection').addClass('d-none');
+            $('#editSbuWorkingScheduleFields').removeClass('pe-none opacity-50');
+            return;
+        }
+        $('#editSbuScheduleModeSection').removeClass('d-none');
+        if ($('#editSbuScheduleModeStandard').is(':checked')) {
+            applyEditOrganizationSchedule();
+            $('#editSbuWorkingScheduleFields').addClass('pe-none opacity-50');
+        } else {
+            $('#editSbuWorkingScheduleFields').removeClass('pe-none opacity-50');
+        }
     }
 
     function showValidationErrors(formSelector, errors) {
@@ -211,9 +314,31 @@
                     $('#edit_address').val(data.address ?? '');
                     $('#edit_latitude').val(data.latitude ?? '');
                     $('#edit_longitude').val(data.longitude ?? '');
+                    const editWorkingDays = Array.isArray(data.working_days) ? data.working_days : [];
+                    $('.edit-sbu-working-day').each(function() {
+                        this.checked = editWorkingDays.includes(this.value);
+                    });
+                    const editStartTime = (data.working_start_time ?? '').toString().slice(0, 5);
+                    const editEndTime = (data.working_end_time ?? '').toString().slice(0, 5);
+                    $('#editSbuWorkingStartTime').val(editStartTime);
+                    $('#editSbuWorkingEndTime').val(editEndTime);
+                    const editOpeningGracePeriod = (data.opening_grace_period ?? '').toString();
+                    const editClosingGracePeriod = (data.closing_grace_period ?? '').toString();
+                    $('#editSbuOpeningGracePeriod').val(editOpeningGracePeriod);
+                    $('#editSbuClosingGracePeriod').val(editClosingGracePeriod);
                     $('#edit_is_active').val(
                         data.is_active === 1 || data.is_active === '1' || data.is_active === true ? '1' : '0'
                     );
+                    if ((data.organization_id ?? '') !== '') {
+                        if (schedulesMatchParentForEdit(editWorkingDays, editStartTime, editEndTime, editOpeningGracePeriod, editClosingGracePeriod)) {
+                            $('#editSbuScheduleModeStandard').prop('checked', true);
+                        } else {
+                            $('#editSbuScheduleModeCustom').prop('checked', true);
+                        }
+                    } else {
+                        $('#editSbuScheduleModeCustom').prop('checked', true);
+                    }
+                    toggleEditSbuScheduleMode();
 
                     $('#editSbuForm').attr('data-update-url', $(button).data('update-url'));
                     $('#deleteSbuBtn').attr('data-delete-url', $(button).data('delete-url'));
@@ -431,14 +556,39 @@
             storeSbu();
         });
 
+        $('#organization_id').on('change', function() {
+            if (this.value) {
+                $('#sbuScheduleModeStandard').prop('checked', true);
+            }
+            toggleAddSbuScheduleMode();
+        });
+        $('#sbuScheduleModeStandard, #sbuScheduleModeCustom').on('change', function() {
+            toggleAddSbuScheduleMode();
+        });
+
         $(document).on('click', '#updateSbuBtn', function(e) {
             e.preventDefault();
             updateSbu();
+        });
+
+        $('#edit_organization_id').on('change', function() {
+            if (this.value) {
+                $('#editSbuScheduleModeStandard').prop('checked', true);
+            } else {
+                $('#editSbuScheduleModeCustom').prop('checked', true);
+            }
+            toggleEditSbuScheduleMode();
+        });
+        $('#editSbuScheduleModeStandard, #editSbuScheduleModeCustom').on('change', function() {
+            toggleEditSbuScheduleMode();
         });
 
         $(document).on('click', '.delete-sbu-btn', function(e) {
             e.preventDefault();
             deleteSbu(this);
         });
+
+        toggleAddSbuScheduleMode();
+        toggleEditSbuScheduleMode();
     }
 })();

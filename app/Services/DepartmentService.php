@@ -23,7 +23,16 @@ class DepartmentService
 
     public function getSbusForFilter(): Collection
     {
-        return Sbu::orderBy('name')->get(['id', 'name', 'organization_id']);
+        return Sbu::orderBy('name')->get([
+            'id',
+            'name',
+            'organization_id',
+            'working_days',
+            'working_start_time',
+            'working_end_time',
+            'opening_grace_period',
+            'closing_grace_period',
+        ]);
     }
 
     public function getCounts(): array

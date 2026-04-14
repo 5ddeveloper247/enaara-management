@@ -20,11 +20,17 @@ class Department extends Model
         'code',
         'parent_department_id',
         'description',
+        'working_days',
+        'working_start_time',
+        'working_end_time',
+        'opening_grace_period',
+        'closing_grace_period',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'working_days' => 'array',
     ];
 
     public function organization(): BelongsTo

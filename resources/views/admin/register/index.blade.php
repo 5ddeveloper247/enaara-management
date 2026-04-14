@@ -83,6 +83,17 @@
     /* Cropper Styles */
     .cropper-container { max-height: 400px !important; }
     #cropperImage { max-width: 100%; display: block; }
+
+    .employee-img-preview-wrap .employee-img-remove-btn:not(.d-none) {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease;
+    }
+    .employee-img-preview-wrap:hover .employee-img-remove-btn:not(.d-none),
+    .employee-img-preview-wrap:focus-within .employee-img-remove-btn:not(.d-none) {
+        opacity: 1;
+        pointer-events: auto;
+    }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 @endpush
@@ -179,6 +190,7 @@
     }
 </script>
 
+<script src="{{ asset('js/employee-register-validation-step1.js') }}"></script>
 @include('admin.register.validation_scripts')
 @include('admin.register.submission_scripts')
 @include('admin.register.navigation_scripts')
@@ -187,9 +199,8 @@
     @if(isset($employee) && isset($editData))
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() {
-            // Prefill form in edit mode
             prefillForm(@json($editData));
-        }, 150);
+        }, 280);
     });
 
     function prefillForm(d) {
@@ -211,31 +222,8 @@
             if (el) el.value = val;
         }
 
-        if (d.organization_id) {
-            const orgSel = document.getElementById('org_select');
-            if (orgSel) {
-                orgSel.value = d.organization_id;
-                if (typeof onOrgChange === 'function') onOrgChange(d.organization_id);
-            }
-        }
-        if (d.role_id) {
-            setTimeout(function() {
-                setSelect('role_id', d.role_id);
-                if (typeof window.syncEmploymentRoleUI === 'function') {
-                    window.syncEmploymentRoleUI();
-                }
-                if (d.sbu_id) {
-                    const sbuSel = document.getElementById('sbu_select');
-                    if (sbuSel) {
-                        sbuSel.value = d.sbu_id;
-                        if (typeof onSbuChange === 'function') onSbuChange(d.sbu_id);
-                    }
-                }
-                if (d.department_id) {
-                    const deptSel = document.getElementById('dept_select');
-                    if (deptSel) deptSel.value = d.department_id;
-                }
-            }, 80);
+        if (typeof window.applyEmploymentMappingPrefill === 'function') {
+            window.applyEmploymentMappingPrefill(d);
         }
 
         setVal('full_name', d.full_name);
@@ -272,9 +260,40 @@
         }
         setVal('nok_name', d.nok_name);
         setVal('nok_cnic', d.nok_cnic);
-        setVal('nok_relation', d.nok_relation);
+        (function prefillNokRelation(stored) {
+            if (stored === null || stored === undefined || stored === '') return;
+            var fixed = ['Father', 'Mother', 'Husband', 'Wife', 'Son', 'Daughter', 'Brother', 'Sister'];
+            var sel = document.getElementById('nok_relation_type');
+            var other = document.getElementById('nok_relation_other');
+            if (!sel) return;
+            var s = String(stored);
+            var canon = fixed.find(function (x) {
+                return x.toLowerCase() === s.trim().toLowerCase();
+            });
+            if (canon) {
+                sel.value = canon;
+            } else {
+                sel.value = 'Other';
+                if (other) other.value = s;
+            }
+            if (typeof window.syncNokRelationOtherVisibility === 'function') {
+                window.syncNokRelationOtherVisibility();
+            }
+        })(d.nok_relation);
         setVal('nok_dob', d.nok_dob);
         setVal('nok_contact', d.nok_contact);
+        (function syncExArmedPrefill() {
+            var ex = document.getElementById('is_ex_armed_force');
+            if (!ex) return;
+            if (d.is_ex_armed_force === undefined || d.is_ex_armed_force === null) {
+                ex.checked = !!(d.armed_force);
+            } else {
+                ex.checked = !!d.is_ex_armed_force;
+            }
+            if (typeof window.syncArmedForcesStepVisibility === 'function') {
+                window.syncArmedForcesStepVisibility();
+            }
+        })();
         setVal('join_date', d.join_date);
         setVal('designation', d.designation);
         setVal('grade', d.grade);
@@ -282,22 +301,85 @@
         setVal('location', d.location);
         setVal('biometric_id', d.biometric_id);
 
-        setRadio('employment_category', d.employment_category);
-        setSelect('intern_type', d.intern_type);
-        setVal('intern_duration', d.intern_duration);
-        setSelect('contractual_type', d.contractual_type);
-        setSelect('engagement_mode', d.engagement_mode);
+        (function () {
+            function normalizeHybridDays(h) {
+                if (h == null) {
+                    return [];
+                }
+                if (Array.isArray(h)) {
+                    return h;
+                }
+                if (typeof h === 'object') {
+                    return Object.values(h);
+                }
+                return [];
+            }
 
-        if (Array.isArray(d.hybrid_days)) {
-            d.hybrid_days.forEach((day) => {
-                const checkbox = document.querySelector('[name="hybrid_days[]"][value="' + day + '"]');
-                if (checkbox) checkbox.checked = true;
+            var rawCat = d.employment_category;
+            var uiCat = rawCat;
+            if (rawCat === 'contractual' || rawCat === 'engagement') {
+                uiCat = 'employee';
+            }
+            if (!uiCat && (d.employment_type || d.contractual_type || d.engagement_mode === 'hybrid' || (d.hybrid_days && normalizeHybridDays(d.hybrid_days).length))) {
+                uiCat = 'employee';
+            }
+            var catMap = { intern: 'catIntern', consultant: 'catConsultant', employee: 'catEmployee' };
+            if (uiCat && catMap[uiCat]) {
+                var catEl = document.getElementById(catMap[uiCat]);
+                if (catEl) {
+                    catEl.checked = true;
+                }
+            }
+            setSelect('intern_type', d.intern_type);
+            setVal('intern_duration', d.intern_duration);
+            if (uiCat === 'employee') {
+                var et = d.employment_type;
+                if (!et && rawCat === 'contractual') {
+                    et = 'contractual';
+                }
+                if (!et && rawCat === 'engagement') {
+                    et = 'permanent';
+                }
+                var empTypeSel = document.getElementById('resourceEmploymentType');
+                if (empTypeSel && et) {
+                    empTypeSel.value = et;
+                }
+                var ctSel = document.getElementById('resourceContractualType');
+                if (ctSel && d.contractual_type) {
+                    ctSel.value = d.contractual_type;
+                }
+                setVal('contract_start_date', d.contract_start_date);
+                setVal('contract_end_date', d.contract_end_date);
+            }
+            var engagementMode = d.engagement_mode;
+            if (engagementMode === 'on_site') {
+                engagementMode = 'standard';
+            }
+            var engSel = document.getElementById('engagementMode');
+            if (engSel && engagementMode) {
+                engSel.value = engagementMode;
+            }
+
+            normalizeHybridDays(d.hybrid_days).forEach(function (day) {
+                var checkbox = document.querySelector('[name="hybrid_days[]"][value="' + String(day) + '"]');
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
             });
-        }
 
-        if (typeof toggleCategoryBlocks === 'function') {
-            toggleCategoryBlocks();
-        }
+            if (typeof window.toggleCategoryBlocks === 'function') {
+                window.toggleCategoryBlocks();
+            }
+            if (typeof window.syncEmployeeResourceSubfields === 'function') {
+                window.syncEmployeeResourceSubfields();
+            }
+            if (typeof window.syncWorkArrangementUI === 'function') {
+                window.syncWorkArrangementUI();
+            }
+            if (typeof window.applyStandardSchedulePrefill === 'function') {
+                window.applyStandardSchedulePrefill(d);
+            }
+        })();
 
         if (d.photo_url) {
             const preview = document.getElementById('imgPreview');
@@ -320,6 +402,9 @@
             setVal('verification_letter_no', d.police.verification_letter_no);
             setVal('next_verification_date', d.police.next_verification_date);
             setVal('police_remarks', d.police.remarks);
+            if (typeof window.syncPoliceDetailRequiredUi === 'function') {
+                window.syncPoliceDetailRequiredUi();
+            }
         }
 
         if (d.armed_force) {
@@ -344,11 +429,25 @@
             setVal('permanent_address', d.contact.permanent_address);
         }
 
-        if (d.bank) {
-            setVal('account_title', d.bank.account_title);
-            setVal('account_no', d.bank.account_no);
-            setVal('bank_branch', d.bank.bank_branch);
-            setRadio('account_type', d.bank.account_type);
+        if (d.bank_details && d.bank_details.length > 0) {
+            var hw = document.getElementById('bank-hidden-inputs');
+            if (hw) hw.innerHTML = '';
+            var bl = document.getElementById('bankListing');
+            if (bl) bl.querySelectorAll('[data-bank-card]').forEach(function (r) { r.remove(); });
+            d.bank_details.forEach(function (b) {
+                if (typeof window.addSavedBankFromServer === 'function') {
+                    window.addSavedBankFromServer(b);
+                }
+            });
+            if (typeof window.syncBankSalaryRadiosAfterLoad === 'function') {
+                window.syncBankSalaryRadiosAfterLoad();
+            }
+        } else if (typeof window.ensureAtLeastOneBankRow === 'function') {
+            var hw2 = document.getElementById('bank-hidden-inputs');
+            if (hw2) hw2.innerHTML = '';
+            var bl2 = document.getElementById('bankListing');
+            if (bl2) bl2.querySelectorAll('[data-bank-card]').forEach(function (r) { r.remove(); });
+            window.ensureAtLeastOneBankRow();
         }
 
         if (d.family && d.family.length) {

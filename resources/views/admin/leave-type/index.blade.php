@@ -197,6 +197,8 @@
         var leaveTypeStoreUrl = '{{ route("admin.leave.type.store") }}';
         var leaveTypeCreateUrl = '{{ route("admin.leave.type.add") }}';
         var departmentsUrl = '{{ route("admin.department.index") }}';
+        var leaveDeptPool = [];
+        var leaveDeptSelected = [];
 
         var editCanvas = document.getElementById('leaveTypeEditCanvas');
         if (editCanvas) {
@@ -278,6 +280,107 @@
             });
         });
 
+        function renderLeaveDeptHiddenInputs() {
+            var wrap = $('#departmentHiddenInputs');
+            wrap.empty();
+            leaveDeptSelected.forEach(function(id) {
+                wrap.append(`<input type="hidden" name="department_ids[]" value="${id}">`);
+            });
+        }
+
+        function renderLeaveDeptChips() {
+            var chips = $('#leaveDeptChips');
+            var placeholder = $('#leaveDeptPlaceholder');
+            chips.empty();
+            if (!leaveDeptSelected.length) {
+                placeholder.show();
+                return;
+            }
+            placeholder.hide();
+            leaveDeptSelected.forEach(function(id) {
+                var row = leaveDeptPool.find(function(d) { return String(d.id) === String(id); });
+                var name = row ? row.name : id;
+                chips.append(
+                    `<span class="lt-dept-chip">${name}<span class="lt-dept-chip-x" onclick="leaveDeptRemove('${id}', event)">×</span></span>`
+                );
+            });
+        }
+
+        function syncLeaveDeptState() {
+            renderLeaveDeptHiddenInputs();
+            renderLeaveDeptChips();
+            window.leaveDeptRenderList();
+        }
+
+        window.leaveDeptRenderList = function() {
+            var list = $('#leaveDeptList');
+            var q = ($('#leaveDeptSearch').val() || '').toLowerCase().trim();
+            var rows = leaveDeptPool.filter(function(d) {
+                return !q || String(d.name || '').toLowerCase().includes(q);
+            });
+            if (!rows.length) {
+                list.html('<div class="lt-dept-no-result">No departments found</div>');
+                return;
+            }
+            list.html(rows.map(function(d) {
+                var picked = leaveDeptSelected.includes(String(d.id));
+                return `<div class="lt-dept-opt ${picked ? 'picked' : ''}" onclick="leaveDeptToggle('${d.id}')">
+                    <span class="lt-dept-opt-cb">
+                        <svg class="lt-dept-opt-ck" viewBox="0 0 16 16" fill="none">
+                            <path d="M3.5 8.2l3 3L12.5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <span class="lt-dept-opt-name">${d.name}</span>
+                </div>`;
+            }).join(''));
+        };
+
+        window.leaveDeptToggle = function(id) {
+            id = String(id);
+            if (leaveDeptSelected.includes(id)) {
+                leaveDeptSelected = leaveDeptSelected.filter(function(v) { return v !== id; });
+            } else {
+                leaveDeptSelected.push(id);
+            }
+            $('#selectAllDepartments').prop('checked', leaveDeptPool.length > 0 && leaveDeptSelected.length === leaveDeptPool.length);
+            syncLeaveDeptState();
+        };
+
+        window.leaveDeptRemove = function(id, e) {
+            if (e) e.stopPropagation();
+            id = String(id);
+            leaveDeptSelected = leaveDeptSelected.filter(function(v) { return v !== id; });
+            $('#selectAllDepartments').prop('checked', false);
+            syncLeaveDeptState();
+        };
+
+        window.leaveDeptBoxClick = function(e) {
+            if (e) e.stopPropagation();
+            if (!leaveDeptPool.length) return;
+            var box = $('#leaveDeptBox');
+            var dd = $('#leaveDeptDropdown');
+            var isOpen = dd.is(':visible');
+            if (isOpen) {
+                dd.hide();
+                box.removeClass('open');
+            } else {
+                dd.show();
+                box.addClass('open');
+                window.leaveDeptRenderList();
+                $('#leaveDeptSearch').trigger('focus');
+            }
+        };
+
+        $(document).on('click', function(e) {
+            var dd = document.getElementById('leaveDeptDropdown');
+            var box = document.getElementById('leaveDeptBox');
+            if (!dd || !box) return;
+            if (!dd.contains(e.target) && !box.contains(e.target)) {
+                $('#leaveDeptDropdown').hide();
+                $('#leaveDeptBox').removeClass('open');
+            }
+        });
+
         function loadSbus(organizationId, selectedSbuId) {
             var sbuSelect = $('#editSbuId');
 
@@ -311,17 +414,19 @@
         }
 
         function loadDepartments(sbuId, selectedDepartmentIds) {
-            var container = $('#departmentCheckboxes');
             selectedDepartmentIds = selectedDepartmentIds || [];
 
             if (!sbuId) {
                 var orgId = $('#editOrganizationId').val();
                 var msg = orgId ? 'Select an SBU first...' : 'Select an organization first...';
-                container.empty().append('<div class="text-muted small">' + msg + '</div>');
+                leaveDeptPool = [];
+                leaveDeptSelected = [];
+                $('#leaveDeptPlaceholder').text(msg).show();
+                $('#selectAllDepartments').prop('checked', false);
+                syncLeaveDeptState();
                 return;
             }
-
-            container.empty().append('<div class="text-muted small">Loading departments...</div>');
+            $('#leaveDeptList').html('<div class="text-muted small p-2">Loading departments...</div>');
 
             $.ajax({
                 url: '{{ url("/admin/department") }}',
@@ -334,27 +439,29 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 success: function(response) {
-                    container.empty();
-
                     if (response.departments && response.departments.length > 0) {
-                        response.departments.forEach(function(dept) {
-                            var checked = selectedDepartmentIds.includes(dept.id) ? 'checked' : '';
-                            var html = `
-                                    <div class="form-check mb-1">
-                                        <input class="form-check-input dept-checkbox" type="checkbox" value="${dept.id}" id="deptCheck_${dept.id}" ${checked}>
-                                        <label class="form-check-label small text-dark" for="deptCheck_${dept.id}">
-                                            ${dept.name}
-                                        </label>
-                                    </div>
-                                `;
-                            container.append(html);
+                        leaveDeptPool = response.departments.map(function(dept) {
+                            return { id: String(dept.id), name: dept.name };
                         });
+                        var allowed = new Set(leaveDeptPool.map(function(d) { return d.id; }));
+                        leaveDeptSelected = (selectedDepartmentIds || [])
+                            .map(function(v) { return String(v); })
+                            .filter(function(v) { return allowed.has(v); });
+                        $('#leaveDeptPlaceholder').text('Select Departments...');
                     } else {
-                        container.append('<div class="text-muted small">No departments found for this SBU.</div>');
+                        leaveDeptPool = [];
+                        leaveDeptSelected = [];
+                        $('#leaveDeptPlaceholder').text('No departments found for this SBU.');
                     }
+                    $('#selectAllDepartments').prop('checked', leaveDeptPool.length > 0 && leaveDeptSelected.length === leaveDeptPool.length);
+                    syncLeaveDeptState();
                 },
                 error: function() {
-                    container.empty().append('<div class="text-danger small">Error loading departments.</div>');
+                    leaveDeptPool = [];
+                    leaveDeptSelected = [];
+                    $('#leaveDeptPlaceholder').text('Error loading departments.');
+                    $('#selectAllDepartments').prop('checked', false);
+                    syncLeaveDeptState();
                 }
             });
         }
@@ -363,7 +470,11 @@
             var orgId = $(this).val();
             loadSbus(orgId, null);
             $('#editSbuId').empty().append('<option value="">Select SBU</option>');
-            $('#departmentCheckboxes').empty().append('<div class="text-muted small">Select an SBU first...</div>');
+            leaveDeptPool = [];
+            leaveDeptSelected = [];
+            $('#leaveDeptPlaceholder').text(orgId ? 'Select an SBU first...' : 'Select an organization first...');
+            $('#selectAllDepartments').prop('checked', false);
+            syncLeaveDeptState();
         });
 
         $('#editSbuId').on('change', function() {
@@ -375,7 +486,12 @@
         // Select All Departments Handler
         $('#selectAllDepartments').on('change', function() {
             var isChecked = $(this).is(':checked');
-            $('.dept-checkbox').prop('checked', isChecked);
+            leaveDeptSelected = isChecked ? leaveDeptPool.map(function(d) { return String(d.id); }) : [];
+            syncLeaveDeptState();
+        });
+
+        $('#leaveDeptSearch').on('keydown', function(e) {
+            e.stopPropagation();
         });
 
         function loadLeaveTypeForAdd() {
@@ -404,10 +520,14 @@
                     $('#editAnnualQuota').val('0');
                     $('#editLeaveTypeIsActive').prop('checked', true);
                     $('#editSbuId').empty().append('<option value="">Please select Organization first...</option>');
-                    $('#departmentCheckboxes').empty().append('<div class="text-muted small">Select an organization first...</div>');
+                    leaveDeptPool = [];
+                    leaveDeptSelected = [];
+                    $('#leaveDeptPlaceholder').text('Select an organization first...').show();
+                    syncLeaveDeptState();
 
                     $('.invalid-feedback').text('').hide();
                     $('.form-select, .form-control').removeClass('is-invalid');
+                    $('#leaveDeptBox').removeClass('is-invalid');
                     $('#selectAllDepartments').prop('checked', false);
                 },
                 error: function(xhr) {
@@ -451,11 +571,15 @@
                     if (response.leaveType.sbu_id) {
                         loadDepartments(response.leaveType.sbu_id, response.department_ids);
                     } else {
-                        $('#departmentCheckboxes').empty().append('<div class="text-muted small">Select an SBU first...</div>');
+                        leaveDeptPool = [];
+                        leaveDeptSelected = [];
+                        $('#leaveDeptPlaceholder').text('Select an SBU first...').show();
+                        syncLeaveDeptState();
                     }
 
                     $('.invalid-feedback').text('').hide();
                     $('.form-select, .form-control').removeClass('is-invalid');
+                    $('#leaveDeptBox').removeClass('is-invalid');
                 },
                 error: function(xhr) {
                     console.error('Error loading leave type:', xhr);
@@ -468,10 +592,7 @@
             e.preventDefault();
 
             var formMode = $('#editFormMode').val();
-            var selectedDepts = [];
-            $('.dept-checkbox:checked').each(function() {
-                selectedDepts.push($(this).val());
-            });
+            var selectedDepts = leaveDeptSelected.slice();
 
             var formData = {
                 organization_id: $('#editOrganizationId').val(),
@@ -485,6 +606,7 @@
 
             $('.invalid-feedback').text('').hide();
             $('.form-select, .form-control').removeClass('is-invalid');
+            $('#leaveDeptBox').removeClass('is-invalid');
 
             var url, method;
             if (formMode === 'add') {
@@ -525,7 +647,7 @@
                         var fieldMap = {
                             'organization_id': 'editOrganizationId',
                             'sbu_id': 'editSbuId',
-                            'department_ids': 'editDepartmentId',
+                            'department_ids': 'leaveDeptBox',
                             'name': 'editLeaveTypeName',
                             'code': 'editLeaveTypeCode',
                             'annual_quota': 'editAnnualQuota',
@@ -533,7 +655,7 @@
                         };
                         $.each(errors, function(field, messages) {
                             var fieldId = '#' + (fieldMap[field] || 'edit' + field);
-                            var errorId = fieldId + 'Error';
+                            var errorId = field === 'department_ids' ? '#editDepartmentIdError' : (fieldId + 'Error');
                             $(fieldId).addClass('is-invalid');
                             $(errorId).text(messages[0]).show();
                             errorList += '<li>' + messages[0] + '</li>';
@@ -551,6 +673,8 @@
                 }
             });
         });
+
+        syncLeaveDeptState();
     });
 </script>
 @endpush

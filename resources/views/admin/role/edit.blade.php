@@ -4,6 +4,174 @@
 
 @section('page-title', 'Roles')
 
+@push('styles')
+<style>
+    .sbu-input-box {
+        background: #fff;
+        border: 1.5px solid #ced4da;
+        border-radius: 10px;
+        padding: 8px 40px 8px 8px;
+        min-height: 46px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        cursor: text;
+        position: relative;
+        transition: border-color .15s, box-shadow .15s;
+    }
+    .sbu-input-box:hover {
+        border-color: #adb5bd;
+    }
+    .sbu-input-box.open,
+    .sbu-input-box:focus-within {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 3px rgba(13,110,253,.12);
+        outline: none;
+    }
+    .sbu-input-box.is-invalid {
+        border-color: #dc3545;
+    }
+    .sbu-input-box.is-invalid.open {
+        box-shadow: 0 0 0 3px rgba(220,53,69,.12);
+    }
+    .sbu-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: #e9f2ff;
+        border: 1px solid #b6d4fe;
+        color: #0a3060;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 3px 6px 3px 10px;
+        border-radius: 999px;
+        cursor: default;
+        transition: background .12s;
+    }
+    .sbu-chip:hover {
+        background: #c8dffe;
+    }
+    .sbu-chip-x {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #185FA5;
+        flex-shrink: 0;
+    }
+    .sbu-chip-x:hover {
+        background: #85B7EB;
+        color: #042C53;
+    }
+    .sbu-ph {
+        font-size: 14px;
+        color: #adb5bd;
+        padding: 2px 4px;
+        pointer-events: none;
+    }
+    .sbu-chevron {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: #adb5bd;
+        transition: transform .18s;
+    }
+    .sbu-input-box.open .sbu-chevron {
+        transform: translateY(-50%) rotate(180deg);
+    }
+    .sbu-dropdown {
+        background: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 10px;
+        margin-top: 6px;
+        overflow: hidden;
+        z-index: 1050;
+        position: relative;
+    }
+    .sbu-search-row {
+        padding: 8px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .sbu-search-row input {
+        width: 100%;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        padding: 7px 12px;
+        font-size: 13px;
+        background: #f8f9fa;
+        color: #212529;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+    }
+    .sbu-search-row input:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 2px rgba(13,110,253,.1);
+        background: #fff;
+    }
+    .sbu-opt-list {
+        max-height: 210px;
+        overflow-y: auto;
+        padding: 4px 0;
+    }
+    .sbu-opt {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #212529;
+        transition: background .1s;
+        user-select: none;
+    }
+    .sbu-opt:hover {
+        background: #f8f9fa;
+    }
+    .sbu-opt.picked {
+        background: #e9f2ff;
+    }
+    .sbu-opt.picked .sbu-opt-name {
+        color: #0a3060;
+        font-weight: 500;
+    }
+    .sbu-opt-cb {
+        width: 17px;
+        height: 17px;
+        border-radius: 5px;
+        border: 1.5px solid #adb5bd;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all .12s;
+    }
+    .sbu-opt.picked .sbu-opt-cb {
+        background: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .sbu-opt-ck {
+        display: none;
+        width: 10px;
+        height: 10px;
+    }
+    .sbu-opt.picked .sbu-opt-ck {
+        display: block;
+    }
+    .sbu-no-result {
+        padding: 16px;
+        font-size: 13px;
+        color: #adb5bd;
+        text-align: center;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid">
     <div class="row align-items-center mb-3">
@@ -26,11 +194,23 @@
                     <i class="bi bi-shield-check me-2"></i>Role Information
                 </h6>
                 <div class="row g-3 mb-4">
-                    <div class="col-md-6">
+                    {{-- <div class="col-md-6">
                         <label for="name" class="form-label">Role Name <span class="text-danger">*</span></label>
                         <input type="text" name="name" id="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $role->name) }}" required maxlength="255" placeholder="Enter role name">
                         <small class="text-muted">Role name should be unique and descriptive</small>
                         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div> --}}
+                    <div class="col-md-6">
+                        <label for="level_id" class="form-label">Role <span class="text-danger">*</span></label>
+                        <select name="level_id" id="level_id" class="form-select @error('level_id') is-invalid @enderror" required>
+                            <option value="">— Select Role Level —</option>
+                            @foreach($levels ?? [] as $level)
+                            <option value="{{ $level->id }}" {{ (string) old('level_id', $selectedLevelId) === (string) $level->id ? 'selected' : '' }}>
+                                {{ $level->name }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('level_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-6">
                         <label for="slug" class="form-label">Slug</label>
@@ -59,18 +239,26 @@
                     </div>
 
                     <div class="col-md-4">
-                        <label for="department_id" class="form-label">Department</label>
-                        <select name="department_id" id="department_id" class="form-select @error('department_id') is-invalid @enderror">
-                            <option value="">Select Department</option>
-                            @foreach($departments ?? [] as $department)
-                            <option value="{{ $department->id }}"
-                                {{ old('department_id', $role->department_id) == $department->id ? 'selected' : '' }}>
-                                {{ $department->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @error('department_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <label for="sbu_id" class="form-label">SBU</label>
+                        <div id="sbu-hidden-inputs"></div>
+                        <div class="sbu-input-box @error('sbu_ids') is-invalid @enderror @error('sbu_ids.*') is-invalid @enderror" id="sbu-box" onclick="sbuBoxClick(event)">
+                            <div id="sbu-chips" style="display:contents"></div>
+                            <span class="sbu-ph" id="sbu-ph">Select SBU...</span>
+                            <svg class="sbu-chevron" id="sbu-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="sbu-dropdown" id="sbu-dd" style="display:none">
+                            <div class="sbu-search-row">
+                                <input id="sbu-search" placeholder="Search SBU..." oninput="sbuRenderList()" onclick="event.stopPropagation()" autocomplete="off">
+                            </div>
+                            <div class="sbu-opt-list" id="sbu-list"></div>
+                        </div>
+                        @error('sbu_ids')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                        @error('sbu_ids.*')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -153,19 +341,135 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const organizationSelect = document.getElementById('organization_id');
-        const departmentSelect = document.getElementById('department_id');
+        const levelSelect = document.getElementById('level_id');
         const parentRoleSelect = document.getElementById('parent_role_id');
         const selectAllModules = document.getElementById('selectAllModules');
         const currentRoleId = "{{ $role->id }}";
+        const sbuHiddenInputs = document.getElementById('sbu-hidden-inputs');
+        const sbuBox = document.getElementById('sbu-box');
+        const sbuChips = document.getElementById('sbu-chips');
+        const sbuPh = document.getElementById('sbu-ph');
+        const sbuDd = document.getElementById('sbu-dd');
+        const sbuSearch = document.getElementById('sbu-search');
+        const sbuList = document.getElementById('sbu-list');
+        let sbuAll = [];
+        let sbuSelected = [];
 
         function resetSelect(select, placeholder) {
             if (!select) return;
             select.innerHTML = `<option value="">${placeholder}</option>`;
         }
 
-        function loadDepartments(organizationId, selectedDepartmentId = '') {
-            resetSelect(departmentSelect, 'Select Department');
+        function resetSbuSelect() {
+            sbuAll = [];
+            sbuSelected = [];
+            renderSbuHiddenInputs();
+            renderSbuChips();
+            sbuRenderList();
+        }
 
+        function getSelectedSbuIds() {
+            return sbuSelected.slice();
+        }
+
+        function renderSbuHiddenInputs() {
+            if (!sbuHiddenInputs) return;
+            sbuHiddenInputs.innerHTML = sbuSelected
+                .map(function(id) { return `<input type="hidden" name="sbu_ids[]" value="${id}">`; })
+                .join('');
+        }
+
+        function renderSbuChips() {
+            if (!sbuChips) return;
+            if (!sbuSelected.length) {
+                sbuChips.innerHTML = '';
+                if (sbuPh) sbuPh.style.display = '';
+                return;
+            }
+            if (sbuPh) sbuPh.style.display = 'none';
+            sbuChips.innerHTML = sbuSelected.map(function(id) {
+                const row = sbuAll.find(function(x) { return String(x.id) === String(id); });
+                const name = row ? row.name : id;
+                return `<span class="sbu-chip">${name}<span class="sbu-chip-x" onclick="sbuRemoveId('${id}', event)">×</span></span>`;
+            }).join('');
+        }
+
+        window.sbuRenderList = function sbuRenderList() {
+            if (!sbuList) return;
+            const q = (sbuSearch?.value || '').toLowerCase().trim();
+            const filtered = sbuAll.filter(function(item) {
+                return !q || String(item.name || '').toLowerCase().includes(q);
+            });
+            if (!filtered.length) {
+                sbuList.innerHTML = '<div class="sbu-no-result">No SBU found</div>';
+                return;
+            }
+            sbuList.innerHTML = filtered.map(function(item) {
+                const picked = sbuSelected.includes(String(item.id));
+                return `<div class="sbu-opt ${picked ? 'picked' : ''}" onclick="sbuToggleId('${item.id}')">
+                            <span class="sbu-opt-cb">
+                                <svg class="sbu-opt-ck" viewBox="0 0 16 16" fill="none">
+                                    <path d="M3.5 8.2l3 3L12.5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                            <span class="sbu-opt-name">${item.name}</span>
+                        </div>`;
+            }).join('');
+        };
+
+        function syncSbuAndParentRoles() {
+            renderSbuHiddenInputs();
+            renderSbuChips();
+            sbuRenderList();
+            loadParentRoles(organizationSelect?.value || '', getSelectedSbuIds());
+        }
+
+        window.sbuToggleId = function sbuToggleId(id) {
+            id = String(id);
+            if (sbuSelected.includes(id)) {
+                sbuSelected = sbuSelected.filter(function(v) { return v !== id; });
+            } else {
+                sbuSelected.push(id);
+            }
+            syncSbuAndParentRoles();
+        };
+
+        window.sbuRemoveId = function sbuRemoveId(id, e) {
+            if (e) e.stopPropagation();
+            id = String(id);
+            sbuSelected = sbuSelected.filter(function(v) { return v !== id; });
+            syncSbuAndParentRoles();
+        };
+
+        window.sbuBoxClick = function sbuBoxClick(e) {
+            if (e) e.stopPropagation();
+            if (!sbuAll.length) return;
+            const isOpen = sbuDd && sbuDd.style.display !== 'none';
+            if (!isOpen) {
+                if (sbuDd) sbuDd.style.display = '';
+                if (sbuBox) sbuBox.classList.add('open');
+                if (sbuSearch) setTimeout(function() { sbuSearch.focus(); }, 0);
+            } else {
+                if (sbuDd) sbuDd.style.display = 'none';
+                if (sbuBox) sbuBox.classList.remove('open');
+            }
+        };
+
+        document.addEventListener('click', function(evt) {
+            if (!sbuDd || !sbuBox) return;
+            if (!sbuDd.contains(evt.target) && !sbuBox.contains(evt.target)) {
+                sbuDd.style.display = 'none';
+                sbuBox.classList.remove('open');
+            }
+        });
+
+        if (sbuSearch) {
+            sbuSearch.addEventListener('keydown', function(e) {
+                e.stopPropagation();
+            });
+        }
+
+        function loadSbus(organizationId, selectedSbuIds = []) {
             if (!organizationId) {
                 return;
             }
@@ -173,24 +477,23 @@
             fetch(`{{ route('admin.role.departmentsByOrganization') }}?organization_id=${organizationId}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success && Array.isArray(data.departments)) {
-                        data.departments.forEach(department => {
-                            const option = document.createElement('option');
-                            option.value = department.id;
-                            option.textContent = department.name;
-
-                            if (selectedDepartmentId && String(selectedDepartmentId) === String(department.id)) {
-                                option.selected = true;
-                            }
-
-                            departmentSelect.appendChild(option);
+                    if (data.success && Array.isArray(data.sbus) && data.sbus.length > 0) {
+                        sbuAll = data.sbus.map(function(sbu) {
+                            return { id: String(sbu.id), name: sbu.name };
                         });
+                    } else {
+                        sbuAll = [];
                     }
+                    const allowed = new Set(sbuAll.map(function(item) { return item.id; }));
+                    sbuSelected = (selectedSbuIds || [])
+                        .map(function(v) { return String(v); })
+                        .filter(function(v) { return allowed.has(v); });
+                    syncSbuAndParentRoles();
                 })
-                .catch(error => console.error('Error loading departments:', error));
+                .catch(error => console.error('Error loading SBUs:', error));
         }
 
-        function loadParentRoles(organizationId, departmentId = '', selectedParentRoleId = '') {
+        function loadParentRoles(organizationId, sbuIds = [], selectedParentRoleId = '') {
             resetSelect(parentRoleSelect, 'Select Parent Role');
 
             if (!organizationId) {
@@ -198,9 +501,12 @@
             }
 
             let url = `{{ route('admin.role.parentRoles') }}?organization_id=${organizationId}&exclude_role_id=${currentRoleId}`;
+            const levelId = levelSelect?.value || '';
+            if (!levelId) return;
+            url += `&level_id=${encodeURIComponent(levelId)}`;
 
-            if (departmentId) {
-                url += `&department_id=${departmentId}`;
+            if (sbuIds.length > 0) {
+                url += `&sbu_ids=${encodeURIComponent(sbuIds.join(','))}`;
             }
 
             fetch(url)
@@ -226,20 +532,18 @@
         organizationSelect?.addEventListener('change', function() {
             const organizationId = this.value;
 
-            resetSelect(departmentSelect, 'Select Department');
+            resetSbuSelect();
             resetSelect(parentRoleSelect, 'Select Parent Role');
 
             if (organizationId) {
-                loadDepartments(organizationId);
+                loadSbus(organizationId);
                 loadParentRoles(organizationId);
             }
         });
 
-        departmentSelect?.addEventListener('change', function() {
+        levelSelect?.addEventListener('change', function() {
             const organizationId = organizationSelect?.value || '';
-            const departmentId = this.value;
-
-            loadParentRoles(organizationId, departmentId);
+            loadParentRoles(organizationId, getSelectedSbuIds());
         });
 
         selectAllModules?.addEventListener('change', function() {
@@ -249,18 +553,24 @@
         });
 
         const currentOrganizationId = @json(old('organization_id', $role->organization_id));
-        const currentDepartmentId = @json(old('department_id', $role->department_id));
+        const currentSbuIds = @json(old('sbu_ids', $selectedSbuIds ?? []));
         const currentParentRoleId = @json(old('parent_role_id', $role->parent_role_id));
 
         if (currentOrganizationId) {
-            loadDepartments(currentOrganizationId, currentDepartmentId);
+            loadSbus(currentOrganizationId, currentSbuIds.map(String));
 
-            if (currentDepartmentId) {
-                loadParentRoles(currentOrganizationId, currentDepartmentId, currentParentRoleId);
+            if (currentSbuIds.length > 0) {
+                loadParentRoles(currentOrganizationId, currentSbuIds.map(String), currentParentRoleId);
             } else {
-                loadParentRoles(currentOrganizationId, '', currentParentRoleId);
+                loadParentRoles(currentOrganizationId, [], currentParentRoleId);
             }
+        } else {
+            resetSbuSelect();
         }
+
+        syncSbuAndParentRoles();
     });
 </script>
+@push('scripts')
+@endpush
 @endsection

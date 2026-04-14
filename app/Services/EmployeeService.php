@@ -20,6 +20,8 @@ use App\Models\Sbu;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditTrailService;
+use App\Services\EmployeeEmploymentInformationService;
+use App\Services\EmployeeGeneralInformationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -31,54 +33,158 @@ class EmployeeService
 {
     protected $auditTrailService;
 
-    public function __construct(AuditTrailService $auditTrailService)
-    {
-        $this->auditTrailService = $auditTrailService;
+    protected EmployeeGeneralInformationService $generalInformation;
+
+    protected EmployeeEmploymentInformationService $employmentInformation;
+
+    public function __construct(
+        AuditTrailService $auditTrailService,
+        EmployeeGeneralInformationService $generalInformation,
+        EmployeeEmploymentInformationService $employmentInformation
+    ) {
+        $this->auditTrailService   = $auditTrailService;
+        $this->generalInformation  = $generalInformation;
+        $this->employmentInformation = $employmentInformation;
     }
 
     public function index(): View
     {
-        $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
-        $roles = Role::where('is_active', true)
+        $organizations = Organization::query()
+            ->select(['id', 'name'])
+            ->where('is_active', true)
+            ->with([
+                'sbus' => static function ($query): void {
+                    $query->select(['id', 'organization_id', 'name'])
+                        ->where('is_active', true)
+                        ->orderBy('name');
+                },
+                'sbus.departments' => static function ($query): void {
+                    $query->select(['id', 'sbu_id', 'name'])
+                        ->where('is_active', true)
+                        ->orderBy('name');
+                },
+            ])
             ->orderBy('name')
-            ->get(['id', 'name', 'organization_id', 'department_id']);
-        $employees     = Employee::with(['organization', 'department'])
-            ->orderByDesc('id')
-            ->paginate(20);
-        $departments=Department::where('is_active',true)->orderBy('name')->get();
-        $sbus = Sbu::where('is_active', true)->orderBy('name')->get();
-        return view('admin.employee.index', compact('organizations', 'employees', 'departments', 'sbus'));
+            ->get();
+
+        $departments = Department::query()
+            ->select(['id', 'name', 'sbu_id', 'organization_id'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $sbus = Sbu::query()
+            ->select(['id', 'name', 'organization_id'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.employee.index', compact('organizations', 'departments', 'sbus'));
     }
 
     public function getFormData(): array
     {
-        $organizations = Organization::with('sbus.departments')->orderBy('name')->get();
-        $roles = Role::where('is_active', true)
-            ->with('department:id,sbu_id')
+        $organizations = Organization::query()
+            ->select([
+                'id',
+                'name',
+                'working_days',
+                'working_start_time',
+                'working_end_time',
+                'opening_grace_period',
+                'closing_grace_period',
+            ])
+            ->where('is_active', true)
+            ->with([
+                'sbus' => static function ($query): void {
+                    $query->select([
+                        'id',
+                        'organization_id',
+                        'name',
+                        'working_days',
+                        'working_start_time',
+                        'working_end_time',
+                        'opening_grace_period',
+                        'closing_grace_period',
+                    ])
+                        ->where('is_active', true)
+                        ->orderBy('name');
+                },
+                'sbus.departments' => static function ($query): void {
+                    $query->select([
+                        'id',
+                        'sbu_id',
+                        'name',
+                        'working_days',
+                        'working_start_time',
+                        'working_end_time',
+                        'opening_grace_period',
+                        'closing_grace_period',
+                    ])
+                        ->where('is_active', true)
+                        ->orderBy('name');
+                },
+            ])
             ->orderBy('name')
-            ->get(['id', 'name', 'organization_id', 'department_id']);
+            ->get();
 
-        $orgsData = $organizations->map(fn($o) => [
-            'id'   => $o->id,
-            'name' => $o->name,
-            'sbus' => $o->sbus->map(fn($s) => [
-                'id'          => $s->id,
-                'name'        => $s->name,
-                'departments' => $s->departments->map(fn($d) => [
-                    'id'   => $d->id,
-                    'name' => $d->name,
+        $roles = Role::query()
+            ->select(['id', 'name', 'organization_id', 'department_id', 'sbu_id', 'slug'])
+            ->where('is_active', true)
+            ->with([
+                'department:id,sbu_id',
+                'sbus:id',
+            ])
+            ->orderBy('name')
+            ->get();
+
+        $orgsData = $organizations->map(fn ($o) => [
+            'id' => $o->id,
+            'name'                   => $o->name,
+            'working_days'           => $o->working_days,
+            'working_start_time'     => $o->working_start_time,
+            'working_end_time'       => $o->working_end_time,
+            'opening_grace_period'   => $o->opening_grace_period,
+            'closing_grace_period'   => $o->closing_grace_period,
+            'sbus'                   => $o->sbus->map(fn ($s) => [
+                'id'                   => $s->id,
+                'name'                 => $s->name,
+                'working_days'         => $s->working_days,
+                'working_start_time'   => $s->working_start_time,
+                'working_end_time'     => $s->working_end_time,
+                'opening_grace_period' => $s->opening_grace_period,
+                'closing_grace_period' => $s->closing_grace_period,
+                'departments'          => $s->departments->map(fn ($d) => [
+                    'id'                   => $d->id,
+                    'name'                 => $d->name,
+                    'working_days'         => $d->working_days,
+                    'working_start_time'   => $d->working_start_time,
+                    'working_end_time'     => $d->working_end_time,
+                    'opening_grace_period' => $d->opening_grace_period,
+                    'closing_grace_period' => $d->closing_grace_period,
                 ])->values()->all(),
             ])->values()->all(),
         ])->values()->all();
 
-        $rolesData = $roles->map(fn($r) => [
-            'id'                      => $r->id,
-            'name'                    => $r->name,
-            'organization_id'         => $r->organization_id,
-            'department_id'           => $r->department_id,
-            'sbu_id'                  => $r->department?->sbu_id,
-            'is_organization_level'   => $r->isOrganizationLevelRole(),
-        ])->values()->all();
+        $rolesData = $roles->map(function ($r) {
+            $linked = $r->sbus->pluck('id');
+            if ($r->sbu_id) {
+                $linked->push($r->sbu_id);
+            }
+            if ($r->department?->sbu_id) {
+                $linked->push($r->department->sbu_id);
+            }
+
+            return [
+                'id'                    => $r->id,
+                'name'                  => $r->name,
+                'organization_id'       => $r->organization_id,
+                'sbu_id'                => $r->sbu_id,
+                'department_id'         => $r->department_id,
+                'linked_sbu_ids'        => $linked->unique()->values()->all(),
+                'is_organization_level' => $r->isOrganizationLevelRole(),
+            ];
+        })->values()->all();
 
         return compact('organizations', 'orgsData', 'rolesData');
     }
@@ -107,13 +213,16 @@ class EmployeeService
                 }
             }
 
+            $scheduleAttrs = $this->employmentInformation->standardScheduleAttributesForPersist($data, $role, $orgLevel);
+
             $employee = Employee::create([
                 'full_name'           => $data['full_name'],
                 'father_name'         => $data['father_name'] ?? null,
                 'employee_code'       => $code,
                 'organization_id'     => $data['organization_id'] ?? null,
-                'sbu_id'              => $orgLevel ? null : ($data['sbu_id'] ?? null),
-                'department_id'       => $orgLevel ? null : ($data['department_id'] ?? null),
+                'sbu_id'              => $data['sbu_id'] ?? null,
+                'department_id'       => $data['department_id'] ?? null,
+                'department_ids'      => $data['department_ids'] ?? null,
                 'role_id'             => $data['role_id'] ?? null,
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,
@@ -145,6 +254,7 @@ class EmployeeService
                 'nok_relation'        => $data['nok_relation'] ?? null,
                 'nok_dob'             => !empty($data['nok_dob']) ? $data['nok_dob'] : null,
                 'nok_contact'         => $data['nok_contact'] ?? null,
+                'is_ex_armed_force'   => ! empty($data['is_ex_armed_force']),
                 'site'                => $data['site'] ?? null,
                 'join_date'           => !empty($data['join_date']) ? $data['join_date'] : null,
                 'floor_access'        => isset($data['floor_access']) ? (bool) $data['floor_access'] : false,
@@ -153,16 +263,26 @@ class EmployeeService
                 'intern_type'         => $data['intern_type'] ?? null,
                 'intern_duration'     => $data['intern_duration'] ?? null,
                 'contractual_type'    => $data['contractual_type'] ?? null,
+                'contract_start_date' => ! empty($data['contract_start_date']) ? $data['contract_start_date'] : null,
+                'contract_end_date'   => ! empty($data['contract_end_date']) ? $data['contract_end_date'] : null,
                 'engagement_mode'     => $data['engagement_mode'] ?? null,
                 'hybrid_days'         => $data['hybrid_days'] ?? null,
+                'standard_schedule_mode' => $scheduleAttrs['standard_schedule_mode'] ?? null,
+                'working_days'        => $scheduleAttrs['working_days'] ?? null,
+                'working_start_time'  => $scheduleAttrs['working_start_time'] ?? null,
+                'working_end_time'    => $scheduleAttrs['working_end_time'] ?? null,
+                'opening_grace_period' => $scheduleAttrs['opening_grace_period'] ?? null,
+                'closing_grace_period' => $scheduleAttrs['closing_grace_period'] ?? null,
                 'sync_with_biometric' => isset($data['sync_with_biometric']) ? (bool) $data['sync_with_biometric'] : false,
                 'is_active'           => true,
             ]);
 
             $this->savePoliceVerification($employee->id, $data);
-            $this->saveArmedForce($employee->id, $data);
+            if (! empty($data['is_ex_armed_force'])) {
+                $this->saveArmedForce($employee->id, $data);
+            }
             $this->saveContact($employee->id, $data);
-            $this->saveBankDetail($employee->id, $data);
+            $this->saveBankDetails($employee->id, $data['banks'] ?? []);
             $this->saveFamilyMembers($employee->id, $data['family'] ?? []);
             $this->saveAcademics($employee->id, $data['academics'] ?? []);
             $this->saveExEmployments($employee->id, $data['employments'] ?? []);
@@ -364,18 +484,104 @@ class EmployeeService
         );
     }
 
-    public function saveBankDetail(int $id, array $d): void
+    public function saveBankDetails(int $id, array $rows): void
     {
-        if (empty($d['account_title']) && empty($d['account_no'])) return;
-        EmployeeBankDetail::updateOrCreate(
-            ['employee_id' => $id],
-            [
-                'account_title' => $d['account_title'] ?? null,
-                'account_no'    => $d['account_no'] ?? null,
-                'bank_branch'   => $d['bank_branch'] ?? null,
-                'account_type'  => $d['account_type'] ?? null,
-            ]
-        );
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            if (empty($row['account_title']) && empty($row['account_no'])) {
+                continue;
+            }
+            EmployeeBankDetail::create([
+                'employee_id'        => $id,
+                'account_category'   => $row['account_category'] ?? null,
+                'account_title'      => $row['account_title'] ?? null,
+                'account_no'         => $row['account_no'] ?? null,
+                'bank_name'          => $row['bank_name'] ?? null,
+                'branch_code'        => $row['branch_code'] ?? null,
+                'branch_address'     => $row['branch_address'] ?? null,
+                'iban'               => ! empty($row['iban']) ? $row['iban'] : null,
+                'account_type'       => $row['account_type'] ?? null,
+                'is_salary_account'  => ! empty($row['is_salary_account']),
+            ]);
+        }
+    }
+
+    public function saveBankDetailRow(int $employeeId, array $row, ?int $bankDetailId = null): EmployeeBankDetail
+    {
+        $wantsSalary = ! empty($row['is_salary_account']);
+        $payload = [
+            'employee_id'       => $employeeId,
+            'account_category'  => $row['account_category'] ?? null,
+            'account_title'     => $row['account_title'] ?? null,
+            'account_no'        => $row['account_no'] ?? null,
+            'bank_name'         => $row['bank_name'] ?? null,
+            'branch_code'       => $row['branch_code'] ?? null,
+            'branch_address'    => $row['branch_address'] ?? null,
+            'iban'              => ! empty($row['iban']) ? $row['iban'] : null,
+            'account_type'      => $row['account_type'] ?? null,
+            'is_salary_account' => $wantsSalary,
+        ];
+
+        if ($bankDetailId) {
+            $bank = EmployeeBankDetail::query()
+                ->where('employee_id', $employeeId)
+                ->where('id', $bankDetailId)
+                ->first();
+            if (! $bank) {
+                throw new \InvalidArgumentException('Bank account not found.');
+            }
+            $bank->update($payload);
+            $bank = $bank->fresh();
+        } else {
+            $bank = EmployeeBankDetail::create($payload);
+        }
+
+        $this->normalizeEmployeeBankSalaryFlags($employeeId, (int) $bank->id, $wantsSalary);
+
+        return $bank->fresh();
+    }
+
+    public function deleteBankDetailRow(int $employeeId, int $bankDetailId): bool
+    {
+        $row = EmployeeBankDetail::query()
+            ->where('employee_id', $employeeId)
+            ->where('id', $bankDetailId)
+            ->first();
+        if (! $row) {
+            return false;
+        }
+        $row->delete();
+
+        return true;
+    }
+
+    public function salaryBankIdForEmployee(int $employeeId): ?int
+    {
+        return EmployeeBankDetail::query()
+            ->where('employee_id', $employeeId)
+            ->where('is_salary_account', true)
+            ->value('id');
+    }
+
+    private function normalizeEmployeeBankSalaryFlags(int $employeeId, int $subjectBankId, bool $subjectWantsSalary): void
+    {
+        if ($subjectWantsSalary) {
+            EmployeeBankDetail::query()
+                ->where('employee_id', $employeeId)
+                ->where('id', '!=', $subjectBankId)
+                ->update(['is_salary_account' => false]);
+            EmployeeBankDetail::query()
+                ->where('id', $subjectBankId)
+                ->update(['is_salary_account' => true]);
+
+            return;
+        }
+
+        EmployeeBankDetail::query()
+            ->where('id', $subjectBankId)
+            ->update(['is_salary_account' => false]);
     }
 
     private function saveFamilyMembers(int $id, array $rows): void
@@ -626,7 +832,43 @@ class EmployeeService
 
     public function getTableData(array $filters = []): array
     {
-        $query = Employee::with(['department', 'organization', 'sbu', 'role', 'mediaFiles', 'policeVerification', 'contact'])
+        $query = Employee::query()
+            ->select([
+                'id',
+                'full_name',
+                'employee_code',
+                'employment_category',
+                'cnic',
+                'nationality',
+                'gender',
+                'join_date',
+                'designation',
+                'employment_type',
+                'biometric_id',
+                'sync_with_biometric',
+                'site',
+                'floor_access',
+                'is_active',
+                'email',
+                'organization_id',
+                'sbu_id',
+                'department_id',
+                'department_ids',
+                'role_id',
+            ])
+            ->with([
+                'department:id,name',
+                'organization:id,name',
+                'sbu:id,name',
+                'role:id,name',
+                'mediaFiles' => static function ($q): void {
+                    $q->select(['id', 'module_id', 'file_type', 'file_path', 'file_name'])
+                        ->where('module_name', 'employee')
+                        ->where('file_type', 'photo');
+                },
+                'policeVerification:id,employee_id,verification_status',
+                'contact:id,employee_id,email,cell_no',
+            ])
             ->orderByDesc('id');
 
         $type = $filters['filter_employee_type'] ?? null;
@@ -643,23 +885,36 @@ class EmployeeService
 
         if (!empty($filters['filter_organization'])) {
             $orgName = $filters['filter_organization'];
-            $query->whereHas('organization', function ($q) use ($orgName) {
-                $q->where('name', $orgName);
-            });
+            $query->whereIn('organization_id', Organization::query()
+                ->where('name', $orgName)
+                ->select('id'));
         }
 
         if (!empty($filters['filter_sbu'])) {
             $sbuName = $filters['filter_sbu'];
-            $query->whereHas('sbu', function ($q) use ($sbuName) {
-                $q->where('name', $sbuName);
-            });
+            $query->whereIn('sbu_id', Sbu::query()
+                ->where('name', $sbuName)
+                ->select('id'));
         }
 
         if (!empty($filters['filter_department'])) {
             $departmentName = $filters['filter_department'];
-            $query->whereHas('department', function ($q) use ($departmentName) {
-                $q->where('name', $departmentName);
-            });
+            $departmentIds = Department::query()
+                ->where('name', $departmentName)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+            if ($departmentIds !== []) {
+                $query->where(function ($q) use ($departmentIds): void {
+                    $q->whereIn('department_id', $departmentIds);
+                    foreach ($departmentIds as $deptId) {
+                        $q->orWhereJsonContains('department_ids', $deptId);
+                    }
+                });
+            } else {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         if (!empty($filters['filter_name'])) {
@@ -674,7 +929,59 @@ class EmployeeService
 
         $employees = $query->get();
 
-        return $employees->map(function (Employee $emp) {
+        $allDeptIds = [];
+        foreach ($employees as $emp) {
+            if (! empty($emp->department_id)) {
+                $allDeptIds[] = (int) $emp->department_id;
+            }
+            $rawMulti = $emp->department_ids;
+            if (! is_array($rawMulti)) {
+                $rawMulti = $rawMulti !== null && $rawMulti !== '' ? [$rawMulti] : [];
+            }
+            foreach ($rawMulti as $did) {
+                $allDeptIds[] = (int) $did;
+            }
+        }
+        $allDeptIds = array_values(array_unique(array_filter($allDeptIds)));
+
+        $deptRows = $allDeptIds === [] ? collect() : Department::query()
+            ->whereIn('id', $allDeptIds)
+            ->get(['id', 'name', 'sbu_id'])
+            ->keyBy('id');
+
+        $sbuIdsFromDepts = $deptRows->pluck('sbu_id')->filter()->map(fn ($id) => (int) $id)->values()->all();
+        $sbuNameById = $sbuIdsFromDepts === [] ? [] : Sbu::query()
+            ->whereIn('id', $sbuIdsFromDepts)
+            ->pluck('name', 'id')
+            ->toArray();
+
+        return $employees->map(function (Employee $emp) use ($deptRows, $sbuNameById) {
+            $rawDeptIds = $emp->department_ids;
+            if (! is_array($rawDeptIds)) {
+                $rawDeptIds = $rawDeptIds !== null && $rawDeptIds !== '' ? [$rawDeptIds] : [];
+            }
+            if (! empty($emp->department_id)) {
+                $rawDeptIds[] = (int) $emp->department_id;
+            }
+            $deptIds = array_values(array_unique(array_filter(array_map('intval', $rawDeptIds))));
+            $deptNames = [];
+            $deptSbuNames = [];
+            foreach ($deptIds as $deptId) {
+                $dept = $deptRows->get($deptId);
+                if (! $dept) {
+                    continue;
+                }
+                if (! empty($dept->name)) {
+                    $deptNames[] = $dept->name;
+                }
+                $sbuName = $sbuNameById[$dept->sbu_id] ?? null;
+                if ($sbuName) {
+                    $deptSbuNames[] = $sbuName;
+                }
+            }
+            $deptNames = array_values(array_unique($deptNames));
+            $deptSbuNames = array_values(array_unique($deptSbuNames));
+
             $initials    = $this->getInitials($emp->full_name ?? '');
             $biometricId = $emp->biometric_id;
             $syncStatus  = $biometricId
@@ -684,6 +991,9 @@ class EmployeeService
 
             $photo    = $emp->mediaFiles->where('file_type', 'photo')->first();
             $photoUrl = $photo ? Storage::url($photo->file_path) : null;
+
+            $departmentLabel = $deptNames !== [] ? implode(', ', $deptNames) : ($emp->department?->name ?? '-');
+            $sbuLabel = $emp->sbu?->name ?? ($deptSbuNames[0] ?? '-');
 
             return [
                 'id'                  => $emp->id,
@@ -696,8 +1006,8 @@ class EmployeeService
                 'nationality'         => $emp->nationality ?? '-',
                 'gender'              => $emp->gender ?? '-',
                 'organization'        => $emp->organization?->name ?? '-',
-                'sbu'                 => $emp->sbu?->name ?? '-',
-                'department'          => $emp->department?->name ?? '-',
+                'sbu'                 => $sbuLabel,
+                'department'          => $departmentLabel,
                 'role'                => $emp->role?->name ?? '-',
                 'join_date'           => $emp->join_date?->format('d M Y') ?? '-',
                 'designation'         => $emp->designation ?? '-',
@@ -717,19 +1027,21 @@ class EmployeeService
 
     public function getStats(): array
     {
-        $employees = Employee::whereNull('deleted_at')
-            ->get(['employment_type', 'biometric_id', 'sync_with_biometric', 'is_active']);
+        $base = Employee::query();
 
-        $total          = $employees->count();
-        $active         = $employees->where('is_active', true)->count();
-        $hasbiometric   = $employees->whereNotNull('biometric_id');
-        $biometricLinked = $hasbiometric->count();
-        $synced         = $hasbiometric->where('sync_with_biometric', true)->count();
-        $pending        = $hasbiometric->where('sync_with_biometric', false)->count();
-        $internal       = $employees->where('employment_type', '!=', 'Third-party')->count();
-        $permanent      = $employees->where('employment_type', 'Permanent')->count();
-        $contract       = $employees->where('employment_type', 'Contract')->count();
-        $outsourced     = $employees->where('employment_type', 'Third-party')->count();
+        $total = (clone $base)->count();
+        $active = (clone $base)->where('is_active', true)->count();
+
+        $biometricLinked = (clone $base)->whereNotNull('biometric_id')->count();
+        $synced = (clone $base)->whereNotNull('biometric_id')->where('sync_with_biometric', true)->count();
+        $pending = $biometricLinked - $synced;
+
+        $outsourced = (clone $base)->where('employment_type', 'Third-party')->count();
+        $internal = (clone $base)->where(function ($q) {
+            $q->whereNull('employment_type')->orWhere('employment_type', '!=', 'Third-party');
+        })->count();
+        $permanent = (clone $base)->where('employment_type', 'Permanent')->count();
+        $contract = (clone $base)->where('employment_type', 'Contract')->count();
 
         return [
             'total'            => $total,
@@ -762,13 +1074,15 @@ class EmployeeService
             'policeVerification',
             'armedForce',
             'contact',
-            'bankDetail',
+            'bankDetails',
             'familyMembers',
             'academics',
             'exEmployments',
             'medical',
             'references',
             'mediaFiles',
+            'sbu:id,name,organization_id',
+            'role:id,name',
         ])->findOrFail($id);
 
         $formData = $this->getFormData();
@@ -792,15 +1106,43 @@ class EmployeeService
         $police     = $employee->policeVerification;
         $armedForce = $employee->armedForce;
         $contact    = $employee->contact;
-        $bank       = $employee->bankDetail;
+        $bankRows = $employee->bankDetails;
         $medical    = $employee->medical;
+
+        $rawDeptIds = $employee->department_ids;
+        if (! is_array($rawDeptIds)) {
+            $rawDeptIds = $rawDeptIds !== null && $rawDeptIds !== '' ? [$rawDeptIds] : [];
+        }
+        if ($employee->department_id) {
+            $rawDeptIds[] = $employee->department_id;
+        }
+        $deptIdsForLabels = array_values(array_unique(array_filter(array_map('intval', $rawDeptIds))));
+        $savedDepartments = $deptIdsForLabels === [] ? [] : Department::query()
+            ->whereIn('id', $deptIdsForLabels)
+            ->orderByDesc('id')
+            ->get(['id', 'name', 'sbu_id'])
+            ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name, 'sbu_id' => $row->sbu_id])
+            ->values()
+            ->all();
+
+        $resolvedSbuId = $employee->sbu_id;
+        if (! $resolvedSbuId && ! empty($savedDepartments)) {
+            $resolvedSbuId = $savedDepartments[0]['sbu_id'] ?? null;
+        }
+        $resolvedSbuName = $employee->sbu?->name;
+        if (! $resolvedSbuName && $resolvedSbuId) {
+            $resolvedSbuName = Sbu::query()->whereKey((int) $resolvedSbuId)->value('name');
+        }
 
         $editData = [
             'id'                  => $employee->id,
             'organization_id'     => $employee->organization_id,
-            'sbu_id'              => $employee->sbu_id,
+            'sbu_id'              => $resolvedSbuId,
+            'sbu_name'            => $resolvedSbuName,
             'department_id'       => $employee->department_id,
             'role_id'             => $employee->role_id,
+            'role_name'           => $employee->role?->name,
+            'saved_departments'   => $savedDepartments,
             'employee_code'       => $employee->employee_code,
             'full_name'           => $employee->full_name,
             'father_name'         => $employee->father_name,
@@ -820,11 +1162,13 @@ class EmployeeService
             'spouse_cnic'         => $employee->spouse_cnic,
             'spouse_nationality'  => $employee->spouse_nationality,
             'marital_status'      => $employee->marital_status,
+            'department_ids'      => $deptIdsForLabels,
             'nok_name'            => $employee->nok_name,
             'nok_cnic'            => $employee->nok_cnic,
             'nok_relation'        => $employee->nok_relation,
             'nok_dob'             => $employee->nok_dob instanceof \Carbon\Carbon ? $employee->nok_dob->format('Y-m-d') : null,
             'nok_contact'         => $employee->nok_contact,
+            'is_ex_armed_force'   => (bool) $employee->is_ex_armed_force || $armedForce !== null,
             'join_date'           => $employee->join_date instanceof \Carbon\Carbon ? $employee->join_date->format('Y-m-d') : null,
             'designation'         => $employee->designation,
             'grade'               => $employee->grade,
@@ -835,8 +1179,21 @@ class EmployeeService
             'intern_type'         => $employee->intern_type,
             'intern_duration'     => $employee->intern_duration,
             'contractual_type'    => $employee->contractual_type,
+            'employment_type'     => $employee->employment_type,
+            'contract_start_date' => $employee->contract_start_date instanceof \Carbon\Carbon ? $employee->contract_start_date->format('Y-m-d') : null,
+            'contract_end_date'   => $employee->contract_end_date instanceof \Carbon\Carbon ? $employee->contract_end_date->format('Y-m-d') : null,
             'engagement_mode'     => $employee->engagement_mode,
-            'hybrid_days'         => $employee->hybrid_days,
+            'hybrid_days'         => is_array($employee->hybrid_days) ? array_values($employee->hybrid_days) : $employee->hybrid_days,
+            'standard_schedule_mode' => $employee->standard_schedule_mode,
+            'working_days'        => is_array($employee->working_days) ? array_values($employee->working_days) : $employee->working_days,
+            'working_start_time'  => $employee->working_start_time
+                ? (is_string($employee->working_start_time) ? substr($employee->working_start_time, 0, 5) : $employee->working_start_time->format('H:i'))
+                : null,
+            'working_end_time'    => $employee->working_end_time
+                ? (is_string($employee->working_end_time) ? substr($employee->working_end_time, 0, 5) : $employee->working_end_time->format('H:i'))
+                : null,
+            'opening_grace_period' => $employee->opening_grace_period,
+            'closing_grace_period' => $employee->closing_grace_period,
             'photo_url'           => $photoUrl,
             'attachments'         => $attachments,
             'police' => $police ? [
@@ -868,12 +1225,18 @@ class EmployeeService
                 'present_address'   => $contact->present_address,
                 'permanent_address' => $contact->permanent_address,
             ] : null,
-            'bank' => $bank ? [
-                'account_title' => $bank->account_title,
-                'account_no'    => $bank->account_no,
-                'bank_branch'   => $bank->bank_branch,
-                'account_type'  => $bank->account_type,
-            ] : null,
+            'bank_details' => $bankRows->map(fn ($b) => [
+                'id'                 => $b->id,
+                'account_category'   => $b->account_category,
+                'account_title'      => $b->account_title,
+                'account_no'         => $b->account_no,
+                'bank_name'          => $b->bank_name,
+                'branch_code'        => $b->branch_code,
+                'branch_address'     => $b->branch_address ?: $b->bank_branch,
+                'iban'               => $b->iban,
+                'account_type'       => $b->account_type,
+                'is_salary_account'  => (bool) $b->is_salary_account,
+            ])->values()->all(),
             'family' => $employee->familyMembers->map(fn($m) => [
                 'id'         => $m->id,
                 'name'       => $m->name,
@@ -945,43 +1308,78 @@ class EmployeeService
                 }
             }
 
-            $fields = [
-                'full_name', 'father_name', 'employee_type', 'employment_type', 'designation', 'grade', 
-                'branch', 'location', 'phone', 'cnic', 'cnic_expiry', 'father_cnic', 'ntn', 'gender', 
-                'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth', 'religion', 
-                'sect', 'marital_status', 'spouse_name', 'nok_name', 'nok_cnic', 'nok_relation', 'nok_dob', 
-                'nok_contact', 'site', 'join_date', 'floor_access', 'biometric_id', 'sync_with_biometric', 
-                'verification_status', 'msr_letter_no', 'addressee', 'verifying_authority', 'verification_letter_no', 
-                'next_verification_date', 'police_remarks', 'service_no', 'rank', 'medical_category', 
-                'date_of_commissioning', 'date_of_retirement', 'reason_of_retirement', 'corps_regiment', 
-                'ex_army_unit', 'trade', 'pma_lc_ots', 'residence_phone', 'emergency_contact', 'cell_no', 
-                'present_address', 'permanent_address', 'account_title', 'account_no', 
-                'bank_branch', 'account_type', 'last_fitness_test', 'has_disability', 'blood_group', 
-                'disability_type', 'disability_description', 'ref1_name', 'ref1_designation', 'ref1_organization', 
-                'ref1_contact', 'ref1_relationship', 'ref2_name', 'ref2_designation', 'ref2_organization', 
-                'ref2_contact', 'ref2_relationship', 'employment_category', 'intern_type', 'intern_duration', 
-                'contractual_type', 'engagement_mode', 'hybrid_days', 'spouse_cnic', 'spouse_nationality', 'nok_cnic_expiry_date'
+            $otherStepColumnNames = [
+                'full_name', 'father_name', 'employee_type', 'employment_type', 'designation', 'grade',
+                'branch', 'location', 'phone', 'cnic', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
+                'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth', 'religion',
+                'sect', 'marital_status', 'spouse_name', 'nok_name', 'nok_cnic', 'nok_relation', 'nok_dob',
+                'nok_contact', 'site', 'join_date', 'floor_access', 'biometric_id', 'sync_with_biometric',
+                'verification_status', 'msr_letter_no', 'addressee', 'verifying_authority', 'verification_letter_no',
+                'next_verification_date', 'police_remarks', 'service_no', 'rank', 'medical_category',
+                'date_of_commissioning', 'date_of_retirement', 'reason_of_retirement', 'corps_regiment',
+                'ex_army_unit', 'trade', 'pma_lc_ots', 'residence_phone', 'emergency_contact', 'cell_no',
+                'present_address', 'permanent_address', 'last_fitness_test', 'has_disability', 'blood_group',
+                'disability_type', 'disability_description', 'ref1_name', 'ref1_designation', 'ref1_organization',
+                'ref1_contact', 'ref1_relationship', 'ref2_name', 'ref2_designation', 'ref2_organization',
+                'ref2_contact', 'ref2_relationship', 'employment_category', 'intern_type', 'intern_duration',
+                'contractual_type', 'contract_start_date', 'contract_end_date', 'engagement_mode', 'hybrid_days',
+                'standard_schedule_mode', 'working_days', 'working_start_time', 'working_end_time', 'opening_grace_period', 'closing_grace_period',
+                'spouse_cnic', 'spouse_nationality', 'nok_cnic_expiry_date',
+                'organization_id', 'role_id', 'sbu_id', 'department_id', 'department_ids',
+                'is_ex_armed_force',
             ];
 
-            $updatePayload = [];
-            foreach ($fields as $field) {
-                if (array_key_exists($field, $data)) {
-                    $updatePayload[$field] = $data[$field] === '' ? null : $data[$field];
+            $step = (int) ($data['step'] ?? 0);
+
+            if ($step === 1) {
+                $updatePayload = $this->generalInformation->buildUpdatePayload($data);
+            } elseif ($step === 2) {
+                $updatePayload = $this->employmentInformation->buildUpdatePayload($data, $orgLevel);
+            } elseif ($step === 0) {
+                $updatePayload = array_merge(
+                    $this->generalInformation->buildUpdatePayload($data),
+                    $this->employmentInformation->buildUpdatePayload($data, $orgLevel)
+                );
+                foreach ($otherStepColumnNames as $field) {
+                    if (! array_key_exists($field, $updatePayload) && array_key_exists($field, $data)) {
+                        $updatePayload[$field] = $data[$field] === '' ? null : $data[$field];
+                    }
+                }
+            } else {
+                $updatePayload = [];
+                foreach ($otherStepColumnNames as $field) {
+                    if (array_key_exists($field, $data)) {
+                        $updatePayload[$field] = $data[$field] === '' ? null : $data[$field];
+                    }
+                }
+                if (array_key_exists('organization_id', $data)) {
+                    $updatePayload['organization_id'] = $data['organization_id'];
+                }
+                if (array_key_exists('role_id', $data)) {
+                    $updatePayload['role_id'] = $data['role_id'];
+                }
+                if (array_key_exists('sbu_id', $data)) {
+                    $updatePayload['sbu_id'] = $data['sbu_id'];
+                }
+                if (array_key_exists('department_id', $data)) {
+                    $updatePayload['department_id'] = $data['department_id'];
+                }
+                if (array_key_exists('department_ids', $data)) {
+                    $updatePayload['department_ids'] = $data['department_ids'];
                 }
             }
 
-            if (array_key_exists('organization_id', $data)) $updatePayload['organization_id'] = $data['organization_id'];
-            if (array_key_exists('role_id', $data)) $updatePayload['role_id'] = $data['role_id'];
-            if (array_key_exists('sbu_id', $data)) $updatePayload['sbu_id'] = $orgLevel ? null : $data['sbu_id'];
-            if (array_key_exists('department_id', $data)) $updatePayload['department_id'] = $orgLevel ? null : $data['department_id'];
-            
             if (array_key_exists('email', $data) || array_key_exists('contact_email', $data)) {
                 $updatePayload['email'] = $data['email'] ?? $data['contact_email'] ?? $employee->email;
             }
-            
+
             $updatePayload['employee_code'] = $code;
 
             $employee->update($updatePayload);
+
+            if (($step === 1 || $step === 0) && array_key_exists('is_ex_armed_force', $updatePayload) && ! $updatePayload['is_ex_armed_force']) {
+                $employee->armedForce()->delete();
+            }
 
             // Sync with associated user account if it exists
             if ($employee->user) {
@@ -1002,28 +1400,27 @@ class EmployeeService
                 }
             }
 
-            $step = (int) ($data['step'] ?? 0);
-
-            // Step 1 - General Info (no child relations for this step)
-
-            // Step 2 - Employment (no child relations for this step)
-
             // Step 3 - Police Verification
             if ($step === 3 || $step === 0) {
                 $employee->policeVerification()->delete();
                 $this->savePoliceVerification($employee->id, $data);
             }
 
-            // Step 4 - Armed Forces Details
             if ($step === 4 || $step === 0) {
-                $employee->armedForce()->delete();
-                $this->saveArmedForce($employee->id, $data);
+                if ($step === 4) {
+                    $employee->armedForce()->delete();
+                    $this->saveArmedForce($employee->id, $data);
+                } elseif ($employee->is_ex_armed_force) {
+                    $employee->armedForce()->delete();
+                    $this->saveArmedForce($employee->id, $data);
+                } else {
+                    $employee->armedForce()->delete();
+                }
             }
 
-            // Step 5 - Bank Details
             if ($step === 5 || $step === 0) {
-                $employee->bankDetail()->delete();
-                $this->saveBankDetail($employee->id, $data);
+                $employee->bankDetails()->delete();
+                $this->saveBankDetails($employee->id, $data['banks'] ?? []);
             }
 
             // Step 6 - More (Family, Academics, Employment History, Medical, References, Contact)

@@ -1,5 +1,5 @@
 <table id="balanceTable" class="display nowrap table table-striped" style="width:100%">
-    <thead class="bg-main">
+    <thead>
         <tr>
             <th class="dt-control"></th>
             <th>Employee</th>

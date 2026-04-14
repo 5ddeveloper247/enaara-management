@@ -22,7 +22,7 @@
                     <select class="form-select" id="editParentId" name="parent_id">
                         <option value="">Select Parent Organization (Optional)</option>
                         @foreach($organizations as $organization)
-                            <option value="{{ $organization->id }}">
+                            <option value="{{ $organization->id }}" data-working-days="{{ implode(',', $organization->working_days ?? []) }}" data-working-start-time="{{ $organization->working_start_time ? substr((string) $organization->working_start_time, 0, 5) : '' }}" data-working-end-time="{{ $organization->working_end_time ? substr((string) $organization->working_end_time, 0, 5) : '' }}" data-opening-grace-period="{{ $organization->opening_grace_period ?? '' }}" data-closing-grace-period="{{ $organization->closing_grace_period ?? '' }}">
                                 {{ $organization->name }}
                             </option>
                         @endforeach
@@ -68,6 +68,52 @@
                     <textarea class="form-control" id="editOrgAddress" name="address" rows="3" placeholder="Enter organization address"></textarea>
                 </div>
 
+                <div id="editScheduleModeSection" class="mb-3 d-none">
+                    <label class="form-label fw-semibold small text-white">Selection Mode</label>
+                    <div class="btn-group w-100" role="group" aria-label="Selection Mode">
+                        <input type="radio" class="btn-check" name="schedule_mode" id="editScheduleModeStandard" value="standard" checked>
+                        <label class="btn btn-outline-light" for="editScheduleModeStandard">Standard</label>
+                        <input type="radio" class="btn-check" name="schedule_mode" id="editScheduleModeCustom" value="custom">
+                        <label class="btn btn-outline-light" for="editScheduleModeCustom">Custom</label>
+                    </div>
+                </div>
+
+                <div id="editWorkingScheduleFields">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-white">Working Days</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        @php($days = ['monday' => 'Mon', 'tuesday' => 'Tue', 'wednesday' => 'Wed', 'thursday' => 'Thu', 'friday' => 'Fri', 'saturday' => 'Sat', 'sunday' => 'Sun'])
+                        @foreach($days as $dayValue => $dayLabel)
+                            <div class="form-check">
+                                <input class="form-check-input edit-working-day" type="checkbox" id="editWorkingDay_{{ $dayValue }}" name="working_days[]" value="{{ $dayValue }}">
+                                <label class="form-check-label small text-white" for="editWorkingDay_{{ $dayValue }}">{{ $dayLabel }}</label>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="editOrgWorkingStartTime" class="form-label fw-semibold small text-white">Working Start Time</label>
+                        <input type="time" class="form-control" id="editOrgWorkingStartTime" name="working_start_time">
+                    </div>
+                    <div class="col-6">
+                        <label for="editOrgWorkingEndTime" class="form-label fw-semibold small text-white">Working End Time</label>
+                        <input type="time" class="form-control" id="editOrgWorkingEndTime" name="working_end_time">
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="editOrgOpeningGracePeriod" class="form-label fw-semibold small text-white">Opening Grace Period (min)</label>
+                        <input type="number" min="0" max="600" class="form-control" id="editOrgOpeningGracePeriod" name="opening_grace_period">
+                    </div>
+                    <div class="col-6">
+                        <label for="editOrgClosingGracePeriod" class="form-label fw-semibold small text-white">Closing Grace Period (min)</label>
+                        <input type="number" min="0" max="600" class="form-control" id="editOrgClosingGracePeriod" name="closing_grace_period">
+                    </div>
+                </div>
+                </div>
+
                 <div class="mb-3">
                     <label for="editOrgStatus" class="form-label fw-semibold small text-white">Status <span class="text-danger">*</span></label>
                     <select class="form-select" id="editOrgStatus" name="is_active" required>
@@ -96,9 +142,82 @@ document.addEventListener('DOMContentLoaded', function () {
     const editForm = document.getElementById('editOrganizationForm');
     const editCanvas = document.getElementById('organizationEditCanvas');
     const updateBtn = document.getElementById('updateOrganizationBtn');
+    const editParentId = document.getElementById('editParentId');
+    const editScheduleModeSection = document.getElementById('editScheduleModeSection');
+    const editScheduleModeStandard = document.getElementById('editScheduleModeStandard');
+    const editScheduleModeCustom = document.getElementById('editScheduleModeCustom');
+    const editWorkingScheduleFields = document.getElementById('editWorkingScheduleFields');
+    const editWorkingDayCheckboxes = document.querySelectorAll('.edit-working-day');
+    const editWorkingStartTime = document.getElementById('editOrgWorkingStartTime');
+    const editWorkingEndTime = document.getElementById('editOrgWorkingEndTime');
+    const editOpeningGracePeriod = document.getElementById('editOrgOpeningGracePeriod');
+    const editClosingGracePeriod = document.getElementById('editOrgClosingGracePeriod');
 
     const updateRouteTemplate = `{{ route('admin.organization.update', ['id' => '__id__']) }}`;
     const editRouteTemplate = `{{ route('admin.organization.edit', ['id' => '__id__']) }}`;
+
+    function getSelectedParentOption() {
+        if (!editParentId) return null;
+        return editParentId.options[editParentId.selectedIndex] || null;
+    }
+
+    function getParentSchedule() {
+        const option = getSelectedParentOption();
+        if (!option || !option.value) {
+            return {
+                workingDays: [],
+                workingStartTime: '',
+                workingEndTime: '',
+                openingGracePeriod: '',
+                closingGracePeriod: ''
+            };
+        }
+        return {
+            workingDays: (option.dataset.workingDays || '').split(',').filter(Boolean),
+            workingStartTime: option.dataset.workingStartTime || '',
+            workingEndTime: option.dataset.workingEndTime || '',
+            openingGracePeriod: option.dataset.openingGracePeriod || '',
+            closingGracePeriod: option.dataset.closingGracePeriod || ''
+        };
+    }
+
+    function applyParentSchedule() {
+        const schedule = getParentSchedule();
+        editWorkingDayCheckboxes.forEach((checkbox) => {
+            checkbox.checked = schedule.workingDays.includes(checkbox.value);
+        });
+        editWorkingStartTime.value = schedule.workingStartTime;
+        editWorkingEndTime.value = schedule.workingEndTime;
+        editOpeningGracePeriod.value = schedule.openingGracePeriod;
+        editClosingGracePeriod.value = schedule.closingGracePeriod;
+    }
+
+    function schedulesMatchParent(currentWorkingDays, currentStartTime, currentEndTime, currentOpeningGracePeriod, currentClosingGracePeriod) {
+        const parentSchedule = getParentSchedule();
+        const normalizedCurrentDays = [...currentWorkingDays].sort().join(',');
+        const normalizedParentDays = [...parentSchedule.workingDays].sort().join(',');
+        return normalizedCurrentDays === normalizedParentDays
+            && (currentStartTime || '') === parentSchedule.workingStartTime
+            && (currentEndTime || '') === parentSchedule.workingEndTime
+            && (currentOpeningGracePeriod || '') === parentSchedule.openingGracePeriod
+            && (currentClosingGracePeriod || '') === parentSchedule.closingGracePeriod;
+    }
+
+    function toggleEditScheduleMode() {
+        const hasParent = editParentId && editParentId.value !== '';
+        if (!hasParent) {
+            editScheduleModeSection.classList.add('d-none');
+            editWorkingScheduleFields.classList.remove('pe-none', 'opacity-50');
+            return;
+        }
+        editScheduleModeSection.classList.remove('d-none');
+        if (editScheduleModeStandard.checked) {
+            applyParentSchedule();
+            editWorkingScheduleFields.classList.add('pe-none', 'opacity-50');
+        } else {
+            editWorkingScheduleFields.classList.remove('pe-none', 'opacity-50');
+        }
+    }
 
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('.edit-organization-btn');
@@ -131,14 +250,47 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('editOrgTaxNo').value = org.tax_no ?? '';
             document.getElementById('editOrgDescription').value = org.description ?? '';
             document.getElementById('editOrgAddress').value = org.address ?? '';
+            document.getElementById('editOrgWorkingStartTime').value = (org.working_start_time ?? '').toString().slice(0, 5);
+            document.getElementById('editOrgWorkingEndTime').value = (org.working_end_time ?? '').toString().slice(0, 5);
+            document.getElementById('editOrgOpeningGracePeriod').value = org.opening_grace_period ?? '';
+            document.getElementById('editOrgClosingGracePeriod').value = org.closing_grace_period ?? '';
             document.getElementById('editOrgStatus').value = org.is_active ? '1' : '0';
             document.getElementById('editParentId').value = org.parent_id ?? '';
+            const workingDays = Array.isArray(org.working_days) ? org.working_days : [];
+            document.querySelectorAll('.edit-working-day').forEach((checkbox) => {
+                checkbox.checked = workingDays.includes(checkbox.value);
+            });
+            const currentStartTime = (org.working_start_time ?? '').toString().slice(0, 5);
+            const currentEndTime = (org.working_end_time ?? '').toString().slice(0, 5);
+            const currentOpeningGracePeriod = (org.opening_grace_period ?? '').toString();
+            const currentClosingGracePeriod = (org.closing_grace_period ?? '').toString();
+            if (org.parent_id) {
+                if (schedulesMatchParent(workingDays, currentStartTime, currentEndTime, currentOpeningGracePeriod, currentClosingGracePeriod)) {
+                    editScheduleModeStandard.checked = true;
+                } else {
+                    editScheduleModeCustom.checked = true;
+                }
+            } else {
+                editScheduleModeCustom.checked = true;
+            }
+            toggleEditScheduleMode();
         })
         .catch(error => {
             console.error('Edit fetch error:', error);
             showError('Something went wrong while loading organization data.');
         });
     });
+
+    editParentId?.addEventListener('change', function () {
+        if (editParentId.value) {
+            editScheduleModeStandard.checked = true;
+        } else {
+            editScheduleModeCustom.checked = true;
+        }
+        toggleEditScheduleMode();
+    });
+    editScheduleModeStandard?.addEventListener('change', toggleEditScheduleMode);
+    editScheduleModeCustom?.addEventListener('change', toggleEditScheduleMode);
 
     editForm.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -219,7 +371,17 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('editOrgId').value = '';
             document.getElementById('editOrgStatus').value = '1';
             document.getElementById('editParentId').value = '';
+            document.getElementById('editOrgWorkingStartTime').value = '';
+            document.getElementById('editOrgWorkingEndTime').value = '';
+            document.getElementById('editOrgOpeningGracePeriod').value = '';
+            document.getElementById('editOrgClosingGracePeriod').value = '';
+            document.querySelectorAll('.edit-working-day').forEach((checkbox) => {
+                checkbox.checked = false;
+            });
+            editScheduleModeStandard.checked = true;
+            toggleEditScheduleMode();
         });
     }
+    toggleEditScheduleMode();
 });
 </script>

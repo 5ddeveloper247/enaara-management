@@ -53,6 +53,57 @@
                 <div class="invalid-feedback" id="editDepartmentDescriptionError"></div>
             </div>
 
+            <div class="mb-3 d-none" id="deptScheduleModeSection">
+                <label class="form-label text-white">Selection Mode</label>
+                <div class="btn-group w-100" role="group" aria-label="Department Selection Mode">
+                    <input type="radio" class="btn-check" name="schedule_mode" id="deptScheduleModeStandard" value="standard" checked>
+                    <label class="btn btn-outline-light" for="deptScheduleModeStandard">Standard</label>
+                    <input type="radio" class="btn-check" name="schedule_mode" id="deptScheduleModeCustom" value="custom">
+                    <label class="btn btn-outline-light" for="deptScheduleModeCustom">Custom</label>
+                </div>
+            </div>
+
+            <div id="deptWorkingScheduleFields">
+                <div class="mb-3">
+                    <label class="form-label text-white">Working Days</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        @php($days = ['monday' => 'Mon', 'tuesday' => 'Tue', 'wednesday' => 'Wed', 'thursday' => 'Thu', 'friday' => 'Fri', 'saturday' => 'Sat', 'sunday' => 'Sun'])
+                        @foreach($days as $dayValue => $dayLabel)
+                            <div class="form-check">
+                                <input class="form-check-input dept-working-day" type="checkbox" id="deptWorkingDay_{{ $dayValue }}" name="working_days[]" value="{{ $dayValue }}">
+                                <label class="form-check-label text-white" for="deptWorkingDay_{{ $dayValue }}">{{ $dayLabel }}</label>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="invalid-feedback d-block" id="editWorkingDaysError"></div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="editWorkingStartTime" class="form-label text-white">Working Start Time</label>
+                        <input type="time" name="working_start_time" id="editWorkingStartTime" class="form-control">
+                        <div class="invalid-feedback" id="editWorkingStartTimeError"></div>
+                    </div>
+                    <div class="col-6">
+                        <label for="editWorkingEndTime" class="form-label text-white">Working End Time</label>
+                        <input type="time" name="working_end_time" id="editWorkingEndTime" class="form-control">
+                        <div class="invalid-feedback" id="editWorkingEndTimeError"></div>
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="editOpeningGracePeriod" class="form-label text-white">Opening Grace Period (min)</label>
+                        <input type="number" name="opening_grace_period" id="editOpeningGracePeriod" class="form-control" min="0" max="600">
+                        <div class="invalid-feedback" id="editOpeningGracePeriodError"></div>
+                    </div>
+                    <div class="col-6">
+                        <label for="editClosingGracePeriod" class="form-label text-white">Closing Grace Period (min)</label>
+                        <input type="number" name="closing_grace_period" id="editClosingGracePeriod" class="form-control" min="0" max="600">
+                        <div class="invalid-feedback" id="editClosingGracePeriodError"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="mb-3">
                 <div class="form-check form-switch">
                     <input type="hidden" name="is_active" value="0">

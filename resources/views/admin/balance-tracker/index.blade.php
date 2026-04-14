@@ -36,11 +36,23 @@
             --bs-table-bg: transparent !important;
         }
 
-        th {
-            padding: 0.75rem 1rem !important;
-            color: var(--light-color) !important;
+        #balanceTable thead th {
             white-space: nowrap !important;
             font-size: 0.85rem !important;
+        }
+
+        .dataTables_wrapper .dataTables_scrollHead table.dataTable thead th {
+            padding: 0.75rem 1rem !important;
+            color: var(--light-color) !important;
+            background-color: var(--main-color) !important;
+        }
+
+        .dataTables_wrapper .dataTables_scrollBody table.dataTable thead th {
+            padding: 0 !important;
+            border: 0 !important;
+            height: 0 !important;
+            line-height: 0 !important;
+            background: transparent !important;
         }
 
         td {

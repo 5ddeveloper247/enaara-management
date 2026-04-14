@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use App\Notifications\LeaveApprovalNotification;
 use App\Notifications\LeaveApprovedToHodNotification;
 use App\Services\AuditTrailService;
+use App\Models\RoleLevel;
 
 class LeaveRequestService
 {
@@ -303,14 +304,12 @@ class LeaveRequestService
                 ->store('leave-request/medical-reports', 'public');
         }
 
-        $lineManagers = $this->resolveParentApprovers($fromEmployee);
-        $hodUser = $this->resolveHeadOfDepartment($fromEmployee);
-        $hodEmployee = $hodUser?->employee;
+        $recommenders = $this->resolveParentApprovers($fromEmployee);
+        $hodEmployees = $this->resolveHeadOfDepartmentApprovers($fromEmployee);
 
         $createdRequests = [];
 
-        // Create separate recommendation row for each line manager
-        foreach ($lineManagers as $manager) {
+        foreach ($recommenders as $manager) {
             $managerUser = User::where('employee_id', $manager->id)->first();
 
             $leaveRequest = EmployeLeaveRequest::create([
@@ -339,69 +338,142 @@ class LeaveRequestService
             $createdRequests[] = $leaveRequest;
         }
 
-        // Create one final/master row for HOD
-        $finalLeaveRequest = EmployeLeaveRequest::create([
-            'from_employee_id' => $fromEmployee->id,
-            'to_employee_id' => $hodEmployee?->id,
-            'from_user_id' => Auth::id(),
-            'to_user_id' => $hodUser?->id,
-            'department_id' => $fromEmployee->department_id,
-            'leave_type_id' => $validated['leave_type_id'],
-            'start_date' => $startDate->format('Y-m-d'),
-            'end_date' => $endDate->format('Y-m-d'),
-            'duration' => $duration,
-            'reason' => $validated['reason'] ?? null,
-            'medical_report' => $medicalReportPath,
-            'action_type' => 2,
-            'status' => 0,
-        ]);
+        $finalLeaveRequests = collect();
+        foreach ($hodEmployees as $hodEmployee) {
+            $hodUser = User::where('employee_id', $hodEmployee->id)
+                ->where('is_active', true)
+                ->first();
 
-        $finalLeaveRequest->load([
-            'fromEmployee:id,full_name',
-            'toEmployee:id,full_name',
-            'leaveType:id,name',
-        ]);
+            $finalLeaveRequest = EmployeLeaveRequest::create([
+                'from_employee_id' => $fromEmployee->id,
+                'to_employee_id' => $hodEmployee->id,
+                'from_user_id' => Auth::id(),
+                'to_user_id' => $hodUser?->id,
+                'department_id' => $fromEmployee->department_id,
+                'leave_type_id' => $validated['leave_type_id'],
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+                'duration' => $duration,
+                'reason' => $validated['reason'] ?? null,
+                'medical_report' => $medicalReportPath,
+                'action_type' => 2,
+                'status' => 0,
+            ]);
 
-        if ($hodUser) {
-            $hodUser->notify(
-                (new \App\Notifications\LeaveApprovalRequestToHodNotification($finalLeaveRequest))
-                    ->delay(now()->addSeconds(5))
-            );
+            $finalLeaveRequest->load([
+                'fromEmployee:id,full_name',
+                'toEmployee:id,full_name',
+                'leaveType:id,name',
+            ]);
+
+            if ($hodUser) {
+                $hodUser->notify(
+                    (new \App\Notifications\LeaveApprovalRequestToHodNotification($finalLeaveRequest))
+                        ->delay(now()->addSeconds(5))
+                );
+            }
+
+            $createdRequests[] = $finalLeaveRequest;
+            $finalLeaveRequests->push($finalLeaveRequest);
         }
 
-        $createdRequests[] = $finalLeaveRequest;
-
-        return $finalLeaveRequest;
+        return $finalLeaveRequests->first() ?? $createdRequests[0] ?? new EmployeLeaveRequest();
     }
 
     private function resolveParentApprovers(Employee $fromEmployee): \Illuminate\Support\Collection
     {
-        $currentRole = $fromEmployee->role;
-
-        if (!$currentRole || !$currentRole->parent_role_id) {
+        $currentRoleId = (int) ($fromEmployee->role_id ?? 0);
+        if ($currentRoleId <= 0) {
             return collect();
         }
 
-        $parentRole = Role::find($currentRole->parent_role_id);
+        $currentLevel = Role::query()
+            ->from('roles as r')
+            ->join('role_levels as rl', 'rl.name', '=', 'r.name')
+            ->where('r.id', $currentRoleId)
+            ->value('rl.level');
 
-        if (!$parentRole) {
+        if ($currentLevel === null) {
             return collect();
         }
 
-        $query = Employee::query()
-            ->where('is_active', true)
-            ->where('id', '!=', $fromEmployee->id)
-            ->where('role_id', $parentRole->id);
+        $scopes = [];
 
-        if (!empty($fromEmployee->organization_id)) {
-            $query->where('organization_id', $fromEmployee->organization_id);
+        if (! empty($fromEmployee->department_id)) {
+            $scopes[] = [
+                'organization_id' => $fromEmployee->organization_id,
+                'sbu_id' => $fromEmployee->sbu_id,
+                'department_id' => $fromEmployee->department_id,
+            ];
         }
 
-        if (!empty($parentRole->department_id)) {
-            $query->where('department_id', $fromEmployee->department_id);
+        if (! empty($fromEmployee->sbu_id)) {
+            $scopes[] = [
+                'organization_id' => $fromEmployee->organization_id,
+                'sbu_id' => $fromEmployee->sbu_id,
+                'department_id' => null,
+            ];
         }
 
-        return $query->orderBy('id')->get();
+        if (! empty($fromEmployee->organization_id)) {
+            $scopes[] = [
+                'organization_id' => $fromEmployee->organization_id,
+                'sbu_id' => null,
+                'department_id' => null,
+            ];
+        }
+
+        foreach ($scopes as $scope) {
+            $rows = $this->findApproversAtImmediateUpperLevel(
+                $fromEmployee,
+                (int) $currentLevel,
+                $scope
+            );
+
+            if ($rows->isNotEmpty()) {
+                return $rows;
+            }
+        }
+
+        return collect();
+    }
+
+    private function findApproversAtImmediateUpperLevel(
+        Employee $fromEmployee,
+        int $currentLevel,
+        array $scope
+    ): \Illuminate\Support\Collection {
+        $base = Employee::query()
+            ->select('employees.*')
+            ->join('roles as r', 'r.id', '=', 'employees.role_id')
+            ->join('role_levels as rl', 'rl.name', '=', 'r.name')
+            ->where('employees.is_active', true)
+            ->where('employees.id', '!=', $fromEmployee->id)
+            ->where('rl.level', '<', $currentLevel);
+
+        if (! empty($scope['organization_id'])) {
+            $base->where('employees.organization_id', (int) $scope['organization_id']);
+        }
+
+        if (! empty($scope['sbu_id'])) {
+            $base->where('employees.sbu_id', (int) $scope['sbu_id']);
+        }
+
+        if (! empty($scope['department_id'])) {
+            $base->where('employees.department_id', (int) $scope['department_id']);
+        }
+
+        $targetLevel = (clone $base)->max('rl.level');
+        if ($targetLevel === null) {
+            return collect();
+        }
+
+        return $base
+            ->where('rl.level', (int) $targetLevel)
+            ->orderBy('employees.id')
+            ->get()
+            ->unique('id')
+            ->values();
     }
 
     private function notifyApprover(EmployeLeaveRequest $leaveRequest, ?Employee $toEmployee): void
@@ -491,6 +563,13 @@ class LeaveRequestService
                         : abort(403, $msg);
                 }
             } elseif ((int) $leaveRequest->action_type === 2) {
+                if ((int) $currentStatus !== 0) {
+                    $msg = 'This final approval request has already been actioned.';
+                    return $request->expectsJson()
+                        ? response()->json(['success' => false, 'message' => $msg], 403)
+                        : abort(403, $msg);
+                }
+
                 if (!in_array($newStatus, [3, 4, 5])) {
                     $msg = 'You can only approve, reject or cancel.';
                     return $request->expectsJson()
@@ -540,17 +619,17 @@ class LeaveRequestService
         if ((int) $leaveRequest->action_type === 1 && (int) $newStatus === 1) {
             $fromEmployee = $leaveRequest->fromEmployee;
             if ($fromEmployee) {
-                // Find the final approval row (action_type 2) for this same request
-                $finalRow = EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
+                $finalRows = EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
                     ->where('leave_type_id', $leaveRequest->leave_type_id)
                     ->where('start_date', $leaveRequest->start_date)
                     ->where('end_date', $leaveRequest->end_date)
                     ->where('action_type', 2)
-                    ->first();
-                
-                if ($finalRow && $finalRow->to_user_id) {
+                    ->whereNotNull('to_user_id')
+                    ->get();
+
+                foreach ($finalRows as $finalRow) {
                     $hodUser = User::find($finalRow->to_user_id);
-                    if ($hodUser) {
+                    if ($hodUser && $hodUser->is_active) {
                         $hodUser->notify(
                             (new \App\Notifications\LeaveApprovalRequestToHodNotification($finalRow, $actorName))
                                 ->delay(now()->addSeconds(5))
@@ -565,19 +644,32 @@ class LeaveRequestService
             $fromEmployee = $leaveRequest->fromEmployee;
 
             if ($fromEmployee) {
-                $hodUser = $this->resolveHeadOfDepartment($fromEmployee);
+                $hodUsers = $this->resolveHeadOfDepartmentApprovers($fromEmployee)
+                    ->map(fn ($emp) => User::where('employee_id', $emp->id)->where('is_active', true)->first())
+                    ->filter();
 
-                if ($hodUser && $hodUser->id !== $requesterUser?->id) {
-                    $hodUser->notify(
-                        (new LeaveApprovedToHodNotification($leaveRequest, $actorName))
-                            ->delay(now()->addSeconds(6))
-                    );
+                foreach ($hodUsers as $hodUser) {
+                    if ($hodUser->id !== $requesterUser?->id) {
+                        $hodUser->notify(
+                            (new LeaveApprovedToHodNotification($leaveRequest, $actorName))
+                                ->delay(now()->addSeconds(6))
+                        );
+                    }
                 }
             }
         }
 
         // Sync final decision to all recommendation rows
         if ((int) $leaveRequest->action_type === 2 && in_array($newStatus, [3, 4, 5])) {
+            EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
+                ->where('leave_type_id', $leaveRequest->leave_type_id)
+                ->where('start_date', $leaveRequest->start_date)
+                ->where('end_date', $leaveRequest->end_date)
+                ->where('action_type', 2)
+                ->where('id', '!=', $leaveRequest->id)
+                ->where('status', 0)
+                ->update(['status' => $newStatus]);
+
             EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
                 ->where('leave_type_id', $leaveRequest->leave_type_id)
                 ->where('start_date', $leaveRequest->start_date)
@@ -597,28 +689,99 @@ class LeaveRequestService
         return redirect()->back()->with('success', 'Status updated successfully.');
     }
 
-    private function resolveHeadOfDepartment(Employee $employee): ?User
+    private function resolveHeadOfDepartmentApprovers(Employee $employee): \Illuminate\Support\Collection
     {
-        if (!$employee->department_id) {
-            return null;
+        $currentRoleId = (int) ($employee->role_id ?? 0);
+        if ($currentRoleId <= 0) {
+            return collect();
         }
 
-        $hodEmployee = Employee::query()
-            ->where('is_active', true)
-            ->where('id', '!=', $employee->id)
-            ->where('department_id', $employee->department_id)
-            ->whereHas('role', function ($roleQuery) {
-                $roleQuery->whereHas('parentRole', function ($parentQuery) {
-                    $parentQuery->whereNull('department_id');
-                });
-            })
-            ->orderBy('id')
-            ->first();
+        $currentLevel = Role::query()
+            ->from('roles as r')
+            ->join('role_levels as rl', 'rl.name', '=', 'r.name')
+            ->where('r.id', $currentRoleId)
+            ->value('rl.level');
 
-        if (!$hodEmployee) {
-            return null;
+        if ($currentLevel === null) {
+            return collect();
         }
 
-        return User::where('employee_id', $hodEmployee->id)->first();
+        $scopes = [];
+
+        if (! empty($employee->department_id)) {
+            $scopes[] = [
+                'organization_id' => $employee->organization_id,
+                'sbu_id' => $employee->sbu_id,
+                'department_id' => $employee->department_id,
+            ];
+        }
+
+        if (! empty($employee->sbu_id)) {
+            $scopes[] = [
+                'organization_id' => $employee->organization_id,
+                'sbu_id' => $employee->sbu_id,
+                'department_id' => null,
+            ];
+        }
+
+        if (! empty($employee->organization_id)) {
+            $scopes[] = [
+                'organization_id' => $employee->organization_id,
+                'sbu_id' => null,
+                'department_id' => null,
+            ];
+        }
+
+        $hodEmployees = collect();
+        foreach ($scopes as $scope) {
+            $hodEmployees = $this->findMostSeniorHodEmployeesForScope(
+                $employee,
+                (int) $currentLevel,
+                $scope
+            );
+            if ($hodEmployees->isNotEmpty()) {
+                break;
+            }
+        }
+
+        return $hodEmployees;
+    }
+
+    private function findMostSeniorHodEmployeesForScope(
+        Employee $employee,
+        int $currentLevel,
+        array $scope
+    ): \Illuminate\Support\Collection {
+        $base = Employee::query()
+            ->select('employees.*')
+            ->join('roles as r', 'r.id', '=', 'employees.role_id')
+            ->join('role_levels as rl', 'rl.name', '=', 'r.name')
+            ->where('employees.is_active', true)
+            ->where('employees.id', '!=', $employee->id)
+            ->where('rl.level', '<', $currentLevel);
+
+        if (! empty($scope['organization_id'])) {
+            $base->where('employees.organization_id', (int) $scope['organization_id']);
+        }
+
+        if (! empty($scope['sbu_id'])) {
+            $base->where('employees.sbu_id', (int) $scope['sbu_id']);
+        }
+
+        if (! empty($scope['department_id'])) {
+            $base->where('employees.department_id', (int) $scope['department_id']);
+        }
+
+        $targetLevel = (clone $base)->min('rl.level');
+        if ($targetLevel === null) {
+            return collect();
+        }
+
+        return $base
+            ->where('rl.level', (int) $targetLevel)
+            ->orderBy('employees.id')
+            ->get()
+            ->unique('id')
+            ->values();
     }
 }

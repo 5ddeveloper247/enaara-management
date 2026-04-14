@@ -6,25 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->date('nok_cnic_expiry_date')
-            ->nullable()
-            ->after('nok_cnic'); // optional (adjust based on your table)
+            $table->boolean('is_ex_armed_force')->default(false)->after('nok_contact');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            //
+            $table->dropColumn('is_ex_armed_force');
         });
     }
 };

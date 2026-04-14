@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\ShiftRoster;
 
+use App\Models\Employee;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BulkShiftRosterRequest extends FormRequest
@@ -12,6 +13,26 @@ class BulkShiftRosterRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($v) {
+            $ids = array_values(array_unique(array_filter(array_map('intval', $this->input('employee_ids', [])))));
+            if ($ids === []) {
+                return;
+            }
+            $validCount = Employee::query()
+                ->whereKey($ids)
+                ->where('engagement_mode', 'shifts')
+                ->count();
+            if ($validCount !== count($ids)) {
+                $v->errors()->add(
+                    'employee_ids',
+                    'Only employees with shift-based work arrangement can be assigned on the roster.'
+                );
+            }
+        });
     }
 
     /**
