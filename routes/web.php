@@ -303,7 +303,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     })->name('admin.overtime.index');
 
     Route::get('/register1', function () {
-        return view('admin.register.index1');
+        return view('admin.EmployeeRegisteration.index');
     })->name('admin.register.index1');
 
     // Policies Routes

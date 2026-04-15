@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Employee Profile Wizard - Admin Panel')
 
@@ -299,6 +299,139 @@
             display: flex;
         }
 
+        .emp-dept-input-box {
+            background: #fff;
+            border: 1px solid #ced4da;
+            border-radius: .75rem;
+            padding: 8px 36px 8px 10px;
+            min-height: 46px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            cursor: text;
+            position: relative;
+        }
+        .emp-dept-input-box.open,
+        .emp-dept-input-box:focus-within {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 3px rgba(13,110,253,.12);
+        }
+        .emp-dept-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e9f2ff;
+            border: 1px solid #b6d4fe;
+            color: #0a3060;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 8px 3px 10px;
+            border-radius: 999px;
+        }
+        .emp-dept-chip-x {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #185FA5;
+        }
+        .emp-dept-chip-x:hover {
+            background: #85B7EB;
+            color: #042C53;
+        }
+        .emp-dept-ph {
+            font-size: 14px;
+            color: #adb5bd;
+            padding: 2px 4px;
+            pointer-events: none;
+        }
+        .emp-dept-chevron {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #adb5bd;
+            transition: transform .18s;
+        }
+        .emp-dept-input-box.open .emp-dept-chevron {
+            transform: translateY(-50%) rotate(180deg);
+        }
+        .emp-dept-dropdown {
+            background: #fff;
+            border: 1px solid #ced4da;
+            border-radius: .75rem;
+            margin-top: 6px;
+            overflow: hidden;
+            z-index: 1050;
+            position: relative;
+        }
+        .emp-dept-search-row {
+            padding: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .emp-dept-search-row input {
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            background: #f8f9fa;
+            color: #212529;
+            outline: none;
+        }
+        .emp-dept-opt-list {
+            max-height: 210px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+        .emp-dept-opt {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #212529;
+        }
+        .emp-dept-opt:hover {
+            background: #f8f9fa;
+        }
+        .emp-dept-opt.picked {
+            background: #e9f2ff;
+        }
+        .emp-dept-opt-cb {
+            width: 17px;
+            height: 17px;
+            border-radius: 5px;
+            border: 1.5px solid #adb5bd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .emp-dept-opt.picked .emp-dept-opt-cb {
+            background: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .emp-dept-opt-ck {
+            display: none;
+            width: 10px;
+            height: 10px;
+        }
+        .emp-dept-opt.picked .emp-dept-opt-ck {
+            display: block;
+        }
+        .emp-dept-no-result {
+            padding: 14px;
+            font-size: 13px;
+            color: #adb5bd;
+            text-align: center;
+        }
+
         .option-chip {
             min-width: 96px;
             text-align: center;
@@ -448,11 +581,23 @@
                                             <span>Personal Information</span>
                                         </div>
                                         <div class="row g-3 w-100">
-                                            <div class="col-6">
+                                            <div class="col-12">
+                                                <div class="d-flex flex-wrap gap-4 justify-content-end">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="giExArmyRetiredCheckbox">
+                                                        <label class="form-check-label" for="giExArmyRetiredCheckbox">Ex-Army Retired</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="giFatherDeceasedCheckbox">
+                                                        <label class="form-check-label" for="giFatherDeceasedCheckbox">Father Deceased</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
                                                 <label class="form-label">Name <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control" id="giNameInput" placeholder="Enter full name">
                                             </div>
-                                            <div class="col-6">
+                                            <div class="col-md-6">
                                                 <label class="form-label">Father Name</label>
                                                 <input type="text" class="form-control" placeholder="Enter father name">
                                             </div>
@@ -464,9 +609,9 @@
                                                 <label class="form-label">CNIC Expiry Date <span class="text-danger">*</span></label>
                                                 <input type="date" class="form-control" placeholder="yyyy-mm-dd">
                                             </div>
-                                            <div class="col">
+                                            <div class="col" id="giFatherCnicField">
                                                 <label class="form-label">Father CNIC</label>
-                                                <input type="text" class="form-control" placeholder="00000-0000000-0">
+                                                <input type="text" class="form-control" id="giFatherCnicInput" placeholder="00000-0000000-0">
                                             </div>
                                             <div class="col">
                                                 <label class="form-label">NTN #</label>
@@ -507,12 +652,23 @@
                                                     </select>
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <label class="form-label">Domicile (District)</label>
-                                                    <input type="text" class="form-control" placeholder="Enter district">
+                                                    <label class="form-label">District</label>
+                                                    <select class="form-select">
+                                                        <option value="" selected disabled>Select district</option>
+                                                    </select>
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <label class="form-label">Domicile (Province)</label>
-                                                    <input type="text" class="form-control" placeholder="Enter province">
+                                                    <label class="form-label">Province</label>
+                                                    <select class="form-select">
+                                                        <option value="" selected disabled>Select province</option>
+                                                        <option>Punjab</option>
+                                                        <option>Sindh</option>
+                                                        <option>Khyber Pakhtunkhwa</option>
+                                                        <option>Balochistan</option>
+                                                        <option>Islamabad Capital Territory</option>
+                                                        <option>Gilgit-Baltistan</option>
+                                                        <option>Azad Jammu and Kashmir</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                                 </div>
@@ -536,7 +692,7 @@
                                                     <label class="form-label">Sect</label>
                                                     <input type="text" class="form-control" placeholder="Enter sect">
                                                 </div>
-                                                <div class="col-md-6">
+                                                <div class="col-md-4">
                                                     <label class="form-label">Marital Status <span class="text-danger">*</span></label>
                                                     <select class="form-select">
                                                         <option selected disabled>Select</option>
@@ -544,9 +700,21 @@
                                                         <option>Married</option>
                                                     </select>
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Spouse Name & Nationality</label>
-                                                    <input type="text" class="form-control" placeholder="Enter spouse details">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Spouse Name</label>
+                                                    <input type="text" class="form-control" placeholder="Enter spouse name">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Spouse Nationality</label>
+                                                    <input type="text" class="form-control" placeholder="Enter spouse nationality">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Spouse CNIC</label>
+                                                    <input type="text" class="form-control" placeholder="00000-0000000-0">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Spouse CNIC Expiry</label>
+                                                    <input type="date" class="form-control" placeholder="yyyy-mm-dd">
                                                 </div>
                                             </div>
                                                 </div>
@@ -562,16 +730,35 @@
                                                     <label class="form-label">Name of Next of Kin</label>
                                                     <input type="text" class="form-control" placeholder="Enter NOK name">
                                                 </div>
-                                                <div class="col-md-4">
+                                                <div class="col-md-2">
                                                     <label class="form-label">Relation with NOK</label>
-                                                    <input type="text" class="form-control" placeholder="Enter relation">
+                                                    <select class="form-select" id="giNokRelationSelect">
+                                                        <option value="" selected disabled>Select relation</option>
+                                                        <option value="Son">Son</option>
+                                                        <option value="Daughter">Daughter</option>
+                                                        <option value="Spouse">Spouse</option>
+                                                        <option value="Brother">Brother</option>
+                                                        <option value="Sister">Sister</option>
+                                                        <option value="Father">Father</option>
+                                                        <option value="Mother">Mother</option>
+                                                        <option value="Guardian">Guardian</option>
+                                                        <option value="Other">Other</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2 d-none" id="giNokSpecifyRelationField">
+                                                    <label class="form-label">Specify Relation</label>
+                                                    <input type="text" class="form-control" id="giNokSpecifyRelationInput" placeholder="Specify relation">
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <label class="form-label">NOK CNIC & Date of Expiry</label>
-                                                    <input type="text" class="form-control" placeholder="CNIC / Expiry date">
-                                                </div>
-                                                <div class="col-md-6">
                                                     <label class="form-label">NOK Date of Birth</label>
+                                                    <input type="date" class="form-control" placeholder="yyyy-mm-dd">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">NOK CNIC</label>
+                                                    <input type="text" class="form-control" placeholder="00000-0000000-0">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">NOK CNIC Expiry</label>
                                                     <input type="date" class="form-control" placeholder="yyyy-mm-dd">
                                                 </div>
                                                 <div class="col-md-6">
@@ -606,19 +793,19 @@
                                                             class="text-danger">*</span></label>
                                                     <div class="d-flex flex-wrap gap-2">
                                                         <input type="radio" class="btn-check" name="employmentCategory"
-                                                            id="employmentDetailsCategoryIntern" value="Intern" required>
+                                                            id="employmentDetailsCategoryEngagement" value="Engagement" required>
                                                         <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
-                                                            for="employmentDetailsCategoryIntern">Intern</label>
+                                                            for="employmentDetailsCategoryEngagement">Employee</label>
 
                                                         <input type="radio" class="btn-check" name="employmentCategory"
                                                             id="employmentDetailsCategoryContractual" value="Contractual">
                                                         <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
-                                                            for="employmentDetailsCategoryContractual">Contractual</label>
+                                                            for="employmentDetailsCategoryContractual">Consultant / Retainer</label>
 
                                                         <input type="radio" class="btn-check" name="employmentCategory"
-                                                            id="employmentDetailsCategoryEngagement" value="Engagement">
+                                                            id="employmentDetailsCategoryIntern" value="Intern">
                                                         <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
-                                                            for="employmentDetailsCategoryEngagement">Engagement</label>
+                                                            for="employmentDetailsCategoryIntern">Intern</label>
                                                     </div>
 
                                                     <div class="row g-3 d-none mt-1" id="employmentDetailsInternFields">
@@ -639,26 +826,47 @@
 
                                                     <div class="row g-3 d-none mt-1" id="employmentDetailsContractualFields">
                                                         <div class="col-md-6">
-                                                            <label class="form-label">Contract Type <span class="text-danger">*</span></label>
-                                                            <select class="form-select" id="employmentDetailsContractTypeInput">
-                                                                <option value="" selected disabled>Select contract type</option>
-                                                                <option value="Time bound">Time bound</option>
-                                                                <option value="Open">Open</option>
-                                                                <option value="Project-based consultants">Project-based consultants</option>
-                                                            </select>
+                                                            <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                                                            <input type="date" class="form-control" id="employmentDetailsContractStartDateInput"
+                                                                placeholder="yyyy-mm-dd">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">End Date <span class="text-danger">*</span></label>
+                                                            <input type="date" class="form-control" id="employmentDetailsContractEndDateInput"
+                                                                placeholder="yyyy-mm-dd">
                                                         </div>
                                                     </div>
 
                                                     <div class="row g-3 d-none mt-1" id="employmentDetailsEngagementFields">
                                                         <div class="col-md-6">
-                                                            <label class="form-label">Engagement Mode <span class="text-danger">*</span></label>
+                                                            <label class="form-label">Employment Type <span class="text-danger">*</span></label>
                                                             <select class="form-select" id="employmentDetailsEngagementModeInput">
-                                                                <option value="" selected disabled>Select engagement mode</option>
-                                                                <option value="Onsite">Onsite</option>
-                                                                <option value="Shift">Shift</option>
-                                                                <option value="Remote">Remote</option>
-                                                                <option value="Hybrid">Hybrid</option>
+                                                                <option value="" selected disabled>Select employment type</option>
+                                                                <option value="Permanent">Permanent</option>
+                                                                <option value="Contractual">Contractual</option>
                                                             </select>
+                                                        </div>
+                                                        <div class="col-md-6 d-none" id="employmentDetailsEmployeeContractTypeField">
+                                                            <label class="form-label">Contract Type <span class="text-danger">*</span></label>
+                                                            <select class="form-select" id="employmentDetailsEmployeeContractTypeInput">
+                                                                <option value="" selected disabled>Select contract type</option>
+                                                                <option value="Time bound">Time bound</option>
+                                                                <option value="Open ended">Open ended</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-12 d-none" id="employmentDetailsEmployeeContractDatesField">
+                                                            <div class="row g-3">
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label">Contract Start Date <span class="text-danger">*</span></label>
+                                                                    <input type="date" class="form-control" id="employmentDetailsEmployeeContractStartDateInput"
+                                                                        placeholder="yyyy-mm-dd">
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label">Contract End Date <span class="text-danger">*</span></label>
+                                                                    <input type="date" class="form-control" id="employmentDetailsEmployeeContractEndDateInput"
+                                                                        placeholder="yyyy-mm-dd">
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -674,16 +882,44 @@
                                             <div class="card-body p-3">
                                                 <div class="fw-bold text-uppercase small mb-3">Organization and Role</div>
                                                 <div class="row g-3">
-                                                    <div class="col-md-6">
+                                                    <div class="col-md-4">
                                                         <label class="form-label">Organization <span
                                                                 class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control"
-                                                            placeholder="Enaara Management System">
+                                                        <select class="form-select" id="employmentOrganizationSelect">
+                                                            <option value="" selected disabled>Select organization</option>
+                                                        </select>
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">Role <span
-                                                                class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control" placeholder="Enter role">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">SBU <span class="text-danger">*</span></label>
+                                                        <select class="form-select" id="employmentSbuSelect">
+                                                            <option value="" selected disabled>Select SBU</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Roles <span class="text-danger">*</span></label>
+                                                        <select class="form-select" id="employmentRoleSelect">
+                                                            <option value="" selected disabled>Select role</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label">Departments <span class="text-muted fw-normal small">(optional)</span></label>
+                                                        <select name="department_ids[]" id="employmentDepartmentSelect" class="form-select d-none" multiple size="4">
+                                                            <option value="" selected disabled>No departments under this SBU</option>
+                                                        </select>
+                                                        <div class="emp-dept-input-box" id="employmentDeptBox" onclick="employmentDeptBoxClick(event)">
+                                                            <div id="employmentDeptChips" style="display:contents"></div>
+                                                            <span class="emp-dept-ph" id="employmentDeptPh">Select Departments...</span>
+                                                            <svg class="emp-dept-chevron" id="employmentDeptChevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                                            </svg>
+                                                        </div>
+                                                        <div class="emp-dept-dropdown" id="employmentDeptDd" style="display:none">
+                                                            <div class="emp-dept-search-row">
+                                                                <input id="employmentDeptSearch" placeholder="Search Department..." oninput="employmentDeptRenderList()" onclick="event.stopPropagation()" autocomplete="off">
+                                                            </div>
+                                                            <div class="emp-dept-opt-list" id="employmentDeptList"></div>
+                                                        </div>
+                                                        <small class="text-muted d-block mt-1" id="employmentDeptHint">No departments are set up for this SBU yet.</small>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Date of Joining <span
@@ -715,6 +951,155 @@
                                                     <div class="col-12">
                                                         <label class="form-label">Location</label>
                                                         <input type="text" class="form-control" placeholder="Location">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card border-0 bg-light mt-3">
+                                    <div class="card-body p-3">
+                                        <div class="border rounded p-3" style="background-color: #01244518">
+                                            <label class="form-label fw-semibold d-block mb-2">Work Arrangement <span
+                                                    class="text-danger">*</span></label>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <input type="radio" class="btn-check" name="employmentWorkArrangement"
+                                                    id="employmentWorkArrangementStandard" value="Standard" required>
+                                                <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
+                                                    for="employmentWorkArrangementStandard">Standard</label>
+
+                                                <input type="radio" class="btn-check" name="employmentWorkArrangement"
+                                                    id="employmentWorkArrangementShift" value="Shift-Based">
+                                                <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
+                                                    for="employmentWorkArrangementShift">Shift-Based</label>
+
+                                                <input type="radio" class="btn-check" name="employmentWorkArrangement"
+                                                    id="employmentWorkArrangementRemote" value="Remote">
+                                                <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
+                                                    for="employmentWorkArrangementRemote">Remote</label>
+
+                                                <input type="radio" class="btn-check" name="employmentWorkArrangement"
+                                                    id="employmentWorkArrangementHybrid" value="Hybrid">
+                                                <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
+                                                    for="employmentWorkArrangementHybrid">Hybrid</label>
+                                            </div>
+
+                                            <div class="row g-3 d-none mt-1" id="employmentWorkArrangementStandardFields">
+                                                <div class="col-12">
+                                                    <label class="form-label fw-semibold d-block mb-2">Standard Type <span class="text-danger">*</span></label>
+                                                    <div class="d-flex flex-wrap gap-2">
+                                                        <input type="radio" class="btn-check" name="employmentWorkArrangementStandardType"
+                                                            id="employmentWorkArrangementStandardTypeDefault" value="Default">
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
+                                                            for="employmentWorkArrangementStandardTypeDefault">Default</label>
+
+                                                        <input type="radio" class="btn-check" name="employmentWorkArrangementStandardType"
+                                                            id="employmentWorkArrangementStandardTypeCustom" value="Custom">
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
+                                                            for="employmentWorkArrangementStandardTypeCustom">Custom</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3 d-none mt-1" id="employmentWorkArrangementDefaultCardWrap">
+                                                <div class="col-md-6">
+                                                    <div class="card border shadow-sm">
+                                                        <div class="card-body p-2">
+                                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                                <div class="d-flex align-items-center justify-content-center text-white fw-bold rounded"
+                                                                    id="employmentWorkArrangementOrgInitial"
+                                                                    style="width:44px;height:44px;background:#012d5a;font-size:18px;">-</div>
+                                                                <div>
+                                                                    <div class="text-muted small">Source: Organization - <span class="fw-semibold text-dark"
+                                                                            id="employmentWorkArrangementOrgName">-</span></div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="fw-semibold small">Working days: <span class="fw-normal">- - -</span></div>
+                                                            <div class="fw-semibold small">Working time: <span class="fw-normal">- - -</span></div>
+                                                            <div class="fw-semibold small">Check-in grace: <span class="fw-normal">-</span></div>
+                                                            <div class="fw-semibold small">Check-out grace: <span class="fw-normal">-</span></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3 d-none mt-1" id="employmentWorkArrangementCustomFields">
+                                                <div class="col-12">
+                                                    <label class="form-label fw-semibold">Working days <span class="text-danger">*</span></label>
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        <div class="form-check mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayMon" name="employment_custom_days[]" value="Mon">
+                                                            <label class="form-check-label" for="employmentCustomDayMon">Mon</label>
+                                                        </div>
+                                                        <div class="form-check mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayTue" name="employment_custom_days[]" value="Tue">
+                                                            <label class="form-check-label" for="employmentCustomDayTue">Tue</label>
+                                                        </div>
+                                                        <div class="form-check mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayWed" name="employment_custom_days[]" value="Wed">
+                                                            <label class="form-check-label" for="employmentCustomDayWed">Wed</label>
+                                                        </div>
+                                                        <div class="form-check mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayThu" name="employment_custom_days[]" value="Thu">
+                                                            <label class="form-check-label" for="employmentCustomDayThu">Thu</label>
+                                                        </div>
+                                                        <div class="form-check mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayFri" name="employment_custom_days[]" value="Fri">
+                                                            <label class="form-check-label" for="employmentCustomDayFri">Fri</label>
+                                                        </div>
+                                                        <div class="form-check mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDaySat" name="employment_custom_days[]" value="Sat">
+                                                            <label class="form-check-label" for="employmentCustomDaySat">Sat</label>
+                                                        </div>
+                                                        <div class="form-check mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDaySun" name="employment_custom_days[]" value="Sun">
+                                                            <label class="form-check-label" for="employmentCustomDaySun">Sun</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Working start <span class="text-danger">*</span></label>
+                                                    <input type="time" class="form-control" id="employmentCustomWorkingStartInput">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Working end <span class="text-danger">*</span></label>
+                                                    <input type="time" class="form-control" id="employmentCustomWorkingEndInput">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Check-in grace (min)</label>
+                                                    <input type="number" min="0" class="form-control" id="employmentCustomCheckInGraceInput" placeholder="Optional">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Check-out grace (min)</label>
+                                                    <input type="number" min="0" class="form-control" id="employmentCustomCheckOutGraceInput" placeholder="Optional">
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3 d-none mt-1" id="employmentWorkArrangementHybridFields">
+                                                <div class="col-12">
+                                                    <label class="form-label fw-semibold d-block mb-2">Hybrid - on-site days <span class="text-danger">*</span></label>
+                                                    <div class="d-flex flex-wrap gap-2">
+                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayMon" value="Mon">
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayMon">Mon</label>
+
+                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayTue" value="Tue">
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayTue">Tue</label>
+
+                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayWed" value="Wed">
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayWed">Wed</label>
+
+                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayThu" value="Thu">
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayThu">Thu</label>
+
+                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayFri" value="Fri">
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayFri">Fri</label>
+
+                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDaySat" value="Sat">
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDaySat">Sat</label>
+
+                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDaySun" value="Sun">
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDaySun">Sun</label>
                                                     </div>
                                                 </div>
                                             </div>
@@ -765,17 +1150,29 @@
                                             <div class="card-body p-3">
                                                 <div class="fw-bold text-uppercase small mb-3">Verification Details</div>
                                                 <div class="row g-3">
-                                                    <div class="col-12">
-                                                        <label class="form-label">MSR Letter No & Date</label>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">MSR Number</label>
                                                         <input type="text" class="form-control"
-                                                            id="policeVerificationMsrLetterNoDateInput"
-                                                            placeholder="Enter MSR letter number and date">
+                                                            id="policeVerificationMsrNumberInput"
+                                                            placeholder="Enter MSR number">
                                                     </div>
-                                                    <div class="col-12">
-                                                        <label class="form-label">Verification Letter No & Date</label>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">MSR Date</label>
+                                                        <input type="date" class="form-control"
+                                                            id="policeVerificationMsrDateInput"
+                                                            placeholder="yyyy-mm-dd">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Verification Letter Number</label>
                                                         <input type="text" class="form-control"
-                                                            id="policeVerificationLetterNoDateInput"
-                                                            placeholder="Enter verification letter number and date">
+                                                            id="policeVerificationLetterNumberInput"
+                                                            placeholder="Enter verification letter number">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Verification Letter Date</label>
+                                                        <input type="date" class="form-control"
+                                                            id="policeVerificationLetterDateInput"
+                                                            placeholder="yyyy-mm-dd">
                                                     </div>
                                                 </div>
                                             </div>
@@ -1491,6 +1888,151 @@
             });
         }
 
+        const giFatherDeceasedCheckbox = document.getElementById('giFatherDeceasedCheckbox');
+        const giFatherCnicField = document.getElementById('giFatherCnicField');
+        const giFatherCnicInput = document.getElementById('giFatherCnicInput');
+
+        function syncFatherCnicVisibility() {
+            if (!giFatherDeceasedCheckbox || !giFatherCnicField) return;
+            const hideFatherCnic = giFatherDeceasedCheckbox.checked;
+            giFatherCnicField.classList.toggle('d-none', hideFatherCnic);
+            if (hideFatherCnic && giFatherCnicInput) {
+                giFatherCnicInput.value = '';
+            }
+        }
+
+        if (giFatherDeceasedCheckbox) {
+            giFatherDeceasedCheckbox.addEventListener('change', syncFatherCnicVisibility);
+            syncFatherCnicVisibility();
+        }
+
+        const giNokRelationSelect = document.getElementById('giNokRelationSelect');
+        const giNokSpecifyRelationField = document.getElementById('giNokSpecifyRelationField');
+        const giNokSpecifyRelationInput = document.getElementById('giNokSpecifyRelationInput');
+
+        function syncNokSpecifyRelationField() {
+            if (!giNokRelationSelect || !giNokSpecifyRelationField) return;
+            const isOtherSelected = giNokRelationSelect.value === 'Other';
+            giNokSpecifyRelationField.classList.toggle('d-none', !isOtherSelected);
+            if (giNokSpecifyRelationInput) {
+                giNokSpecifyRelationInput.required = isOtherSelected;
+                if (!isOtherSelected) {
+                    giNokSpecifyRelationInput.value = '';
+                }
+            }
+        }
+
+        if (giNokRelationSelect) {
+            giNokRelationSelect.addEventListener('change', syncNokSpecifyRelationField);
+            syncNokSpecifyRelationField();
+        }
+
+        function employmentDeptGetSelect() {
+            return document.getElementById('employmentDepartmentSelect');
+        }
+
+        function employmentDeptRenderFromSelect() {
+            const deptSel = employmentDeptGetSelect();
+            const chips = document.getElementById('employmentDeptChips');
+            const ph = document.getElementById('employmentDeptPh');
+            if (!deptSel || !chips) return;
+            const selected = Array.from(deptSel.selectedOptions || []);
+            if (!selected.length) {
+                chips.innerHTML = '';
+                if (ph) ph.style.display = '';
+                return;
+            }
+            if (ph) ph.style.display = 'none';
+            chips.innerHTML = selected
+                .map(function (opt) {
+                    const val = String(opt.value || '');
+                    const text = String(opt.textContent || '');
+                    if (!val) {
+                        return '<span class="emp-dept-chip">' + text + '</span>';
+                    }
+                    return '<span class="emp-dept-chip">' + text + '<span class="emp-dept-chip-x" onclick="employmentDeptRemoveId(\'' + val + '\', event)">×</span></span>';
+                })
+                .join('');
+        }
+
+        window.employmentDeptRenderList = function employmentDeptRenderList() {
+            const deptSel = employmentDeptGetSelect();
+            const list = document.getElementById('employmentDeptList');
+            const search = document.getElementById('employmentDeptSearch');
+            if (!deptSel || !list) return;
+            const q = String((search && search.value) || '').toLowerCase().trim();
+            const options = Array.from(deptSel.options || []).filter(function (opt) {
+                return opt.value && (!q || String(opt.textContent || '').toLowerCase().indexOf(q) !== -1);
+            });
+            if (!options.length) {
+                list.innerHTML = '<div class="emp-dept-no-result">No departments under this SBU</div>';
+                return;
+            }
+            list.innerHTML = options
+                .map(function (opt) {
+                    const picked = !!opt.selected;
+                    return '<div class="emp-dept-opt ' + (picked ? 'picked' : '') + '" onclick="employmentDeptToggleId(\'' + String(opt.value || '') + '\')"><span class="emp-dept-opt-cb"><svg class="emp-dept-opt-ck" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.2l3 3L12.5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="emp-dept-opt-name">' + String(opt.textContent || '') + '</span></div>';
+                })
+                .join('');
+        };
+
+        window.employmentDeptToggleId = function employmentDeptToggleId(id) {
+            const deptSel = employmentDeptGetSelect();
+            if (!deptSel) return;
+            const opt = deptSel.querySelector('option[value="' + String(id) + '"]');
+            if (!opt) return;
+            opt.selected = !opt.selected;
+            employmentDeptRenderFromSelect();
+            window.employmentDeptRenderList();
+        };
+
+        window.employmentDeptRemoveId = function employmentDeptRemoveId(id, e) {
+            if (e) e.stopPropagation();
+            const deptSel = employmentDeptGetSelect();
+            if (!deptSel) return;
+            const opt = deptSel.querySelector('option[value="' + String(id) + '"]');
+            if (opt) opt.selected = false;
+            employmentDeptRenderFromSelect();
+            window.employmentDeptRenderList();
+        };
+
+        window.employmentDeptBoxClick = function employmentDeptBoxClick(e) {
+            if (e) e.stopPropagation();
+            const dd = document.getElementById('employmentDeptDd');
+            const box = document.getElementById('employmentDeptBox');
+            if (!dd || !box) return;
+            const isOpen = dd.style.display !== 'none';
+            if (!isOpen) {
+                dd.style.display = '';
+                box.classList.add('open');
+                window.employmentDeptRenderList();
+                const search = document.getElementById('employmentDeptSearch');
+                if (search) setTimeout(function () { search.focus(); }, 0);
+            } else {
+                dd.style.display = 'none';
+                box.classList.remove('open');
+            }
+        };
+
+        document.addEventListener('click', function (evt) {
+            const dd = document.getElementById('employmentDeptDd');
+            const box = document.getElementById('employmentDeptBox');
+            if (!dd || !box) return;
+            if (!dd.contains(evt.target) && !box.contains(evt.target)) {
+                dd.style.display = 'none';
+                box.classList.remove('open');
+            }
+        });
+
+        const employmentDeptSearch = document.getElementById('employmentDeptSearch');
+        if (employmentDeptSearch) {
+            employmentDeptSearch.addEventListener('keydown', function (evt) {
+                evt.stopPropagation();
+            });
+        }
+        employmentDeptRenderFromSelect();
+        window.employmentDeptRenderList();
+
         const employmentDetailsCategoryIntern = document.getElementById('employmentDetailsCategoryIntern');
         const employmentDetailsCategoryContractual = document.getElementById('employmentDetailsCategoryContractual');
         const employmentDetailsCategoryEngagement = document.getElementById('employmentDetailsCategoryEngagement');
@@ -1499,9 +2041,15 @@
         const employmentDetailsEngagementFields = document.getElementById('employmentDetailsEngagementFields');
         const employmentDetailsInternTypeInput = document.getElementById('employmentDetailsInternTypeInput');
         const employmentDetailsEmployeeNumberInput = document.getElementById('employmentDetailsEmployeeNumberInput');
-        const employmentDetailsContractTypeInput = document.getElementById('employmentDetailsContractTypeInput');
+        const employmentDetailsContractStartDateInput = document.getElementById('employmentDetailsContractStartDateInput');
+        const employmentDetailsContractEndDateInput = document.getElementById('employmentDetailsContractEndDateInput');
         const employmentDetailsContractualEmployeeNumberInput = document.getElementById('employmentDetailsContractualEmployeeNumberInput');
         const employmentDetailsEngagementModeInput = document.getElementById('employmentDetailsEngagementModeInput');
+        const employmentDetailsEmployeeContractTypeField = document.getElementById('employmentDetailsEmployeeContractTypeField');
+        const employmentDetailsEmployeeContractTypeInput = document.getElementById('employmentDetailsEmployeeContractTypeInput');
+        const employmentDetailsEmployeeContractDatesField = document.getElementById('employmentDetailsEmployeeContractDatesField');
+        const employmentDetailsEmployeeContractStartDateInput = document.getElementById('employmentDetailsEmployeeContractStartDateInput');
+        const employmentDetailsEmployeeContractEndDateInput = document.getElementById('employmentDetailsEmployeeContractEndDateInput');
         const employmentDetailsEngagementEmployeeNumberInput = document.getElementById('employmentDetailsEngagementEmployeeNumberInput');
         const employmentDetailsCategoryInputs = document.querySelectorAll('input[name="employmentCategory"]');
 
@@ -1528,10 +2076,17 @@
                 }
             }
 
-            if (employmentDetailsContractTypeInput) {
-                employmentDetailsContractTypeInput.required = showContractualFields;
+            if (employmentDetailsContractStartDateInput) {
+                employmentDetailsContractStartDateInput.required = showContractualFields;
                 if (!showContractualFields) {
-                    employmentDetailsContractTypeInput.value = '';
+                    employmentDetailsContractStartDateInput.value = '';
+                }
+            }
+
+            if (employmentDetailsContractEndDateInput) {
+                employmentDetailsContractEndDateInput.required = showContractualFields;
+                if (!showContractualFields) {
+                    employmentDetailsContractEndDateInput.value = '';
                 }
             }
 
@@ -1549,6 +2104,34 @@
                 }
             }
 
+            const showEmploymentContractType = showEngagementFields && employmentDetailsEngagementModeInput && employmentDetailsEngagementModeInput.value === 'Contractual';
+            if (employmentDetailsEmployeeContractTypeField) {
+                employmentDetailsEmployeeContractTypeField.classList.toggle('d-none', !showEmploymentContractType);
+            }
+            if (employmentDetailsEmployeeContractTypeInput) {
+                employmentDetailsEmployeeContractTypeInput.required = !!showEmploymentContractType;
+                if (!showEmploymentContractType) {
+                    employmentDetailsEmployeeContractTypeInput.value = '';
+                }
+            }
+
+            const showEmploymentContractDates = !!showEmploymentContractType && employmentDetailsEmployeeContractTypeInput && employmentDetailsEmployeeContractTypeInput.value === 'Time bound';
+            if (employmentDetailsEmployeeContractDatesField) {
+                employmentDetailsEmployeeContractDatesField.classList.toggle('d-none', !showEmploymentContractDates);
+            }
+            if (employmentDetailsEmployeeContractStartDateInput) {
+                employmentDetailsEmployeeContractStartDateInput.required = !!showEmploymentContractDates;
+                if (!showEmploymentContractDates) {
+                    employmentDetailsEmployeeContractStartDateInput.value = '';
+                }
+            }
+            if (employmentDetailsEmployeeContractEndDateInput) {
+                employmentDetailsEmployeeContractEndDateInput.required = !!showEmploymentContractDates;
+                if (!showEmploymentContractDates) {
+                    employmentDetailsEmployeeContractEndDateInput.value = '';
+                }
+            }
+
             if (employmentDetailsEngagementEmployeeNumberInput) {
                 employmentDetailsEngagementEmployeeNumberInput.required = showEngagementFields;
                 if (!showEngagementFields) {
@@ -1560,6 +2143,12 @@
         employmentDetailsCategoryInputs.forEach((input) => {
             input.addEventListener('change', toggleEmploymentCategoryFields);
         });
+        if (employmentDetailsEngagementModeInput) {
+            employmentDetailsEngagementModeInput.addEventListener('change', toggleEmploymentCategoryFields);
+        }
+        if (employmentDetailsEmployeeContractTypeInput) {
+            employmentDetailsEmployeeContractTypeInput.addEventListener('change', toggleEmploymentCategoryFields);
+        }
         toggleEmploymentCategoryFields();
 
         const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersContainer');
@@ -2142,5 +2731,9 @@
         bindSummaryField('giNationalityInput', 'summaryNationality', 'Not selected');
     </script>
 @endpush
+
+
+
+
 
 
