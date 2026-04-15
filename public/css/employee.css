@@ -141,38 +141,23 @@
     }
 }
 
-.employee-grid-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.employee-grid-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-}
-
-.employee-grid-avatar-wrap .user-avatar,
-.employee-grid-avatar-wrap img {
-    width: 40px;
-    height: 40px;
-}
-
 .employee-grid-card-scroll {
-    max-height: 88px;
+    max-height: 320px;
     overflow-y: auto;
     overflow-x: hidden;
-    font-size: 0.76rem;
+    font-size: 0.8125rem;
     -webkit-overflow-scrolling: touch;
 }
 
 .employee-grid-field-label {
     color: var(--bs-secondary-color, #6c757d);
-    font-size: 0.62rem;
+    font-size: 0.65rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
 }
 
 .employee-grid-field-value {
-    margin-top: 0.1rem;
+    margin-top: 0.25rem;
     word-wrap: break-word;
 }
 
