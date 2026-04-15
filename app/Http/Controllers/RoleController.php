@@ -252,8 +252,14 @@ class RoleController extends Controller
             $parentOrganizationId = Organization::whereKey($organizationId)->value('parent_id');
         }
 
+        $roleLevelByName = RoleLevel::query()
+            ->selectRaw('name, MIN(level) as level')
+            ->groupBy('name');
+
         $roles = Role::query()
-            ->join('role_levels as role_level_map', 'role_level_map.name', '=', 'roles.name')
+            ->joinSub($roleLevelByName, 'role_level_map', function ($join) {
+                $join->on('role_level_map.name', '=', 'roles.name');
+            })
             ->where('roles.is_active', true)
             ->when($organizationId, function ($q) use ($organizationId, $parentOrganizationId, $sbuIds, $request, $selectedLevelValue) {
                 $q->where(function ($query) use ($organizationId, $parentOrganizationId, $sbuIds, $request, $selectedLevelValue) {
@@ -289,7 +295,9 @@ class RoleController extends Controller
             })
             ->orderBy('role_level_map.level')
             ->orderBy('roles.name')
-            ->get(['roles.id', 'roles.name']);
+            ->get(['roles.id', 'roles.name'])
+            ->unique('id')
+            ->values();
 
         return response()->json([
             'success' => true,

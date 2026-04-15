@@ -354,6 +354,7 @@
         const sbuList = document.getElementById('sbu-list');
         let sbuAll = [];
         let sbuSelected = [];
+        let parentRolesLoadToken = 0;
 
         function resetSelect(select, placeholder) {
             if (!select) return;
@@ -509,11 +510,22 @@
                 url += `&sbu_ids=${encodeURIComponent(sbuIds.join(','))}`;
             }
 
+            const token = ++parentRolesLoadToken;
+
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
+                    if (token !== parentRolesLoadToken) {
+                        return;
+                    }
                     if (data.success && Array.isArray(data.roles)) {
+                        const seen = new Set();
                         data.roles.forEach(role => {
+                            const idStr = String(role.id);
+                            if (seen.has(idStr)) {
+                                return;
+                            }
+                            seen.add(idStr);
                             const option = document.createElement('option');
                             option.value = role.id;
                             option.textContent = role.name;
