@@ -32,6 +32,7 @@ class EmployeeGeneralInformationService
             'nok_dob',
             'nok_contact',
             'is_ex_armed_force',
+            'is_father_deceased',
         ];
     }
 
@@ -40,7 +41,7 @@ class EmployeeGeneralInformationService
         $payload = [];
         foreach ($this->employeeAttributeNames() as $field) {
             if (array_key_exists($field, $data)) {
-                if ($field === 'is_ex_armed_force') {
+                if ($field === 'is_ex_armed_force' || $field === 'is_father_deceased') {
                     $payload[$field] = (bool) $data[$field];
                 } else {
                     $payload[$field] = $data[$field] === '' ? null : $data[$field];

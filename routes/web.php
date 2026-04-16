@@ -172,23 +172,26 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
 
     Route::get('/register', [RegistrationController::class, 'index'])->name('admin.register.index');
 
-    Route::get('/employee', [EmployeeController::class, 'index'])->name('admin.employee.index');
-    Route::get('/employee/data', [EmployeeController::class, 'tableData'])->name('admin.employee.data');
-    Route::get('/employee/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
-    Route::get('/employee/preview-employee-code', [EmployeeController::class, 'previewEmployeeCode'])->name('admin.employee.preview_code');
-    Route::post('/employee/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
-    Route::post('/employee/save-step', [EmployeeController::class, 'saveStep'])->name('admin.employee.save_step');
-    Route::post('/employee/save-subsection', [EmployeeController::class, 'saveSubsection'])->name('admin.employee.save_subsection');
-    Route::post('/employee/delete-family', [EmployeeController::class, 'deleteFamily'])->name('admin.employee.delete_family');
-    Route::post('/employee/delete-academic', [EmployeeController::class, 'deleteAcademic'])->name('admin.employee.delete_academic');
-    Route::post('/employee/delete-employment', [EmployeeController::class, 'deleteEmployment'])->name('admin.employee.delete_employment');
-    Route::post('/employee/delete-bank-detail', [EmployeeController::class, 'deleteBankDetail'])->name('admin.employee.delete_bank_detail');
-    Route::post('/employee/delete-photo', [EmployeeController::class, 'deletePhoto'])->name('admin.employee.delete_photo');
-    Route::post('/employee/save-attachment', [EmployeeController::class, 'saveAttachment'])->name('admin.employee.save_attachment');
-    Route::post('/employee/delete-attachment', [EmployeeController::class, 'deleteAttachment'])->name('admin.employee.delete_attachment');
-    Route::get('/employee/{id}/edit', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
-    Route::post('/employee/{id}/update', [EmployeeController::class, 'update'])->name('admin.employee.update');
-    Route::delete('/employee/{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
+    Route::get('/employees', [EmployeeController::class, 'index'])->name('admin.employee.index');
+    Route::redirect('/employee', '/admin/employees');
+    Route::redirect('/employee/{id}/edit', '/admin/employees/{id}/edit');
+    
+    Route::get('/employees/data', [EmployeeController::class, 'tableData'])->name('admin.employee.data');
+    Route::get('/employees/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
+    Route::get('/employees/preview-employee-code', [EmployeeController::class, 'previewEmployeeCode'])->name('admin.employee.preview_code');
+    Route::post('/employees/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
+    Route::post('/employees/save-step', [EmployeeController::class, 'saveStep'])->name('admin.employee.save_step');
+    Route::post('/employees/save-subsection', [EmployeeController::class, 'saveSubsection'])->name('admin.employee.save_subsection');
+    Route::post('/employees/delete-family', [EmployeeController::class, 'deleteFamily'])->name('admin.employee.delete_family');
+    Route::post('/employees/delete-academic', [EmployeeController::class, 'deleteAcademic'])->name('admin.employee.delete_academic');
+    Route::post('/employees/delete-employment', [EmployeeController::class, 'deleteEmployment'])->name('admin.employee.delete_employment');
+    Route::post('/employees/delete-bank-detail', [EmployeeController::class, 'deleteBankDetail'])->name('admin.employee.delete_bank_detail');
+    Route::post('/employees/delete-photo', [EmployeeController::class, 'deletePhoto'])->name('admin.employee.delete_photo');
+    Route::post('/employees/save-attachment', [EmployeeController::class, 'saveAttachment'])->name('admin.employee.save_attachment');
+    Route::post('/employees/delete-attachment', [EmployeeController::class, 'deleteAttachment'])->name('admin.employee.delete_attachment');
+    Route::get('/employees/{id}/edit', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
+    Route::post('/employees/{id}/update', [EmployeeController::class, 'update'])->name('admin.employee.update');
+    Route::delete('/employees/{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
 
     // Location Routes for Registration
     Route::get('/locations/countries', [LocationController::class, 'getCountries'])->name('admin.locations.countries');
@@ -303,7 +306,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     })->name('admin.overtime.index');
 
     Route::get('/register1', function () {
-        return view('admin.EmployeeRegisteration.index');
+        return view('admin.employeeregisteration.index');
     })->name('admin.register.index1');
 
     // Policies Routes

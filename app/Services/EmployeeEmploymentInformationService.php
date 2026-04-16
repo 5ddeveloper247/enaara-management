@@ -41,6 +41,16 @@ class EmployeeEmploymentInformationService
     {
         $payload = [];
         foreach ($this->employeeAttributeNames() as $field) {
+            if ($field === 'contract_start_date') {
+                $val = $data['contract_start_date'] ?? $data['employee_contract_start_date'] ?? null;
+                $payload['contract_start_date'] = $val === '' ? null : $val;
+                continue;
+            }
+            if ($field === 'contract_end_date') {
+                $val = $data['contract_end_date'] ?? $data['employee_contract_end_date'] ?? null;
+                $payload['contract_end_date'] = $val === '' ? null : $val;
+                continue;
+            }
             if (! array_key_exists($field, $data)) {
                 continue;
             }

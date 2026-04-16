@@ -21,8 +21,6 @@ class EmployeeStepRequest extends FormRequest
         $validator->after(function ($v) {
             if ((int) $this->input('step') === 5) {
                 $this->assertAtLeastOneSalaryBank($v);
-                $this->assertAtLeastOnePersonalBank($v);
-                $this->assertAtLeastOneCompanyOperatedBank($v);
             }
         });
     }
@@ -133,7 +131,10 @@ class EmployeeStepRequest extends FormRequest
         $stepRaw = $this->input('step');
         $st = ($stepRaw !== null && $stepRaw !== '') ? (int) $stepRaw : 0;
         if ($st === 1 || $st === 0) {
-            $this->merge(['is_ex_armed_force' => $this->boolean('is_ex_armed_force')]);
+            $this->merge([
+                'is_ex_armed_force' => $this->boolean('is_ex_armed_force') ? 1 : 0,
+                'is_father_deceased' => $this->boolean('is_father_deceased') ? 1 : 0,
+            ]);
         }
         if ($st === 5 || $st === 0) {
             $this->normalizeBankRowsFromRequest();
@@ -222,197 +223,10 @@ class EmployeeStepRequest extends FormRequest
             return $this->getSubsectionRules($subsection, $employeeId);
         }
 
+        // Base rules strictly limited to wizard meta-data
         $baseRules = [
-            'step' => ['required', 'integer', 'min:1', 'max:6'],
+            'step'        => ['required', 'integer', 'min:1', 'max:6'],
             'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
-
-            // Section A - General
-            'full_name' => ['nullable', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
-            'father_name' => ['nullable', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
-            'email' => [
-                'nullable',
-                'email:rfc,dns',
-                'max:50',
-                Rule::unique('employees', 'email')->ignore($employeeId),
-            ],
-            'phone' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-            'cnic' => [
-                'bail',
-                'nullable',
-                'string',
-                'regex:' . $this->cnicRegex(),
-                'min:13',
-                'max:15',
-                Rule::unique('employees', 'cnic')->ignore($employeeId),
-            ],
-            'cnic_expiry' => ['nullable', 'date', 'after:today'],
-            'father_cnic' => ['bail', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
-            'ntn' => ['nullable', 'string', 'regex:/^(?:[0-9]{7}|[0-9]{13})$/'],
-            'is_ex_armed_force' => ['nullable', 'boolean'],
-            'gender' => ['nullable', Rule::in(['Male', 'Female', 'Other'])],
-            'nationality' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()],
-            'dob' => ['nullable', 'date', 'before:today'],
-            'domicile_district' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
-            'domicile_province' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()],
-            'city_of_birth' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
-            'religion' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
-            'sect' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
-            'marital_status' => ['nullable', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widowed'])],
-            'spouse_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
-            'spouse_cnic' => ['nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
-            'spouse_nationality' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()],
-            'nok_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
-            'nok_cnic' => ['bail', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
-            'nok_cnic_expiry_date' => ['nullable', 'date', 'after:today'],
-            'nok_relation' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
-            'nok_relation_type' => ['nullable', 'string', 'max:20'],
-            'nok_relation_other' => ['nullable', 'string', 'max:100'],
-            'nok_dob' => ['nullable', 'date', 'before:today'],
-            'nok_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-
-            // Section B - Employment
-            'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
-            'sbu_id' => ['nullable', 'integer', 'exists:sbus,id'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-            'department_ids' => ['nullable', 'array'],
-            'department_ids.*' => ['integer', 'exists:departments,id'],
-            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
-
-            'employee_type' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
-            'designation' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
-            'grade' => ['nullable', 'string', 'max:10', 'regex:' . $this->alphaNumericTextRegex()],
-            'branch' => ['nullable', 'string', 'min:2', 'max:50', 'regex:' . $this->alphaTextRegex()],
-            'location' => ['nullable', 'string', 'min:2', 'max:255'],
-            'vendor' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaTextRegex()],
-            'site' => ['nullable', 'string', 'min:2', 'max:255'],
-            'join_date' => ['nullable', 'date', 'before_or_equal:today'],
-            'floor_access' => ['nullable', 'boolean'],
-            'biometric_id' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9\-_]+$/'],
-
-            'employment_category' => ['nullable', Rule::in(['intern', 'consultant', 'employee', 'contractual', 'engagement'])],
-            'intern_type' => ['nullable', Rule::in(['paid', 'unpaid'])],
-            'intern_duration' => ['nullable', 'string', 'max:100'],
-            'employment_type' => ['nullable', 'string', 'max:100'],
-            'contractual_type' => ['nullable', Rule::in(['time_bound', 'open', 'project_based'])],
-            'contract_start_date' => ['nullable', 'date'],
-            'contract_end_date' => ['nullable', 'date', 'after_or_equal:contract_start_date'],
-            'engagement_mode' => ['nullable', Rule::in(['standard', 'remote', 'shifts', 'hybrid'])],
-            'hybrid_days' => ['nullable', 'array'],
-            'hybrid_days.*' => ['nullable', Rule::in(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])],
-            'standard_schedule_mode' => ['nullable', Rule::in(['default', 'custom'])],
-            'working_days' => ['nullable', 'array'],
-            'working_days.*' => ['nullable', Rule::in(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])],
-            'working_start_time' => ['nullable', 'date_format:H:i'],
-            'working_end_time' => ['nullable', 'date_format:H:i', 'after:working_start_time'],
-            'opening_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
-            'closing_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
-            'sync_with_biometric' => ['nullable', 'boolean'],
-
-            // Section C - Police Verification
-            'verification_status' => ['nullable', Rule::in(['Cleared', 'Not Cleared', 'In Process'])],
-            'msr_letter_no' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9\/\-_]+$/'],
-            'addressee' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
-            'verifying_authority' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaTextRegex()],
-            'verification_letter_no' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9\/\-_]+$/'],
-            'next_verification_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'police_remarks' => ['nullable', 'string', 'max:2000'],
-
-            // Section D - Armed / Military
-            'service_no' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphanumericCodeRegex()],
-            'rank' => ['nullable', 'string', 'min:1', 'max:20', 'regex:/^[A-Za-z0-9\s\.\-\/]+$/'],
-            'medical_category' => ['nullable', 'string', 'min:1', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
-            'date_of_commissioning' => ['nullable', 'date', 'before_or_equal:today'],
-            'date_of_retirement' => ['nullable', 'date', 'after_or_equal:date_of_commissioning'],
-            'reason_of_retirement' => ['nullable', 'string', 'min:3', 'max:255'],
-            'corps_regiment' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaTextRegex()],
-            'ex_army_unit' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaTextRegex()],
-            'trade' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
-            'pma_lc_ots' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
-
-            // Section E - Bank / Contact
-            'residence_phone' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-            'emergency_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-            'cell_no' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-            'contact_email' => ['nullable', 'email:rfc,dns', 'max:255'],
-            'present_address' => ['nullable', 'string', 'min:10', 'max:1000'],
-            'permanent_address' => ['nullable', 'string', 'min:10', 'max:1000'],
-
-            'account_title' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->nameRegex()],
-            'account_no' => ['nullable', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
-            'bank_branch' => ['nullable', 'string', 'min:2', 'max:255'],
-            'account_type' => ['nullable', Rule::in(['Saving', 'Current'])],
-
-            'banks' => ['nullable', 'array'],
-            'banks.*.account_category' => ['nullable', 'string', Rule::in(['personal', 'company_operated'])],
-            'banks.*.account_title' => ['nullable', 'string', 'min:3', 'max:255', 'regex:' . $this->nameRegex()],
-            'banks.*.account_no' => ['nullable', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
-            'banks.*.bank_name' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
-            'banks.*.branch_code' => ['nullable', 'string', 'min:1', 'max:50', 'regex:/^[A-Za-z0-9\-]+$/'],
-            'banks.*.branch_address' => ['nullable', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
-            'banks.*.iban' => ['nullable', 'string', 'max:34', 'regex:/^[A-Z0-9]+$/'],
-            'banks.*.account_type' => ['nullable', Rule::in(['Saving', 'Current'])],
-            'banks.*.is_salary_account' => ['nullable', 'boolean'],
-
-            // Family
-            'family' => ['nullable', 'array'],
-            'family.*.name' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
-            'family.*.gender' => ['nullable', Rule::in(['Male', 'Female'])],
-            'family.*.dob' => ['nullable', 'date', 'before:today'],
-            'family.*.relation' => ['nullable', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
-            'family.*.occupation' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
-
-            // Academics
-            'academics' => ['nullable', 'array'],
-            'academics.*.degree' => ['nullable', 'string', 'max:255'],
-            'academics.*.grade_cgpa' => ['nullable', 'string', 'max:50'],
-            'academics.*.start_date' => ['nullable', 'date'],
-            'academics.*.end_date' => ['nullable', 'date'],
-            'academics.*.field_of_study' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
-            'academics.*.institute' => ['nullable', 'string', 'max:255'],
-
-            // Previous Employments
-            'employments' => ['nullable', 'array'],
-            'employments.*.organization' => ['nullable', 'string', 'min:2', 'max:100'],
-            'employments.*.designation' => ['nullable', 'string', 'min:2', 'max:50'],
-            'employments.*.from_date' => ['nullable', 'date'],
-            'employments.*.to_date' => ['nullable', 'date'],
-            'employments.*.salary' => ['nullable', 'numeric', 'min:0', 'max:999999999'],
-            'employments.*.reason_for_leaving' => ['nullable', 'string', 'max:500'],
-
-            // Medical
-            'last_fitness_test' => ['nullable', 'string', 'max:1000'],
-            'has_disability' => ['nullable', Rule::in(['yes', 'no'])],
-            'blood_group' => ['nullable', 'string', 'regex:/^(A|B|AB|O)[+-]$/'],
-            'disability_type' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
-            'disability_description' => ['nullable', 'string', 'max:1000'],
-
-            // References
-            'ref1_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
-            'ref1_designation' => ['nullable', 'string', 'min:2', 'max:255'],
-            'ref1_organization' => ['nullable', 'string', 'min:2', 'max:255'],
-            'ref1_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-            'ref1_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
-
-            'ref2_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
-            'ref2_designation' => ['nullable', 'string', 'min:2', 'max:255'],
-            'ref2_organization' => ['nullable', 'string', 'min:2', 'max:255'],
-            'ref2_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-            'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
-
-            // Attachments
-            'profile_photo' => ['nullable', 'file', 'max:2048', 'mimes:jpg,jpeg,png,gif,svg'],
-            'kept_attachment_ids' => ['nullable', 'array'],
-            'kept_attachment_ids.*' => ['integer', 'exists:media_files,id'],
-            'attachments' => ['nullable', 'array'],
-            'attachments.*.name' => ['required_with:attachments', 'string', 'max:255'],
-            'attachments.*.type' => ['nullable', 'string', 'max:100'],
-            'attachments.*.description' => ['nullable', 'string', 'max:1000'],
-            'attachments.*.files' => ['required_with:attachments', 'array', 'min:1'],
-            'attachments.*.files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx'],
-
-            // Account
-            'create_user_account' => ['nullable', 'boolean'],
-            'password' => ['nullable', 'string', 'min:8', 'max:64', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
         ];
 
         $stepRules = [];
@@ -420,6 +234,14 @@ class EmployeeStepRequest extends FormRequest
         if ($step === 1) {
             $stepRules = array_merge([
                 'full_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+                'father_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+                'email' => [
+                    'nullable',
+                    'email:rfc,dns',
+                    'max:50',
+                    Rule::unique('employees', 'email')->ignore($employeeId),
+                ],
+                'phone' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
                 'cnic' => [
                     'bail',
                     'required',
@@ -430,8 +252,25 @@ class EmployeeStepRequest extends FormRequest
                     Rule::unique('employees', 'cnic')->ignore($employeeId),
                 ],
                 'cnic_expiry' => ['required', 'date', 'after:today'],
-                'dob' => ['required', 'date', 'before:today'],
+                'father_cnic' => [
+                    'bail',
+                    'required_if:is_father_deceased,0',
+                    'nullable',
+                    'string',
+                    'regex:' . $this->cnicRegex(),
+                    'min:13',
+                    'max:15'
+                ],
+                'ntn' => ['nullable', 'string', 'regex:/^(?:[0-9]{7}|[0-9]{13})$/'],
+                'is_ex_armed_force' => ['nullable', 'boolean'],
+                'gender' => ['required', Rule::in(['Male', 'Female', 'Other'])],
                 'nationality' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()],
+                'dob' => ['required', 'date', 'before:today'],
+                'domicile_district' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
+                'domicile_province' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()],
+                'city_of_birth' => ['nullable', 'string', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
+                'religion' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
+                'sect' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
                 'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widowed'])],
                 'spouse_name' => [
                     'required_if:marital_status,Married', 'nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()
@@ -447,36 +286,11 @@ class EmployeeStepRequest extends FormRequest
                 'nok_cnic_expiry_date' => ['required', 'date', 'after:today'],
                 'nok_dob' => ['required', 'date', 'before:today'],
                 'nok_contact' => ['required', 'string', 'regex:' . $this->contactRegex()],
-
-                'father_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
-                'father_cnic' => ['bail', 'required', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
-                'gender' => ['required', Rule::in(['Male', 'Female', 'Other'])],
-                'domicile_province' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()],
-                'domicile_district' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
-                'city_of_birth' => ['nullable', 'string', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
-                'religion' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
-                'sect' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
-                'ntn' => ['nullable', 'string', 'regex:/^(?:[0-9]{7}|[0-9]{13})$/'],
-
-                'family.*.name' => ['required_with:family.*', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
-                'family.*.gender' => ['required_with:family.*', Rule::in(['Male', 'Female'])],
-                'family.*.dob' => ['required_with:family.*', 'date', 'before:today'],
-                'family.*.relation' => ['required_with:family.*', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
-
-                'academics.*.degree' => ['required_with:academics.*', 'string', 'max:255', $this->maxWordsRule(10, 'Certificate / Degree')],
-                'academics.*.grade_cgpa' => ['required_with:academics.*', 'string', 'max:50', $this->maxWordsRule(5, 'Grade / CGPA')],
-                'academics.*.start_date' => ['required_with:academics.*', 'date'],
-                'academics.*.end_date' => ['required_with:academics.*', 'date'],
-
-                'employments.*.organization' => ['required_with:employments.*', 'string', 'min:2', 'max:255'],
-                'employments.*.designation' => ['required_with:employments.*', 'string', 'min:2', 'max:255'],
-                'employments.*.from_date' => ['required_with:employments.*', 'date'],
-                'employments.*.to_date' => ['required_with:employments.*', 'date'],
             ], $this->nokRelationValidationRules());
         }
         elseif ($step === 2) {
             $stepRules = [
-                'employment_category' => ['required', Rule::in(['intern', 'consultant', 'employee'])],
+                'employment_category' => ['required', Rule::in(['intern', 'consultant', 'employee', 'contractual', 'engagement'])],
                 'organization_id' => ['required', 'integer', 'exists:organizations,id'],
                 'role_id' => ['required', 'integer', 'exists:roles,id'],
                 'sbu_id' => [
@@ -485,25 +299,18 @@ class EmployeeStepRequest extends FormRequest
                     'exists:sbus,id',
                     Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected()),
                 ],
-                'department_id' => [
-                    'nullable',
-                    'integer',
-                    'exists:departments,id',
-                ],
-                'department_ids' => [
-                    'nullable',
-                    'array',
-                ],
-                'department_ids.*' => [
-                    'integer',
-                    Rule::exists('departments', 'id')->where(function ($q) {
-                        $sbuId = $this->input('sbu_id');
-                        if ($sbuId) {
-                            $q->where('sbu_id', (int) $sbuId);
-                        }
-                    }),
-                ],
+                'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+                'department_ids' => ['nullable', 'array'],
+                'department_ids.*' => ['integer', 'exists:departments,id'],
+                'employee_type' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
+                'designation' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
+                'grade' => ['nullable', 'string', 'max:10', 'regex:' . $this->alphaNumericTextRegex()],
+                'branch' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphaTextRegex()],
+                'location' => ['nullable', 'string', 'max:255'],
+                'site' => ['nullable', 'string', 'max:255'],
                 'join_date' => ['required', 'date', 'before_or_equal:today'],
+                'floor_access' => ['nullable', 'boolean'],
+                'biometric_id' => ['nullable', 'string', 'max:20'],
                 'intern_type' => [
                     'nullable',
                     Rule::in(['paid', 'unpaid']),
@@ -528,14 +335,25 @@ class EmployeeStepRequest extends FormRequest
                 'contract_start_date' => [
                     'nullable',
                     'date',
-                    Rule::requiredIf(fn () => $this->input('employment_category') === 'employee'
-                        && $this->input('employment_type') === 'contractual'
-                        && $this->input('contractual_type') === 'time_bound'),
+                    Rule::requiredIf(fn () => $this->input('employment_category') === 'contractual'),
                 ],
                 'contract_end_date' => [
                     'nullable',
                     'date',
                     'after_or_equal:contract_start_date',
+                    Rule::requiredIf(fn () => $this->input('employment_category') === 'contractual'),
+                ],
+                'employee_contract_start_date' => [
+                    'nullable',
+                    'date',
+                    Rule::requiredIf(fn () => $this->input('employment_category') === 'employee'
+                        && $this->input('employment_type') === 'contractual'
+                        && $this->input('contractual_type') === 'time_bound'),
+                ],
+                'employee_contract_end_date' => [
+                    'nullable',
+                    'date',
+                    'after_or_equal:employee_contract_start_date',
                     Rule::requiredIf(fn () => $this->input('employment_category') === 'employee'
                         && $this->input('employment_type') === 'contractual'
                         && $this->input('contractual_type') === 'time_bound'),
@@ -545,7 +363,6 @@ class EmployeeStepRequest extends FormRequest
                     'nullable',
                     'array',
                     Rule::requiredIf(fn () => $this->input('engagement_mode') === 'hybrid'),
-                    Rule::when($this->input('engagement_mode') === 'hybrid', ['min:1']),
                 ],
                 'standard_schedule_mode' => [
                     'nullable',
@@ -555,39 +372,22 @@ class EmployeeStepRequest extends FormRequest
                 'working_days' => [
                     'nullable',
                     'array',
-                    Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard'
-                        && $this->input('standard_schedule_mode') === 'custom'),
-                    Rule::when(
-                        $this->input('engagement_mode') === 'standard' && $this->input('standard_schedule_mode') === 'custom',
-                        ['min:1']
-                    ),
+                    Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard' && $this->input('standard_schedule_mode') === 'custom'),
                 ],
-                'working_days.*' => ['nullable', Rule::in(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])],
                 'working_start_time' => [
                     'nullable',
                     'date_format:H:i',
-                    Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard'
-                        && $this->input('standard_schedule_mode') === 'custom'),
+                    Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard' && $this->input('standard_schedule_mode') === 'custom'),
                 ],
                 'working_end_time' => [
                     'nullable',
                     'date_format:H:i',
                     'after:working_start_time',
-                    Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard'
-                        && $this->input('standard_schedule_mode') === 'custom'),
+                    Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard' && $this->input('standard_schedule_mode') === 'custom'),
                 ],
-                'opening_grace_period' => [
-                    'nullable',
-                    'integer',
-                    'min:0',
-                    'max:600',
-                ],
-                'closing_grace_period' => [
-                    'nullable',
-                    'integer',
-                    'min:0',
-                    'max:600',
-                ],
+                'opening_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
+                'closing_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
+                'sync_with_biometric' => ['nullable', 'boolean'],
             ];
         }
         elseif ($step === 3) {
@@ -595,93 +395,145 @@ class EmployeeStepRequest extends FormRequest
             $stepRules = [
                 'verification_status' => ['required', Rule::in(['Cleared', 'Not Cleared', $inProcess])],
                 'msr_letter_no' => [
-                    'bail',
-                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
                     'nullable',
                     'string',
                     'max:255',
-                    Rule::when(fn () => filled($this->input('msr_letter_no')), ['regex:/^[A-Za-z0-9\/\-_]+$/']),
-                ],
-                'addressee' => [
-                    'bail',
+                    'regex:/^[A-Za-z0-9\/\-_]+$/',
                     Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
-                    'nullable',
-                    'string',
-                    'min:2',
-                    'max:100',
-                    Rule::when(fn () => filled($this->input('addressee')), ['regex:' . $this->alphaNumericTextRegex()]),
                 ],
-                'verifying_authority' => [
-                    'bail',
-                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
-                    'nullable',
-                    'string',
-                    'min:2',
-                    'max:255',
-                    Rule::when(fn () => filled($this->input('verifying_authority')), ['regex:' . $this->alphaTextRegex()]),
-                ],
-                'verification_letter_no' => [
-                    'bail',
-                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
-                    'nullable',
-                    'string',
-                    'max:100',
-                    Rule::when(fn () => filled($this->input('verification_letter_no')), ['regex:/^[A-Za-z0-9\/\-_]+$/']),
-                ],
-                'next_verification_date' => [
-                    'bail',
-                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
+                'msr_date' => [
                     'nullable',
                     'date',
-                    Rule::when(
-                        fn () => ($this->input('verification_status') ?? '') !== $inProcess,
-                        ['after_or_equal:today']
-                    ),
-                ],
-                'police_remarks' => [
-                    'bail',
                     Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
+                ],
+                'addressee' => [
                     'nullable',
                     'string',
-                    'max:2000',
-                    Rule::when(
-                        fn () => ($this->input('verification_status') ?? '') !== $inProcess,
-                        ['min:2']
-                    ),
+                    'max:100',
+                    'regex:' . $this->alphaNumericTextRegex(),
+                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
                 ],
+                'verifying_authority' => [
+                    'nullable',
+                    'string',
+                    'max:255',
+                    'regex:' . $this->alphaTextRegex(),
+                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
+                ],
+                'verification_letter_no' => [
+                    'nullable',
+                    'string',
+                    'max:100',
+                    'regex:/^[A-Za-z0-9\/\-_]+$/',
+                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
+                ],
+                'verification_letter_date' => [
+                    'nullable',
+                    'date',
+                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
+                ],
+                'next_verification_date' => [
+                    'nullable',
+                    'date',
+                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
+                ],
+                'police_remarks' => [
+                    'nullable', 
+                    'string', 
+                    'max:2000',
+                    Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
+                ],
+            ];
+        }
+        elseif ($step === 4) {
+            $stepRules = [
+                'service_no' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphanumericCodeRegex()],
+                'rank' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9\s\.\-\/]+$/'],
+                'medical_category' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
+                'date_of_commissioning' => ['nullable', 'date', 'before_or_equal:today'],
+                'date_of_retirement' => ['nullable', 'date', 'after_or_equal:date_of_commissioning'],
+                'reason_of_retirement' => ['nullable', 'string', 'max:255'],
+                'corps_regiment' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaTextRegex()],
+                'ex_army_unit' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaTextRegex()],
+                'trade' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
+                'pma_lc_ots' => ['nullable', 'string', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
             ];
         }
         elseif ($step === 5) {
             $stepRules = [
-                'banks' => ['required', 'array', 'min:2'],
-                'banks.*.account_category' => ['required', 'string', Rule::in(['personal', 'company_operated'])],
-                'banks.*.account_title' => ['required', 'string', 'min:3', 'max:255', 'regex:' . $this->nameRegex()],
-                'banks.*.account_no' => ['required', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
-                'banks.*.bank_name' => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
-                'banks.*.branch_code' => ['required', 'string', 'min:1', 'max:50', 'regex:/^[A-Za-z0-9\-]+$/'],
-                'banks.*.branch_address' => ['required', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
-                'banks.*.iban' => ['nullable', 'string', 'max:34', 'regex:/^[A-Z0-9]+$/'],
-                'banks.*.account_type' => ['required', Rule::in(['Saving', 'Current'])],
+                'banks' => ['required', 'array', 'min:1'],
+                'banks.*.account_category'  => ['required', 'string', Rule::in(['Personal', 'Company'])],
+                'banks.*.account_title'     => ['required', 'string', 'min:3', 'max:255', 'regex:' . $this->nameRegex()],
+                'banks.*.account_no'        => ['required', 'string', 'min:8', 'max:16', 'regex:/^[0-9]+$/'],
+                'banks.*.bank_name'         => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
+                'banks.*.branch_code'       => ['required', 'string', 'min:1', 'max:50', 'regex:/^[A-Za-z0-9\-]+$/'],
+                'banks.*.branch_address'    => ['required', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
+                'banks.*.iban'              => ['nullable', 'string', 'min:24', 'max:30', 'regex:/^[A-Z0-9]+$/'],
+                'banks.*.account_type'      => ['required', Rule::in(['Saving', 'Current'])],
                 'banks.*.is_salary_account' => ['required', 'boolean'],
             ];
         }
         elseif ($step === 6) {
             $stepRules = [
-                'cell_no' => ['required', 'string', 'regex:' . $this->contactRegex()],
-                'contact_email' => [
+                // Contact
+                'residence_phone'   => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                'emergency_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                'cell_no'           => ['required', 'string', 'regex:' . $this->contactRegex()],
+                'contact_email'     => [
                     'required',
-                    'email:rfc',
+                    'email:rfc,dns',
                     'max:255',
-                    Rule::unique('employee_contacts', 'email')->ignore($employeeId, 'employee_id'),
                 ],
-                'present_address' => ['required', 'string', 'min:10', 'max:1000'],
+                'present_address'   => ['required', 'string', 'min:10', 'max:1000'],
                 'permanent_address' => ['required', 'string', 'min:10', 'max:1000'],
+
+                // Family
+                'family'            => ['nullable', 'array'],
+                'family.*.name'     => ['required_with:family.*', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
+                'family.*.gender'   => ['required_with:family.*', Rule::in(['Male', 'Female'])],
+                'family.*.dob'      => ['required_with:family.*', 'date', 'before:today'],
+                'family.*.relation' => ['required_with:family.*', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
+
+                // Academics
+                'academics'                => ['nullable', 'array'],
+                'academics.*.degree'       => ['required_with:academics.*', 'string', 'max:255'],
+                'academics.*.grade_cgpa'   => ['required_with:academics.*', 'string', 'max:50'],
+                'academics.*.start_date'   => ['required_with:academics.*', 'date'],
+                'academics.*.end_date'     => ['required_with:academics.*', 'date'],
+                'academics.*.institute'    => ['required_with:academics.*', 'string', 'max:255'],
+
+                // Employment History
+                'employments'              => ['nullable', 'array'],
+                'employments.*.organization' => ['required_with:employments.*', 'string', 'min:2', 'max:255'],
+                'employments.*.designation'  => ['required_with:employments.*', 'string', 'min:2', 'max:255'],
+                'employments.*.from_date'    => ['required_with:employments.*', 'date'],
+                'employments.*.to_date'      => ['required_with:employments.*', 'date'],
+
+                // Medical
+                'last_fitness_test'      => ['nullable', 'string', 'max:1000'],
+                'has_disability'         => ['nullable', Rule::in(['yes', 'no'])],
+                'blood_group'            => ['nullable', 'string', 'regex:/^(A|B|AB|O)[+-]$/'],
+                'disability_type'        => ['nullable', 'string', 'max:100'],
+                'disability_description' => ['nullable', 'string', 'max:1000'],
+
+                // References
+                'ref1_name'         => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
+                'ref1_designation'  => ['nullable', 'string', 'max:255'],
+                'ref1_organization' => ['nullable', 'string', 'max:255'],
+                'ref1_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                'ref1_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
+
+                'ref2_name'         => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
+                'ref2_designation'  => ['nullable', 'string', 'max:255'],
+                'ref2_organization' => ['nullable', 'string', 'max:255'],
+                'ref2_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
+
+                // Account
+                'create_user_account' => ['nullable', 'boolean'],
                 'password' => [
-                    'nullable',
-                    'string',
-                    'min:8',
-                    'max:64',
-                    'required_if:create_user_account,1',
+                    'nullable', 'string', 'min:8', 'max:64',
+                    'required_if:create_user_account,true',
                     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
                 ],
             ];
@@ -919,7 +771,10 @@ class EmployeeStepRequest extends FormRequest
             'employment_type.in' => 'The selected permanent or contractual option is invalid.',
             'contractual_type.required' => 'Contract type is required when Contractual is selected.',
             'contractual_type.in' => 'The selected contract type is invalid.',
-            'contract_start_date.required' => 'Contract start date is required for a time-bound contract.',
+            'contract_start_date.required' => 'Contract start date is required.',
+            'contract_end_date.required' => 'Contract end date is required.',
+            'employee_contract_start_date.required' => 'Contract start date is required for a time-bound contract.',
+            'employee_contract_end_date.required' => 'Contract end date is required for a time-bound contract.',
             'contract_end_date.required' => 'Contract end date is required for a time-bound contract.',
             'contract_end_date.after_or_equal' => 'Contract end date must be on or after the start date.',
             'engagement_mode.required' => 'Work arrangement is required.',

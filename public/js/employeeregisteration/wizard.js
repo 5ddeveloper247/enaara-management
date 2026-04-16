@@ -1,102 +1,656 @@
-﻿(function () {
+(function () {
     'use strict';
 
-let currentStep = 1;
+    let currentStep = 1;
+    let maxStepReached = 1;
     const totalSteps = 6;
-    
+
+    // Cropper State
+    window.cropper = null;
+    window.croppedImageBlob = null;
+    window.originalFileName = "";
+
+
+    const savedId = document.getElementById('saved_employee_id');
+    if (savedId && savedId.value) {
+        maxStepReached = totalSteps; 
+    }
+
+    // Core selects and global data
+    const orgSelect = document.getElementById('employmentOrganizationSelect');
+    const sbuSelect = document.getElementById('employmentSbuSelect');
+    const roleSelect = document.getElementById('employmentRoleSelect');
+    const deptSelect = document.getElementById('employmentDepartmentSelect');
+    const deptBox = document.getElementById('employmentDeptBox');
+    const deptDd = document.getElementById('employmentDeptDd');
+    const deptList = document.getElementById('employmentDeptList');
+    const deptSearch = document.getElementById('employmentDeptSearch');
+    const deptChips = document.getElementById('employmentDeptChips');
+    const deptPh = document.getElementById('employmentDeptPh');
+    const deptHint = document.getElementById('employmentDeptHint');
+
+    const orgsData = window.orgsData || [];
+    const rolesData = window.rolesData || [];
+    let availableDepartments = [];
+
+    const initialSbu = sbuSelect ? sbuSelect.value : null;
+    const initialRole = roleSelect ? roleSelect.value : null;
+
+    // Conditional Visibility Handling
+    function syncConditionalVisibility() {
+        // Armed Forces Tab
+        const armyCheck = document.getElementById('giExArmyRetiredCheckbox');
+        const armyTab = document.querySelector('.profile-tab[data-step="4"]');
+        if (armyCheck && armyTab) {
+            // Logic: HIDE tab if checked. Show if unchecked.
+            if (armyCheck.checked) {
+                armyTab.classList.add('d-none');
+                // If we are currently on step 4 but it's now hidden, move to step 1
+                if (currentStep === 4) {
+                    goToStep(1);
+                }
+            } else {
+                armyTab.classList.remove('d-none');
+            }
+        }
+
+        // Father Deceased / CNIC
+        const deceasedCheck = document.getElementById('giFatherDeceasedCheckbox');
+        const fatherCnicField = document.getElementById('giFatherCnicField');
+        const fatherCnicInput = document.querySelector('[name="father_cnic"]');
+        if (deceasedCheck && fatherCnicField) {
+            if (deceasedCheck.checked) {
+                fatherCnicField.classList.add('d-none');
+                if (fatherCnicInput) {
+                    fatherCnicInput.required = false;
+                    fatherCnicInput.value = ''; // Clear if deceased
+                    clearFieldStatus(fatherCnicInput);
+                }
+            } else {
+                fatherCnicField.classList.remove('d-none');
+                if (fatherCnicInput) {
+                    fatherCnicInput.required = true;
+                }
+            }
+        }
+
+        // Marital Status / Spouse Details
+        const maritalStatusSelect = document.getElementById('giMaritalStatusSelect');
+        const spouseFields = [
+            document.getElementById('giSpouseNameField'),
+            document.getElementById('giSpouseNationalityField'),
+            document.getElementById('giSpouseCnicField'),
+        ];
+        
+        if (maritalStatusSelect) {
+            const isMarried = maritalStatusSelect.value === 'Married';
+            spouseFields.forEach(field => {
+                if (field) {
+                    field.classList.toggle('d-none', !isMarried);
+                    const input = field.querySelector('input, select');
+                    if (input) {
+                        input.required = isMarried;
+                        if (!isMarried) {
+                            input.value = '';
+                            clearFieldStatus(input);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function togglePoliceVerificationFields() {
+        const activeStatus = document.querySelector('input[name="verification_status"]:checked');
+        const status = activeStatus ? activeStatus.value : '';
+        const isMandatory = (status === 'Cleared' || status === 'Not Cleared');
+
+        const stars = document.querySelectorAll('.police-mandatory-star');
+        const fields = document.querySelectorAll('.police-verification-field');
+
+        stars.forEach(star => {
+            if (isMandatory) star.classList.remove('d-none');
+            else star.classList.add('d-none');
+        });
+
+        fields.forEach(field => {
+            field.required = isMandatory;
+        });
+    }
+
+    document.addEventListener('change', function(e) {
+        if (e.target.id === 'giExArmyRetiredCheckbox' || e.target.id === 'giFatherDeceasedCheckbox' || e.target.id === 'giMaritalStatusSelect') {
+            syncConditionalVisibility();
+        }
+        if (e.target.name === 'verification_status') {
+            togglePoliceVerificationFields();
+        }
+    });
+
+    // SweetAlert2 Helpers
+    const showSuccess = (message, title = 'Success') => {
+        return Swal.fire({
+            icon: 'success',
+            title: title,
+            text: message,
+            confirmButtonColor: '#1a237e',
+            timer: 3000,
+            timerProgressBar: true
+        });
+    };
+
+    const showError = (message, title = 'Error') => {
+        return Swal.fire({
+            icon: 'error',
+            title: title,
+            text: message,
+            confirmButtonColor: '#1a237e'
+        });
+    };
+
+    const showConfirm = (message, title = 'Are you sure?') => {
+        return Swal.fire({
+            title: title,
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#1a237e',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, proceed!'
+        });
+    };
+
+    // Error and State Handling
+    function clearFieldStatus(el) {
+        if (!el) return;
+        el.classList.remove('is-invalid');
+        // Find the closest parent that might contain error messages
+        const container = el.closest('.col-12, .col-md-6, .col-md-4, .col-md-3, .col-xl-3, .col, .form-group, .mb-3');
+        if (container) {
+            container.querySelectorAll('.field-error-msg').forEach(err => err.remove());
+        } else {
+            // Fallback: check immediate siblings
+            const siblings = Array.from(el.parentElement.children);
+            siblings.forEach(node => {
+                if (node.classList && node.classList.contains('field-error-msg')) {
+                    node.remove();
+                }
+            });
+        }
+    }
+
+    function clearStepErrors() {
+        document.querySelectorAll('.is-invalid').forEach(el => {
+            el.classList.remove('is-invalid');
+        });
+        document.querySelectorAll('.field-error-msg').forEach(err => err.remove());
+        
+        // Remove any legacy or stray error containers
+        const generalErrors = document.getElementById('error-container');
+        if (generalErrors) generalErrors.innerHTML = '';
+    }
+
+    // Field name -> visible element mapping overrides
+    const fieldElementMap = {
+        'engagement_mode':          null, // handled as radio group below
+        'standard_schedule_mode':   null,
+        'hybrid_days':              null,
+        'working_days':             null,
+        'employee_contract_start_date': 'employmentDetailsEmployeeContractStartDateInput',
+        'employee_contract_end_date':   'employmentDetailsEmployeeContractEndDateInput',
+        'contract_start_date':          'employmentDetailsContractStartDateInput',
+        'contract_end_date':            'employmentDetailsContractEndDateInput',
+    };
+
+    // For radio groups: map field name -> wrapper element id to append error immediately after the pill row
+    const radioGroupWrapperMap = {
+        'engagement_mode':        'employmentWorkArrangementModeGroup',
+        'standard_schedule_mode': 'employmentWorkArrangementStandardTypeGroup',
+        'hybrid_days':            'employmentWorkArrangementHybridFields',
+        'working_days':           'employmentWorkArrangementCustomFields',
+    };
+
+    function showFieldErrors(errors) {
+        clearStepErrors();
+        
+        Object.entries(errors).forEach(([field, messages]) => {
+            let fieldName = field;
+            if (field.includes('.')) {
+                const parts = field.split('.');
+                fieldName = parts[0] + parts.slice(1).map(p => `[${p}]`).join('');
+            }
+
+            const msg = messages[0];
+
+            // Handle radio/checkbox groups specially
+            if (radioGroupWrapperMap[field]) {
+                const wrapper = document.getElementById(radioGroupWrapperMap[field]);
+                if (wrapper) {
+                    // Mark all inputs in the group
+                    document.querySelectorAll(`input[name="${field}"]`).forEach(r => r.classList.add('is-invalid'));
+                    // Only inject once
+                    if (!wrapper.nextElementSibling || !wrapper.nextElementSibling.classList.contains('field-error-msg')) {
+                        const err = document.createElement('div');
+                        err.className = 'field-error-msg text-danger small mt-1 fw-bold';
+                        err.textContent = msg;
+                        wrapper.insertAdjacentElement('afterend', err);
+                    }
+                }
+                return;
+            }
+
+            // Handle element id overrides
+            let input = null;
+            if (fieldElementMap[field] !== undefined) {
+                if (fieldElementMap[field]) {
+                    input = document.getElementById(fieldElementMap[field]);
+                }
+            } else {
+                input = document.querySelector(`[name="${fieldName}"]`) ||
+                        document.querySelector(`[name="${fieldName}[]"]`) ||
+                        document.getElementById(fieldName);
+            }
+
+            if (input) {
+                input.classList.add('is-invalid');
+                const err = document.createElement('div');
+                err.className = 'field-error-msg text-danger small mt-1 fw-bold';
+                err.textContent = msg;
+                
+                const container = input.closest('.col-12, .col-md-6, .col-md-4, .col-md-3, .col-xl-3, .col, .form-group, .mb-3');
+                if (container) {
+                    container.appendChild(err);
+                } else if (input.parentElement) {
+                    input.parentElement.appendChild(err);
+                } else {
+                    input.insertAdjacentElement('afterend', err);
+                }
+            }
+        });
+
+        const firstInvalid = document.querySelector('.is-invalid, .field-error-msg');
+        if (firstInvalid) {
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
     function syncStepUi() {
         for (let i = 1; i <= totalSteps; i++) {
             const pane = document.getElementById('stepPane' + i);
-            pane.classList.toggle('active', i === currentStep);
+            if (pane) pane.classList.toggle('active', i === currentStep);
         }
-    
+
         const tabs = document.querySelectorAll('.profile-tab');
         tabs.forEach((tab) => {
             const step = Number(tab.getAttribute('data-step'));
             tab.classList.remove('active');
+            
+            // Manage Tab locking
+            if (step > maxStepReached && step !== currentStep) {
+                tab.classList.add('locked-tab');
+                tab.style.opacity = '0.5';
+                tab.style.pointerEvents = 'none';
+                tab.setAttribute('title', 'Complete current step to unlock');
+            } else {
+                tab.classList.remove('locked-tab');
+                tab.style.opacity = '1';
+                tab.style.pointerEvents = 'auto';
+                tab.removeAttribute('title');
+            }
+
             if (step === currentStep) tab.classList.add('active');
         });
-    
+
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
-        prevBtn.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
-        nextBtn.textContent = currentStep === totalSteps ? 'Finish' : 'Next';
+        if (prevBtn) prevBtn.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
+        if (nextBtn) {
+            const isLastStep = currentStep === totalSteps;
+            const isLastMoreStep = typeof window.isLastMoreStep === 'function' ? window.isLastMoreStep() : true;
+
+            if (isLastStep && isLastMoreStep) {
+                nextBtn.textContent = 'Finish Registration';
+            } else {
+                nextBtn.textContent = 'Next Step';
+            }
+        }
     }
-    
-    document.querySelectorAll('.profile-tab').forEach((tab) => {
-        tab.addEventListener('click', function() {
-            currentStep = Number(this.getAttribute('data-step'));
+
+    async function processStepSave(step, onSuccess) {
+        const form = document.getElementById('employeeForm');
+        if (!form) return;
+
+        const formData = new FormData(form);
+        formData.append('step', step);
+
+        if (window.croppedImageBlob) {
+            formData.append('profile_photo', window.croppedImageBlob, window.originalFileName);
+        }
+
+        const nextBtn = document.getElementById('nextBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const originalText = nextBtn.textContent;
+
+        nextBtn.disabled = true;
+        nextBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        if (prevBtn) prevBtn.disabled = true;
+
+        try {
+            const response = await fetch('/admin/employees/save-step', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.status === 422) {
+                showFieldErrors(data.errors);
+                // Subtle toast-like error for better UX instead of a modal summary
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Validation Failed',
+                    text: 'Please check the highlighted fields.',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            } else if (!response.ok) {
+                throw new Error(data.message || 'Server error occurred');
+            } else if (data.success) {
+                clearStepErrors();
+                if (data.employee_id) {
+                    const idInput = document.getElementById('saved_employee_id');
+                    if (idInput) idInput.value = data.employee_id;
+                    
+                    // Unlock next step
+                    if (step === maxStepReached) {
+                        maxStepReached = Math.min(totalSteps, step + 1);
+                    }
+                }
+                
+                // Keep the preview UI but clear the blob so it's not sent multiple times
+                if (window.croppedImageBlob) {
+                    window.croppedImageBlob = null;
+                }
+
+                if (step === totalSteps) {
+                    showSuccess('Employee registration completed successfully!', 'Success').then(() => {
+                        window.location.href = '/admin/employees';
+                    });
+                } else {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: data.message || 'Saved successfully.',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                    if (onSuccess) onSuccess();
+                }
+            } else {
+                showError(data.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Save step error:', error);
+            showError(error.message || 'Unable to connect to server.');
+        } finally {
+            nextBtn.disabled = false;
+            nextBtn.textContent = originalText;
+            if (prevBtn) prevBtn.disabled = false;
             syncStepUi();
+        }
+    }
+
+    // Event Listeners
+    document.querySelectorAll('.profile-tab').forEach((tab) => {
+        tab.addEventListener('click', function () {
+            const step = Number(this.getAttribute('data-step'));
+            if (step <= maxStepReached) {
+                currentStep = step;
+                syncStepUi();
+            }
         });
     });
-    
-    document.getElementById('nextBtn').addEventListener('click', function() {
+
+    document.getElementById('nextBtn').addEventListener('click', function () {
+        if (currentStep === 6) {
+            // Check if there are more sub-steps in Step 6
+            const isLastMoreStep = typeof window.isLastMoreStep === 'function' ? window.isLastMoreStep() : true;
+            if (!isLastMoreStep) {
+                if (typeof window.nextMoreSubStep === 'function') {
+                    window.nextMoreSubStep();
+                    syncStepUi();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+            }
+        }
+
         if (currentStep < totalSteps) {
-            currentStep += 1;
-            syncStepUi();
+            processStepSave(currentStep, () => {
+                currentStep += 1;
+                syncStepUi();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
         } else {
-            this.disabled = true;
-            this.classList.remove('bg-main');
-            this.classList.add('btn-success');
-            this.textContent = 'Completed';
+            processStepSave(currentStep); // Final step
         }
     });
-    
-    document.getElementById('prevBtn').addEventListener('click', function() {
+
+    document.getElementById('prevBtn').addEventListener('click', function () {
+        if (currentStep === 6) {
+            const isFirstMoreStep = typeof window.isFirstMoreStep === 'function' ? window.isFirstMoreStep() : true;
+            if (!isFirstMoreStep) {
+                if (typeof window.prevMoreSubStep === 'function') {
+                    window.prevMoreSubStep();
+                    syncStepUi();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+            }
+        }
+
         if (currentStep > 1) {
             currentStep -= 1;
             syncStepUi();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     });
-    
-    const profilePhotoInput = document.getElementById('profilePhotoInput');
-    const avatarPreviewImage = document.getElementById('avatarPreviewImage');
-    const avatarPlaceholderIcon = document.getElementById('avatarPlaceholderIcon');
-    
-    if (profilePhotoInput && avatarPreviewImage && avatarPlaceholderIcon) {
-        profilePhotoInput.addEventListener('change', function(e) {
-            const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-            if (!file) return;
-            const objectUrl = URL.createObjectURL(file);
-            avatarPreviewImage.src = objectUrl;
-            avatarPreviewImage.classList.remove('d-none');
-            avatarPreviewImage.classList.add('d-block');
-            avatarPlaceholderIcon.classList.add('d-none');
+
+    // CNIC Formatting
+    function formatCNIC(input) {
+        if (!input) return;
+        let val = input.value.replace(/\D/g, '');
+        if (val.length > 13) val = val.substring(0, 13);
+        let formatted = '';
+        if (val.length > 0) {
+            formatted = val.substring(0, 5);
+            if (val.length > 5) {
+                formatted += '-' + val.substring(5, 12);
+                if (val.length > 12) formatted += '-' + val.substring(12, 13);
+            }
+        }
+        input.value = formatted;
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.classList.contains('cnic-mask')) {
+            formatCNIC(e.target);
+        }
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
+            clearFieldStatus(e.target);
+        }
+    });
+
+    // Profile Photo Cropper
+    window.openCropper = function(inputFile) {
+        if (!inputFile.files || !inputFile.files[0]) return;
+
+        const file = inputFile.files[0];
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg'];
+        const extension = file.name.split('.').pop().toLowerCase();
+
+        if (!allowedExtensions.includes(extension)) {
+            showError('Only JPG, PNG, GIF, and SVG files are allowed.', 'Invalid File Type');
+            inputFile.value = '';
+            return;
+        }
+
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSize) {
+            showError('Maximum allowed file size is 2MB.', 'File Too Large');
+            inputFile.value = '';
+            return;
+        }
+
+        window.originalFileName = file.name;
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const cropperImage = document.getElementById('cropperImage');
+            if (cropperImage) {
+                cropperImage.src = e.target.result;
+
+                const modalEl = document.getElementById('cropperModal');
+                if (modalEl) {
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+
+                    const onShown = function() {
+                        if (window.cropper) window.cropper.destroy();
+                        window.cropper = new Cropper(cropperImage, {
+                            aspectRatio: 1,
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 0.8,
+                            restore: false,
+                            guides: true,
+                            center: true,
+                            highlight: false,
+                            cropBoxMovable: true,
+                            cropBoxResizable: true,
+                            toggleDragModeOnDblclick: false,
+                        });
+                        modalEl.removeEventListener('shown.bs.modal', onShown);
+                    };
+                    modalEl.addEventListener('shown.bs.modal', onShown);
+                }
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    window.cancelCrop = function() {
+        if (window.cropper) {
+            window.cropper.destroy();
+            window.cropper = null;
+        }
+        if (!window.croppedImageBlob) {
+            const inp = document.getElementById('profilePhotoInput');
+            if (inp) inp.value = '';
+        }
+    };
+
+    const cropBtn = document.getElementById('cropBtn');
+    if (cropBtn) {
+        cropBtn.addEventListener('click', function() {
+            if (!window.cropper) return;
+
+            const canvas = window.cropper.getCroppedCanvas({
+                width: 500,
+                height: 500,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+
+            canvas.toBlob(function(blob) {
+                window.croppedImageBlob = blob;
+
+                // Update preview
+                const avatarPreviewImage = document.getElementById('avatarPreviewImage');
+                const avatarPlaceholderIcon = document.getElementById('avatarPlaceholderIcon');
+
+                if (avatarPreviewImage && avatarPlaceholderIcon) {
+                    avatarPreviewImage.src = URL.createObjectURL(blob);
+                    avatarPreviewImage.classList.remove('d-none');
+                    avatarPlaceholderIcon.classList.add('d-none');
+                }
+
+                const removeBtn = document.getElementById('removePhotoBtn');
+                if (removeBtn) {
+                    removeBtn.classList.remove('d-none');
+                }
+
+                // Close modal
+                const modalEl = document.getElementById('cropperModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) modalInstance.hide();
+
+                window.cropper.destroy();
+                window.cropper = null;
+
+                // If Employee ID exists, save the photo instantly
+                const savedIdInput = document.getElementById('saved_employee_id');
+                const employeeId = savedIdInput ? savedIdInput.value : '';
+
+                if (employeeId) {
+                    const formData = new FormData();
+                    formData.append('employee_id', employeeId);
+                    formData.append('subsection', 'photo');
+                    formData.append('profile_photo', blob, window.originalFileName);
+                    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+                    fetch('/admin/employees/save-subsection', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: data.message || 'Profile photo saved successfully.',
+                                showConfirmButton: false,
+                                timer: 3000,
+                                timerProgressBar: true
+                            });
+                        } else {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'error',
+                                title: data.message || 'Failed to save photo.',
+                                showConfirmButton: false, timer: 3000, timerProgressBar: true
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error saving photo:', error);
+                    });
+                }
+            }, 'image/jpeg', 0.9);
         });
     }
 
-    const giFatherDeceasedCheckbox = document.getElementById('giFatherDeceasedCheckbox');
-    const giFatherCnicField = document.getElementById('giFatherCnicField');
-    const giFatherCnicInput = document.getElementById('giFatherCnicInput');
-
-    function syncFatherCnicVisibility() {
-        if (!giFatherDeceasedCheckbox || !giFatherCnicField) return;
-        const hideFatherCnic = giFatherDeceasedCheckbox.checked;
-        giFatherCnicField.classList.toggle('d-none', hideFatherCnic);
-        if (hideFatherCnic && giFatherCnicInput) {
-            giFatherCnicInput.value = '';
-        }
-    }
-
-    if (giFatherDeceasedCheckbox) {
-        giFatherDeceasedCheckbox.addEventListener('change', syncFatherCnicVisibility);
-        syncFatherCnicVisibility();
-    }
-
+    // Dependent Fields Logic (NOK Relation, etc.)
     const giNokRelationSelect = document.getElementById('giNokRelationSelect');
     const giNokSpecifyRelationField = document.getElementById('giNokSpecifyRelationField');
-    const giNokSpecifyRelationInput = document.getElementById('giNokSpecifyRelationInput');
 
     function syncNokSpecifyRelationField() {
         if (!giNokRelationSelect || !giNokSpecifyRelationField) return;
         const isOtherSelected = giNokRelationSelect.value === 'Other';
         giNokSpecifyRelationField.classList.toggle('d-none', !isOtherSelected);
-        if (giNokSpecifyRelationInput) {
-            giNokSpecifyRelationInput.required = isOtherSelected;
-            if (!isOtherSelected) {
-                giNokSpecifyRelationInput.value = '';
-            }
-        }
     }
 
     if (giNokRelationSelect) {
@@ -104,357 +658,600 @@ let currentStep = 1;
         syncNokSpecifyRelationField();
     }
 
-    function employmentDeptGetSelect() {
-        return document.getElementById('employmentDepartmentSelect');
-    }
-
-    function employmentDeptRenderFromSelect() {
-        const deptSel = employmentDeptGetSelect();
-        const chips = document.getElementById('employmentDeptChips');
-        const ph = document.getElementById('employmentDeptPh');
-        if (!deptSel || !chips) return;
-        const selected = Array.from(deptSel.selectedOptions || []);
-        if (!selected.length) {
-            chips.innerHTML = '';
-            if (ph) ph.style.display = '';
-            return;
-        }
-        if (ph) ph.style.display = 'none';
-        chips.innerHTML = selected
-            .map(function (opt) {
-                const val = String(opt.value || '');
-                const text = String(opt.textContent || '');
-                if (!val) {
-                    return '<span class="emp-dept-chip">' + text + '</span>';
-                }
-                return '<span class="emp-dept-chip">' + text + '<span class="emp-dept-chip-x" onclick="employmentDeptRemoveId(\'' + val + '\', event)">×</span></span>';
-            })
-            .join('');
-    }
-
-    window.employmentDeptRenderList = function employmentDeptRenderList() {
-        const deptSel = employmentDeptGetSelect();
-        const list = document.getElementById('employmentDeptList');
-        const search = document.getElementById('employmentDeptSearch');
-        if (!deptSel || !list) return;
-        const q = String((search && search.value) || '').toLowerCase().trim();
-        const options = Array.from(deptSel.options || []).filter(function (opt) {
-            return opt.value && (!q || String(opt.textContent || '').toLowerCase().indexOf(q) !== -1);
-        });
-        if (!options.length) {
-            list.innerHTML = '<div class="emp-dept-no-result">No departments under this SBU</div>';
-            return;
-        }
-        list.innerHTML = options
-            .map(function (opt) {
-                const picked = !!opt.selected;
-                return '<div class="emp-dept-opt ' + (picked ? 'picked' : '') + '" onclick="employmentDeptToggleId(\'' + String(opt.value || '') + '\')"><span class="emp-dept-opt-cb"><svg class="emp-dept-opt-ck" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.2l3 3L12.5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="emp-dept-opt-name">' + String(opt.textContent || '') + '</span></div>';
-            })
-            .join('');
-    };
-
-    window.employmentDeptToggleId = function employmentDeptToggleId(id) {
-        const deptSel = employmentDeptGetSelect();
-        if (!deptSel) return;
-        const opt = deptSel.querySelector('option[value="' + String(id) + '"]');
-        if (!opt) return;
-        opt.selected = !opt.selected;
-        employmentDeptRenderFromSelect();
-        window.employmentDeptRenderList();
-    };
-
-    window.employmentDeptRemoveId = function employmentDeptRemoveId(id, e) {
-        if (e) e.stopPropagation();
-        const deptSel = employmentDeptGetSelect();
-        if (!deptSel) return;
-        const opt = deptSel.querySelector('option[value="' + String(id) + '"]');
-        if (opt) opt.selected = false;
-        employmentDeptRenderFromSelect();
-        window.employmentDeptRenderList();
-    };
-
-    window.employmentDeptBoxClick = function employmentDeptBoxClick(e) {
-        if (e) e.stopPropagation();
-        const dd = document.getElementById('employmentDeptDd');
-        const box = document.getElementById('employmentDeptBox');
-        if (!dd || !box) return;
-        const isOpen = dd.style.display !== 'none';
-        if (!isOpen) {
-            dd.style.display = '';
-            box.classList.add('open');
-            window.employmentDeptRenderList();
-            const search = document.getElementById('employmentDeptSearch');
-            if (search) setTimeout(function () { search.focus(); }, 0);
-        } else {
-            dd.style.display = 'none';
-            box.classList.remove('open');
-        }
-    };
-
-    document.addEventListener('click', function (evt) {
-        const dd = document.getElementById('employmentDeptDd');
-        const box = document.getElementById('employmentDeptBox');
-        if (!dd || !box) return;
-        if (!dd.contains(evt.target) && !box.contains(evt.target)) {
-            dd.style.display = 'none';
-            box.classList.remove('open');
-        }
-    });
-
-    const employmentDeptSearch = document.getElementById('employmentDeptSearch');
-    if (employmentDeptSearch) {
-        employmentDeptSearch.addEventListener('keydown', function (evt) {
-            evt.stopPropagation();
-        });
-    }
-    employmentDeptRenderFromSelect();
-    window.employmentDeptRenderList();
-    
-    const employmentDetailsCategoryIntern = document.getElementById('employmentDetailsCategoryIntern');
-    const employmentDetailsCategoryContractual = document.getElementById('employmentDetailsCategoryContractual');
-    const employmentDetailsCategoryEngagement = document.getElementById('employmentDetailsCategoryEngagement');
-    const employmentDetailsInternFields = document.getElementById('employmentDetailsInternFields');
-    const employmentDetailsContractualFields = document.getElementById('employmentDetailsContractualFields');
-    const employmentDetailsEngagementFields = document.getElementById('employmentDetailsEngagementFields');
-    const employmentDetailsInternTypeInput = document.getElementById('employmentDetailsInternTypeInput');
-    const employmentDetailsEmployeeNumberInput = document.getElementById('employmentDetailsEmployeeNumberInput');
-    const employmentDetailsContractStartDateInput = document.getElementById('employmentDetailsContractStartDateInput');
-    const employmentDetailsContractEndDateInput = document.getElementById('employmentDetailsContractEndDateInput');
-    const employmentDetailsContractualEmployeeNumberInput = document.getElementById('employmentDetailsContractualEmployeeNumberInput');
-    const employmentDetailsEngagementModeInput = document.getElementById('employmentDetailsEngagementModeInput');
-    const employmentDetailsEmployeeContractTypeField = document.getElementById('employmentDetailsEmployeeContractTypeField');
-    const employmentDetailsEmployeeContractTypeInput = document.getElementById('employmentDetailsEmployeeContractTypeInput');
-    const employmentDetailsEmployeeContractDatesField = document.getElementById('employmentDetailsEmployeeContractDatesField');
-    const employmentDetailsEmployeeContractStartDateInput = document.getElementById('employmentDetailsEmployeeContractStartDateInput');
-    const employmentDetailsEmployeeContractEndDateInput = document.getElementById('employmentDetailsEmployeeContractEndDateInput');
-    const employmentDetailsEngagementEmployeeNumberInput = document.getElementById('employmentDetailsEngagementEmployeeNumberInput');
-    const employmentDetailsCategoryInputs = document.querySelectorAll('input[name="employmentCategory"]');
-    const employmentWorkArrangementStandard = document.getElementById('employmentWorkArrangementStandard');
-    const employmentWorkArrangementHybrid = document.getElementById('employmentWorkArrangementHybrid');
-    const employmentWorkArrangementStandardFields = document.getElementById('employmentWorkArrangementStandardFields');
-    const employmentWorkArrangementStandardTypeDefault = document.getElementById('employmentWorkArrangementStandardTypeDefault');
-    const employmentWorkArrangementStandardTypeCustom = document.getElementById('employmentWorkArrangementStandardTypeCustom');
-    const employmentWorkArrangementInputs = document.querySelectorAll('input[name="employmentWorkArrangement"]');
-    const employmentWorkArrangementStandardTypeInputs = document.querySelectorAll('input[name="employmentWorkArrangementStandardType"]');
-    const employmentWorkArrangementDefaultCardWrap = document.getElementById('employmentWorkArrangementDefaultCardWrap');
-    const employmentWorkArrangementCustomFields = document.getElementById('employmentWorkArrangementCustomFields');
-    const employmentWorkArrangementHybridFields = document.getElementById('employmentWorkArrangementHybridFields');
-    const employmentWorkArrangementOrgInitial = document.getElementById('employmentWorkArrangementOrgInitial');
-    const employmentWorkArrangementOrgName = document.getElementById('employmentWorkArrangementOrgName');
-    const employmentOrganizationSelect = document.getElementById('employmentOrganizationSelect');
-    const employmentCustomWorkingStartInput = document.getElementById('employmentCustomWorkingStartInput');
-    const employmentCustomWorkingEndInput = document.getElementById('employmentCustomWorkingEndInput');
-    const employmentCustomCheckInGraceInput = document.getElementById('employmentCustomCheckInGraceInput');
-    const employmentCustomCheckOutGraceInput = document.getElementById('employmentCustomCheckOutGraceInput');
-    const employmentCustomDayInputs = document.querySelectorAll('input[name="employment_custom_days[]"]');
-    const employmentHybridDayInputs = document.querySelectorAll('input[name="employment_hybrid_days[]"]');
-    
+    // Employment Category Toggles
     function toggleEmploymentCategoryFields() {
-        if (!employmentDetailsCategoryIntern || !employmentDetailsInternFields || !employmentDetailsContractualFields || !employmentDetailsEngagementFields) return;
-        const showInternFields = employmentDetailsCategoryIntern.checked;
-        const showContractualFields = employmentDetailsCategoryContractual ? employmentDetailsCategoryContractual.checked : false;
-        const showEngagementFields = employmentDetailsCategoryEngagement ? employmentDetailsCategoryEngagement.checked : false;
-        employmentDetailsInternFields.classList.toggle('d-none', !showInternFields);
-        employmentDetailsContractualFields.classList.toggle('d-none', !showContractualFields);
-        employmentDetailsEngagementFields.classList.toggle('d-none', !showEngagementFields);
-    
-        if (employmentDetailsInternTypeInput) {
-            employmentDetailsInternTypeInput.required = showInternFields;
-            if (!showInternFields) {
-                employmentDetailsInternTypeInput.value = '';
-            }
-        }
-    
-        if (employmentDetailsEmployeeNumberInput) {
-            employmentDetailsEmployeeNumberInput.required = showInternFields;
-            if (!showInternFields) {
-                employmentDetailsEmployeeNumberInput.value = '';
-            }
-        }
-    
-        if (employmentDetailsContractStartDateInput) {
-            employmentDetailsContractStartDateInput.required = showContractualFields;
-            if (!showContractualFields) {
-                employmentDetailsContractStartDateInput.value = '';
-            }
-        }
+        const internFields = document.getElementById('employmentDetailsInternFields');
+        const contractualFields = document.getElementById('employmentDetailsContractualFields');
+        const engagementFields = document.getElementById('employmentDetailsEngagementFields');
+        
+        const catIntern = document.getElementById('employmentDetailsCategoryIntern');
+        const catContractual = document.getElementById('employmentDetailsCategoryContractual');
+        const catEngagement = document.getElementById('employmentDetailsCategoryEngagement');
 
-        if (employmentDetailsContractEndDateInput) {
-            employmentDetailsContractEndDateInput.required = showContractualFields;
-            if (!showContractualFields) {
-                employmentDetailsContractEndDateInput.value = '';
-            }
-        }
-    
-        if (employmentDetailsContractualEmployeeNumberInput) {
-            employmentDetailsContractualEmployeeNumberInput.required = showContractualFields;
-            if (!showContractualFields) {
-                employmentDetailsContractualEmployeeNumberInput.value = '';
-            }
-        }
-    
-        if (employmentDetailsEngagementModeInput) {
-            employmentDetailsEngagementModeInput.required = showEngagementFields;
-            if (!showEngagementFields) {
-                employmentDetailsEngagementModeInput.value = '';
-            }
-        }
-
-        const showEmploymentContractType = showEngagementFields && employmentDetailsEngagementModeInput && employmentDetailsEngagementModeInput.value === 'Contractual';
-        if (employmentDetailsEmployeeContractTypeField) {
-            employmentDetailsEmployeeContractTypeField.classList.toggle('d-none', !showEmploymentContractType);
-        }
-        if (employmentDetailsEmployeeContractTypeInput) {
-            employmentDetailsEmployeeContractTypeInput.required = !!showEmploymentContractType;
-            if (!showEmploymentContractType) {
-                employmentDetailsEmployeeContractTypeInput.value = '';
-            }
-        }
-
-        const showEmploymentContractDates = !!showEmploymentContractType && employmentDetailsEmployeeContractTypeInput && employmentDetailsEmployeeContractTypeInput.value === 'Time bound';
-        if (employmentDetailsEmployeeContractDatesField) {
-            employmentDetailsEmployeeContractDatesField.classList.toggle('d-none', !showEmploymentContractDates);
-        }
-        if (employmentDetailsEmployeeContractStartDateInput) {
-            employmentDetailsEmployeeContractStartDateInput.required = !!showEmploymentContractDates;
-            if (!showEmploymentContractDates) {
-                employmentDetailsEmployeeContractStartDateInput.value = '';
-            }
-        }
-        if (employmentDetailsEmployeeContractEndDateInput) {
-            employmentDetailsEmployeeContractEndDateInput.required = !!showEmploymentContractDates;
-            if (!showEmploymentContractDates) {
-                employmentDetailsEmployeeContractEndDateInput.value = '';
-            }
-        }
-    
-        if (employmentDetailsEngagementEmployeeNumberInput) {
-            employmentDetailsEngagementEmployeeNumberInput.required = showEngagementFields;
-            if (!showEngagementFields) {
-                employmentDetailsEngagementEmployeeNumberInput.value = '';
-            }
-        }
+        if (internFields) internFields.classList.toggle('d-none', !(catIntern && catIntern.checked));
+        if (contractualFields) contractualFields.classList.toggle('d-none', !(catContractual && catContractual.checked));
+        if (engagementFields) engagementFields.classList.toggle('d-none', !(catEngagement && catEngagement.checked));
     }
 
-    function syncWorkArrangementFields() {
-        if (!employmentWorkArrangementStandardFields) return;
-        const showStandardFields = !!(employmentWorkArrangementStandard && employmentWorkArrangementStandard.checked);
-        const showDefaultCard = !!(showStandardFields && employmentWorkArrangementStandardTypeDefault && employmentWorkArrangementStandardTypeDefault.checked);
-        const showCustomFields = !!(showStandardFields && employmentWorkArrangementStandardTypeCustom && employmentWorkArrangementStandardTypeCustom.checked);
-        const showHybridFields = !!(employmentWorkArrangementHybrid && employmentWorkArrangementHybrid.checked);
-        employmentWorkArrangementStandardFields.classList.toggle('d-none', !showStandardFields);
-        if (employmentWorkArrangementDefaultCardWrap) {
-            employmentWorkArrangementDefaultCardWrap.classList.toggle('d-none', !showDefaultCard);
-        }
-        if (employmentWorkArrangementCustomFields) {
-            employmentWorkArrangementCustomFields.classList.toggle('d-none', !showCustomFields);
-        }
-        if (employmentWorkArrangementHybridFields) {
-            employmentWorkArrangementHybridFields.classList.toggle('d-none', !showHybridFields);
-        }
-        if (employmentWorkArrangementStandardTypeDefault) {
-            employmentWorkArrangementStandardTypeDefault.required = showStandardFields;
-            if (!showStandardFields) {
-                employmentWorkArrangementStandardTypeDefault.checked = false;
-            }
-        }
-        if (employmentWorkArrangementStandardTypeCustom) {
-            employmentWorkArrangementStandardTypeCustom.required = showStandardFields;
-            if (!showStandardFields) {
-                employmentWorkArrangementStandardTypeCustom.checked = false;
-            }
-        }
-        if (employmentCustomWorkingStartInput) {
-            employmentCustomWorkingStartInput.required = showCustomFields;
-            if (!showCustomFields) {
-                employmentCustomWorkingStartInput.value = '';
-            }
-        }
-        if (employmentCustomWorkingEndInput) {
-            employmentCustomWorkingEndInput.required = showCustomFields;
-            if (!showCustomFields) {
-                employmentCustomWorkingEndInput.value = '';
-            }
-        }
-        if (employmentCustomCheckInGraceInput && !showCustomFields) {
-            employmentCustomCheckInGraceInput.value = '';
-        }
-        if (employmentCustomCheckOutGraceInput && !showCustomFields) {
-            employmentCustomCheckOutGraceInput.value = '';
-        }
-        if (!showCustomFields) {
-            employmentCustomDayInputs.forEach((input) => {
-                input.checked = false;
-            });
-        }
-        if (employmentHybridDayInputs.length) {
-            employmentHybridDayInputs.forEach((input, idx) => {
-                input.required = showHybridFields && idx === 0;
-                if (!showHybridFields) {
-                    input.checked = false;
-                }
-            });
-        }
-    }
-
-    function syncWorkArrangementOrganizationPreview() {
-        if (!employmentWorkArrangementOrgInitial || !employmentWorkArrangementOrgName) return;
-        let orgName = '-';
-        if (employmentOrganizationSelect && employmentOrganizationSelect.selectedIndex >= 0) {
-            const selectedOption = employmentOrganizationSelect.options[employmentOrganizationSelect.selectedIndex];
-            const selectedText = selectedOption ? String(selectedOption.textContent || '').trim() : '';
-            if (selectedOption && selectedOption.value && selectedText) {
-                orgName = selectedText;
-            }
-        }
-        const firstMatch = orgName.match(/[A-Za-z0-9]/);
-        employmentWorkArrangementOrgName.textContent = orgName;
-        employmentWorkArrangementOrgInitial.textContent = firstMatch ? firstMatch[0].toUpperCase() : '-';
-    }
-    
-    employmentDetailsCategoryInputs.forEach((input) => {
+    document.querySelectorAll('input[name="employment_category"]').forEach(input => {
         input.addEventListener('change', toggleEmploymentCategoryFields);
     });
-    if (employmentDetailsEngagementModeInput) {
-        employmentDetailsEngagementModeInput.addEventListener('change', toggleEmploymentCategoryFields);
-    }
-    if (employmentDetailsEmployeeContractTypeInput) {
-        employmentDetailsEmployeeContractTypeInput.addEventListener('change', toggleEmploymentCategoryFields);
-    }
     toggleEmploymentCategoryFields();
-    employmentWorkArrangementInputs.forEach((input) => {
-        input.addEventListener('change', syncWorkArrangementFields);
+
+    // Inner Employment Toggles (for Employee Resource Type)
+    function toggleEmployeeInnerFields() {
+        const engagementModeInput = document.getElementById('employmentDetailsEngagementModeInput');
+        const contractTypeField = document.getElementById('employmentDetailsEmployeeContractTypeField');
+        
+        if (engagementModeInput && contractTypeField) {
+            const isContractual = engagementModeInput.value === 'contractual';
+            contractTypeField.classList.toggle('d-none', !isContractual);
+        }
+    }
+
+    function toggleContractualInnerFields() {
+        const contractTypeInput = document.getElementById('employmentDetailsEmployeeContractTypeInput');
+        const contractDatesField = document.getElementById('employmentDetailsEmployeeContractDatesField');
+        
+        if (contractTypeInput && contractDatesField) {
+            const isTimeBound = contractTypeInput.value === 'time_bound';
+            contractDatesField.classList.toggle('d-none', !isTimeBound);
+        }
+    }
+
+    const mEngagementModeInput = document.getElementById('employmentDetailsEngagementModeInput');
+    if (mEngagementModeInput) {
+        mEngagementModeInput.addEventListener('change', toggleEmployeeInnerFields);
+        toggleEmployeeInnerFields();
+    }
+
+    const mContractTypeInput = document.getElementById('employmentDetailsEmployeeContractTypeInput');
+    if (mContractTypeInput) {
+        mContractTypeInput.addEventListener('change', toggleContractualInnerFields);
+        toggleContractualInnerFields();
+    }
+
+    // ─── Work Arrangement Toggles ────────────────────────────────────────────────
+
+    function getScheduleSource() {
+        // Look up live at call time — avoids temporal dead zone with orgSelect/sbuSelect consts below
+        const oSel = document.getElementById('employmentOrganizationSelect');
+        const sSel = document.getElementById('employmentSbuSelect');
+        const orgs = window.orgsData || [];
+
+        const oId = oSel ? oSel.value : null;
+        const sId = sSel ? sSel.value : null;
+        if (!oId) return null;
+        const org = orgs.find(o => o.id == oId);
+        if (!org) return null;
+        if (sId && org.sbus) {
+            const sbu = org.sbus.find(s => s.id == sId);
+            if (sbu) return { label: sbu.name, initial: sbu.name.charAt(0).toUpperCase(), data: sbu };
+        }
+        return { label: org.name, initial: org.name.charAt(0).toUpperCase(), data: org };
+    }
+
+    function formatDaysList(days) {
+        if (!days || !days.length) return '- - -';
+        const map = { Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu', Fri: 'Fri', Sat: 'Sat', Sun: 'Sun',
+                      monday:'Mon', tuesday:'Tue', wednesday:'Wed', thursday:'Thu', friday:'Fri', saturday:'Sat', sunday:'Sun' };
+        return days.map(d => map[d] || d).join(', ');
+    }
+
+    function formatTime(t) {
+        if (!t) return '- - -';
+        // HH:MM or HH:MM:SS -> 12-hour
+        const parts = t.split(':');
+        let h = parseInt(parts[0], 10), m = parseInt(parts[1] || '0', 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${h}:${String(m).padStart(2,'0')} ${ampm}`;
+    }
+
+    function updateDefaultScheduleCard() {
+        const src = getScheduleSource();
+        const orgInitial  = document.getElementById('employmentWorkArrangementOrgInitial');
+        const orgName     = document.getElementById('employmentWorkArrangementOrgName');
+        const wkDays      = document.getElementById('employmentDefaultWorkingDays');
+        const wkTime      = document.getElementById('employmentDefaultWorkingTime');
+        const checkIn     = document.getElementById('employmentDefaultCheckInGrace');
+        const checkOut    = document.getElementById('employmentDefaultCheckOutGrace');
+
+        if (!src) {
+            if (orgInitial) orgInitial.textContent = '-';
+            if (orgName)    orgName.textContent    = '-';
+            if (wkDays)     wkDays.textContent     = '- - -';
+            if (wkTime)     wkTime.textContent     = '- - -';
+            if (checkIn)    checkIn.textContent    = '-';
+            if (checkOut)   checkOut.textContent   = '-';
+            return;
+        }
+
+        const d = src.data;
+        if (orgInitial) orgInitial.textContent = src.initial;
+        if (orgName)    orgName.textContent    = src.label;
+        if (wkDays)     wkDays.textContent     = formatDaysList(d.working_days);
+        if (wkTime)     wkTime.textContent     = (d.working_start_time && d.working_end_time)
+                                                    ? `${formatTime(d.working_start_time)} – ${formatTime(d.working_end_time)}`
+                                                    : '- - -';
+        if (checkIn)    checkIn.textContent    = d.opening_grace_period != null ? `${d.opening_grace_period} min` : '-';
+        if (checkOut)   checkOut.textContent   = d.closing_grace_period != null ? `${d.closing_grace_period} min` : '-';
+    }
+
+    function toggleWorkArrangementFields() {
+        const active = document.querySelector('input[name="engagement_mode"]:checked');
+        const mode = active ? active.value : null;
+
+        const standardFields = document.getElementById('employmentWorkArrangementStandardFields');
+        const defaultCard    = document.getElementById('employmentWorkArrangementDefaultCardWrap');
+        const customFields   = document.getElementById('employmentWorkArrangementCustomFields');
+        const hybridFields   = document.getElementById('employmentWorkArrangementHybridFields');
+
+        // Hide everything first
+        if (standardFields) standardFields.classList.add('d-none');
+        if (defaultCard)    defaultCard.classList.add('d-none');
+        if (customFields)   customFields.classList.add('d-none');
+        if (hybridFields)   hybridFields.classList.add('d-none');
+
+        if (mode === 'standard') {
+            if (standardFields) standardFields.classList.remove('d-none');
+            // Also trigger inner standard-type toggle
+            toggleStandardTypeFields();
+        } else if (mode === 'hybrid') {
+            if (hybridFields) hybridFields.classList.remove('d-none');
+        }
+        // shift_based and remote: nothing extra to show
+    }
+
+    function toggleStandardTypeFields() {
+        const active = document.querySelector('input[name="standard_schedule_mode"]:checked');
+        const schedMode = active ? active.value : null;
+
+        const defaultCard  = document.getElementById('employmentWorkArrangementDefaultCardWrap');
+        const customFields = document.getElementById('employmentWorkArrangementCustomFields');
+
+        if (defaultCard)  defaultCard.classList.toggle('d-none', schedMode !== 'default');
+        if (customFields) customFields.classList.toggle('d-none', schedMode !== 'custom');
+
+        if (schedMode === 'default') {
+            updateDefaultScheduleCard();
+        }
+    }
+
+    // Bind engagement_mode change
+    document.querySelectorAll('input[name="engagement_mode"]').forEach(input => {
+        input.addEventListener('change', toggleWorkArrangementFields);
     });
-    employmentWorkArrangementStandardTypeInputs.forEach((input) => {
-        input.addEventListener('change', syncWorkArrangementFields);
+
+    // Bind standard_schedule_mode change
+    document.querySelectorAll('input[name="standard_schedule_mode"]').forEach(input => {
+        input.addEventListener('change', toggleStandardTypeFields);
     });
-    if (employmentOrganizationSelect) {
-        employmentOrganizationSelect.addEventListener('change', syncWorkArrangementOrganizationPreview);
+
+    // Re-run default card update when org or sbu changes
+    if (orgSelect) orgSelect.addEventListener('change', updateDefaultScheduleCard);
+    if (sbuSelect) sbuSelect.addEventListener('change', updateDefaultScheduleCard);
+
+    // Init on page load
+    toggleWorkArrangementFields();
+
+    // ─── End Work Arrangement Toggles ────────────────────────────────────────────
+
+    // Location Dependent Selects (Nationality -> Province -> District)
+    async function loadLocationData(select, url, currentValue = null) {
+        if (!select) return;
+
+        // Reset and show loading state
+        const originalText = select.options[0].text;
+        select.options[0].text = 'Loading...';
+        select.disabled = true;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            // Clear except first option
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+
+            data.forEach(item => {
+                const option = new Option(item.name, item.name);
+                select.add(option);
+            });
+
+            // Restore placeholder
+            select.options[0].text = originalText;
+            select.disabled = false;
+
+            // Pre-selection logic
+            const valToSelect = currentValue || select.getAttribute('data-current-value');
+            if (valToSelect) {
+                select.value = valToSelect;
+                // Trigger change to update dependent selects
+                if (select.value === valToSelect) {
+                    select.dispatchEvent(new Event('change'));
+                }
+            }
+
+        } catch (error) {
+            console.error('Failed to load location data:', error);
+            select.options[0].text = 'Error loading data';
+        }
     }
-    syncWorkArrangementFields();
-    syncWorkArrangementOrganizationPreview();
-    
-    function setSummaryValue(targetId, value, fallback) {
-        const el = document.getElementById(targetId);
-        if (!el) return;
-        const nextVal = value && String(value).trim() ? String(value).trim() : fallback;
-        el.textContent = nextVal;
+
+    function initLocationSelectors() {
+        const selects = document.querySelectorAll('.location-select');
+        const nationalitySelect = document.getElementById('giNationalityInput');
+        const provinceSelect = document.getElementById('giProvinceSelect');
+        const districtSelect = document.getElementById('giDistrictSelect');
+
+        if (nationalitySelect) {
+            // Load Countries (Nationality) initially
+            loadLocationData(nationalitySelect, '/admin/locations/countries');
+        }
+
+        const spouseNationalitySelect = document.getElementById('giSpouseNationalityInput');
+        if (spouseNationalitySelect) {
+            loadLocationData(spouseNationalitySelect, '/admin/locations/countries');
+        }
+
+        if (nationalitySelect) {
+            nationalitySelect.addEventListener('change', function() {
+                const countryName = this.value;
+                if (provinceSelect) {
+                    // Reset district when nationality changes
+                    if (districtSelect) {
+                        while (districtSelect.options.length > 1) districtSelect.remove(1);
+                        districtSelect.selectedIndex = 0;
+                    }
+
+                    if (countryName) {
+                        loadLocationData(provinceSelect, `/admin/locations/provinces/${encodeURIComponent(countryName)}`);
+                    } else {
+                        while (provinceSelect.options.length > 1) provinceSelect.remove(1);
+                        provinceSelect.selectedIndex = 0;
+                    }
+                }
+            });
+        }
+
+        if (provinceSelect) {
+            provinceSelect.addEventListener('change', function() {
+                const provinceName = this.value;
+                const countryName = nationalitySelect ? nationalitySelect.value : null;
+
+                if (districtSelect) {
+                    if (provinceName && countryName) {
+                        loadLocationData(districtSelect, `/admin/locations/districts/${encodeURIComponent(countryName)}/${encodeURIComponent(provinceName)}`);
+                    } else {
+                        while (districtSelect.options.length > 1) districtSelect.remove(1);
+                        districtSelect.selectedIndex = 0;
+                    }
+                }
+            });
+        }
     }
-    
-    function bindSummaryField(inputId, targetId, fallback) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-        const handler = function() {
-            setSummaryValue(targetId, input.value, fallback);
-        };
-        input.addEventListener('input', handler);
-        input.addEventListener('change', handler);
-        handler();
+
+    // Initialize UI
+    initLocationSelectors();
+    syncStepUi();
+    syncConditionalVisibility();
+    togglePoliceVerificationFields();
+
+    // Dynamic Sidebar Updates
+    function updateSidebarSummary() {
+        const nameInput = document.querySelector('input[name="full_name"]');
+        if (nameInput) document.getElementById('summaryName').textContent = nameInput.value || 'Not provided';
+        if (nameInput) document.getElementById('sidebarEmployeeName').textContent = nameInput.value || 'New Employee';
+
+        const cnicInput = document.querySelector('input[name="cnic"]');
+        if (cnicInput) document.getElementById('summaryCnic').textContent = cnicInput.value || 'Not provided';
+
+        const genderSelect = document.querySelector('select[name="gender"]');
+        if (genderSelect) document.getElementById('summaryGender').textContent = genderSelect.value || 'Not selected';
+
+        const religionSelect = document.querySelector('select[name="religion"]');
+        if (religionSelect) document.getElementById('summaryReligion').textContent = religionSelect.value || 'Not selected';
+
+        const nationalitySelect = document.querySelector('select[name="nationality"]');
+        if (nationalitySelect) {
+            const label = nationalitySelect.options[nationalitySelect.selectedIndex]?.text;
+            document.getElementById('summaryNationality').textContent = (label && label !== 'Select Nationality') ? label : 'Not selected';
+        }
     }
-    
-    bindSummaryField('giNameInput', 'summaryName', 'Not provided');
-    bindSummaryField('giCnicInput', 'summaryCnic', 'Not provided');
-    bindSummaryField('giGenderInput', 'summaryGender', 'Not selected');
-    bindSummaryField('giReligionInput', 'summaryReligion', 'Not selected');
-    bindSummaryField('giNationalityInput', 'summaryNationality', 'Not selected');
+
+    document.querySelectorAll('input[name="full_name"], input[name="cnic"]').forEach(el => {
+        el.addEventListener('input', updateSidebarSummary);
+    });
+    document.querySelectorAll('select[name="gender"], select[name="religion"], select[name="nationality"]').forEach(el => {
+        el.addEventListener('change', updateSidebarSummary);
+    });
+
+    // Remove Photo Logic
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+    if (removePhotoBtn) {
+        removePhotoBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            showConfirm('Are you sure you want to remove the profile photo?', 'Remove Photo')
+            .then((result) => {
+                if (result.isConfirmed) {
+                    const savedIdInput = document.getElementById('saved_employee_id');
+                    const employeeId = savedIdInput ? savedIdInput.value : '';
+
+                    if (employeeId) {
+                        // Delete from DB
+                        fetch('/admin/employees/delete-photo', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ id: employeeId })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                clearPreview();
+                                Swal.fire({
+                                    toast: true, position: 'top-end', icon: 'success',
+                                    title: 'Photo removed successfully.',
+                                    showConfirmButton: false, timer: 3000, timerProgressBar: true
+                                });
+                            } else {
+                                showError(data.message || 'Failed to remove photo.');
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            showError('Error deleting photo');
+                        });
+                    } else {
+                        // Just clear local
+                        window.croppedImageBlob = null;
+                        clearPreview();
+                    }
+                }
+            });
+        });
+    }
+
+    function clearPreview() {
+        const avatarPreviewImage = document.getElementById('avatarPreviewImage');
+        const avatarPlaceholderIcon = document.getElementById('avatarPlaceholderIcon');
+        const rBtn = document.getElementById('removePhotoBtn');
+        const inp = document.getElementById('profilePhotoInput');
+        
+        if (avatarPreviewImage) {
+            avatarPreviewImage.src = '';
+            avatarPreviewImage.classList.add('d-none');
+        }
+        if (avatarPlaceholderIcon) avatarPlaceholderIcon.classList.remove('d-none');
+        if (rBtn) rBtn.classList.add('d-none');
+        if (inp) inp.value = '';
+    }
+
+    // Organization -> SBU -> Roles dependent dropdowns
+
+
+    function populateSbus(orgId, selectedSbuId = null) {
+        if (!sbuSelect) return;
+        
+        sbuSelect.innerHTML = '<option value="" selected disabled>Select SBU</option>';
+
+        if (!orgId) return;
+
+        const org = orgsData.find(o => o.id == orgId);
+        if (org && org.sbus) {
+            org.sbus.forEach(sbu => {
+                const opt = new Option(sbu.name, sbu.id);
+                if (selectedSbuId == sbu.id) {
+                    opt.selected = true;
+                }
+                sbuSelect.add(opt);
+            });
+        }
+    }
+
+    function populateRoles(orgId, sbuId, selectedRoleId = null) {
+        if (!roleSelect) return;
+
+        roleSelect.innerHTML = '<option value="" selected disabled>Select role</option>';
+
+        if (!orgId) return;
+
+        let filteredRoles = rolesData.filter(role => role.organization_id == orgId);
+
+        if (sbuId) {
+            filteredRoles = filteredRoles.filter(role => {
+                if (role.is_organization_level) return true;
+                return role.sbu_id == sbuId || (role.linked_sbu_ids && role.linked_sbu_ids.includes(parseInt(sbuId)));
+            });
+        }
+
+        // Sort ascending by role name
+        filteredRoles.sort((a, b) => a.name.localeCompare(b.name));
+
+        filteredRoles.forEach(role => {
+            const opt = new Option(role.name, role.id);
+            if (selectedRoleId == role.id) {
+                opt.selected = true;
+            }
+            roleSelect.add(opt);
+        });
+    }
+
+    if (orgSelect) {
+        orgSelect.addEventListener('change', function () {
+            const orgId = this.value;
+            populateSbus(orgId);
+            populateRoles(orgId, null);
+        });
+    }
+
+    if (sbuSelect) {
+        sbuSelect.addEventListener('change', function () {
+            const orgId = orgSelect ? orgSelect.value : null;
+            const sbuId = this.value;
+            populateRoles(orgId, sbuId);
+            populateDepartments(orgId, sbuId);
+        });
+    }
+
+    if (orgSelect && orgSelect.value) {
+        const oId = orgSelect.value;
+        const sId = initialSbu; 
+        const rId = initialRole;
+
+        populateSbus(oId, sId);
+        populateRoles(oId, sId, rId);
+        populateDepartments(oId, sId);
+    }
+
+    // Custom Multi-Select logic for Departments
+
+
+    function renderDeptChips() {
+        if (!deptChips || !deptSelect) return;
+        deptChips.innerHTML = '';
+        
+        const selectedOptions = Array.from(deptSelect.options).filter(o => o.selected && o.value);
+        if (selectedOptions.length > 0) {
+            if (deptPh) deptPh.style.display = 'none';
+        } else {
+            if (deptPh) deptPh.style.display = 'inline';
+        }
+
+        selectedOptions.forEach(opt => {
+            const chip = document.createElement('div');
+            chip.className = 'emp-dept-chip';
+            chip.style.cssText = 'display:inline-block; padding: 2px 8px; border-radius: 4px; background: #e9ecef; margin: 2px; font-size: 13px;';
+            chip.innerHTML = `${opt.text} <span class="emp-dept-chip-rm fw-bold text-danger ms-1" style="cursor:pointer;" data-id="${opt.value}">&times;</span>`;
+            deptChips.appendChild(chip);
+        });
+    }
+
+    function syncDeptDropdownState() {
+        if (!deptList || !deptSelect) return;
+        const selectedIds = Array.from(deptSelect.options).filter(o => o.selected).map(o => o.value);
+        const items = deptList.querySelectorAll('.emp-dept-list-opt');
+        items.forEach(item => {
+            const id = item.getAttribute('data-id');
+            if (selectedIds.includes(id)) {
+                item.style.backgroundColor = '#eef2f6';
+                item.style.fontWeight = 'bold';
+            } else {
+                item.style.backgroundColor = 'transparent';
+                item.style.fontWeight = 'normal';
+            }
+        });
+    }
+
+    function buildDeptDropdownOptions(filter = '') {
+        if (!deptList) return;
+        deptList.innerHTML = '';
+        const lowerFilter = filter.toLowerCase();
+
+        availableDepartments.forEach(dept => {
+            if (dept.name.toLowerCase().includes(lowerFilter)) {
+                const div = document.createElement('div');
+                div.className = 'emp-dept-list-opt p-2 border-bottom';
+                div.style.cursor = 'pointer';
+                div.setAttribute('data-id', dept.id);
+                div.innerText = dept.name;
+
+                div.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    let opt = Array.from(deptSelect.options).find(o => o.value == dept.id);
+                    if (opt) {
+                        opt.selected = !opt.selected;
+                    } else {
+                        opt = new Option(dept.name, dept.id);
+                        opt.selected = true;
+                        deptSelect.add(opt);
+                    }
+                    renderDeptChips();
+                    syncDeptDropdownState();
+                });
+
+                deptList.appendChild(div);
+            }
+        });
+        syncDeptDropdownState();
+    }
+
+    if (deptSearch) {
+        deptSearch.addEventListener('input', function(e) {
+            buildDeptDropdownOptions(e.target.value);
+        });
+    }
+
+    if (deptBox) {
+        deptBox.addEventListener('click', function(e) {
+            if (e.target.classList.contains('emp-dept-chip-rm')) {
+                const idToRemove = e.target.getAttribute('data-id');
+                const opt = Array.from(deptSelect.options).find(o => o.value == idToRemove);
+                if (opt) opt.selected = false;
+                renderDeptChips();
+                syncDeptDropdownState();
+                return;
+            }
+            if (deptDd) {
+                deptDd.style.display = deptDd.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (deptBox && deptDd && !deptBox.contains(e.target) && !deptDd.contains(e.target)) {
+            deptDd.style.display = 'none';
+        }
+    });
+
+    function populateDepartments(orgId, sbuId) {
+        availableDepartments = [];
+        if (!deptSelect) return;
+        
+        const org = orgsData.find(o => o.id == orgId);
+        if (org && org.sbus) {
+            const sbu = org.sbus.find(s => s.id == sbuId);
+            if (sbu && sbu.departments) {
+                availableDepartments = sbu.departments;
+            }
+        }
+
+        if (availableDepartments.length === 0) {
+            if (deptHint) deptHint.style.display = 'block';
+            const currentSelected = Array.from(deptSelect.options).filter(o => o.selected);
+            deptSelect.innerHTML = '';
+            currentSelected.forEach(opt => deptSelect.add(opt));
+        } else {
+            if (deptHint) deptHint.style.display = 'none';
+            const currentSelectedIds = Array.from(deptSelect.options).filter(o => o.selected).map(o => parseInt(o.value));
+            deptSelect.innerHTML = '';
+            availableDepartments.sort((a,b) => a.name.localeCompare(b.name));
+            
+            availableDepartments.forEach(dept => {
+                const opt = new Option(dept.name, dept.id);
+                if (currentSelectedIds.includes(parseInt(dept.id))) {
+                    opt.selected = true;
+                }
+                deptSelect.add(opt);
+            });
+        }
+        renderDeptChips();
+        buildDeptDropdownOptions();
+    }
+
+    window.empDeptComboBox = {
+        clearSbuChange: function() {} // Safely override previously referenced fallback
+    };
+
+    if (deptSelect && Array.from(deptSelect.options).length > 0) {
+        renderDeptChips();
+    }
+
 })();
+

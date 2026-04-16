@@ -255,6 +255,7 @@ class EmployeeService
                 'nok_dob'             => !empty($data['nok_dob']) ? $data['nok_dob'] : null,
                 'nok_contact'         => $data['nok_contact'] ?? null,
                 'is_ex_armed_force'   => ! empty($data['is_ex_armed_force']),
+                'is_father_deceased'  => ! empty($data['is_father_deceased']),
                 'site'                => $data['site'] ?? null,
                 'join_date'           => !empty($data['join_date']) ? $data['join_date'] : null,
                 'floor_access'        => isset($data['floor_access']) ? (bool) $data['floor_access'] : false,
@@ -263,8 +264,8 @@ class EmployeeService
                 'intern_type'         => $data['intern_type'] ?? null,
                 'intern_duration'     => $data['intern_duration'] ?? null,
                 'contractual_type'    => $data['contractual_type'] ?? null,
-                'contract_start_date' => ! empty($data['contract_start_date']) ? $data['contract_start_date'] : null,
-                'contract_end_date'   => ! empty($data['contract_end_date']) ? $data['contract_end_date'] : null,
+                'contract_start_date' => ! empty($data['contract_start_date']) ? $data['contract_start_date'] : (!empty($data['employee_contract_start_date']) ? $data['employee_contract_start_date'] : null),
+                'contract_end_date'   => ! empty($data['contract_end_date']) ? $data['contract_end_date'] : (!empty($data['employee_contract_end_date']) ? $data['employee_contract_end_date'] : null),
                 'engagement_mode'     => $data['engagement_mode'] ?? null,
                 'hybrid_days'         => $data['hybrid_days'] ?? null,
                 'standard_schedule_mode' => $scheduleAttrs['standard_schedule_mode'] ?? null,
@@ -439,9 +440,11 @@ class EmployeeService
             [
                 'verification_status'    => $d['verification_status'] ?? null,
                 'msr_letter_no'          => $d['msr_letter_no'] ?? null,
+                'msr_date'               => !empty($d['msr_date']) ? $d['msr_date'] : null,
                 'addressee'              => $d['addressee'] ?? null,
                 'verifying_authority'    => $d['verifying_authority'] ?? null,
                 'verification_letter_no' => $d['verification_letter_no'] ?? null,
+                'verification_letter_date' => !empty($d['verification_letter_date']) ? $d['verification_letter_date'] : null,
                 'next_verification_date' => !empty($d['next_verification_date']) ? $d['next_verification_date'] : null,
                 'remarks'                => $d['police_remarks'] ?? null,
             ]
@@ -1280,7 +1283,7 @@ class EmployeeService
             ])->values()->all(),
         ];
 
-        return view('admin.register.index', array_merge($formData, [
+        return view('admin.employeeregisteration.index', array_merge($formData, [
             'employee' => $employee,
             'editData' => $editData,
         ]));
@@ -1327,6 +1330,7 @@ class EmployeeService
                 'spouse_cnic', 'spouse_nationality', 'nok_cnic_expiry_date',
                 'organization_id', 'role_id', 'sbu_id', 'department_id', 'department_ids',
                 'is_ex_armed_force',
+                'is_father_deceased',
             ];
 
             $step = (int) ($data['step'] ?? 0);

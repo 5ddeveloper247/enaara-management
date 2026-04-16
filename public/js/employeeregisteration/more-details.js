@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     'use strict';
 
 const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersContainer');
@@ -151,8 +151,46 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
     
     if (moreFamilyMembersContainer && !moreFamilyMembersContainer.querySelector('[data-family-row]')) {
         addFamilyMember();
+    } else if (moreFamilyMembersContainer) {
+        // Init preview mode for pre-filled rows
+        moreFamilyMembersContainer.querySelectorAll('[data-family-row]').forEach(row => {
+            setFamilyRowPreviewData(row);
+            setFamilyRowMode(row, true);
+        });
+        updateFamilyMemberIndexes();
     }
-    
+
+    // Expose functions for pre-filling from Blade
+    window.addFamilyMember = addFamilyMember;
+    window.addAcademicRecord = addAcademicRecord;
+    window.addEmployementRecord = addEmployementRecord;
+
+    window.nextMoreSubStep = function() {
+        if (currentMoreStep < totalMoreSteps) {
+            currentMoreStep += 1;
+            syncMoreStepUi();
+            return true;
+        }
+        return false;
+    };
+
+    window.prevMoreSubStep = function() {
+        if (currentMoreStep > 1) {
+            currentMoreStep -= 1;
+            syncMoreStepUi();
+            return true;
+        }
+        return false;
+    };
+
+    window.isLastMoreStep = function() {
+        return currentMoreStep === totalMoreSteps;
+    };
+
+    window.isFirstMoreStep = function() {
+        return currentMoreStep === 1;
+    };
+
     const moreAcademicRecordsContainer = document.getElementById('moreAcademicRecordsContainer');
     const moreAcademicAddRecordBtn = document.getElementById('moreAcademicAddRecordBtn');
     const moreAcademicRecordTemplate = document.getElementById('moreAcademicRecordTemplate');
@@ -175,9 +213,9 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
         const instituteInput = row.querySelector('[data-academic-institute]');
         return {
             degree: degreeInput ? degreeInput.value : '',
-            grade: gradeInput ? gradeInput.value : '',
-            startDate: startDateInput ? startDateInput.value : '',
-            endDate: endDateInput ? endDateInput.value : '',
+            grade_cgpa: gradeInput ? gradeInput.value : '',
+            start_date: startDateInput ? startDateInput.value : '',
+            end_date: endDateInput ? endDateInput.value : '',
             fieldOfStudy: fieldOfStudyInput ? fieldOfStudyInput.value : '',
             institute: instituteInput ? instituteInput.value : ''
         };
@@ -194,9 +232,9 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
         const previewInstitute = row.querySelector('[data-academic-preview-institute]');
     
         if (previewDegree) previewDegree.textContent = values.degree || '-';
-        if (previewGrade) previewGrade.textContent = values.grade || '-';
-        if (previewStartDate) previewStartDate.textContent = formatAcademicDatePreview(values.startDate);
-        if (previewEndDate) previewEndDate.textContent = formatAcademicDatePreview(values.endDate);
+        if (previewGrade) previewGrade.textContent = values.grade_cgpa || '-';
+        if (previewStartDate) previewStartDate.textContent = formatAcademicDatePreview(values.start_date);
+        if (previewEndDate) previewEndDate.textContent = formatAcademicDatePreview(values.end_date);
         if (previewFieldOfStudy) previewFieldOfStudy.textContent = values.fieldOfStudy || '-';
         if (previewInstitute) previewInstitute.textContent = values.institute || '-';
     }
@@ -250,9 +288,9 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
         const fieldOfStudyInput = row.querySelector('[data-academic-field-of-study]');
         const instituteInput = row.querySelector('[data-academic-institute]');
         if (degreeInput) degreeInput.value = values && values.degree ? values.degree : '';
-        if (gradeInput) gradeInput.value = values && values.grade ? values.grade : '';
-        if (startDateInput) startDateInput.value = values && values.startDate ? values.startDate : '';
-        if (endDateInput) endDateInput.value = values && values.endDate ? values.endDate : '';
+        if (gradeInput) gradeInput.value = values && values.grade_cgpa ? values.grade_cgpa : '';
+        if (startDateInput) startDateInput.value = values && values.start_date ? values.start_date : '';
+        if (endDateInput) endDateInput.value = values && values.end_date ? values.end_date : '';
         if (fieldOfStudyInput) fieldOfStudyInput.value = values && values.fieldOfStudy ? values.fieldOfStudy : '';
         if (instituteInput) instituteInput.value = values && values.institute ? values.institute : '';
         setAcademicRecordPreviewData(row);
@@ -310,6 +348,13 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
     
     if (moreAcademicRecordsContainer && !moreAcademicRecordsContainer.querySelector('[data-academic-row]')) {
         addAcademicRecord();
+    } else if (moreAcademicRecordsContainer) {
+        // Init preview mode for pre-filled rows
+        moreAcademicRecordsContainer.querySelectorAll('[data-academic-row]').forEach(row => {
+            setAcademicRecordPreviewData(row);
+            setAcademicRecordMode(row, true);
+        });
+        updateAcademicRecordIndexes();
     }
     
     const moreEmployementRecordsContainer = document.getElementById('moreEmployementRecordsContainer');
@@ -335,10 +380,10 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
         return {
             organization: organizationInput ? organizationInput.value : '',
             designation: designationInput ? designationInput.value : '',
-            fromDate: fromDateInput ? fromDateInput.value : '',
-            toDate: toDateInput ? toDateInput.value : '',
+            from_date: fromDateInput ? fromDateInput.value : '',
+            to_date: toDateInput ? toDateInput.value : '',
             salary: salaryInput ? salaryInput.value : '',
-            reason: reasonInput ? reasonInput.value : ''
+            reason_for_leaving: reasonInput ? reasonInput.value : ''
         };
     }
     
@@ -354,10 +399,10 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
     
         if (previewOrganization) previewOrganization.textContent = values.organization || '-';
         if (previewDesignation) previewDesignation.textContent = values.designation || '-';
-        if (previewFromDate) previewFromDate.textContent = formatEmployementDatePreview(values.fromDate);
-        if (previewToDate) previewToDate.textContent = formatEmployementDatePreview(values.toDate);
+        if (previewFromDate) previewFromDate.textContent = formatEmployementDatePreview(values.from_date);
+        if (previewToDate) previewToDate.textContent = formatEmployementDatePreview(values.to_date);
         if (previewSalary) previewSalary.textContent = values.salary || '-';
-        if (previewReason) previewReason.textContent = values.reason || '-';
+        if (previewReason) previewReason.textContent = values.reason_for_leaving || '-';
     }
     
     function setEmployementRecordMode(row, isPreviewMode) {
@@ -410,10 +455,10 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
         const reasonInput = row.querySelector('[data-employement-reason]');
         if (organizationInput) organizationInput.value = values && values.organization ? values.organization : '';
         if (designationInput) designationInput.value = values && values.designation ? values.designation : '';
-        if (fromDateInput) fromDateInput.value = values && values.fromDate ? values.fromDate : '';
-        if (toDateInput) toDateInput.value = values && values.toDate ? values.toDate : '';
+        if (fromDateInput) fromDateInput.value = values && values.from_date ? values.from_date : '';
+        if (toDateInput) toDateInput.value = values && values.to_date ? values.to_date : '';
         if (salaryInput) salaryInput.value = values && values.salary ? values.salary : '';
-        if (reasonInput) reasonInput.value = values && values.reason ? values.reason : '';
+        if (reasonInput) reasonInput.value = values && values.reason_for_leaving ? values.reason_for_leaving : '';
         setEmployementRecordPreviewData(row);
         setEmployementRecordMode(row, false);
         return row;
@@ -469,6 +514,13 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
     
     if (moreEmployementRecordsContainer && !moreEmployementRecordsContainer.querySelector('[data-employement-row]')) {
         addEmployementRecord();
+    } else if (moreEmployementRecordsContainer) {
+        // Init preview mode for pre-filled rows
+        moreEmployementRecordsContainer.querySelectorAll('[data-employement-row]').forEach(row => {
+            setEmployementRecordPreviewData(row);
+            setEmployementRecordMode(row, true);
+        });
+        updateEmployementRecordIndexes();
     }
     
     const moreMedicalHasDisabilityYes = document.getElementById('moreMedicalHasDisabilityYes');

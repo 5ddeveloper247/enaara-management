@@ -1,4 +1,7 @@
-﻿    <style>
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    
+    <style>
         .wizard-pane {
             display: none;
         }
@@ -443,10 +446,25 @@
             background: var(--primary-color) !important;
         }
 
-        #avatarPreviewWrap:hover .avatar-upload-overlay {
+        /* Locked Tab Styles */
+        .profile-tab.locked-tab {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            filter: grayscale(100%);
+            border-bottom: 2px solid transparent !important;
+        }
+
+        .profile-tab.locked-tab:hover {
+            background: transparent !important;
+            color: #fff !important;
+        }
+
+        #avatarPreviewWrap:hover .avatar-upload-overlay,
+        #avatarPreviewWrap:hover .remove-photo-btn {
             opacity: 1;
         }
-        .avatar-upload-overlay {
+        .avatar-upload-overlay,
+        .remove-photo-btn {
             opacity: 0;
             transition: opacity .2s ease;
         }
@@ -454,5 +472,19 @@
         .card {
             box-shadow: none !important;
             border: 1px solid #0124452b !important;
+        }
+
+        /* Cropper Styles */
+        .cropper-container-wrapper {
+            max-height: 500px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden;
+            background: #f8fafc;
+        }
+        #cropperImage {
+            max-width: 100%;
+            display: block;
         }
     </style>

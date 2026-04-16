@@ -286,7 +286,7 @@
                         </select>
                         @error('is_active')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="col-md-6">
+                    <!-- <div class="col-md-6">
                         <label for="is_primary" class="form-label">Primary Role</label>
                         <div class="form-check form-switch mt-2">
                             <input type="hidden" name="is_primary" value="0">
@@ -294,7 +294,7 @@
                             <label class="form-check-label" for="is_primary">Mark as primary role</label>
                         </div>
                         @error('is_primary')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                    </div>
+                    </div> -->
                 </div>
 
                 <hr class="my-4">

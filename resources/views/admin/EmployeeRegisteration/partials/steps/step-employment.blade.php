@@ -1,5 +1,5 @@
-﻿                        <div class="wizard-pane" id="stepPane2">
-                            <div>
+                        <div class="wizard-pane" id="stepPane2">
+                            <div id="step-2">
                                 <div class="card bg-light border-0 shadow-sm mb-3">
                                     <div class="card-body p-3">
                                         <div class="fw-bold text-dark mb-3">
@@ -7,87 +7,87 @@
                                         </div>
                                         <div class="row g-3">
                                             <div class="col-md-6">
-                                                <label class="form-label">TAS ID</label>
-                                                <input type="text" class="form-control" placeholder="Enter service or biometric ID">
+                                                <label class="form-label">TAS ID / Biometric ID</label>
+                                                <input type="text" name="biometric_id" class="form-control" value="{{ $employee->biometric_id ?? '' }}" placeholder="Enter service or biometric ID">
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label">Employee Number</label>
-                                                <input type="text" class="form-control" placeholder="e.g. EMP-CEO-VIUQ">
+                                                <input type="text" name="employee_number" class="form-control" value="{{ $employee->employee_number ?? '' }}" placeholder="e.g. EMP-CEO-VIUQ" disabled>
                                             </div>
                                             <div class="col-12">
                                                 <div class="border rounded p-3" style="background-color: #01244518">
                                                     <label class="form-label fw-semibold d-block mb-2">Resource Type <span
                                                             class="text-danger">*</span></label>
                                                     <div class="d-flex flex-wrap gap-2">
-                                                        <input type="radio" class="btn-check" name="employmentCategory"
-                                                            id="employmentDetailsCategoryEngagement" value="Engagement" required>
+                                                        <input type="radio" class="btn-check" name="employment_category"
+                                                            id="employmentDetailsCategoryEngagement" value="employee" required {{ ($employee->employment_category ?? '') == 'employee' ? 'checked' : '' }}>
                                                         <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                             for="employmentDetailsCategoryEngagement">Employee</label>
 
-                                                        <input type="radio" class="btn-check" name="employmentCategory"
-                                                            id="employmentDetailsCategoryContractual" value="Contractual">
+                                                        <input type="radio" class="btn-check" name="employment_category"
+                                                            id="employmentDetailsCategoryContractual" value="contractual" {{ ($employee->employment_category ?? '') == 'contractual' ? 'checked' : '' }}>
                                                         <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                             for="employmentDetailsCategoryContractual">Consultant / Retainer</label>
 
-                                                        <input type="radio" class="btn-check" name="employmentCategory"
-                                                            id="employmentDetailsCategoryIntern" value="Intern">
+                                                        <input type="radio" class="btn-check" name="employment_category"
+                                                            id="employmentDetailsCategoryIntern" value="intern" {{ ($employee->employment_category ?? '') == 'intern' ? 'checked' : '' }}>
                                                         <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                             for="employmentDetailsCategoryIntern">Intern</label>
                                                     </div>
 
-                                                    <div class="row g-3 d-none mt-1" id="employmentDetailsInternFields">
+                                                    <div class="row g-3 {{ ($employee->employment_category ?? '') == 'intern' ? '' : 'd-none' }} mt-1" id="employmentDetailsInternFields">
                                                         <div class="col-md-6">
                                                             <label class="form-label">Intern Type <span class="text-danger">*</span></label>
-                                                            <select class="form-select" id="employmentDetailsInternTypeInput">
-                                                                <option value="" selected disabled>Select intern type</option>
-                                                                <option value="Paid">Paid</option>
-                                                                <option value="Unpaid">Unpaid</option>
+                                                            <select name="intern_type" class="form-select" id="employmentDetailsInternTypeInput">
+                                                                <option value="" {{ !isset($employee->intern_type) ? 'selected' : '' }} disabled>Select intern type</option>
+                                                                <option value="Paid" {{ ($employee->intern_type ?? '') == 'Paid' ? 'selected' : '' }}>Paid</option>
+                                                                <option value="Unpaid" {{ ($employee->intern_type ?? '') == 'Unpaid' ? 'selected' : '' }}>Unpaid</option>
                                                             </select>
                                                         </div>
                                                         <div class="col-md-6">
                                                             <label class="form-label">Intern Duration <span class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" id="employmentDetailsEmployeeNumberInput"
-                                                                placeholder="e.g. 3 months, 6 months">
+                                                            <input type="text" name="intern_duration" class="form-control" id="employmentDetailsInternDurationInput"
+                                                                value="{{ $employee->intern_duration ?? '' }}" placeholder="e.g. 3 months, 6 months">
                                                         </div>
                                                     </div>
 
-                                                    <div class="row g-3 d-none mt-1" id="employmentDetailsContractualFields">
+                                                    <div class="row g-3 {{ ($employee->employment_category ?? '') == 'contractual' ? '' : 'd-none' }} mt-1" id="employmentDetailsContractualFields">
                                                         <div class="col-md-6">
                                                             <label class="form-label">Start Date <span class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control" id="employmentDetailsContractStartDateInput" placeholder="yyyy-mm-dd">
+                                                            <input type="date" name="contract_start_date" class="form-control" id="employmentDetailsContractStartDateInput" value="{{ $employee->contract_start_date ?? '' }}" placeholder="yyyy-mm-dd">
                                                         </div>
                                                         <div class="col-md-6">
                                                             <label class="form-label">End Date <span class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control" id="employmentDetailsContractEndDateInput" placeholder="yyyy-mm-dd">
+                                                            <input type="date" name="contract_end_date" class="form-control" id="employmentDetailsContractEndDateInput" value="{{ $employee->contract_end_date ?? '' }}" placeholder="yyyy-mm-dd">
                                                         </div>
                                                     </div>
 
-                                                    <div class="row g-3 d-none mt-1" id="employmentDetailsEngagementFields">
+                                                    <div class="row g-3 {{ ($employee->employment_category ?? '') == 'employee' ? '' : 'd-none' }} mt-1" id="employmentDetailsEngagementFields">
                                                         <div class="col-md-6">
                                                             <label class="form-label">Employment Type <span class="text-danger">*</span></label>
-                                                            <select class="form-select" id="employmentDetailsEngagementModeInput">
-                                                                <option value="" selected disabled>Select employment type</option>
-                                                                <option value="Permanent">Permanent</option>
-                                                                <option value="Contractual">Contractual</option>
+                                                            <select name="employment_type" class="form-select" id="employmentDetailsEngagementModeInput">
+                                                                <option value="" {{ !isset($employee->employment_type) ? 'selected' : '' }} disabled>Select employment type</option>
+                                                                <option value="permanent" {{ ($employee->employment_type ?? '') == 'permanent' ? 'selected' : '' }}>Permanent</option>
+                                                                <option value="contractual" {{ ($employee->employment_type ?? '') == 'contractual' ? 'selected' : '' }}>Contractual</option>
                                                             </select>
                                                         </div>
-                                                        <div class="col-md-6 d-none" id="employmentDetailsEmployeeContractTypeField">
+                                                        <div class="col-md-6 {{ ($employee->employment_type ?? '') == 'contractual' ? '' : 'd-none' }}" id="employmentDetailsEmployeeContractTypeField">
                                                             <label class="form-label">Contract Type <span class="text-danger">*</span></label>
-                                                            <select class="form-select" id="employmentDetailsEmployeeContractTypeInput">
-                                                                <option value="" selected disabled>Select contract type</option>
-                                                                <option value="Time bound">Time bound</option>
-                                                                <option value="Open ended">Open ended</option>
+                                                            <select name="contractual_type" class="form-select" id="employmentDetailsEmployeeContractTypeInput">
+                                                                <option value="" {{ !isset($employee->contractual_type) ? 'selected' : '' }} disabled>Select contract type</option>
+                                                                <option value="time_bound" {{ ($employee->contractual_type ?? '') == 'time_bound' ? 'selected' : '' }}>Time bound</option>
+                                                                <option value="open_ended" {{ ($employee->contractual_type ?? '') == 'open_ended' ? 'selected' : '' }}>Open ended</option>
                                                             </select>
                                                         </div>
-                                                        <div class="col-12 d-none" id="employmentDetailsEmployeeContractDatesField">
+                                                        <div class="col-12 {{ ($employee->contractual_type ?? '') == 'time_bound' ? '' : 'd-none' }}" id="employmentDetailsEmployeeContractDatesField">
                                                             <div class="row g-3">
                                                                 <div class="col-md-6">
                                                                     <label class="form-label">Contract Start Date <span class="text-danger">*</span></label>
-                                                                    <input type="date" class="form-control" id="employmentDetailsEmployeeContractStartDateInput" placeholder="yyyy-mm-dd">
+                                                                    <input type="date" name="employee_contract_start_date" class="form-control" id="employmentDetailsEmployeeContractStartDateInput" value="{{ $employee->contract_start_date ?? '' }}" placeholder="yyyy-mm-dd">
                                                                 </div>
                                                                 <div class="col-md-6">
                                                                     <label class="form-label">Contract End Date <span class="text-danger">*</span></label>
-                                                                    <input type="date" class="form-control" id="employmentDetailsEmployeeContractEndDateInput" placeholder="yyyy-mm-dd">
+                                                                    <input type="date" name="employee_contract_end_date" class="form-control" id="employmentDetailsEmployeeContractEndDateInput" value="{{ $employee->contract_end_date ?? '' }}" placeholder="yyyy-mm-dd">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -108,28 +108,49 @@
                                                     <div class="col-md-6">
                                                         <label class="form-label">Organization <span
                                                                 class="text-danger">*</span></label>
-                                                        <select class="form-select" id="employmentOrganizationSelect">
-                                                            <option value="" selected disabled>Select organization</option>
+                                                        <select name="organization_id" class="form-select" id="employmentOrganizationSelect">
+                                                            <option value="" {{ !isset($employee->organization_id) ? 'selected' : '' }} disabled>Select organization</option>
+                                                            @foreach($organizations as $org)
+                                                                <option value="{{ $org->id }}" {{ ($employee->organization_id ?? '') == $org->id ? 'selected' : '' }}>{{ $org->name }}</option>
+                                                            @endforeach
                                                         </select>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">SBU <span class="text-danger">*</span></label>
-                                                        <select class="form-select" id="employmentSbuSelect">
-                                                            <option value="" selected disabled>Select SBU</option>
-                                                        </select>
+                                                         <select name="sbu_id" class="form-select" id="employmentSbuSelect">
+                                                             <option value="" {{ !isset($employee->sbu_id) ? 'selected' : '' }} disabled>Select SBU</option>
+                                                             @if(isset($employee->organization_id))
+                                                                 @php
+                                                                     $selectedOrg = $organizations->where('id', $employee->organization_id)->first();
+                                                                     $currentSbus = $selectedOrg ? $selectedOrg->sbus : collect();
+                                                                 @endphp
+                                                                 @foreach($currentSbus as $sbu)
+                                                                     <option value="{{ $sbu->id }}" {{ ($employee->sbu_id ?? '') == $sbu->id ? 'selected' : '' }}>{{ $sbu->name }}</option>
+                                                                 @endforeach
+                                                             @endif
+                                                         </select>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Roles <span class="text-danger">*</span></label>
-                                                        <select class="form-select" id="employmentRoleSelect">
-                                                            <option value="" selected disabled>Select role</option>
-                                                        </select>
+                                                         <select name="role_id" class="form-select" id="employmentRoleSelect">
+                                                             <option value="" {{ !isset($employee->role_id) ? 'selected' : '' }} disabled>Select role</option>
+                                                             @if(isset($rolesData))
+                                                                 @foreach($rolesData as $role)
+                                                                     <option value="{{ $role['id'] }}" {{ ($employee->role_id ?? '') == $role['id'] ? 'selected' : '' }}>{{ $role['name'] }}</option>
+                                                                 @endforeach
+                                                             @endif
+                                                         </select>
                                                     </div>
                                                     <div class="col-12">
                                                         <label class="form-label">Departments <span class="text-muted fw-normal small">(optional)</span></label>
-                                                        <select name="department_ids[]" id="employmentDepartmentSelect" class="form-select d-none" multiple size="4">
-                                                            <option value="" selected disabled>No departments under this SBU</option>
+                                                        <select name="department_ids[]" id="employmentDepartmentSelect" class="form-select d-none" multiple>
+                                                            @if(isset($employee->departments))
+                                                                @foreach($employee->departments as $dept)
+                                                                    <option value="{{ $dept->id }}" selected>{{ $dept->name }}</option>
+                                                                @endforeach
+                                                            @endif
                                                         </select>
-                                                        <div class="emp-dept-input-box" id="employmentDeptBox" onclick="employmentDeptBoxClick(event)">
+                                                        <div class="emp-dept-input-box" id="employmentDeptBox">
                                                             <div id="employmentDeptChips" style="display:contents"></div>
                                                             <span class="emp-dept-ph" id="employmentDeptPh">Select Departments...</span>
                                                             <svg class="emp-dept-chevron" id="employmentDeptChevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -138,7 +159,7 @@
                                                         </div>
                                                         <div class="emp-dept-dropdown" id="employmentDeptDd" style="display:none">
                                                             <div class="emp-dept-search-row">
-                                                                <input id="employmentDeptSearch" placeholder="Search Department..." oninput="employmentDeptRenderList()" onclick="event.stopPropagation()" autocomplete="off">
+                                                                <input id="employmentDeptSearch" placeholder="Search Department..." autocomplete="off">
                                                             </div>
                                                             <div class="emp-dept-opt-list" id="employmentDeptList"></div>
                                                         </div>
@@ -147,11 +168,11 @@
                                                     <div class="col-md-6">
                                                         <label class="form-label">Date of Joining <span
                                                                 class="text-danger">*</span></label>
-                                                        <input type="date" class="form-control" placeholder="yyyy-mm-dd">
+                                                        <input type="date" name="join_date" class="form-control" value="{{ $employee->join_date ?? '' }}" placeholder="yyyy-mm-dd">
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Designation</label>
-                                                        <input type="text" class="form-control" placeholder="Designation">
+                                                        <input type="text" name="designation" class="form-control" value="{{ $employee->designation ?? '' }}" placeholder="Designation">
                                                     </div>
                                                 </div>
                                             </div>
@@ -165,15 +186,15 @@
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
                                                         <label class="form-label">Grade</label>
-                                                        <input type="text" class="form-control" placeholder="Grade">
+                                                        <input type="text" name="grade" class="form-control" value="{{ $employee->grade ?? '' }}" placeholder="Grade">
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Branch</label>
-                                                        <input type="text" class="form-control" placeholder="Branch">
+                                                        <input type="text" name="branch" class="form-control" value="{{ $employee->branch ?? '' }}" placeholder="Branch">
                                                     </div>
                                                     <div class="col-12">
                                                         <label class="form-label">Location</label>
-                                                        <input type="text" class="form-control" placeholder="Location">
+                                                        <input type="text" name="location" class="form-control" value="{{ $employee->location ?? '' }}" placeholder="Location">
                                                     </div>
                                                 </div>
                                             </div>
@@ -186,46 +207,46 @@
                                         <div class="border rounded p-3" style="background-color: #01244518">
                                             <label class="form-label fw-semibold d-block mb-2">Work Arrangement <span
                                                     class="text-danger">*</span></label>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <input type="radio" class="btn-check" name="employmentWorkArrangement"
-                                                    id="employmentWorkArrangementStandard" value="Standard" required>
+                                            <div class="d-flex flex-wrap gap-2" id="employmentWorkArrangementModeGroup">
+                                                <input type="radio" class="btn-check" name="engagement_mode"
+                                                    id="employmentWorkArrangementStandard" value="standard" required {{ ($employee->engagement_mode ?? '') == 'standard' ? 'checked' : '' }}>
                                                 <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                     for="employmentWorkArrangementStandard">Standard</label>
 
-                                                <input type="radio" class="btn-check" name="employmentWorkArrangement"
-                                                    id="employmentWorkArrangementShift" value="Shift-Based">
+                                                <input type="radio" class="btn-check" name="engagement_mode"
+                                                    id="employmentWorkArrangementShift" value="shifts" {{ ($employee->engagement_mode ?? '') == 'shifts' ? 'checked' : '' }}>
                                                 <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                     for="employmentWorkArrangementShift">Shift-Based</label>
 
-                                                <input type="radio" class="btn-check" name="employmentWorkArrangement"
-                                                    id="employmentWorkArrangementRemote" value="Remote">
+                                                <input type="radio" class="btn-check" name="engagement_mode"
+                                                    id="employmentWorkArrangementRemote" value="remote" {{ ($employee->engagement_mode ?? '') == 'remote' ? 'checked' : '' }}>
                                                 <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                     for="employmentWorkArrangementRemote">Remote</label>
 
-                                                <input type="radio" class="btn-check" name="employmentWorkArrangement"
-                                                    id="employmentWorkArrangementHybrid" value="Hybrid">
+                                                <input type="radio" class="btn-check" name="engagement_mode"
+                                                    id="employmentWorkArrangementHybrid" value="hybrid" {{ ($employee->engagement_mode ?? '') == 'hybrid' ? 'checked' : '' }}>
                                                 <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                     for="employmentWorkArrangementHybrid">Hybrid</label>
                                             </div>
 
-                                            <div class="row g-3 d-none mt-1" id="employmentWorkArrangementStandardFields">
+                                            <div class="row g-3 {{ ($employee->engagement_mode ?? '') == 'standard' ? '' : 'd-none' }} mt-1" id="employmentWorkArrangementStandardFields">
                                                 <div class="col-12">
                                                     <label class="form-label fw-semibold d-block mb-2">Standard Type <span class="text-danger">*</span></label>
-                                                    <div class="d-flex flex-wrap gap-2">
-                                                        <input type="radio" class="btn-check" name="employmentWorkArrangementStandardType"
-                                                            id="employmentWorkArrangementStandardTypeDefault" value="Default">
+                                                    <div class="d-flex flex-wrap gap-2" id="employmentWorkArrangementStandardTypeGroup">
+                                                        <input type="radio" class="btn-check" name="standard_schedule_mode"
+                                                            id="employmentWorkArrangementStandardTypeDefault" value="default" {{ ($employee->standard_schedule_mode ?? '') == 'default' ? 'checked' : '' }}>
                                                         <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                             for="employmentWorkArrangementStandardTypeDefault">Default</label>
 
-                                                        <input type="radio" class="btn-check" name="employmentWorkArrangementStandardType"
-                                                            id="employmentWorkArrangementStandardTypeCustom" value="Custom">
+                                                        <input type="radio" class="btn-check" name="standard_schedule_mode"
+                                                            id="employmentWorkArrangementStandardTypeCustom" value="custom" {{ ($employee->standard_schedule_mode ?? '') == 'custom' ? 'checked' : '' }}>
                                                         <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                             for="employmentWorkArrangementStandardTypeCustom">Custom</label>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div class="row g-3 d-none mt-1" id="employmentWorkArrangementDefaultCardWrap">
+                                            <div class="row g-3 {{ ($employee->standard_schedule_mode ?? '') == 'default' ? '' : 'd-none' }} mt-1" id="employmentWorkArrangementDefaultCardWrap">
                                                 <div class="col-md-6">
                                                     <div class="card border shadow-sm">
                                                         <div class="card-body p-2">
@@ -238,91 +259,59 @@
                                                                             id="employmentWorkArrangementOrgName">-</span></div>
                                                                 </div>
                                                             </div>
-                                                            <div class="fw-semibold small">Working days: <span class="fw-normal">- - -</span></div>
-                                                            <div class="fw-semibold small">Working time: <span class="fw-normal">- - -</span></div>
-                                                            <div class="fw-semibold small">Check-in grace: <span class="fw-normal">-</span></div>
-                                                            <div class="fw-semibold small">Check-out grace: <span class="fw-normal">-</span></div>
+                                                            <div class="fw-semibold small">Working days: <span class="fw-normal" id="employmentDefaultWorkingDays">- - -</span></div>
+                                                            <div class="fw-semibold small">Working time: <span class="fw-normal" id="employmentDefaultWorkingTime">- - -</span></div>
+                                                            <div class="fw-semibold small">Check-in grace: <span class="fw-normal" id="employmentDefaultCheckInGrace">-</span></div>
+                                                            <div class="fw-semibold small">Check-out grace: <span class="fw-normal" id="employmentDefaultCheckOutGrace">-</span></div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div class="row g-3 d-none mt-1" id="employmentWorkArrangementCustomFields">
+                                            <div class="row g-3 {{ ($employee->standard_schedule_mode ?? '') == 'custom' ? '' : 'd-none' }} mt-1" id="employmentWorkArrangementCustomFields">
                                                 <div class="col-12">
                                                     <label class="form-label fw-semibold">Working days <span class="text-danger">*</span></label>
                                                     <div class="d-flex flex-wrap gap-3">
+                                                        @php
+                                                            $workingDays = isset($employee->working_days) ? (is_array($employee->working_days) ? $employee->working_days : explode(',', $employee->working_days)) : [];
+                                                        @endphp
+                                                        @foreach(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $day)
                                                         <div class="form-check mb-0">
-                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayMon" name="employment_custom_days[]" value="Mon">
-                                                            <label class="form-check-label" for="employmentCustomDayMon">Mon</label>
+                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDay{{ $day }}" name="working_days[]" value="{{ $day }}" {{ in_array($day, $workingDays) ? 'checked' : '' }}>
+                                                            <label class="form-check-label" for="employmentCustomDay{{ $day }}">{{ $day }}</label>
                                                         </div>
-                                                        <div class="form-check mb-0">
-                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayTue" name="employment_custom_days[]" value="Tue">
-                                                            <label class="form-check-label" for="employmentCustomDayTue">Tue</label>
-                                                        </div>
-                                                        <div class="form-check mb-0">
-                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayWed" name="employment_custom_days[]" value="Wed">
-                                                            <label class="form-check-label" for="employmentCustomDayWed">Wed</label>
-                                                        </div>
-                                                        <div class="form-check mb-0">
-                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayThu" name="employment_custom_days[]" value="Thu">
-                                                            <label class="form-check-label" for="employmentCustomDayThu">Thu</label>
-                                                        </div>
-                                                        <div class="form-check mb-0">
-                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDayFri" name="employment_custom_days[]" value="Fri">
-                                                            <label class="form-check-label" for="employmentCustomDayFri">Fri</label>
-                                                        </div>
-                                                        <div class="form-check mb-0">
-                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDaySat" name="employment_custom_days[]" value="Sat">
-                                                            <label class="form-check-label" for="employmentCustomDaySat">Sat</label>
-                                                        </div>
-                                                        <div class="form-check mb-0">
-                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDaySun" name="employment_custom_days[]" value="Sun">
-                                                            <label class="form-check-label" for="employmentCustomDaySun">Sun</label>
-                                                        </div>
+                                                        @endforeach
                                                     </div>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">Working start <span class="text-danger">*</span></label>
-                                                    <input type="time" class="form-control" id="employmentCustomWorkingStartInput">
+                                                    <input type="time" name="working_start_time" class="form-control" id="employmentCustomWorkingStartInput" value="{{ $employee->working_start_time ?? '' }}">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">Working end <span class="text-danger">*</span></label>
-                                                    <input type="time" class="form-control" id="employmentCustomWorkingEndInput">
+                                                    <input type="time" name="working_end_time" class="form-control" id="employmentCustomWorkingEndInput" value="{{ $employee->working_end_time ?? '' }}">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">Check-in grace (min)</label>
-                                                    <input type="number" min="0" class="form-control" id="employmentCustomCheckInGraceInput" placeholder="Optional">
+                                                    <input type="number" name="opening_grace_period" min="0" class="form-control" id="employmentCustomCheckInGraceInput" placeholder="Optional" value="{{ $employee->opening_grace_period ?? '' }}">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">Check-out grace (min)</label>
-                                                    <input type="number" min="0" class="form-control" id="employmentCustomCheckOutGraceInput" placeholder="Optional">
+                                                    <input type="number" name="closing_grace_period" min="0" class="form-control" id="employmentCustomCheckOutGraceInput" placeholder="Optional" value="{{ $employee->closing_grace_period ?? '' }}">
                                                 </div>
                                             </div>
 
-                                            <div class="row g-3 d-none mt-1" id="employmentWorkArrangementHybridFields">
+                                            <div class="row g-3 {{ ($employee->engagement_mode ?? '') == 'hybrid' ? '' : 'd-none' }} mt-1" id="employmentWorkArrangementHybridFields">
                                                 <div class="col-12">
                                                     <label class="form-label fw-semibold d-block mb-2">Hybrid - on-site days <span class="text-danger">*</span></label>
                                                     <div class="d-flex flex-wrap gap-2">
-                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayMon" value="Mon">
-                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayMon">Mon</label>
-
-                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayTue" value="Tue">
-                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayTue">Tue</label>
-
-                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayWed" value="Wed">
-                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayWed">Wed</label>
-
-                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayThu" value="Thu">
-                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayThu">Thu</label>
-
-                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDayFri" value="Fri">
-                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDayFri">Fri</label>
-
-                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDaySat" value="Sat">
-                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDaySat">Sat</label>
-
-                                                        <input type="checkbox" class="btn-check" name="employment_hybrid_days[]" id="employmentHybridDaySun" value="Sun">
-                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDaySun">Sun</label>
+                                                        @php
+                                                            $hybridDays = isset($employee->hybrid_days) ? (is_array($employee->hybrid_days) ? $employee->hybrid_days : explode(',', $employee->hybrid_days)) : [];
+                                                        @endphp
+                                                        @foreach(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $day)
+                                                        <input type="checkbox" class="btn-check" name="hybrid_days[]" id="employmentHybridDay{{ $day }}" value="{{ $day }}" {{ in_array($day, $hybridDays) ? 'checked' : '' }}>
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDay{{ $day }}">{{ $day }}</label>
+                                                        @endforeach
                                                     </div>
                                                 </div>
                                             </div>

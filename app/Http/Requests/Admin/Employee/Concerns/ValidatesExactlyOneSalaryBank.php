@@ -26,46 +26,4 @@ trait ValidatesExactlyOneSalaryBank
             $validator->errors()->add('banks', 'Select at least one account for salary (payroll) using "Use for salary (payroll)".');
         }
     }
-
-    protected function assertAtLeastOnePersonalBank(Validator $validator): void
-    {
-        $banks = $this->input('banks', []);
-        if (! is_array($banks) || $banks === []) {
-            return;
-        }
-        $hasPersonal = false;
-        foreach ($banks as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-            if (($row['account_category'] ?? '') === 'personal') {
-                $hasPersonal = true;
-                break;
-            }
-        }
-        if (! $hasPersonal) {
-            $validator->errors()->add('banks', 'At least one saved account must be a Personal account.');
-        }
-    }
-
-    protected function assertAtLeastOneCompanyOperatedBank(Validator $validator): void
-    {
-        $banks = $this->input('banks', []);
-        if (! is_array($banks) || $banks === []) {
-            return;
-        }
-        $hasCompany = false;
-        foreach ($banks as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-            if (($row['account_category'] ?? '') === 'company_operated') {
-                $hasCompany = true;
-                break;
-            }
-        }
-        if (! $hasCompany) {
-            $validator->errors()->add('banks', 'At least one saved account must be a Company operated account.');
-        }
-    }
 }
