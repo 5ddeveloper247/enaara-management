@@ -1283,7 +1283,7 @@ class EmployeeService
             ])->values()->all(),
         ];
 
-        return view('admin.employeeregisteration.index', array_merge($formData, [
+        return view('admin.employeeregistration.index', array_merge($formData, [
             'employee' => $employee,
             'editData' => $editData,
         ]));
