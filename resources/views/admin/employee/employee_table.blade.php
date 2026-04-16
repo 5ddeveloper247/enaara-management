@@ -2,7 +2,7 @@
     window.employeeDataUrl    = "{{ route('admin.employee.data') }}";
     window.employeeStatsUrl   = "{{ route('admin.employee.stats') }}";
     window.registerUrl        = "{{ route('admin.register.index') }}";
-    window.employeeEditUrlBase = "{{ url('admin/employee') }}";
+    window.employeeEditUrlBase = "{{ url('admin/employees') }}";
 </script>
 
 <div id="tableViewWrapper" class="row g-3">

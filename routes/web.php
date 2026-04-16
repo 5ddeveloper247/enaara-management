@@ -305,9 +305,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
         return redirect()->route('admin.dashboard.index');
     })->name('admin.overtime.index');
 
-    Route::get('/register1', function () {
-        return view('admin.employeeregisteration.index');
-    })->name('admin.register.index1');
+   
 
     // Policies Routes
     Route::get('/policies', [PolicyController::class, 'index'])->name('admin.policies.index');
