@@ -174,7 +174,9 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
 
     Route::get('/employees', [EmployeeController::class, 'index'])->name('admin.employee.index');
     Route::redirect('/employee', '/admin/employees');
-    Route::redirect('/employee/{id}/edit', '/admin/employees/{id}/edit');
+    Route::get('/employee/{id}/edit', function ($id) {
+        return redirect()->route('admin.employee.edit', ['id' => $id]);
+    });
     
     Route::get('/employees/data', [EmployeeController::class, 'tableData'])->name('admin.employee.data');
     Route::get('/employees/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
