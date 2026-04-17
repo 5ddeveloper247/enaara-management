@@ -48,11 +48,16 @@
     <script>
         window.orgsData = @json($orgsData ?? []);
         window.rolesData = @json($rolesData ?? []);
+        window.editData = {
+            bankDetails: @json($employee->bankDetails ?? []),
+            familyMembers: @json($employee->familyMembers ?? []),
+            academics: @json($employee->academics ?? []),
+            exEmployments: @json($employee->exEmployments ?? [])
+        };
     </script>
     <!-- Cropper.js Script -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     
     <script src="{{ asset('js/employeeregistration/wizard.js') }}"></script>
-    <script src="{{ asset('js/employeeregistration/more-details.js') }}"></script>
 @endpush
 

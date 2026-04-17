@@ -248,19 +248,12 @@ class EmployeeController extends Controller
                     $this->employeeService->saveReferences((int)$employeeId, $data);
                     $message = 'References saved successfully.';
                     break;
-                case 'photo':
-                    if ($request->hasFile('profile_photo')) {
-                        $this->employeeService->savePhoto((int)$employeeId, $request->file('profile_photo'));
-                        $message = 'Profile photo saved successfully.';
-                    } else {
-                        return response()->json(['success' => false, 'message' => 'No photo uploaded.'], 422);
-                    }
-                    break;
                 case 'bank_row':
                     $validated = $request->validated();
                     $row = Arr::only($validated, [
                         'account_category', 'account_title', 'account_no', 'bank_name',
                         'branch_code', 'branch_address', 'iban', 'account_type', 'is_salary_account',
+                        'bank_detail_id'
                     ]);
                     try {
                         $record = $this->employeeService->saveBankDetailRow(
@@ -273,6 +266,7 @@ class EmployeeController extends Controller
                     }
                     $message = 'Bank account saved successfully.';
                     $responseData = [
+                        'id' => $record->id,
                         'bank' => [
                             'id'                 => $record->id,
                             'account_category'   => $record->account_category,
@@ -287,6 +281,14 @@ class EmployeeController extends Controller
                         ],
                         'salary_bank_id' => $this->employeeService->salaryBankIdForEmployee((int) $employeeId),
                     ];
+                    break;
+                case 'photo':
+                    if ($request->hasFile('profile_photo')) {
+                        $this->employeeService->savePhoto((int)$employeeId, $request->file('profile_photo'));
+                        $message = 'Profile photo saved successfully.';
+                    } else {
+                        return response()->json(['success' => false, 'message' => 'No photo uploaded.'], 422);
+                    }
                     break;
                 default:
                     return response()->json(['success' => false, 'message' => 'Invalid subsection type.'], 422);

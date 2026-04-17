@@ -624,7 +624,7 @@ class EmployeeStepRequest extends FormRequest
                         'integer',
                         Rule::exists('employee_bank_details', 'id')->where('employee_id', (int) $this->input('employee_id')),
                     ],
-                    'account_category'   => ['required', 'string', Rule::in(['personal', 'company_operated'])],
+                    'account_category'   => ['required', 'string', Rule::in(['Personal', 'Company'])],
                     'account_title'      => ['required', 'string', 'min:3', 'max:255', 'regex:' . $this->nameRegex()],
                     'account_no'         => ['required', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
                     'bank_name'          => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
@@ -728,6 +728,8 @@ class EmployeeStepRequest extends FormRequest
 
             'city_of_birth.min' => 'Town / City of birth must be at least 2 characters.',
             'city_of_birth.max' => 'Town / City of birth must not exceed 100 characters.',
+            
+            'blood_group.regex' => 'The blood group format is invalid. It must be a standard format (e.g., A+, O-, AB+).',
             'city_of_birth.regex' => 'Town / City of birth must include letters and may use numbers, spaces, and standard punctuation (no angle brackets).',
 
             'religion.regex' => 'Religion must contain text only.',

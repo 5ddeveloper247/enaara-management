@@ -213,6 +213,18 @@
         }
     }
 
+    function showToast(title, icon = 'success') {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: title,
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
+    }
+
     function clearStepErrors() {
         document.querySelectorAll('.is-invalid').forEach(el => {
             el.classList.remove('is-invalid');
@@ -254,18 +266,31 @@
         'ex_army_unit':                 'armedDetailsExArmyUnitInput',
         'trade':                        'armedDetailsTradeInput',
         'pma_lc_ots':                   'armedDetailsPmaLcOtsInput',
+        'account_title':                'bankDetailsAccountTitleInput',
+        'account_no':                   'bankDetailsAccountNumberInput',
+        'iban':                         'bankDetailsIbanInput',
+        'bank_name':                    'bankDetailsBranchNameInput',
+        'branch_code':                  'bankDetailsBranchCodeInput',
+        'branch_address':               'bankDetailsBranchAddressInput',
     };
 
     // For radio groups: map field name -> wrapper element id to append error immediately after the pill row
     const radioGroupWrapperMap = {
-        'engagement_mode':        'employmentWorkArrangementModeGroup',
-        'standard_schedule_mode': 'employmentWorkArrangementStandardTypeGroup',
-        'hybrid_days':            'employmentWorkArrangementHybridFields',
         'working_days':           'employmentWorkArrangementCustomFields',
+        'account_category':      'bankAccountCategoryWrapper',
+        'is_salary_account':     'isSalaryAccountWrapper',
+        'account_type':          'bankAccountTypeWrapper',
+        'banks':                 'bankDetailsList',
     };
 
-    function showFieldErrors(errors) {
-        clearStepErrors();
+    function showFieldErrors(errors, container = document) {
+        if (container === document) {
+            clearStepErrors();
+        } else {
+            // Localized clear within the row
+            container.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            container.querySelectorAll('.field-error-msg').forEach(err => err.remove());
+        }
         
         Object.entries(errors).forEach(([field, messages]) => {
             let fieldName = field;
@@ -295,14 +320,15 @@
 
             // Handle element id overrides
             let input = null;
-            if (fieldElementMap[field] !== undefined) {
+            if (fieldElementMap[field] !== undefined && container === document) {
                 if (fieldElementMap[field]) {
                     input = document.getElementById(fieldElementMap[field]);
                 }
             } else {
-                input = document.querySelector(`[name="${fieldName}"]`) ||
-                        document.querySelector(`[name="${fieldName}[]"]`) ||
-                        document.getElementById(fieldName);
+                input = container.querySelector(`[name="${fieldName}"]`) ||
+                        container.querySelector(`[name="${fieldName}[]"]`) ||
+                        container.querySelector(`[name$="[][${fieldName}]"]`) ||
+                        (container === document ? document.getElementById(fieldName) : container.querySelector(`#${fieldName}`));
             }
 
             if (input) {
@@ -322,7 +348,7 @@
                 err.className = 'field-error-msg text-danger small mt-1 fw-bold';
                 err.textContent = msg;
                 
-                const container = input.closest('.col-12, .col-md-6, .col-md-4, .col-md-3, .col-xl-3, .col, .form-group, .mb-3');
+                const container = input.closest('[class^="col-"], [class*=" col-"], .col, .form-group, .mb-3');
                 if (container) {
                     container.appendChild(err);
                 } else if (input.parentElement) {
@@ -390,6 +416,45 @@
 
         const formData = new FormData(form);
         formData.append('step', step);
+
+        // --- Step 5: Append Saved Bank Accounts ---
+        if (step === 5) {
+            savedBanks.forEach((bank, index) => {
+                Object.entries(bank).forEach(([key, value]) => {
+                    if (value !== null && value !== undefined) {
+                        formData.append(`banks[${index}][${key}]`, value);
+                    }
+                });
+            });
+        }
+
+        // --- Step 6: Append Subsection Data ---
+        if (step === 6) {
+            const subsystems = ['family', 'academic', 'employment'];
+            subsystems.forEach(sub => {
+                const containerId = {
+                    'family': 'moreFamilyRecordsContainer',
+                    'academic': 'moreAcademicRecordsContainer',
+                    'employment': 'moreEmploymentRecordsContainer'
+                }[sub];
+                const container = document.getElementById(containerId);
+                if (container) {
+                    const rows = container.querySelectorAll(`[data-${sub}-row]`);
+                    rows.forEach((row, index) => {
+                        const dbId = row.getAttribute('data-db-id');
+                        if (dbId) formData.append(`${sub === 'employment' ? 'employments' : sub}[${index}][id]`, dbId);
+                        
+                        row.querySelectorAll('input, select, textarea').forEach(input => {
+                            const name = input.getAttribute('name');
+                            if (name) {
+                                const cleanKey = name.match(/\[([^\]]*)\]$/)?.[1] || name;
+                                if (cleanKey) formData.append(`${sub === 'employment' ? 'employments' : sub}[${index}][${cleanKey}]`, input.value);
+                            }
+                        });
+                    });
+                }
+            });
+        }
 
         if (window.croppedImageBlob) {
             formData.append('profile_photo', window.croppedImageBlob, window.originalFileName);
@@ -490,9 +555,22 @@
 
     document.getElementById('nextBtn').addEventListener('click', function () {
         if (currentStep === 6) {
-            // Check if there are more sub-steps in Step 6
             const isLastMoreStep = typeof window.isLastMoreStep === 'function' ? window.isLastMoreStep() : true;
             if (!isLastMoreStep) {
+                // If it's a "static" more subsection, save it first
+                const moreStep = currentMoreStep;
+                if ([1, 5, 6].includes(moreStep)) {
+                    saveMoreSubSection(moreStep, () => {
+                        if (typeof window.nextMoreSubStep === 'function') {
+                            window.nextMoreSubStep();
+                            syncStepUi();
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                    });
+                    return;
+                }
+                
+                // For dynamic rows (2,3,4), just move next (they have independent save buttons)
                 if (typeof window.nextMoreSubStep === 'function') {
                     window.nextMoreSubStep();
                     syncStepUi();
@@ -509,9 +587,57 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         } else {
-            processStepSave(currentStep); // Final step
+            // Final submission
+            processStepSave(currentStep); 
         }
     });
+
+    async function saveMoreSubSection(step, onSuccess) {
+        const typeMap = { 1: 'contact', 5: 'medical', 6: 'references' };
+        const subsection = typeMap[step];
+        if (!subsection) {
+            if (onSuccess) onSuccess();
+            return;
+        }
+
+        const employeeId = document.getElementById('saved_employee_id')?.value;
+        if (!employeeId) return showError('Save general information first.');
+
+        const nextBtn = document.getElementById('nextBtn');
+        const originalText = nextBtn.textContent;
+        nextBtn.disabled = true;
+        nextBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>Saving...';
+
+        const form = document.getElementById('employeeForm');
+        const formData = new FormData(form);
+        formData.append('subsection', subsection);
+        formData.append('employee_id', employeeId);
+
+        try {
+            const response = await fetch('/admin/employees/save-subsection', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const res = await response.json();
+            if (response.status === 422) {
+                showFieldErrors(res.errors);
+            } else if (res.success) {
+                showToast(`${subsection.charAt(0).toUpperCase() + subsection.slice(1)} information saved successfully`);
+                if (onSuccess) onSuccess();
+            } else {
+                showError(res.message);
+            }
+        } catch (e) { showError('Network error'); }
+        finally {
+            nextBtn.disabled = false;
+            nextBtn.textContent = originalText;
+        }
+    }
 
     document.getElementById('prevBtn').addEventListener('click', function () {
         if (currentStep === 6) {
@@ -1319,6 +1445,700 @@
 
     if (deptSelect && Array.from(deptSelect.options).length > 0) {
         renderDeptChips();
+    }
+
+    // --- STEP 5: COMPACT BANK DETAILS LOGIC ---
+    
+    // Original editData check
+    let savedBanks = window.editData && window.editData.bankDetails ? JSON.parse(JSON.stringify(window.editData.bankDetails)) : [];
+
+    window.addBankDetail = function() {
+        resetBankForm();
+        window.scrollTo({
+            top: document.getElementById('step-5').offsetTop - 100,
+            behavior: 'smooth'
+        });
+    };
+
+    window.resetBankForm = function() {
+        document.getElementById('bank_detail_id').value = '';
+        document.getElementById('bankDetailsAccountTitleInput').value = '';
+        document.getElementById('bankDetailsAccountNumberInput').value = '';
+        document.getElementById('bankDetailsIbanInput').value = '';
+        document.getElementById('bankDetailsBranchNameInput').value = '';
+        document.getElementById('bankDetailsBranchCodeInput').value = '';
+        document.getElementById('bankDetailsBranchAddressInput').value = '';
+        
+        if (document.getElementById('accountCategoryPersonal')) document.getElementById('accountCategoryPersonal').checked = true;
+        if (document.getElementById('salaryAccountNo')) document.getElementById('salaryAccountNo').checked = true;
+        if (document.getElementById('bankDetailsAccountTypeSaving')) document.getElementById('bankDetailsAccountTypeSaving').checked = true;
+        
+        document.getElementById('bankResetBtn').classList.add('d-none');
+        document.querySelectorAll('#bankEntryForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    };
+
+    function collectStep5Data() {
+        const banks = [];
+        const editingId = document.getElementById('bank_detail_id').value;
+        
+        savedBanks.forEach(b => {
+             if (b.id != editingId) banks.push(b);
+        });
+
+        const title = document.getElementById('bankDetailsAccountTitleInput').value.trim();
+        const no = document.getElementById('bankDetailsAccountNumberInput').value.trim();
+        if (title !== '' && no !== '') {
+            banks.push({
+                id: editingId || null,
+                account_category: document.querySelector('input[name="account_category"]:checked')?.value || 'Personal',
+                account_title: title,
+                account_no: no,
+                iban: document.getElementById('bankDetailsIbanInput').value,
+                bank_name: document.getElementById('bankDetailsBranchNameInput').value,
+                branch_code: document.getElementById('bankDetailsBranchCodeInput').value,
+                branch_address: document.getElementById('bankDetailsBranchAddressInput').value,
+                account_type: document.querySelector('input[name="account_type"]:checked')?.value || 'Saving',
+                is_salary_account: document.querySelector('input[name="is_salary_account"]:checked')?.value === '1'
+            });
+        }
+        return banks;
+    }
+
+    // Capture original processStepSave if we haven't already
+    const baseProcessStepSave = window.processStepSave;
+
+    window.processStepSave = function(step, onSuccess) {
+        if (step === 5) {
+            const banks = collectStep5Data();
+            if (banks.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Bank Account Saved',
+                    text: 'Please save at least one bank account using the "Save Account" button before proceeding.',
+                    confirmButtonColor: '#1a237e'
+                });
+                return;
+            }
+
+            const form = document.getElementById('employeeForm');
+            const formData = new FormData(form);
+            
+            formData.delete('banks'); 
+            banks.forEach((bank, index) => {
+                for (const [key, value] of Object.entries(bank)) {
+                    if (value !== null && value !== undefined) {
+                        formData.append(`banks[${index}][${key}]`, value);
+                    }
+                }
+            });
+
+            return executeStep5Save(formData, onSuccess);
+        }
+        
+        return baseProcessStepSave(step, onSuccess);
+    };
+
+    async function executeStep5Save(formData, onSuccess) {
+        const nextBtn = document.getElementById('nextBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const originalText = nextBtn.textContent;
+        nextBtn.disabled = true;
+        nextBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+        formData.append('step', 5);
+        const employeeId = document.getElementById('saved_employee_id')?.value;
+        if (employeeId) formData.append('employee_id', employeeId);
+
+        try {
+            const response = await fetch('/admin/employees/save-step', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (response.status === 422) {
+                showFieldErrors(data.errors);
+            } else if (data.success) {
+                clearStepErrors();
+                if (data.employee_id) document.getElementById('saved_employee_id').value = data.employee_id;
+                
+                // Show success message and move to Step 6
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Step 5 Saved',
+                    text: 'Bank details have been saved successfully. Moving to final details.',
+                    confirmButtonColor: '#1a237e',
+                    timer: 2000,
+                    timerProgressBar: true
+                }).then(() => {
+                    if (currentStep === maxStepReached) maxStepReached = Math.min(totalSteps, currentStep + 1);
+                    if (onSuccess) onSuccess();
+                    // Ensure Step 6 starts at sub-step 1 (Contact)
+                    setMoreSubStep(1);
+                });
+            } else {
+                showError(data.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            showError('Network error');
+        } finally {
+            nextBtn.disabled = false;
+            nextBtn.textContent = originalText;
+            if (prevBtn) prevBtn.disabled = false;
+            syncStepUi();
+        }
+    }
+
+    window.saveBankDetail = async function() {
+        const employeeId = document.getElementById('saved_employee_id')?.value;
+        if (!employeeId) {
+            showError('Please save the "General Information" step first.');
+            return;
+        }
+
+        const bankId = document.getElementById('bank_detail_id').value;
+        const payload = {
+            employee_id: employeeId,
+            subsection: 'bank_row',
+            bank_detail_id: bankId,
+            account_category: document.querySelector('input[name="account_category"]:checked')?.value || 'Personal',
+            account_title: document.getElementById('bankDetailsAccountTitleInput').value,
+            account_no: document.getElementById('bankDetailsAccountNumberInput').value,
+            iban: document.getElementById('bankDetailsIbanInput').value,
+            bank_name: document.getElementById('bankDetailsBranchNameInput').value,
+            branch_code: document.getElementById('bankDetailsBranchCodeInput').value,
+            branch_address: document.getElementById('bankDetailsBranchAddressInput').value,
+            account_type: document.querySelector('input[name="account_type"]:checked')?.value || 'Saving',
+            is_salary_account: document.querySelector('input[name="is_salary_account"]:checked')?.value === '1'
+        };
+
+        const saveBtn = document.querySelector('button[onclick="saveBankDetail()"]');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+        try {
+            const response = await fetch('/admin/employees/save-subsection', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.status === 422) {
+                showFieldErrors(data.errors);
+            } else if (data.success) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Saved', showConfirmButton: false, timer: 2000 });
+                
+                const rec = {
+                    id: data.id || bankId,
+                    account_category: payload.account_category,
+                    account_title: payload.account_title,
+                    account_no: payload.account_no,
+                    iban: payload.iban,
+                    bank_name: payload.bank_name,
+                    branch_code: payload.branch_code,
+                    branch_address: payload.branch_address,
+                    account_type: payload.account_type,
+                    is_salary_account: payload.is_salary_account
+                };
+
+                if (bankId) {
+                    const idx = savedBanks.findIndex(b => b.id == bankId);
+                    if (idx !== -1) savedBanks[idx] = rec;
+                } else {
+                    savedBanks.push(rec);
+                }
+
+                if (payload.is_salary_account) {
+                    savedBanks.forEach(b => { if (b.id != rec.id) b.is_salary_account = false; });
+                }
+
+                renderBankList();
+                resetBankForm();
+                showToast(bankId ? 'Bank account updated' : 'Bank account saved');
+            }
+        } catch (error) { showError('Network error'); }
+        finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
+        }
+    };
+
+    window.editBankDetail = function(id) {
+        const bank = savedBanks.find(b => b.id == id);
+        if (!bank) return;
+
+        resetBankForm();
+        document.getElementById('bank_detail_id').value = bank.id;
+        document.getElementById('bankDetailsAccountTitleInput').value = bank.account_title || '';
+        document.getElementById('bankDetailsAccountNumberInput').value = bank.account_no || '';
+        document.getElementById('bankDetailsIbanInput').value = bank.iban || '';
+        document.getElementById('bankDetailsBranchNameInput').value = bank.bank_name || '';
+        document.getElementById('bankDetailsBranchCodeInput').value = bank.branch_code || '';
+        document.getElementById('bankDetailsBranchAddressInput').value = bank.branch_address || '';
+        
+        // Use the actual values from the savedBanks array
+        const categoryInput = document.querySelector(`input[name="account_category"][value="${bank.account_category}"]`);
+        if (categoryInput) categoryInput.checked = true;
+
+        const salaryInput = document.querySelector(`input[name="is_salary_account"][value="${bank.is_salary_account ? '1' : '0'}"]`);
+        if (salaryInput) salaryInput.checked = true;
+
+        const typeInput = document.querySelector(`input[name="account_type"][value="${bank.account_type}"]`);
+        if (typeInput) typeInput.checked = true;
+
+        document.getElementById('bankResetBtn').classList.remove('d-none');
+        window.scrollTo({ top: document.getElementById('bankEntryForm').offsetTop - 100, behavior: 'smooth' });
+    };
+
+    window.deleteBankDetail = async function(id) {
+        const result = await showConfirm('Delete this bank account?');
+        if (!result.isConfirmed) return;
+
+        const employeeId = document.getElementById('saved_employee_id')?.value;
+        try {
+            const resp = await fetch('/admin/employees/delete-bank-detail', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ employee_id: employeeId, id: id })
+            });
+            const d = await resp.json();
+            if (d.success) {
+                savedBanks = savedBanks.filter(b => b.id != id);
+                renderBankList();
+                showToast('Bank account deleted');
+            } else showError(d.message);
+        } catch (e) { showError('Network error'); }
+    };
+
+    function renderBankList() {
+        const list = document.getElementById('bankDetailsList');
+        if (!list) return;
+
+        list.innerHTML = '';
+        if (savedBanks.length === 0) {
+            list.innerHTML = `<div class="col-12" id="bankEmptyState"><div class="text-center py-3 bg-light rounded text-muted small border" style="border-style: dotted !important;">No bank accounts saved yet.</div></div>`;
+            return;
+        }
+
+        const template = document.getElementById('bankCardTemplate');
+        savedBanks.forEach(bank => {
+            const clone = template.content.cloneNode(true);
+            const card = clone.querySelector('.bank-card-item');
+            card.setAttribute('data-id', bank.id);
+            if (bank.is_salary_account) {
+                clone.querySelector('.salary-account-badge').classList.remove('d-none');
+            }
+            
+            const initial = (bank.bank_name || 'B').charAt(0).toUpperCase();
+            clone.querySelector('.bank-initial-icon').innerText = initial;
+            clone.querySelector('.bank-title-label').innerText = bank.account_title || 'Account';
+            clone.querySelector('.bank-sub-label').innerText = `Source: ${bank.bank_name || 'N/A'} - (${bank.account_category || '-'})`;
+            clone.querySelector('.bank-no-label').innerText = bank.account_no || 'N/A';
+            clone.querySelector('.bank-iban-label').innerText = bank.iban || 'N/A';
+            
+            clone.querySelector('.edit-bank-btn').onclick = () => editBankDetail(bank.id);
+            clone.querySelector('.delete-bank-btn').onclick = () => deleteBankDetail(bank.id);
+            list.appendChild(clone);
+        });
+    }
+
+    // Validation override for specific navigation rules
+    document.getElementById('nextBtn').addEventListener('click', function(e) {
+        if (currentStep === 5) {
+            // Check if we have SAVED banks. 
+            // We ignore unsaved form data here because the user must use "Save Account"
+            if (savedBanks.length === 0) {
+                 e.stopImmediatePropagation();
+                 
+                 // Show visual error if not already showing
+                 if (!document.querySelector('#bankDetailsList .field-error-msg')) {
+                    const list = document.getElementById('bankDetailsList');
+                    const err = document.createElement('div');
+                    err.className = 'field-error-msg text-danger small mt-2 fw-bold text-center w-100';
+                    err.textContent = 'Please save at least one bank account using the "Save Account" button.';
+                    list.appendChild(err);
+                 }
+                 
+                 showError('At least one bank account is required.', 'Validation Error');
+                 return;
+            }
+            
+            const hasSalaryAccount = savedBanks.some(b => b.is_salary_account);
+            if (!hasSalaryAccount) {
+                e.stopImmediatePropagation();
+                showError('One bank account must be marked as the Salary Account (Primary).', 'Validation Error');
+                return;
+            }
+        }
+    }, true);
+
+    // --- STEP 6: MORE INFORMATION LOGIC ---
+    let currentMoreStep = 1;
+    const totalMoreSteps = 6;
+
+    window.setMoreSubStep = function(step) {
+        currentMoreStep = step;
+        document.querySelectorAll('.more-sub-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.more-sub-tab').forEach(t => t.classList.remove('active'));
+        
+        const pane = document.getElementById('moreStepPane' + step);
+        if (pane) pane.classList.add('active');
+        
+        const tab = document.querySelector(`.more-sub-tab[data-more-step="${step}"]`);
+        if (tab) tab.classList.add('active');
+        
+        if (typeof syncStepUi === 'function') syncStepUi();
+    };
+
+    window.isFirstMoreStep = function() { return currentMoreStep === 1; };
+    window.isLastMoreStep = function() { return currentMoreStep === totalMoreSteps; };
+
+    window.nextMoreSubStep = function() {
+        if (currentMoreStep < totalMoreSteps) {
+            setMoreSubStep(currentMoreStep + 1);
+        }
+    };
+
+    window.prevMoreSubStep = function() {
+        if (currentMoreStep > 1) {
+            setMoreSubStep(currentMoreStep - 1);
+        }
+    };
+
+    document.querySelectorAll('.more-sub-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            setMoreSubStep(parseInt(this.getAttribute('data-more-step')));
+        });
+    });
+
+    // --- Subsection Management Helpers (Family, Academic, Employment) ---
+
+    function setSubsectionRowMode(row, type, isPreview) {
+        if (!row) return;
+        row.classList.toggle('preview-mode', isPreview);
+        const saveBtn = row.querySelector(`[data-${type}-save]`);
+        if (!saveBtn) return;
+        
+        if (isPreview) {
+            saveBtn.classList.remove('btn-outline-primary');
+            saveBtn.classList.add('btn-outline-secondary');
+            saveBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+            saveBtn.setAttribute('title', 'Edit record');
+        } else {
+            saveBtn.classList.remove('btn-outline-secondary');
+            saveBtn.classList.add('btn-outline-primary');
+            saveBtn.innerHTML = '<i class="bi bi-floppy"></i>';
+            saveBtn.setAttribute('title', 'Save record');
+        }
+    }
+
+    function updateSubsectionPreview(row, type) {
+        if (!row) return;
+        row.querySelectorAll('input, select, textarea').forEach(input => {
+            const name = input.getAttribute('name');
+            if (name) {
+                const cleanKey = name.match(/\[([^\]]*)\]$/)?.[1] || name;
+                if (cleanKey) {
+                    const preview = row.querySelector(`[data-${type}-preview-${cleanKey.replace(/_/g, '-')}]`) || 
+                                   row.querySelector(`[data-${type}-preview-${cleanKey}]`) ||
+                                   row.querySelector(`[data-${type}-preview-${cleanKey.split('_')[0]}]`);
+                    if (preview) {
+                        let displayValue = input.value || '-';
+                        if (input.tagName === 'SELECT' && input.value) {
+                            displayValue = input.options[input.selectedIndex].text;
+                        }
+                        preview.textContent = displayValue;
+                    }
+                }
+            }
+        });
+    }
+
+    async function saveSubsectionRow(type, rowElement) {
+        const isPreview = rowElement.classList.contains('preview-mode');
+        if (isPreview) {
+            setSubsectionRowMode(rowElement, type, false);
+            return;
+        }
+
+        const employeeId = document.getElementById('saved_employee_id')?.value;
+        if (!employeeId) return showError('Save general information first.');
+
+        const saveBtn = rowElement.querySelector(`[data-${type}-save]`);
+        const originalHtml = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        // Collect inputs in this row
+        const data = { employee_id: employeeId, subsection: `${type}_row` };
+        if (rowElement.getAttribute('data-db-id')) {
+            data[`${type}_id`] = rowElement.getAttribute('data-db-id');
+        }
+
+        rowElement.querySelectorAll('input, select, textarea').forEach(input => {
+            const name = input.getAttribute('name');
+            if (name) {
+                // Extract clean key from name like "family[][name]" -> "name"
+                const cleanKey = name.match(/\[([^\]]*)\]$/)?.[1] || name;
+                if (cleanKey) data[cleanKey] = input.value;
+            }
+        });
+
+        try {
+            const response = await fetch('/admin/employees/save-subsection', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const res = await response.json();
+            if (response.status === 422) {
+                showFieldErrors(res.errors, rowElement);
+            } else if (res.success) {
+                // Remove any remaining visual errors on successful save
+                rowElement.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                rowElement.querySelectorAll('.field-error-msg').forEach(err => err.remove());
+                
+                if (res.id) rowElement.setAttribute('data-db-id', res.id);
+                showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} record saved successfully`);
+                updateSubsectionPreview(rowElement, type);
+                setSubsectionRowMode(rowElement, type, true);
+                rowElement.classList.add('saved-row');
+            } else {
+                showError(res.message);
+            }
+        } catch (e) { showError('Network error'); }
+        finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalHtml;
+        }
+    }
+
+    async function removeSubsectionRow(type, rowElement) {
+        const dbId = rowElement.getAttribute('data-db-id');
+        const employeeId = document.getElementById('saved_employee_id')?.value;
+
+        const result = await showConfirm(`Are you sure you want to delete this ${type} record?`);
+        if (!result.isConfirmed) return;
+
+        if (dbId) {
+            try {
+                // Capitalize first letter for endpoint: delete-family, delete-academic, delete-employment
+                const endpointMap = {
+                    'family': 'family',
+                    'academic': 'academic',
+                    'employment': 'employment'
+                };
+                const endpoint = `/admin/employees/delete-${endpointMap[type]}`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ employee_id: employeeId, id: dbId })
+                });
+
+                const res = await response.json();
+                if (res.success) {
+                    rowElement.remove();
+                    updateRowIndices(type);
+                    showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} member deleted successfully`);
+                } else {
+                    showError(res.message);
+                }
+            } catch (e) { showError('Network error'); }
+        } else {
+            rowElement.remove();
+            updateRowIndices(type);
+        }
+    }
+
+    function updateRowIndices(type) {
+        const containerId = {
+            'family': 'moreFamilyMembersContainer',
+            'academic': 'moreAcademicRecordsContainer',
+            'employment': 'moreEmploymentRecordsContainer'
+        }[type];
+        
+        const countId = {
+            'family': 'moreFamilyMemberCount',
+            'academic': 'moreAcademicRecordCount',
+            'employment': 'moreEmploymentRecordCount'
+        }[type];
+
+        const container = document.getElementById(containerId);
+        const rows = container.querySelectorAll(`[data-${type}-row]`);
+        rows.forEach((row, idx) => {
+            const indexSpan = row.querySelector(`[data-${type}-index]`);
+            if (indexSpan) indexSpan.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} ${idx + 1}`;
+        });
+
+        const countLabel = document.getElementById(countId);
+        if (countLabel) countLabel.textContent = `${rows.length} ${rows.length === 1 ? 'Record' : 'Records'}`;
+    }
+
+    // --- FAMILY Member Specifics ---
+
+    window.addFamilyMember = function(data = null) {
+        const container = document.getElementById('moreFamilyMembersContainer');
+        const template = document.getElementById('moreFamilyMemberTemplate');
+        if (!container || !template) return;
+
+        const clone = template.content.cloneNode(true);
+        const row = clone.querySelector('[data-family-row]');
+        
+        if (data) {
+            row.setAttribute('data-db-id', data.id || '');
+            if (data.name) row.querySelector('[data-family-name]').value = data.name;
+            if (data.gender) row.querySelector('[data-family-gender]').value = data.gender;
+            if (data.dateOfBirth) row.querySelector('[data-family-date-of-birth]').value = data.dateOfBirth;
+            if (data.relation) row.querySelector('[data-family-relation]').value = data.relation;
+            if (data.occupation) row.querySelector('[data-family-occupation]').value = data.occupation;
+        }
+
+        row.querySelector('[data-family-save]').onclick = () => saveSubsectionRow('family', row);
+        row.querySelector('[data-family-remove]').onclick = () => removeSubsectionRow('family', row);
+
+        container.appendChild(clone);
+        if (data && data.id) {
+            updateSubsectionPreview(row, 'family');
+            setSubsectionRowMode(row, 'family', true);
+        }
+        updateRowIndices('family');
+    };
+
+    const addFamilyBtn = document.getElementById('moreFamilyAddMemberBtn');
+    if (addFamilyBtn) addFamilyBtn.onclick = () => addFamilyMember();
+
+    // --- ACADEMIC Record Specifics ---
+
+    window.addAcademicRecord = function(data = null) {
+        const container = document.getElementById('moreAcademicRecordsContainer');
+        const template = document.getElementById('moreAcademicRecordTemplate');
+        if (!container || !template) return;
+
+        const clone = template.content.cloneNode(true);
+        const row = clone.querySelector('[data-academic-row]');
+
+        if (data) {
+            row.setAttribute('data-db-id', data.id || '');
+            if (data.degree) row.querySelector('[data-academic-degree]').value = data.degree;
+            if (data.grade_cgpa) row.querySelector('[data-academic-grade]').value = data.grade_cgpa;
+            if (data.start_date) row.querySelector('[data-academic-start-date]').value = data.start_date;
+            if (data.end_date) row.querySelector('[data-academic-end-date]').value = data.end_date;
+            if (data.fieldOfStudy || data.field_of_study) row.querySelector('[data-academic-field-of-study]').value = data.fieldOfStudy || data.field_of_study;
+            if (data.institute) row.querySelector('[data-academic-institute]').value = data.institute;
+        }
+
+        row.querySelector('[data-academic-save]').onclick = () => saveSubsectionRow('academic', row);
+        row.querySelector('[data-academic-remove]').onclick = () => removeSubsectionRow('academic', row);
+
+        container.appendChild(clone);
+        if (data && data.id) {
+            updateSubsectionPreview(row, 'academic');
+            setSubsectionRowMode(row, 'academic', true);
+        }
+        updateRowIndices('academic');
+    };
+
+    const addAcademicBtn = document.getElementById('moreAcademicAddRecordBtn');
+    if (addAcademicBtn) addAcademicBtn.onclick = () => addAcademicRecord();
+
+    // --- EMPLOYMENT Record Specifics ---
+
+    window.addEmploymentRecord = function(data = null) {
+        const container = document.getElementById('moreEmploymentRecordsContainer');
+        const template = document.getElementById('moreEmploymentRecordTemplate');
+        if (!container || !template) return;
+
+        const clone = template.content.cloneNode(true);
+        const row = clone.querySelector('[data-employment-row]');
+
+        if (data) {
+            row.setAttribute('data-db-id', data.id || '');
+            if (data.organization) row.querySelector('[data-employment-organization]').value = data.organization;
+            if (data.designation) row.querySelector('[data-employment-designation]').value = data.designation;
+            if (data.from_date) row.querySelector('[data-employment-from-date]').value = data.from_date;
+            if (data.to_date) row.querySelector('[data-employment-to-date]').value = data.to_date;
+            if (data.salary) row.querySelector('[data-employment-salary]').value = data.salary;
+            if (data.reason_for_leaving) row.querySelector('[data-employment-reason]').value = data.reason_for_leaving;
+        }
+
+        row.querySelector('[data-employment-save]').onclick = () => saveSubsectionRow('employment', row);
+        row.querySelector('[data-employment-remove]').onclick = () => removeSubsectionRow('employment', row);
+
+        container.appendChild(clone);
+        if (data && data.id) {
+            updateSubsectionPreview(row, 'employment');
+            setSubsectionRowMode(row, 'employment', true);
+        }
+        updateRowIndices('employment');
+    };
+
+    const addEmploymentBtn = document.getElementById('moreEmploymentAddRecordBtn');
+    if (addEmploymentBtn) addEmploymentBtn.onclick = () => addEmploymentRecord();
+
+    // --- Error Clearing on Input ---
+    const mainForm = document.getElementById('employeeForm');
+    if (mainForm) {
+        const clearLocalError = function(e) {
+            const target = e.target;
+            if (target && target.classList.contains('is-invalid')) {
+                target.classList.remove('is-invalid');
+                
+                // Clear sibling/nearby error message
+                const container = target.closest('[class^="col-"], [class*=" col-"], .col, .form-group, .mb-3');
+                if (container) {
+                    const err = container.querySelector('.field-error-msg');
+                    if (err) err.remove();
+                } else if (target.nextElementSibling && target.nextElementSibling.classList.contains('field-error-msg')) {
+                    target.nextElementSibling.remove();
+                }
+            }
+        };
+
+        mainForm.addEventListener('input', clearLocalError);
+        
+        mainForm.addEventListener('change', function(e) {
+            clearLocalError(e);
+            
+            if (e.target.type === 'radio' || e.target.tagName === 'SELECT') {
+                const radioWrapper = e.target.closest('[id$="Wrapper"], [id$="Fields"], [id$="List"]');
+                if (radioWrapper) {
+                    const err = radioWrapper.querySelector('.field-error-msg') || radioWrapper.nextElementSibling;
+                    if (err && err.classList.contains('field-error-msg')) {
+                        err.remove();
+                    }
+                    if (e.target.type === 'radio') {
+                        document.querySelectorAll(`input[name="${e.target.name}"]`).forEach(r => r.classList.remove('is-invalid'));
+                    } else {
+                        e.target.classList.remove('is-invalid');
+                    }
+                }
+            }
+        });
     }
 
 })();

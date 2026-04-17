@@ -13,7 +13,7 @@
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
                                                 data-more-step="3"><span class="more-step-index">3</span><span>Academic</span></button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
-                                                data-more-step="4"><span class="more-step-index">4</span><span>Employement</span></button>
+                                                data-more-step="4"><span class="more-step-index">4</span><span>Employment</span></button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
                                                 data-more-step="5"><span class="more-step-index">5</span><span>Medical</span></button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
@@ -84,6 +84,7 @@
                                                                  @foreach(($employee?->familyMembers ?? []) as $member)
                                                                      if (typeof window.addFamilyMember === 'function') {
                                                                          window.addFamilyMember({
+                                                                             id: @json($member->id),
                                                                              name: @json($member?->name),
                                                                              gender: @json($member?->gender),
                                                                              dateOfBirth: @json($member?->dob ? $member?->dob?->format('Y-m-d') : ''),
@@ -171,6 +172,7 @@
                                                               @if(isset($employee) && $employee?->academics?->count() > 0)
                                                                  @foreach(($employee?->academics ?? []) as $record)
                                                                          window.addAcademicRecord({
+                                                                             id: @json($record->id),
                                                                              degree: @json($record?->degree),
                                                                              grade_cgpa: @json($record?->grade_cgpa),
                                                                              start_date: @json($record?->start_date ? $record?->start_date?->format('Y-m-d') : ''),
@@ -216,7 +218,7 @@
                                                         <label class="form-label">Grade / Div / CGPA <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control academic-field-input" name="academics[][grade_cgpa]"
                                                             data-academic-grade placeholder="Enter grade, division, or CGPA" required>
-                                                        <div class="academic-field-preview" data-academic-preview-grade>-</div>
+                                                        <div class="academic-field-preview" data-academic-preview-grade-cgpa>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
                                                         <label class="form-label">Start Date <span class="text-danger">*</span></label>
@@ -248,19 +250,20 @@
 
                                         <div class="more-sub-pane" id="moreStepPane4">
                                             <div>
-                                                <div class="fw-bold text-uppercase small mb-3">Employement</div>
+                                                <div class="fw-bold text-uppercase small mb-3">Employment</div>
                                                 <div class="employment-records-wrap bg-white">
                                                     <div class="employment-records-toolbar">
-                                                        <div class="small text-secondary">Add each employement record as a separate row.</div>
-                                                        <span class="employment-records-count" id="moreEmployementRecordCount">0 Records</span>
+                                                        <div class="small text-secondary">Add each employment record as a separate row.</div>
+                                                        <span class="employment-records-count" id="moreEmploymentRecordCount">0 Records</span>
                                                     </div>
-                                                     <div id="moreEmployementRecordsContainer"></div>
+                                                     <div id="moreEmploymentRecordsContainer"></div>
                                                      <script>
                                                          document.addEventListener('DOMContentLoaded', function() {
                                                               @if(isset($employee) && $employee?->exEmployments?->count() > 0)
                                                                  @foreach(($employee?->exEmployments ?? []) as $record)
-                                                                     if (typeof window.addEmployementRecord === 'function') {
-                                                                         window.addEmployementRecord({
+                                                                     if (typeof window.addEmploymentRecord === 'function') {
+                                                                         window.addEmploymentRecord({
+                                                                             id: @json($record->id),
                                                                              organization: @json($record?->organization),
                                                                              designation: @json($record?->designation),
                                                                              from_date: @json($record?->from_date ? $record?->from_date?->format('Y-m-d') : ''),
@@ -276,22 +279,22 @@
                                                 </div>
                                                 <div class="mt-3">
                                                     <button type="button" class="btn btn-sm text-white bg-main border-0"
-                                                        id="moreEmployementAddRecordBtn">
-                                                        <i class="bi bi-plus-lg me-1"></i>Add Employement Record
+                                                        id="moreEmploymentAddRecordBtn">
+                                                        <i class="bi bi-plus-lg me-1"></i>Add Employment Record
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <template id="moreEmployementRecordTemplate">
-                                            <div class="employment-record-row mb-2 bg-light" data-employement-row>
+                                        <template id="moreEmploymentRecordTemplate">
+                                            <div class="employment-record-row mb-2 bg-light" data-employment-row>
                                                 <div class="employment-record-header">
-                                                    <span class="employment-record-index" data-employement-index>Record 1</span>
+                                                    <span class="employment-record-index" data-employment-index>Record 1</span>
                                                     <div class="employment-record-actions">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-employement-save title="Save record">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-employment-save title="Save record">
                                                             <i class="bi bi-floppy"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" data-employement-remove>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" data-employment-remove>
                                                             <i class="bi bi-trash"></i>
                                                         </button>
                                                     </div>
@@ -300,38 +303,38 @@
                                                     <div class="col-12 col-md-6 col-xl-3">
                                                         <label class="form-label">Organization <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control employment-field-input" name="employments[][organization]"
-                                                            data-employement-organization placeholder="Enter organization" required>
-                                                        <div class="employment-field-preview" data-employement-preview-organization>-</div>
+                                                            data-employment-organization placeholder="Enter organization" required>
+                                                        <div class="employment-field-preview" data-employment-preview-organization>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-3">
                                                         <label class="form-label">Designation <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control employment-field-input" name="employments[][designation]"
-                                                            data-employement-designation placeholder="Enter designation" required>
-                                                        <div class="employment-field-preview" data-employement-preview-designation>-</div>
+                                                            data-employment-designation placeholder="Enter designation" required>
+                                                        <div class="employment-field-preview" data-employment-preview-designation>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
                                                         <label class="form-label">From <span class="text-danger">*</span></label>
                                                         <input type="date" class="form-control employment-field-input" name="employments[][from_date]"
-                                                            data-employement-from-date placeholder="yyyy-mm-dd" required>
-                                                        <div class="employment-field-preview" data-employement-preview-from-date>-</div>
+                                                            data-employment-from-date placeholder="yyyy-mm-dd" required>
+                                                        <div class="employment-field-preview" data-employment-preview-from-date>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
                                                         <label class="form-label">To <span class="text-danger">*</span></label>
                                                         <input type="date" class="form-control employment-field-input" name="employments[][to_date]"
-                                                            data-employement-to-date placeholder="yyyy-mm-dd" required>
-                                                        <div class="employment-field-preview" data-employement-preview-to-date>-</div>
+                                                            data-employment-to-date placeholder="yyyy-mm-dd" required>
+                                                        <div class="employment-field-preview" data-employment-preview-to-date>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
                                                         <label class="form-label">Salary</label>
-                                                        <input type="text" class="form-control employment-field-input" name="employments[][salary]"
-                                                            data-employement-salary placeholder="Enter salary">
-                                                        <div class="employment-field-preview" data-employement-preview-salary>-</div>
+                                                        <input type="number" class="form-control employment-field-input" name="employments[][salary]"
+                                                            data-employment-salary placeholder="Enter salary" step="0.01">
+                                                        <div class="employment-field-preview" data-employment-preview-salary>-</div>
                                                     </div>
                                                     <div class="col-12">
                                                         <label class="form-label">Reason for Leaving</label>
                                                         <input type="text" class="form-control employment-field-input" name="employments[][reason_for_leaving]"
-                                                            data-employement-reason placeholder="Enter reason for leaving">
-                                                        <div class="employment-field-preview" data-employement-preview-reason>-</div>
+                                                            data-employment-reason placeholder="Enter reason for leaving">
+                                                        <div class="employment-field-preview" data-employment-preview-reason>-</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -348,27 +351,35 @@
                                                                 <textarea name="last_fitness_test" class="form-control" id="moreMedicalLastFitnessTestInput" rows="2"
                                                                     placeholder="Enter date and results of last medical fitness test">{{ $employee?->medical?->last_fitness_test ?? '' }}</textarea>
                                                             </div>
-                                                            <div class="col-md-3">
-                                                                <label class="form-label d-block">Do you have any disability?</label>
-                                                                <div class="d-flex gap-4 pt-1">
+                                                            <div class="col-md-4">
+                                                                <label class="form-label">Do you have any disability?</label>
+                                                                <div class="d-flex gap-2">
                                                                     <input class="btn-check" type="radio" name="has_disability"
-                                                                        id="moreMedicalHasDisabilityYes" value="Yes" {{ ($employee?->medical?->has_disability ?? '') == 'Yes' ? 'checked' : '' }}>
-                                                                    <label class="btn btn-outline-secondary option-chip"
+                                                                        id="moreMedicalHasDisabilityYes" value="yes" {{ strtolower($employee?->medical?->has_disability ?? '') == 'yes' ? 'checked' : '' }}>
+                                                                    <label class="btn btn-outline-secondary option-chip m-0 flex-grow-1"
                                                                         for="moreMedicalHasDisabilityYes">Yes</label>
 
                                                                     <input class="btn-check" type="radio" name="has_disability"
-                                                                        id="moreMedicalHasDisabilityNo" value="No" {{ ($employee?->medical?->has_disability ?? '') == 'No' ? 'checked' : '' }}>
-                                                                    <label class="btn btn-outline-secondary option-chip"
+                                                                        id="moreMedicalHasDisabilityNo" value="no" {{ strtolower($employee?->medical?->has_disability ?? '') == 'no' ? 'checked' : '' }}>
+                                                                    <label class="btn btn-outline-secondary option-chip m-0 flex-grow-1"
                                                                         for="moreMedicalHasDisabilityNo">No</label>
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-3">
+                                                            <div class="col-md-4">
                                                                 <label class="form-label">Blood Group</label>
-                                                                <input type="text" name="blood_group" class="form-control" id="moreMedicalBloodGroupInput"
-                                                                    value="{{ $employee?->medical?->blood_group ?? '' }}"
-                                                                    placeholder="Enter blood group">
+                                                                <select name="blood_group" class="form-select" id="moreMedicalBloodGroupInput">
+                                                                    <option value="" selected disabled>Select</option>
+                                                                    <option value="A+" {{ ($employee?->medical?->blood_group ?? '') == 'A+' ? 'selected' : '' }}>A+</option>
+                                                                    <option value="A-" {{ ($employee?->medical?->blood_group ?? '') == 'A-' ? 'selected' : '' }}>A-</option>
+                                                                    <option value="B+" {{ ($employee?->medical?->blood_group ?? '') == 'B+' ? 'selected' : '' }}>B+</option>
+                                                                    <option value="B-" {{ ($employee?->medical?->blood_group ?? '') == 'B-' ? 'selected' : '' }}>B-</option>
+                                                                    <option value="AB+" {{ ($employee?->medical?->blood_group ?? '') == 'AB+' ? 'selected' : '' }}>AB+</option>
+                                                                    <option value="AB-" {{ ($employee?->medical?->blood_group ?? '') == 'AB-' ? 'selected' : '' }}>AB-</option>
+                                                                    <option value="O+" {{ ($employee?->medical?->blood_group ?? '') == 'O+' ? 'selected' : '' }}>O+</option>
+                                                                    <option value="O-" {{ ($employee?->medical?->blood_group ?? '') == 'O-' ? 'selected' : '' }}>O-</option>
+                                                                </select>
                                                             </div>
-                                                            <div class="col-md-3">
+                                                            <div class="col-md-4">
                                                                 <label class="form-label">If Yes (Disability Type)</label>
                                                                 <select name="disability_type" class="form-select" id="moreMedicalDisabilityTypeInput">
                                                                     <option value="" selected disabled>Select</option>

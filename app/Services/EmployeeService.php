@@ -692,42 +692,54 @@ class EmployeeService
     public function saveFamilyMember(int $id, array $row)
     {
         if (empty($row['name'])) return null;
-        return EmployeeFamilyMember::create([
-            'employee_id' => $id,
-            'name'        => $row['name'],
-            'gender'      => $row['gender'] ?? null,
-            'dob'         => !empty($row['dob']) ? $row['dob'] : null,
-            'relation'    => $row['relation'] ?? null,
-            'occupation'  => $row['occupation'] ?? null,
-        ]);
+        $memberId = $row['family_id'] ?? null;
+        
+        return EmployeeFamilyMember::updateOrCreate(
+            ['id' => $memberId, 'employee_id' => $id],
+            [
+                'name'        => $row['name'],
+                'gender'      => $row['gender'] ?? null,
+                'dob'         => !empty($row['dob']) ? $row['dob'] : (!empty($row['date_of_birth']) ? $row['date_of_birth'] : null),
+                'relation'    => $row['relation'] ?? null,
+                'occupation'  => $row['occupation'] ?? null,
+            ]
+        );
     }
 
     public function saveAcademic(int $id, array $row)
     {
         if (empty($row['degree'])) return null;
-        return EmployeeAcademic::create([
-            'employee_id'    => $id,
-            'degree'         => $row['degree'],
-            'grade_cgpa'     => $row['grade_cgpa'] ?? null,
-            'start_date'     => !empty($row['start_date']) ? $row['start_date'] : null,
-            'end_date'       => !empty($row['end_date']) ? $row['end_date'] : null,
-            'field_of_study' => $row['field_of_study'] ?? null,
-            'institute'      => $row['institute'] ?? null,
-        ]);
+        $academicId = $row['academic_id'] ?? null;
+
+        return EmployeeAcademic::updateOrCreate(
+            ['id' => $academicId, 'employee_id' => $id],
+            [
+                'degree'         => $row['degree'],
+                'grade_cgpa'     => $row['grade_cgpa'] ?? null,
+                'start_date'     => !empty($row['start_date']) ? $row['start_date'] : null,
+                'end_date'       => !empty($row['end_date']) ? $row['end_date'] : null,
+                'field_of_study' => $row['field_of_study'] ?? ($row['fieldOfStudy'] ?? null),
+                'institute'      => $row['institute'] ?? null,
+            ]
+        );
     }
 
     public function saveExEmployment(int $id, array $row)
     {
         if (empty($row['organization'])) return null;
-        return EmployeeExEmployment::create([
-            'employee_id'        => $id,
-            'organization'       => $row['organization'],
-            'designation'        => $row['designation'] ?? null,
-            'from_date'          => !empty($row['from_date']) ? $row['from_date'] : null,
-            'to_date'            => !empty($row['to_date']) ? $row['to_date'] : null,
-            'salary'             => $row['salary'] ?? null,
-            'reason_for_leaving' => $row['reason_for_leaving'] ?? null,
-        ]);
+        $employmentId = $row['employment_id'] ?? null;
+
+        return EmployeeExEmployment::updateOrCreate(
+            ['id' => $employmentId, 'employee_id' => $id],
+            [
+                'organization'       => $row['organization'],
+                'designation'        => $row['designation'] ?? null,
+                'from_date'          => !empty($row['from_date']) ? $row['from_date'] : null,
+                'to_date'            => !empty($row['to_date']) ? $row['to_date'] : null,
+                'salary'             => $row['salary'] ?? null,
+                'reason_for_leaving' => $row['reason_for_leaving'] ?? null,
+            ]
+        );
     }
 
     public function deleteSubsectionRow(string $type, int $id): bool
