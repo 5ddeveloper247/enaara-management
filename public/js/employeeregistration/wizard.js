@@ -234,6 +234,26 @@
         'employee_contract_end_date':   'employmentDetailsEmployeeContractEndDateInput',
         'contract_start_date':          'employmentDetailsContractStartDateInput',
         'contract_end_date':            'employmentDetailsContractEndDateInput',
+        'working_start_time':           'employmentCustomWorkingStartInput',
+        'working_end_time':             'employmentCustomWorkingEndInput',
+        'opening_grace_period':         'employmentCustomCheckInGraceInput',
+        'closing_grace_period':         'employmentCustomCheckOutGraceInput',
+        'join_date':                    'join_date',
+        'designation':                  'designation',
+        'grade':                        'grade',
+        'branch':                       'branch',
+        'location':                     'location',
+        'biometric_id':                 'biometric_id',
+        'service_no':                   'armedDetailsServiceNoInput',
+        'rank':                         'armedDetailsRankInput',
+        'medical_category':             'armedDetailsMedicalCategoryInput',
+        'date_of_commissioning':        'armedDetailsCommissioningEnrollmentDateInput',
+        'date_of_retirement':           'armedDetailsRetirementDateInput',
+        'reason_of_retirement':         'armedDetailsRetirementReasonInput',
+        'corps_regiment':               'armedDetailsCorpsRegimentSquadronInput',
+        'ex_army_unit':                 'armedDetailsExArmyUnitInput',
+        'trade':                        'armedDetailsTradeInput',
+        'pma_lc_ots':                   'armedDetailsPmaLcOtsInput',
     };
 
     // For radio groups: map field name -> wrapper element id to append error immediately after the pill row
@@ -287,6 +307,17 @@
 
             if (input) {
                 input.classList.add('is-invalid');
+                
+                // If the input is in a hidden container (e.g. custom schedule fields while in default mode), 
+                // we should reveal it so the user can see the error, OR at least the user should know.
+                let parent = input.parentElement;
+                while (parent && parent !== document.body) {
+                    if (parent.classList.contains('d-none')) {
+                        parent.classList.remove('d-none');
+                    }
+                    parent = parent.parentElement;
+                }
+
                 const err = document.createElement('div');
                 err.className = 'field-error-msg text-danger small mt-1 fw-bold';
                 err.textContent = msg;
@@ -299,6 +330,9 @@
                 } else {
                     input.insertAdjacentElement('afterend', err);
                 }
+            } else {
+                // Fallback: if no input found, log it and maybe show a global error
+                console.warn(`Could not find input for field: ${field}`);
             }
         });
 

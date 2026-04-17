@@ -54,11 +54,11 @@
                                                     <div class="row g-3 {{ ($employee->employment_category ?? '') == 'contractual' ? '' : 'd-none' }} mt-1" id="employmentDetailsContractualFields">
                                                         <div class="col-md-6">
                                                             <label class="form-label">Start Date <span class="text-danger">*</span></label>
-                                                            <input type="date" name="contract_start_date" class="form-control" id="employmentDetailsContractStartDateInput" value="{{ $employee->contract_start_date ?? '' }}" placeholder="yyyy-mm-dd">
+                                                            <input type="date" name="contract_start_date" class="form-control" id="employmentDetailsContractStartDateInput" value="{{ isset($employee->contract_start_date) ? $employee->contract_start_date->format('Y-m-d') : '' }}" placeholder="yyyy-mm-dd">
                                                         </div>
                                                         <div class="col-md-6">
                                                             <label class="form-label">End Date <span class="text-danger">*</span></label>
-                                                            <input type="date" name="contract_end_date" class="form-control" id="employmentDetailsContractEndDateInput" value="{{ $employee->contract_end_date ?? '' }}" placeholder="yyyy-mm-dd">
+                                                            <input type="date" name="contract_end_date" class="form-control" id="employmentDetailsContractEndDateInput" value="{{ isset($employee->contract_end_date) ? $employee->contract_end_date->format('Y-m-d') : '' }}" placeholder="yyyy-mm-dd">
                                                         </div>
                                                     </div>
 
@@ -83,11 +83,11 @@
                                                             <div class="row g-3">
                                                                 <div class="col-md-6">
                                                                     <label class="form-label">Contract Start Date <span class="text-danger">*</span></label>
-                                                                    <input type="date" name="employee_contract_start_date" class="form-control" id="employmentDetailsEmployeeContractStartDateInput" value="{{ $employee->contract_start_date ?? '' }}" placeholder="yyyy-mm-dd">
+                                                                    <input type="date" name="employee_contract_start_date" class="form-control" id="employmentDetailsEmployeeContractStartDateInput" value="{{ isset($employee->contract_start_date) ? $employee->contract_start_date->format('Y-m-d') : '' }}" placeholder="yyyy-mm-dd">
                                                                 </div>
                                                                 <div class="col-md-6">
                                                                     <label class="form-label">Contract End Date <span class="text-danger">*</span></label>
-                                                                    <input type="date" name="employee_contract_end_date" class="form-control" id="employmentDetailsEmployeeContractEndDateInput" value="{{ $employee->contract_end_date ?? '' }}" placeholder="yyyy-mm-dd">
+                                                                    <input type="date" name="employee_contract_end_date" class="form-control" id="employmentDetailsEmployeeContractEndDateInput" value="{{ isset($employee->contract_end_date) ? $employee->contract_end_date->format('Y-m-d') : '' }}" placeholder="yyyy-mm-dd">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -144,9 +144,12 @@
                                                     <div class="col-12">
                                                         <label class="form-label">Departments <span class="text-muted fw-normal small">(optional)</span></label>
                                                         <select name="department_ids[]" id="employmentDepartmentSelect" class="form-select d-none" multiple>
-                                                            @if(isset($employee->departments))
-                                                                @foreach($employee->departments as $dept)
-                                                                    <option value="{{ $dept->id }}" selected>{{ $dept->name }}</option>
+                                                            @php
+                                                                $savedDepts = collect($editData['saved_departments'] ?? []);
+                                                            @endphp
+                                                            @if($savedDepts->isNotEmpty())
+                                                                @foreach($savedDepts as $dept)
+                                                                    <option value="{{ $dept['id'] }}" selected>{{ $dept['name'] }}</option>
                                                                 @endforeach
                                                             @endif
                                                         </select>
@@ -168,7 +171,7 @@
                                                     <div class="col-md-6">
                                                         <label class="form-label">Date of Joining <span
                                                                 class="text-danger">*</span></label>
-                                                        <input type="date" name="join_date" class="form-control" value="{{ $employee->join_date ?? '' }}" placeholder="yyyy-mm-dd">
+                                                        <input type="date" name="join_date" class="form-control" value="{{ isset($employee->join_date) ? $employee->join_date->format('Y-m-d') : '' }}" placeholder="yyyy-mm-dd">
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Designation</label>
@@ -285,11 +288,11 @@
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">Working start <span class="text-danger">*</span></label>
-                                                    <input type="time" name="working_start_time" class="form-control" id="employmentCustomWorkingStartInput" value="{{ $employee->working_start_time ?? '' }}">
+                                                    <input type="time" name="working_start_time" class="form-control" id="employmentCustomWorkingStartInput" value="{{ isset($employee->working_start_time) ? substr($employee->working_start_time, 0, 5) : '' }}">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">Working end <span class="text-danger">*</span></label>
-                                                    <input type="time" name="working_end_time" class="form-control" id="employmentCustomWorkingEndInput" value="{{ $employee->working_end_time ?? '' }}">
+                                                    <input type="time" name="working_end_time" class="form-control" id="employmentCustomWorkingEndInput" value="{{ isset($employee->working_end_time) ? substr($employee->working_end_time, 0, 5) : '' }}">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">Check-in grace (min)</label>
