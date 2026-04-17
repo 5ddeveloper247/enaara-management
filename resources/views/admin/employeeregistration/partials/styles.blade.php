@@ -459,13 +459,15 @@
             color: #fff !important;
         }
 
-        #avatarPreviewWrap:hover .avatar-upload-overlay,
-        #avatarPreviewWrap:hover .remove-photo-btn {
+        #avatarPreviewContainer:hover .avatar-upload-overlay,
+        #avatarPreviewContainer:hover .remove-photo-btn {
             opacity: 1;
+            pointer-events: auto;
         }
         .avatar-upload-overlay,
         .remove-photo-btn {
             opacity: 0;
+            pointer-events: none;
             transition: opacity .2s ease;
         }
 

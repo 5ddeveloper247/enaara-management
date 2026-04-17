@@ -22,9 +22,7 @@
                     <div class="card-body p-3">
                         <form id="employeeForm" enctype="multipart/form-data">
                             @csrf
-                            @if(isset($employee))
-                                <input type="hidden" name="employee_id" id="saved_employee_id" value="{{ $employee->id }}">
-                            @endif
+                            <input type="hidden" name="employee_id" id="saved_employee_id" value="{{ $employee->id ?? '' }}">
 
                             @include('admin.employeeregistration.partials.steps.step-general')
                             @include('admin.employeeregistration.partials.steps.step-employment')

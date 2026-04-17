@@ -10,22 +10,24 @@
                         }
                     @endphp
                     <div class="bg-main text-center p-2">
-                        <div class="rounded-circle mx-auto mt-2 d-flex align-items-center justify-content-center position-relative overflow-hidden border-2 border-white shadow-sm bg-secondary-subtle text-secondary"
-                            id="avatarPreviewWrap" style="width: 110px; height: 110px;">
-                            
-                            <img id="avatarPreviewImage" alt="Employee photo preview" class="w-100 h-100 object-fit-cover {{ empty($photoUrl) ? 'd-none' : '' }}" src="{{ $photoUrl }}">
-                            <i class="bi bi-person-fill {{ !empty($photoUrl) ? 'd-none' : '' }}" id="avatarPlaceholderIcon" style="font-size: 3rem;"></i>
-                            
-                            <label class="avatar-upload-overlay position-absolute top-0 start-0 w-100 h-100 rounded-circle bg-dark bg-opacity-50 text-white d-flex flex-column align-items-center justify-content-center gap-1 small fw-semibold"
-                                for="profilePhotoInput">
-                                <i class="bi bi-cloud-arrow-up"></i>
-                                <span>Upload Photo</span>
-                            </label>
+                        <div class="position-relative mx-auto mt-2" style="width: 110px; height: 110px;" id="avatarPreviewContainer">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center position-relative overflow-hidden border-2 border-white shadow-sm bg-secondary-subtle text-secondary w-100 h-100"
+                                id="avatarPreviewWrap">
+                                
+                                <img id="avatarPreviewImage" alt="Employee photo preview" class="w-100 h-100 object-fit-cover {{ empty($photoUrl) ? 'd-none' : '' }}" src="{{ $photoUrl }}">
+                                <i class="bi bi-person-fill {{ !empty($photoUrl) ? 'd-none' : '' }}" id="avatarPlaceholderIcon" style="font-size: 3rem;"></i>
+                                
+                                <label class="avatar-upload-overlay position-absolute top-0 start-0 w-100 h-100 rounded-circle bg-dark bg-opacity-50 text-white d-flex flex-column align-items-center justify-content-center gap-1 small fw-semibold"
+                                    for="profilePhotoInput">
+                                    <i class="bi bi-cloud-arrow-up"></i>
+                                    <span>Upload Photo</span>
+                                </label>
+                            </div>
 
                             <button type="button" class="btn btn-danger btn-sm position-absolute rounded-circle d-flex align-items-center justify-content-center remove-photo-btn {{ empty($photoUrl) ? 'd-none' : '' }}" 
                                 id="removePhotoBtn" 
-                                style="top: 8px; right: 8px; width: 24px; height: 24px; z-index: 10; padding: 0;" title="Delete Photo">
-                                <i class="bi bi-x fs-5"></i>
+                                style="top: 5px; right: 5px; width: 18px; height: 18px; z-index: 10; padding: 0;" title="Delete Photo">
+                                <i class="bi bi-x" style="font-size: 0.75rem;"></i>
                             </button>
                         </div>
                         <input type="file" id="profilePhotoInput" accept=".jpg,.jpeg,.png,.gif,.svg" class="d-none" onchange="openCropper(this)">

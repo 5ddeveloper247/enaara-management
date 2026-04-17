@@ -29,7 +29,7 @@ class EmployeeController extends Controller
 
     public function store(EmployeeStoreRequest $request)
     {
-        if (!validatePermissions('admin/employee')) {
+        if (!validatePermissions('admin/employees')) {
             Log::warning('Unauthorized employee create attempt', ['user_id' => Auth::id()]);
             return response()->json(['success' => false, 'message' => 'You do not have permission to perform this action.'], 403);
         }
@@ -92,7 +92,7 @@ class EmployeeController extends Controller
 
     public function previewEmployeeCode(Request $request): JsonResponse
     {
-        if (! validatePermissions('admin/employee')) {
+        if (! validatePermissions('admin/employees')) {
             return response()->json(['success' => false, 'message' => 'You do not have permission to perform this action.'], 403);
         }
 
@@ -127,7 +127,7 @@ class EmployeeController extends Controller
 
     public function update(EmployeeUpdateRequest $request, int $id)
     {
-        if (!validatePermissions('admin/employee')) {
+        if (!validatePermissions('admin/employees')) {
             Log::warning('Unauthorized employee update attempt', ['user_id' => Auth::id(), 'employee_id' => $id]);
             return response()->json(['success' => false, 'message' => 'You do not have permission to perform this action.'], 403);
         }
@@ -156,7 +156,7 @@ class EmployeeController extends Controller
 
     public function saveStep(\App\Http\Requests\Admin\Employee\EmployeeStepRequest $request)
     {
-        if (!validatePermissions('admin/employee')) {
+        if (!validatePermissions('admin/employees')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
@@ -203,7 +203,7 @@ class EmployeeController extends Controller
 
     public function saveSubsection(\App\Http\Requests\Admin\Employee\EmployeeStepRequest $request)
     {
-        if (!validatePermissions('admin/employee')) {
+        if (!validatePermissions('admin/employees')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
@@ -322,7 +322,7 @@ class EmployeeController extends Controller
 
     public function deleteBankDetail(Request $request)
     {
-        if (! validatePermissions('admin/employee')) {
+        if (! validatePermissions('admin/employees')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
@@ -356,7 +356,7 @@ class EmployeeController extends Controller
 
     public function deletePhoto(Request $request)
     {
-        if (!validatePermissions('admin/employee')) {
+        if (!validatePermissions('admin/employees')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
@@ -429,7 +429,7 @@ class EmployeeController extends Controller
 
     public function deleteAttachment(Request $request)
     {
-        if (!validatePermissions('admin/employee')) {
+        if (!validatePermissions('admin/employees')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
@@ -451,7 +451,7 @@ class EmployeeController extends Controller
 
     private function processDeletion(Request $request, string $type)
     {
-        if (!validatePermissions('admin/employee')) {
+        if (!validatePermissions('admin/employees')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
@@ -473,7 +473,7 @@ class EmployeeController extends Controller
 
     public function destroy(Request $request, int $id)
     {
-        if (!validatePermissions('admin/employee')) {
+        if (!validatePermissions('admin/employees')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 

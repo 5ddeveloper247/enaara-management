@@ -200,7 +200,7 @@ class EmployeeStepRequest extends FormRequest
 
     protected function contactRegex(): string
     {
-        return '/^\+?[0-9]{10,15}$/';
+        return '/^[0-9]{11,15}$/';
     }
 
     protected function phoneRegex(): string

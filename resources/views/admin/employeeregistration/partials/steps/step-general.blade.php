@@ -164,7 +164,7 @@
 
                                                         <div class="col-md-4">
                                                             <label class="form-label">NOK Contact No <span class="text-danger">*</span></label>
-                                                            <input type="text" name="nok_contact" class="form-control" value="{{ $employee->nok_contact ?? '' }}" placeholder="03XXXXXXXXX">
+                                                             <input type="text" name="nok_contact" class="form-control contact-mask" value="{{ $employee->nok_contact ?? '' }}" placeholder="03XXXXXXXXX">
                                                         </div>
 
 

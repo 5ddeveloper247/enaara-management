@@ -27,21 +27,21 @@
                                                      <div class="row g-3">
                                                          <div class="col-md-4">
                                                              <label class="form-label">Residence Phone</label>
-                                                             <input type="text" name="residence_phone" class="form-control"
+                                                             <input type="text" name="residence_phone" class="form-control contact-mask"
                                                                  id="moreContactResidencePhoneInput"
                                                                  value="{{ $employee?->contact?->residence_phone ?? '' }}"
                                                                  placeholder="Enter residence phone">
                                                          </div>
                                                          <div class="col-md-4">
                                                              <label class="form-label">In Case of Emergency Contact No</label>
-                                                             <input type="text" name="emergency_contact" class="form-control"
+                                                             <input type="text" name="emergency_contact" class="form-control contact-mask"
                                                                  id="moreContactEmergencyContactInput"
                                                                  value="{{ $employee?->contact?->emergency_contact ?? '' }}"
                                                                  placeholder="Enter emergency contact number">
                                                          </div>
                                                          <div class="col-md-4">
                                                              <label class="form-label">Cell No <span class="text-danger">*</span></label>
-                                                             <input type="text" name="cell_no" class="form-control"
+                                                             <input type="text" name="cell_no" class="form-control contact-mask"
                                                                  id="moreContactCellNoInput"
                                                                  value="{{ $employee?->contact?->cell_no ?? '' }}"
                                                                  placeholder="Enter cell number">
@@ -422,7 +422,7 @@
                                                                      </div>
                                                                      <div class="col-6">
                                                                          <label class="form-label">Contact No</label>
-                                                                         <input type="text" name="ref1_contact" class="form-control" id="moreReferenceOneContactNoInput"
+                                                                         <input type="text" name="ref1_contact" class="form-control contact-mask" id="moreReferenceOneContactNoInput"
                                                                              value="{{ $employee?->references?->where('ref_number', 1)?->first()?->contact_no ?? '' }}"
                                                                              placeholder="Enter contact number">
                                                                      </div>
@@ -469,7 +469,7 @@
                                                                      </div>
                                                                      <div class="col-6">
                                                                          <label class="form-label">Contact No</label>
-                                                                         <input type="text" name="ref2_contact" class="form-control" id="moreReferenceTwoContactNoInput"
+                                                                         <input type="text" name="ref2_contact" class="form-control contact-mask" id="moreReferenceTwoContactNoInput"
                                                                              value="{{ $employee?->references?->where('ref_number', 2)?->first()?->contact_no ?? '' }}"
                                                                              placeholder="Enter contact number">
                                                                      </div>

@@ -33,6 +33,40 @@
     const rolesData = window.rolesData || [];
     let availableDepartments = [];
 
+    function initContactMasks() {
+        const contactInputs = document.querySelectorAll('.contact-mask');
+        contactInputs.forEach(input => {
+            // Restriction and formatting logic
+            const formatInput = (e) => {
+                let val = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                if (val.length > 15) {
+                    val = val.substring(0, 15);
+                }
+                e.target.value = val;
+                
+                // Visual feedback
+                if (val.length > 0 && val.length < 11) {
+                    e.target.classList.add('is-invalid');
+                } else {
+                    e.target.classList.remove('is-invalid');
+                }
+            };
+
+            input.addEventListener('input', formatInput);
+            input.addEventListener('blur', formatInput);
+            
+            // Prevent non-numeric keypresses
+            input.addEventListener('keypress', function(e) {
+                if (e.which < 48 || e.which > 57) {
+                    e.preventDefault();
+                }
+            });
+        });
+    }
+
+    // Initialize masks
+    initContactMasks();
+
     const initialSbu = sbuSelect ? sbuSelect.value : null;
     const initialRole = roleSelect ? roleSelect.value : null;
 
