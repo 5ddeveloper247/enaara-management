@@ -21,6 +21,7 @@ class Role extends Model
         'sbu_id',
         'department_id',
         'parent_role_id',
+        'role_level_id',
         'is_active',
         'is_primary',
     ];
@@ -72,6 +73,11 @@ class Role extends Model
     public function department()
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function roleLevel()
+    {
+        return $this->belongsTo(RoleLevel::class, 'role_level_id');
     }
 
     public function organization()

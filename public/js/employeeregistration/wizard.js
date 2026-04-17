@@ -1304,6 +1304,35 @@
         populateDepartments(oId, sId);
     }
 
+    // --- Department Required based on Role Level ---
+    const deptRequiredBadge  = document.getElementById('employmentDeptRequired');
+    const deptBoxEl          = document.getElementById('employmentDeptBox');
+
+    function updateDeptRequired(roleId) {
+        if (!deptRequiredBadge) return;
+        const role = rolesData.find(r => r.id == roleId);
+        const level = role ? (role.level ?? null) : null;
+        const isRequired = level !== null && parseInt(level) >= 4;
+
+        if (isRequired) {
+            deptRequiredBadge.className = 'text-danger fw-bold';
+            deptRequiredBadge.textContent = '*';
+            if (deptBoxEl) deptBoxEl.setAttribute('data-dept-required', '1');
+        } else {
+            deptRequiredBadge.className = 'text-muted fw-normal small';
+            deptRequiredBadge.textContent = '(optional)';
+            if (deptBoxEl) deptBoxEl.removeAttribute('data-dept-required');
+        }
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function () {
+            updateDeptRequired(this.value);
+        });
+        // Run on page load for edit mode
+        if (roleSelect.value) updateDeptRequired(roleSelect.value);
+    }
+
     // Custom Multi-Select logic for Departments
 
 

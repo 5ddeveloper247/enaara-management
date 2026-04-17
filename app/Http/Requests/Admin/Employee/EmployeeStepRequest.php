@@ -300,7 +300,10 @@ class EmployeeStepRequest extends FormRequest
                     Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected()),
                 ],
                 'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-                'department_ids' => ['nullable', 'array'],
+                'department_ids'   => [
+                    Rule::requiredIf(fn () => $this->deptRequiredForRole()),
+                    'nullable', 'array',
+                ],
                 'department_ids.*' => ['integer', 'exists:departments,id'],
                 'employee_type' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
                 'designation' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
@@ -708,6 +711,10 @@ class EmployeeStepRequest extends FormRequest
             'nok_dob.before' => 'The Next of Kin (NOK) date of birth must be a past date.',
             'nok_contact.required' => 'The Next of Kin (NOK) contact number is mandatory.',
             'nok_contact.regex' => 'The Next of Kin (NOK) contact number must be a valid phone number.',
+
+            // Employment - Department (required for role level >= 4)
+            'department_ids.required' => 'Department is required for this role level. Please select at least one department.',
+            'department_ids.min'      => 'Please select at least one department.',
 
             'nationality.required' => 'Nationality is required.',
             'nationality.regex' => 'Nationality must be valid text (letters from any language, spaces, and standard punctuation).',

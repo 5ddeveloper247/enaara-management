@@ -22,4 +22,19 @@ trait ValidatesEmployeeRoleScope
 
         return Role::query()->find($roleId);
     }
+
+    protected function deptRequiredForRole(): bool
+    {
+        $roleId = $this->input('role_id');
+        if (! $roleId) {
+            return false;
+        }
+
+        $role = Role::query()->with('roleLevel:id,level')->find($roleId);
+        if (! $role || ! $role->roleLevel) {
+            return false;
+        }
+
+        return (int) $role->roleLevel->level >= 4;
+    }
 }

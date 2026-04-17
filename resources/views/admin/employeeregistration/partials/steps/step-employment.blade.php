@@ -142,7 +142,7 @@
                                                          </select>
                                                     </div>
                                                     <div class="col-12">
-                                                        <label class="form-label">Departments <span class="text-muted fw-normal small">(optional)</span></label>
+                                                        <label class="form-label" id="employmentDeptLabel">Departments <span id="employmentDeptRequired" class="text-muted fw-normal small">(optional)</span></label>
                                                         <select name="department_ids[]" id="employmentDepartmentSelect" class="form-select d-none" multiple>
                                                             @php
                                                                 $savedDepts = collect($editData['saved_departments'] ?? []);

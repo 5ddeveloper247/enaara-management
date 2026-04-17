@@ -129,11 +129,12 @@ class EmployeeService
             ->get();
 
         $roles = Role::query()
-            ->select(['id', 'name', 'organization_id', 'department_id', 'sbu_id', 'slug'])
+            ->select(['id', 'name', 'organization_id', 'department_id', 'sbu_id', 'role_level_id', 'slug'])
             ->where('is_active', true)
             ->with([
                 'department:id,sbu_id',
                 'sbus:id',
+                'roleLevel:id,level'
             ])
             ->orderBy('name')
             ->get();
@@ -181,6 +182,7 @@ class EmployeeService
                 'organization_id'       => $r->organization_id,
                 'sbu_id'                => $r->sbu_id,
                 'department_id'         => $r->department_id,
+                'level'                 => $r->roleLevel?->level,
                 'linked_sbu_ids'        => $linked->unique()->values()->all(),
                 'is_organization_level' => $r->isOrganizationLevelRole(),
             ];
