@@ -224,45 +224,52 @@
         var dayCount = days.length;
         var colspan = 2 + dayCount;
 
-        depts.forEach(function(dept) {
-            var deptTr = document.createElement('tr');
-            deptTr.className = 'roster-dept-row';
-            deptTr.setAttribute('data-dept-id', String(dept.id));
-            deptTr.innerHTML = '<td class="text-center">' +
-                '<button type="button" class="btn btn-sm btn-link p-0 text-dark roster-dept-toggle" data-dept-id="' + dept.id + '" aria-expanded="true" aria-label="Collapse ' + dept.name + '">' +
-                '<i class="bi bi-chevron-down"></i></button></td>' +
-                '<td colspan="' + colspan + '" class="fw-semibold">' + dept.name + '</td>';
-            tbody.appendChild(deptTr);
+        if (depts.length === 0) {
+            var emptyTr = document.createElement('tr');
+            emptyTr.innerHTML = '<td colspan="' + colspan + '" class="text-center py-5 text-muted">' +
+                '<i class="bi bi-info-circle me-2"></i>No records found for this period.</td>';
+            tbody.appendChild(emptyTr);
+        } else {
+            depts.forEach(function(dept) {
+                var deptTr = document.createElement('tr');
+                deptTr.className = 'roster-dept-row';
+                deptTr.setAttribute('data-dept-id', String(dept.id));
+                deptTr.innerHTML = '<td class="text-center">' +
+                    '<button type="button" class="btn btn-sm btn-link p-0 text-dark roster-dept-toggle" data-dept-id="' + dept.id + '" aria-expanded="true" aria-label="Collapse ' + dept.name + '">' +
+                    '<i class="bi bi-chevron-down"></i></button></td>' +
+                    '<td colspan="' + colspan + '" class="fw-semibold">' + dept.name + '</td>';
+                tbody.appendChild(deptTr);
 
-            employees.filter(function(e) { return Number(e.departmentId) === Number(dept.id); }).forEach(function(emp) {
-                var tr = document.createElement('tr');
-                tr.className = 'roster-emp-row';
-                tr.setAttribute('data-dept-id', String(dept.id));
-                tr.innerHTML = '<td></td><td class="text-muted">' + escapeHtml(emp.name) + '</td>';
-                days.forEach(function(d) {
-                    var iso = dateToISO(d);
-                    var k = emp.id + '-' + iso;
-                    var s = shiftsByEmpDay[k];
-                    var td = document.createElement('td');
-                    td.className = 'roster-day-cell shift-cell';
-                    td.setAttribute('data-employee-id', String(emp.id));
-                    td.setAttribute('data-roster-date', iso);
-                    td.setAttribute('data-day', String(d.getDate()));
-                    if (d.getMonth() !== rosterViewDate.getMonth() || d.getFullYear() !== rosterViewDate.getFullYear()) {
-                        td.style.opacity = '0.55';
-                    }
-                    if (s) {
-                        td.setAttribute('data-shift', JSON.stringify(s));
-                        td.innerHTML = pillHtml(s);
-                    } else {
-                        td.classList.add('roster-day-cell-empty');
-                        td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100" style="min-height:2rem"><i class="bi bi-plus-lg"></i></span>';
-                    }
-                    tr.appendChild(td);
+                employees.filter(function(e) { return Number(e.departmentId) === Number(dept.id); }).forEach(function(emp) {
+                    var tr = document.createElement('tr');
+                    tr.className = 'roster-emp-row';
+                    tr.setAttribute('data-dept-id', String(dept.id));
+                    tr.innerHTML = '<td></td><td class="text-muted">' + escapeHtml(emp.name) + '</td>';
+                    days.forEach(function(d) {
+                        var iso = dateToISO(d);
+                        var k = emp.id + '-' + iso;
+                        var s = shiftsByEmpDay[k];
+                        var td = document.createElement('td');
+                        td.className = 'roster-day-cell shift-cell';
+                        td.setAttribute('data-employee-id', String(emp.id));
+                        td.setAttribute('data-roster-date', iso);
+                        td.setAttribute('data-day', String(d.getDate()));
+                        if (d.getMonth() !== rosterViewDate.getMonth() || d.getFullYear() !== rosterViewDate.getFullYear()) {
+                            td.style.opacity = '0.55';
+                        }
+                        if (s) {
+                            td.setAttribute('data-shift', JSON.stringify(s));
+                            td.innerHTML = pillHtml(s);
+                        } else {
+                            td.classList.add('roster-day-cell-empty');
+                            td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100" style="min-height:2rem"><i class="bi bi-plus-lg"></i></span>';
+                        }
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
                 });
-                tbody.appendChild(tr);
             });
-        });
+        }
 
         document.querySelectorAll('.roster-dept-toggle').forEach(function(btn) {
             btn.addEventListener('click', function() {
