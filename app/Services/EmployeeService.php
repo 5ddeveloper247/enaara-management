@@ -18,6 +18,7 @@ use App\Models\Department;
 use App\Models\Organization;
 use App\Models\Sbu;
 use App\Models\Role;
+use App\Models\RoleLevel;
 use App\Models\User;
 use App\Services\AuditTrailService;
 use App\Services\EmployeeEmploymentInformationService;
@@ -28,6 +29,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class EmployeeService
 {
@@ -130,25 +132,29 @@ class EmployeeService
 
         $roles = Role::query()
             ->select([
-                'roles.id',
-                'roles.name',
-                'roles.organization_id',
-                'roles.department_id',
-                'roles.sbu_id',
-                'roles.role_level_id',
-                'roles.slug',
+                'id',
+                'name',
+                'organization_id',
+                'department_id',
+                'sbu_id',
+                'role_level_id',
+                'slug',
             ])
-            ->where('roles.is_active', true)
-            ->leftJoin('role_levels', 'roles.role_level_id', '=', 'role_levels.id')
-            ->orderByRaw('role_levels.level IS NULL')
-            ->orderBy('role_levels.level')
-            ->orderBy('roles.name')
+            ->where('is_active', true)
             ->with([
                 'department:id,sbu_id',
                 'sbus:id',
                 'roleLevel:id,level',
             ])
             ->get();
+
+        $levelByNormalizedRoleLevelName = RoleLevel::query()
+            ->where('is_active', true)
+            ->whereNotNull('name')
+            ->where('name', '!=', '')
+            ->get()
+            ->groupBy(fn (RoleLevel $rl): string => Str::lower(trim((string) $rl->name)))
+            ->map(fn ($group) => (int) $group->min('level'));
 
         $orgsData = $organizations->map(fn ($o) => [
             'id' => $o->id,
@@ -178,7 +184,7 @@ class EmployeeService
             ])->values()->all(),
         ])->values()->all();
 
-        $rolesData = $roles->map(function ($r) {
+        $rolesData = $roles->map(function ($r) use ($levelByNormalizedRoleLevelName) {
             $linked = $r->sbus->pluck('id');
             if ($r->sbu_id) {
                 $linked->push($r->sbu_id);
@@ -187,17 +193,39 @@ class EmployeeService
                 $linked->push($r->department->sbu_id);
             }
 
+            $fromFk = $r->roleLevel?->level;
+            $normName = Str::lower(trim((string) $r->name));
+            $fromName = $normName !== '' ? $levelByNormalizedRoleLevelName->get($normName) : null;
+            $effectiveLevel = $fromFk !== null && $fromFk !== ''
+                ? (int) $fromFk
+                : ($fromName !== null ? (int) $fromName : null);
+
             return [
                 'id'                    => $r->id,
                 'name'                  => $r->name,
                 'organization_id'       => $r->organization_id,
                 'sbu_id'                => $r->sbu_id,
                 'department_id'         => $r->department_id,
-                'level'                 => $r->roleLevel?->level,
+                'level'                 => $effectiveLevel,
                 'linked_sbu_ids'        => $linked->unique()->values()->all(),
                 'is_organization_level' => $r->isOrganizationLevelRole(),
             ];
-        })->values()->all();
+        });
+
+        $rolesData = $rolesData
+            ->sort(function (array $a, array $b): int {
+                $ka = $a['level'];
+                $kb = $b['level'];
+                $da = ($ka === null || $ka === '') ? PHP_INT_MAX : (int) $ka;
+                $db = ($kb === null || $kb === '') ? PHP_INT_MAX : (int) $kb;
+                if ($da !== $db) {
+                    return $da <=> $db;
+                }
+
+                return strcmp((string) $a['name'], (string) $b['name']);
+            })
+            ->values()
+            ->all();
 
         return compact('organizations', 'orgsData', 'rolesData');
     }
@@ -225,6 +253,18 @@ class EmployeeService
                     $code = $this->generateNextCode($sbuId);
                 }
             }
+
+            $codeSbuForSync = null;
+            if ($role) {
+                if ($orgLevel) {
+                    $sid = Sbu::where('organization_id', (int) ($data['organization_id'] ?? 0))->orderBy('id')->value('id');
+                    $codeSbuForSync = $sid ? (int) $sid : null;
+                } elseif (! empty($data['sbu_id'])) {
+                    $codeSbuForSync = (int) $data['sbu_id'];
+                }
+            }
+
+            $code = $this->ensureGloballyUniqueEmployeeCode($code, null);
 
             $scheduleAttrs = $this->employmentInformation->standardScheduleAttributesForPersist($data, $role, $orgLevel);
 
@@ -291,6 +331,10 @@ class EmployeeService
                 'is_active'           => true,
             ]);
 
+            if ($code && $codeSbuForSync) {
+                $this->syncEmployeeIdSequenceToAllocatedCode($codeSbuForSync, $code);
+            }
+
             $this->savePoliceVerification($employee->id, $data);
             if (! empty($data['is_ex_armed_force'])) {
                 $this->saveArmedForce($employee->id, $data);
@@ -353,22 +397,14 @@ class EmployeeService
 
     private function peekNextCode(int $sbuId): string
     {
-        $prefix = $this->buildSbuPrefix($sbuId);
+        $prefix = strtoupper($this->buildSbuPrefix($sbuId));
         $seq    = EmployeeIdSequence::where('sbu_id', $sbuId)->first();
         $last   = $seq ? $seq->last_number : 100;
 
-        // Sync with highest existing code so peek is accurate
-        $maxExisting = Employee::whereNotNull('employee_code')
-            ->where('sbu_id', $sbuId)
-            ->where('employee_code', 'like', $prefix . '-%')
-            ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
-            ->value('employee_code');
-
-        if ($maxExisting) {
-            $maxNum = (int) substr($maxExisting, strrpos($maxExisting, '-') + 1);
-            if ($maxNum >= $last) {
-                $last = $maxNum;
-            }
+        // Any SBU can share the same letter prefix — sync against every employee using this prefix.
+        $maxNum = $this->highestUsedNumericSuffixForPrefix($prefix);
+        if ($maxNum >= $last) {
+            $last = $maxNum;
         }
 
         return $prefix . '-' . ($last + 1);
@@ -376,47 +412,111 @@ class EmployeeService
 
     private function generateNextCode(int $sbuId): string
     {
-        $prefix = $this->buildSbuPrefix($sbuId);
+        $prefix = strtoupper($this->buildSbuPrefix($sbuId));
         $seq = EmployeeIdSequence::where('sbu_id', $sbuId)->lockForUpdate()->first();
 
         if (!$seq) {
-            // No sequence record — create one seeded from existing data
-            $maxExisting = Employee::whereNotNull('employee_code')
-                ->where('sbu_id', $sbuId)
-                ->where('employee_code', 'like', $prefix . '-%')
-                ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
-                ->value('employee_code');
-            $lastNum = $maxExisting
-                ? (int) substr($maxExisting, strrpos($maxExisting, '-') + 1)
-                : 100;
+            $lastNum = $this->highestUsedNumericSuffixForPrefix($prefix);
             $seq = EmployeeIdSequence::create(['sbu_id' => $sbuId, 'prefix' => $prefix, 'last_number' => $lastNum]);
         }
 
-        $prefix = strtoupper($prefix);
         if ($seq->prefix !== $prefix) {
             $seq->prefix = $prefix;
             $seq->save();
         }
 
-        // Self-heal: if the sequence is behind the highest existing code, catch up first
-        $maxExisting = Employee::whereNotNull('employee_code')
-            ->where('sbu_id', $sbuId)
-            ->where('employee_code', 'like', $prefix . '-%')
-            ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
-            ->value('employee_code');
-
-        if ($maxExisting) {
-            $maxNum = (int) substr($maxExisting, strrpos($maxExisting, '-') + 1);
-            if ($maxNum >= $seq->last_number) {
-                $seq->last_number = $maxNum;
-                $seq->save();
-            }
+        $maxNum = $this->highestUsedNumericSuffixForPrefix($prefix);
+        if ($maxNum >= $seq->last_number) {
+            $seq->last_number = $maxNum;
+            $seq->save();
         }
 
         $seq->increment('last_number');
         $seq->refresh();
 
         return $prefix . '-' . $seq->last_number;
+    }
+
+    /**
+     * Highest numeric suffix among all employees whose code starts with "{prefix}-"
+     * (prefix is compared case-insensitively). Used because initials can collide across SBUs.
+     */
+    private function highestUsedNumericSuffixForPrefix(string $prefix): int
+    {
+        $p = strtoupper($prefix);
+        $maxExisting = Employee::query()
+            ->whereNotNull('employee_code')
+            ->where('employee_code', 'like', $p . '-%')
+            ->orderByRaw('CAST(SUBSTRING_INDEX(employee_code, "-", -1) AS UNSIGNED) DESC')
+            ->value('employee_code');
+
+        if (!$maxExisting) {
+            return 100;
+        }
+
+        return (int) substr($maxExisting, strrpos($maxExisting, '-') + 1);
+    }
+
+    /**
+     * If the code is already taken by another employee, bump "{PREFIX}-{N}" until free.
+     */
+    private function ensureGloballyUniqueEmployeeCode(?string $code, ?int $exceptEmployeeId = null): ?string
+    {
+        if ($code === null || $code === '') {
+            return $code;
+        }
+
+        $pos = strrpos($code, '-');
+        if ($pos === false) {
+            $exists = Employee::query()
+                ->where('employee_code', $code)
+                ->when($exceptEmployeeId !== null, fn ($q) => $q->where('id', '!=', $exceptEmployeeId))
+                ->exists();
+            if (!$exists) {
+                return $code;
+            }
+
+            return $code . '-' . bin2hex(random_bytes(2));
+        }
+
+        $prefix = substr($code, 0, $pos);
+        $num = (int) substr($code, $pos + 1);
+        $candidate = $code;
+        $guard = 0;
+        while (
+            Employee::query()
+                ->where('employee_code', $candidate)
+                ->when($exceptEmployeeId !== null, fn ($q) => $q->where('id', '!=', $exceptEmployeeId))
+                ->exists()
+        ) {
+            $guard++;
+            if ($guard > 10000) {
+                throw new \RuntimeException('Could not allocate a unique employee code.');
+            }
+            $num++;
+            $candidate = $prefix . '-' . $num;
+        }
+
+        return $candidate;
+    }
+
+    private function syncEmployeeIdSequenceToAllocatedCode(int $sbuId, string $allocatedCode): void
+    {
+        $expectedPrefix = strtoupper($this->buildSbuPrefix($sbuId));
+        $pos = strrpos($allocatedCode, '-');
+        if ($pos === false) {
+            return;
+        }
+        $p = strtoupper(substr($allocatedCode, 0, $pos));
+        if ($p !== $expectedPrefix) {
+            return;
+        }
+        $num = (int) substr($allocatedCode, $pos + 1);
+        $seq = EmployeeIdSequence::where('sbu_id', $sbuId)->lockForUpdate()->first();
+        if ($seq && $num > (int) $seq->last_number) {
+            $seq->last_number = $num;
+            $seq->save();
+        }
     }
 
     private function buildSbuPrefix(int $sbuId): string
@@ -1403,9 +1503,26 @@ class EmployeeService
                 $updatePayload['email'] = $data['email'] ?? $data['contact_email'] ?? $employee->email;
             }
 
+            $code = $this->ensureGloballyUniqueEmployeeCode($code, $employee->id);
+
+            $codeSbuForSync = null;
+            if ($role) {
+                if ($orgLevel) {
+                    $sid = Sbu::where('organization_id', (int) ($data['organization_id'] ?? $employee->organization_id))->orderBy('id')->value('id');
+                    $codeSbuForSync = $sid ? (int) $sid : null;
+                } else {
+                    $sid = isset($data['sbu_id']) ? (int) $data['sbu_id'] : ($employee->sbu_id ? (int) $employee->sbu_id : 0);
+                    $codeSbuForSync = $sid > 0 ? $sid : null;
+                }
+            }
+
             $updatePayload['employee_code'] = $code;
 
             $employee->update($updatePayload);
+
+            if ($code && $codeSbuForSync) {
+                $this->syncEmployeeIdSequenceToAllocatedCode($codeSbuForSync, $code);
+            }
 
             if (($step === 1 || $step === 0) && array_key_exists('is_ex_armed_force', $updatePayload) && ! $updatePayload['is_ex_armed_force']) {
                 $employee->armedForce()->delete();
