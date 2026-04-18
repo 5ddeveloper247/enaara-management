@@ -489,4 +489,11 @@
             max-width: 100%;
             display: block;
         }
+
+        /* Inline validation errors (employee registration wizard) */
+        .field-error-msg {
+            font-size: 0.75rem !important;
+            line-height: 1.15 !important;
+            font-weight: 600 !important;
+        }
     </style>
