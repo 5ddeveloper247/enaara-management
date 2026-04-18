@@ -591,8 +591,9 @@ class EmployeeStepRequest extends FormRequest
                     'name'       => ['required', 'string', 'min:2', 'max:70', 'regex:' . $this->alphaNumericTextRegex()],
                     'gender'     => ['required', Rule::in(['Male', 'Female'])],
                     'dob'        => ['required', 'date', 'before:today'],
-                    'relation'   => ['required', 'string', 'min:2', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
-                    'occupation' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
+                    'relation'       => ['required', 'string', 'max:50'],
+                    'relation_other' => ['required_if:relation,Other', 'nullable', 'string', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
+                    'occupation'     => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
                 ]);
 
             case 'academic_row':
@@ -620,8 +621,8 @@ class EmployeeStepRequest extends FormRequest
                     'last_fitness_test'      => ['nullable', 'string', 'max:500'],
                     'has_disability'         => ['required', Rule::in(['yes', 'no'])],
                     'blood_group'            => ['nullable', 'string', 'max:10', 'regex:' . $this->bloodGroupRegex()],
-                    'disability_type'        => ['nullable', 'string', 'max:100'],
-                    'disability_description' => ['nullable', 'string', 'max:1000'],
+                    'disability_type'        => ['required_if:has_disability,yes', 'nullable', 'string', 'max:100'],
+                    'disability_description' => ['required_if:disability_type,Other', 'nullable', 'string', 'max:1000'],
                 ]);
 
             case 'bank_row':

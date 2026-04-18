@@ -41,97 +41,64 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content bg-main text-white">
 
-            <div class="modal-header pb-0 border-bottom" style="border-color:#ffffff42 !important">
-                <h5 class="modal-title" id="deleteRoleModalLabel">Attachments</h5>
+            <div class="modal-header pb-2 border-bottom" style="border-color:#ffffff42 !important">
+                <h5 class="modal-title" id="attachmentModalLabel"><i class="bi bi-paperclip me-2"></i>Add Attachment</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                     aria-label="Close"></button>
             </div>
 
             <div class="modal-body pt-2">
 
-                <ul class="nav nav-tabs" id="attachmentTabs" style="border-color:#ffffff42;">
-                    <li class="nav-item">
-                        <button class="nav-link text-black active" data-bs-toggle="tab" data-bs-target="#tab-add"
-                            style="border-color:#ffffff42 #ffffff42 transparent;">
-                            <i class="bi bi-plus-circle me-1"></i>Add Attachment
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link text-white opacity-75" data-bs-toggle="tab" data-bs-target="#tab-list"
-                            style="border-color:#ffffff42 #ffffff42 transparent;">
-                            <i class="bi bi-list-ul me-1"></i>All Attachments
-                            <span class="badge ms-1" id="attachmentCountBadge"
-                                style="background:rgba(255,255,255,.2);color:#fff;">0</span>
-                        </button>
-                    </li>
-                </ul>
-
-                <div class="tab-content pt-3">
-
-                    {{-- ADD TAB --}}
-                    <div class="tab-pane fade show active" id="tab-add">
-                        <div class="row g-3">
-
-                            <div class="col-md-6">
-                                <label class="form-label opacity-75 small">Name</label>
-                                <input type="text" class="form-control border"
-                                    style="background:rgba(255,255,255,.07);border-color:#ffffff1a !important;"
-                                    id="attachmentName" placeholder="Enter attachment name">
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label opacity-75 small">Type</label>
-                                <select class="form-select text-white border" id="attachmentType"
-                                    style="background:rgba(255,255,255,.07) !important;border-color:#ffffff1a !important;">
-                                    <option value="" style="background:#012445 !important">Select type</option>
-                                    <option style="background:#012445 !important">CNIC</option>
-                                    <option style="background:#012445 !important">Passport</option>
-                                    <option style="background:#012445 !important">Contract</option>
-                                    <option style="background:#012445 !important">Certificate</option>
-                                    <option style="background:#012445 !important">Other</option>
-                                </select>
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label opacity-75 small">Description</label>
-                                <textarea class="form-control text-white border" id="attachmentDesc" rows="3" placeholder="Enter description"
-                                    style="background:rgba(255,255,255,.07) !important;border-color:#ffffff1a !important;"></textarea>
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label opacity-75 small">Upload Files</label>
-                                <label for="attachmentUpload"
-                                    class="d-flex flex-column align-items-center justify-content-center gap-2 w-100"
-                                    style="height:130px;border:2px dashed rgba(255,255,255,.3);border-radius:10px;cursor:pointer;background:rgba(255,255,255,.07);">
-                                    <i class="bi bi-cloud-arrow-up fs-1" style="color:rgba(255,255,255,.4);"></i>
-                                    <span class="small" style="color:rgba(255,255,255,.5);">Click to upload (multiple allowed)</span>
-                                    <span class="small" style="color:rgba(255,255,255,.5); font-size: 0.75rem;">(Allowed: JPG, PNG, PDF, DOC, DOCX up to 10MB)</span>
-                                    <input type="file" id="attachmentUpload" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                                        class="d-none" multiple onchange="previewAttachmentUpload(this)">
-                                </label>
-                                <div id="attachmentUploadPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
-                            </div>
-
+                <div class="pt-0">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label opacity-75 small">Name</label>
+                            <input type="text" class="form-control border"
+                                style="background:rgba(255,255,255,.07);border-color:#ffffff1a !important;"
+                                id="attachmentName" placeholder="Enter attachment name">
                         </div>
 
-                        <div class="d-flex justify-content-end mt-4 gap-2 pt-3 border-top"
-                            style="border-color:#ffffffab !important">
-                            <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn btn-outline-light" onclick="saveAttachment()">
-                                <i class="bi bi-floppy me-1"></i>Save Attachment
-                            </button>
+                        <div class="col-md-6">
+                            <label class="form-label opacity-75 small">Type</label>
+                            <select class="form-select text-white border" id="attachmentType"
+                                style="background:rgba(255,255,255,.07) !important;border-color:#ffffff1a !important;">
+                                <option value="" style="background:#012445 !important">Select type</option>
+                                <option style="background:#012445 !important">CNIC</option>
+                                <option style="background:#012445 !important">Passport</option>
+                                <option style="background:#012445 !important">Contract</option>
+                                <option style="background:#012445 !important">Certificate</option>
+                                <option style="background:#012445 !important">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label opacity-75 small">Description</label>
+                            <textarea class="form-control text-white border" id="attachmentDesc" rows="3" placeholder="Enter description"
+                                style="background:rgba(255,255,255,.07) !important;border-color:#ffffff1a !important;"></textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label opacity-75 small">Upload Files</label>
+                            <label for="attachmentUpload"
+                                class="d-flex flex-column align-items-center justify-content-center gap-2 w-100"
+                                style="height:130px;border:2px dashed rgba(255,255,255,.3);border-radius:10px;cursor:pointer;background:rgba(255,255,255,.07);">
+                                <i class="bi bi-cloud-arrow-up fs-1" style="color:rgba(255,255,255,.4);"></i>
+                                <span class="small" style="color:rgba(255,255,255,.5);">Click to upload (multiple allowed)</span>
+                                <span class="small" style="color:rgba(255,255,255,.5); font-size: 0.75rem;">(Allowed: JPG, PNG, PDF, DOC, DOCX up to 10MB)</span>
+                                <input type="file" id="attachmentUpload" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                                    class="d-none" multiple onchange="previewAttachmentUpload(this)">
+                            </label>
+                            <div id="attachmentUploadPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
                         </div>
                     </div>
 
-                    {{-- LIST TAB --}}
-                    <div class="tab-pane fade" id="tab-list">
-                        <div id="attachmentListingEmpty" class="text-center py-4 small"
-                            style="color:rgba(255,255,255,.5);">
-                            No attachments added yet.
-                        </div>
-                        <div id="attachmentListing" class="row g-3"></div>
+                    <div class="d-flex justify-content-end mt-4 gap-2 pt-3 border-top"
+                        style="border-color:#ffffffab !important">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-outline-light" onclick="saveAttachment()">
+                            <i class="bi bi-floppy me-1"></i>Save Attachment
+                        </button>
                     </div>
-
                 </div>
             </div>
 
@@ -267,7 +234,9 @@
                 resetAttachmentForm();
                 
                 showToast(data.message || 'Attachment saved successfully', 'success');
-                document.querySelector('[data-bs-target="#tab-list"]').click();
+                const modalEl = document.getElementById('attachmentModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) modalInstance.hide();
             } else {
                 if (data.errors) {
                     for (const key in data.errors) {
@@ -339,13 +308,19 @@
     }
 
     function renderAttachmentListing() {
-        const container = document.getElementById('attachmentListing');
-        const empty = document.getElementById('attachmentListingEmpty');
+        const modalContainer = document.getElementById('attachmentListing');
+        const modalEmpty = document.getElementById('attachmentListingEmpty');
         const badge = document.getElementById('attachmentCountBadge');
+        
+        const onPageContainer = document.getElementById('onPageAttachmentListing');
+        const onPageEmpty = document.getElementById('onPageAttachmentListingEmpty');
 
-        badge.textContent = employeeAttachments.length;
-        empty.classList.toggle('d-none', employeeAttachments.length > 0);
-        container.innerHTML = '';
+        if (badge) badge.textContent = employeeAttachments.length;
+        if (modalEmpty) modalEmpty.classList.toggle('d-none', employeeAttachments.length > 0);
+        if (onPageEmpty) onPageEmpty.classList.toggle('d-none', employeeAttachments.length > 0);
+        
+        if (modalContainer) modalContainer.innerHTML = '';
+        if (onPageContainer) onPageContainer.innerHTML = '';
 
         employeeAttachments.forEach(a => {
             const nameSafe = escAtt(a.name);
@@ -360,48 +335,77 @@
                 isImg: (f.mime_type || '').startsWith('image/'),
                 url: f.url || null,
             })));
-            const filesHtml = files.length ?
-                `<div class="mb-2 d-flex flex-column gap-2">
-                ${files.map(f => {
-                    const preview = f.isImg && f.url
-                        ? `<img src="${escAttrUrl(f.url)}"
-                        style="height:40px;width:40px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,.25);flex-shrink:0;">`
-                        : `<span class="badge bg-light text-muted border" style="font-size:10px;">
-                           <i class="bi bi-paperclip me-1"></i>${escAtt(f.name)}
-                       </span>`;
-                    const downloadBtn = f.url
-                        ? `<a href="${escAttrUrl(f.url)}" download="${escAtt(f.name)}" class="btn btn-sm btn-outline-light py-0 px-2 align-self-start" style="font-size:11px;">
-                            <i class="bi bi-download me-1"></i>Download
-                        </a>`
-                        : '';
-                    return `<div class="d-flex flex-wrap align-items-center gap-2">${preview}${downloadBtn}</div>`;
-                }).join('')}
-               </div>` :
-                '';
 
-            container.insertAdjacentHTML('beforeend', `
-            <div class="col-md-6 col-lg-4" id="${escAtt(a.localId)}">
-                   <div class="rounded-3 border p-3 h-100" style="border-color:#ffffff1a !important;background:rgba(255,255,255,.07);">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h6 class="mb-0 fw-semibold small text-white">${nameSafe}</h6>
-                            <small style="color:rgba(255,255,255,.55);">${typeSafe || '—'}</small>
-                        </div>
-                        <span class="badge" style="background:rgba(255,255,255,.15);font-size:10px;">${typeSafe || '—'}</span>
-                </div>
-                 ${a.desc ? `
-                 <div class="rounded-3 border p-2 mb-2" style="border-color:#ffffff1a !important;">
-                     <small class="opacity-75 d-block mb-1">Description</small>
-                     <div class="fw-semibold small">${descSafe}</div>
-                 </div>` : ''}
-                    ${filesHtml}
-                    <div class="pt-3 mt-2 border-top d-flex gap-2 justify-content-end" style="border-color:#ffffff1a !important;">
-                       <button class="btn btn-sm btn-outline-light" onclick="deleteAttachment('${escAtt(a.localId)}')">
-                            <i class="bi bi-trash me-1"></i>Delete
-                        </button>
+            const generateFilesHtml = (isDark = true) => {
+                if (!files.length) return '';
+                const btnClass = isDark ? 'btn-outline-light' : 'btn-outline-primary';
+                const badgeClass = isDark ? 'bg-light text-muted' : 'bg-light text-dark border-secondary';
+                
+                return `<div class="mb-2 d-flex flex-column gap-2">
+                    ${files.map(f => {
+                        const preview = f.isImg && f.url
+                            ? `<img src="${escAttrUrl(f.url)}"
+                            style="height:40px;width:40px;object-fit:cover;border-radius:6px;border:1px solid ${isDark ? 'rgba(255,255,255,.25)' : '#dee2e6'};flex-shrink:0;">`
+                            : `<span class="badge ${badgeClass} border px-2 py-1" style="font-size:10px;">
+                               <i class="bi bi-paperclip me-1"></i>${escAtt(f.name)}
+                           </span>`;
+                        const downloadBtn = f.url
+                            ? `<a href="${escAttrUrl(f.url)}" download="${escAtt(f.name)}" class="btn btn-sm ${btnClass} py-0 px-2 align-self-start" style="font-size:11px;">
+                                <i class="bi bi-download me-1"></i>Download
+                            </a>`
+                            : '';
+                        return `<div class="d-flex flex-wrap align-items-center gap-2">${preview}${downloadBtn}</div>`;
+                    }).join('')}
+                   </div>`;
+            };
+
+            // Card for Modal (Dark)
+            if (modalContainer) {
+                modalContainer.insertAdjacentHTML('beforeend', `
+                <div class="col-md-6 col-lg-4" id="modal-${escAtt(a.localId)}">
+                       <div class="rounded-3 border p-3 h-100" style="border-color:#ffffff1a !important;background:rgba(255,255,255,.07);">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h6 class="mb-0 fw-semibold small text-white">${nameSafe}</h6>
+                                <small style="color:rgba(255,255,255,.55);">${typeSafe || '—'}</small>
+                            </div>
+                            <span class="badge" style="background:rgba(255,255,255,.15);font-size:10px;">${typeSafe || '—'}</span>
                     </div>
-                </div>
-            </div>`);
+                     ${a.desc ? `<div class="rounded-3 border p-2 mb-2" style="border-color:#ffffff1a !important;"><small class="opacity-75 d-block mb-1 text-white-50">Description</small><div class="fw-semibold small text-white">${descSafe}</div></div>` : ''}
+                        ${generateFilesHtml(true)}
+                        <div class="pt-3 mt-2 border-top d-flex gap-2 justify-content-end" style="border-color:#ffffff1a !important;">
+                           <button class="btn btn-sm btn-outline-light" onclick="deleteAttachment('${escAtt(a.localId)}')">
+                                <i class="bi bi-trash me-1"></i>Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>`);
+            }
+
+            // Card for On-Page (Light)
+            if (onPageContainer) {
+                onPageContainer.insertAdjacentHTML('beforeend', `
+                <div class="col-md-6 col-lg-4" id="page-${escAtt(a.localId)}">
+                       <div class="card border rounded-3 h-100 shadow-sm bg-white">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="mb-0 fw-bold small text-dark">${nameSafe}</h6>
+                                    <small class="text-muted">${typeSafe || '—'}</small>
+                                </div>
+                                <span class="badge bg-light text-dark border" style="font-size:10px;">${typeSafe || '—'}</span>
+                            </div>
+                             ${a.desc ? `<div class="bg-light rounded-3 p-2 mb-2 border-0"><small class="text-muted d-block mb-1" style="font-size:0.7rem;">Description</small><div class="fw-semibold small text-dark" style="font-size:0.8rem;">${descSafe}</div></div>` : ''}
+                            ${generateFilesHtml(false)}
+                            <div class="pt-3 mt-auto border-top d-flex gap-2 justify-content-end">
+                               <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteAttachment('${escAtt(a.localId)}')">
+                                    <i class="bi bi-trash me-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`);
+            }
         });
     }
 

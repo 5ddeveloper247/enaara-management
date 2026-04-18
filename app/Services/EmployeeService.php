@@ -598,7 +598,7 @@ class EmployeeService
                 'name'        => $row['name'],
                 'gender'      => $row['gender'] ?? null,
                 'dob'         => !empty($row['dob']) ? $row['dob'] : null,
-                'relation'    => $row['relation'] ?? null,
+                'relation'    => ($row['relation'] === 'Other' && !empty($row['relation_other'])) ? $row['relation_other'] : ($row['relation'] ?? null),
                 'occupation'  => $row['occupation'] ?? null,
             ]);
         }
@@ -702,7 +702,7 @@ class EmployeeService
                 'name'        => $row['name'],
                 'gender'      => $row['gender'] ?? null,
                 'dob'         => !empty($row['dob']) ? $row['dob'] : (!empty($row['date_of_birth']) ? $row['date_of_birth'] : null),
-                'relation'    => $row['relation'] ?? null,
+                'relation'    => ($row['relation'] === 'Other' && !empty($row['relation_other'])) ? $row['relation_other'] : ($row['relation'] ?? null),
                 'occupation'  => $row['occupation'] ?? null,
             ]
         );

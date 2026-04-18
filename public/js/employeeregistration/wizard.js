@@ -1902,6 +1902,14 @@
                         if (input.tagName === 'SELECT' && input.value) {
                             displayValue = input.options[input.selectedIndex].text;
                         }
+                        
+                        // Special case for Relation "Other"
+                        if (cleanKey === 'relation' && input.value === 'Other') {
+                            const otherInput = row.querySelector('[name*="relation_other"]');
+                            if (otherInput && otherInput.value) {
+                                displayValue = otherInput.value;
+                            }
+                        }
                         preview.textContent = displayValue;
                     }
                 }
@@ -2057,8 +2065,42 @@
             if (data.name) row.querySelector('[data-family-name]').value = data.name;
             if (data.gender) row.querySelector('[data-family-gender]').value = data.gender;
             if (data.dateOfBirth) row.querySelector('[data-family-date-of-birth]').value = data.dateOfBirth;
-            if (data.relation) row.querySelector('[data-family-relation]').value = data.relation;
+            
+            // Relation mapping
+            const relSelect = row.querySelector('[data-family-relation]');
+            const relOtherWrapper = row.querySelector('[data-family-relation-other-wrapper]');
+            const relOtherInput = row.querySelector('[data-family-relation-other]');
+            
+            if (data.relation && relSelect) {
+                const standardOptions = ['Father', 'Mother', 'Husband', 'Wife', 'Son', 'Daughter', 'Brother', 'Sister'];
+                if (standardOptions.includes(data.relation)) {
+                    relSelect.value = data.relation;
+                } else {
+                    relSelect.value = 'Other';
+                    if (relOtherInput) relOtherInput.value = data.relation;
+                    if (relOtherWrapper) relOtherWrapper.classList.remove('d-none');
+                }
+            }
             if (data.occupation) row.querySelector('[data-family-occupation]').value = data.occupation;
+        }
+
+        // Toggling logic for Relation dropdown
+        const relationSelect = row.querySelector('[data-family-relation]');
+        if (relationSelect) {
+            relationSelect.addEventListener('change', function() {
+                const wrapper = row.querySelector('[data-family-relation-other-wrapper]');
+                const otherInput = row.querySelector('[data-family-relation-other]');
+                if (this.value === 'Other') {
+                    if (wrapper) wrapper.classList.remove('d-none');
+                    if (otherInput) otherInput.required = true;
+                } else {
+                    if (wrapper) wrapper.classList.add('d-none');
+                    if (otherInput) {
+                        otherInput.required = false;
+                        otherInput.value = '';
+                    }
+                }
+            });
         }
 
         row.querySelector('[data-family-save]').onclick = () => saveSubsectionRow('family', row);
@@ -2181,8 +2223,47 @@
                     }
                 }
             }
+
         });
     }
-
 })();
+
+// --- Medical disability toggling (Robust version) ---
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.name === 'has_disability') {
+        const typeContainer = document.getElementById('moreMedicalDisabilityTypeContainer');
+        const descContainer = document.getElementById('moreMedicalDisabilityDescriptionContainer');
+        const isYes = e.target.value === 'yes';
+        
+        if (typeContainer) {
+            typeContainer.style.display = isYes ? 'block' : 'none';
+        }
+        if (descContainer) {
+            if (!isYes) {
+                descContainer.style.display = 'none';
+            } else {
+                const typeInput = document.getElementById('moreMedicalDisabilityTypeInput');
+                descContainer.style.display = (typeInput && typeInput.value === 'Other') ? 'block' : 'none';
+            }
+        }
+
+        if (!isYes) {
+            const select = document.getElementById('moreMedicalDisabilityTypeInput');
+            if (select) select.value = '';
+            const textarea = document.getElementById('moreMedicalDisabilityDescriptionInput');
+            if (textarea) textarea.value = '';
+        }
+    }
+
+    if (e.target && e.target.id === 'moreMedicalDisabilityTypeInput') {
+        const descContainer = document.getElementById('moreMedicalDisabilityDescriptionContainer');
+        if (descContainer) {
+            descContainer.style.display = e.target.value === 'Other' ? 'block' : 'none';
+        }
+        if (e.target.value !== 'Other') {
+            const textarea = document.getElementById('moreMedicalDisabilityDescriptionInput');
+            if (textarea) textarea.value = '';
+        }
+    }
+});
 
