@@ -1963,6 +1963,7 @@
             const res = await response.json();
             if (response.status === 422) {
                 showFieldErrors(res.errors, rowElement);
+                saveBtn.innerHTML = originalHtml;
             } else if (res.success) {
                 // Remove any remaining visual errors on successful save
                 rowElement.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
@@ -1975,11 +1976,13 @@
                 rowElement.classList.add('saved-row');
             } else {
                 showError(res.message);
+                saveBtn.innerHTML = originalHtml;
             }
-        } catch (e) { showError('Network error'); }
-        finally {
-            saveBtn.disabled = false;
+        } catch (e) { 
+            showError('Network error'); 
             saveBtn.innerHTML = originalHtml;
+        } finally {
+            saveBtn.disabled = false;
         }
     }
 
