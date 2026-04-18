@@ -10,9 +10,12 @@
     // ─────────────────────────────────────────────
     let workflowsTable   = null;
     let workflowsData    = [];   // local cache from last fetch
-    let activeWorkflowId = null; // used for detail canvas / edit / delete
+    let activeWorkflowId = null; // detail canvas context
     let approvalLevelCounter = 0;
     let customFilterFn   = null;
+
+    const workflowScopeTree = Array.isArray(window.workflowScopeTree) ? window.workflowScopeTree : [];
+    const workflowRoleNames = Array.isArray(window.workflowRoleNames) ? window.workflowRoleNames : [];
 
     // ─────────────────────────────────────────────
     // INIT
@@ -42,24 +45,6 @@
             'Accept': 'application/json',
             'Content-Type': 'application/json',
         };
-    }
-
-    function showToast(message, type = 'success') {
-        const existing = document.getElementById('wf-toast');
-        if (existing) existing.remove();
-
-        const color = type === 'success' ? 'bg-success' : (type === 'danger' ? 'bg-danger' : 'bg-warning');
-        const toast = document.createElement('div');
-        toast.id = 'wf-toast';
-        toast.className = `toast align-items-center text-white ${color} border-0 position-fixed bottom-0 end-0 m-3 show`;
-        toast.style.zIndex = 9999;
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">${escHtml(message)}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('.toast').remove()"></button>
-            </div>`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
     }
 
     function showFieldErrors(errors) {
@@ -102,7 +87,11 @@
             return '<span class="badge px-2 rounded-1 bg-primary"><i class="bi bi-globe me-1"></i>Global</span>';
         }
         let text = escHtml(wf.organization);
-        if (wf.branch) text += ` - ${escHtml(wf.branch)}`;
+        if (wf.sbu_name) {
+            text += ` — ${escHtml(wf.sbu_name)}`;
+        } else if (wf.branch) {
+            text += ` — ${escHtml(wf.branch)}`;
+        }
         return `<span class="badge px-2 rounded-1 bg-info"><i class="bi bi-building me-1"></i>${text}</span>`;
     }
 
@@ -119,7 +108,7 @@
             <tr data-request-type="${escHtml(wf.request_type)}"
                 data-status="${escHtml(wf.status)}"
                 data-org-id="${wf.organization_id || 'global'}"
-                data-branch="${escHtml(wf.branch || '')}">
+                data-sbu-id="${wf.sbu_id != null ? wf.sbu_id : ''}">
                 <td class="dt-control"></td>
                 <td><div class="fw-semibold">${escHtml(wf.name)}</div></td>
                 <td>${requestTypeBadge(wf.request_type)}</td>
@@ -133,14 +122,28 @@
                 <td><div class="small fw-semibold">${slaDisplay}</div></td>
                 <td>${statusBadge(wf.status)}</td>
                 <td class="text-end">
-                    <button type="button"
-                        class="btn btn-sm btn-primary view-workflow-btn"
-                        data-bs-toggle="offcanvas"
-                        data-bs-target="#workflowDetailCanvas"
-                        data-workflow-id="${wf.id}"
-                        title="View Details">
-                        <i class="bi bi-eye"></i>
-                    </button>
+                    <div class="d-flex gap-1 justify-content-end" style="white-space: nowrap;">
+                        <button type="button"
+                            class="btn btn-sm btn-primary view-workflow-btn"
+                            data-bs-toggle="offcanvas"
+                            data-bs-target="#workflowDetailCanvas"
+                            data-workflow-id="${wf.id}"
+                            title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button type="button"
+                            class="btn btn-sm btn-outline-secondary edit-workflow-btn"
+                            data-workflow-id="${wf.id}"
+                            title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button"
+                            class="btn btn-sm btn-outline-danger delete-workflow-btn"
+                            data-workflow-id="${wf.id}"
+                            title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>`;
     }
@@ -192,6 +195,7 @@
                         updateCounters();
                     },
                 });
+                populateFilterSbuOptions();
             })
             .catch(err => console.error('Failed to load workflows:', err));
     }
@@ -212,6 +216,7 @@
 
                 if (workflowsTable) workflowsTable.draw();
                 loadStats();
+                populateFilterSbuOptions();
             });
     }
 
@@ -266,7 +271,7 @@
         const type   = $('#filterRequestType').val();
         const status = $('#filterStatus').val();
         const org    = $('#filterOrganization').val();
-        const branch = $('#filterBranch').val().toLowerCase().trim();
+        const sbu    = $('#filterSbu').val();
 
         if (customFilterFn) {
             $.fn.dataTable.ext.search.pop();
@@ -284,9 +289,9 @@
                 if (org === 'global') { if (rowOrg !== 'global') return false; }
                 else                  { if (rowOrg !== org)      return false; }
             }
-            if (branch) {
-                const rowBranch = String($(row).data('branch') || '').toLowerCase();
-                if (!rowBranch.includes(branch)) return false;
+            if (sbu) {
+                const rowSbu = String($(row).data('sbu-id') || '');
+                if (rowSbu !== String(sbu)) return false;
             }
             return true;
         };
@@ -296,7 +301,7 @@
     }
 
     function clearFilters() {
-        $('#filterRequestType, #filterStatus, #filterOrganization, #filterBranch').val('');
+        $('#filterRequestType, #filterStatus, #filterOrganization, #filterSbu').val('');
         if (customFilterFn) {
             $.fn.dataTable.ext.search.pop();
             customFilterFn = null;
@@ -314,7 +319,13 @@
         $('#detailRequestType').html(requestTypeBadge(wf.request_type));
         $('#detailStatus').html(statusBadge(wf.status));
         $('#detailOrganization').text(wf.organization || 'Global');
-        $('#detailBranch').text(wf.branch || 'All Branches');
+        if (wf.sbu_name) {
+            $('#detailSbu').text(wf.sbu_name);
+        } else if (wf.branch) {
+            $('#detailSbu').text(wf.branch + ' (legacy)');
+        } else {
+            $('#detailSbu').text('All SBUs');
+        }
         $('#detailSLA').text(wf.sla_hours + ' hours');
 
         // Escalate To
@@ -345,13 +356,55 @@
     // ─────────────────────────────────────────────
     // APPROVAL LEVEL MANAGEMENT (form)
     // ─────────────────────────────────────────────
-    const availableRoles = ['Supervisor', 'Department Head', 'Manager', 'HR Manager', 'Super Admin'];
+    function getApproverRoleOptions() {
+        if (workflowRoleNames.length) {
+            return workflowRoleNames;
+        }
+        return ['Supervisor', 'Department Head', 'Manager', 'HR Manager', 'Super Admin'];
+    }
+
+    function populateFilterSbuOptions() {
+        const $sel = $('#filterSbu');
+        if (!$sel.length) {
+            return;
+        }
+        const current = $sel.val();
+        $sel.find('option:not(:first)').remove();
+        workflowScopeTree.forEach((org) => {
+            (org.sbus || []).forEach((sbu) => {
+                $sel.append($('<option>', { value: sbu.id, text: `${org.name} — ${sbu.name}` }));
+            });
+        });
+        if (current) {
+            $sel.val(current);
+        }
+    }
+
+    function repopulateWorkflowSbusForForm(orgId, preserveSbuId) {
+        const $sel = $('#workflowSbu');
+        if (!$sel.length) {
+            return;
+        }
+        $sel.find('option:not(:first)').remove();
+        const org = workflowScopeTree.find((o) => String(o.id) === String(orgId));
+        if (org && org.sbus) {
+            org.sbus.forEach((sbu) => {
+                $sel.append($('<option>', { value: sbu.id, text: sbu.name }));
+            });
+        }
+        if (preserveSbuId != null && preserveSbuId !== '') {
+            $sel.val(String(preserveSbuId));
+        } else {
+            $sel.val('');
+        }
+    }
 
     function addApprovalLevel(roleValue = '') {
         approvalLevelCounter++;
         const levelNum = $('.approval-level-item').length + 1;
-        const options  = availableRoles.map(r =>
-            `<option value="${r}" ${r === roleValue ? 'selected' : ''}>${r}</option>`
+        const roles = getApproverRoleOptions();
+        const options = roles.map((r) =>
+            `<option value="${escHtml(r)}" ${r === roleValue ? 'selected' : ''}>${escHtml(r)}</option>`
         ).join('');
 
         const html = `
@@ -388,6 +441,7 @@
         approvalLevelCounter = 0;
         document.querySelectorAll('.field-error-msg').forEach(el => el.textContent = '');
         $('#workflowSLA').val(24);
+        repopulateWorkflowSbusForForm('', null);
     }
 
     // ─────────────────────────────────────────────
@@ -404,7 +458,7 @@
         $('#workflowRequestType').val(wf.request_type);
         $('#workflowStatus').val(wf.status);
         $('#workflowOrganization').val(wf.organization_id || '');
-        $('#workflowBranch').val(wf.branch || '');
+        repopulateWorkflowSbusForForm($('#workflowOrganization').val(), wf.sbu_id);
         $('#workflowSLA').val(wf.sla_hours);
         $('#workflowEscalateTo').val(wf.escalate_to || '');
 
@@ -449,17 +503,18 @@
             : window.workflowsStoreUrl;
 
         const payload = {
-            name:            $('#workflowName').val(),
-            request_type:    $('#workflowRequestType').val(),
-            status:          $('#workflowStatus').val(),
+            name: $('#workflowName').val(),
+            request_type: $('#workflowRequestType').val(),
+            status: $('#workflowStatus').val(),
             organization_id: $('#workflowOrganization').val() || null,
-            branch:          $('#workflowBranch').val() || null,
+            sbu_id: $('#workflowSbu').val() || null,
             approval_levels: levels,
-            sla_hours:       parseInt($('#workflowSLA').val()),
-            escalate_to:     $('#workflowEscalateTo').val() || null,
+            sla_hours: parseInt($('#workflowSLA').val(), 10),
+            escalate_to: $('#workflowEscalateTo').val() || null,
         };
 
         const submitBtn = document.getElementById('workflowSubmitBtn');
+        const btnDefaultHtml = `<i class="bi bi-check-circle me-1"></i><span id="submitBtnText">${isEdit ? 'Update Workflow' : 'Create Workflow'}</span>`;
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
 
@@ -468,27 +523,40 @@
             headers: csrfHeaders(),
             body: JSON.stringify(payload),
         })
-        .then(r => r.json())
-        .then(res => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `<i class="bi bi-check-circle me-1"></i><span id="submitBtnText">${isEdit ? 'Update Workflow' : 'Create Workflow'}</span>`;
+            .then(async (r) => {
+                const res = await r.json().catch(() => ({}));
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = btnDefaultHtml;
 
-            if (res.success) {
-                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('createWorkflowCanvas'));
-                if (offcanvas) offcanvas.hide();
-                showToast(res.message, 'success');
-                reloadTable();
-            } else if (res.errors) {
-                showFieldErrors(res.errors);
-            } else {
-                showToast(res.message || 'Something went wrong.', 'danger');
-            }
-        })
-        .catch(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i><span id="submitBtnText">Save</span>';
-            showToast('Network error. Please try again.', 'danger');
-        });
+                if (r.ok && res.success) {
+                    const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('createWorkflowCanvas'));
+                    if (offcanvas) {
+                        offcanvas.hide();
+                    }
+                    if (typeof window.showSuccess === 'function') {
+                        window.showSuccess(res.message || 'Workflow saved successfully.', 'Success');
+                    }
+                    reloadTable();
+                } else if (res.errors) {
+                    showFieldErrors(res.errors);
+                    const flat = Object.values(res.errors).flat().join('\n');
+                    if (typeof window.showError === 'function') {
+                        window.showError(flat || 'Please fix the highlighted fields.', 'Validation');
+                    }
+                } else {
+                    const msg = res.message || (r.status === 422 ? 'Validation failed.' : 'Something went wrong.');
+                    if (typeof window.showError === 'function') {
+                        window.showError(msg, 'Error');
+                    }
+                }
+            })
+            .catch(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = btnDefaultHtml;
+                if (typeof window.showError === 'function') {
+                    window.showError('Network error. Please try again.', 'Error');
+                }
+            });
     }
 
     // ─────────────────────────────────────────────
@@ -511,21 +579,30 @@
             method: 'DELETE',
             headers: csrfHeaders(),
         })
-        .then(r => r.json())
-        .then(res => {
-            bootstrap.Modal.getInstance(document.getElementById('deleteWorkflowModal'))?.hide();
-            const detailOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('workflowDetailCanvas'));
-            if (detailOffcanvas) detailOffcanvas.hide();
+            .then(async (r) => {
+                const res = await r.json().catch(() => ({}));
+                bootstrap.Modal.getInstance(document.getElementById('deleteWorkflowModal'))?.hide();
+                const detailOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('workflowDetailCanvas'));
+                if (detailOffcanvas) {
+                    detailOffcanvas.hide();
+                }
 
-            if (res.success) {
-                showToast(res.message, 'success');
-                reloadTable();
-            } else {
-                showToast(res.message || 'Delete failed.', 'danger');
-            }
-            pendingDeleteId = null;
-        })
-        .catch(() => showToast('Network error.', 'danger'));
+                if (r.ok && res.success) {
+                    if (typeof window.showSuccess === 'function') {
+                        window.showSuccess(res.message || 'Workflow deleted successfully.', 'Deleted');
+                    }
+                    reloadTable();
+                } else if (typeof window.showError === 'function') {
+                    window.showError(res.message || 'Delete failed.', 'Error');
+                }
+                pendingDeleteId = null;
+            })
+            .catch(() => {
+                if (typeof window.showError === 'function') {
+                    window.showError('Network error.', 'Error');
+                }
+                pendingDeleteId = null;
+            });
     }
 
     // ─────────────────────────────────────────────
@@ -538,8 +615,11 @@
 
         // Export
         $('#exportBtn').on('click', function () {
-            if (workflowsTable) workflowsTable.button('.buttons-csv')?.trigger();
-            else showToast('No data to export.', 'warning');
+            if (workflowsTable) {
+                workflowsTable.button('.buttons-csv')?.trigger();
+            } else if (typeof window.showError === 'function') {
+                window.showError('No data to export.', 'Export');
+            }
         });
 
         // Create form submit
@@ -572,22 +652,32 @@
         document.getElementById('workflowDetailCanvas')?.addEventListener('show.bs.offcanvas', function (event) {
             const btn = event.relatedTarget;
             if (btn && btn.classList.contains('view-workflow-btn')) {
-                const id = parseInt($(btn).data('workflow-id'));
+                const id = parseInt($(btn).data('workflow-id'), 10);
                 const wf = workflowsData.find(w => w.id === id);
                 if (wf) populateDetailCanvas(wf);
             }
         });
 
-        // Edit from detail canvas
-        $('#editWorkflowBtn').on('click', function () {
-            const wf = workflowsData.find(w => w.id === activeWorkflowId);
-            if (wf) openEditMode(wf);
+        $(document).on('click', '.edit-workflow-btn', function (e) {
+            e.stopPropagation();
+            const id = parseInt($(this).data('workflow-id'), 10);
+            const wf = workflowsData.find(w => w.id === id);
+            if (wf) {
+                openEditMode(wf);
+            }
         });
 
-        // Delete from detail canvas
-        $('#deleteWorkflowBtn').on('click', function () {
-            const wf = workflowsData.find(w => w.id === activeWorkflowId);
-            if (wf) confirmDelete(wf);
+        $(document).on('click', '.delete-workflow-btn', function (e) {
+            e.stopPropagation();
+            const id = parseInt($(this).data('workflow-id'), 10);
+            const wf = workflowsData.find(w => w.id === id);
+            if (wf) {
+                confirmDelete(wf);
+            }
+        });
+
+        $('#workflowOrganization').on('change', function () {
+            repopulateWorkflowSbusForForm($(this).val(), null);
         });
 
         // Confirm delete button in modal

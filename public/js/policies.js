@@ -11,6 +11,9 @@
     // ============================================
     let policiesTable;
     let policiesData = [];
+    const policyScopeTree = typeof window.policyScopeTree !== 'undefined' && Array.isArray(window.policyScopeTree)
+        ? window.policyScopeTree
+        : [];
     let customFilterFunction = null;
     let isEditMode = false;
     let editPolicyId = null;
@@ -37,8 +40,11 @@
                 status: p.status,
                 effectiveDate: p.effective_date,
                 lastUpdated: p.updated_at,
-                applicableTo: p.applicable_to,
+                applicableTo: p.applicable_to === 'branch' ? 'sbu' : p.applicable_to,
                 applicableDetails: p.applicable_details || '',
+                organizationId: p.organization_id ?? null,
+                sbuId: p.sbu_id ?? null,
+                sbuFloorId: p.sbu_floor_id ?? null,
                 description: p.description || '',
                 hasDocument: !!p.document_path,
                 documentName: p.document_name || null,
@@ -47,6 +53,138 @@
             }));
         } else {
             policiesData = [];
+        }
+    }
+
+    function rebuildOrganizationOptions() {
+        const $sel = $('#policyOrganization');
+        if (!$sel.length) {
+            return;
+        }
+        const current = $sel.val();
+        $sel.find('option:not(:first)').remove();
+        policyScopeTree.forEach((org) => {
+            $sel.append($('<option>', { value: org.id, text: org.name }));
+        });
+        if (current) {
+            $sel.val(current);
+        }
+    }
+
+    function resetSbuAndFloorSelects() {
+        $('#policySbu').empty().append($('<option>', { value: '', text: 'Select SBU' }));
+        $('#policyFloor').empty().append($('<option>', { value: '', text: 'Select Floor' }));
+    }
+
+    function repopulateSbus(orgId) {
+        const $sbu = $('#policySbu');
+        $sbu.empty().append($('<option>', { value: '', text: 'Select SBU' }));
+        $('#policyFloor').empty().append($('<option>', { value: '', text: 'Select Floor' }));
+        const org = policyScopeTree.find((o) => String(o.id) === String(orgId));
+        if (!org || !org.sbus) {
+            return;
+        }
+        org.sbus.forEach((s) => {
+            $sbu.append($('<option>', { value: s.id, text: s.name }));
+        });
+    }
+
+    function repopulateFloors(sbuId) {
+        const $fl = $('#policyFloor');
+        $fl.empty().append($('<option>', { value: '', text: 'Select Floor' }));
+        if (!sbuId) {
+            return;
+        }
+        for (let i = 0; i < policyScopeTree.length; i++) {
+            const org = policyScopeTree[i];
+            if (!org.sbus) {
+                continue;
+            }
+            const sbu = org.sbus.find((s) => String(s.id) === String(sbuId));
+            if (sbu && sbu.floors) {
+                sbu.floors.forEach((f) => {
+                    const num = f.floor_number;
+                    const suffix = num !== null && num !== undefined && num !== '' ? ` (#${num})` : '';
+                    $fl.append($('<option>', { value: f.id, text: f.name + suffix }));
+                });
+                return;
+            }
+        }
+    }
+
+    function updateScopeFieldVisibility() {
+        const v = $('#policyApplicableTo').val();
+        $('#policyOrgWrap, #policySbuWrap, #policyFloorWrap').hide();
+        $('.scope-org-req, .scope-sbu-req, .scope-floor-req').hide();
+        if (v === 'organization' || v === 'sbu' || v === 'floor') {
+            $('#policyOrgWrap').show();
+            $('.scope-org-req').show();
+        }
+        if (v === 'sbu' || v === 'floor') {
+            $('#policySbuWrap').show();
+            $('.scope-sbu-req').show();
+        }
+        if (v === 'floor') {
+            $('#policyFloorWrap').show();
+            $('.scope-floor-req').show();
+        }
+    }
+
+    function applyPolicyScopeToForm(p) {
+        const atRaw = p.applicable_to === 'branch' ? 'sbu' : p.applicable_to;
+        $('#policyApplicableTo').val(atRaw);
+        updateScopeFieldVisibility();
+        rebuildOrganizationOptions();
+
+        if (atRaw === 'global') {
+            return;
+        }
+
+        let orgId = p.organization_id;
+        let sbuId = p.sbu_id;
+
+        if (!orgId && sbuId) {
+            for (let i = 0; i < policyScopeTree.length; i++) {
+                const org = policyScopeTree[i];
+                if (org.sbus && org.sbus.some((s) => String(s.id) === String(sbuId))) {
+                    orgId = org.id;
+                    break;
+                }
+            }
+        }
+
+        if (!sbuId && p.sbu_floor_id) {
+            outer: for (let i = 0; i < policyScopeTree.length; i++) {
+                const org = policyScopeTree[i];
+                if (!org.sbus) {
+                    continue;
+                }
+                for (let j = 0; j < org.sbus.length; j++) {
+                    const s = org.sbus[j];
+                    if (s.floors && s.floors.some((f) => String(f.id) === String(p.sbu_floor_id))) {
+                        orgId = org.id;
+                        sbuId = s.id;
+                        break outer;
+                    }
+                }
+            }
+        }
+
+        if (orgId) {
+            $('#policyOrganization').val(String(orgId));
+        }
+
+        if (atRaw === 'sbu' || atRaw === 'floor') {
+            repopulateSbus($('#policyOrganization').val());
+        }
+        if (sbuId) {
+            $('#policySbu').val(String(sbuId));
+        }
+        if (atRaw === 'floor') {
+            repopulateFloors($('#policySbu').val());
+            if (p.sbu_floor_id) {
+                $('#policyFloor').val(String(p.sbu_floor_id));
+            }
         }
     }
 
@@ -154,8 +292,8 @@
             applicableToBadge = '<span class="badge px-2 rounded-1 bg-primary"><i class="bi bi-globe me-1"></i>Global</span>';
         } else if (policy.applicableTo === 'organization') {
             applicableToBadge = `<span class="badge px-2 rounded-1 bg-info"><i class="bi bi-building me-1"></i>${policy.applicableDetails}</span>`;
-        } else if (policy.applicableTo === 'branch') {
-            applicableToBadge = `<span class="badge px-2 rounded-1 bg-success"><i class="bi bi-geo-alt me-1"></i>${policy.applicableDetails}</span>`;
+        } else if (policy.applicableTo === 'sbu' || policy.applicableTo === 'branch') {
+            applicableToBadge = `<span class="badge px-2 rounded-1 bg-success"><i class="bi bi-diagram-2 me-1"></i>${policy.applicableDetails}</span>`;
         } else if (policy.applicableTo === 'floor') {
             applicableToBadge = `<span class="badge px-2 rounded-1 bg-warning text-dark"><i class="bi bi-building me-1"></i>${policy.applicableDetails}</span>`;
         }
@@ -203,7 +341,8 @@
         return `
             <tr data-category="${policy.category.toLowerCase().replace(/\s+/g, '-')}" 
                 data-status="${policy.status}" 
-                data-applicable-to="${policy.applicableTo}">
+                data-applicable-to="${policy.applicableTo}"
+                data-organization-id="${policy.organizationId != null ? policy.organizationId : ''}">
                 <td class="dt-control"></td>
                 <td>
                     <div class="fw-semibold">${policy.title}</div>
@@ -239,17 +378,43 @@
         // Create Policy Form
         $('#createPolicyForm').on('submit', handleCreatePolicy);
 
-        // Applicable To change handler
-        $('#policyApplicableTo').on('change', function() {
+        rebuildOrganizationOptions();
+
+        $('#policyApplicableTo').on('change', function () {
+            updateScopeFieldVisibility();
             const value = $(this).val();
-            $('#organizationSelect, #branchSelect, #floorSelect').hide();
-            
+            if (value === 'global') {
+                $('#policyOrganization').val('');
+                resetSbuAndFloorSelects();
+                return;
+            }
+            rebuildOrganizationOptions();
             if (value === 'organization') {
-                $('#organizationSelect').show();
-            } else if (value === 'branch') {
-                $('#branchSelect').show();
-            } else if (value === 'floor') {
-                $('#floorSelect').show();
+                resetSbuAndFloorSelects();
+            }
+            if (value === 'sbu') {
+                repopulateSbus($('#policyOrganization').val());
+                $('#policyFloor').html('<option value="">Select Floor</option>');
+            }
+            if (value === 'floor') {
+                repopulateSbus($('#policyOrganization').val());
+                repopulateFloors($('#policySbu').val());
+            }
+        });
+
+        $('#policyOrganization').on('change', function () {
+            const scope = $('#policyApplicableTo').val();
+            if (scope === 'sbu' || scope === 'floor') {
+                repopulateSbus($(this).val());
+            }
+            if (scope === 'floor') {
+                $('#policyFloor').html('<option value="">Select Floor</option>');
+            }
+        });
+
+        $('#policySbu').on('change', function () {
+            if ($('#policyApplicableTo').val() === 'floor') {
+                repopulateFloors($(this).val());
             }
         });
 
@@ -356,13 +521,13 @@
                 if (rowStatus !== status) return false;
             }
             
-            // Organization filter
+            // Organization filter (numeric organization id or "global")
             if (organization) {
-                const rowOrg = $(row).data('organization');
                 if (organization === 'global') {
                     if ($(row).data('applicable-to') !== 'global') return false;
                 } else {
-                    if (rowOrg !== organization.toLowerCase().replace(/\s+/g, '-')) return false;
+                    const rowOrgId = $(row).data('organization-id');
+                    if (String(rowOrgId || '') !== String(organization)) return false;
                 }
             }
             
@@ -418,20 +583,9 @@
         formData.append('status', $('#policyStatus').val());
         formData.append('effective_date', $('#policyEffectiveDate').val());
         formData.append('applicable_to', $('#policyApplicableTo').val());
-
-        // Set applicable details
-        const applicableTo = $('#policyApplicableTo').val();
-        let applicableDetails = '';
-        if (applicableTo === 'global') {
-            applicableDetails = 'Global (All Organizations)';
-        } else if (applicableTo === 'organization') {
-            applicableDetails = $('#policyOrganization option:selected').text();
-        } else if (applicableTo === 'branch') {
-            applicableDetails = $('#policyBranch option:selected').text() + ' Branch';
-        } else if (applicableTo === 'floor') {
-            applicableDetails = 'Floor ' + $('#policyFloor').val();
-        }
-        formData.append('applicable_details', applicableDetails);
+        formData.append('organization_id', $('#policyOrganization').val() || '');
+        formData.append('sbu_id', $('#policySbu').val() || '');
+        formData.append('sbu_floor_id', $('#policyFloor').val() || '');
 
         formData.append('description', $('#policyDescription').val() || '');
 
@@ -460,17 +614,20 @@
             contentType: false,
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
             },
             success: function(response) {
-                if (response.success) {
-                    // Close modal
+                if (response && response.success) {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createPolicyModal'));
                     if (modal) modal.hide();
 
-                    showSuccess(response.message).then(() => {
+                    showSuccess(response.message || 'Saved successfully.').then(() => {
                         window.location.reload();
                     });
+                } else {
+                    const msg = (response && response.message) ? response.message : 'Unable to save policy.';
+                    showError(msg);
                 }
             },
             error: function(xhr) {
@@ -482,7 +639,7 @@
                         errorMsg = xhr.responseJSON.message;
                     }
                 }
-                showError(errorMsg);
+                showError(errorMsg, xhr.status === 422 ? 'Validation' : 'Error');
             },
             complete: function() {
                 submitBtn.prop('disabled', false).html(originalBtnText);
@@ -499,7 +656,8 @@
             url: `/admin/policies/${policyId}`,
             method: 'GET',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
             },
             success: function(response) {
                 if (response.success && response.policy) {
@@ -528,8 +686,9 @@
 
                     $('#policyStatus').val(p.status);
                     $('#policyEffectiveDate').val(p.effective_date ? p.effective_date.split('T')[0] : '');
-                    $('#policyApplicableTo').val(p.applicable_to).trigger('change');
                     $('#policyDescription').val(p.description || '');
+
+                    applyPolicyScopeToForm(p);
 
                     // Open modal
                     const modal = new bootstrap.Modal(document.getElementById('createPolicyModal'));
@@ -548,7 +707,10 @@
         $('#createPolicyModalLabel').html('<i class="bi bi-plus-circle me-2"></i>Create New Policy');
         $('#createPolicyForm button[type="submit"]').html('<i class="bi bi-check-circle me-1"></i>Create Policy');
         $('#createPolicyForm')[0].reset();
-        $('#organizationSelect, #branchSelect, #floorSelect').hide();
+        $('#policyOrgWrap, #policySbuWrap, #policyFloorWrap').hide();
+        $('.scope-org-req, .scope-sbu-req, .scope-floor-req').hide();
+        resetSbuAndFloorSelects();
+        rebuildOrganizationOptions();
     }
 
     // ============================================
@@ -570,13 +732,16 @@
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
                     },
                     success: function(response) {
-                        if (response.success) {
+                        if (response && response.success) {
                             showSuccess(response.message || 'Policy has been deleted.').then(() => {
                                 window.location.reload();
                             });
+                        } else {
+                            showError((response && response.message) ? response.message : 'Unable to delete policy.');
                         }
                     },
                     error: function(xhr) {
@@ -596,7 +761,8 @@
             url: `/admin/policies/${policyId}`,
             method: 'GET',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
             },
             success: function(response) {
                 if (response.success && response.policy) {
@@ -658,8 +824,8 @@
             applicableToHtml = '<span class="badge px-2 py-1 bg-primary"><i class="bi bi-globe me-1"></i>Global (All Organizations)</span>';
         } else if (policy.applicable_to === 'organization') {
             applicableToHtml = `<span class="badge px-2 py-1 bg-info"><i class="bi bi-building me-1"></i>${policy.applicable_details}</span>`;
-        } else if (policy.applicable_to === 'branch') {
-            applicableToHtml = `<span class="badge px-2 py-1 bg-success"><i class="bi bi-geo-alt me-1"></i>${policy.applicable_details}</span>`;
+        } else if (policy.applicable_to === 'sbu' || policy.applicable_to === 'branch') {
+            applicableToHtml = `<span class="badge px-2 py-1 bg-success"><i class="bi bi-diagram-2 me-1"></i>${policy.applicable_details}</span>`;
         } else if (policy.applicable_to === 'floor') {
             applicableToHtml = `<span class="badge px-2 py-1 bg-warning text-dark"><i class="bi bi-building me-1"></i>${policy.applicable_details}</span>`;
         }

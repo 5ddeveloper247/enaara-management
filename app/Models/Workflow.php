@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use App\Traits\LogsActivity;
 
 class Workflow extends Model
 {
@@ -18,6 +17,7 @@ class Workflow extends Model
         'request_type',
         'status',
         'organization_id',
+        'sbu_id',
         'branch',
         'approval_levels',
         'sla_hours',
@@ -26,11 +26,16 @@ class Workflow extends Model
 
     protected $casts = [
         'approval_levels' => 'array',
-        'sla_hours'       => 'integer',
+        'sla_hours' => 'integer',
     ];
 
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function sbu(): BelongsTo
+    {
+        return $this->belongsTo(Sbu::class, 'sbu_id');
     }
 }

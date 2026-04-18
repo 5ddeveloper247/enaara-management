@@ -59,44 +59,26 @@
                                 <select class="form-select" id="policyApplicableTo" required>
                                     <option value="global">Global (All Organizations)</option>
                                     <option value="organization">Organization Specific</option>
-                                    <option value="branch">Branch Specific</option>
+                                    <option value="sbu">SBU Specific</option>
                                     <option value="floor">Floor Specific</option>
                                 </select>
                             </div>
-                            <div class="col-md-6" id="organizationSelect" style="display: none;">
-                                <label class="form-label small fw-semibold">Organization</label>
+                            <div class="col-md-6" id="policyOrgWrap" style="display: none;">
+                                <label class="form-label small fw-semibold">Organization <span class="text-danger scope-org-req" style="display:none;">*</span></label>
                                 <select class="form-select" id="policyOrganization">
                                     <option value="">Select Organization</option>
-                                    <option value="enaara">Enaara Developers</option>
-                                    <option value="msr-rawalpindi">Madison Square Mall Rawalpindi</option>
-                                    <option value="msr-lahore">Madison Square Mall Lahore</option>
-                                    <option value="royal-swiss">Royal Swiss Lahore</option>
                                 </select>
                             </div>
-                            <div class="col-md-6" id="branchSelect" style="display: none;">
-                                <label class="form-label small fw-semibold">Branch</label>
-                                <select class="form-select" id="policyBranch">
-                                    <option value="">Select Branch</option>
-                                    <option value="rawalpindi">Rawalpindi</option>
-                                    <option value="lahore">Lahore</option>
-                                    <option value="karachi">Karachi</option>
+                            <div class="col-md-6" id="policySbuWrap" style="display: none;">
+                                <label class="form-label small fw-semibold">SBU <span class="text-danger scope-sbu-req" style="display:none;">*</span></label>
+                                <select class="form-select" id="policySbu">
+                                    <option value="">Select SBU</option>
                                 </select>
                             </div>
-                            <div class="col-md-6" id="floorSelect" style="display: none;">
-                                <label class="form-label small fw-semibold">Floor</label>
+                            <div class="col-md-6" id="policyFloorWrap" style="display: none;">
+                                <label class="form-label small fw-semibold">Floor <span class="text-danger scope-floor-req" style="display:none;">*</span></label>
                                 <select class="form-select" id="policyFloor">
                                     <option value="">Select Floor</option>
-                                    <option value="ground">Ground Floor</option>
-                                    <option value="1">Floor 1</option>
-                                    <option value="2">Floor 2</option>
-                                    <option value="3">Floor 3</option>
-                                    <option value="4">Floor 4</option>
-                                    <option value="5">Floor 5</option>
-                                    <option value="6">Floor 6</option>
-                                    <option value="7">Floor 7</option>
-                                    <option value="8">Floor 8</option>
-                                    <option value="9">Floor 9 (Corporate/HR Zone)</option>
-                                    <option value="10">Floor 10</option>
                                 </select>
                             </div>
                         </div>

@@ -31,8 +31,8 @@
                         <div class="fw-semibold text-white" id="detailOrganization">-</div>
                     </div>
                     <div class="col-md-6">
-                        <small class="opacity-75 text-white d-block mb-1">Branch</small>
-                        <div class="fw-semibold text-white" id="detailBranch">-</div>
+                        <small class="opacity-75 text-white d-block mb-1">SBU</small>
+                        <div class="fw-semibold text-white" id="detailSbu">-</div>
                     </div>
                 </div>
             </div>
@@ -71,15 +71,8 @@
             </div>
         </div>
 
-        <!-- Action Buttons -->
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
-            <button type="button" class="btn btn-outline-danger border-1" id="deleteWorkflowBtn">
-                <i class="bi bi-trash me-1"></i>Delete
-            </button>
-            <button type="button" class="btn btn-light text-dark border-0" id="editWorkflowBtn">
-                <i class="bi bi-pencil me-1"></i>Edit Workflow
-            </button>
         </div>
     </div>
 </div>

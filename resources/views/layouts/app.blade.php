@@ -73,15 +73,23 @@
                 <script>
                     // Global helper functions for SweetAlert
                     window.showAlert = function(icon, title, message, timer = 2000) {
-                        return Swal.fire({
+                        const useHtml = typeof message === 'string' && (message.includes('<br') || message.includes('<br/>'));
+                        const cfg = {
                             icon: icon,
                             title: title,
-                            text: message,
                             timer: icon === 'success' ? timer : null,
                             showConfirmButton: icon !== 'success',
                             confirmButtonColor: '#1a237e',
                             confirmButtonText: 'Dismiss'
-                        });
+                        };
+                        if (useHtml) {
+                            cfg.html = message;
+                        } else if (typeof message === 'string' && message.includes('\n')) {
+                            cfg.html = message.replace(/\n/g, '<br>');
+                        } else {
+                            cfg.text = message;
+                        }
+                        return Swal.fire(cfg);
                     };
 
                     window.showSuccess = function(message, title = 'Saved') {

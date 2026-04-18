@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Services\PolicyService;
 use App\Http\Requests\Admin\Policy\StorePolicyRequest;
 use App\Http\Requests\Admin\Policy\UpdatePolicyRequest;
+use App\Models\Organization;
 use App\Models\Policy;
+use App\Services\PolicyService;
 
 class PolicyController extends Controller
 {
@@ -19,23 +19,52 @@ class PolicyController extends Controller
 
     public function index()
     {
-        if (!validatePermissions('admin/policies')) {
+        if (! validatePermissions('admin/policies')) {
             abort(403, 'Unauthorized action.');
         }
 
         $policies = Policy::orderBy('updated_at', 'desc')->get();
 
-        return view('admin.policies.index', compact('policies'));
+        $organizations = Organization::query()
+            ->where('is_active', true)
+            ->with([
+                'sbus' => fn ($q) => $q->where('is_active', true)->orderBy('name'),
+                'sbus.floors' => fn ($q) => $q->where('is_active', true)->orderBy('floor_number'),
+            ])
+            ->orderBy('name')
+            ->get();
+
+        $policyScopeTree = $organizations->map(fn (Organization $org) => [
+            'id' => $org->id,
+            'name' => $org->name,
+            'sbus' => $org->sbus->map(fn ($sbu) => [
+                'id' => $sbu->id,
+                'name' => $sbu->name,
+                'floors' => $sbu->floors->map(fn ($floor) => [
+                    'id' => $floor->id,
+                    'name' => $floor->name,
+                    'floor_number' => $floor->floor_number,
+                ]),
+            ]),
+        ]);
+
+        $organizationsForFilter = $organizations->map(fn (Organization $org) => [
+            'id' => $org->id,
+            'name' => $org->name,
+        ]);
+
+        return view('admin.policies.index', compact('policies', 'policyScopeTree', 'organizationsForFilter'));
     }
 
     public function show($id)
     {
-        if (!validatePermissions('admin/policies')) {
+        if (! validatePermissions('admin/policies')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
         try {
             $policy = Policy::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'policy' => $policy,
@@ -47,7 +76,7 @@ class PolicyController extends Controller
 
     public function store(StorePolicyRequest $request)
     {
-        if (!validatePermissions('admin/policies')) {
+        if (! validatePermissions('admin/policies')) {
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
             }
@@ -73,20 +102,20 @@ class PolicyController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to create policy: ' . $e->getMessage(),
+                    'message' => 'Failed to create policy: '.$e->getMessage(),
                 ], 500);
             }
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Failed to create policy: ' . $e->getMessage());
+                ->with('error', 'Failed to create policy: '.$e->getMessage());
         }
     }
 
     public function update(UpdatePolicyRequest $request, $id)
     {
-        if (!validatePermissions('admin/policies')) {
+        if (! validatePermissions('admin/policies')) {
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
             }
@@ -112,20 +141,20 @@ class PolicyController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update policy: ' . $e->getMessage(),
+                    'message' => 'Failed to update policy: '.$e->getMessage(),
                 ], 500);
             }
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Failed to update policy: ' . $e->getMessage());
+                ->with('error', 'Failed to update policy: '.$e->getMessage());
         }
     }
 
     public function destroy($id)
     {
-        if (!validatePermissions('admin/policies')) {
+        if (! validatePermissions('admin/policies')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
@@ -140,7 +169,7 @@ class PolicyController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete policy: ' . $e->getMessage(),
+                'message' => 'Failed to delete policy: '.$e->getMessage(),
             ], 500);
         }
     }

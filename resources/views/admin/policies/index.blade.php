@@ -93,6 +93,7 @@
     <script>
         // Dynamic policies data from backend
         const dbPolicies = @json($policies ?? []);
+        window.policyScopeTree = @json($policyScopeTree ?? []);
     </script>
     <!-- Policies Module JavaScript -->
     <script src="{{ asset('js/policies.js') }}"></script>

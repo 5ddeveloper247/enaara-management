@@ -59,9 +59,12 @@
                         <div class="field-error-msg text-danger small mt-1" id="organization_id-error"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold text-white">Branch (Optional)</label>
-                        <input type="text" class="form-control" id="workflowBranch" name="branch" placeholder="e.g., Karachi, Lahore">
-                        <div class="field-error-msg text-danger small mt-1" id="branch-error"></div>
+                        <label class="form-label small fw-semibold text-white">SBU <small class="opacity-75">(optional)</small></label>
+                        <select class="form-select" id="workflowSbu" name="sbu_id">
+                            <option value="">All SBUs under organization</option>
+                        </select>
+                        <small class="opacity-75 text-white d-block mt-1">Choose an organization first, then narrow to one SBU.</small>
+                        <div class="field-error-msg text-danger small mt-1" id="sbu_id-error"></div>
                     </div>
                 </div>
             </div>
@@ -98,9 +101,12 @@
                         <label class="form-label small fw-semibold text-white">Escalate To</label>
                         <select class="form-select" id="workflowEscalateTo" name="escalate_to">
                             <option value="">No Auto-escalation</option>
-                            <option value="HR Manager">HR Manager</option>
-                            <option value="Super Admin">Super Admin</option>
                             <option value="Next Level Approver">Next Level Approver</option>
+                            @isset($roleNames)
+                                @foreach ($roleNames as $roleName)
+                                    <option value="{{ $roleName }}">{{ $roleName }}</option>
+                                @endforeach
+                            @endisset
                         </select>
                         <div class="field-error-msg text-danger small mt-1" id="escalate_to-error"></div>
                     </div>

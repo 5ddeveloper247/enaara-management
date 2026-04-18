@@ -41,11 +41,12 @@
         <label class="form-label small fw-semibold text-muted mb-2">Organization</label>
         <select class="form-select form-select-sm" id="filterOrganization">
             <option value="">All Organizations</option>
-            <option value="enaara">Enaara Developers</option>
-            <option value="msr-rawalpindi">Madison Square Mall Rawalpindi</option>
-            <option value="msr-lahore">Madison Square Mall Lahore</option>
-            <option value="royal-swiss">Royal Swiss Lahore</option>
-            <option value="global">Global</option>
+            <option value="global">Global only</option>
+            @isset($organizationsForFilter)
+                @foreach ($organizationsForFilter as $org)
+                    <option value="{{ $org['id'] }}">{{ $org['name'] }}</option>
+                @endforeach
+            @endisset
         </select>
     </div>
     <div class="col-md-3">
@@ -54,7 +55,7 @@
             <option value="">All Types</option>
             <option value="global">Global</option>
             <option value="organization">Organization</option>
-            <option value="branch">Branch</option>
+            <option value="sbu">SBU</option>
             <option value="floor">Floor</option>
         </select>
     </div>

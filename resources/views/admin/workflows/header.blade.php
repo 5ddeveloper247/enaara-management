@@ -45,9 +45,9 @@
         </select>
     </div>
     <div class="col-md-3">
-        <label class="form-label small fw-semibold text-muted mb-2">Branch</label>
-        <select class="form-select form-select-sm" id="filterBranch">
-            <option value="">All Branches</option>
+        <label class="form-label small fw-semibold text-muted mb-2">SBU</label>
+        <select class="form-select form-select-sm" id="filterSbu">
+            <option value="">All SBUs</option>
         </select>
     </div>
     <div class="col-12">

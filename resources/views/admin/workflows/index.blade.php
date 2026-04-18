@@ -118,6 +118,8 @@
         window.workflowsStatusUrl = "{{ url('admin/workflows/:id/status') }}";
         window.workflowsDeleteUrl = "{{ url('admin/workflows/:id/delete') }}";
         window.csrfToken          = "{{ csrf_token() }}";
+        window.workflowScopeTree = @json($workflowScopeTree ?? []);
+        window.workflowRoleNames = @json($roleNames ?? []);
     </script>
     <!-- Workflows Module JavaScript -->
     <script src="{{ asset('js/workflows.js') }}"></script>
