@@ -40,6 +40,7 @@
     </div>
     <!-- Cropper.js Modal -->
     @include('admin.employeeregistration.partials.cropper-modal')
+    @include('admin.employeeregistration.partials.attachement_model')
 
 @endsection
 
@@ -52,7 +53,8 @@
             bankDetails: @json($employee->bankDetails ?? []),
             familyMembers: @json($employee->familyMembers ?? []),
             academics: @json($employee->academics ?? []),
-            exEmployments: @json($employee->exEmployments ?? [])
+            exEmployments: @json($employee->exEmployments ?? []),
+            attachments: @json($editData['attachments'] ?? [])
         };
     </script>
     <!-- Cropper.js Script -->

@@ -33,6 +33,7 @@ use App\Http\Controllers\ShiftPlannerController;
 use App\Http\Controllers\ShiftRosterController;
 use App\Http\Controllers\MonthlySummaryController;
 use App\Http\Controllers\AuditTrailController;
+use App\Http\Controllers\RoleLevelController;
 use App\Http\Middleware\EnsurePasswordIsNotTemporary;
 // Authentication Routes
 Route::get('/', function () {
@@ -118,6 +119,12 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/department/edit/{id}', [DepartmentController::class, 'update'])->name('admin.department.update');
     Route::delete('/department/{id}', [DepartmentController::class, 'destroy'])->name('admin.department.destroy');
 
+    // Role Level Routes
+    Route::get('/role-levels', [RoleLevelController::class, 'index'])->name('admin.role-levels.index');
+    Route::post('/role-levels/add', [RoleLevelController::class, 'store'])->name('admin.role-levels.store');
+    Route::get('/role-levels/edit/{id}', [RoleLevelController::class, 'edit'])->name('admin.role-levels.edit');
+    Route::post('/role-levels/edit/{id}', [RoleLevelController::class, 'update'])->name('admin.role-levels.update');
+    Route::delete('/role-levels/delete/{id}', [RoleLevelController::class, 'destroy'])->name('admin.role-levels.destroy');
 
     Route::get('/leave-type', [LeaveTypeController::class, 'index'])->name('admin.leave.type.index');
     Route::get('/leave-type/add', [LeaveTypeController::class, 'create'])->name('admin.leave.type.add');

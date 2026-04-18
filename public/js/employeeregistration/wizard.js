@@ -76,15 +76,15 @@
         const armyCheck = document.getElementById('giExArmyRetiredCheckbox');
         const armyTab = document.querySelector('.profile-tab[data-step="4"]');
         if (armyCheck && armyTab) {
-            // Logic: HIDE tab if checked. Show if unchecked.
+            // Logic: SHOW tab if checked. Hide if unchecked.
             if (armyCheck.checked) {
+                armyTab.classList.remove('d-none');
+            } else {
                 armyTab.classList.add('d-none');
                 // If we are currently on step 4 but it's now hidden, move to step 1
                 if (currentStep === 4) {
                     goToStep(1);
                 }
-            } else {
-                armyTab.classList.remove('d-none');
             }
         }
 
@@ -213,7 +213,7 @@
         }
     }
 
-    function showToast(title, icon = 'success') {
+    window.showToast = function(title, icon = 'success') {
         Swal.fire({
             toast: true,
             position: 'top-end',
@@ -223,7 +223,8 @@
             timer: 2000,
             timerProgressBar: true
         });
-    }
+    };
+    const showToast = window.showToast;
 
     function clearStepErrors() {
         document.querySelectorAll('.is-invalid').forEach(el => {
@@ -1818,7 +1819,7 @@
 
     // --- STEP 6: MORE INFORMATION LOGIC ---
     let currentMoreStep = 1;
-    const totalMoreSteps = 6;
+    const totalMoreSteps = 7;
 
     window.setMoreSubStep = function(step) {
         currentMoreStep = step;

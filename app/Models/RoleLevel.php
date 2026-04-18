@@ -11,5 +11,10 @@ class RoleLevel extends Model
         'name',
         'description',
         'level',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 }

@@ -150,7 +150,7 @@
 
             <hr class="my-4">
 
-            <!-- SAVED ACCOUNTS LIST (Card style matching Dept/Org) -->
+            <!-- SAVED ACCOUNTS LIST (Card style matching SBU/Role Levels) -->
             <div id="bankDetailsList" class="row g-3 px-1">
                 @php 
                     $savedBanks = $editData['bank_details'] ?? []; 
@@ -164,45 +164,46 @@
                 @else
                     @foreach($savedBanks as $bank)
                         <div class="col-12 col-md-6 col-xl-4 bank-card-item" data-id="{{ $bank['id'] }}">
-                            <div class="card shadow-sm border position-relative" style="border-radius: 12px; background: #fff;">
-                                <div class="card-body p-2">
-                                    <div class="d-flex align-items-center gap-2 mb-2 pe-5">
-                                        <!-- Initial Box -->
-                                        <div class="d-flex align-items-center justify-content-center text-white fw-bold rounded bank-initial-box" 
-                                             style="width:40px;height:40px;background:#012d5a;font-size:16px;">
-                                            {{ strtoupper(substr($bank['bank_name'] ?? 'B', 0, 1)) }}
-                                        </div>
-                                        <div class="overflow-hidden">
-                                            <div class="fw-bold text-dark text-truncate small">{{ $bank['account_title'] ?? 'Account' }}</div>
-                                            <div class="text-muted text-truncate" style="font-size: 10px;">
-                                                Source: {{ $bank['bank_name'] ?? 'N/A' }} - ({{ $bank['account_category'] ?? '-' }})
+                            <div class="card sbu-card border-1 rounded-3 h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; font-size: 1.1rem;">
+                                                {{ strtoupper(substr($bank['bank_name'] ?? 'B', 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 fw-semibold small">{{ $bank['account_title'] ?? 'Account' }}</h6>
+                                                <small class="text-muted small">{{ $bank['bank_name'] ?? 'N/A' }} - ({{ $bank['account_category'] ?? '-' }})</small>
                                             </div>
                                         </div>
-                                        
                                         @if($bank['is_salary_account'])
-                                            <div class="position-absolute" style="top: 10px; right: 10px;">
-                                                <span class="badge border text-dark bg-light px-2 py-1" style="font-size: 9px; border-color: #012d5a !important;">
-                                                    Primary
-                                                </span>
-                                            </div>
+                                        <span class="badge bg-success" style="font-size: 10px; padding: 4px 6px;">Primary</span>
+                                        @else
+                                        <span class="badge bg-secondary" style="font-size: 10px; padding: 4px 6px;">{{ $bank['account_type'] ?? 'Saving' }}</span>
                                         @endif
                                     </div>
-
-                                    <div class="px-1 mb-2" style="font-size: 11px;">
-                                        <div class="d-flex gap-2 text-muted">
-                                            <span class="fw-bold text-dark">A/C No:</span> <span>{{ $bank['account_no'] ?? 'N/A' }}</span>
-                                        </div>
-                                        <div class="d-flex gap-2 text-muted">
-                                            <span class="fw-bold text-dark">IBAN:</span> <span class="text-truncate">{{ $bank['iban'] ?? 'N/A' }}</span>
-                                        </div>
+                                    <div class="mb-2">
+                                        <i class="bi bi-credit-card me-1 text-main small"></i>
+                                        <small class="text-muted small"><strong>A/C No:</strong> {{ $bank['account_no'] ?? 'N/A' }}</small>
                                     </div>
-
-                                    <div class="d-flex gap-2 border-top pt-2 mt-1">
-                                        <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1 d-flex align-items-center justify-content-center gap-1" onclick="editBankDetail({{ $bank['id'] }})" style="font-size: 11px; padding: 4px;">
-                                            Edit
+                                    <div class="mb-2">
+                                        <i class="bi bi-bank me-1 text-main small"></i>
+                                        <small class="text-muted small"><strong>IBAN:</strong> {{ Str::limit($bank['iban'] ?? 'N/A', 30) }}</small>
+                                    </div>
+                                    @if(!empty($bank['branch_code']))
+                                    <div class="mb-2">
+                                        <i class="bi bi-hash me-1 text-main small"></i>
+                                        <small class="text-muted small"><strong>Branch Code:</strong> {{ $bank['branch_code'] }}</small>
+                                    </div>
+                                    @endif
+                                    <div class="mt-3 pt-3 border-top d-flex gap-1">
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-primary flex-grow-1"
+                                            onclick="editBankDetail({{ $bank['id'] }})">
+                                            <i class="bi bi-pencil me-1"></i>Edit
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center" onclick="deleteBankDetail({{ $bank['id'] }})" style="padding: 4px 8px; border-color: #ff0000 !important; color: #ff0000 !important;">
-                                            <i class='bx bx-trash'></i>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteBankDetail({{ $bank['id'] }})">
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -216,40 +217,44 @@
     </div>
 </div>
 
-<!-- Template for Compact Bank Card -->
+<!-- Template for Bank Card (SBU/Role Level style) -->
 <template id="bankCardTemplate">
     <div class="col-12 col-md-6 col-xl-4 bank-card-item" data-id="">
-        <div class="card shadow-sm border position-relative" style="border-radius: 12px; background: #fff;">
-            <div class="card-body p-2">
-                <div class="d-flex align-items-center gap-2 mb-2 pe-5">
-                    <div class="d-flex align-items-center justify-content-center text-white fw-bold rounded bank-initial-icon" 
-                         style="width:40px;height:40px;background:#012d5a;font-size:16px;">B</div>
-                    <div class="overflow-hidden">
-                        <div class="bank-title-label fw-bold text-dark text-truncate small">Account Title</div>
-                        <div class="bank-sub-label text-muted text-truncate" style="font-size: 10px;">Source: Bank Name - (Category)</div>
+        <div class="card sbu-card border-1 rounded-3 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold bank-initial-icon" style="width: 45px; height: 45px; font-size: 1.1rem;">B</div>
+                        <div>
+                            <h6 class="mb-0 fw-semibold small bank-title-label">Account Title</h6>
+                            <small class="text-muted small bank-sub-label">Bank Name - (Category)</small>
+                        </div>
                     </div>
-                    <div class="salary-account-badge position-absolute d-none" style="top: 10px; right: 10px;">
-                        <span class="badge border text-dark bg-light px-2 py-1" style="font-size: 9px; border-color: #012d5a !important;">
-                            Primary
-                        </span>
+                    <div class="salary-account-badge d-none">
+                        <span class="badge bg-success" style="font-size: 10px; padding: 4px 6px;">Primary</span>
                     </div>
-                </div>
-
-                <div class="px-1 mb-2" style="font-size: 11px;">
-                    <div class="d-flex gap-2 text-muted">
-                        <span class="fw-bold text-dark">A/C No:</span> <span class="bank-no-label">N/A</span>
-                    </div>
-                    <div class="d-flex gap-2 text-muted">
-                        <span class="fw-bold text-dark">IBAN:</span> <span class="bank-iban-label text-truncate">N/A</span>
+                    <div class="account-type-badge d-none">
+                        <span class="badge bg-secondary" style="font-size: 10px; padding: 4px 6px;">Saving</span>
                     </div>
                 </div>
-
-                <div class="d-flex gap-2 border-top pt-2 mt-1">
-                    <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1 d-flex align-items-center justify-content-center gap-1 edit-bank-btn" style="font-size: 11px; padding: 4px;">
-                        Edit
+                <div class="mb-2">
+                    <i class="bi bi-credit-card me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>A/C No:</strong> <span class="bank-no-label">N/A</span></small>
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-bank me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>IBAN:</strong> <span class="bank-iban-label">N/A</span></small>
+                </div>
+                <div class="mb-2 bank-branch-code-row d-none">
+                    <i class="bi bi-hash me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>Branch Code:</strong> <span class="bank-branch-code-label">N/A</span></small>
+                </div>
+                <div class="mt-3 pt-3 border-top d-flex gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1 edit-bank-btn">
+                        <i class="bi bi-pencil me-1"></i>Edit
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center delete-bank-btn" style="padding: 4px 8px; border-color: #ff0000 !important; color: #ff0000 !important;">
-                        <i class='bx bx-trash'></i>
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-bank-btn">
+                        <i class="bi bi-trash"></i>
                     </button>
                 </div>
             </div>
@@ -266,3 +271,4 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
 }
 </style>
+

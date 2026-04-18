@@ -1295,6 +1295,7 @@ class EmployeeService
                 'contact_no'   => $r->contact_no,
                 'relationship' => $r->relationship,
             ])->values()->all(),
+            'attachments' => $attachments,
         ];
 
         return view('admin.employeeregistration.index', array_merge($formData, [

@@ -18,6 +18,8 @@
                                                 data-more-step="5"><span class="more-step-index">5</span><span>Medical</span></button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
                                                 data-more-step="6"><span class="more-step-index">6</span><span>Reference</span></button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
+                                                data-more-step="7"><span class="more-step-index">7</span><span>Attachments</span></button>
                                         </div>
 
                                         <div class="more-sub-pane active" id="moreStepPane1">
@@ -140,7 +142,7 @@
                                                         <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
                                                         <input type="date" class="form-control family-field-input" name="family[][dob]"
                                                             data-family-date-of-birth placeholder="yyyy-mm-dd" required>
-                                                        <div class="family-field-preview" data-family-preview-date-of-birth>-</div>
+                                                        <div class="family-field-preview" data-family-preview-dob>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
                                                         <label class="form-label">Relation <span class="text-danger">*</span></label>
@@ -500,6 +502,21 @@
                                                          </div>
                                                      </div>
                                                  </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="more-sub-pane" id="moreStepPane7">
+                                            <div>
+                                                <div class="fw-bold text-uppercase small mb-3">Attachments</div>
+                                                <div class="card border-0 bg-light">
+                                                    <div class="card-body p-4 text-center">
+                                                        <i class="bi bi-folder-check display-4 text-secondary mb-3 d-block"></i>
+                                                        <p class="text-secondary small mb-3">Upload and manage employee documents such as CNIC, passport, certificates, and contracts.</p>
+                                                        <button type="button" class="btn btn-sm text-white bg-main border-0 px-4" data-bs-toggle="modal" data-bs-target="#attachmentModal">
+                                                            <i class="bi bi-paperclip me-1"></i> Manage Attachments
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
