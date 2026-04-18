@@ -40,8 +40,8 @@
                                                             <label class="form-label">Intern Type <span class="text-danger">*</span></label>
                                                             <select name="intern_type" class="form-select" id="employmentDetailsInternTypeInput">
                                                                 <option value="" {{ !isset($employee->intern_type) ? 'selected' : '' }} disabled>Select intern type</option>
-                                                                <option value="Paid" {{ ($employee->intern_type ?? '') == 'Paid' ? 'selected' : '' }}>Paid</option>
-                                                                <option value="Unpaid" {{ ($employee->intern_type ?? '') == 'Unpaid' ? 'selected' : '' }}>Unpaid</option>
+                                                                <option value="paid" {{ strtolower((string) ($employee->intern_type ?? '')) == 'paid' ? 'selected' : '' }}>Paid</option>
+                                                                <option value="unpaid" {{ strtolower((string) ($employee->intern_type ?? '')) == 'unpaid' ? 'selected' : '' }}>Unpaid</option>
                                                             </select>
                                                         </div>
                                                         <div class="col-md-6">

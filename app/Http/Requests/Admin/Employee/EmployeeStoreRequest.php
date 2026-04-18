@@ -90,6 +90,10 @@ class EmployeeStoreRequest extends FormRequest
             $this->merge(['contact_email' => strtolower(trim((string) $this->input('contact_email')))]);
         }
 
+        if ($this->filled('intern_type')) {
+            $this->merge(['intern_type' => strtolower(trim((string) $this->input('intern_type')))]);
+        }
+
         if ($this->filled('ntn')) {
             $this->merge(['ntn' => preg_replace('/\D/', '', (string) $this->input('ntn'))]);
         }
@@ -644,3 +648,4 @@ class EmployeeStoreRequest extends FormRequest
         ];
     }
 }
+

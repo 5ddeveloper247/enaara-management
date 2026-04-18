@@ -107,6 +107,10 @@ class EmployeeStepRequest extends FormRequest
             ]);
         }
 
+        if ($this->filled('intern_type')) {
+            $this->merge(['intern_type' => strtolower(trim((string) $this->input('intern_type')))]);
+        }
+
         if ($this->filled('ntn')) {
             $this->merge(['ntn' => preg_replace('/\D/', '', (string) $this->input('ntn'))]);
         }
@@ -965,3 +969,4 @@ class EmployeeStepRequest extends FormRequest
         ];
     }
 }
+
