@@ -134,7 +134,6 @@
                                                             <option value="" selected disabled>Select</option>
                                                             <option value="Male">Male</option>
                                                             <option value="Female">Female</option>
-                                                            <option value="Other">Other</option>
                                                         </select>
                                                         <div class="family-field-preview" data-family-preview-gender>-</div>
                                                     </div>
