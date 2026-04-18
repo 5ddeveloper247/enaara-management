@@ -16,7 +16,7 @@ class RoleLevelStoreRequest extends FormRequest
         return [
             'name' => 'required|string|max:100|unique:role_levels,name',
             'description' => 'nullable|string|max:1000',
-            'level' => 'required|integer|min:1|unique:role_levels,level',
+            'level' => 'required|integer|min:1',
             'is_active' => 'boolean',
         ];
     }
