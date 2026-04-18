@@ -393,17 +393,7 @@
                                                                     <option value="Other" {{ ($employee?->medical?->disability_type ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
                                                                 </select>
                                                             </div>
-                                                            <div class="col-md-4">
-                                                                <label class="form-label">If Yes (Disability Type)</label>
-                                                                <select name="disability_type" class="form-select" id="moreMedicalDisabilityTypeInput">
-                                                                    <option value="" selected disabled>Select</option>
-                                                                    <option value="Physical" {{ ($employee?->medical?->disability_type ?? '') == 'Physical' ? 'selected' : '' }}>Physical</option>
-                                                                    <option value="Visual" {{ ($employee?->medical?->disability_type ?? '') == 'Visual' ? 'selected' : '' }}>Visual</option>
-                                                                    <option value="Hearing" {{ ($employee?->medical?->disability_type ?? '') == 'Hearing' ? 'selected' : '' }}>Hearing</option>
-                                                                    <option value="Speech" {{ ($employee?->medical?->disability_type ?? '') == 'Speech' ? 'selected' : '' }}>Speech</option>
-                                                                    <option value="Other" {{ ($employee?->medical?->disability_type ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
-                                                                </select>
-                                                            </div>
+                                                        
                                                             <div class="col-md-4">
                                                                 <label class="form-label">Blood Group</label>
                                                                 <select name="blood_group" class="form-select" id="moreMedicalBloodGroupInput">
