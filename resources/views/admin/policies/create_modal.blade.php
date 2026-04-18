@@ -9,8 +9,9 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form id="createPolicyForm" class="d-flex flex-column h-100">
+            <form id="createPolicyForm" class="d-flex flex-column h-100" novalidate>
                 <div class="modal-body">
+                    <div id="policyFormErrorSummary" class="alert alert-danger py-2 px-3 small d-none mb-3" role="alert"></div>
                     <!-- Basic Information -->
                     <div class="mb-4">
                         <h6 class="mb-3 fw-semibold small">
@@ -19,7 +20,8 @@
                         <div class="row g-3">
                             <div class="col-md-12">
                                 <label class="form-label small fw-semibold">Policy Title <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="policyTitle" required placeholder="Enter policy title">
+                                <input type="text" class="form-control" id="policyTitle" required placeholder="Enter policy title" autocomplete="off">
+                                <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-title"></div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold">Category <span class="text-danger">*</span></label>
@@ -32,6 +34,7 @@
                                     <option value="security">Security Policy</option>
                                     <option value="hr">HR Policy</option>
                                 </select>
+                                <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-category"></div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold">Status <span class="text-danger">*</span></label>
@@ -40,10 +43,12 @@
                                     <option value="active">Active</option>
                                     <option value="archived">Archived</option>
                                 </select>
+                                <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-status"></div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold">Effective Date <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" id="policyEffectiveDate" required>
+                                <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-effective_date"></div>
                             </div>
                         </div>
                     </div>
@@ -57,29 +62,33 @@
                             <div class="col-md-12">
                                 <label class="form-label small fw-semibold">Scope <span class="text-danger">*</span></label>
                                 <select class="form-select" id="policyApplicableTo" required>
-                                    <option value="global">Global (All Organizations)</option>
+                                    <option value="global" selected>Global (All Organizations)</option>
                                     <option value="organization">Organization Specific</option>
                                     <option value="sbu">SBU Specific</option>
                                     <option value="floor">Floor Specific</option>
                                 </select>
+                                <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-applicable_to"></div>
                             </div>
                             <div class="col-md-6" id="policyOrgWrap" style="display: none;">
                                 <label class="form-label small fw-semibold">Organization <span class="text-danger scope-org-req" style="display:none;">*</span></label>
                                 <select class="form-select" id="policyOrganization">
                                     <option value="">Select Organization</option>
                                 </select>
+                                <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-organization_id"></div>
                             </div>
                             <div class="col-md-6" id="policySbuWrap" style="display: none;">
                                 <label class="form-label small fw-semibold">SBU <span class="text-danger scope-sbu-req" style="display:none;">*</span></label>
                                 <select class="form-select" id="policySbu">
                                     <option value="">Select SBU</option>
                                 </select>
+                                <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-sbu_id"></div>
                             </div>
                             <div class="col-md-6" id="policyFloorWrap" style="display: none;">
                                 <label class="form-label small fw-semibold">Floor <span class="text-danger scope-floor-req" style="display:none;">*</span></label>
                                 <select class="form-select" id="policyFloor">
                                     <option value="">Select Floor</option>
                                 </select>
+                                <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-sbu_floor_id"></div>
                             </div>
                         </div>
                     </div>
@@ -92,11 +101,13 @@
                         <div class="mb-3">
                             <label class="form-label small fw-semibold">Description</label>
                             <textarea class="form-control" id="policyDescription" rows="4" placeholder="Enter policy description"></textarea>
+                            <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-description"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-semibold">Policy Document (Optional)</label>
                             <input type="file" class="form-control" id="policyDocument" accept=".pdf,.doc,.docx">
                             <small class="text-muted">Upload PDF or Word document (Max 10MB)</small>
+                            <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-document"></div>
                         </div>
                     </div>
                 </div>

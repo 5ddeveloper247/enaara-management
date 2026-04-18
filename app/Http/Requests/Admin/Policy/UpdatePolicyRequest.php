@@ -75,7 +75,7 @@ class UpdatePolicyRequest extends FormRequest
                 $sbuId = (int) $this->input('sbu_id');
                 $sbu = Sbu::query()->find($sbuId);
                 if (! $sbu || (int) $sbu->organization_id !== $orgId) {
-                    $validator->errors()->add('sbu_id', 'The selected SBU must belong to the selected organization.');
+                    $validator->errors()->add('sbu_id', 'Pick an SBU that belongs to the organization you selected (or change the organization).');
                 }
             }
 
@@ -85,33 +85,61 @@ class UpdatePolicyRequest extends FormRequest
                 $floorId = (int) $this->input('sbu_floor_id');
                 $floor = SbuFloor::query()->with('sbu')->find($floorId);
                 if (! $floor || ! $floor->sbu) {
-                    $validator->errors()->add('sbu_floor_id', 'The selected floor is invalid.');
+                    $validator->errors()->add('sbu_floor_id', 'That floor could not be found. Refresh the page and choose a floor again.');
 
                     return;
                 }
                 if ((int) $floor->sbu_id !== $sbuId) {
-                    $validator->errors()->add('sbu_floor_id', 'The selected floor must belong to the selected SBU.');
+                    $validator->errors()->add('sbu_floor_id', 'Choose a floor that belongs to the SBU you selected.');
                 }
                 if ((int) $floor->sbu->organization_id !== $orgId) {
-                    $validator->errors()->add('organization_id', 'The selected organization must match the floor\'s SBU.');
+                    $validator->errors()->add('organization_id', 'The organization must match the SBU that owns this floor.');
                 }
             }
         });
     }
 
+    public function attributes(): array
+    {
+        return [
+            'title' => 'policy title',
+            'category' => 'category',
+            'status' => 'status',
+            'effective_date' => 'effective date',
+            'applicable_to' => 'scope',
+            'organization_id' => 'organization',
+            'sbu_id' => 'SBU',
+            'sbu_floor_id' => 'floor',
+            'description' => 'description',
+            'document' => 'document',
+        ];
+    }
+
     public function messages(): array
     {
         return [
-            'title.required' => 'The policy title is required.',
-            'category.required' => 'Please select a category.',
-            'status.required' => 'Please select a status.',
-            'effective_date.required' => 'The effective date is required.',
-            'applicable_to.required' => 'Please select the scope.',
-            'organization_id.required' => 'Please select an organization.',
-            'sbu_id.required' => 'Please select an SBU.',
-            'sbu_floor_id.required' => 'Please select a floor.',
-            'document.mimes' => 'Only PDF and Word documents are allowed.',
-            'document.max' => 'Document size must not exceed 10MB.',
+            'title.required' => 'Enter a policy title.',
+            'title.max' => 'The policy title cannot be longer than 255 characters.',
+            'category.required' => 'Choose a category from the list.',
+            'category.in' => 'The category you chose is not valid. Please select a category again.',
+            'status.required' => 'Choose whether this policy is draft, active, or archived.',
+            'status.in' => 'Status must be draft, active, or archived.',
+            'effective_date.required' => 'Choose the date this policy takes effect.',
+            'effective_date.date' => 'Enter a valid date for the effective date.',
+            'applicable_to.required' => 'Choose who this policy applies to (scope).',
+            'applicable_to.in' => 'Scope must be Global, Organization specific, SBU specific, or Floor specific.',
+            'organization_id.required' => 'Select an organization for this scope.',
+            'organization_id.exists' => 'That organization is no longer available. Refresh the page and select again.',
+            'organization_id.integer' => 'Organization selection is invalid.',
+            'sbu_id.required' => 'Select an SBU for SBU or floor scope.',
+            'sbu_id.exists' => 'That SBU is no longer available. Refresh the page and select again.',
+            'sbu_id.integer' => 'SBU selection is invalid.',
+            'sbu_floor_id.required' => 'Select a floor for floor-specific policies.',
+            'sbu_floor_id.exists' => 'That floor is no longer available. Refresh the page and select again.',
+            'sbu_floor_id.integer' => 'Floor selection is invalid.',
+            'description.max' => 'The description cannot be longer than 5000 characters.',
+            'document.mimes' => 'Only PDF or Word files (.pdf, .doc, .docx) are allowed.',
+            'document.max' => 'The file must be 10 MB or smaller.',
         ];
     }
 }

@@ -418,6 +418,28 @@
             }
         });
 
+        const policyInputIdToFeedbackKey = {
+            policyTitle: 'title',
+            policyCategory: 'category',
+            policyStatus: 'status',
+            policyEffectiveDate: 'effective_date',
+            policyApplicableTo: 'applicable_to',
+            policyOrganization: 'organization_id',
+            policySbu: 'sbu_id',
+            policyFloor: 'sbu_floor_id',
+            policyDescription: 'description',
+            policyDocument: 'document'
+        };
+        $('#createPolicyForm').on('input change', 'input, select, textarea', function () {
+            const id = $(this).attr('id');
+            const feKey = policyInputIdToFeedbackKey[id];
+            if (feKey) {
+                $(this).removeClass('is-invalid');
+                $('#policy-fe-' + feKey).addClass('d-none').text('');
+            }
+            $('#policyFormErrorSummary').addClass('d-none').empty();
+        });
+
         // View Policy Detail Canvas
         const detailCanvas = document.getElementById('policyDetailCanvas');
         if (detailCanvas) {
@@ -481,6 +503,11 @@
         if (createModal) {
             createModal.addEventListener('hidden.bs.modal', function () {
                 resetModal();
+            });
+            createModal.addEventListener('shown.bs.modal', function () {
+                if (!isEditMode) {
+                    clearPolicyFieldErrors();
+                }
             });
         }
     }
@@ -572,11 +599,106 @@
     }
 
     // ============================================
+    // POLICY FORM — INLINE VALIDATION
+    // ============================================
+    function clearPolicyFieldErrors() {
+        $('#createPolicyForm .is-invalid').removeClass('is-invalid');
+        $('#createPolicyForm .policy-field-feedback').addClass('d-none').text('');
+        $('#policyFormErrorSummary').addClass('d-none').empty();
+    }
+
+    function displayPolicyValidationErrors(errors) {
+        if (!errors || typeof errors !== 'object') {
+            return;
+        }
+        const inputByKey = {
+            title: '#policyTitle',
+            category: '#policyCategory',
+            status: '#policyStatus',
+            effective_date: '#policyEffectiveDate',
+            applicable_to: '#policyApplicableTo',
+            organization_id: '#policyOrganization',
+            sbu_id: '#policySbu',
+            sbu_floor_id: '#policyFloor',
+            description: '#policyDescription',
+            document: '#policyDocument'
+        };
+        const summary = [];
+
+        Object.keys(errors).sort().forEach((key) => {
+            const msgs = errors[key];
+            const msg = Array.isArray(msgs) ? msgs[0] : String(msgs);
+            const rootKey = key.split('.')[0];
+            const feedbackId = '#policy-fe-' + rootKey.replace(/\./g, '-');
+            const $fb = $(feedbackId);
+
+            if ($fb.length) {
+                $fb.removeClass('d-none').text(msg);
+                const inputSel = inputByKey[rootKey];
+                if (inputSel) {
+                    $(inputSel).addClass('is-invalid');
+                }
+            } else {
+                summary.push(msg);
+            }
+        });
+
+        if (summary.length) {
+            $('#policyFormErrorSummary').removeClass('d-none').text(summary.join(' '));
+        }
+    }
+
+    function validatePolicyClientScope() {
+        const scope = $('#policyApplicableTo').val();
+        const needOrg = ['organization', 'sbu', 'floor'].indexOf(scope) >= 0;
+        const needSbu = ['sbu', 'floor'].indexOf(scope) >= 0;
+        const needFloor = scope === 'floor';
+        let ok = true;
+
+        if (needOrg && policyScopeTree.length === 0) {
+            $('#policy-fe-applicable_to').removeClass('d-none')
+                .text('No active organizations are set up. Choose “Global (All Organizations)” or ask an administrator to add organizations and SBUs.');
+            $('#policyApplicableTo').addClass('is-invalid');
+            ok = false;
+        } else if (needOrg && !$('#policyOrganization').val()) {
+            $('#policy-fe-organization_id').removeClass('d-none').text('Select which organization this policy applies to.');
+            $('#policyOrganization').addClass('is-invalid');
+            ok = false;
+        }
+        if (needSbu && !$('#policySbu').val()) {
+            $('#policy-fe-sbu_id').removeClass('d-none').text('Select an SBU, or change scope to “Organization” if the whole organization should apply.');
+            $('#policySbu').addClass('is-invalid');
+            ok = false;
+        }
+        if (needFloor && !$('#policyFloor').val()) {
+            $('#policy-fe-sbu_floor_id').removeClass('d-none').text('Select a floor for this policy.');
+            $('#policyFloor').addClass('is-invalid');
+            ok = false;
+        }
+
+        if (!ok) {
+            updateScopeFieldVisibility();
+            const first = document.querySelector('#createPolicyModal .is-invalid');
+            if (first) {
+                first.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+        return ok;
+    }
+
+    // ============================================
     // POLICY CREATION / UPDATE
     // ============================================
     function handleCreatePolicy(e) {
         e.preventDefault();
-        
+
+        clearPolicyFieldErrors();
+        updateScopeFieldVisibility();
+
+        if (!validatePolicyClientScope()) {
+            return;
+        }
+
         const formData = new FormData();
         formData.append('title', $('#policyTitle').val());
         formData.append('category', $('#policyCategory option:selected').text());
@@ -619,6 +741,7 @@
             },
             success: function(response) {
                 if (response && response.success) {
+                    clearPolicyFieldErrors();
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createPolicyModal'));
                     if (modal) modal.hide();
 
@@ -627,10 +750,20 @@
                     });
                 } else {
                     const msg = (response && response.message) ? response.message : 'Unable to save policy.';
+                    $('#policyFormErrorSummary').removeClass('d-none').text(msg);
                     showError(msg);
                 }
             },
             error: function(xhr) {
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    updateScopeFieldVisibility();
+                    displayPolicyValidationErrors(xhr.responseJSON.errors);
+                    const first = document.querySelector('#createPolicyModal .is-invalid');
+                    if (first) {
+                        first.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                    return;
+                }
                 let errorMsg = 'An error occurred. Please try again.';
                 if (xhr.responseJSON) {
                     if (xhr.responseJSON.errors) {
@@ -639,7 +772,10 @@
                         errorMsg = xhr.responseJSON.message;
                     }
                 }
-                showError(errorMsg, xhr.status === 422 ? 'Validation' : 'Error');
+                $('#policyFormErrorSummary').removeClass('d-none').text(errorMsg);
+                if (typeof showError === 'function') {
+                    showError(errorMsg, xhr.status === 422 ? 'Validation' : 'Error');
+                }
             },
             complete: function() {
                 submitBtn.prop('disabled', false).html(originalBtnText);
@@ -662,7 +798,9 @@
             success: function(response) {
                 if (response.success && response.policy) {
                     const p = response.policy;
-                    
+
+                    clearPolicyFieldErrors();
+
                     isEditMode = true;
                     editPolicyId = p.id;
 
@@ -711,6 +849,7 @@
         $('.scope-org-req, .scope-sbu-req, .scope-floor-req').hide();
         resetSbuAndFloorSelects();
         rebuildOrganizationOptions();
+        clearPolicyFieldErrors();
     }
 
     // ============================================
