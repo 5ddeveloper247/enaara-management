@@ -12,6 +12,8 @@ use App\Models\Organization;
 use App\Models\Department;
 use App\Models\RoleLevel;
 use App\Models\Sbu;
+use Illuminate\Support\Str;
+
 class RoleController extends Controller
 {
     public function __construct(
@@ -67,6 +69,7 @@ class RoleController extends Controller
         ]);
         $roleLevel = RoleLevel::findOrFail((int) $validated['level_id']);
         $validated['name'] = $roleLevel->name;
+        $validated['role_level_id'] = $roleLevel->id;
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_primary'] = $request->boolean('is_primary');
@@ -105,7 +108,11 @@ class RoleController extends Controller
         $organizations = Organization::where('is_active', true)->orderBy('name')->get();
         $departments = Department::where('is_active', true)->orderBy('name')->get();
         $levels = RoleLevel::orderBy('level')->get();
-        $selectedLevelId = RoleLevel::where('name', $role->name)->value('id');
+        $selectedLevelId = $role->role_level_id
+            ?? RoleLevel::query()
+                ->whereRaw('LOWER(TRIM(name)) = ?', [Str::lower(trim((string) $role->name))])
+                ->orderBy('id')
+                ->value('id');
         $sbus = Sbu::where('is_active', true)->orderBy('name')->get();
         $selectedSbuIds = $role->sbus->pluck('id')->toArray();
         if (empty($selectedSbuIds) && $role->sbu_id) {
@@ -152,6 +159,7 @@ class RoleController extends Controller
         ]);
         $roleLevel = RoleLevel::findOrFail((int) $validated['level_id']);
         $validated['name'] = $roleLevel->name;
+        $validated['role_level_id'] = $roleLevel->id;
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_primary'] = $request->boolean('is_primary');
