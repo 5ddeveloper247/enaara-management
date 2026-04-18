@@ -877,10 +877,20 @@
     function toggleEmployeeInnerFields() {
         const engagementModeInput = document.getElementById('employmentDetailsEngagementModeInput');
         const contractTypeField = document.getElementById('employmentDetailsEmployeeContractTypeField');
+        const contractTypeInput = document.getElementById('employmentDetailsEmployeeContractTypeInput');
+        const contractDatesField = document.getElementById('employmentDetailsEmployeeContractDatesField');
         
         if (engagementModeInput && contractTypeField) {
             const isContractual = engagementModeInput.value === 'contractual';
             contractTypeField.classList.toggle('d-none', !isContractual);
+
+            // If employment type switches away from contractual, hide dependent date fields too.
+            if (!isContractual && contractDatesField) {
+                contractDatesField.classList.add('d-none');
+            } else if (isContractual && contractTypeInput && contractDatesField) {
+                const isTimeBound = contractTypeInput.value === 'time_bound';
+                contractDatesField.classList.toggle('d-none', !isTimeBound);
+            }
         }
     }
 
