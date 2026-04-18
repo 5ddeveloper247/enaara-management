@@ -146,9 +146,24 @@
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
                                                         <label class="form-label">Relation <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control family-field-input" name="family[][relation]"
-                                                            data-family-relation placeholder="Enter relation" required>
+                                                        <select class="form-select family-field-input" name="family[][relation]" data-family-relation required>
+                                                            <option value="" selected disabled>Select</option>
+                                                            <option value="Father">Father</option>
+                                                            <option value="Mother">Mother</option>
+                                                            <option value="Husband">Husband</option>
+                                                            <option value="Wife">Wife</option>
+                                                            <option value="Son">Son</option>
+                                                            <option value="Daughter">Daughter</option>
+                                                            <option value="Brother">Brother</option>
+                                                            <option value="Sister">Sister</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
                                                         <div class="family-field-preview" data-family-preview-relation>-</div>
+                                                    </div>
+                                                    <div class="col-12 d-none" data-family-relation-other-wrapper>
+                                                        <label class="form-label">Specify Relation <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control family-field-input" name="family[][relation_other]"
+                                                            data-family-relation-other placeholder="Specify relation">
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-3">
                                                         <label class="form-label">Occupation</label>
@@ -367,6 +382,17 @@
                                                                         for="moreMedicalHasDisabilityNo">No</label>
                                                                 </div>
                                                             </div>
+                                                            <div class="col-md-4" id="moreMedicalDisabilityTypeContainer" style="{{ strtolower($employee?->medical?->has_disability ?? '') == 'yes' ? '' : 'display:none;' }}">
+                                                                <label class="form-label">If Yes (Disability Type) <span class="text-danger">*</span></label>
+                                                                <select name="disability_type" class="form-select" id="moreMedicalDisabilityTypeInput">
+                                                                    <option value="" selected disabled>Select</option>
+                                                                    <option value="Physical" {{ ($employee?->medical?->disability_type ?? '') == 'Physical' ? 'selected' : '' }}>Physical</option>
+                                                                    <option value="Visual" {{ ($employee?->medical?->disability_type ?? '') == 'Visual' ? 'selected' : '' }}>Visual</option>
+                                                                    <option value="Hearing" {{ ($employee?->medical?->disability_type ?? '') == 'Hearing' ? 'selected' : '' }}>Hearing</option>
+                                                                    <option value="Speech" {{ ($employee?->medical?->disability_type ?? '') == 'Speech' ? 'selected' : '' }}>Speech</option>
+                                                                    <option value="Other" {{ ($employee?->medical?->disability_type ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
+                                                                </select>
+                                                            </div>
                                                             <div class="col-md-4">
                                                                 <label class="form-label">If Yes (Disability Type)</label>
                                                                 <select name="disability_type" class="form-select" id="moreMedicalDisabilityTypeInput">
@@ -392,9 +418,8 @@
                                                                     <option value="O-" {{ ($employee?->medical?->blood_group ?? '') == 'O-' ? 'selected' : '' }}>O-</option>
                                                                 </select>
                                                             </div>
-                                                            
-                                                            <div class="col-12">
-                                                                <label class="form-label">Disease / Disability Description</label>
+                                                            <div class="col-12" id="moreMedicalDisabilityDescriptionContainer" style="{{ ($employee?->medical?->disability_type ?? '') == 'Other' ? '' : 'display:none;' }}">
+                                                                <label class="form-label">Specify Disability Details <span class="text-danger">*</span></label>
                                                                 <textarea name="disability_description" class="form-control" id="moreMedicalDisabilityDescriptionInput" rows="2"
                                                                     placeholder="Enter disease or disability description">{{ $employee?->medical?->disability_description ?? '' }}</textarea>
                                                             </div>
@@ -507,17 +532,23 @@
                                         </div>
 
                                         <div class="more-sub-pane" id="moreStepPane7">
-                                            <div>
-                                                <div class="fw-bold text-uppercase small mb-3">Attachments</div>
-                                                <div class="card border-0 bg-light">
-                                                    <div class="card-body p-4 text-center">
-                                                        <i class="bi bi-folder-check display-4 text-secondary mb-3 d-block"></i>
-                                                        <p class="text-secondary small mb-3">Upload and manage employee documents such as CNIC, passport, certificates, and contracts.</p>
-                                                        <button type="button" class="btn btn-sm text-white bg-main border-0 px-4" data-bs-toggle="modal" data-bs-target="#attachmentModal">
-                                                            <i class="bi bi-paperclip me-1"></i> Manage Attachments
-                                                        </button>
-                                                    </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <div class="fw-bold text-uppercase small">Attachments</div>
+                                                <button type="button" class="btn btn-sm bg-main text-white border-0 rounded-2 px-3" data-bs-toggle="modal" data-bs-target="#attachmentModal">
+                                                    <i class="bi bi-plus-lg me-1"></i> Add Attachment
+                                                </button>
+                                            </div>
+
+                                            <div id="onPageAttachmentListingEmpty" class="card border-0 bg-light text-center py-5">
+                                                <div class="card-body">
+                                                    <i class="bi bi-folder-check display-4 text-secondary mb-3 d-block opacity-25"></i>
+                                                    <p class="text-secondary small">No attachments uploaded yet.</p>
+                                                    <small class="text-muted">Click the "Add Attachment" button to upload documents.</small>
                                                 </div>
+                                            </div>
+
+                                            <div id="onPageAttachmentListing" class="row g-3">
+                                                <!-- Attachments will be rendered here dynamically -->
                                             </div>
                                         </div>
                                     </div>
