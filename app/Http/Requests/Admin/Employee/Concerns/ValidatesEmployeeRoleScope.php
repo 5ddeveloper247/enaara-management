@@ -30,11 +30,13 @@ trait ValidatesEmployeeRoleScope
             return false;
         }
 
-        $role = Role::query()->with('roleLevel:id,level')->find($roleId);
-        if (! $role || ! $role->roleLevel) {
+        $role = Role::query()->find($roleId);
+        if (! $role) {
             return false;
         }
 
-        return (int) $role->roleLevel->level >= 4;
+        $level = $role->resolvedNumericLevel();
+
+        return $level !== null && $level >= 4;
     }
 }

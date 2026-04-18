@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -112,5 +113,33 @@ class Role extends Model
         return ! $this->sbus()->exists();
     }
 
+    /**
+     * Numeric priority from role_levels: FK first, else match active role_levels.name to role name
+     * (same idea as employee registration rolesData), for validation when role_level_id is not set.
+     */
+    public function resolvedNumericLevel(): ?int
+    {
+        $this->loadMissing('roleLevel:id,level');
 
+        if ($this->roleLevel !== null) {
+            $v = $this->roleLevel->level;
+            if ($v !== null && $v !== '') {
+                return (int) $v;
+            }
+        }
+
+        $name = trim((string) ($this->name ?? ''));
+        if ($name === '') {
+            return null;
+        }
+
+        $min = RoleLevel::query()
+            ->where('is_active', true)
+            ->whereNotNull('name')
+            ->where('name', '!=', '')
+            ->whereRaw('LOWER(TRIM(name)) = ?', [Str::lower($name)])
+            ->min('level');
+
+        return $min !== null ? (int) $min : null;
+    }
 }

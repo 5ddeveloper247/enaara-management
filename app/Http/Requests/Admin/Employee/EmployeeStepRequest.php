@@ -302,7 +302,9 @@ class EmployeeStepRequest extends FormRequest
                 'department_id' => ['nullable', 'integer', 'exists:departments,id'],
                 'department_ids'   => [
                     Rule::requiredIf(fn () => $this->deptRequiredForRole()),
-                    'nullable', 'array',
+                    'nullable',
+                    'array',
+                    Rule::when($this->deptRequiredForRole(), ['min:1']),
                 ],
                 'department_ids.*' => ['integer', 'exists:departments,id'],
                 'employee_type' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],

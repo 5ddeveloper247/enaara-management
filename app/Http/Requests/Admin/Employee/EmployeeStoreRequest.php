@@ -4,7 +4,7 @@ namespace App\Http\Requests\Admin\Employee;
 
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesBankRowsFromRequest;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
-use App\Models\Role;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeRoleScope;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -13,6 +13,7 @@ class EmployeeStoreRequest extends FormRequest
 {
     use NormalizesBankRowsFromRequest;
     use ValidatesExactlyOneSalaryBank;
+    use ValidatesEmployeeRoleScope;
 
     public function authorize(): bool { return true; }
 
@@ -43,13 +44,12 @@ class EmployeeStoreRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $role = $this->resolveRoleForOrgLevelCheck();
-        $orgLevel = $this->isOrgLevelRole($role);
         Log::info('EmployeeStoreRequest employment scope', [
             'role_id'         => $this->input('role_id'),
             'role_slug'       => $role?->slug,
             'role_name'       => $role?->name,
             'role_department_id' => $role?->department_id,
-            'org_level_role'  => $orgLevel,
+            'org_level_role'  => $this->orgLevelRoleSelected(),
         ]);
         $rawDept = $this->input('department_ids', []);
         if (! is_array($rawDept)) {
@@ -177,26 +177,6 @@ class EmployeeStoreRequest extends FormRequest
         return '/^[A-Za-z0-9\/\-_]+$/';
     }
 
-    protected function orgLevelRoleSelected(): bool
-    {
-        return $this->isOrgLevelRole($this->resolveRoleForOrgLevelCheck());
-    }
-
-    protected function resolveRoleForOrgLevelCheck(): ?Role
-    {
-        $roleId = $this->input('role_id');
-        if (! $roleId) {
-            return null;
-        }
-
-        return Role::query()->find($roleId);
-    }
-
-    protected function isOrgLevelRole(?Role $role): bool
-    {
-        return $role !== null && $role->isOrganizationLevelRole();
-    }
-
     public function rules(): array
     {
         return [
@@ -231,8 +211,10 @@ class EmployeeStoreRequest extends FormRequest
             'sbu_id'                 => ['nullable', 'integer', 'exists:sbus,id', Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected())],
             'department_id'          => ['nullable', 'integer', 'exists:departments,id'],
             'department_ids'         => [
+                Rule::requiredIf(fn () => $this->deptRequiredForRole()),
                 'nullable',
                 'array',
+                Rule::when($this->deptRequiredForRole(), ['min:1']),
             ],
             'department_ids.*'       => [
                 'integer',
@@ -537,6 +519,8 @@ class EmployeeStoreRequest extends FormRequest
             'organization_id.exists'   => 'Selected organization does not exist.',
             'sbu_id.required'          => 'SBU is required.',
             'sbu_id.exists'            => 'Selected SBU does not exist.',
+            'department_ids.required'  => 'Department is required for this role level. Please select at least one department.',
+            'department_ids.min'       => 'Please select at least one department.',
             'department_id.required'   => 'Department is required.',
             'department_id.exists'     => 'Selected department does not exist.',
             'role_id.required'         => 'Role is required.',

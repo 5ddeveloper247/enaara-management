@@ -250,8 +250,10 @@ class EmployeeUpdateRequest extends FormRequest
             'sbu_id' => ['nullable', 'integer', 'exists:sbus,id', Rule::requiredIf(fn () => ! $this->orgLevelRoleSelected())],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'department_ids' => [
+                Rule::requiredIf(fn () => $this->deptRequiredForRole()),
                 'nullable',
                 'array',
+                Rule::when($this->deptRequiredForRole(), ['min:1']),
             ],
             'department_ids.*' => [
                 'integer',
@@ -564,6 +566,8 @@ class EmployeeUpdateRequest extends FormRequest
             'organization_id.exists' => 'Selected organization does not exist.',
             'sbu_id.required' => 'SBU is required.',
             'sbu_id.exists' => 'Selected SBU does not exist.',
+            'department_ids.required' => 'Department is required for this role level. Please select at least one department.',
+            'department_ids.min' => 'Please select at least one department.',
             'department_id.exists' => 'Selected department does not exist.',
             'department_ids.*.exists' => 'One or more selected departments are invalid for this SBU.',
             'role_id.required' => 'Role is required.',
