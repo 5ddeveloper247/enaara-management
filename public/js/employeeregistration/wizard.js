@@ -1266,8 +1266,18 @@
             });
         }
 
-        // Sort ascending by role name
-        filteredRoles.sort((a, b) => a.name.localeCompare(b.name));
+        function roleLevelSortKey(role) {
+            const v = role.level;
+            if (v === null || v === undefined || v === '') return Number.POSITIVE_INFINITY;
+            const n = parseInt(v, 10);
+            return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
+        }
+        filteredRoles.sort((a, b) => {
+            const da = roleLevelSortKey(a);
+            const db = roleLevelSortKey(b);
+            if (da !== db) return da - db;
+            return String(a.name || '').localeCompare(String(b.name || ''));
+        });
 
         filteredRoles.forEach(role => {
             const opt = new Option(role.name, role.id);

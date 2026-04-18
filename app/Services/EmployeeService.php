@@ -129,14 +129,25 @@ class EmployeeService
             ->get();
 
         $roles = Role::query()
-            ->select(['id', 'name', 'organization_id', 'department_id', 'sbu_id', 'role_level_id', 'slug'])
-            ->where('is_active', true)
+            ->select([
+                'roles.id',
+                'roles.name',
+                'roles.organization_id',
+                'roles.department_id',
+                'roles.sbu_id',
+                'roles.role_level_id',
+                'roles.slug',
+            ])
+            ->where('roles.is_active', true)
+            ->leftJoin('role_levels', 'roles.role_level_id', '=', 'role_levels.id')
+            ->orderByRaw('role_levels.level IS NULL')
+            ->orderBy('role_levels.level')
+            ->orderBy('roles.name')
             ->with([
                 'department:id,sbu_id',
                 'sbus:id',
-                'roleLevel:id,level'
+                'roleLevel:id,level',
             ])
-            ->orderBy('name')
             ->get();
 
         $orgsData = $organizations->map(fn ($o) => [

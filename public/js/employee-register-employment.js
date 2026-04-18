@@ -282,6 +282,22 @@
         return false;
     }
 
+    function roleLevelSortKey(role) {
+        var v = role && role.level;
+        if (v === null || v === undefined || v === '') return Number.POSITIVE_INFINITY;
+        var n = parseInt(v, 10);
+        return isFinite(n) ? n : Number.POSITIVE_INFINITY;
+    }
+
+    function sortRolesByLevelThenName(roles) {
+        return roles.slice().sort(function (a, b) {
+            var da = roleLevelSortKey(a);
+            var db = roleLevelSortKey(b);
+            if (da !== db) return da - db;
+            return String((a && a.name) || '').localeCompare(String((b && b.name) || ''));
+        });
+    }
+
     function setDeptMultiHint(text) {
         var deptSection = document.getElementById('deptMultiSection');
         if (!deptSection) return;
@@ -491,8 +507,11 @@
             return;
         }
 
+        var matchedRoles = [];
         (window._rolesData || []).forEach(function (role) {
-            if (!roleMatchesOrgAndSbu(role, orgId, sbuId)) return;
+            if (roleMatchesOrgAndSbu(role, orgId, sbuId)) matchedRoles.push(role);
+        });
+        sortRolesByLevelThenName(matchedRoles).forEach(function (role) {
             roleSel.insertAdjacentHTML(
                 'beforeend',
                 '<option value="' + role.id + '">' + escHtmlBasic(role.name) + '</option>'
