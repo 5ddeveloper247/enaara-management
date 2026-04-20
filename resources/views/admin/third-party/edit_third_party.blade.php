@@ -15,22 +15,45 @@
             <input type="hidden" id="edit_id" name="id">
 
             <div class="mb-3">
-                <label for="edit_organization_id" class="form-label fw-semibold small text-white">
-                    Organization <span class="text-danger">*</span>
+                <label class="form-label fw-semibold small text-white">
+                    Organizations <span class="text-danger">*</span>
                 </label>
-                <select class="form-select" id="edit_organization_id" name="organization_id" required>
-                    <option value="">Select Organization</option>
-                    @foreach ($organizations as $org)
-                        <option value="{{ $org->id }}">{{ $org->name }}</option>
-                    @endforeach
-                </select>
+                <div id="editOrganizationHiddenInputs"></div>
+                <div class="tp-ms-box" id="editOrganizationBox" data-field-box="organization_ids">
+                    <div class="tp-ms-chips" id="editOrganizationChips"></div>
+                    <span class="tp-ms-ph" id="editOrganizationPh">Select organizations...</span>
+                    <svg class="tp-ms-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="tp-ms-dropdown" id="editOrganizationDropdown">
+                    <div class="tp-ms-search-row">
+                        <input id="editOrganizationSearch" placeholder="Search organizations..." autocomplete="off">
+                    </div>
+                    <div class="tp-ms-opt-list" id="editOrganizationList"></div>
+                </div>
+                <small class="text-white-50">Select one or more organizations.</small>
             </div>
 
             <div class="mb-3">
-                <label for="edit_name" class="form-label fw-semibold small text-white">
-                    SBU Name <span class="text-danger">*</span>
+                <label class="form-label fw-semibold small text-white">
+                    SBUs <span class="text-danger">*</span>
                 </label>
-                <input type="text" class="form-control" id="edit_name" name="name" placeholder="Enter SBU name" required>
+                <div id="editSbuHiddenInputs"></div>
+                <div class="tp-ms-box" id="editSbuBox" data-field-box="sbu_ids">
+                    <div class="tp-ms-chips" id="editSbuChips"></div>
+                    <span class="tp-ms-ph" id="editSbuPh">First select the organization</span>
+                    <svg class="tp-ms-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="tp-ms-dropdown" id="editSbuDropdown">
+                    <div class="tp-ms-search-row">
+                        <input id="editSbuSearch" placeholder="Search SBUs..." autocomplete="off">
+                    </div>
+                    <div class="tp-ms-opt-list" id="editSbuList"></div>
+                </div>
+                <small class="text-white-50">SBUs are shown based on selected organizations.</small>
             </div>
 
             <div class="mb-3">

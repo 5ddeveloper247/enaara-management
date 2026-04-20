@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Sbu_floor;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SbuFloorUpdateRequest extends FormRequest
 {
@@ -19,10 +20,31 @@ class SbuFloorUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'sbu_id' => ['required', 'integer', 'exists:sbus,id'],
+        $floorId = (int) $this->route('id');
 
-            'name' => ['required', 'string', 'max:50'],
+        return [
+            'organization_id' => ['required', 'integer', 'exists:organizations,id'],
+            'sbu_id' => [
+                'required',
+                'integer',
+                Rule::exists('sbus', 'id')->where(function ($query) {
+                    $organizationId = (int) $this->input('organization_id');
+                    if (! $organizationId) {
+                        $query->whereRaw('1 = 0');
+                        return;
+                    }
+                    $query->where('organization_id', $organizationId);
+                }),
+            ],
+
+            'name' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('sbu_floors', 'name')
+                    ->where(fn ($query) => $query->where('sbu_id', (int) $this->input('sbu_id')))
+                    ->ignore($floorId),
+            ],
 
             'floor_number' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9\s\-]+$/'],
 
@@ -43,10 +65,13 @@ class SbuFloorUpdateRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'organization_id.required' => 'Organization is required.',
+            'organization_id.exists' => 'Selected organization is invalid.',
             'sbu_id.required' => 'SBU is required.',
-            'sbu_id.exists' => 'Selected SBU is invalid.',
+            'sbu_id.exists' => 'Selected SBU is invalid or does not belong to selected organization.',
 
             'name.required' => 'Floor name is required.',
+            'name.unique' => 'This floor name already exists for the selected SBU.',
 
             'floor_number.string' => 'Floor number must be valid text.',
             'floor_number.max' => 'Floor number may not exceed 50 characters.',
@@ -67,6 +92,7 @@ class SbuFloorUpdateRequest extends FormRequest
     protected function prepareForValidation()
     {
         $this->merge([
+            'name' => $this->filled('name') ? trim((string) $this->input('name')) : $this->input('name'),
             'is_restricted' => filter_var($this->is_restricted, FILTER_VALIDATE_BOOLEAN),
             'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
         ]);

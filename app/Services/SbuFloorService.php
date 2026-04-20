@@ -11,7 +11,7 @@ class SbuFloorService
 {
     public function getList(): Collection
     {
-        return SbuFloor::with('sbu')
+        return SbuFloor::with('sbu.organization')
             ->orderByDesc('id')
             ->get();
     }
@@ -60,7 +60,7 @@ class SbuFloorService
 
     public function findById($id): ?SbuFloor
     {
-        return SbuFloor::with('sbu')->find($id);
+        return SbuFloor::with('sbu.organization')->find($id);
     }
 
     public function update($id, array $data): SbuFloor

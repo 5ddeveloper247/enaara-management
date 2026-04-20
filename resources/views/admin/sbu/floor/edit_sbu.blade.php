@@ -15,14 +15,23 @@
             <input type="hidden" id="edit_id" name="id">
 
             <div class="mb-3">
+                <label for="edit_organization_id" class="form-label fw-semibold small text-white">
+                    Organization <span class="text-danger">*</span>
+                </label>
+                <select class="form-select" id="edit_organization_id" name="organization_id" required>
+                    <option value="">Select Organization</option>
+                    @foreach ($organizations as $organization)
+                        <option value="{{ $organization->id }}">{{ $organization->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mb-3">
                 <label for="edit_sbu_id" class="form-label fw-semibold small text-white">
                     SBU <span class="text-danger">*</span>
                 </label>
                 <select class="form-select" id="edit_sbu_id" name="sbu_id" required>
-                    <option value="">Select SBU</option>
-                    @foreach ($sbus as $sbu)
-                        <option value="{{ $sbu->id }}">{{ $sbu->name }}</option>
-                    @endforeach
+                    <option value="">First select organization</option>
                 </select>
             </div>
 

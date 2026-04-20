@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ThirdParty extends Model
 {
@@ -14,7 +15,6 @@ class ThirdParty extends Model
 
     protected $fillable = [
         'organization_id',
-        'name',
         'third_party_name',
         'city',
         'address',
@@ -30,5 +30,17 @@ class ThirdParty extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'third_party_organizations')
+            ->withTimestamps();
+    }
+
+    public function sbus(): BelongsToMany
+    {
+        return $this->belongsToMany(Sbu::class, 'third_party_sbu')
+            ->withTimestamps();
     }
 }

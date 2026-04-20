@@ -48,5 +48,17 @@
 @push('scripts')
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="{{ asset('js/helpers.js') }}"></script>
+@php
+    $sbuFloorSbus = ($sbus ?? collect())->map(function ($sbu) {
+        return [
+            'id' => $sbu->id,
+            'name' => $sbu->name,
+            'organization_id' => $sbu->organization_id,
+        ];
+    })->values();
+@endphp
+<script>
+    window.sbuFloorSbus = @json($sbuFloorSbus);
+</script>
 <script src="{{ asset('js/sbu-floor.js') }}"></script>
 @endpush

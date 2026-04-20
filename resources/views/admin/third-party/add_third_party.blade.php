@@ -14,22 +14,45 @@
             @csrf
 
             <div class="mb-3">
-                <label for="organization_id" class="form-label fw-semibold small text-white">
-                    Organization <span class="text-danger">*</span>
+                <label class="form-label fw-semibold small text-white">
+                    Organizations <span class="text-danger">*</span>
                 </label>
-                <select class="form-select" id="organization_id" name="organization_id" required>
-                    <option value="">Select Organization</option>
-                    @foreach ($organizations as $org)
-                        <option value="{{ $org->id }}">{{ $org->name }}</option>
-                    @endforeach
-                </select>
+                <div id="addOrganizationHiddenInputs"></div>
+                <div class="tp-ms-box" id="addOrganizationBox" data-field-box="organization_ids">
+                    <div class="tp-ms-chips" id="addOrganizationChips"></div>
+                    <span class="tp-ms-ph" id="addOrganizationPh">Select organizations...</span>
+                    <svg class="tp-ms-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="tp-ms-dropdown" id="addOrganizationDropdown">
+                    <div class="tp-ms-search-row">
+                        <input id="addOrganizationSearch" placeholder="Search organizations..." autocomplete="off">
+                    </div>
+                    <div class="tp-ms-opt-list" id="addOrganizationList"></div>
+                </div>
+                <small class="text-white-50">Select one or more organizations.</small>
             </div>
 
             <div class="mb-3">
-                <label for="name" class="form-label fw-semibold small text-white">
-                    SBU Name <span class="text-danger">*</span>
+                <label class="form-label fw-semibold small text-white">
+                    SBUs <span class="text-danger">*</span>
                 </label>
-                <input type="text" class="form-control" id="name" name="name" placeholder="Enter SBU name" required>
+                <div id="addSbuHiddenInputs"></div>
+                <div class="tp-ms-box" id="addSbuBox" data-field-box="sbu_ids">
+                    <div class="tp-ms-chips" id="addSbuChips"></div>
+                    <span class="tp-ms-ph" id="addSbuPh">First select the organization</span>
+                    <svg class="tp-ms-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="tp-ms-dropdown" id="addSbuDropdown">
+                    <div class="tp-ms-search-row">
+                        <input id="addSbuSearch" placeholder="Search SBUs..." autocomplete="off">
+                    </div>
+                    <div class="tp-ms-opt-list" id="addSbuList"></div>
+                </div>
+                <small class="text-white-50">SBUs are shown based on selected organizations.</small>
             </div>
 
             <div class="mb-3">

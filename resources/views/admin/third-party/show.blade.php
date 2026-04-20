@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $thirdParty->name . ' - Third Party')
+@section('title', $thirdParty->third_party_name . ' - Third Party')
 
 @section('page-title', 'Third Party Details')
 
@@ -21,8 +21,10 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="p-3 rounded-3 border">
-                            <small class="text-muted d-block mb-2">SBU name</small>
-                            <div class="fw-semibold">{{ $thirdParty->name }}</div>
+                            <small class="text-muted d-block mb-2">SBUs</small>
+                            <div class="fw-semibold">
+                                {{ ($thirdParty->sbus ?? collect())->pluck('name')->implode(', ') ?: '—' }}
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -33,8 +35,8 @@
                     </div>
                     <div class="col-md-6">
                         <div class="p-3 rounded-3 border">
-                            <small class="text-muted d-block mb-2">Organization</small>
-                            <div class="fw-semibold">{{ $thirdParty->organization?->name ?? '—' }}</div>
+                            <small class="text-muted d-block mb-2">Organizations</small>
+                            <div class="fw-semibold">{{ ($thirdParty->organizations ?? collect())->pluck('name')->implode(', ') ?: '—' }}</div>
                         </div>
                     </div>
                     <div class="col-md-6">

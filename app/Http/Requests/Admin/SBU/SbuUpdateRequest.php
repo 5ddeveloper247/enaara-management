@@ -2,27 +2,63 @@
 
 namespace App\Http\Requests\Admin\SBU;
 
+use App\Models\Sbu;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SbuUpdateRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
+    protected function prepareForValidation(): void
     {
-        return true; 
+        $this->merge([
+            'name' => $this->filled('name') ? preg_replace('/\s+/', ' ', trim((string) $this->input('name'))) : $this->input('name'),
+            'city' => $this->filled('city') ? preg_replace('/\s+/', ' ', trim((string) $this->input('city'))) : $this->input('city'),
+            'address' => $this->filled('address') ? trim((string) $this->input('address')) : $this->input('address'),
+        ]);
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     */
+    protected function normalizeName(string $value): string
+    {
+        return mb_strtolower(preg_replace('/\s+/', ' ', trim($value)));
+    }
+
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
+        $sbuId = $this->route('id');
+
         return [
             'organization_id' => ['required', 'integer', 'exists:organizations,id'],
 
-            'name' => ['required', 'string', 'max:50'],
+            'name' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('sbus', 'name')
+                    ->where(fn ($query) => $query->where('organization_id', $this->input('organization_id')))
+                    ->ignore($sbuId),
+                function (string $attribute, mixed $value, \Closure $fail) use ($sbuId) {
+                    $organizationId = (int) $this->input('organization_id');
+                    if ($organizationId <= 0) {
+                        return;
+                    }
+                    $normalizedInput = $this->normalizeName((string) $value);
+                    $existingNames = Sbu::query()
+                        ->where('organization_id', $organizationId)
+                        ->where('id', '!=', $sbuId)
+                        ->pluck('name');
+                    foreach ($existingNames as $existingName) {
+                        if ($this->normalizeName((string) $existingName) === $normalizedInput) {
+                            $fail('This SBU name already exists in the selected organization.');
+                            return;
+                        }
+                    }
+                },
+            ],
 
             'city' => ['nullable', 'string', 'max:50'],
 
@@ -50,9 +86,6 @@ class SbuUpdateRequest extends FormRequest
         ];
     }
 
-    /**
-     * Custom messages (optional)
-     */
     public function messages(): array
     {
         return [
@@ -60,8 +93,9 @@ class SbuUpdateRequest extends FormRequest
             'organization_id.exists' => 'Selected organization is invalid.',
 
             'name.required' => 'SBU name is required.',
+            'name.unique' => 'This SBU name already exists in the selected organization.',
 
-            'address.max' => 'Address cannot exceed 500 characters.',
+            'address.max' => 'Address cannot exceed 255 characters.',
             'latitude.numeric' => 'Latitude must be a valid number.',
             'latitude.between' => 'Latitude must be between -90 and 90.',
             'longitude.numeric' => 'Longitude must be a valid number.',

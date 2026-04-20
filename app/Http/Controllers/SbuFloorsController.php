@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\SbuFloorService;
 use Illuminate\View\View;
+use App\Models\Organization;
 use App\Models\Sbu;
 use App\Http\Requests\Admin\Sbu_floor\SbuFloorStoreRequest;
 use App\Http\Requests\Admin\Sbu_floor\SbuFloorUpdateRequest;
@@ -18,10 +19,12 @@ class SbuFloorsController extends Controller
     {
         $sbuFloors = $this->sbuFloorService->getList();
         $counts = $this->sbuFloorService->getCounts();
+        $organizations = Organization::where('is_active', 1)->orderBy('name')->get();
         $sbus = Sbu::where('is_active', 1)->orderBy('name')->get();
 
         return view('admin.sbu.floor.index', [
             'sbuFloors' => $sbuFloors,
+            'organizations' => $organizations,
             'sbus' => $sbus,
             'totalSbuFloors' => $counts['total'],
             'activeSbuFloors' => $counts['active'],
@@ -37,10 +40,12 @@ class SbuFloorsController extends Controller
 
         $sbuFloors = $this->sbuFloorService->getList();
         $counts = $this->sbuFloorService->getCounts();
+        $organizations = Organization::where('is_active', 1)->orderBy('name')->get();
         $sbus = Sbu::where('is_active', 1)->orderBy('name')->get();
 
         return view('admin.sbu.floor.index', [
             'sbuFloors' => $sbuFloors,
+            'organizations' => $organizations,
             'sbus' => $sbus,
             'totalSbuFloors' => $counts['total'],
             'activeSbuFloors' => $counts['active'],
@@ -127,6 +132,7 @@ class SbuFloorsController extends Controller
                 'success' => true,
                 'data' => [
                     'id' => $sbuFloor->id,
+                    'organization_id' => $sbuFloor->sbu?->organization_id,
                     'sbu_id' => $sbuFloor->sbu_id,
                     'name' => $sbuFloor->name,
                     'floor_number' => $sbuFloor->floor_number,

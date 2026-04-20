@@ -2,22 +2,31 @@
 
 namespace App\Http\Requests\Admin\Organization;
 
+use App\Models\Organization;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class OrganizationUpdateRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'name' => $this->filled('name') ? preg_replace('/\s+/', ' ', trim((string) $this->input('name'))) : $this->input('name'),
+            'code' => $this->filled('code') ? strtoupper(trim((string) $this->input('code'))) : $this->input('code'),
+            'tax_no' => $this->filled('tax_no') ? strtoupper(trim((string) $this->input('tax_no'))) : $this->input('tax_no'),
+        ]);
+    }
+
+    protected function normalizeName(string $value): string
+    {
+        return mb_strtolower(preg_replace('/\s+/', ' ', trim($value)));
+    }
+
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     */
     public function rules(): array
     {
         $organizationId = $this->route('id');
@@ -35,6 +44,18 @@ class OrganizationUpdateRequest extends FormRequest
                 'string',
                 'max:50',
                 Rule::unique('organizations', 'name')->ignore($organizationId),
+                function (string $attribute, mixed $value, \Closure $fail) use ($organizationId) {
+                    $normalizedInput = $this->normalizeName((string) $value);
+                    $existingNames = Organization::query()
+                        ->where('id', '!=', $organizationId)
+                        ->pluck('name');
+                    foreach ($existingNames as $existingName) {
+                        if ($this->normalizeName((string) $existingName) === $normalizedInput) {
+                            $fail('This organization name is already registered.');
+                            return;
+                        }
+                    }
+                },
             ],
 
             'code' => [
@@ -73,9 +94,6 @@ class OrganizationUpdateRequest extends FormRequest
         ];
     }
 
-    /**
-     * Custom validation messages.
-     */
     public function messages(): array
     {
         return [

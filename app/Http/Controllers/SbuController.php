@@ -7,6 +7,7 @@ use Illuminate\View\View;
 use App\Models\Organization;
 use App\Http\Requests\Admin\SBU\SbuStoreRequest;
 use App\Http\Requests\Admin\SBU\SbuUpdateRequest;
+use Illuminate\Support\Facades\Log;
 
 class SbuController extends Controller
 {
@@ -46,7 +47,7 @@ class SbuController extends Controller
         ]);
     }
 
-    public function create(SbuStoreRequest $request)
+    public function create()
     {
         if (!validatePermissions('admin/sbu/add')) {
             abort(403, 'Unauthorized action.');
@@ -92,17 +93,20 @@ class SbuController extends Controller
                 ->route('admin.sbu.index')
                 ->with('success', 'SBU created successfully.');
         } catch (\Exception $e) {
+            Log::error('SBU create failed', [
+                'exception' => $e->getMessage(),
+            ]);
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to create SBU: ' . $e->getMessage(),
+                    'message' => 'Failed to create SBU.',
                 ], 500);
             }
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Failed to create SBU: ' . $e->getMessage());
+                ->with('error', 'Failed to create SBU.');
         }
     }
 
@@ -159,9 +163,13 @@ class SbuController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('SBU edit fetch failed', [
+                'sbu_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch SBU: ' . $e->getMessage(),
+                'message' => 'Failed to fetch SBU.',
             ], 500);
         }
     }
@@ -193,17 +201,21 @@ class SbuController extends Controller
                 ->route('admin.sbu.index')
                 ->with('success', 'SBU updated successfully.');
         } catch (\Exception $e) {
+            Log::error('SBU update failed', [
+                'sbu_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update SBU: ' . $e->getMessage(),
+                    'message' => 'Failed to update SBU.',
                 ], 500);
             }
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Failed to update SBU: ' . $e->getMessage());
+                ->with('error', 'Failed to update SBU.');
         }
     }
 
@@ -234,16 +246,20 @@ class SbuController extends Controller
                 ->route('admin.sbu.index')
                 ->with('success', 'SBU deleted successfully.');
         } catch (\Exception $e) {
+            Log::error('SBU delete failed', [
+                'sbu_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to delete SBU: ' . $e->getMessage(),
+                    'message' => 'Failed to delete SBU.',
                 ], 500);
             }
 
             return redirect()
                 ->back()
-                ->with('error', 'Failed to delete SBU: ' . $e->getMessage());
+                ->with('error', 'Failed to delete SBU.');
         }
     }
 }

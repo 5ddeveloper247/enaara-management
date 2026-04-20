@@ -153,6 +153,52 @@ document.addEventListener('DOMContentLoaded', function () {
     const editOpeningGracePeriod = document.getElementById('editOrgOpeningGracePeriod');
     const editClosingGracePeriod = document.getElementById('editOrgClosingGracePeriod');
 
+    function clearValidationErrors(form) {
+        form.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
+        form.querySelectorAll('.validation-error-dynamic').forEach((el) => el.remove());
+    }
+
+    function appendFieldError(form, fieldName, message) {
+        const normalizedField = fieldName.replace(/\.\d+$/, '');
+        if (normalizedField === 'working_days') {
+            const checkboxes = form.querySelectorAll('input[name="working_days[]"]');
+            checkboxes.forEach((checkbox) => checkbox.classList.add('is-invalid'));
+            const wrapper = checkboxes.length ? checkboxes[0].closest('.mb-3') : null;
+            if (wrapper && !wrapper.querySelector('[data-error-for="working_days"]')) {
+                const feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback d-block validation-error-dynamic';
+                feedback.dataset.errorFor = 'working_days';
+                feedback.textContent = message;
+                wrapper.appendChild(feedback);
+            }
+            return;
+        }
+
+        const fieldElement = form.querySelector(`[name="${normalizedField}"]`) || form.querySelector(`[name="${normalizedField}[]"]`);
+        if (!fieldElement) return;
+        fieldElement.classList.add('is-invalid');
+        if (form.querySelector(`[data-error-for="${normalizedField}"]`)) return;
+        const feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback d-block validation-error-dynamic';
+        feedback.dataset.errorFor = normalizedField;
+        feedback.textContent = message;
+        fieldElement.insertAdjacentElement('afterend', feedback);
+    }
+
+    function showValidationErrors(form, errors) {
+        clearValidationErrors(form);
+        Object.entries(errors || {}).forEach(([field, messages]) => {
+            const firstMessage = Array.isArray(messages) ? messages[0] : messages;
+            if (firstMessage) {
+                appendFieldError(form, field, firstMessage);
+            }
+        });
+        const firstInvalid = form.querySelector('.is-invalid');
+        if (firstInvalid && typeof firstInvalid.focus === 'function') {
+            firstInvalid.focus();
+        }
+    }
+
     const updateRouteTemplate = `{{ route('admin.organization.update', ['id' => '__id__']) }}`;
     const editRouteTemplate = `{{ route('admin.organization.edit', ['id' => '__id__']) }}`;
 
@@ -238,6 +284,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 showError(response.message || 'Failed to load organization data.');
                 return;
             }
+            clearValidationErrors(editForm);
 
             const org = response.data;
 
@@ -322,6 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json().then(data => ({ status: response.status, data })))
         .then(({ status, data }) => {
             if (status === 200 || data.success) {
+                clearValidationErrors(editForm);
                 const offcanvas = bootstrap.Offcanvas.getInstance(editCanvas);
                 if (offcanvas) offcanvas.hide();
 
@@ -329,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.location.reload();
                 });
             } else if (status === 422) {
-                // Validation errors
+                showValidationErrors(editForm, data.errors || {});
                 let errorMessage = '';
                 if (data.errors) {
                     errorMessage = '<div class="text-start mt-2">';
@@ -367,6 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
         editCanvas.addEventListener('hidden.bs.offcanvas', function () {
             editForm.reset();
             editForm.action = 'javascript:void(0);';
+            clearValidationErrors(editForm);
 
             document.getElementById('editOrgId').value = '';
             document.getElementById('editOrgStatus').value = '1';

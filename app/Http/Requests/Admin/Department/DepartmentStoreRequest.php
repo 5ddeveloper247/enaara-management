@@ -7,6 +7,18 @@ use Illuminate\Validation\Rule;
 
 class DepartmentStoreRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'name' => $this->filled('name') ? preg_replace('/\s+/', ' ', trim((string) $this->input('name'))) : $this->input('name'),
+            'code' => $this->filled('code') ? strtoupper(trim((string) $this->input('code'))) : $this->input('code'),
+            'description' => $this->filled('description') ? trim((string) $this->input('description')) : $this->input('description'),
+            'is_active' => $this->has('is_active')
+                ? filter_var($this->input('is_active'), FILTER_VALIDATE_BOOLEAN)
+                : $this->input('is_active'),
+        ]);
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -16,13 +28,20 @@ class DepartmentStoreRequest extends FormRequest
     {
         return [
             'organization_id' => ['required', 'exists:organizations,id'],
-            'sbu_id' => ['required', 'exists:sbus,id'],
+            'sbu_id' => [
+                'required',
+                Rule::exists('sbus', 'id')->where(function ($query) {
+                    return $query->where('organization_id', $this->input('organization_id'));
+                }),
+            ],
             'name' => [
                 'required',
                 'string',
                 'max:50',
                 Rule::unique('departments')->where(function ($query) {
-                    return $query->where('organization_id', $this->organization_id);
+                    return $query
+                        ->where('organization_id', $this->organization_id)
+                        ->where('sbu_id', $this->sbu_id);
                 }),
             ],
             'code' => [
@@ -33,7 +52,14 @@ class DepartmentStoreRequest extends FormRequest
                     return $query->where('organization_id', $this->organization_id);
                 }),
             ],
-            'parent_department_id' => ['nullable', 'exists:departments,id'],
+            'parent_department_id' => [
+                'nullable',
+                Rule::exists('departments', 'id')->where(function ($query) {
+                    return $query
+                        ->where('organization_id', $this->input('organization_id'))
+                        ->where('sbu_id', $this->input('sbu_id'));
+                }),
+            ],
             'description' => ['nullable', 'string', 'max:255'],
             'working_days' => ['nullable', 'array'],
             'working_days.*' => ['in:monday,tuesday,wednesday,thursday,friday,saturday,sunday'],
@@ -53,9 +79,9 @@ class DepartmentStoreRequest extends FormRequest
             'sbu_id.required' => 'SBU is required.',
             'sbu_id.exists' => 'Selected SBU is invalid.',
             'name.required' => 'Department name is required.',
-            'name.unique' => 'This department name is already in use for this organization.',
+            'name.unique' => 'This department name is already in use for this SBU.',
             'code.unique' => 'This department code is already in use for this organization.',
-            'code.max' => 'The department code cannot exceed 32 characters.',
+            'code.max' => 'The department code cannot exceed 10 characters.',
             'parent_department_id.exists' => 'Selected parent department is invalid.',
             'working_days.*.in' => 'Selected working day is invalid.',
             'working_start_time.date_format' => 'Working start time must be in HH:MM format.',
@@ -70,12 +96,4 @@ class DepartmentStoreRequest extends FormRequest
         ];
     }
 
-    protected function prepareForValidation()
-    {
-        if ($this->has('is_active')) {
-            $this->merge([
-                'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
-            ]);
-        }
-    }
 }

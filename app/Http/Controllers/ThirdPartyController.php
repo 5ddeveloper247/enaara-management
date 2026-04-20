@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Admin\ThirdParty\ThirdPartyStoreRequest;
 use App\Http\Requests\Admin\ThirdParty\ThirdPartyUpdateRequest;
 use App\Models\Organization;
+use App\Models\Sbu;
 use App\Services\ThirdPartyService;
 use Illuminate\View\View;
 
@@ -19,10 +20,16 @@ class ThirdPartyController extends Controller
         $thirdParties = $this->thirdPartyService->getList();
         $counts       = $this->thirdPartyService->getCounts();
         $organizations = Organization::orderBy('name')->get();
+        $sbus = Sbu::query()
+            ->select(['id', 'name', 'organization_id'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
         return view('admin.third-party.index', [
             'thirdParties'     => $thirdParties,
             'organizations'   => $organizations,
+            'sbus'            => $sbus,
             'totalThirdParties' => $counts['total'],
             'activeThirdParties' => $counts['active'],
             'activePercentage' => $counts['active_percentage'],
@@ -38,10 +45,16 @@ class ThirdPartyController extends Controller
         $thirdParties = $this->thirdPartyService->getList();
         $counts         = $this->thirdPartyService->getCounts();
         $organizations = Organization::orderBy('name')->get();
+        $sbus = Sbu::query()
+            ->select(['id', 'name', 'organization_id'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
         return view('admin.third-party.index', [
             'thirdParties'       => $thirdParties,
             'organizations'     => $organizations,
+            'sbus'              => $sbus,
             'totalThirdParties'   => $counts['total'],
             'activeThirdParties'  => $counts['active'],
             'activePercentage'   => $counts['active_percentage'],
@@ -128,7 +141,10 @@ class ThirdPartyController extends Controller
                 'data'    => [
                     'id'               => $thirdParty->id,
                     'organization_id'  => $thirdParty->organization_id,
-                    'name'             => $thirdParty->name,
+                    'organization_ids' => $thirdParty->organizations->pluck('id')->whenEmpty(
+                        fn ($collection) => collect($thirdParty->organization_id ? [$thirdParty->organization_id] : [])
+                    )->values(),
+                    'sbu_ids'          => $thirdParty->sbus->pluck('id')->values(),
                     'third_party_name' => $thirdParty->third_party_name,
                     'city'             => $thirdParty->city,
                     'address'          => $thirdParty->address,

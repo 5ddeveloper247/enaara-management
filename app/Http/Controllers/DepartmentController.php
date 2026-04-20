@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Services\DepartmentService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use App\Http\Requests\Admin\Department\DepartmentStoreRequest;
 use App\Http\Requests\Admin\Department\DepartmentUpdateRequest;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class DepartmentController extends Controller
 {
@@ -122,13 +121,16 @@ class DepartmentController extends Controller
             }
             throw $e;
         } catch (\Exception $e) {
+            Log::error('Department create failed', [
+                'exception' => $e->getMessage(),
+            ]);
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to create department. ' . $e->getMessage(),
+                    'message' => 'Failed to create department.',
                 ], 500);
             }
-            throw $e;
+            return redirect()->back()->withInput()->with('error', 'Failed to create department.');
         }
     }
 
@@ -204,13 +206,17 @@ class DepartmentController extends Controller
             }
             throw $e;
         } catch (\Exception $e) {
+            Log::error('Department update failed', [
+                'department_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update department. ' . $e->getMessage(),
+                    'message' => 'Failed to update department.',
                 ], 500);
             }
-            throw $e;
+            return redirect()->back()->withInput()->with('error', 'Failed to update department.');
         }
     }
 
@@ -240,14 +246,18 @@ class DepartmentController extends Controller
 
             return redirect()->route('admin.department.index')->with('success', 'Department deleted successfully.');
         } catch (\Exception $e) {
+            Log::error('Department delete failed', [
+                'department_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to delete department. ' . $e->getMessage()
+                    'message' => 'Failed to delete department.'
                 ], 500);
             }
 
-            return redirect()->back()->with('error', 'Failed to delete department. ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to delete department.');
         }
     }
 }

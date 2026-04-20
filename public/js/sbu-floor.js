@@ -45,6 +45,7 @@
         $('#detailFloorLogoPlaceholder').text((name.substring(0, 1) || 'F').toUpperCase());
         $('#detailFloorName').text(name);
         $('#detailFloorType').text(ucfirst(get('data-floor-type')));
+        $('#detailFloorOrganizationName').text(get('data-organization-name'));
         $('#detailFloorSbuName').text(get('data-sbu-name'));
         $('#detailFloorNumber').text(get('data-floor-number'));
         $('#detailFloorRestricted').text(get('data-floor-restricted') === '1' ? 'Yes' : 'No');
@@ -71,15 +72,59 @@
 
     function showValidationErrors(formSelector, errors) {
         clearFormMessages(formSelector);
+        let firstInvalid = null;
 
         $.each(errors, function(field, messages) {
-            const input = $(formSelector + ' [name="' + field + '"]');
+            let input = $(formSelector + ' [name="' + field + '"]');
+            if (!input.length && field.includes('.')) {
+                const root = field.split('.')[0];
+                input = $(formSelector + ' [name="' + root + '"]');
+            }
+
+            if (!input.length && field === 'organization_id') {
+                input = $(formSelector + ' #organization_id, ' + formSelector + ' #edit_organization_id');
+            }
 
             if (input.length) {
                 input.addClass('is-invalid');
                 input.after('<div class="invalid-feedback d-block">' + messages[0] + '</div>');
+                if (!firstInvalid) {
+                    firstInvalid = input.first();
+                }
             }
         });
+
+        if (firstInvalid && firstInvalid.length) {
+            firstInvalid.trigger('focus');
+        }
+    }
+
+    function getAllSbus() {
+        return Array.isArray(window.sbuFloorSbus) ? window.sbuFloorSbus : [];
+    }
+
+    function setSbuOptions(selectSelector, organizationId, placeholder) {
+        const sbuSelect = $(selectSelector);
+        const allSbus = getAllSbus();
+        const orgId = String(organizationId || '');
+
+        if (!orgId) {
+            sbuSelect.prop('disabled', true);
+            sbuSelect.html('<option value="">' + (placeholder || 'First select organization') + '</option>');
+            return;
+        }
+
+        const filtered = allSbus.filter(function(sbu) {
+            return String(sbu.organization_id) === orgId;
+        });
+
+        let options = '<option value="">Select SBU</option>';
+        filtered.forEach(function(sbu) {
+            options += '<option value="' + sbu.id + '">' + sbu.name + '</option>';
+        });
+
+        sbuSelect.prop('disabled', false);
+        sbuSelect.html(options);
     }
 
     function resetAddFloorForm() {
@@ -90,6 +135,8 @@
         }
 
         clearFormMessages('#addSbuFloorForm');
+        $('#organization_id').val('');
+        setSbuOptions('#sbu_id', null, 'First select organization');
         $('#floor_type').val('operational');
         $('#is_restricted').val('0');
         $('#is_active').val('1');
@@ -103,6 +150,8 @@
         }
 
         clearFormMessages('#editSbuFloorForm');
+        $('#edit_organization_id').val('');
+        setSbuOptions('#edit_sbu_id', null, 'First select organization');
         $('#edit_floor_type').val('operational');
         $('#edit_is_restricted').val('0');
         $('#edit_is_active').val('1');
@@ -158,6 +207,7 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    showValidationErrors('#addSbuFloorForm', xhr.responseJSON.errors);
                     let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
                     Object.values(xhr.responseJSON.errors).flat().forEach(err => {
                         errorMessage += `<li>${err}</li>`;
@@ -210,6 +260,8 @@
                     const data = response.data;
 
                     $('#edit_id').val(data.id ?? '');
+                    $('#edit_organization_id').val(data.organization_id ?? '');
+                    setSbuOptions('#edit_sbu_id', data.organization_id ?? null, 'First select organization');
                     $('#edit_sbu_id').val(data.sbu_id ?? '');
                     $('#edit_name').val(data.name ?? '');
                     $('#edit_floor_number').val(data.floor_number ?? '');
@@ -286,6 +338,7 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    showValidationErrors('#editSbuFloorForm', xhr.responseJSON.errors);
                     let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
                     Object.values(xhr.responseJSON.errors).flat().forEach(err => {
                         errorMessage += `<li>${err}</li>`;
@@ -428,6 +481,14 @@
             applyFilters();
         });
 
+        $('#organization_id').on('change', function() {
+            setSbuOptions('#sbu_id', $(this).val(), 'First select organization');
+        });
+
+        $('#edit_organization_id').on('change', function() {
+            setSbuOptions('#edit_sbu_id', $(this).val(), 'First select organization');
+        });
+
         $('#clearFiltersBtn').on('click', function() {
             clearFilters();
         });
@@ -446,5 +507,8 @@
             e.preventDefault();
             deleteFloor(this);
         });
+
+        setSbuOptions('#sbu_id', $('#organization_id').val(), 'First select organization');
+        setSbuOptions('#edit_sbu_id', $('#edit_organization_id').val(), 'First select organization');
     }
 })();

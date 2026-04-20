@@ -199,13 +199,37 @@
         clearFormMessages(formSelector);
 
         $.each(errors, function(field, messages) {
-            const input = $(formSelector + ' [name="' + field + '"]');
+            const normalizedField = String(field).replace(/\.\d+$/, '');
+            const message = Array.isArray(messages) ? messages[0] : messages;
+            if (!message) {
+                return;
+            }
 
+            if (normalizedField === 'working_days') {
+                const checkboxes = $(formSelector + ' input[name="working_days[]"]');
+                if (checkboxes.length) {
+                    checkboxes.addClass('is-invalid');
+                    const wrapper = checkboxes.first().closest('.mb-3');
+                    if (!wrapper.find('[data-error-for="working_days"]').length) {
+                        wrapper.append('<div class="invalid-feedback d-block" data-error-for="working_days">' + message + '</div>');
+                    }
+                }
+                return;
+            }
+
+            const input = $(formSelector + ' [name="' + normalizedField + '"], ' + formSelector + ' [name="' + normalizedField + '[]"]');
             if (input.length) {
-                input.addClass('is-invalid');
-                input.after('<div class="invalid-feedback d-block">' + messages[0] + '</div>');
+                input.first().addClass('is-invalid');
+                if ($(formSelector + ' [data-error-for="' + normalizedField + '"]').length === 0) {
+                    input.first().after('<div class="invalid-feedback d-block" data-error-for="' + normalizedField + '">' + message + '</div>');
+                }
             }
         });
+
+        const firstInvalid = $(formSelector + ' .is-invalid').first();
+        if (firstInvalid.length) {
+            firstInvalid.trigger('focus');
+        }
     }
 
     function storeSbu() {
@@ -256,6 +280,7 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    showValidationErrors('#addSbuForm', xhr.responseJSON.errors);
                     let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
                     Object.values(xhr.responseJSON.errors).flat().forEach(err => {
                         errorMessage += `<li>${err}</li>`;
@@ -405,6 +430,7 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    showValidationErrors('#editSbuForm', xhr.responseJSON.errors);
                     let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
                     Object.values(xhr.responseJSON.errors).flat().forEach(err => {
                         errorMessage += `<li>${err}</li>`;

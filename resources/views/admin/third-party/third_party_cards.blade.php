@@ -8,11 +8,13 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="d-flex align-items-center">
                                 <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; font-size: 1.1rem;">
-                                    {{ strtoupper(substr($tp->name, 0, 2)) }}
+                                    {{ strtoupper(substr($tp->third_party_name, 0, 2)) }}
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 fw-semibold small">{{ $tp->name }}</h6>
-                                    <small class="text-muted small d-block">{{ $tp->third_party_name }}</small>
+                                    <h6 class="mb-0 fw-semibold small">{{ $tp->third_party_name }}</h6>
+                                    <small class="text-muted small d-block">
+                                        {{ ($tp->sbus ?? collect())->pluck('name')->take(2)->implode(', ') ?: '—' }}
+                                    </small>
                                     <small class="text-muted small">{{ $tp->city ?? '—' }}</small>
                                 </div>
                             </div>
@@ -31,7 +33,9 @@
                         @if($tp->organization)
                         <div class="mb-2">
                             <i class="bi bi-building me-1 text-main small"></i>
-                            <small class="text-muted small">{{ $tp->organization->name }}</small>
+                            <small class="text-muted small">
+                                {{ ($tp->organizations ?? collect())->pluck('name')->take(2)->implode(', ') ?: $tp->organization->name }}
+                            </small>
                         </div>
                         @endif
                         <div class="mt-3 pt-3 border-top d-flex gap-1">
@@ -55,14 +59,15 @@
                                 class="btn btn-sm btn-outline-secondary view-tp-btn"
                                 data-bs-toggle="offcanvas"
                                 data-bs-target="#thirdPartyDetailCanvas"
-                                data-tp-name="{{ e($tp->name) }}"
+                                data-tp-name="{{ e($tp->third_party_name) }}"
                                 data-tp-third-party-name="{{ e($tp->third_party_name) }}"
+                                data-tp-sbu-names="{{ e(($tp->sbus ?? collect())->pluck('name')->implode(', ')) }}"
                                 data-tp-city="{{ e($tp->city ?? '') }}"
                                 data-tp-address="{{ e($tp->address ?? '') }}"
                                 data-tp-latitude="{{ $tp->latitude }}"
                                 data-tp-longitude="{{ $tp->longitude }}"
                                 data-tp-active="{{ $tp->is_active ? '1' : '0' }}"
-                                data-organization-name="{{ $tp->organization ? e($tp->organization->name) : '' }}">
+                                data-organization-name="{{ e(($tp->organizations ?? collect())->pluck('name')->implode(', ')) }}">
                                 <i class="bi bi-eye"></i>
                             </button>
 

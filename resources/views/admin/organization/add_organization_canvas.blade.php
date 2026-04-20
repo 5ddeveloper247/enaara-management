@@ -150,6 +150,52 @@
         const openingGracePeriod = document.getElementById('orgOpeningGracePeriod');
         const closingGracePeriod = document.getElementById('orgClosingGracePeriod');
 
+        function clearValidationErrors(form) {
+            form.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
+            form.querySelectorAll('.validation-error-dynamic').forEach((el) => el.remove());
+        }
+
+        function appendFieldError(form, fieldName, message) {
+            const normalizedField = fieldName.replace(/\.\d+$/, '');
+            if (normalizedField === 'working_days') {
+                const checkboxes = form.querySelectorAll('input[name="working_days[]"]');
+                checkboxes.forEach((checkbox) => checkbox.classList.add('is-invalid'));
+                const wrapper = checkboxes.length ? checkboxes[0].closest('.mb-3') : null;
+                if (wrapper && !wrapper.querySelector('[data-error-for="working_days"]')) {
+                    const feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback d-block validation-error-dynamic';
+                    feedback.dataset.errorFor = 'working_days';
+                    feedback.textContent = message;
+                    wrapper.appendChild(feedback);
+                }
+                return;
+            }
+
+            const fieldElement = form.querySelector(`[name="${normalizedField}"]`) || form.querySelector(`[name="${normalizedField}[]"]`);
+            if (!fieldElement) return;
+            fieldElement.classList.add('is-invalid');
+            if (form.querySelector(`[data-error-for="${normalizedField}"]`)) return;
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback d-block validation-error-dynamic';
+            feedback.dataset.errorFor = normalizedField;
+            feedback.textContent = message;
+            fieldElement.insertAdjacentElement('afterend', feedback);
+        }
+
+        function showValidationErrors(form, errors) {
+            clearValidationErrors(form);
+            Object.entries(errors || {}).forEach(([field, messages]) => {
+                const firstMessage = Array.isArray(messages) ? messages[0] : messages;
+                if (firstMessage) {
+                    appendFieldError(form, field, firstMessage);
+                }
+            });
+            const firstInvalid = form.querySelector('.is-invalid');
+            if (firstInvalid && typeof firstInvalid.focus === 'function') {
+                firstInvalid.focus();
+            }
+        }
+
         function getSelectedParentOption() {
             if (!parentId) return null;
             return parentId.options[parentId.selectedIndex] || null;
@@ -188,6 +234,7 @@
             addOrgCanvas.addEventListener('hidden.bs.offcanvas', function() {
                 addOrgForm.reset();
                 document.getElementById('orgStatus').value = '1';
+                clearValidationErrors(addOrgForm);
                 scheduleModeStandard.checked = true;
                 toggleScheduleMode();
             });
@@ -223,6 +270,7 @@
                 .then(response => response.json().then(data => ({ status: response.status, data })))
                 .then(({ status, data }) => {
                     if (status === 200 || data.success) {
+                        clearValidationErrors(addOrgForm);
                         const offcanvas = bootstrap.Offcanvas.getInstance(addOrgCanvas);
                         if (offcanvas) offcanvas.hide();
 
@@ -230,7 +278,7 @@
                             window.location.reload();
                         });
                     } else if (status === 422) {
-                        // Validation errors
+                        showValidationErrors(addOrgForm, data.errors || {});
                         let errorMessage = '';
                         if (data.errors) {
                             errorMessage = '<div class="text-start mt-2">';

@@ -2,10 +2,25 @@
 
 namespace App\Http\Requests\Admin\Organization;
 
+use App\Models\Organization;
 use Illuminate\Foundation\Http\FormRequest;
 
 class OrganizationStoreRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'name' => $this->filled('name') ? preg_replace('/\s+/', ' ', trim((string) $this->input('name'))) : $this->input('name'),
+            'code' => $this->filled('code') ? strtoupper(trim((string) $this->input('code'))) : $this->input('code'),
+            'tax_no' => $this->filled('tax_no') ? strtoupper(trim((string) $this->input('tax_no'))) : $this->input('tax_no'),
+        ]);
+    }
+
+    protected function normalizeName(string $value): string
+    {
+        return mb_strtolower(preg_replace('/\s+/', ' ', trim($value)));
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -15,11 +30,25 @@ class OrganizationStoreRequest extends FormRequest
     {
         return [
             'parent_id'   => ['nullable', 'exists:organizations,id'],
-            'name'        => ['required', 'string', 'max:50', 'unique:organizations,name'],
+            'name'        => [
+                'required',
+                'string',
+                'max:50',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $normalizedInput = $this->normalizeName((string) $value);
+                    $existingNames = Organization::query()->pluck('name');
+                    foreach ($existingNames as $existingName) {
+                        if ($this->normalizeName((string) $existingName) === $normalizedInput) {
+                            $fail('This organization name is already registered.');
+                            return;
+                        }
+                    }
+                },
+            ],
             'code'        => ['nullable', 'string', 'max:10', 'unique:organizations,code'],
             'email'       => ['nullable', 'email', 'max:255'],
             'tax_no'      => ['nullable', 'string', 'max:10', 'unique:organizations,tax_no'],
-            'description' => ['nullable', 'string', 'max:255'], // ✅ limit applied
+            'description' => ['nullable', 'string', 'max:255'],
             'address'     => ['nullable', 'string', 'max:255'],
             'working_days' => ['nullable', 'array'],
             'working_days.*' => ['in:monday,tuesday,wednesday,thursday,friday,saturday,sunday'],
@@ -40,8 +69,6 @@ class OrganizationStoreRequest extends FormRequest
             'tax_no.unique' => 'This tax number is already registered.',
             'parent_id.exists' => 'Selected parent company does not exist.',
             'email.email'   => 'Please enter a valid email address.',
-
-            // ✅ NEW MESSAGE
             'description.max' => 'Description must not exceed 255 characters.',
             'working_days.*.in' => 'Selected working day is invalid.',
             'working_start_time.date_format' => 'Working start time must be in HH:MM format.',

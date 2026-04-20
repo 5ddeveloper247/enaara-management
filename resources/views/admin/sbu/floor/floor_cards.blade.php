@@ -27,6 +27,12 @@
                             <small class="text-muted small">{{ $floor->sbu->name }}</small>
                         </div>
                         @endif
+                        @if($floor->sbu && $floor->sbu->organization)
+                        <div class="mb-2">
+                            <i class="bi bi-diagram-3 me-1 text-main small"></i>
+                            <small class="text-muted small">{{ $floor->sbu->organization->name }}</small>
+                        </div>
+                        @endif
                         @if($floor->is_restricted)
                         <div class="mb-2">
                             <span class="badge bg-warning text-dark">Restricted</span>
@@ -64,7 +70,8 @@
                                     data-floor-type="{{ $floor->floor_type }}"
                                     data-floor-restricted="{{ $floor->is_restricted ? '1' : '0' }}"
                                     data-floor-active="{{ $floor->is_active ? '1' : '0' }}"
-                                    data-sbu-name="{{ $floor->sbu ? e($floor->sbu->name) : '' }}">
+                                    data-sbu-name="{{ $floor->sbu ? e($floor->sbu->name) : '' }}"
+                                    data-organization-name="{{ $floor->sbu && $floor->sbu->organization ? e($floor->sbu->organization->name) : '' }}">
                                     <i class="bi bi-eye"></i>
                                 </button>
 
