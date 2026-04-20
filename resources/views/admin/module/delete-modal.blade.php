@@ -9,7 +9,7 @@
                 <div class="text-center mb-3">
                     <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
                 </div>
-                <p class="text-center mb-0">Are you sure you want to delete this module category?</p>
+                <p class="text-center mb-0">Are you sure you want to delete this module?</p>
                 <p class="text-center text-muted small mt-2" id="deleteModuleName"></p>
                 <p class="text-center text-danger small mt-2">This action cannot be undone.</p>
             </div>

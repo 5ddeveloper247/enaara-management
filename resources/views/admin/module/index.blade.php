@@ -126,7 +126,7 @@
                 var id = itemToDelete;
                 itemToDelete = null;
                 $.ajax({
-                    url: moduleDestroyUrl + '/' + id,
+                    url: moduleDestroyUrl + '/' + id + '/delete',
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                     success: function() {
@@ -140,6 +140,13 @@
                         $('#totalModules').text(Math.max(0, total - 1));
                         var modalEl = document.getElementById('deleteModuleModal');
                         if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+                        showSuccess('Module deleted successfully.', 'Deleted!');
+                    },
+                    error: function(xhr) {
+                        var message = (xhr.responseJSON && xhr.responseJSON.message)
+                            ? xhr.responseJSON.message
+                            : 'Delete failed. Please try again.';
+                        showError(message);
                     }
                 });
             });

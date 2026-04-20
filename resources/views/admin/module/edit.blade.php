@@ -49,8 +49,8 @@
                             @error('css_class')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="display_order" class="form-label">Display Order</label>
-                            <input type="number" name="display_order" id="display_order" min="0" class="form-control @error('display_order') is-invalid @enderror" value="{{ old('display_order', $module->display_order) }}">
+                            <label for="display_order" class="form-label">Display Order <span class="text-danger">*</span></label>
+                            <input type="number" name="display_order" id="display_order" min="0" class="form-control @error('display_order') is-invalid @enderror" value="{{ old('display_order', $module->display_order) }}" required>
                             @error('display_order')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">

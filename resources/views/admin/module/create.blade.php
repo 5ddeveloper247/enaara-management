@@ -23,8 +23,8 @@
                     @csrf
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="module_category_id" class="form-label">Category</label>
-                            <select name="module_category_id" id="module_category_id" class="form-select @error('module_category_id') is-invalid @enderror">
+                            <label for="module_category_id" class="form-label">Category <span class="text-danger">*</span></label>
+                            <select name="module_category_id" id="module_category_id" class="form-select @error('module_category_id') is-invalid @enderror" required>
                                 <option value="">Select Category</option>
                                 @foreach($moduleCategories ?? [] as $cat)
                                     <option value="{{ $cat->ID }}" {{ old('module_category_id') == $cat->ID ? 'selected' : '' }}>{{ $cat->category_name }}</option>
@@ -48,8 +48,8 @@
                             @error('css_class')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="display_order" class="form-label">Display Order</label>
-                            <input type="number" name="display_order" id="display_order" min="0" class="form-control @error('display_order') is-invalid @enderror" value="{{ old('display_order') }}">
+                            <label for="display_order" class="form-label">Display Order <span class="text-danger">*</span></label>
+                            <input type="number" name="display_order" id="display_order" min="0" class="form-control @error('display_order') is-invalid @enderror" value="{{ old('display_order') }}" required>
                             @error('display_order')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">

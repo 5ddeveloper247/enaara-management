@@ -7,6 +7,7 @@ use App\Services\ModuleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ModuleController extends Controller
@@ -40,12 +41,12 @@ class ModuleController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'module_category_id' => 'nullable|exists:module_categories,ID',
-            'module_name' => 'required|string|max:155',
+            'module_category_id' => 'required|exists:module_categories,ID',
+            'module_name' => ['required', 'string', 'max:155', Rule::unique('modules', 'module_name')],
             'route' => 'nullable|string|max:155',
             'show_in_menu' => 'boolean',
             'css_class' => 'nullable|string|max:100',
-            'display_order' => 'nullable|integer|min:0',
+            'display_order' => ['required', 'integer', 'min:0', Rule::unique('modules', 'display_order')],
         ]);
 
         $validated['show_in_menu'] = $request->boolean('show_in_menu') ? 1 : 0;
@@ -95,11 +96,11 @@ class ModuleController extends Controller
 
         $validated = $request->validate([
             'module_category_id' => 'nullable|exists:module_categories,ID',
-            'module_name' => 'required|string|max:155',
+            'module_name' => ['required', 'string', 'max:155', Rule::unique('modules', 'module_name')->ignore($id)],
             'route' => 'nullable|string|max:155',
             'show_in_menu' => 'boolean',
             'css_class' => 'nullable|string|max:100',
-            'display_order' => 'nullable|integer|min:0',
+            'display_order' => ['required', 'integer', 'min:0', Rule::unique('modules', 'display_order')->ignore($id)],
         ]);
 
         $validated['show_in_menu'] = $request->boolean('show_in_menu') ? 1 : 0;
