@@ -9,7 +9,7 @@ class RoleLevelService
 {
     public function getList(): Collection
     {
-        return RoleLevel::orderByDesc('id')->get();
+        return RoleLevel::orderBy('level')->orderBy('id')->get();
     }
 
     public function getCounts(): array

@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\ModuleCategory;
 use App\Models\Role;
 use App\Models\RolePrivilege;
+use App\Models\Sbu;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -75,6 +77,8 @@ class RoleService
         $data['department_id'] = $data['department_id'] ?? null;
         $data['parent_role_id'] = $data['parent_role_id'] ?? null;
 
+        $this->validateScopeData($data);
+
         $role = Role::create($data);
 
         $this->syncRolePrivileges($role->id, $moduleIds);
@@ -113,11 +117,7 @@ class RoleService
         $data['department_id'] = $data['department_id'] ?? null;
         $data['parent_role_id'] = $data['parent_role_id'] ?? null;
 
-        if (!empty($data['parent_role_id']) && (int) $data['parent_role_id'] === (int) $role->id) {
-            throw ValidationException::withMessages([
-                'parent_role_id' => 'A role cannot be its own parent.',
-            ]);
-        }
+        $this->validateScopeData($data, $role->id);
 
         $role->update($data);
 
@@ -140,7 +140,7 @@ class RoleService
 
     protected function syncRolePrivileges(int $roleId, array $moduleIds): void
     {
-        RolePrivilege::where('role_id', $roleId)->delete();
+        RolePrivilege::withTrashed()->where('role_id', $roleId)->forceDelete();
 
         $moduleIds = array_filter(array_unique(array_map('intval', $moduleIds)));
 
@@ -150,6 +150,88 @@ class RoleService
                 'module_id' => $moduleId,
             ]);
         }
+    }
+
+    protected function validateScopeData(array $data, ?int $currentRoleId = null): void
+    {
+        $organizationId = (int) ($data['organization_id'] ?? 0);
+        $sbuIds = array_values(array_filter(array_unique(array_map('intval', $data['sbu_ids'] ?? []))));
+        $departmentId = isset($data['department_id']) && $data['department_id'] !== '' ? (int) $data['department_id'] : null;
+        $parentRoleId = isset($data['parent_role_id']) && $data['parent_role_id'] !== '' ? (int) $data['parent_role_id'] : null;
+
+        if ($organizationId <= 0) {
+            throw ValidationException::withMessages([
+                'organization_id' => 'Organization is required.',
+            ]);
+        }
+
+        if (!empty($sbuIds)) {
+            $validSbuCount = Sbu::query()
+                ->where('organization_id', $organizationId)
+                ->whereIn('id', $sbuIds)
+                ->count();
+            if ($validSbuCount !== count($sbuIds)) {
+                throw ValidationException::withMessages([
+                    'sbu_ids' => 'Selected SBU must belong to the selected organization.',
+                ]);
+            }
+        }
+
+        if ($departmentId !== null) {
+            $department = Department::query()->find($departmentId);
+            if (!$department) {
+                throw ValidationException::withMessages([
+                    'department_id' => 'Selected department is invalid.',
+                ]);
+            }
+            if ((int) $department->organization_id !== $organizationId) {
+                throw ValidationException::withMessages([
+                    'department_id' => 'Selected department must belong to the selected organization.',
+                ]);
+            }
+            if (empty($sbuIds)) {
+                throw ValidationException::withMessages([
+                    'sbu_ids' => 'Please select at least one SBU when department is selected.',
+                ]);
+            }
+            if (!in_array((int) $department->sbu_id, $sbuIds, true)) {
+                throw ValidationException::withMessages([
+                    'department_id' => 'Selected department must belong to one of the selected SBUs.',
+                ]);
+            }
+        }
+
+        if ($parentRoleId !== null && $currentRoleId !== null) {
+            if ($parentRoleId === $currentRoleId) {
+                throw ValidationException::withMessages([
+                    'parent_role_id' => 'A role cannot be its own parent.',
+                ]);
+            }
+            if ($this->createsParentCycle($currentRoleId, $parentRoleId)) {
+                throw ValidationException::withMessages([
+                    'parent_role_id' => 'Selected parent role creates a cyclic hierarchy.',
+                ]);
+            }
+        }
+    }
+
+    protected function createsParentCycle(int $currentRoleId, int $parentRoleId): bool
+    {
+        $visited = [];
+        $cursor = $parentRoleId;
+
+        while ($cursor) {
+            if ($cursor === $currentRoleId) {
+                return true;
+            }
+            if (in_array($cursor, $visited, true)) {
+                return true;
+            }
+            $visited[] = $cursor;
+            $cursor = (int) (Role::query()->whereKey($cursor)->value('parent_role_id') ?? 0);
+        }
+
+        return false;
     }
 
     protected function syncRoleSbus(Role $role, array $sbuIds): void
@@ -199,7 +281,7 @@ class RoleService
             return false;
         }
 
-        RolePrivilege::where('role_id', $role->id)->delete();
+        RolePrivilege::withTrashed()->where('role_id', $role->id)->forceDelete();
         $role->delete();
 
         return true;

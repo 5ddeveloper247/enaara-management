@@ -418,11 +418,11 @@
             }).join('');
         };
 
-        function syncSbuAndParentRoles() {
+        function syncSbuAndParentRoles(selectedParentRoleId = (parentRoleSelect?.value || '')) {
             renderSbuHiddenInputs();
             renderSbuChips();
             sbuRenderList();
-            loadParentRoles(organizationSelect?.value || '', getSelectedSbuIds());
+            loadParentRoles(organizationSelect?.value || '', getSelectedSbuIds(), selectedParentRoleId);
         }
 
         window.sbuToggleId = function sbuToggleId(id) {
@@ -489,7 +489,7 @@
                     sbuSelected = (selectedSbuIds || [])
                         .map(function(v) { return String(v); })
                         .filter(function(v) { return allowed.has(v); });
-                    syncSbuAndParentRoles();
+                    syncSbuAndParentRoles(currentParentRoleId);
                 })
                 .catch(error => console.error('Error loading SBUs:', error));
         }
@@ -580,7 +580,7 @@
             resetSbuSelect();
         }
 
-        syncSbuAndParentRoles();
+        syncSbuAndParentRoles(currentParentRoleId);
     });
 </script>
 @push('scripts')

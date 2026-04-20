@@ -20,6 +20,29 @@ class RoleController extends Controller
         private RoleService $roleService
     ) {}
 
+    private function denyIfUnauthorized(string|array $permission, bool $expectsJson = false): ?JsonResponse
+    {
+        $permissions = is_array($permission) ? $permission : [$permission];
+        foreach ($permissions as $permissionKey) {
+            if (validatePermissions($permissionKey)) {
+                return null;
+            }
+        }
+
+        if (empty($permissions)) {
+            return null;
+        }
+
+        if ($expectsJson) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+
+        abort(403, 'Unauthorized action.');
+    }
+
     public function index(): View
     {
         $roles = $this->roleService->getList();
@@ -35,6 +58,8 @@ class RoleController extends Controller
 
     public function create(): View
     {
+        // $this->denyIfUnauthorized('admin/role/add');
+
         $moduleCategories = $this->roleService->getModuleCategoriesWithModules();
         $organizations = Organization::where('is_active', true)->orderBy('name')->get();
         $departments = Department::where('is_active', true)->orderBy('name')->get();
@@ -53,6 +78,8 @@ class RoleController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // $this->denyIfUnauthorized('admin/role/add');
+
         $validated = $request->validate([
             'level_id' => 'required|exists:role_levels,id',
             'slug' => 'nullable|string|max:255|unique:roles,slug',
@@ -98,6 +125,8 @@ class RoleController extends Controller
 
     public function edit(int $id): View|RedirectResponse
     {
+        // $this->denyIfUnauthorized('admin/role/edit');
+
         $role = $this->roleService->findById($id);
 
         if (!$role instanceof Role) {
@@ -137,6 +166,8 @@ class RoleController extends Controller
 
     public function update(Request $request, int $id): RedirectResponse
     {
+        // $this->denyIfUnauthorized('admin/role/edit');
+
         $role = $this->roleService->findById($id);
 
         if (!$role instanceof Role) {
@@ -179,6 +210,11 @@ class RoleController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
+        $denied = $this->denyIfUnauthorized('admin/role/delete', true);
+        if ($denied instanceof JsonResponse) {
+            return $denied;
+        }
+
         $deleted = $this->roleService->delete($id);
 
         if (!$deleted) {
@@ -190,6 +226,11 @@ class RoleController extends Controller
 
     public function updateStatus(Request $request, int $id): JsonResponse
     {
+        $denied = $this->denyIfUnauthorized('admin/role/edit', true);
+        if ($denied instanceof JsonResponse) {
+            return $denied;
+        }
+
         $request->validate(['is_active' => 'required|boolean']);
 
         $role = $this->roleService->updateStatus($id, (bool) $request->input('is_active'));
@@ -216,6 +257,11 @@ class RoleController extends Controller
 
     public function getDepartmentsByOrganization(Request $request): JsonResponse
     {
+        $denied = $this->denyIfUnauthorized(['admin/role', 'admin/role/add', 'admin/role/edit'], true);
+        if ($denied instanceof JsonResponse) {
+            return $denied;
+        }
+
         $request->validate([
             'organization_id' => 'required|exists:organizations,id',
         ]);
@@ -236,6 +282,11 @@ class RoleController extends Controller
 
     public function getParentRoles(Request $request): JsonResponse
     {
+        $denied = $this->denyIfUnauthorized(['admin/role', 'admin/role/add', 'admin/role/edit'], true);
+        if ($denied instanceof JsonResponse) {
+            return $denied;
+        }
+
         $request->validate([
             'organization_id' => 'nullable|exists:organizations,id',
             'level_id' => 'nullable|exists:role_levels,id',

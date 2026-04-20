@@ -10,6 +10,7 @@ use Illuminate\View\View;
 use App\Http\Requests\Admin\RoleLevel\RoleLevelStoreRequest;
 use App\Http\Requests\Admin\RoleLevel\RoleLevelUpdateRequest;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class RoleLevelController extends Controller
 {
@@ -66,13 +67,16 @@ class RoleLevelController extends Controller
             }
             throw $e;
         } catch (\Exception $e) {
+            Log::error('Role Level create failed', [
+                'exception' => $e->getMessage(),
+            ]);
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to create Role Level. ' . $e->getMessage(),
+                    'message' => 'Failed to create Role Level.',
                 ], 500);
             }
-            throw $e;
+            return redirect()->back()->withInput()->with('error', 'Failed to create Role Level.');
         }
     }
 
@@ -109,9 +113,13 @@ class RoleLevelController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('Role Level fetch failed', [
+                'role_level_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch Role Level: ' . $e->getMessage(),
+                'message' => 'Failed to fetch Role Level.',
             ], 500);
         }
     }
@@ -159,13 +167,17 @@ class RoleLevelController extends Controller
             }
             throw $e;
         } catch (\Exception $e) {
+            Log::error('Role Level update failed', [
+                'role_level_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update Role Level. ' . $e->getMessage(),
+                    'message' => 'Failed to update Role Level.',
                 ], 500);
             }
-            throw $e;
+            return redirect()->back()->withInput()->with('error', 'Failed to update Role Level.');
         }
     }
 
@@ -205,14 +217,18 @@ class RoleLevelController extends Controller
 
             return redirect()->route('admin.role-levels.index')->with('success', 'Role Level deleted successfully.');
         } catch (\Exception $e) {
+            Log::error('Role Level delete failed', [
+                'role_level_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to delete Role Level. ' . $e->getMessage()
+                    'message' => 'Failed to delete Role Level.'
                 ], 500);
             }
 
-            return redirect()->back()->with('error', 'Failed to delete Role Level. ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to delete Role Level.');
         }
     }
 }

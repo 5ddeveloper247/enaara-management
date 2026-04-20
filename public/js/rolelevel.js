@@ -47,7 +47,7 @@
 
     function clearFormMessages(formSelector) {
         $(formSelector + ' .is-invalid').removeClass('is-invalid');
-        $(formSelector + ' .invalid-feedback').remove();
+        $(formSelector + ' .validation-error-dynamic').remove();
         $(formSelector + ' .form-alert-box').remove();
     }
 
@@ -84,6 +84,45 @@
         clearFormMessages('#editRoleLevelForm');
         $('#edit_rl_is_active').val('1');
         $('#editRoleLevelForm').attr('data-update-url', '');
+    }
+
+    function showValidationErrors(formSelector, errors) {
+        clearFormMessages(formSelector);
+        const fieldMap = formSelector === '#addRoleLevelForm'
+            ? {
+                name: '#rl_name',
+                level: '#rl_level',
+                description: '#rl_description',
+                is_active: '#rl_is_active',
+            }
+            : {
+                name: '#edit_rl_name',
+                level: '#edit_rl_level',
+                description: '#edit_rl_description',
+                is_active: '#edit_rl_is_active',
+            };
+
+        $.each(errors || {}, function(field, messages) {
+            const normalizedField = String(field).replace(/\.\d+$/, '');
+            const message = Array.isArray(messages) ? messages[0] : messages;
+            const inputSelector = fieldMap[normalizedField];
+            if (!inputSelector || !message) {
+                return;
+            }
+            const input = $(inputSelector);
+            if (!input.length) {
+                return;
+            }
+            input.addClass('is-invalid');
+            if ($(formSelector + ` [data-error-for="${normalizedField}"]`).length === 0) {
+                input.after(`<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="${normalizedField}">${message}</div>`);
+            }
+        });
+
+        const firstInvalid = $(formSelector + ' .is-invalid').first();
+        if (firstInvalid.length) {
+            firstInvalid.trigger('focus');
+        }
     }
 
     function storeRoleLevel() {
@@ -134,6 +173,7 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    showValidationErrors('#addRoleLevelForm', xhr.responseJSON.errors);
                     let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
                     Object.values(xhr.responseJSON.errors).flat().forEach(err => {
                         errorMessage += `<li>${err}</li>`;
@@ -257,6 +297,7 @@
             },
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    showValidationErrors('#editRoleLevelForm', xhr.responseJSON.errors);
                     let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
                     Object.values(xhr.responseJSON.errors).flat().forEach(err => {
                         errorMessage += `<li>${err}</li>`;
