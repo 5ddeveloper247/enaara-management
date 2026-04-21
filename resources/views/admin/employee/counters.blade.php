@@ -1,7 +1,7 @@
 <!-- Employee Counters -->
 <div class="tab-content" id="employeeStatsTabsContent">
     <!-- Total Workforce Tab -->
-    <div class="tab-pane fade show active" id="total-workforce" role="tabpanel">
+    <div class="tab-pane fade" id="total-workforce" role="tabpanel">
         <div class="row g-3">
             <div class="col-md-3">
                 <div class="card stat-card bg-main border-0 rounded-3 shadow h-100">
@@ -78,7 +78,7 @@
     </div>
 
     <!-- Internal Staff Tab -->
-    <div class="tab-pane fade" id="internal-staff" role="tabpanel">
+    <div class="tab-pane fade show active" id="internal-staff" role="tabpanel">
         <div class="row g-3">
             <div class="col-md-4">
                 <div class="card stat-card bg-primary border-0 rounded-3 shadow h-100">

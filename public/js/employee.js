@@ -205,7 +205,22 @@
                 className: 'btn btn-sm border-0 bg-main text-black',
                 columns: [0, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
             }],
-            dom: '<"row px-4 py-3"<"col-md-6"l><"col-md-6 d-flex justify-content-end gap-2"<B><f>>>r<"employee-datatable-scroll"t><"row px-4 py-2"<"col-md-5"i><"col-md-7"p>>',
+            dom: '<"row px-4 py-3 align-items-center"<"col-lg-3 col-md-4"l><"col-lg-5 col-md-4 d-flex justify-content-center"<"employee-listing-tab-slot">><"col-lg-4 col-md-4 d-flex justify-content-end gap-2"<B><f>>>r<"employee-datatable-scroll"t><"row px-4 py-2"<"col-md-5"i><"col-md-7"p>>',
+            initComplete: function () {
+                const slot = document.querySelector('.employee-listing-tab-slot');
+                const template = document.getElementById('employeeListingTabsTemplate');
+                if (slot && template) {
+                    const tabs = template.querySelector('.employee-listing-tabs');
+                    if (tabs) {
+                        slot.innerHTML = '';
+                        slot.appendChild(tabs);
+                    }
+                    template.remove();
+                }
+                if (typeof window.syncEmployeeStatTabs === 'function') {
+                    window.syncEmployeeStatTabs();
+                }
+            },
             drawCallback: function () {
                 var gridBtn = document.getElementById('btnGridView');
                 if (gridBtn && gridBtn.classList.contains('active') && typeof window.buildEmployeeGrid === 'function') {
@@ -837,6 +852,44 @@
                 }
             });
         });
+
+        const statTargets = ['#total-workforce', '#internal-staff', '#outsourced-staff', '#biometric-sync'];
+        const syncStatButtons = function (activeTarget) {
+            document.querySelectorAll('[data-bs-toggle="pill"][data-bs-target]').forEach(function (btn) {
+                const target = btn.getAttribute('data-bs-target');
+                if (!statTargets.includes(target)) return;
+                const isActive = target === activeTarget;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+        };
+        const syncStatPanes = function (activeTarget) {
+            const paneContainer = document.getElementById('employeeStatsTabsContent');
+            if (!paneContainer) return;
+            paneContainer.querySelectorAll('.tab-pane').forEach(function (pane) {
+                const isActive = ('#' + pane.id) === activeTarget;
+                pane.classList.toggle('show', isActive);
+                pane.classList.toggle('active', isActive);
+            });
+        };
+
+        window.syncEmployeeStatTabs = function () {
+            const activePane = document.querySelector('#employeeStatsTabsContent .tab-pane.show.active');
+            const target = activePane ? ('#' + activePane.id) : '#internal-staff';
+            syncStatButtons(target);
+            syncStatPanes(target);
+        };
+
+        document.addEventListener('shown.bs.tab', function (event) {
+            const trigger = event.target;
+            if (!trigger || !trigger.matches('[data-bs-toggle="pill"][data-bs-target]')) return;
+            const target = trigger.getAttribute('data-bs-target');
+            if (!statTargets.includes(target)) return;
+            syncStatButtons(target);
+            syncStatPanes(target);
+        });
+
+        window.syncEmployeeStatTabs();
     }
 
     function csvEscape(val) {

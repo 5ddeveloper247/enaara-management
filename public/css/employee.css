@@ -110,6 +110,12 @@
     background-color: rgba(0, 0, 0, 0.05);
 }
 
+.employee-listing-tabs .nav-link {
+    font-size: 12px;
+    padding: 0.3rem 0.6rem;
+    white-space: nowrap;
+}
+
 
 /* ============================================
    RESPONSIVE ADJUSTMENTS

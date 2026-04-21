@@ -3,7 +3,27 @@
     window.employeeStatsUrl   = "{{ route('admin.employee.stats') }}";
     window.registerUrl        = "{{ route('admin.register.index') }}";
     window.employeeEditUrlBase = "{{ url('admin/employees') }}";
+    window.outsourcedEmployeeDataUrl = "{{ route('admin.outsourced_employee.data') }}";
+    window.outsourcedEmployeeStoreUrl = "{{ route('admin.outsourced_employee.store') }}";
+    window.outsourcedEmployeeShowUrlBase = "{{ url('admin/outsourced-employees') }}";
 </script>
+
+<div id="employeeListingTabsTemplate" class="d-none">
+    <ul class="nav nav-pills employee-listing-tabs gap-2 mb-0" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link py-1 px-2" data-bs-toggle="pill" data-bs-target="#total-workforce" type="button" role="tab">
+                <i class="bi bi-people-fill me-1"></i>Total Workforce
+                <span class="badge bg-light text-dark ms-1" id="totalWorkforceBadge">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link py-1 px-2" data-bs-toggle="pill" data-bs-target="#biometric-sync" type="button" role="tab">
+                <i class="bi bi-fingerprint me-1"></i>Biometric Sync Status
+                <span class="badge bg-light text-dark ms-1" id="biometricSyncBadge">0</span>
+            </button>
+        </li>
+    </ul>
+</div>
 
 <div id="tableViewWrapper" class="row g-3">
     <div class="col-12">
@@ -39,6 +59,8 @@
     </table>
     </div>
 </div>
+
+@include('admin.outsourced-employee.table')
 
 <div id="gridViewWrapper" class="d-none row g-3 p-3"></div>
 

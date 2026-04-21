@@ -8,6 +8,7 @@ use App\Http\Controllers\BiometricDeviceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\OutsourcedEmployeeController;
 use App\Http\Controllers\EmployeeTypeController;
 use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\LeaveCalendarController;
@@ -194,6 +195,10 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
 
     Route::get('/employees/data', [EmployeeController::class, 'tableData'])->name('admin.employee.data');
     Route::get('/employees/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
+    Route::get('/outsourced-employees/data', [OutsourcedEmployeeController::class, 'tableData'])->name('admin.outsourced_employee.data');
+    Route::get('/outsourced-employees/{id}', [OutsourcedEmployeeController::class, 'show'])->name('admin.outsourced_employee.show');
+    Route::post('/outsourced-employees/store', [OutsourcedEmployeeController::class, 'store'])->name('admin.outsourced_employee.store');
+    Route::post('/outsourced-employees/{id}/update', [OutsourcedEmployeeController::class, 'update'])->name('admin.outsourced_employee.update');
     Route::get('/employees/preview-employee-code', [EmployeeController::class, 'previewEmployeeCode'])->name('admin.employee.preview_code');
     Route::post('/employees/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
     Route::post('/employees/save-step', [EmployeeController::class, 'saveStep'])->name('admin.employee.save_step');

@@ -17,8 +17,10 @@ use App\Models\MediaFile;
 use App\Models\Department;
 use App\Models\Organization;
 use App\Models\Sbu;
+use App\Models\SbuFloor;
 use App\Models\Role;
 use App\Models\RoleLevel;
+use App\Models\OutsourcedEmployee;
 use App\Models\User;
 use App\Services\AuditTrailService;
 use App\Services\EmployeeEmploymentInformationService;
@@ -81,7 +83,13 @@ class EmployeeService
             ->orderBy('name')
             ->get();
 
-        return view('admin.employee.index', compact('organizations', 'departments', 'sbus'));
+        $floors = SbuFloor::query()
+            ->select(['id', 'name', 'sbu_id'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.employee.index', compact('organizations', 'departments', 'sbus', 'floors'));
     }
 
     public function getFormData(): array
@@ -1237,19 +1245,22 @@ class EmployeeService
     {
         $base = Employee::query();
 
-        $total = (clone $base)->count();
+        $internal = (clone $base)->where(function ($q) {
+            $q->whereNull('employment_type')->orWhere('employment_type', '!=', 'Third-party');
+        })->count();
+        $outsourcedLegacy = (clone $base)->where('employment_type', 'Third-party')->count();
+        $outsourcedDedicated = OutsourcedEmployee::query()->count();
+        $outsourced = $outsourcedLegacy + $outsourcedDedicated;
+        $total = $internal + $outsourced;
         $active = (clone $base)->where('is_active', true)->count();
 
         $biometricLinked = (clone $base)->whereNotNull('biometric_id')->count();
         $synced = (clone $base)->whereNotNull('biometric_id')->where('sync_with_biometric', true)->count();
         $pending = $biometricLinked - $synced;
 
-        $outsourced = (clone $base)->where('employment_type', 'Third-party')->count();
-        $internal = (clone $base)->where(function ($q) {
-            $q->whereNull('employment_type')->orWhere('employment_type', '!=', 'Third-party');
-        })->count();
         $permanent = (clone $base)->where('employment_type', 'Permanent')->count();
         $contract = (clone $base)->where('employment_type', 'Contract')->count();
+        $vendors = OutsourcedEmployee::query()->select('contractor_company_name')->distinct()->count('contractor_company_name');
 
         return [
             'total'            => $total,
@@ -1260,7 +1271,7 @@ class EmployeeService
             'permanent'        => $permanent,
             'contract'         => $contract,
             'outsourced'       => $outsourced,
-            'vendors'          => 0,
+            'vendors'          => $vendors,
             'synced'           => $synced,
             'pending'          => $pending,
             'failed'           => 0,
