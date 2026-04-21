@@ -7,7 +7,7 @@ use App\Services\LeaveTypeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Rule;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class LeaveTypeController extends Controller
@@ -16,8 +16,30 @@ class LeaveTypeController extends Controller
         private LeaveTypeService $leaveTypeService
     ) {}
 
+    private function denyIfUnauthorized(string|array $permission, bool $expectsJson = false): ?\Illuminate\Http\JsonResponse
+    {
+        $permissions = is_array($permission) ? $permission : [$permission];
+
+        foreach ($permissions as $permissionKey) {
+            if (validatePermissions($permissionKey)) {
+                return null;
+            }
+        }
+
+        if ($expectsJson) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+
+        abort(403, 'Unauthorized action.');
+    }
+
     public function index(): View
     {
+        $this->denyIfUnauthorized('admin/leave-type');
+
         $leaveTypes = $this->leaveTypeService->getList();
         $organizations = $this->leaveTypeService->getOrganizationsForFilter();
         $counts = $this->leaveTypeService->getCounts();
@@ -33,6 +55,11 @@ class LeaveTypeController extends Controller
 
     public function create(): View|\Illuminate\Http\JsonResponse
     {
+        $denied = $this->denyIfUnauthorized(['admin/leave-type', 'admin/leave-type/add'], request()->expectsJson());
+        if ($denied instanceof \Illuminate\Http\JsonResponse) {
+            return $denied;
+        }
+
         $organizations = $this->leaveTypeService->getOrganizationsForFilter();
         
         if (request()->expectsJson()) {
@@ -48,16 +75,32 @@ class LeaveTypeController extends Controller
 
     public function store(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        $denied = $this->denyIfUnauthorized(['admin/leave-type', 'admin/leave-type/add'], $request->expectsJson());
+        if ($denied instanceof \Illuminate\Http\JsonResponse) {
+            return $denied;
+        }
+
         try {
             $validated = $request->validate([
                 'organization_id' => 'required|exists:organizations,id',
                 'sbu_id' => 'required|exists:sbus,id',
                 'department_ids' => 'nullable|array',
                 'department_ids.*' => 'exists:departments,id',
-                'name' => 'required|string|max:255',
+                'name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    Rule::unique('leave_types', 'name')->where(function ($query) use ($request) {
+                        return $query
+                            ->where('organization_id', $request->input('organization_id'))
+                            ->where('sbu_id', $request->input('sbu_id'));
+                    }),
+                ],
                 'code' => 'nullable|string|max:64',
                 'annual_quota' => 'required|numeric|min:0|max:999.99',
                 'is_active' => 'boolean',
+            ], [
+                'name.unique' => 'This leave type already exists for the selected organization and SBU.',
             ]);
 
             $isActive = $request->boolean('is_active');
@@ -115,6 +158,11 @@ class LeaveTypeController extends Controller
 
     public function edit(int $id): View|\Illuminate\Http\JsonResponse
     {
+        $denied = $this->denyIfUnauthorized(['admin/leave-type', 'admin/leave-type/edit'], request()->expectsJson());
+        if ($denied instanceof \Illuminate\Http\JsonResponse) {
+            return $denied;
+        }
+
         $leaveType = $this->leaveTypeService->findById($id);
 
         if (!$leaveType instanceof LeaveType) {
@@ -144,6 +192,11 @@ class LeaveTypeController extends Controller
 
     public function update(Request $request, int $id): RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        $denied = $this->denyIfUnauthorized(['admin/leave-type', 'admin/leave-type/edit'], $request->expectsJson());
+        if ($denied instanceof \Illuminate\Http\JsonResponse) {
+            return $denied;
+        }
+
         $leaveType = $this->leaveTypeService->findById($id);
 
         if (!$leaveType instanceof LeaveType) {
@@ -159,10 +212,23 @@ class LeaveTypeController extends Controller
                 'sbu_id' => 'required|exists:sbus,id',
                 'department_ids' => 'nullable|array',
                 'department_ids.*' => 'exists:departments,id',
-                'name' => 'required|string|max:255',
+                'name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    Rule::unique('leave_types', 'name')
+                        ->ignore($leaveType->id)
+                        ->where(function ($query) use ($request) {
+                            return $query
+                                ->where('organization_id', $request->input('organization_id'))
+                                ->where('sbu_id', $request->input('sbu_id'));
+                        }),
+                ],
                 'code' => 'nullable|string|max:64',
                 'annual_quota' => 'required|numeric|min:0|max:999.99',
                 'is_active' => 'boolean',
+            ], [
+                'name.unique' => 'This leave type already exists for the selected organization and SBU.',
             ]);
 
             $isActive = $request->boolean('is_active');
@@ -219,6 +285,11 @@ class LeaveTypeController extends Controller
 
     public function destroy(int $id): \Illuminate\Http\JsonResponse|RedirectResponse
     {
+        $denied = $this->denyIfUnauthorized(['admin/leave-type', 'admin/leave-type/delete'], request()->expectsJson());
+        if ($denied instanceof \Illuminate\Http\JsonResponse) {
+            return $denied;
+        }
+
         try {
             $deleted = $this->leaveTypeService->destroy($id);
 
