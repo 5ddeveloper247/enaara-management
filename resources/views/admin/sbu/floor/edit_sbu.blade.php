@@ -1,5 +1,5 @@
 <div class="offcanvas offcanvas-end bg-main text-white" tabindex="-1" id="editSbuFloorCanvas"
-    aria-labelledby="editSbuFloorCanvasLabel" style="width: 600px;">
+    aria-labelledby="editSbuFloorCanvasLabel" style="width: 640px;">
 
     <div class="offcanvas-header border-bottom" style="border-color: #ffffff42 !important">
         <h5 class="offcanvas-title" id="editSbuFloorCanvasLabel">
@@ -80,6 +80,14 @@
                     <option value="1">Active</option>
                     <option value="0">Inactive</option>
                 </select>
+            </div>
+
+            <div class="mb-3 d-none border rounded p-3" id="edit_floor_biometric_section" style="border-color: #ffffff33 !important;">
+                <label class="form-label fw-semibold small text-white d-block mb-2">
+                    Biometric machines on this floor
+                </label>
+                <p class="small text-white-50 mb-2 mb-0">Devices ticked here are assigned to this floor. Untick to clear floor on that device (same SBU only).</p>
+                <div id="edit_floor_biometric_list" class="text-white mt-2"></div>
             </div>
         </form>
     </div>

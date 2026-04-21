@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SbuFloor extends Model
 {
     use LogsActivity;
+
     protected $table = 'sbu_floors';
 
     protected $fillable = [
@@ -29,5 +30,10 @@ class SbuFloor extends Model
     public function sbu(): BelongsTo
     {
         return $this->belongsTo(Sbu::class, 'sbu_id');
+    }
+
+    public function biometricDevices(): HasMany
+    {
+        return $this->hasMany(BiometricDevice::class, 'sbu_floor_id');
     }
 }

@@ -31,6 +31,7 @@ class SbuFloorUpdateRequest extends FormRequest
                     $organizationId = (int) $this->input('organization_id');
                     if (! $organizationId) {
                         $query->whereRaw('1 = 0');
+
                         return;
                     }
                     $query->where('organization_id', $organizationId);
@@ -50,12 +51,27 @@ class SbuFloorUpdateRequest extends FormRequest
 
             'floor_type' => [
                 'required',
-                'in:corporate,operational,mixed'
+                'in:corporate,operational,mixed',
             ],
 
             'is_restricted' => ['required', 'boolean'],
 
             'is_active' => ['required', 'boolean'],
+
+            'biometric_device_ids' => ['nullable', 'array'],
+            'biometric_device_ids.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('biometric_devices', 'id')->where(function ($query) {
+                    $sbuId = (int) $this->input('sbu_id');
+                    if (! $sbuId) {
+                        $query->whereRaw('1 = 0');
+
+                        return;
+                    }
+                    $query->where('sbu_id', $sbuId);
+                }),
+            ],
         ];
     }
 
@@ -83,6 +99,11 @@ class SbuFloorUpdateRequest extends FormRequest
             'is_restricted.required' => 'Restricted field is required.',
 
             'is_active.required' => 'Status is required.',
+
+            'biometric_device_ids.array' => 'Biometric device selection must be a valid list.',
+            'biometric_device_ids.*.exists' => 'One or more selected biometric devices are invalid for this SBU.',
+            'biometric_device_ids.*.integer' => 'Each biometric device id must be valid.',
+            'biometric_device_ids.*.distinct' => 'Duplicate biometric device selection is not allowed.',
         ];
     }
 
@@ -95,6 +116,7 @@ class SbuFloorUpdateRequest extends FormRequest
             'name' => $this->filled('name') ? trim((string) $this->input('name')) : $this->input('name'),
             'is_restricted' => filter_var($this->is_restricted, FILTER_VALIDATE_BOOLEAN),
             'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
+            'biometric_device_ids' => array_values(array_unique(array_filter(array_map('intval', (array) $this->input('biometric_device_ids', []))))),
         ]);
     }
 }

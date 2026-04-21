@@ -65,13 +65,7 @@
                                     data-bs-toggle="offcanvas"
                                     data-bs-target="#sbuFloorDetailCanvas"
                                     data-floor-id="{{ $floor->id }}"
-                                    data-floor-name="{{ e($floor->name) }}"
-                                    data-floor-number="{{ $floor->floor_number ?? '' }}"
-                                    data-floor-type="{{ $floor->floor_type }}"
-                                    data-floor-restricted="{{ $floor->is_restricted ? '1' : '0' }}"
-                                    data-floor-active="{{ $floor->is_active ? '1' : '0' }}"
-                                    data-sbu-name="{{ $floor->sbu ? e($floor->sbu->name) : '' }}"
-                                    data-organization-name="{{ $floor->sbu && $floor->sbu->organization ? e($floor->sbu->organization->name) : '' }}">
+                                    data-detail-url="{{ route('admin.sbu.floor.detail-json', $floor->id) }}">
                                     <i class="bi bi-eye"></i>
                                 </button>
 

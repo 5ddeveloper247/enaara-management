@@ -34,28 +34,98 @@
         $('#sbuFloorsGrid .col-md-6').show();
     }
 
-    function populateDetailCanvas(button) {
-        const get = function(attr, fallback) {
-            const v = button.getAttribute(attr);
-            return (v !== null && v !== '') ? v : (fallback || '—');
-        };
+    function renderBiometricRowsInDetail(devices) {
+        const $bioList = $('#detailFloorBiometricList');
+        $bioList.empty();
 
-        const name = get('data-floor-name');
+        if (!Array.isArray(devices) || devices.length === 0) {
+            $bioList.append(
+                $('<li>', {
+                    class: 'list-group-item bg-transparent text-white border-0 px-3 py-2 small opacity-75',
+                    text: 'No biometric devices assigned to this floor.'
+                })
+            );
+            return;
+        }
+
+        devices.forEach(function(d, idx) {
+            const line = (d.device_name || 'Device') + ' · ' + (d.serial_number || String(d.id || '')) + ' · ID ' + String(d.id || '');
+            const isLast = idx === devices.length - 1;
+            $bioList.append(
+                $('<li>', {
+                    class: 'list-group-item bg-transparent text-white border-0 px-3 py-2 small',
+                    css: isLast ? {} : { borderBottom: '1px solid rgba(255,255,255,0.12)' },
+                    text: line
+                })
+            );
+        });
+    }
+
+    function populateDetailCanvasFromPayload(data) {
+        const name = data.name || '—';
 
         $('#detailFloorLogoPlaceholder').text((name.substring(0, 1) || 'F').toUpperCase());
         $('#detailFloorName').text(name);
-        $('#detailFloorType').text(ucfirst(get('data-floor-type')));
-        $('#detailFloorOrganizationName').text(get('data-organization-name'));
-        $('#detailFloorSbuName').text(get('data-sbu-name'));
-        $('#detailFloorNumber').text(get('data-floor-number'));
-        $('#detailFloorRestricted').text(get('data-floor-restricted') === '1' ? 'Yes' : 'No');
-        $('#detailFloorStatus').text(get('data-floor-active') === '1' ? 'Active' : 'Inactive');
+        $('#detailFloorType').text(ucfirst(data.floor_type || ''));
+        $('#detailFloorOrganizationName').text(data.organization_name || '—');
+        $('#detailFloorSbuName').text(data.sbu_name || '—');
+        $('#detailFloorNumber').text(data.floor_number !== null && data.floor_number !== undefined && String(data.floor_number) !== '' ? String(data.floor_number) : '—');
+        $('#detailFloorRestricted').text(data.is_restricted === true || data.is_restricted === 1 || data.is_restricted === '1' ? 'Yes' : 'No');
+        $('#detailFloorStatus').text(data.is_active === true || data.is_active === 1 || data.is_active === '1' ? 'Active' : 'Inactive');
+        renderBiometricRowsInDetail(data.biometric_devices || []);
+    }
+
+    function loadFloorDetailIntoCanvas(triggerEl) {
+        const btn = triggerEl && triggerEl.closest ? triggerEl.closest('.view-floor-btn') : null;
+
+        if (!btn) {
+            return;
+        }
+
+        const url = btn.getAttribute('data-detail-url');
+
+        if (!url) {
+            return;
+        }
+
+        $('#detailFloorName').text('…');
+        $('#detailFloorOrganizationName').text('…');
+        $('#detailFloorSbuName').text('…');
+        $('#detailFloorNumber').text('…');
+        $('#detailFloorType').text('…');
+        $('#detailFloorRestricted').text('…');
+        $('#detailFloorStatus').text('…');
+        $('#detailFloorBiometricList').html(
+            '<li class="list-group-item bg-transparent text-white border-0 px-3 py-2 small opacity-75">Loading…</li>'
+        );
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: { Accept: 'application/json' },
+            success: function(response) {
+                if (response.success && response.data) {
+                    populateDetailCanvasFromPayload(response.data);
+                } else {
+                    $('#detailFloorBiometricList').html(
+                        '<li class="list-group-item bg-transparent text-white border-0 px-3 py-2 small text-warning">Could not load floor details.</li>'
+                    );
+                }
+            },
+            error: function() {
+                $('#detailFloorBiometricList').html(
+                    '<li class="list-group-item bg-transparent text-white border-0 px-3 py-2 small text-warning">Could not load floor details.</li>'
+                );
+            }
+        });
     }
 
     function clearFormMessages(formSelector) {
         $(formSelector + ' .is-invalid').removeClass('is-invalid');
         $(formSelector + ' .invalid-feedback').remove();
         $(formSelector + ' .form-alert-box').remove();
+        $('#add_floor_biometric_section, #edit_floor_biometric_section').removeClass('border border-danger');
+        $('#add_biometric_devices_feedback, #edit_biometric_devices_feedback').remove();
     }
 
     function showFormMessage(formSelector, message, type = 'danger') {
@@ -75,6 +145,17 @@
         let firstInvalid = null;
 
         $.each(errors, function(field, messages) {
+            if (String(field).indexOf('biometric_device_ids') === 0) {
+                const section = formSelector === '#editSbuFloorForm' ? '#edit_floor_biometric_section' : '#add_floor_biometric_section';
+                $(section).addClass('border border-danger');
+                const fbId = formSelector === '#editSbuFloorForm' ? 'edit_biometric_devices_feedback' : 'add_biometric_devices_feedback';
+                $('#' + fbId).remove();
+                $(section).append(
+                    '<div class="invalid-feedback d-block text-white" id="' + fbId + '">' + messages[0] + '</div>'
+                );
+                return;
+            }
+
             let input = $(formSelector + ' [name="' + field + '"]');
             if (!input.length && field.includes('.')) {
                 const root = field.split('.')[0];
@@ -101,6 +182,82 @@
 
     function getAllSbus() {
         return Array.isArray(window.sbuFloorSbus) ? window.sbuFloorSbus : [];
+    }
+
+    function getBiometricDevices() {
+        return Array.isArray(window.sbuFloorBiometricDevices) ? window.sbuFloorBiometricDevices : [];
+    }
+
+    function renderBiometricCheckboxList(containerSelector, sbuId, checkedIds, formPrefix) {
+        const $box = $(containerSelector);
+        $box.empty();
+
+        const sbu = String(sbuId || '');
+        if (!sbu) {
+            $box.append('<p class="small text-white-50 mb-0">Select SBU to list biometric devices.</p>');
+            return;
+        }
+
+        const list = getBiometricDevices().filter(function(d) {
+            return String(d.sbu_id) === sbu;
+        });
+
+        if (!list.length) {
+            $box.append('<p class="small text-white-50 mb-0">No biometric devices registered for this SBU.</p>');
+            return;
+        }
+
+        const checkedSet = new Set((checkedIds || []).map(function(id) {
+            return String(id);
+        }));
+
+        list.forEach(function(d) {
+            const id = String(d.id);
+            const inputId = formPrefix + '_bio_' + id;
+            const labelText = (d.device_name || 'Device') + ' · ' + (d.serial_number || id);
+            const $div = $('<div class="form-check mb-2">');
+            const $input = $('<input>', {
+                type: 'checkbox',
+                class: 'form-check-input',
+                name: 'biometric_device_ids[]',
+                value: id,
+                id: inputId
+            });
+            if (checkedSet.has(id)) {
+                $input.prop('checked', true);
+            }
+            const $label = $('<label>', { class: 'form-check-label small', for: inputId }).text(labelText);
+            $div.append($input, $label);
+            $box.append($div);
+        });
+    }
+
+    function refreshAddFloorBiometricList() {
+        const sbuId = $('#sbu_id').val();
+        const $sec = $('#add_floor_biometric_section');
+
+        if (!sbuId) {
+            $sec.addClass('d-none');
+            $('#add_floor_biometric_list').empty();
+            return;
+        }
+
+        $sec.removeClass('d-none');
+        renderBiometricCheckboxList('#add_floor_biometric_list', sbuId, [], 'add');
+    }
+
+    function refreshEditFloorBiometricList(checkedIds) {
+        const sbuId = $('#edit_sbu_id').val();
+        const $sec = $('#edit_floor_biometric_section');
+
+        if (!sbuId) {
+            $sec.addClass('d-none');
+            $('#edit_floor_biometric_list').empty();
+            return;
+        }
+
+        $sec.removeClass('d-none');
+        renderBiometricCheckboxList('#edit_floor_biometric_list', sbuId, checkedIds || [], 'edit');
     }
 
     function setSbuOptions(selectSelector, organizationId, placeholder) {
@@ -140,6 +297,7 @@
         $('#floor_type').val('operational');
         $('#is_restricted').val('0');
         $('#is_active').val('1');
+        refreshAddFloorBiometricList();
     }
 
     function resetEditFloorForm() {
@@ -157,6 +315,7 @@
         $('#edit_is_active').val('1');
         $('#editSbuFloorForm').attr('data-update-url', '');
         $('#deleteSbuFloorBtn').attr('data-delete-url', '');
+        refreshEditFloorBiometricList([]);
     }
 
     function storeFloor() {
@@ -275,6 +434,7 @@
 
                     $('#editSbuFloorForm').attr('data-update-url', $(button).data('update-url'));
                     $('#deleteSbuFloorBtn').attr('data-delete-url', $(button).data('delete-url'));
+                    refreshEditFloorBiometricList(data.biometric_device_ids || []);
                 } else {
                     showFormMessage('#editSbuFloorForm', response.message || 'Failed to load floor data.');
                 }
@@ -447,11 +607,8 @@
         const floorDetailCanvas = document.getElementById('sbuFloorDetailCanvas');
         if (floorDetailCanvas) {
             floorDetailCanvas.addEventListener('show.bs.offcanvas', function(event) {
-                const button = event.relatedTarget;
-
-                if (button && button.classList.contains('view-floor-btn')) {
-                    populateDetailCanvas(button);
-                }
+                const raw = event.relatedTarget;
+                loadFloorDetailIntoCanvas(raw);
             });
         }
 
@@ -483,10 +640,20 @@
 
         $('#organization_id').on('change', function() {
             setSbuOptions('#sbu_id', $(this).val(), 'First select organization');
+            refreshAddFloorBiometricList();
+        });
+
+        $('#sbu_id').on('change', function() {
+            refreshAddFloorBiometricList();
         });
 
         $('#edit_organization_id').on('change', function() {
             setSbuOptions('#edit_sbu_id', $(this).val(), 'First select organization');
+            refreshEditFloorBiometricList([]);
+        });
+
+        $('#edit_sbu_id').on('change', function() {
+            refreshEditFloorBiometricList([]);
         });
 
         $('#clearFiltersBtn').on('click', function() {
@@ -510,5 +677,7 @@
 
         setSbuOptions('#sbu_id', $('#organization_id').val(), 'First select organization');
         setSbuOptions('#edit_sbu_id', $('#edit_organization_id').val(), 'First select organization');
+        refreshAddFloorBiometricList();
+        refreshEditFloorBiometricList([]);
     }
 })();

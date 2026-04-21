@@ -56,9 +56,19 @@
             'organization_id' => $sbu->organization_id,
         ];
     })->values();
+    $sbuFloorBiometricDevices = ($biometricDevicesForFloors ?? collect())->map(function ($d) {
+        return [
+            'id' => $d->id,
+            'sbu_id' => $d->sbu_id,
+            'device_name' => $d->device_name,
+            'serial_number' => $d->serial_number,
+            'sbu_floor_id' => $d->sbu_floor_id,
+        ];
+    })->values();
 @endphp
 <script>
     window.sbuFloorSbus = @json($sbuFloorSbus);
+    window.sbuFloorBiometricDevices = @json($sbuFloorBiometricDevices);
 </script>
 <script src="{{ asset('js/sbu-floor.js') }}"></script>
 @endpush

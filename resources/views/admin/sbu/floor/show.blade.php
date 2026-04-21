@@ -61,6 +61,20 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3 border">
+                            <small class="text-muted d-block mb-2">Biometric devices</small>
+                            @forelse($sbuFloor->biometricDevices as $device)
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 @if(!$loop->last) border-bottom @endif">
+                                    <span class="fw-semibold">{{ $device->device_name }}</span>
+                                    <span class="text-muted small font-monospace">{{ $device->serial_number }}</span>
+                                    <span class="text-muted small">ID {{ $device->id }}</span>
+                                </div>
+                            @empty
+                                <p class="mb-0 text-muted">No biometric devices assigned to this floor.</p>
+                            @endforelse
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,40 +1,41 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\PasswordResetController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\OrganizationController;
-use App\Http\Controllers\EmployeeTypeController;
-use App\Http\Controllers\WorkTypeController;
 use App\Http\Controllers\AttendanceModesController;
-use App\Http\Controllers\ShiftTypesController;
-use App\Http\Controllers\SbuController;
-use App\Http\Controllers\ThirdPartyController;
-use App\Http\Controllers\SbuFloorsController;
+use App\Http\Controllers\AuditTrailController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BalanceTrackerController;
+use App\Http\Controllers\BiometricDeviceController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
-use App\Http\Controllers\LeaveTypeController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeTypeController;
+use App\Http\Controllers\GeofenceController;
+use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\LeaveRequestController;
+use App\Http\Controllers\LeaveTypeController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ModuleCategoryController;
 use App\Http\Controllers\ModuleController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\RegistrationController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\MonthlySummaryController;
+use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PasswordFirstChangeController;
-use App\Http\Controllers\WorkflowController;
-use App\Http\Controllers\LocationController;
-
-use App\Http\Controllers\LeaveCalendarController;
-use App\Http\Controllers\BalanceTrackerController;
-use App\Http\Controllers\GeofenceController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PolicyController;
+use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RoleLevelController;
+use App\Http\Controllers\SbuController;
+use App\Http\Controllers\SbuFloorsController;
 use App\Http\Controllers\ShiftPlannerController;
 use App\Http\Controllers\ShiftRosterController;
-use App\Http\Controllers\MonthlySummaryController;
-use App\Http\Controllers\AuditTrailController;
-use App\Http\Controllers\RoleLevelController;
+use App\Http\Controllers\ShiftTypesController;
+use App\Http\Controllers\ThirdPartyController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\WorkflowController;
+use App\Http\Controllers\WorkTypeController;
 use App\Http\Middleware\EnsurePasswordIsNotTemporary;
+use Illuminate\Support\Facades\Route;
+
 // Authentication Routes
 Route::get('/', function () {
     return redirect()->route('login');
@@ -47,8 +48,8 @@ Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', [PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail'])->name('password.email');
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->name('password.update');
-    });
-    Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
+});
+Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::middleware('auth')->group(function () {
@@ -85,6 +86,13 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/third-party/edit/{id}', [ThirdPartyController::class, 'update'])->name('admin.third-party.update');
     Route::delete('/third-party/delete/{id}', [ThirdPartyController::class, 'destroy'])->name('admin.third-party.destroy');
     Route::get('/third-party/{id}/show', [ThirdPartyController::class, 'show'])->name('admin.third-party.show');
+    Route::get('/biometric-device', [BiometricDeviceController::class, 'index'])->name('admin.biometric-device.index');
+    Route::get('/biometric-device/add', [BiometricDeviceController::class, 'create'])->name('admin.biometric-device.create');
+    Route::post('/biometric-device/add', [BiometricDeviceController::class, 'store'])->name('admin.biometric-device.store');
+    Route::get('/biometric-device/edit/{id}', [BiometricDeviceController::class, 'edit'])->name('admin.biometric-device.edit');
+    Route::post('/biometric-device/edit/{id}', [BiometricDeviceController::class, 'update'])->name('admin.biometric-device.update');
+    Route::delete('/biometric-device/delete/{id}', [BiometricDeviceController::class, 'destroy'])->name('admin.biometric-device.destroy');
+    Route::get('/biometric-device/{id}/show', [BiometricDeviceController::class, 'show'])->name('admin.biometric-device.show');
     // Sbu Floor Routes
     Route::get('/sbu-floor', [SbuFloorsController::class, 'index'])->name('admin.sbu.floor.index');
     Route::get('/sbu-floor/add', [SbuFloorsController::class, 'create'])->name('admin.sbu.floor.create');
@@ -92,6 +100,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/sbu-floor/edit/{id}', [SbuFloorsController::class, 'edit'])->name('admin.sbu.floor.edit');
     Route::post('/sbu-floor/edit/{id}', [SbuFloorsController::class, 'update'])->name('admin.sbu.floor.update');
     Route::delete('/sbu-floor/delete/{id}', [SbuFloorsController::class, 'destroy'])->name('admin.sbu.floor.destroy');
+    Route::get('/sbu-floor/{id}/detail-json', [SbuFloorsController::class, 'detailJson'])->name('admin.sbu.floor.detail-json');
     Route::get('/sbu-floor/{id}/show', [SbuFloorsController::class, 'show'])->name('admin.sbu.floor.show');
     //
     Route::get('/employee-type', [EmployeeTypeController::class, 'index'])->name('admin.employee.type.index');
@@ -109,8 +118,6 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/shift-type', [ShiftTypesController::class, 'index'])->name('admin.shift.type.index');
     Route::patch('/shift-type/{id}/status', [ShiftTypesController::class, 'updateStatus'])->name('admin.shift.type.update.status');
     Route::delete('/shift-type/{id}/delete', [ShiftTypesController::class, 'destroy'])->name('admin.shift.type.destroy');
-
-
 
     Route::get('/department', [DepartmentController::class, 'index'])->name('admin.department.index');
     Route::get('/department/add', [DepartmentController::class, 'create'])->name('admin.department.add');
@@ -133,13 +140,13 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/leave-type/edit/{id}', [LeaveTypeController::class, 'update'])->name('admin.leave.type.update');
     Route::delete('/leave-type/{id}', [LeaveTypeController::class, 'destroy'])->name('admin.leave.type.destroy');
 
-    //Leave Requests 
+    // Leave Requests
     Route::get('/leave-request', [LeaveRequestController::class, 'index'])->name('admin.leave.request.index');
     Route::get('/leave-request/add', [LeaveRequestController::class, 'create'])->name('admin.leave.request.add');
     Route::post('/leave-request/add', [LeaveRequestController::class, 'store'])->name('admin.leave.request.store');
     Route::get('/leave-request/leave-types', [LeaveRequestController::class, 'leaveTypesForEmployee'])->name('admin.leave.request.leave-types');
     Route::patch('/leave-request/{id}/status', [LeaveRequestController::class, 'updateStatus'])->name('admin.leave.request.status');
-    // role categories 
+    // role categories
 
     Route::get('/module-categories', [ModuleCategoryController::class, 'index'])->name('admin.module.category.index');
     Route::get('/module-categories/add', [ModuleCategoryController::class, 'create'])->name('admin.module.category.add');
@@ -170,7 +177,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::patch('/role/{id}/status', [RoleController::class, 'updateStatus'])->name('admin.role.update.status');
     Route::delete('/role/{id}/delete', [RoleController::class, 'destroy'])->name('admin.role.destroy');
     Route::get('/role/search', [RoleController::class, 'searchRole'])->name('admin.role.search');
-    //new routes for dynamic dropdowns
+    // new routes for dynamic dropdowns
     Route::get('/roles/departments-by-organization', [RoleController::class, 'getDepartmentsByOrganization'])
         ->name('admin.role.departmentsByOrganization');
 
@@ -184,7 +191,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/employee/{id}/edit', function ($id) {
         return redirect()->route('admin.employee.edit', ['id' => $id]);
     });
-    
+
     Route::get('/employees/data', [EmployeeController::class, 'tableData'])->name('admin.employee.data');
     Route::get('/employees/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
     Route::get('/employees/preview-employee-code', [EmployeeController::class, 'previewEmployeeCode'])->name('admin.employee.preview_code');
@@ -207,13 +214,6 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/locations/provinces/{countryName}', [LocationController::class, 'getProvinces'])->name('admin.locations.provinces');
     Route::get('/locations/districts/{countryName}/{provinceName}', [LocationController::class, 'getDistricts'])->name('admin.locations.districts');
 
-
-
-
-
-
-
-
     Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
     Route::get('/users/data', [UserController::class, 'data'])->name('admin.users.data');
     Route::get('/users/stats', [UserController::class, 'stats'])->name('admin.users.stats');
@@ -223,12 +223,11 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::patch('/users/{id}/status', [UserController::class, 'updateStatus'])->name('admin.users.status');
     Route::delete('/users/{id}/delete', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
-
     // Notifications
     Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsReadAndRedirect'])->name('admin.notifications.read');
     Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('admin.notifications.mark-all-read');
 
-    //Leave Calendar
+    // Leave Calendar
     Route::get('/leave-calendar', [LeaveCalendarController::class, 'index'])->name('admin.leave-calendar.index');
     Route::get('/leave-calendar/add', [LeaveCalendarController::class, 'create'])->name('admin.leave-calendar.add');
     Route::post('/leave-calendar/store', [LeaveCalendarController::class, 'store'])->name('admin.leave-calendar.store');
@@ -237,8 +236,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::delete('/leave-calendar/destroy/{id}', [LeaveCalendarController::class, 'destroy'])->name('admin.leave-calendar.destroy');
     Route::get('/leave-calendar/fetch-department-employees', [LeaveCalendarController::class, 'fetchDepartmentLeaveEmployees'])->name('admin.leave-calendar.fetch-department-employees');
 
-
-    //Leave Balance 
+    // Leave Balance
     Route::get('/balance-tracker', [BalanceTrackerController::class, 'index'])->name('admin.balance-tracker.index');
     Route::post('/balance-tracker', [BalanceTrackerController::class, 'adjustBalance'])->name('admin.balance-tracker.adjust');
     Route::get('/balance-tracker/export', [BalanceTrackerController::class, 'export'])->name('admin.balance-tracker.export');
@@ -262,14 +260,13 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
         return redirect()->route('admin.dashboard.index');
     })->name('admin.monthly-logs.index');
 
-
     Route::get('/shift-planner', [ShiftPlannerController::class, 'index'])->name('admin.shift-planner.index');
     Route::post('/shift-planner', [ShiftPlannerController::class, 'store'])->name('admin.shift-planner.store');
     Route::get('/shift-planner/{id}', [ShiftPlannerController::class, 'show'])->name('admin.shift-planner.show');
     Route::post('/shift-planner/{id}', [ShiftPlannerController::class, 'update'])->name('admin.shift-planner.update');
     Route::delete('/shift-planner/{id}', [ShiftPlannerController::class, 'destroy'])->name('admin.shift-planner.destroy');
 
-    //Shift Roster
+    // Shift Roster
     Route::get('/shift-roster', [ShiftRosterController::class, 'index'])->name('admin.shift-roster.index');
     Route::get('/shift-roster/grid', [ShiftRosterController::class, 'grid'])->name('admin.shift-roster.grid');
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
@@ -290,7 +287,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::delete('/geofencing/{id}', [GeofenceController::class, 'destroy'])->name('admin.geofencing.destroy');
     Route::get('/my-leaves', [LeaveRequestController::class, 'myLeaves'])->name('admin.my.leaves.index');
 
-    //Monthly Summary ROutes
+    // Monthly Summary ROutes
     Route::get('/monthly-summary', [MonthlySummaryController::class, 'index'])->name('admin.monthly-summary.index');
 
     // Route::get('/my-leaves', function () {
@@ -309,12 +306,9 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
         return view('admin.roles-permissions.index');
     })->name('admin.roles.index');
 
-
     Route::get('/overtime-tracker', function () {
         return redirect()->route('admin.dashboard.index');
     })->name('admin.overtime.index');
-
-   
 
     // Policies Routes
     Route::get('/policies', [PolicyController::class, 'index'])->name('admin.policies.index');
@@ -336,7 +330,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     //     return view('admin.dashboard'); // Placeholder - replace with actual reports view
     // })->name('admin.reports');
 
-    //Audit Trails Routes
+    // Audit Trails Routes
     Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('admin.audit-trails.index');
     Route::get('/audit-trails/data', [AuditTrailController::class, 'data'])->name('admin.audit-trails.data');
     Route::get('/audit-trails/{auditTrail}', [AuditTrailController::class, 'show'])->name('admin.audit-trails.show');

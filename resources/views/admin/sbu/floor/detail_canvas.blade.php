@@ -56,6 +56,13 @@
                 </div>
             </div>
         </div>
+        <hr class="my-4" style="border-color: #ffffffab !important">
+        <div class="mb-4">
+            <h6 class="mb-3 fw-semibold small">
+                <i class="bi bi-fingerprint me-2"></i>Biometric devices
+            </h6>
+            <ul class="list-group list-group-flush rounded-3 border overflow-hidden" id="detailFloorBiometricList" style="border-color: #ffffff1a !important;"></ul>
+        </div>
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
         </div>

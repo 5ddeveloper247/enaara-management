@@ -1,5 +1,5 @@
 <div class="offcanvas offcanvas-end bg-main text-white" tabindex="-1" id="addSbuFloorCanvas"
-    aria-labelledby="addSbuFloorCanvasLabel" style="width: 600px;">
+    aria-labelledby="addSbuFloorCanvasLabel" style="width: 640px;">
 
     <div class="offcanvas-header border-bottom" style="border-color: #ffffff42 !important">
         <h5 class="offcanvas-title" id="addSbuFloorCanvasLabel">
@@ -79,6 +79,14 @@
                     <option value="1" selected>Active</option>
                     <option value="0">Inactive</option>
                 </select>
+            </div>
+
+            <div class="mb-3 d-none border rounded p-3" id="add_floor_biometric_section" style="border-color: #ffffff33 !important;">
+                <label class="form-label fw-semibold small text-white d-block mb-2">
+                    Biometric machines on this floor
+                </label>
+                <p class="small text-white-50 mb-2 mb-0">Select the devices installed on this floor (same SBU). This updates the floor field on each selected device.</p>
+                <div id="add_floor_biometric_list" class="text-white mt-2"></div>
             </div>
         </form>
     </div>

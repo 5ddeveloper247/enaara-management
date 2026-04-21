@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\SbuFloorService;
-use Illuminate\View\View;
-use App\Models\Organization;
-use App\Models\Sbu;
 use App\Http\Requests\Admin\Sbu_floor\SbuFloorStoreRequest;
 use App\Http\Requests\Admin\Sbu_floor\SbuFloorUpdateRequest;
+use App\Models\BiometricDevice;
+use App\Models\Organization;
+use App\Models\Sbu;
+use App\Services\SbuFloorService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
 
 class SbuFloorsController extends Controller
 {
@@ -26,6 +28,7 @@ class SbuFloorsController extends Controller
             'sbuFloors' => $sbuFloors,
             'organizations' => $organizations,
             'sbus' => $sbus,
+            'biometricDevicesForFloors' => $this->biometricDevicesForFloorForms(),
             'totalSbuFloors' => $counts['total'],
             'activeSbuFloors' => $counts['active'],
             'activePercentage' => $counts['active_percentage'],
@@ -34,7 +37,7 @@ class SbuFloorsController extends Controller
 
     public function create(SbuFloorStoreRequest $request)
     {
-        if (!validatePermissions('admin/sbu-floor/add')) {
+        if (! validatePermissions('admin/sbu-floor/add')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -47,6 +50,7 @@ class SbuFloorsController extends Controller
             'sbuFloors' => $sbuFloors,
             'organizations' => $organizations,
             'sbus' => $sbus,
+            'biometricDevicesForFloors' => $this->biometricDevicesForFloorForms(),
             'totalSbuFloors' => $counts['total'],
             'activeSbuFloors' => $counts['active'],
             'activePercentage' => $counts['active_percentage'],
@@ -55,11 +59,11 @@ class SbuFloorsController extends Controller
 
     public function store(SbuFloorStoreRequest $request)
     {
-        if (!validatePermissions('admin/sbu-floor/add')) {
+        if (! validatePermissions('admin/sbu-floor/add')) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized action.'
+                    'message' => 'Unauthorized action.',
                 ], 403);
             }
 
@@ -83,14 +87,14 @@ class SbuFloorsController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to create SBU floor: ' . $e->getMessage(),
+                    'message' => 'Failed to create SBU floor: '.$e->getMessage(),
                 ], 500);
             }
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Failed to create SBU floor: ' . $e->getMessage());
+                ->with('error', 'Failed to create SBU floor: '.$e->getMessage());
         }
     }
 
@@ -98,20 +102,62 @@ class SbuFloorsController extends Controller
     {
         $sbuFloor = $this->sbuFloorService->findById($id);
 
-        if (!$sbuFloor) {
+        if (! $sbuFloor) {
             abort(404);
         }
 
         return view('admin.sbu.floor.show', ['sbuFloor' => $sbuFloor]);
     }
 
+    public function detailJson(int $id): JsonResponse
+    {
+        try {
+            $sbuFloor = $this->sbuFloorService->findById($id);
+
+            if (! $sbuFloor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SBU floor not found.',
+                ], 404);
+            }
+
+            $devices = $sbuFloor->biometricDevices->map(function ($d) {
+                return [
+                    'id' => $d->id,
+                    'device_name' => $d->device_name,
+                    'serial_number' => $d->serial_number,
+                ];
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $sbuFloor->id,
+                    'name' => $sbuFloor->name,
+                    'floor_number' => $sbuFloor->floor_number,
+                    'floor_type' => $sbuFloor->floor_type,
+                    'is_restricted' => $sbuFloor->is_restricted,
+                    'is_active' => $sbuFloor->is_active,
+                    'organization_name' => $sbuFloor->sbu?->organization?->name,
+                    'sbu_name' => $sbuFloor->sbu?->name,
+                    'biometric_devices' => $devices,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load floor details.',
+            ], 500);
+        }
+    }
+
     public function edit($id)
     {
-        if (!validatePermissions('admin/sbu-floor/edit')) {
+        if (! validatePermissions('admin/sbu-floor/edit')) {
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized action.'
+                    'message' => 'Unauthorized action.',
                 ], 403);
             }
 
@@ -121,10 +167,10 @@ class SbuFloorsController extends Controller
         try {
             $sbuFloor = $this->sbuFloorService->findById($id);
 
-            if (!$sbuFloor) {
+            if (! $sbuFloor) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'SBU floor not found.'
+                    'message' => 'SBU floor not found.',
                 ], 404);
             }
 
@@ -139,23 +185,29 @@ class SbuFloorsController extends Controller
                     'floor_type' => $sbuFloor->floor_type,
                     'is_restricted' => $sbuFloor->is_restricted,
                     'is_active' => $sbuFloor->is_active,
-                ]
+                    'biometric_device_ids' => BiometricDevice::query()
+                        ->where('sbu_floor_id', $sbuFloor->id)
+                        ->orderByDesc('id')
+                        ->pluck('id')
+                        ->values()
+                        ->all(),
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch SBU floor: ' . $e->getMessage(),
+                'message' => 'Failed to fetch SBU floor: '.$e->getMessage(),
             ], 500);
         }
     }
 
     public function update(SbuFloorUpdateRequest $request, $id)
     {
-        if (!validatePermissions('admin/sbu-floor/edit')) {
+        if (! validatePermissions('admin/sbu-floor/edit')) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized action.'
+                    'message' => 'Unauthorized action.',
                 ], 403);
             }
 
@@ -179,24 +231,24 @@ class SbuFloorsController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update SBU floor: ' . $e->getMessage(),
+                    'message' => 'Failed to update SBU floor: '.$e->getMessage(),
                 ], 500);
             }
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Failed to update SBU floor: ' . $e->getMessage());
+                ->with('error', 'Failed to update SBU floor: '.$e->getMessage());
         }
     }
 
     public function destroy($id)
     {
-        if (!validatePermissions('admin/sbu-floor/delete')) {
+        if (! validatePermissions('admin/sbu-floor/delete')) {
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized action.'
+                    'message' => 'Unauthorized action.',
                 ], 403);
             }
 
@@ -220,13 +272,20 @@ class SbuFloorsController extends Controller
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to delete SBU floor: ' . $e->getMessage(),
+                    'message' => 'Failed to delete SBU floor: '.$e->getMessage(),
                 ], 500);
             }
 
             return redirect()
                 ->back()
-                ->with('error', 'Failed to delete SBU floor: ' . $e->getMessage());
+                ->with('error', 'Failed to delete SBU floor: '.$e->getMessage());
         }
+    }
+
+    protected function biometricDevicesForFloorForms()
+    {
+        return BiometricDevice::query()
+            ->orderByDesc('id')
+            ->get(['id', 'sbu_id', 'device_name', 'serial_number', 'sbu_floor_id']);
     }
 }
