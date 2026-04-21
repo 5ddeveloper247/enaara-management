@@ -58,7 +58,10 @@ class Employee extends Model
     public function armedForce()        { return $this->hasOne(EmployeeArmedForce::class); }
     public function contact()           { return $this->hasOne(EmployeeContact::class); }
     public function bankDetails()       { return $this->hasMany(EmployeeBankDetail::class)->orderByDesc('id'); }
-    public function familyMembers()     { return $this->hasMany(EmployeeFamilyMember::class); }
+    public function familyMembers()
+    {
+        return $this->hasMany(EmployeeFamilyMember::class)->orderByDesc('id');
+    }
     public function academics()         { return $this->hasMany(EmployeeAcademic::class); }
     public function exEmployments()     { return $this->hasMany(EmployeeExEmployment::class); }
     public function medical()           { return $this->hasOne(EmployeeMedical::class); }

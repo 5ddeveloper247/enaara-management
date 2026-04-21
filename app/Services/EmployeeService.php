@@ -700,19 +700,60 @@ class EmployeeService
             ->update(['is_salary_account' => false]);
     }
 
+    public function syncEmployeeNokFromFamilyMembers(int $employeeId): void
+    {
+        $nok = EmployeeFamilyMember::query()
+            ->where('employee_id', $employeeId)
+            ->where('is_next_of_kin', true)
+            ->orderByDesc('id')
+            ->first();
+
+        $payload = [
+            'nok_name'             => null,
+            'nok_cnic'             => null,
+            'nok_cnic_expiry_date' => null,
+            'nok_relation'         => null,
+            'nok_dob'              => null,
+            'nok_contact'          => null,
+        ];
+
+        if ($nok) {
+            $payload = [
+                'nok_name'             => $nok->name,
+                'nok_cnic'             => $nok->nok_cnic,
+                'nok_cnic_expiry_date' => $nok->nok_cnic_expiry_date,
+                'nok_relation'         => $nok->relation,
+                'nok_dob'              => $nok->dob,
+                'nok_contact'          => $nok->nok_contact,
+            ];
+        }
+
+        Employee::whereKey($employeeId)->update($payload);
+    }
+
     private function saveFamilyMembers(int $id, array $rows): void
     {
         foreach ($rows as $row) {
-            if (empty($row['name'])) continue;
+            if (empty($row['name'])) {
+                continue;
+            }
+            $isNok = filter_var($row['is_next_of_kin'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                || (isset($row['is_next_of_kin']) && (string) $row['is_next_of_kin'] === '1');
             EmployeeFamilyMember::create([
-                'employee_id' => $id,
-                'name'        => $row['name'],
-                'gender'      => $row['gender'] ?? null,
-                'dob'         => !empty($row['dob']) ? $row['dob'] : null,
-                'relation'    => ($row['relation'] === 'Other' && !empty($row['relation_other'])) ? $row['relation_other'] : ($row['relation'] ?? null),
-                'occupation'  => $row['occupation'] ?? null,
+                'employee_id'          => $id,
+                'name'                 => $row['name'],
+                'gender'               => $row['gender'] ?? null,
+                'dob'                  => ! empty($row['dob']) ? $row['dob'] : null,
+                'relation'             => ($row['relation'] === 'Other' && ! empty($row['relation_other'])) ? $row['relation_other'] : ($row['relation'] ?? null),
+                'occupation'           => $row['occupation'] ?? null,
+                'is_next_of_kin'       => $isNok,
+                'nok_cnic'             => $isNok ? ($row['nok_cnic'] ?? null) : null,
+                'nok_cnic_expiry_date' => $isNok && ! empty($row['nok_cnic_expiry_date']) ? $row['nok_cnic_expiry_date'] : null,
+                'nok_contact'          => $isNok ? ($row['nok_contact'] ?? null) : null,
             ]);
         }
+
+        $this->syncEmployeeNokFromFamilyMembers($id);
     }
 
     private function saveAcademics(int $id, array $rows): void
@@ -749,7 +790,16 @@ class EmployeeService
 
     public function saveMedical(int $id, array $d): void
     {
-        if (empty($d['last_fitness_test']) && empty($d['blood_group'])) return;
+        $hasAnyMedicalValue = ! empty($d['last_fitness_test'])
+            || array_key_exists('has_disability', $d)
+            || ! empty($d['blood_group'])
+            || ! empty($d['disability_type'])
+            || ! empty($d['disability_description']);
+
+        if (! $hasAnyMedicalValue) {
+            return;
+        }
+
         EmployeeMedical::updateOrCreate(
             ['employee_id' => $id],
             [
@@ -804,19 +854,43 @@ class EmployeeService
 
     public function saveFamilyMember(int $id, array $row)
     {
-        if (empty($row['name'])) return null;
+        if (empty($row['name'])) {
+            return null;
+        }
         $memberId = $row['family_id'] ?? null;
-        
-        return EmployeeFamilyMember::updateOrCreate(
+        $isNok = filter_var($row['is_next_of_kin'] ?? false, FILTER_VALIDATE_BOOLEAN)
+            || (isset($row['is_next_of_kin']) && (string) $row['is_next_of_kin'] === '1');
+
+        if ($isNok) {
+            EmployeeFamilyMember::query()
+                ->where('employee_id', $id)
+                ->when($memberId, fn ($q) => $q->where('id', '!=', (int) $memberId))
+                ->update([
+                    'is_next_of_kin'       => false,
+                    'nok_cnic'             => null,
+                    'nok_cnic_expiry_date' => null,
+                    'nok_contact'          => null,
+                ]);
+        }
+
+        $record = EmployeeFamilyMember::updateOrCreate(
             ['id' => $memberId, 'employee_id' => $id],
             [
-                'name'        => $row['name'],
-                'gender'      => $row['gender'] ?? null,
-                'dob'         => !empty($row['dob']) ? $row['dob'] : (!empty($row['date_of_birth']) ? $row['date_of_birth'] : null),
-                'relation'    => ($row['relation'] === 'Other' && !empty($row['relation_other'])) ? $row['relation_other'] : ($row['relation'] ?? null),
-                'occupation'  => $row['occupation'] ?? null,
+                'name'                 => $row['name'],
+                'gender'               => $row['gender'] ?? null,
+                'dob'                  => ! empty($row['dob']) ? $row['dob'] : (! empty($row['date_of_birth']) ? $row['date_of_birth'] : null),
+                'relation'             => ($row['relation'] === 'Other' && ! empty($row['relation_other'])) ? $row['relation_other'] : ($row['relation'] ?? null),
+                'occupation'           => $row['occupation'] ?? null,
+                'is_next_of_kin'       => $isNok,
+                'nok_cnic'             => $isNok ? ($row['nok_cnic'] ?? null) : null,
+                'nok_cnic_expiry_date' => $isNok && ! empty($row['nok_cnic_expiry_date']) ? $row['nok_cnic_expiry_date'] : null,
+                'nok_contact'          => $isNok ? ($row['nok_contact'] ?? null) : null,
             ]
         );
+
+        $this->syncEmployeeNokFromFamilyMembers($id);
+
+        return $record;
     }
 
     public function saveAcademic(int $id, array $row)
@@ -859,7 +933,13 @@ class EmployeeService
     {
         switch ($type) {
             case 'family_row':
-                return EmployeeFamilyMember::where('id', $id)->delete() > 0;
+                $employeeId = EmployeeFamilyMember::query()->whereKey($id)->value('employee_id');
+                $deleted = EmployeeFamilyMember::where('id', $id)->delete() > 0;
+                if ($deleted && $employeeId) {
+                    $this->syncEmployeeNokFromFamilyMembers((int) $employeeId);
+                }
+
+                return $deleted;
             case 'academic_row':
                 return EmployeeAcademic::where('id', $id)->delete() > 0;
             case 'employment_row':
@@ -1365,13 +1445,17 @@ class EmployeeService
                 'account_type'       => $b->account_type,
                 'is_salary_account'  => (bool) $b->is_salary_account,
             ])->values()->all(),
-            'family' => $employee->familyMembers->map(fn($m) => [
-                'id'         => $m->id,
-                'name'       => $m->name,
-                'gender'     => $m->gender,
-                'dob'        => $m->dob?->format('Y-m-d'),
-                'relation'   => $m->relation,
-                'occupation' => $m->occupation,
+            'family' => $employee->familyMembers->map(fn ($m) => [
+                'id'                   => $m->id,
+                'name'                 => $m->name,
+                'gender'               => $m->gender,
+                'dob'                  => $m->dob?->format('Y-m-d'),
+                'relation'             => $m->relation,
+                'occupation'           => $m->occupation,
+                'is_next_of_kin'       => (bool) $m->is_next_of_kin,
+                'nok_cnic'             => $m->nok_cnic,
+                'nok_cnic_expiry_date' => $m->nok_cnic_expiry_date?->format('Y-m-d'),
+                'nok_contact'          => $m->nok_contact,
             ])->values()->all(),
             'academics' => $employee->academics->map(fn($a) => [
                 'id'             => $a->id,

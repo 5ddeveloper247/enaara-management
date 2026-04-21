@@ -22,6 +22,12 @@ class EmployeeStepRequest extends FormRequest
             if ((int) $this->input('step') === 5) {
                 $this->assertAtLeastOneSalaryBank($v);
             }
+            if ((int) $this->input('step') === 6) {
+                $this->assertFamilyNextOfKinRules($v);
+            }
+            if ((string) $this->input('subsection') === 'family_row') {
+                $this->assertFamilyRowNextOfKinRules($v);
+            }
         });
     }
 
@@ -142,6 +148,31 @@ class EmployeeStepRequest extends FormRequest
         }
         if ($st === 5 || $st === 0) {
             $this->normalizeBankRowsFromRequest();
+        }
+
+        if ($st === 6 && is_array($this->input('family'))) {
+            $family = $this->input('family');
+            foreach ($family as $i => $fr) {
+                if (! is_array($fr)) {
+                    continue;
+                }
+                if (! empty($fr['nok_cnic'])) {
+                    $family[$i]['nok_cnic'] = str_replace('-', '', (string) $fr['nok_cnic']);
+                }
+                if (! empty($fr['nok_contact'])) {
+                    $family[$i]['nok_contact'] = preg_replace('/[^\d+]/', '', (string) $fr['nok_contact']);
+                }
+            }
+            $this->merge(['family' => $family]);
+        }
+
+        if ((string) $this->input('subsection') === 'family_row') {
+            if ($this->filled('nok_cnic')) {
+                $this->merge(['nok_cnic' => str_replace('-', '', (string) $this->input('nok_cnic'))]);
+            }
+            if ($this->filled('nok_contact')) {
+                $this->merge(['nok_contact' => preg_replace('/[^\d+]/', '', (string) $this->input('nok_contact'))]);
+            }
         }
 
         if ((string) $this->input('subsection') === 'bank_row') {
@@ -285,12 +316,7 @@ class EmployeeStepRequest extends FormRequest
                 'spouse_nationality' => [
                     'required_if:marital_status,Married', 'nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()
                 ],
-                'nok_name' => ['required', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
-                'nok_cnic' => ['bail', 'required', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
-                'nok_cnic_expiry_date' => ['required', 'date', 'after:today'],
-                'nok_dob' => ['required', 'date', 'before:today'],
-                'nok_contact' => ['required', 'string', 'regex:' . $this->contactRegex()],
-            ], $this->nokRelationValidationRules());
+            ]);
         }
         elseif ($step === 2) {
             $stepRules = [
@@ -502,6 +528,12 @@ class EmployeeStepRequest extends FormRequest
                 'family.*.gender'   => ['required_with:family.*', Rule::in(['Male', 'Female'])],
                 'family.*.dob'      => ['required_with:family.*', 'date', 'before:today'],
                 'family.*.relation' => ['required_with:family.*', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
+                'family.*.relation_other' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
+                'family.*.occupation' => ['nullable', 'string', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
+                'family.*.is_next_of_kin' => ['nullable', 'boolean'],
+                'family.*.nok_cnic' => ['nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
+                'family.*.nok_cnic_expiry_date' => ['nullable', 'date', 'after:today'],
+                'family.*.nok_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
 
                 // Academics
                 'academics'                => ['nullable', 'array'],
@@ -590,12 +622,21 @@ class EmployeeStepRequest extends FormRequest
 
             case 'family_row':
                 return array_merge($rules, [
-                    'name'       => ['required', 'string', 'min:2', 'max:70', 'regex:' . $this->alphaNumericTextRegex()],
-                    'gender'     => ['required', Rule::in(['Male', 'Female'])],
-                    'dob'        => ['required', 'date', 'before:today'],
-                    'relation'       => ['required', 'string', 'max:50'],
-                    'relation_other' => ['required_if:relation,Other', 'nullable', 'string', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
-                    'occupation'     => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
+                    'family_id' => [
+                        'nullable',
+                        'integer',
+                        Rule::exists('employee_family_members', 'id')->where('employee_id', (int) $this->input('employee_id')),
+                    ],
+                    'name'           => ['required', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
+                    'gender'         => ['required', Rule::in(['Male', 'Female'])],
+                    'dob'            => ['required', 'date', 'before:today'],
+                    'relation'       => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
+                    'relation_other' => ['required_if:relation,Other', 'nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
+                    'occupation'     => ['nullable', 'string', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
+                    'is_next_of_kin' => ['nullable', 'boolean'],
+                    'nok_cnic'       => ['nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
+                    'nok_cnic_expiry_date' => ['nullable', 'date', 'after:today'],
+                    'nok_contact'    => ['nullable', 'string', 'regex:' . $this->contactRegex()],
                 ]);
 
             case 'academic_row':
@@ -661,6 +702,145 @@ class EmployeeStepRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    protected function familyRowIsNextOfKinTruthy(?array $row): bool
+    {
+        if ($row === null) {
+            return false;
+        }
+
+        return filter_var($row['is_next_of_kin'] ?? false, FILTER_VALIDATE_BOOLEAN)
+            || (isset($row['is_next_of_kin']) && (string) $row['is_next_of_kin'] === '1');
+    }
+
+    protected function assertFamilyNextOfKinRules($v): void
+    {
+        $family = $this->input('family', []);
+        if (! is_array($family)) {
+            return;
+        }
+
+        $filledRowIndexes = [];
+        foreach ($family as $idx => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $name = isset($row['name']) ? trim((string) $row['name']) : '';
+            if ($name === '') {
+                continue;
+            }
+            $filledRowIndexes[] = $idx;
+            $relation = (string) ($row['relation'] ?? '');
+            if ($relation === 'Other') {
+                $other = isset($row['relation_other']) ? trim((string) $row['relation_other']) : '';
+                if ($other === '') {
+                    $v->errors()->add("family.$idx.relation_other", 'Specify relation when Other is selected.');
+                }
+            }
+        }
+
+        if (count($filledRowIndexes) === 0) {
+            return;
+        }
+
+        $nokIndexes = [];
+        foreach ($filledRowIndexes as $idx) {
+            $row = $family[$idx];
+            if (! is_array($row)) {
+                continue;
+            }
+            if ($this->familyRowIsNextOfKinTruthy($row)) {
+                $nokIndexes[] = $idx;
+            }
+        }
+
+        if (count($nokIndexes) > 1) {
+            $v->errors()->add('family', 'Only one family member can be Next of Kin.');
+
+            return;
+        }
+
+        if (count($nokIndexes) === 0) {
+            return;
+        }
+
+        $idx = $nokIndexes[0];
+        $row = $family[$idx];
+        $labels = [
+            'nok_cnic'             => 'Next of Kin CNIC',
+            'nok_cnic_expiry_date' => 'Next of Kin CNIC expiry',
+            'nok_contact'          => 'Next of Kin contact',
+        ];
+        foreach ($labels as $field => $label) {
+            $val = isset($row[$field]) ? trim((string) $row[$field]) : '';
+            if ($val === '') {
+                $v->errors()->add("family.$idx.$field", $label . ' is required for the member marked as Next of Kin.');
+
+                continue;
+            }
+            if ($field === 'nok_cnic' && ! preg_match($this->cnicRegex(), $val)) {
+                $v->errors()->add("family.$idx.$field", 'Next of Kin CNIC must be 13–15 digits.');
+            }
+            if ($field === 'nok_contact' && ! preg_match($this->contactRegex(), $val)) {
+                $v->errors()->add("family.$idx.$field", 'Next of Kin contact must be a valid phone number (11–15 digits).');
+            }
+            if ($field === 'nok_cnic_expiry_date') {
+                try {
+                    $d = \Carbon\Carbon::parse($val)->startOfDay();
+                    if ($d->lte(\Carbon\Carbon::today())) {
+                        $v->errors()->add("family.$idx.$field", 'Next of Kin CNIC expiry must be after today.');
+                    }
+                } catch (\Throwable $e) {
+                    $v->errors()->add("family.$idx.$field", 'Next of Kin CNIC expiry must be a valid date.');
+                }
+            }
+        }
+    }
+
+    protected function assertFamilyRowNextOfKinRules($v): void
+    {
+        $row = $this->all();
+        if (! $this->familyRowIsNextOfKinTruthy($row)) {
+            return;
+        }
+
+        if (((string) ($row['relation'] ?? '')) === 'Other') {
+            $other = isset($row['relation_other']) ? trim((string) $row['relation_other']) : '';
+            if ($other === '') {
+                $v->errors()->add('relation_other', 'Specify relation when Other is selected.');
+            }
+        }
+
+        $labels = [
+            'nok_cnic'             => 'Next of Kin CNIC',
+            'nok_cnic_expiry_date' => 'Next of Kin CNIC expiry',
+            'nok_contact'          => 'Next of Kin contact',
+        ];
+        foreach ($labels as $field => $label) {
+            $val = isset($row[$field]) ? trim((string) $row[$field]) : '';
+            if ($val === '') {
+                $v->errors()->add($field, $label . ' is required when marking this member as Next of Kin.');
+
+                continue;
+            }
+            if ($field === 'nok_cnic' && ! preg_match($this->cnicRegex(), $val)) {
+                $v->errors()->add($field, 'Next of Kin CNIC must be 13–15 digits.');
+            }
+            if ($field === 'nok_contact' && ! preg_match($this->contactRegex(), $val)) {
+                $v->errors()->add($field, 'Next of Kin contact must be a valid phone number (11–15 digits).');
+            }
+            if ($field === 'nok_cnic_expiry_date') {
+                try {
+                    $d = \Carbon\Carbon::parse($val)->startOfDay();
+                    if ($d->lte(\Carbon\Carbon::today())) {
+                        $v->errors()->add($field, 'Next of Kin CNIC expiry must be after today.');
+                    }
+                } catch (\Throwable $e) {
+                    $v->errors()->add($field, 'Next of Kin CNIC expiry must be a valid date.');
+                }
+            }
+        }
     }
 
     protected function bloodGroupRegex(): string

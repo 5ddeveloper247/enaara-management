@@ -91,7 +91,11 @@
                                                                              gender: @json($member?->gender),
                                                                              dateOfBirth: @json($member?->dob ? $member?->dob?->format('Y-m-d') : ''),
                                                                              relation: @json($member?->relation),
-                                                                             occupation: @json($member?->occupation)
+                                                                             occupation: @json($member?->occupation),
+                                                                             is_next_of_kin: @json((bool) ($member?->is_next_of_kin ?? false)),
+                                                                             nok_cnic: @json($member?->nok_cnic),
+                                                                             nok_cnic_expiry_date: @json($member?->nok_cnic_expiry_date ? $member?->nok_cnic_expiry_date?->format('Y-m-d') : ''),
+                                                                             nok_contact: @json($member?->nok_contact),
                                                                          });
                                                                      }
                                                                  @endforeach
@@ -169,6 +173,62 @@
                                                         <input type="text" class="form-control family-field-input" name="family[][occupation]"
                                                             data-family-occupation placeholder="Enter occupation">
                                                         <div class="family-field-preview" data-family-preview-occupation>-</div>
+                                                    </div>
+                                                    <div class="col-12 d-none" data-family-nok-member-indicator>
+                                                        <div class="small text-success fw-semibold">This member is selected as Next of Kin.</div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <hr class="text-secondary opacity-25 my-1">
+                                                    </div>
+                                                    <div class="col-12 col-md-6 col-xl-4">
+                                                        <input type="hidden" name="family[][is_next_of_kin]" value="0" data-family-is-nok-hidden>
+                                                        <div class="family-nok-edit-controls mt-1">
+                                                            <div class="small text-secondary fw-semibold mb-1" data-family-nok-title>Next of Kin Selection</div>
+                                                            <div class="family-nok-toggle border rounded-3 px-3 py-2 bg-white mb-1" data-family-nok-toggle role="button" tabindex="0" title="Click to select or unselect Next of Kin">
+                                                                <input type="radio" name="family_nok_selector" class="form-check-input family-nok-selector visually-hidden" title="Mark as Next of Kin" aria-label="Mark as Next of Kin">
+                                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                                    <div class="fw-semibold text-dark">
+                                                                        <i class="bi bi-person-check me-1 text-primary"></i>Set as Next of Kin
+                                                                    </div>
+                                                                    <span class="badge text-bg-success d-none" data-family-nok-selected-badge>Selected</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="small text-secondary" data-family-nok-helper>Click this box to select or unselect NOK.</div>
+                                                            <div class="small text-warning-emphasis d-none family-nok-locked-note" data-family-nok-locked-note>
+                                                                Next of Kin is already selected in another member. Remove that first to change.
+                                                            </div>
+                                                        </div>
+                                                        <div class="family-nok-preview-toolbar d-flex align-items-center gap-2 mt-1">
+                                                            <span class="btn btn-sm btn-outline-primary d-none family-nok-tag" data-family-nok-badge>
+                                                                <i class="bi bi-person me-1"></i>Next of Kin
+                                                            </span>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger d-none family-nok-remove" title="Remove Next of Kin">
+                                                                <i class="bi bi-x-circle me-1"></i>Remove NOK
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <div class="row g-2 border rounded p-2 mt-1 bg-white d-none" data-family-nok-fields>
+                                                            <div class="col-12 small text-secondary">NOK identity and contact (required when this member is Next of Kin)</div>
+                                                            <div class="col-12 col-md-6 col-xl-4">
+                                                                <label class="form-label">NOK CNIC <span class="text-danger">*</span></label>
+                                                                <input type="text" class="form-control family-field-input cnic-mask" name="family[][nok_cnic]"
+                                                                    data-family-nok-input data-family-nok-cnic placeholder="00000-0000000-0">
+                                                                <div class="family-field-preview" data-family-preview-nok-cnic>-</div>
+                                                            </div>
+                                                            <div class="col-12 col-md-6 col-xl-4">
+                                                                <label class="form-label">NOK CNIC expiry <span class="text-danger">*</span></label>
+                                                                <input type="date" class="form-control family-field-input" name="family[][nok_cnic_expiry_date]"
+                                                                    data-family-nok-input data-family-nok-cnic-expiry placeholder="yyyy-mm-dd">
+                                                                <div class="family-field-preview" data-family-preview-nok-cnic-expiry-date>-</div>
+                                                            </div>
+                                                            <div class="col-12 col-md-6 col-xl-4">
+                                                                <label class="form-label">NOK contact <span class="text-danger">*</span></label>
+                                                                <input type="text" class="form-control family-field-input contact-mask" name="family[][nok_contact]"
+                                                                    data-family-nok-input data-family-nok-contact placeholder="03XXXXXXXXX">
+                                                                <div class="family-field-preview" data-family-preview-nok-contact>-</div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

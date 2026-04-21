@@ -431,10 +431,13 @@
 
         // --- Step 6: Append Subsection Data ---
         if (step === 6) {
+            if (typeof window.ensureFamilyNokBeforeStepSave === 'function') {
+                window.ensureFamilyNokBeforeStepSave();
+            }
             const subsystems = ['family', 'academic', 'employment'];
             subsystems.forEach(sub => {
                 const containerId = {
-                    'family': 'moreFamilyRecordsContainer',
+                    'family': 'moreFamilyMembersContainer',
                     'academic': 'moreAcademicRecordsContainer',
                     'employment': 'moreEmploymentRecordsContainer'
                 }[sub];
@@ -1904,9 +1907,8 @@
             if (name) {
                 const cleanKey = name.match(/\[([^\]]*)\]$/)?.[1] || name;
                 if (cleanKey) {
-                    const preview = row.querySelector(`[data-${type}-preview-${cleanKey.replace(/_/g, '-')}]`) || 
-                                   row.querySelector(`[data-${type}-preview-${cleanKey}]`) ||
-                                   row.querySelector(`[data-${type}-preview-${cleanKey.split('_')[0]}]`);
+                    const preview = row.querySelector(`[data-${type}-preview-${cleanKey.replace(/_/g, '-')}]`) ||
+                                   row.querySelector(`[data-${type}-preview-${cleanKey}]`);
                     if (preview) {
                         let displayValue = input.value || '-';
                         if (input.tagName === 'SELECT' && input.value) {
@@ -1951,7 +1953,9 @@
         rowElement.querySelectorAll('input, select, textarea').forEach(input => {
             const name = input.getAttribute('name');
             if (name) {
-                // Extract clean key from name like "family[][name]" -> "name"
+                if (name === 'family_nok_selector') {
+                    return;
+                }
                 const cleanKey = name.match(/\[([^\]]*)\]$/)?.[1] || name;
                 if (cleanKey) data[cleanKey] = input.value;
             }
@@ -2051,6 +2055,20 @@
 
         const container = document.getElementById(containerId);
         const rows = container.querySelectorAll(`[data-${type}-row]`);
+        if (type === 'family') {
+            rows.forEach((row, idx) => {
+                const indexSpan = row.querySelector('[data-family-index]');
+                if (indexSpan) indexSpan.textContent = 'Member ' + String(idx + 1);
+                const removeBtn = row.querySelector('[data-family-remove]');
+                if (removeBtn) removeBtn.disabled = rows.length === 1;
+            });
+            const countLabel = document.getElementById(countId);
+            if (countLabel) {
+                countLabel.textContent = rows.length + (rows.length === 1 ? ' Member' : ' Members');
+            }
+            return;
+        }
+
         rows.forEach((row, idx) => {
             const indexSpan = row.querySelector(`[data-${type}-index]`);
             if (indexSpan) indexSpan.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} ${idx + 1}`;
@@ -2058,6 +2076,109 @@
 
         const countLabel = document.getElementById(countId);
         if (countLabel) countLabel.textContent = `${rows.length} ${rows.length === 1 ? 'Record' : 'Records'}`;
+    }
+
+    function syncFamilyNokFromRadios() {
+        const container = document.getElementById('moreFamilyMembersContainer');
+        if (!container) return;
+        const rows = Array.from(container.querySelectorAll('[data-family-row]'));
+        const selectedRow = rows.find(function (r) {
+            const radio = r.querySelector('.family-nok-selector');
+            return radio && radio.checked;
+        }) || null;
+
+        rows.forEach(function (row) {
+            const radio = row.querySelector('.family-nok-selector');
+            const hidden = row.querySelector('[data-family-is-nok-hidden]');
+            const block = row.querySelector('[data-family-nok-fields]');
+            const badge = row.querySelector('[data-family-nok-badge]');
+            const selectedBadge = row.querySelector('[data-family-nok-selected-badge]');
+            const toggleCard = row.querySelector('[data-family-nok-toggle]');
+            const removeBtn = row.querySelector('.family-nok-remove');
+            const memberIndicator = row.querySelector('[data-family-nok-member-indicator]');
+            const lockedNote = row.querySelector('[data-family-nok-locked-note]');
+            const helperText = row.querySelector('[data-family-nok-helper]');
+            const titleText = row.querySelector('[data-family-nok-title]');
+            const isOn = radio && radio.checked;
+            const isLockedForOther = !!selectedRow && selectedRow !== row && !isOn;
+
+            if (toggleCard) {
+                toggleCard.classList.toggle('d-none', isLockedForOther);
+            }
+            if (titleText) {
+                titleText.classList.toggle('d-none', isLockedForOther);
+            }
+            if (lockedNote) {
+                lockedNote.classList.toggle('d-none', !isLockedForOther);
+            }
+            if (helperText) {
+                helperText.classList.toggle('d-none', isLockedForOther);
+            }
+
+            if (hidden) hidden.value = isOn ? '1' : '0';
+            if (block) block.classList.toggle('d-none', !isOn);
+            if (badge) badge.classList.toggle('d-none', !isOn);
+            if (selectedBadge) selectedBadge.classList.toggle('d-none', !isOn);
+            if (toggleCard) toggleCard.classList.toggle('active', !!isOn);
+            if (removeBtn) removeBtn.classList.toggle('d-none', !isOn);
+            if (memberIndicator) memberIndicator.classList.toggle('d-none', !isOn);
+            row.querySelectorAll('[data-family-nok-input]').forEach(function (inp) {
+                inp.required = !!isOn;
+            });
+        });
+    }
+
+    window.ensureFamilyNokBeforeStepSave = syncFamilyNokFromRadios;
+
+    const moreFamilyMembersContainerEl = document.getElementById('moreFamilyMembersContainer');
+    if (moreFamilyMembersContainerEl) {
+        moreFamilyMembersContainerEl.addEventListener('change', function (e) {
+            if (e.target && e.target.classList && e.target.classList.contains('family-nok-selector')) {
+                syncFamilyNokFromRadios();
+            }
+        });
+        moreFamilyMembersContainerEl.addEventListener('click', async function (e) {
+            const toggleCard = e.target.closest('[data-family-nok-toggle]');
+            if (toggleCard) {
+                const row = toggleCard.closest('[data-family-row]');
+                if (row) {
+                    const radio = row.querySelector('.family-nok-selector');
+                    if (radio) {
+                        radio.checked = !radio.checked;
+                    }
+                    syncFamilyNokFromRadios();
+                }
+                return;
+            }
+        });
+        moreFamilyMembersContainerEl.addEventListener('click', async function (e) {
+            const removeBtn = e.target.closest('.family-nok-remove');
+            if (!removeBtn) {
+                return;
+            }
+            e.preventDefault();
+            const row = removeBtn.closest('[data-family-row]');
+            if (!row) return;
+            const result = await showConfirm('Are you sure you want to remove this member as Next of Kin?', 'Remove Next of Kin');
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            const radio = row.querySelector('.family-nok-selector');
+            if (radio) {
+                radio.checked = false;
+            }
+            row.querySelectorAll('[data-family-nok-input]').forEach(function (inp) {
+                inp.value = '';
+            });
+            syncFamilyNokFromRadios();
+            updateSubsectionPreview(row, 'family');
+
+            if (row.getAttribute('data-db-id')) {
+                setSubsectionRowMode(row, 'family', false);
+                await saveSubsectionRow('family', row);
+            }
+        });
     }
 
     // --- FAMILY Member Specifics ---
@@ -2092,6 +2213,19 @@
                 }
             }
             if (data.occupation) row.querySelector('[data-family-occupation]').value = data.occupation;
+            const nokCnicEl = row.querySelector('[data-family-nok-cnic]');
+            const nokExpiryEl = row.querySelector('[data-family-nok-cnic-expiry]');
+            const nokContactEl = row.querySelector('[data-family-nok-contact]');
+            if (nokCnicEl && data.nok_cnic) nokCnicEl.value = data.nok_cnic;
+            if (nokExpiryEl && data.nok_cnic_expiry_date) nokExpiryEl.value = data.nok_cnic_expiry_date;
+            if (nokContactEl && data.nok_contact) nokContactEl.value = data.nok_contact;
+            if (data.is_next_of_kin) {
+                const nokRadio = row.querySelector('.family-nok-selector');
+                if (nokRadio) nokRadio.checked = true;
+            }
+            if (typeof window.ensureFamilyNokBeforeStepSave === 'function') {
+                window.ensureFamilyNokBeforeStepSave();
+            }
         }
 
         // Toggling logic for Relation dropdown
@@ -2121,6 +2255,7 @@
             updateSubsectionPreview(row, 'family');
             setSubsectionRowMode(row, 'family', true);
         }
+        syncFamilyNokFromRadios();
         updateRowIndices('family');
     };
 

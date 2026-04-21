@@ -241,13 +241,15 @@ class EmployeeUpdateRequest extends FormRequest
             'spouse_nationality' => [
                 'required_if:marital_status,Married', 'nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()
             ],
-            'nok_name' => ['required', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
-            'nok_cnic' => ['bail', 'required', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
-            'nok_cnic_expiry_date' => ['required', 'date', 'after:today'],
-            'nok_dob' => ['required', 'date', 'before:today'],
-            'nok_contact' => ['required', 'string', 'regex:' . $this->contactRegex()],
+            'nok_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
+            'nok_cnic' => ['bail', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
+            'nok_cnic_expiry_date' => ['nullable', 'date', 'after:today'],
+            'nok_dob' => ['nullable', 'date', 'before:today'],
+            'nok_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+            'nok_relation_type' => ['nullable', Rule::in(NormalizesNokRelationFields::nokRelationDropdownOptions())],
+            'nok_relation_other' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
+            'nok_relation' => ['nullable', 'string', 'min:2', 'max:100'],
             ],
-            $this->nokRelationValidationRules(),
             [
             // Section B — Employment
             'organization_id' => ['required', 'integer', 'exists:organizations,id'],
