@@ -224,6 +224,7 @@
             </div>
         </div>
 
+        {{--
         <hr class="my-4" style="border-color: #ffffffab !important">
 
         <!-- Biometric Information -->
@@ -283,6 +284,7 @@
                 </div>
             </div>
         </div>
+        --}}
 
         <hr class="my-4" style="border-color: #ffffffab !important">
 
