@@ -15,7 +15,13 @@
                                     <small class="text-muted small d-block">
                                         {{ ($tp->sbus ?? collect())->pluck('name')->take(2)->implode(', ') ?: '—' }}
                                     </small>
-                                    <small class="text-muted small">{{ $tp->city ?? '—' }}</small>
+                                    <small class="text-muted small">
+                                        @if(($tp->service_type ?? '') === 'Other' && !empty($tp->specify_service_type))
+                                            Other ({{ $tp->specify_service_type }})
+                                        @else
+                                            {{ $tp->service_type ?? '—' }}
+                                        @endif
+                                    </small>
                                 </div>
                             </div>
                             @if($tp->is_active)
@@ -61,6 +67,25 @@
                                 data-bs-target="#thirdPartyDetailCanvas"
                                 data-tp-name="{{ e($tp->third_party_name) }}"
                                 data-tp-third-party-name="{{ e($tp->third_party_name) }}"
+                                data-tp-vendor-id="{{ e($tp->vendor_id ?? '') }}"
+                                data-tp-service-type="{{ e($tp->service_type ?? '') }}"
+                                data-tp-specify-service-type="{{ e($tp->specify_service_type ?? '') }}"
+                                data-tp-is-individual="{{ $tp->is_individual_contractor ? '1' : '0' }}"
+                                data-tp-ntn="{{ e($tp->ntn ?? '') }}"
+                                data-tp-contractor-cnic="{{ e($tp->contractor_cnic ?? '') }}"
+                                data-tp-contact-person-name="{{ e($tp->contact_person_name ?? '') }}"
+                                data-tp-mobile-number="{{ e($tp->mobile_number ?? '') }}"
+                                data-tp-email="{{ e($tp->email ?? '') }}"
+                                data-tp-supervisor-name="{{ e($tp->supervisor_name ?? '') }}"
+                                data-tp-supervisor-cnic="{{ e($tp->supervisor_cnic ?? '') }}"
+                                data-tp-supervisor-mobile-number="{{ e($tp->supervisor_mobile_number ?? '') }}"
+                                data-tp-contract-start-date="{{ optional($tp->contract_start_date)->format('Y-m-d') }}"
+                                data-tp-contract-end-date="{{ optional($tp->contract_end_date)->format('Y-m-d') }}"
+                                data-tp-scope-of-work="{{ e($tp->scope_of_work ?? '') }}"
+                                data-tp-estimated-staff-count="{{ e($tp->estimated_staff_count ?? '') }}"
+                                data-tp-company-doc-url="{{ $tp->company_registration_document_path ? asset('storage/' . $tp->company_registration_document_path) : '' }}"
+                                data-tp-contract-doc-url="{{ $tp->contract_copy_path ? asset('storage/' . $tp->contract_copy_path) : '' }}"
+                                data-tp-remarks="{{ e($tp->remarks ?? '') }}"
                                 data-tp-sbu-names="{{ e(($tp->sbus ?? collect())->pluck('name')->implode(', ')) }}"
                                 data-tp-city="{{ e($tp->city ?? '') }}"
                                 data-tp-address="{{ e($tp->address ?? '') }}"

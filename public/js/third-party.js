@@ -21,6 +21,65 @@
         Swal.fire({ icon: type, title: title, text: message });
     }
 
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function formatPakCnicInput(input) {
+        if (!input) return;
+        var val = String(input.value).replace(/\D/g, '');
+        if (val.length > 15) val = val.substring(0, 15);
+        var formatted = '';
+        var core = val.substring(0, 13);
+        if (core.length > 0) {
+            formatted = core.substring(0, 5);
+            if (core.length > 5) formatted += '-' + core.substring(5, 12);
+            if (core.length > 12) formatted += '-' + core.substring(12, 13);
+        }
+        if (val.length > 13) formatted += val.substring(13);
+        input.value = formatted;
+    }
+
+    function formatNtnDigitsInput(input) {
+        if (!input) return;
+        var v = String(input.value).replace(/\D/g, '').substring(0, 13);
+        input.value = v;
+    }
+
+    function digitsToCnicDisplay(digits) {
+        var d = String(digits || '').replace(/\D/g, '').substring(0, 15);
+        if (!d.length) return '';
+        var core = d.substring(0, 13);
+        var out = core.substring(0, 5);
+        if (core.length > 5) out += '-' + core.substring(5, 12);
+        if (core.length > 12) out += '-' + core.substring(12, 13);
+        if (d.length > 13) out += d.substring(13);
+        return out;
+    }
+
+    function syncVendorTaxUi(scope) {
+        var isInd = scope === 'add'
+            ? $('#is_individual_contractor').val() === '1'
+            : $('#edit_is_individual_contractor').val() === '1';
+        if (scope === 'add') {
+            $('#ntnWrap').toggleClass('d-none', isInd);
+            $('#contractorCnicWrap').toggleClass('d-none', !isInd);
+            $('#ntn').prop('required', !isInd).prop('disabled', isInd);
+            $('#contractor_cnic').prop('required', isInd).prop('disabled', !isInd);
+        } else {
+            $('#edit_ntnWrap').toggleClass('d-none', isInd);
+            $('#edit_contractorCnicWrap').toggleClass('d-none', !isInd);
+            $('#edit_ntn').prop('required', !isInd).prop('disabled', isInd);
+            $('#edit_contractor_cnic').prop('required', isInd).prop('disabled', !isInd);
+        }
+    }
+
     function applyTpFilters() {
         const status = $('input[name="filterTpStatus"]:checked').val();
         $('#thirdPartiesGrid .col-md-6').each(function() {
@@ -48,11 +107,41 @@
         $('#detailTpCity').text(get('data-tp-city'));
         $('#detailTpOrganization').text(get('data-organization-name'));
         $('#detailTpSbus').text(get('data-tp-sbu-names'));
-        $('#detailTpAddress').text(get('data-tp-address'));
+        $('#detailTpVendorId').text(get('data-tp-vendor-id'));
+        const serviceTypeVal = get('data-tp-service-type');
+        const specifyServiceTypeVal = (button.getAttribute('data-tp-specify-service-type') || '').trim();
+        $('#detailTpServiceType').text(serviceTypeVal);
+        if (serviceTypeVal === 'Other' && specifyServiceTypeVal) {
+            $('#detailTpSpecifyServiceTypeRow').removeClass('d-none');
+            $('#detailTpSpecifyServiceType').text(specifyServiceTypeVal);
+        } else {
+            $('#detailTpSpecifyServiceTypeRow').addClass('d-none');
+            $('#detailTpSpecifyServiceType').text('—');
+        }
+        var isInd = get('data-tp-is-individual') === '1';
+        $('#detailTpVendorType').text(isInd ? 'Individual contractor (CNIC)' : 'Registered company (NTN)');
+        $('#detailTpNtn').text(isInd ? '—' : (get('data-tp-ntn') || '—'));
+        var conRaw = button.getAttribute('data-tp-contractor-cnic');
+        var conDigits = (conRaw !== null && conRaw !== '') ? String(conRaw).replace(/\D/g, '') : '';
+        $('#detailTpContractorCnic').text(!isInd ? '—' : (conDigits.length ? digitsToCnicDisplay(conRaw) : '—'));
+        $('#detailTpContactPersonName').text(get('data-tp-contact-person-name'));
+        $('#detailTpMobileNumber').text(get('data-tp-mobile-number'));
+        $('#detailTpEmail').text(get('data-tp-email'));
+        $('#detailTpSupervisorName').text(get('data-tp-supervisor-name'));
+        var supCnicRaw = button.getAttribute('data-tp-supervisor-cnic');
+        var supCnicDigits = (supCnicRaw !== null && supCnicRaw !== '') ? String(supCnicRaw).replace(/\D/g, '') : '';
+        $('#detailTpSupervisorCnic').text(supCnicDigits.length ? digitsToCnicDisplay(supCnicRaw) : '—');
+        $('#detailTpSupervisorMobile').text(get('data-tp-supervisor-mobile-number'));
+        $('#detailTpContractStartDate').text(get('data-tp-contract-start-date'));
+        $('#detailTpContractEndDate').text(get('data-tp-contract-end-date'));
+        $('#detailTpScopeOfWork').text(get('data-tp-scope-of-work'));
+        $('#detailTpEstimatedStaffCount').text(get('data-tp-estimated-staff-count'));
+        $('#detailTpRemarks').text(get('data-tp-remarks'));
 
-        const lat = button.getAttribute('data-tp-latitude');
-        const lng = button.getAttribute('data-tp-longitude');
-        $('#detailTpCoordinates').text((lat && lng) ? lat + ', ' + lng : '—');
+        const companyDocUrl = button.getAttribute('data-tp-company-doc-url');
+        const contractDocUrl = button.getAttribute('data-tp-contract-doc-url');
+        $('#detailTpCompanyDoc').html(companyDocUrl ? '<a href="' + escapeHtml(companyDocUrl) + '" target="_blank" class="text-white text-decoration-underline">View document</a>' : '—');
+        $('#detailTpContractDoc').html(contractDocUrl ? '<a href="' + escapeHtml(contractDocUrl) + '" target="_blank" class="text-white text-decoration-underline">View document</a>' : '—');
         $('#detailTpStatus').text(get('data-tp-active') === '1' ? 'Active' : 'Inactive');
     }
 
@@ -97,7 +186,7 @@
             chips.innerHTML = selected.map(function(id) {
                 const row = options.find(function(item) { return String(item.id) === id; });
                 const label = row ? row.name : id;
-                return '<span class="tp-ms-chip">' + label + '<span class="tp-ms-chip-x" data-remove-id="' + id + '">×</span></span>';
+                return '<span class="tp-ms-chip">' + escapeHtml(label) + '<span class="tp-ms-chip-x" data-remove-id="' + escapeHtml(id) + '">×</span></span>';
             }).join('');
         }
 
@@ -122,7 +211,7 @@
                 const picked = selected.includes(id);
                 return '<div class="tp-ms-opt ' + (picked ? 'picked' : '') + '" data-option-id="' + id + '">' +
                     '<span class="tp-ms-opt-cb"><svg class="tp-ms-opt-ck" viewBox="0 0 16 16" width="12" height="12" fill="none"><path d="M3.5 8.2l3 3L12.5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
-                    '<span>' + item.name + '</span>' +
+                    '<span>' + escapeHtml(item.name) + '</span>' +
                 '</div>';
             }).join('');
         }
@@ -383,6 +472,98 @@
         }
     }
 
+    function validateThirdPartyClient(formSelector) {
+        var errs = {};
+        function add(field, msg) {
+            if (!errs[field]) errs[field] = [];
+            errs[field].push(msg);
+        }
+        var $f = $(formSelector);
+        var addOrg = formSelector === '#addThirdPartyForm' ? tpState.addOrganization : tpState.editOrganization;
+        var addSbu = formSelector === '#addThirdPartyForm' ? tpState.addSbu : tpState.editSbu;
+        if (!addOrg || !addOrg.getSelected().length) {
+            add('organization_ids', 'Select at least one organization.');
+        }
+        if (!addSbu || !addSbu.getSelected().length) {
+            add('sbu_ids', 'Select at least one SBU.');
+        }
+        var tpName = String($f.find('[name="third_party_name"]').val() || '').trim();
+        if (tpName.length < 2) {
+            add('third_party_name', 'Company name must be at least 2 characters.');
+        } else if (!/[A-Za-z]/.test(tpName)) {
+            add('third_party_name', 'Company name must contain letters.');
+        }
+        if (!String($f.find('[name="service_type"]').val() || '').trim()) {
+            add('service_type', 'Service type is required.');
+        }
+        if ($f.find('[name="service_type"]').val() === 'Other') {
+            var st = String($f.find('[name="specify_service_type"]').val() || '').trim();
+            if (st.length < 3) {
+                add('specify_service_type', 'Please specify the service type (at least 3 characters).');
+            } else if (!/[A-Za-z]/.test(st)) {
+                add('specify_service_type', 'Specified service type must contain letters.');
+            }
+        }
+        var isInd = $f.find('[name="is_individual_contractor"]').val() === '1';
+        var ntnDigits = String($f.find('[name="ntn"]').val() || '').replace(/\D/g, '');
+        var contractorDigits = String($f.find('[name="contractor_cnic"]').val() || '').replace(/\D/g, '');
+        if (!isInd) {
+            if (!/^[0-9]{5,13}$/.test(ntnDigits)) {
+                add('ntn', 'NTN must be 5 to 13 digits only.');
+            }
+        } else if (!/^[0-9]{13,15}$/.test(contractorDigits)) {
+            add('contractor_cnic', 'Contractor CNIC must be 13 to 15 digits.');
+        }
+        var contactName = String($f.find('[name="contact_person_name"]').val() || '').trim();
+        if (contactName.length < 3) {
+            add('contact_person_name', 'Contact person name must be at least 3 characters.');
+        } else if (!/[A-Za-z]/.test(contactName)) {
+            add('contact_person_name', 'Contact person name must contain letters.');
+        }
+        var mobile = String($f.find('[name="mobile_number"]').val() || '').replace(/\D/g, '');
+        if (!/^[0-9]{11,15}$/.test(mobile)) {
+            add('mobile_number', 'Mobile number must be 11 to 15 digits.');
+        }
+        var supName = String($f.find('[name="supervisor_name"]').val() || '').trim();
+        if (supName.length < 3) {
+            add('supervisor_name', 'Supervisor name must be at least 3 characters.');
+        } else if (!/[A-Za-z]/.test(supName)) {
+            add('supervisor_name', 'Supervisor name must contain letters.');
+        }
+        var supCnic = String($f.find('[name="supervisor_cnic"]').val() || '').replace(/\D/g, '');
+        if (!/^[0-9]{13,15}$/.test(supCnic)) {
+            add('supervisor_cnic', 'Supervisor CNIC must be 13 to 15 digits.');
+        }
+        var supMobile = String($f.find('[name="supervisor_mobile_number"]').val() || '').replace(/\D/g, '');
+        if (!/^[0-9]{11,15}$/.test(supMobile)) {
+            add('supervisor_mobile_number', 'Supervisor mobile number must be 11 to 15 digits.');
+        }
+        if (!String($f.find('[name="contract_start_date"]').val() || '').trim()) {
+            add('contract_start_date', 'Contract start date is required.');
+        }
+        if (!String($f.find('[name="contract_end_date"]').val() || '').trim()) {
+            add('contract_end_date', 'Contract end date is required.');
+        }
+        var scope = String($f.find('[name="scope_of_work"]').val() || '').trim();
+        if (scope.length < 5) {
+            add('scope_of_work', 'Scope of work must be at least 5 characters.');
+        }
+        var esc = parseInt(String($f.find('[name="estimated_staff_count"]').val() || ''), 10);
+        if (!esc || esc < 1) {
+            add('estimated_staff_count', 'Estimated staff count must be at least 1.');
+        }
+        if (typeof validate !== 'undefined') {
+            var emailVal = String($f.find('[name="email"]').val() || '').trim();
+            var emailErr = validate({ email: emailVal }, { email: { presence: { allowEmpty: false }, email: true } });
+            if (emailErr && emailErr.email) {
+                add('email', emailErr.email[0]);
+            }
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String($f.find('[name="email"]').val() || '').trim())) {
+            add('email', 'Email address format is invalid.');
+        }
+        return Object.keys(errs).length ? errs : null;
+    }
+
     function showValidationErrors(formSelector, errors) {
         clearFormMessages(formSelector);
 
@@ -409,14 +590,40 @@
         });
     }
 
+    function syncSpecifyServiceTypeUi(scope) {
+        if (scope === 'add') {
+            if ($('#service_type').val() === 'Other') {
+                $('#specifyServiceTypeWrap').removeClass('d-none');
+                $('#specify_service_type').prop('disabled', false).prop('required', true);
+            } else {
+                $('#specifyServiceTypeWrap').addClass('d-none');
+                $('#specify_service_type').val('').prop('disabled', true).prop('required', false);
+            }
+        } else {
+            if ($('#edit_service_type').val() === 'Other') {
+                $('#editSpecifyServiceTypeWrap').removeClass('d-none');
+                $('#edit_specify_service_type').prop('disabled', false).prop('required', true);
+            } else {
+                $('#editSpecifyServiceTypeWrap').addClass('d-none');
+                $('#edit_specify_service_type').val('').prop('disabled', true).prop('required', false);
+            }
+        }
+    }
+
     function resetAddTpForm() {
         const form = document.getElementById('addThirdPartyForm');
         if (form) form.reset();
         clearFormMessages('#addThirdPartyForm');
         $('#is_active').val('1');
+        $('#vendor_id_display').val('Auto-generated after save');
         tpState.addOrganization.clear(false);
         updateAddSbuOptions([]);
         tpState.addSbu.clear(false);
+        syncSpecifyServiceTypeUi('add');
+        $('#is_individual_contractor').val('0');
+        $('#ntn').val('');
+        $('#contractor_cnic').val('');
+        syncVendorTaxUi('add');
     }
 
     function resetEditTpForm() {
@@ -424,10 +631,18 @@
         if (form) form.reset();
         clearFormMessages('#editThirdPartyForm');
         $('#edit_is_active').val('1');
+        $('#edit_vendor_id').val('');
+        $('#edit_company_registration_document_link').html('');
+        $('#edit_contract_copy_link').html('');
         $('#editThirdPartyForm').attr('data-update-url', '');
         tpState.editOrganization.clear(false);
         updateEditSbuOptions([]);
         tpState.editSbu.clear(false);
+        syncSpecifyServiceTypeUi('edit');
+        $('#edit_is_individual_contractor').val('0');
+        $('#edit_ntn').val('');
+        $('#edit_contractor_cnic').val('');
+        syncVendorTaxUi('edit');
     }
 
     function storeThirdParty() {
@@ -440,10 +655,19 @@
             return;
         }
 
+        var clientErr = validateThirdPartyClient('#addThirdPartyForm');
+        if (clientErr) {
+            showValidationErrors('#addThirdPartyForm', clientErr);
+            showSwal('error', 'Validation Error', 'Please fix the highlighted fields and try again.');
+            return;
+        }
+
         $.ajax({
             url: url,
             type: 'POST',
-            data: form.serialize(),
+            data: new FormData(form[0]),
+            processData: false,
+            contentType: false,
             headers: { 'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json' },
             beforeSend: function() { $('#saveThirdPartyBtn').prop('disabled', true).html('Saving...'); },
             success: function(response) {
@@ -489,12 +713,39 @@
                     updateEditSbuOptions(tpState.editOrganization.getSelected());
                     tpState.editSbu.setSelected(data.sbu_ids || []);
                     $('#edit_third_party_name').val(data.third_party_name || '');
-                    $('#edit_city').val(data.city || '');
-                    $('#edit_address').val(data.address || '');
-                    $('#edit_latitude').val(data.latitude || '');
-                    $('#edit_longitude').val(data.longitude || '');
+                    $('#edit_vendor_id').val(data.vendor_id || '');
+                    $('#edit_service_type').val(data.service_type || '');
+                    $('#edit_specify_service_type').val(data.specify_service_type || '');
+                    syncSpecifyServiceTypeUi('edit');
+                    $('#edit_is_individual_contractor').val(data.is_individual_contractor === 1 || data.is_individual_contractor === '1' || data.is_individual_contractor === true ? '1' : '0');
+                    syncVendorTaxUi('edit');
+                    $('#edit_ntn').val(data.ntn || '');
+                    $('#edit_contractor_cnic').val(digitsToCnicDisplay(data.contractor_cnic || ''));
+                    $('#edit_contact_person_name').val(data.contact_person_name || '');
+                    $('#edit_mobile_number').val(data.mobile_number || '');
+                    $('#edit_email').val(data.email || '');
+                    $('#edit_supervisor_name').val(data.supervisor_name || '');
+                    $('#edit_supervisor_cnic').val(digitsToCnicDisplay(data.supervisor_cnic || ''));
+                    $('#edit_supervisor_mobile_number').val(data.supervisor_mobile_number || '');
+                    $('#edit_contract_start_date').val(data.contract_start_date || '');
+                    $('#edit_contract_end_date').val(data.contract_end_date || '');
+                    $('#edit_scope_of_work').val(data.scope_of_work || '');
+                    $('#edit_estimated_staff_count').val(data.estimated_staff_count || '');
+                    $('#edit_remarks').val(data.remarks || '');
+
+                    const companyDocLink = data.company_registration_document_url
+                        ? '<a href="' + escapeHtml(data.company_registration_document_url) + '" target="_blank" class="text-white text-decoration-underline">Current document</a>'
+                        : 'No document uploaded';
+                    const contractDocLink = data.contract_copy_url
+                        ? '<a href="' + escapeHtml(data.contract_copy_url) + '" target="_blank" class="text-white text-decoration-underline">Current document</a>'
+                        : 'No document uploaded';
+                    $('#edit_company_registration_document_link').html(companyDocLink);
+                    $('#edit_contract_copy_link').html(contractDocLink);
+
                     $('#edit_is_active').val(data.is_active === 1 || data.is_active === '1' || data.is_active === true ? '1' : '0');
                     $('#editThirdPartyForm').attr('data-update-url', $(button).data('update-url'));
+                    formatPakCnicInput(document.getElementById('edit_contractor_cnic'));
+                    formatPakCnicInput(document.getElementById('edit_supervisor_cnic'));
                 } else {
                     showSwal('error', 'Error', response.message || 'Failed to load data.');
                 }
@@ -513,10 +764,20 @@
             showSwal('error', 'Error', 'Update URL not found.');
             return;
         }
+
+        var clientErrEdit = validateThirdPartyClient('#editThirdPartyForm');
+        if (clientErrEdit) {
+            showValidationErrors('#editThirdPartyForm', clientErrEdit);
+            showSwal('error', 'Validation Error', 'Please fix the highlighted fields and try again.');
+            return;
+        }
+
         $.ajax({
             url: url,
             type: 'POST',
-            data: form.serialize(),
+            data: new FormData(form[0]),
+            processData: false,
+            contentType: false,
             headers: { 'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json' },
             beforeSend: function() { $('#updateThirdPartyBtn').prop('disabled', true).html('Updating...'); },
             success: function(response) {
@@ -601,6 +862,18 @@
 
         $('.filter-tp-status').on('change', applyTpFilters);
         $('#clearTpFiltersBtn').on('click', clearTpFilters);
+        $(document).on('change', '#service_type', function() { syncSpecifyServiceTypeUi('add'); });
+        $(document).on('change', '#edit_service_type', function() { syncSpecifyServiceTypeUi('edit'); });
+        $(document).on('change', '#is_individual_contractor', function() {
+            if ($(this).val() === '1') $('#ntn').val(''); else $('#contractor_cnic').val('');
+            syncVendorTaxUi('add');
+        });
+        $(document).on('change', '#edit_is_individual_contractor', function() {
+            if ($(this).val() === '1') $('#edit_ntn').val(''); else $('#edit_contractor_cnic').val('');
+            syncVendorTaxUi('edit');
+        });
+        $(document).on('input', '.tp-cnic-field', function() { formatPakCnicInput(this); });
+        $(document).on('input', '.tp-ntn-field', function() { formatNtnDigitsInput(this); });
         $(document).on('click', '#saveThirdPartyBtn', function(event) { event.preventDefault(); storeThirdParty(); });
         $(document).on('click', '#updateThirdPartyBtn', function(event) { event.preventDefault(); updateThirdParty(); });
         $(document).on('click', '.delete-tp-btn', function(event) { event.preventDefault(); deleteThirdParty(this); });

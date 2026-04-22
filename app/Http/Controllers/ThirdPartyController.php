@@ -75,7 +75,11 @@ class ThirdPartyController extends Controller
         }
 
         try {
-            $this->thirdPartyService->store($request->validated());
+            $this->thirdPartyService->store(
+                $request->validated(),
+                $request->file('company_registration_document'),
+                $request->file('contract_copy')
+            );
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -146,6 +150,25 @@ class ThirdPartyController extends Controller
                     )->values(),
                     'sbu_ids'          => $thirdParty->sbus->pluck('id')->values(),
                     'third_party_name' => $thirdParty->third_party_name,
+                    'vendor_id'         => $thirdParty->vendor_id,
+                    'service_type'      => $thirdParty->service_type,
+                    'specify_service_type' => $thirdParty->specify_service_type,
+                    'is_individual_contractor' => $thirdParty->is_individual_contractor ? 1 : 0,
+                    'ntn'               => $thirdParty->ntn,
+                    'contractor_cnic'   => $thirdParty->contractor_cnic,
+                    'contact_person_name' => $thirdParty->contact_person_name,
+                    'mobile_number'     => $thirdParty->mobile_number,
+                    'email'             => $thirdParty->email,
+                    'supervisor_name'   => $thirdParty->supervisor_name,
+                    'supervisor_cnic'   => $thirdParty->supervisor_cnic,
+                    'supervisor_mobile_number' => $thirdParty->supervisor_mobile_number,
+                    'contract_start_date' => optional($thirdParty->contract_start_date)->format('Y-m-d'),
+                    'contract_end_date' => optional($thirdParty->contract_end_date)->format('Y-m-d'),
+                    'scope_of_work'     => $thirdParty->scope_of_work,
+                    'estimated_staff_count' => $thirdParty->estimated_staff_count,
+                    'company_registration_document_url' => $thirdParty->company_registration_document_path ? asset('storage/' . $thirdParty->company_registration_document_path) : null,
+                    'contract_copy_url' => $thirdParty->contract_copy_path ? asset('storage/' . $thirdParty->contract_copy_path) : null,
+                    'remarks'           => $thirdParty->remarks,
                     'city'             => $thirdParty->city,
                     'address'          => $thirdParty->address,
                     'latitude'         => $thirdParty->latitude,
@@ -175,7 +198,12 @@ class ThirdPartyController extends Controller
         }
 
         try {
-            $this->thirdPartyService->update($id, $request->validated());
+            $this->thirdPartyService->update(
+                $id,
+                $request->validated(),
+                $request->file('company_registration_document'),
+                $request->file('contract_copy')
+            );
 
             if ($request->expectsJson()) {
                 return response()->json([

@@ -106,6 +106,7 @@
 
 @push('scripts')
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/validate.js@0.13.1/validate.min.js"></script>
 <script src="{{ asset('js/helpers.js') }}"></script>
 @php
     $thirdPartyOrganizations = ($organizations ?? collect())->map(function ($organization) {

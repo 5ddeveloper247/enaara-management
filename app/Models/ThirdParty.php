@@ -15,7 +15,26 @@ class ThirdParty extends Model
 
     protected $fillable = [
         'organization_id',
+        'vendor_id',
         'third_party_name',
+        'service_type',
+        'specify_service_type',
+        'is_individual_contractor',
+        'ntn',
+        'contractor_cnic',
+        'contact_person_name',
+        'mobile_number',
+        'email',
+        'supervisor_name',
+        'supervisor_cnic',
+        'supervisor_mobile_number',
+        'contract_start_date',
+        'contract_end_date',
+        'scope_of_work',
+        'estimated_staff_count',
+        'company_registration_document_path',
+        'contract_copy_path',
+        'remarks',
         'city',
         'address',
         'latitude',
@@ -24,7 +43,11 @@ class ThirdParty extends Model
     ];
 
     protected $casts = [
+        'is_individual_contractor' => 'boolean',
         'is_active' => 'boolean',
+        'contract_start_date' => 'date',
+        'contract_end_date' => 'date',
+        'estimated_staff_count' => 'integer',
     ];
 
     public function organization(): BelongsTo

@@ -4,12 +4,19 @@ namespace App\Services;
 
 use App\Models\Sbu;
 use App\Models\ThirdParty;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ThirdPartyService
 {
+    protected function buildVendorId(int $id): string
+    {
+        return 'VND-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+    }
+
     protected function sanitizeIds(array $ids): array
     {
         $clean = array_values(array_unique(array_map('intval', $ids)));
@@ -64,7 +71,7 @@ class ThirdPartyService
         ];
     }
 
-    public function store(array $data): ThirdParty
+    public function store(array $data, ?UploadedFile $companyRegistrationDocument = null, ?UploadedFile $contractCopy = null): ThirdParty
     {
         DB::beginTransaction();
 
@@ -73,19 +80,45 @@ class ThirdPartyService
             $sbuIds = $this->sanitizeIds($data['sbu_ids'] ?? []);
             $primaryOrganizationId = $this->resolvePrimaryOrganizationId($organizationIds, $sbuIds);
 
-            $row = [
+            $row = ThirdParty::create([
                 'organization_id'  => $primaryOrganizationId,
+                'vendor_id'        => null,
                 'third_party_name' => $data['third_party_name'],
+                'service_type'     => $data['service_type'],
+                'specify_service_type' => ($data['service_type'] ?? '') === 'Other' ? ($data['specify_service_type'] ?? null) : null,
+                'is_individual_contractor' => (bool) ($data['is_individual_contractor'] ?? false),
+                'ntn'              => $data['ntn'] ?? null,
+                'contractor_cnic'  => $data['contractor_cnic'] ?? null,
+                'contact_person_name' => $data['contact_person_name'],
+                'mobile_number'    => $data['mobile_number'],
+                'email'            => $data['email'],
+                'supervisor_name'  => $data['supervisor_name'],
+                'supervisor_cnic'  => $data['supervisor_cnic'],
+                'supervisor_mobile_number' => $data['supervisor_mobile_number'],
+                'contract_start_date' => $data['contract_start_date'],
+                'contract_end_date' => $data['contract_end_date'],
+                'scope_of_work'    => $data['scope_of_work'],
+                'estimated_staff_count' => $data['estimated_staff_count'],
+                'remarks'          => $data['remarks'] ?? null,
                 'city'             => $data['city'] ?? null,
                 'address'          => $data['address'] ?? null,
                 'latitude'         => $data['latitude'] ?? null,
                 'longitude'        => $data['longitude'] ?? null,
                 'is_active'        => $data['is_active'] ?? true,
-                'created_at'       => now(),
-                'updated_at'       => now(),
-            ];
+            ]);
 
-            $thirdParty = ThirdParty::create($row);
+            $updatePayload = [
+                'vendor_id' => $this->buildVendorId((int) $row->id),
+            ];
+            if ($companyRegistrationDocument) {
+                $updatePayload['company_registration_document_path'] = $companyRegistrationDocument->store("third-parties/{$row->id}/documents", 'public');
+            }
+            if ($contractCopy) {
+                $updatePayload['contract_copy_path'] = $contractCopy->store("third-parties/{$row->id}/documents", 'public');
+            }
+            $row->update($updatePayload);
+
+            $thirdParty = $row->fresh();
             $thirdParty->organizations()->sync($organizationIds);
             $thirdParty->sbus()->sync($sbuIds);
 
@@ -100,34 +133,69 @@ class ThirdPartyService
     }
 
     public function findById($id): ?ThirdParty
-    {
+    { 
         return ThirdParty::with(['organization', 'organizations', 'sbus'])->find($id);
     }
 
-    public function update($id, array $data): ThirdParty
+    public function update($id, array $data, ?UploadedFile $companyRegistrationDocument = null, ?UploadedFile $contractCopy = null): ThirdParty
     {
-        $thirdParty = ThirdParty::findOrFail($id);
-        $organizationIds = $this->sanitizeIds($data['organization_ids'] ?? []);
-        $sbuIds = $this->sanitizeIds($data['sbu_ids'] ?? []);
-        $primaryOrganizationId = $this->resolvePrimaryOrganizationId(
-            $organizationIds,
-            $sbuIds,
-            $thirdParty->organization_id ? (int) $thirdParty->organization_id : null
-        );
+        return DB::transaction(function () use ($id, $data, $companyRegistrationDocument, $contractCopy) {
+            $thirdParty = ThirdParty::findOrFail($id);
+            $organizationIds = $this->sanitizeIds($data['organization_ids'] ?? []);
+            $sbuIds = $this->sanitizeIds($data['sbu_ids'] ?? []);
+            $primaryOrganizationId = $this->resolvePrimaryOrganizationId(
+                $organizationIds,
+                $sbuIds,
+                $thirdParty->organization_id ? (int) $thirdParty->organization_id : null
+            );
 
-        $thirdParty->update([
-            'organization_id'  => $primaryOrganizationId,
-            'third_party_name' => $data['third_party_name'],
-            'city'             => $data['city'] ?? null,
-            'address'          => $data['address'] ?? null,
-            'latitude'         => $data['latitude'] ?? null,
-            'longitude'        => $data['longitude'] ?? null,
-            'is_active'        => $data['is_active'],
-        ]);
-        $thirdParty->organizations()->sync($organizationIds);
-        $thirdParty->sbus()->sync($sbuIds);
+            $updatePayload = [
+                'organization_id'  => $primaryOrganizationId,
+                'vendor_id'        => $thirdParty->vendor_id ?: $this->buildVendorId((int) $thirdParty->id),
+                'third_party_name' => $data['third_party_name'],
+                'service_type'     => $data['service_type'],
+                'specify_service_type' => ($data['service_type'] ?? '') === 'Other' ? ($data['specify_service_type'] ?? null) : null,
+                'is_individual_contractor' => (bool) ($data['is_individual_contractor'] ?? false),
+                'ntn'              => ! empty($data['is_individual_contractor']) ? null : ($data['ntn'] ?? null),
+                'contractor_cnic'  => ! empty($data['is_individual_contractor']) ? ($data['contractor_cnic'] ?? null) : null,
+                'contact_person_name' => $data['contact_person_name'],
+                'mobile_number'    => $data['mobile_number'],
+                'email'            => $data['email'],
+                'supervisor_name'  => $data['supervisor_name'],
+                'supervisor_cnic'  => $data['supervisor_cnic'],
+                'supervisor_mobile_number' => $data['supervisor_mobile_number'],
+                'contract_start_date' => $data['contract_start_date'],
+                'contract_end_date' => $data['contract_end_date'],
+                'scope_of_work'    => $data['scope_of_work'],
+                'estimated_staff_count' => $data['estimated_staff_count'],
+                'remarks'          => $data['remarks'] ?? null,
+                'city'             => $data['city'] ?? null,
+                'address'          => $data['address'] ?? null,
+                'latitude'         => $data['latitude'] ?? null,
+                'longitude'        => $data['longitude'] ?? null,
+                'is_active'        => $data['is_active'],
+            ];
 
-        return $thirdParty;
+            if ($companyRegistrationDocument) {
+                if (! empty($thirdParty->company_registration_document_path) && Storage::disk('public')->exists($thirdParty->company_registration_document_path)) {
+                    Storage::disk('public')->delete($thirdParty->company_registration_document_path);
+                }
+                $updatePayload['company_registration_document_path'] = $companyRegistrationDocument->store("third-parties/{$thirdParty->id}/documents", 'public');
+            }
+
+            if ($contractCopy) {
+                if (! empty($thirdParty->contract_copy_path) && Storage::disk('public')->exists($thirdParty->contract_copy_path)) {
+                    Storage::disk('public')->delete($thirdParty->contract_copy_path);
+                }
+                $updatePayload['contract_copy_path'] = $contractCopy->store("third-parties/{$thirdParty->id}/documents", 'public');
+            }
+
+            $thirdParty->update($updatePayload);
+            $thirdParty->organizations()->sync($organizationIds);
+            $thirdParty->sbus()->sync($sbuIds);
+
+            return $thirdParty->fresh();
+        });
     }
 
     public function destroy($id): void
