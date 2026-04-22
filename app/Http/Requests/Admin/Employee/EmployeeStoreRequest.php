@@ -60,6 +60,14 @@ class EmployeeStoreRequest extends FormRequest
             'department_ids' => $deptIds,
             'department_id'  => $deptIds[0] ?? null,
         ]);
+        $rawFloors = $this->input('assigned_floor_ids', []);
+        if (! is_array($rawFloors)) {
+            $rawFloors = $rawFloors !== null && $rawFloors !== '' ? [$rawFloors] : [];
+        }
+        $floorIds = array_values(array_unique(array_filter(array_map('intval', $rawFloors))));
+        $this->merge([
+            'assigned_floor_ids' => $floorIds,
+        ]);
 
         $cnicFields = ['cnic', 'father_cnic', 'nok_cnic', 'spouse_cnic'];
         foreach ($cnicFields as $field) {
@@ -244,7 +252,18 @@ class EmployeeStoreRequest extends FormRequest
             'site'                   => ['nullable', 'string', 'max:255'],
             'join_date'              => ['required', 'date'],
             'floor_access'           => ['nullable', 'boolean'],
+            'assigned_floor_ids'     => ['nullable', 'array'],
+            'assigned_floor_ids.*'   => [
+                'integer',
+                Rule::exists('sbu_floors', 'id')->where(function ($q) {
+                    $sbuId = $this->input('sbu_id');
+                    if ($sbuId) {
+                        $q->where('sbu_id', (int) $sbuId);
+                    }
+                }),
+            ],
             'biometric_id'           => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9\-_]+$/'],
+            'employee_status'        => ['required', Rule::in(['Active', 'Suspend', 'Terminated'])],
             'employment_category'    => ['required', Rule::in(['intern', 'consultant', 'employee', 'contractual'])],
             'intern_type'            => ['nullable', Rule::in(['paid', 'unpaid']), 'required_if:employment_category,intern'],
             'intern_duration'        => ['nullable', 'string', 'max:100', 'required_if:employment_category,intern'],
@@ -268,6 +287,9 @@ class EmployeeStoreRequest extends FormRequest
                     && $this->input('employment_type') === 'contractual'
                     && $this->input('contractual_type') === 'time_bound'),
             ],
+            'probation_start_date'   => ['nullable', 'date', Rule::requiredIf(fn () => $this->input('employment_category') === 'employee')],
+            'probation_end_date'     => ['nullable', 'date', 'after_or_equal:probation_start_date', Rule::requiredIf(fn () => $this->input('employment_category') === 'employee')],
+            'probation_contract_start_date' => ['nullable', 'date'],
             'engagement_mode'        => ['required', Rule::in(['standard', 'remote', 'shifts', 'hybrid'])],
             'hybrid_days'            => [
                 'nullable',
@@ -544,10 +566,17 @@ class EmployeeStoreRequest extends FormRequest
 
             'employment_category.required' => 'Resource type is required.',
             'employment_category.in'       => 'The selected resource type is invalid.',
+            'employee_status.required'     => 'Employee status is required.',
+            'employee_status.in'           => 'The selected employee status is invalid.',
+            'assigned_floor_ids.array'     => 'Assigned floors must be provided as a list.',
+            'assigned_floor_ids.*.exists'  => 'One or more selected floors are invalid for this SBU.',
             'contractual_type.required'    => 'Contract type is required when Contractual is selected.',
             'contract_start_date.required' => 'Contract start date is required for a time-bound contract.',
             'contract_end_date.required'  => 'Contract end date is required for a time-bound contract.',
             'contract_end_date.after_or_equal' => 'Contract end date must be on or after the start date.',
+            'probation_start_date.required' => 'Probation start date is required for employee resource type.',
+            'probation_end_date.required' => 'Probation end date is required for employee resource type.',
+            'probation_end_date.after_or_equal' => 'Probation end date must be on or after probation start date.',
             'verification_status.required' => 'Verification Status is required.',
             'msr_letter_no.required'       => 'MSR letter number and date is required when status is Cleared or Not Cleared.',
             'addressee.required'           => 'Addressee is required when status is Cleared or Not Cleared.',

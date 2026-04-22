@@ -134,6 +134,15 @@ class EmployeeService
                         ->where('is_active', true)
                         ->orderBy('name');
                 },
+                'sbus.floors' => static function ($query): void {
+                    $query->select([
+                        'id',
+                        'sbu_id',
+                        'name',
+                    ])
+                        ->where('is_active', true)
+                        ->orderBy('name');
+                },
             ])
             ->orderBy('name')
             ->get();
@@ -188,6 +197,10 @@ class EmployeeService
                     'working_end_time'     => $d->working_end_time,
                     'opening_grace_period' => $d->opening_grace_period,
                     'closing_grace_period' => $d->closing_grace_period,
+                ])->values()->all(),
+                'floors'               => $s->floors->map(fn ($f) => [
+                    'id' => $f->id,
+                    'name' => $f->name,
                 ])->values()->all(),
             ])->values()->all(),
         ])->values()->all();
@@ -321,12 +334,15 @@ class EmployeeService
                 'join_date'           => !empty($data['join_date']) ? $data['join_date'] : null,
                 'floor_access'        => isset($data['floor_access']) ? (bool) $data['floor_access'] : false,
                 'biometric_id'        => $data['biometric_id'] ?? null,
+                'employee_status'     => $data['employee_status'] ?? 'Active',
                 'employment_category' => $data['employment_category'] ?? null,
                 'intern_type'         => $data['intern_type'] ?? null,
                 'intern_duration'     => $data['intern_duration'] ?? null,
                 'contractual_type'    => $data['contractual_type'] ?? null,
-                'contract_start_date' => ! empty($data['contract_start_date']) ? $data['contract_start_date'] : (!empty($data['employee_contract_start_date']) ? $data['employee_contract_start_date'] : null),
+                'contract_start_date' => ! empty($data['contract_start_date']) ? $data['contract_start_date'] : (!empty($data['employee_contract_start_date']) ? $data['employee_contract_start_date'] : (!empty($data['probation_contract_start_date']) ? $data['probation_contract_start_date'] : null)),
                 'contract_end_date'   => ! empty($data['contract_end_date']) ? $data['contract_end_date'] : (!empty($data['employee_contract_end_date']) ? $data['employee_contract_end_date'] : null),
+                'probation_start_date' => ! empty($data['probation_start_date']) ? $data['probation_start_date'] : null,
+                'probation_end_date' => ! empty($data['probation_end_date']) ? $data['probation_end_date'] : null,
                 'engagement_mode'     => $data['engagement_mode'] ?? null,
                 'hybrid_days'         => $data['hybrid_days'] ?? null,
                 'standard_schedule_mode' => $scheduleAttrs['standard_schedule_mode'] ?? null,
@@ -341,6 +357,10 @@ class EmployeeService
 
             if ($code && $codeSbuForSync) {
                 $this->syncEmployeeIdSequenceToAllocatedCode($codeSbuForSync, $code);
+            }
+
+            if (array_key_exists('assigned_floor_ids', $data)) {
+                $this->syncAssignedFloors($employee, $data['assigned_floor_ids']);
             }
 
             $this->savePoliceVerification($employee->id, $data);
@@ -1302,6 +1322,7 @@ class EmployeeService
             'mediaFiles',
             'sbu:id,name,organization_id',
             'role:id,name',
+            'assignedFloors:id,name',
         ])->findOrFail($id);
 
         $formData = $this->getFormData();
@@ -1393,6 +1414,11 @@ class EmployeeService
             'grade'               => $employee->grade,
             'branch'              => $employee->branch,
             'location'            => $employee->location,
+            'employee_status'     => $employee->employee_status,
+            'probation_start_date' => $employee->probation_start_date instanceof \Carbon\Carbon ? $employee->probation_start_date->format('Y-m-d') : null,
+            'probation_end_date'  => $employee->probation_end_date instanceof \Carbon\Carbon ? $employee->probation_end_date->format('Y-m-d') : null,
+            'probation_contract_start_date' => $employee->contract_start_date instanceof \Carbon\Carbon ? $employee->contract_start_date->format('Y-m-d') : null,
+            'assigned_floor_ids'  => $employee->assignedFloors->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
             'biometric_id'        => $employee->biometric_id,
             'employment_category' => $employee->employment_category,
             'intern_type'         => $employee->intern_type,
@@ -1546,7 +1572,7 @@ class EmployeeService
                 'disability_type', 'disability_description', 'ref1_name', 'ref1_designation', 'ref1_organization',
                 'ref1_contact', 'ref1_relationship', 'ref2_name', 'ref2_designation', 'ref2_organization',
                 'ref2_contact', 'ref2_relationship', 'employment_category', 'intern_type', 'intern_duration',
-                'contractual_type', 'contract_start_date', 'contract_end_date', 'engagement_mode', 'hybrid_days',
+                'contractual_type', 'contract_start_date', 'contract_end_date', 'probation_start_date', 'probation_end_date', 'employee_status', 'engagement_mode', 'hybrid_days',
                 'standard_schedule_mode', 'working_days', 'working_start_time', 'working_end_time', 'opening_grace_period', 'closing_grace_period',
                 'spouse_cnic', 'spouse_nationality', 'nok_cnic_expiry_date',
                 'organization_id', 'role_id', 'sbu_id', 'department_id', 'department_ids',
@@ -1614,6 +1640,10 @@ class EmployeeService
             $updatePayload['employee_code'] = $code;
 
             $employee->update($updatePayload);
+
+            if (array_key_exists('assigned_floor_ids', $data)) {
+                $this->syncAssignedFloors($employee, $data['assigned_floor_ids']);
+            }
 
             if ($code && $codeSbuForSync) {
                 $this->syncEmployeeIdSequenceToAllocatedCode($codeSbuForSync, $code);
@@ -1709,6 +1739,13 @@ class EmployeeService
 
             return $employee;
         });
+    }
+
+    private function syncAssignedFloors(Employee $employee, mixed $rawFloorIds): void
+    {
+        $floorIds = is_array($rawFloorIds) ? $rawFloorIds : [];
+        $floorIds = array_values(array_unique(array_filter(array_map('intval', $floorIds), fn ($id) => $id > 0)));
+        $employee->assignedFloors()->sync($floorIds);
     }
 
     public function destroy(int $id): void

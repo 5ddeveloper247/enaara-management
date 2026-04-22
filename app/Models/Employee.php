@@ -5,6 +5,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Role;
 use App\Traits\LogsActivity;
 
@@ -21,10 +22,10 @@ class Employee extends Model
         'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth',
         'religion', 'sect', 'marital_status', 'spouse_name', 'spouse_cnic', 'spouse_nationality', 'nok_name', 'nok_cnic',
         'nok_relation', 'nok_dob', 'nok_contact', 'nok_cnic_expiry_date', 'is_ex_armed_force', 'line_manager_id', 'is_manager',
-        'is_active', 'role_id', 'site', 'join_date', 'floor_access', 'is_father_deceased',
+        'is_active', 'employee_status', 'role_id', 'site', 'join_date', 'floor_access', 'is_father_deceased',
         'biometric_id', 'sync_with_biometric',
         'employment_category', 'intern_type', 'intern_duration', 'contractual_type',
-        'contract_start_date', 'contract_end_date',
+        'contract_start_date', 'contract_end_date', 'probation_start_date', 'probation_end_date',
         'engagement_mode', 'hybrid_days',
         'standard_schedule_mode', 'working_days', 'working_start_time', 'working_end_time',
         'opening_grace_period', 'closing_grace_period',
@@ -38,6 +39,8 @@ class Employee extends Model
         'join_date'           => 'date',
         'contract_start_date' => 'date',
         'contract_end_date'   => 'date',
+        'probation_start_date' => 'date',
+        'probation_end_date' => 'date',
         'floor_access'        => 'boolean',
         'sync_with_biometric' => 'boolean',
         'is_manager'          => 'boolean',
@@ -68,6 +71,10 @@ class Employee extends Model
     public function references()        { return $this->hasMany(EmployeeReference::class); }
     public function mediaFiles()        { return $this->hasMany(MediaFile::class, 'module_id')->where('module_name', 'employee'); }
     public function role()              { return $this->belongsTo(Role::class, 'role_id'); }
+    public function assignedFloors(): BelongsToMany
+    {
+        return $this->belongsToMany(SbuFloor::class, 'employee_floor_privileges', 'employee_id', 'sbu_floor_id')->withTimestamps();
+    }
     // public function role()
     // {
     //     return $this->belongsTo(Role::class);

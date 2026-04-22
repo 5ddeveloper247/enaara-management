@@ -34,6 +34,9 @@ class EmployeeEmploymentInformationService
             'employee_type',
             'employment_type',
             'site',
+            'employee_status',
+            'probation_start_date',
+            'probation_end_date',
         ];
     }
 
@@ -42,7 +45,7 @@ class EmployeeEmploymentInformationService
         $payload = [];
         foreach ($this->employeeAttributeNames() as $field) {
             if ($field === 'contract_start_date') {
-                $val = $data['contract_start_date'] ?? $data['employee_contract_start_date'] ?? null;
+                $val = $data['contract_start_date'] ?? $data['employee_contract_start_date'] ?? $data['probation_contract_start_date'] ?? null;
                 $payload['contract_start_date'] = $val === '' ? null : $val;
                 continue;
             }

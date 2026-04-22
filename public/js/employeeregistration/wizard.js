@@ -28,10 +28,20 @@
     const deptChips = document.getElementById('employmentDeptChips');
     const deptPh = document.getElementById('employmentDeptPh');
     const deptHint = document.getElementById('employmentDeptHint');
+    const floorSelect = document.getElementById('employmentAssignedFloorsSelect');
+    const floorBox = document.getElementById('employmentFloorBox');
+    const floorDd = document.getElementById('employmentFloorDd');
+    const floorList = document.getElementById('employmentFloorList');
+    const floorSearch = document.getElementById('employmentFloorSearch');
+    const floorChips = document.getElementById('employmentFloorChips');
+    const floorPh = document.getElementById('employmentFloorPh');
+    const floorHint = document.getElementById('employmentFloorHint');
+    const probationEndInput = document.getElementById('employmentProbationEndDateInput');
 
     const orgsData = window.orgsData || [];
     const rolesData = window.rolesData || [];
     let availableDepartments = [];
+    let availableFloors = [];
 
     function initContactMasks() {
         const contactInputs = document.querySelectorAll('.contact-mask');
@@ -247,6 +257,11 @@
         'employee_contract_end_date':   'employmentDetailsEmployeeContractEndDateInput',
         'contract_start_date':          'employmentDetailsContractStartDateInput',
         'contract_end_date':            'employmentDetailsContractEndDateInput',
+        'employee_status':              'employmentStatusInput',
+        'probation_start_date':         'employmentProbationStartDateInput',
+        'probation_end_date':           'employmentProbationEndDateInput',
+        'probation_contract_start_date': 'employmentProbationContractStartDateInput',
+        'assigned_floor_ids':           'employmentAssignedFloorsSelect',
         'working_start_time':           'employmentCustomWorkingStartInput',
         'working_end_time':             'employmentCustomWorkingEndInput',
         'opening_grace_period':         'employmentCustomCheckInGraceInput',
@@ -1263,6 +1278,75 @@
         }
     }
 
+    function formatDateForInput(dateObj) {
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function syncProbationContractStartDate(forceFill = false) {
+        if (!probationEndInput || !probationEndInput.value) return;
+
+        const endDate = new Date(probationEndInput.value + 'T00:00:00');
+        if (Number.isNaN(endDate.getTime())) return;
+        endDate.setDate(endDate.getDate() + 1);
+        const computedDate = formatDateForInput(endDate);
+
+        const contractualStartInput = document.getElementById('employmentDetailsContractStartDateInput');
+        const employeeContractualStartInput = document.getElementById('employmentDetailsEmployeeContractStartDateInput');
+        if (contractualStartInput && (forceFill || !contractualStartInput.value)) {
+            contractualStartInput.value = computedDate;
+        }
+        if (employeeContractualStartInput && (forceFill || !employeeContractualStartInput.value)) {
+            employeeContractualStartInput.value = computedDate;
+        }
+    }
+
+    function populateFloors(orgId, sbuId) {
+        if (!floorSelect) return;
+        availableFloors = [];
+
+        const org = orgsData.find(o => o.id == orgId);
+        if (org && org.sbus) {
+            const sbu = org.sbus.find(s => s.id == sbuId);
+            if (sbu && Array.isArray(sbu.floors)) {
+                availableFloors = sbu.floors;
+            }
+        }
+
+        const currentSelectedIds = Array.from(floorSelect.options)
+            .filter(o => o.selected)
+            .map(o => parseInt(o.value, 10))
+            .filter(Number.isFinite);
+
+        const selectedFromDataAttr = floorSelect.dataset.selectedValues
+            ? JSON.parse(floorSelect.dataset.selectedValues)
+            : [];
+
+        const selectedIds = (currentSelectedIds.length ? currentSelectedIds : selectedFromDataAttr)
+            .map(v => parseInt(v, 10))
+            .filter(Number.isFinite);
+
+        floorSelect.innerHTML = '';
+
+        if (availableFloors.length === 0) {
+            if (floorHint) floorHint.style.display = 'block';
+        } else {
+            if (floorHint) floorHint.style.display = 'none';
+            availableFloors
+                .slice()
+                .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+                .forEach(floor => {
+                    const option = new Option(floor.name, floor.id);
+                    option.selected = selectedIds.includes(parseInt(floor.id, 10));
+                    floorSelect.add(option);
+                });
+        }
+        renderFloorChips();
+        buildFloorDropdownOptions();
+    }
+
     function populateRoles(orgId, sbuId, selectedRoleId = null) {
         if (!roleSelect) return;
 
@@ -1306,6 +1390,7 @@
             const orgId = this.value;
             populateSbus(orgId);
             populateRoles(orgId, null);
+            populateFloors(orgId, null);
         });
     }
 
@@ -1315,6 +1400,7 @@
             const sbuId = this.value;
             populateRoles(orgId, sbuId);
             populateDepartments(orgId, sbuId);
+            populateFloors(orgId, sbuId);
         });
     }
 
@@ -1326,7 +1412,14 @@
         populateSbus(oId, sId);
         populateRoles(oId, sId, rId);
         populateDepartments(oId, sId);
+        populateFloors(oId, sId);
     }
+    if (probationEndInput) {
+        probationEndInput.addEventListener('change', function () {
+            syncProbationContractStartDate(true);
+        });
+    }
+    syncProbationContractStartDate(false);
 
     // --- Department Required based on Role Level ---
     const deptRequiredBadge  = document.getElementById('employmentDeptRequired');
@@ -1380,10 +1473,46 @@
         });
     }
 
+    function renderFloorChips() {
+        if (!floorChips || !floorSelect) return;
+        floorChips.innerHTML = '';
+
+        const selectedOptions = Array.from(floorSelect.options).filter(o => o.selected && o.value);
+        if (selectedOptions.length > 0) {
+            if (floorPh) floorPh.style.display = 'none';
+        } else {
+            if (floorPh) floorPh.style.display = 'inline';
+        }
+
+        selectedOptions.forEach(opt => {
+            const chip = document.createElement('div');
+            chip.className = 'emp-dept-chip';
+            chip.style.cssText = 'display:inline-block; padding: 2px 8px; border-radius: 4px; background: #e9ecef; margin: 2px; font-size: 13px;';
+            chip.innerHTML = `${opt.text} <span class="emp-floor-chip-rm fw-bold text-danger ms-1" style="cursor:pointer;" data-id="${opt.value}">&times;</span>`;
+            floorChips.appendChild(chip);
+        });
+    }
+
     function syncDeptDropdownState() {
         if (!deptList || !deptSelect) return;
         const selectedIds = Array.from(deptSelect.options).filter(o => o.selected).map(o => o.value);
         const items = deptList.querySelectorAll('.emp-dept-list-opt');
+        items.forEach(item => {
+            const id = item.getAttribute('data-id');
+            if (selectedIds.includes(id)) {
+                item.style.backgroundColor = '#eef2f6';
+                item.style.fontWeight = 'bold';
+            } else {
+                item.style.backgroundColor = 'transparent';
+                item.style.fontWeight = 'normal';
+            }
+        });
+    }
+
+    function syncFloorDropdownState() {
+        if (!floorList || !floorSelect) return;
+        const selectedIds = Array.from(floorSelect.options).filter(o => o.selected).map(o => o.value);
+        const items = floorList.querySelectorAll('.emp-floor-list-opt');
         items.forEach(item => {
             const id = item.getAttribute('data-id');
             if (selectedIds.includes(id)) {
@@ -1429,9 +1558,48 @@
         syncDeptDropdownState();
     }
 
+    function buildFloorDropdownOptions(filter = '') {
+        if (!floorList) return;
+        floorList.innerHTML = '';
+        const lowerFilter = filter.toLowerCase();
+
+        availableFloors.forEach(floor => {
+            const floorName = String(floor.name || '');
+            if (floorName.toLowerCase().includes(lowerFilter)) {
+                const div = document.createElement('div');
+                div.className = 'emp-floor-list-opt p-2 border-bottom';
+                div.style.cursor = 'pointer';
+                div.setAttribute('data-id', floor.id);
+                div.innerText = floorName;
+
+                div.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    let opt = Array.from(floorSelect.options).find(o => o.value == floor.id);
+                    if (opt) {
+                        opt.selected = !opt.selected;
+                    } else {
+                        opt = new Option(floorName, floor.id);
+                        opt.selected = true;
+                        floorSelect.add(opt);
+                    }
+                    renderFloorChips();
+                    syncFloorDropdownState();
+                });
+
+                floorList.appendChild(div);
+            }
+        });
+        syncFloorDropdownState();
+    }
+
     if (deptSearch) {
         deptSearch.addEventListener('input', function(e) {
             buildDeptDropdownOptions(e.target.value);
+        });
+    }
+    if (floorSearch) {
+        floorSearch.addEventListener('input', function(e) {
+            buildFloorDropdownOptions(e.target.value);
         });
     }
 
@@ -1450,10 +1618,28 @@
             }
         });
     }
+    if (floorBox) {
+        floorBox.addEventListener('click', function(e) {
+            if (e.target.classList.contains('emp-floor-chip-rm')) {
+                const idToRemove = e.target.getAttribute('data-id');
+                const opt = Array.from(floorSelect.options).find(o => o.value == idToRemove);
+                if (opt) opt.selected = false;
+                renderFloorChips();
+                syncFloorDropdownState();
+                return;
+            }
+            if (floorDd) {
+                floorDd.style.display = floorDd.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+    }
 
     document.addEventListener('click', function(e) {
         if (deptBox && deptDd && !deptBox.contains(e.target) && !deptDd.contains(e.target)) {
             deptDd.style.display = 'none';
+        }
+        if (floorBox && floorDd && !floorBox.contains(e.target) && !floorDd.contains(e.target)) {
+            floorDd.style.display = 'none';
         }
     });
 

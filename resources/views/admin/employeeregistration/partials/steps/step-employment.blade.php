@@ -7,10 +7,6 @@
                                         </div>
                                         <div class="row g-3">
                                             <div class="col-md-6">
-                                                <label class="form-label">TAS ID / Biometric ID</label>
-                                                <input type="text" name="biometric_id" class="form-control" value="{{ $employee->biometric_id ?? '' }}" placeholder="Enter service or biometric ID">
-                                            </div>
-                                            <div class="col-md-6">
                                                 <label class="form-label">Employee Number</label>
                                                 <input type="text" name="employee_number" class="form-control" value="{{ $employee->employee_code ?? '' }}" placeholder="e.g. EMP-CEO-VIUQ" disabled>
                                             </div>
@@ -64,6 +60,26 @@
 
                                                     <div class="row g-3 {{ ($employee->employment_category ?? '') == 'employee' ? '' : 'd-none' }} mt-1" id="employmentDetailsEngagementFields">
                                                         <div class="col-md-6">
+                                                            <label class="form-label">Probation Start Date <span class="text-danger">*</span></label>
+                                                            <input
+                                                                type="date"
+                                                                name="probation_start_date"
+                                                                class="form-control"
+                                                                id="employmentProbationStartDateInput"
+                                                                value="{{ isset($employee->probation_start_date) && $employee->probation_start_date ? (is_string($employee->probation_start_date) ? date('Y-m-d', strtotime($employee->probation_start_date)) : $employee->probation_start_date->format('Y-m-d')) : '' }}"
+                                                                placeholder="yyyy-mm-dd">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Probation End Date <span class="text-danger">*</span></label>
+                                                            <input
+                                                                type="date"
+                                                                name="probation_end_date"
+                                                                class="form-control"
+                                                                id="employmentProbationEndDateInput"
+                                                                value="{{ isset($employee->probation_end_date) && $employee->probation_end_date ? (is_string($employee->probation_end_date) ? date('Y-m-d', strtotime($employee->probation_end_date)) : $employee->probation_end_date->format('Y-m-d')) : '' }}"
+                                                                placeholder="yyyy-mm-dd">
+                                                        </div>
+                                                        <div class="col-md-6">
                                                             <label class="form-label">Employment Type <span class="text-danger">*</span></label>
                                                             <select name="employment_type" class="form-select" id="employmentDetailsEngagementModeInput">
                                                                 <option value="" {{ !isset($employee->employment_type) ? 'selected' : '' }} disabled>Select employment type</option>
@@ -101,7 +117,7 @@
 
                                 <div class="row g-3">
                                     <div class="col-12 col-xl-6">
-                                        <div class="card border-0 bg-light h-100">
+                                        <div class="card border-0 bg-light">
                                             <div class="card-body p-3">
                                                 <div class="fw-bold text-uppercase small mb-3">Organization and Role</div>
                                                 <div class="row g-3">
@@ -183,7 +199,7 @@
                                     </div>
 
                                     <div class="col-12 col-xl-6">
-                                        <div class="card border-0 bg-light h-100">
+                                        <div class="card border-0 bg-light">
                                             <div class="card-body p-3">
                                                 <div class="fw-bold text-uppercase small mb-3">Placement and Grade</div>
                                                 <div class="row g-3">
@@ -198,6 +214,58 @@
                                                     <div class="col-12">
                                                         <label class="form-label">Location</label>
                                                         <input type="text" name="location" class="form-control" value="{{ $employee->location ?? '' }}" placeholder="Location">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @php
+                                            $assignedFloorIdsRaw = $editData['assigned_floor_ids'] ?? [];
+                                            if (!is_array($assignedFloorIdsRaw)) {
+                                                $assignedFloorIdsRaw = $assignedFloorIdsRaw ? explode(',', (string) $assignedFloorIdsRaw) : [];
+                                            }
+                                            $assignedFloorIds = collect($assignedFloorIdsRaw)
+                                                ->map(fn ($id) => (int) $id)
+                                                ->filter(fn ($id) => $id > 0)
+                                                ->values()
+                                                ->all();
+                                            $selectedEmployeeStatus = $employee->employee_status ?? 'Active';
+                                        @endphp
+                                        <div class="card border-0 bg-light mt-3">
+                                            <div class="card-body p-3">
+                                                <div class="fw-bold text-uppercase small mb-3">Status and Probation</div>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Employee Status <span class="text-danger">*</span></label>
+                                                        <select name="employee_status" class="form-select" id="employmentStatusInput" required>
+                                                            <option value="Active" {{ $selectedEmployeeStatus === 'Active' ? 'selected' : '' }}>Active</option>
+                                                            <option value="Suspend" {{ $selectedEmployeeStatus === 'Suspend' ? 'selected' : '' }}>Suspend</option>
+                                                            <option value="Terminated" {{ $selectedEmployeeStatus === 'Terminated' ? 'selected' : '' }}>Terminated</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">TAS ID / Biometric ID</label>
+                                                        <input type="text" name="biometric_id" id="biometric_id" class="form-control" value="{{ $employee->biometric_id ?? '' }}" placeholder="Enter service or biometric ID">
+                                                    </div>
+                                              
+                                                    <div class="col-12">
+                                                        <label class="form-label">Assigned Floors</label>
+                                                        <select name="assigned_floor_ids[]" id="employmentAssignedFloorsSelect" class="form-select d-none" multiple data-selected-values='@json($assignedFloorIds)'>
+                                                        </select>
+                                                        <div class="emp-dept-input-box" id="employmentFloorBox">
+                                                            <div id="employmentFloorChips" style="display:contents"></div>
+                                                            <span class="emp-dept-ph" id="employmentFloorPh">Select Floors...</span>
+                                                            <svg class="emp-dept-chevron" id="employmentFloorChevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                                            </svg>
+                                                        </div>
+                                                        <div class="emp-dept-dropdown" id="employmentFloorDd" style="display:none">
+                                                            <div class="emp-dept-search-row">
+                                                                <input id="employmentFloorSearch" placeholder="Search Floor..." autocomplete="off">
+                                                            </div>
+                                                            <div class="emp-dept-opt-list" id="employmentFloorList"></div>
+                                                        </div>
+                                                        <small class="text-muted d-block mt-1" id="employmentFloorHint">No floors are set up for this SBU yet.</small>
+                                                        <small class="text-muted">Floors are loaded based on selected SBU. You can select multiple floors.</small>
                                                     </div>
                                                 </div>
                                             </div>

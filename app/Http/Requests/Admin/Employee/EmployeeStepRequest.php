@@ -60,9 +60,15 @@ class EmployeeStepRequest extends FormRequest
                 $rawDept = $rawDept !== null && $rawDept !== '' ? [$rawDept] : [];
             }
             $deptIds = array_values(array_unique(array_filter(array_map('intval', $rawDept))));
+            $rawFloors = $this->input('assigned_floor_ids', []);
+            if (! is_array($rawFloors)) {
+                $rawFloors = $rawFloors !== null && $rawFloors !== '' ? [$rawFloors] : [];
+            }
+            $floorIds = array_values(array_unique(array_filter(array_map('intval', $rawFloors))));
             $this->merge([
                 'department_ids' => $deptIds,
                 'department_id'  => $deptIds[0] ?? null,
+                'assigned_floor_ids' => $floorIds,
             ]);
         }
 
@@ -345,7 +351,18 @@ class EmployeeStepRequest extends FormRequest
                 'site' => ['nullable', 'string', 'max:255'],
                 'join_date' => ['required', 'date', 'before_or_equal:today'],
                 'floor_access' => ['nullable', 'boolean'],
+                'assigned_floor_ids' => ['nullable', 'array'],
+                'assigned_floor_ids.*' => [
+                    'integer',
+                    Rule::exists('sbu_floors', 'id')->where(function ($q) {
+                        $sbuId = $this->input('sbu_id');
+                        if ($sbuId) {
+                            $q->where('sbu_id', (int) $sbuId);
+                        }
+                    }),
+                ],
                 'biometric_id' => ['nullable', 'string', 'max:20'],
+                'employee_status' => ['required', Rule::in(['Active', 'Suspend', 'Terminated'])],
                 'intern_type' => [
                     'nullable',
                     Rule::in(['paid', 'unpaid']),
@@ -378,6 +395,9 @@ class EmployeeStepRequest extends FormRequest
                     'after_or_equal:contract_start_date',
                     Rule::requiredIf(fn () => $this->input('employment_category') === 'contractual'),
                 ],
+                'probation_start_date' => ['nullable', 'date', Rule::requiredIf(fn () => $this->input('employment_category') === 'employee')],
+                'probation_end_date' => ['nullable', 'date', 'after_or_equal:probation_start_date', Rule::requiredIf(fn () => $this->input('employment_category') === 'employee')],
+                'probation_contract_start_date' => ['nullable', 'date'],
                 'employee_contract_start_date' => [
                     'nullable',
                     'date',
@@ -961,6 +981,10 @@ class EmployeeStepRequest extends FormRequest
 
             'employment_category.required' => 'Resource type is required.',
             'employment_category.in' => 'The selected resource type is invalid.',
+            'employee_status.required' => 'Employee status is required.',
+            'employee_status.in' => 'The selected employee status is invalid.',
+            'assigned_floor_ids.array' => 'Assigned floors must be provided as a list.',
+            'assigned_floor_ids.*.exists' => 'One or more selected floors are invalid for this SBU.',
             'intern_type.required' => 'Intern type is required when resource type is Intern.',
             'intern_duration.required' => 'Intern duration is required when resource type is Intern.',
             'employment_type.required' => 'Select Permanent or Contractual.',
@@ -969,6 +993,9 @@ class EmployeeStepRequest extends FormRequest
             'contractual_type.in' => 'The selected contract type is invalid.',
             'contract_start_date.required' => 'Contract start date is required.',
             'contract_end_date.required' => 'Contract end date is required.',
+            'probation_start_date.required' => 'Probation start date is required for employee resource type.',
+            'probation_end_date.required' => 'Probation end date is required for employee resource type.',
+            'probation_end_date.after_or_equal' => 'Probation end date must be on or after probation start date.',
             'employee_contract_start_date.required' => 'Contract start date is required for a time-bound contract.',
             'employee_contract_end_date.required' => 'Contract end date is required for a time-bound contract.',
             'contract_end_date.required' => 'Contract end date is required for a time-bound contract.',
