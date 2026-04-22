@@ -141,6 +141,11 @@
         return window.outsourcedOrganizations;
     }
 
+    function getOutsourcedVendors() {
+        if (!Array.isArray(window.outsourcedVendors)) return [];
+        return window.outsourcedVendors;
+    }
+
     function fillSelectOptions(selectEl, items, placeholder, valueKey, labelKey, selectedValue) {
         if (!selectEl) return;
         const selected = selectedValue === null || selectedValue === undefined ? '' : String(selectedValue);
@@ -183,6 +188,31 @@
         fillSelectOptions(departmentSelect, departments, 'Select department', 'id', 'name', selectedDepartmentId);
     }
 
+    function populateVendorOptions(orgId, sbuId, selectedVendorId) {
+        const vendorSelect = document.getElementById('oeCompanyName');
+        if (!vendorSelect) return;
+        const selectedOrgId = parseInt(orgId, 10);
+        const selectedSbuId = parseInt(sbuId, 10);
+
+        if (!Number.isFinite(selectedOrgId) || selectedOrgId <= 0) {
+            vendorSelect.innerHTML = '<option value="">Select organization first</option>';
+            return;
+        }
+
+        if (!Number.isFinite(selectedSbuId) || selectedSbuId <= 0) {
+            vendorSelect.innerHTML = '<option value="">Select SBU first</option>';
+            return;
+        }
+
+        const vendors = getOutsourcedVendors().filter(function (vendor) {
+            const orgIds = Array.isArray(vendor.organization_ids) ? vendor.organization_ids.map(Number) : [];
+            const sbuIds = Array.isArray(vendor.sbu_ids) ? vendor.sbu_ids.map(Number) : [];
+            return orgIds.includes(selectedOrgId) && sbuIds.includes(selectedSbuId);
+        });
+
+        fillSelectOptions(vendorSelect, vendors, 'Select contractor company', 'id', 'third_party_name', selectedVendorId);
+    }
+
     function initOutsourcedTable() {
         if (!document.getElementById('outsourcedEmployeeTable') || outsourcedTable) return;
 
@@ -206,7 +236,44 @@
                 }
             },
             columns: [
-                { data: 'photo_url', render: (d) => d ? `<img src="${escHtml(d)}" alt="Photo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">` : '<span class="text-muted">-</span>', orderable: false },
+                {
+                    data: 'photo_url',
+                    orderable: false,
+                    render: function (d, type, row) {
+                        if (d) {
+                            return `<img src="${escHtml(d)}" alt="Photo"
+                                        style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`;
+                        }
+                
+                        const name = row.full_name || '';
+                        const words = name.trim().split(' ').filter(Boolean);
+                
+                        let initials = 'OE';
+                        if (words.length === 1) {
+                            initials = words[0].substring(0, 2).toUpperCase();
+                        } else if (words.length > 1) {
+                            initials = (words[0][0] + words[1][0]).toUpperCase();
+                        }
+                
+                        return `
+                            <div style="
+                                width:36px;
+                                height:36px;
+                                border-radius:50%;
+                                display:flex;
+                                align-items:center;
+                                justify-content:center;
+                                background:#0d6efd;
+                                color:#fff;
+                                font-size:13px;
+                                font-weight:600;
+                            ">
+                                ${escHtml(initials)}
+                            </div>
+                        `;
+                    }
+                },
+                
                 { data: 'full_name' },
                 { data: 'cnic_number' },
                 { data: 'mobile_number' },
@@ -282,6 +349,7 @@
         if (title) title.textContent = 'Add Outsourced Employee';
         populateSbuOptions('', '');
         populateDepartmentOptions('', '', '');
+        populateVendorOptions('', '', '');
         clearOutsourcedValidation(form);
     }
 
@@ -303,12 +371,12 @@
             document.getElementById('oeFullName').value = d.full_name || '';
             document.getElementById('oeCnic').value = d.cnic_number || '';
             document.getElementById('oeMobile').value = d.mobile_number || '';
-            document.getElementById('oeCompanyName').value = d.contractor_company_name || '';
             document.getElementById('oeSupervisorName').value = d.supervisor_name || '';
             document.getElementById('oeSupervisorContact').value = d.supervisor_contact_number || '';
             document.getElementById('oeOrganizationId').value = d.organization_id || '';
             populateSbuOptions(d.organization_id || '', d.sbu_id || '');
             populateDepartmentOptions(d.organization_id || '', d.sbu_id || '', d.department_id || '');
+            populateVendorOptions(d.organization_id || '', d.sbu_id || '', d.contractor_company_id || '');
             document.getElementById('oeJobRole').value = d.job_role_trade || '';
             document.getElementById('oePlacementFloor').value = d.placement_floor || '';
             document.getElementById('oeDeploymentDate').value = d.date_of_deployment || '';
@@ -701,6 +769,7 @@
                 const orgId = organizationSelect.value || '';
                 populateSbuOptions(orgId, '');
                 populateDepartmentOptions(orgId, '', '');
+                populateVendorOptions(orgId, '', '');
             });
         }
 
@@ -708,11 +777,13 @@
             sbuSelect.addEventListener('change', function () {
                 const orgId = organizationSelect ? organizationSelect.value : '';
                 populateDepartmentOptions(orgId, sbuSelect.value || '', '');
+                populateVendorOptions(orgId, sbuSelect.value || '', '');
             });
         }
 
         populateSbuOptions('', '');
         populateDepartmentOptions('', '', '');
+        populateVendorOptions('', '', '');
 
         const internalTab = document.getElementById('internal-staff-tab');
         const outsourcedTab = document.getElementById('outsourced-staff-tab');

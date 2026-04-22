@@ -21,6 +21,7 @@ use App\Models\SbuFloor;
 use App\Models\Role;
 use App\Models\RoleLevel;
 use App\Models\OutsourcedEmployee;
+use App\Models\ThirdParty;
 use App\Models\User;
 use App\Services\AuditTrailService;
 use App\Services\EmployeeEmploymentInformationService;
@@ -89,7 +90,17 @@ class EmployeeService
             ->orderBy('name')
             ->get();
 
-        return view('admin.employee.index', compact('organizations', 'departments', 'sbus', 'floors'));
+        $outsourcedVendors = ThirdParty::query()
+            ->select(['id', 'third_party_name'])
+            ->where('is_active', true)
+            ->with([
+                'organizations:id',
+                'sbus:id',
+            ])
+            ->orderBy('third_party_name')
+            ->get();
+
+        return view('admin.employee.index', compact('organizations', 'departments', 'sbus', 'floors', 'outsourcedVendors'));
     }
 
     public function getFormData(): array
@@ -1284,7 +1295,10 @@ class EmployeeService
 
         $permanent = (clone $base)->where('employment_type', 'Permanent')->count();
         $contract = (clone $base)->where('employment_type', 'Contract')->count();
-        $vendors = OutsourcedEmployee::query()->select('contractor_company_name')->distinct()->count('contractor_company_name');
+        $vendors = OutsourcedEmployee::query()
+            ->whereNotNull('contractor_company_id')
+            ->distinct('contractor_company_id')
+            ->count('contractor_company_id');
 
         return [
             'total'            => $total,

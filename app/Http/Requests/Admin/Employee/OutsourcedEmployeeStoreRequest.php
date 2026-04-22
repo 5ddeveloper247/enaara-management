@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Employee;
 
+use App\Models\ThirdParty;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -56,7 +57,11 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
             'mobile_number' => ['required', 'string', 'regex:/^[0-9]{11,15}$/'],
             'photo' => ['nullable', 'image', 'max:2048', 'mimes:jpg,jpeg,png,webp'],
 
-            'contractor_company_name' => ['required', 'string', 'min:2', 'max:150', 'regex:/^(?!.*[<>])(?=.*\p{L})[\p{L}\p{M}\p{N}\p{Zs}\.\-\'",&()\/#]+$/u'],
+            'contractor_company_id' => [
+                'required',
+                'integer',
+                Rule::exists('third_parties', 'id')->where(fn ($query) => $query->where('is_active', true)),
+            ],
             'supervisor_name' => ['required', 'string', 'min:3', 'max:120', 'regex:/^(?!.*[<>])(?=.*\p{L})[\p{L}\p{M}\p{Zs}\.\-\'"]+$/u'],
             'supervisor_contact_number' => ['required', 'string', 'regex:/^[0-9]{11,15}$/'],
 
@@ -98,6 +103,32 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $vendorId = (int) $this->input('contractor_company_id');
+            $organizationId = (int) $this->input('organization_id');
+            $sbuId = (int) $this->input('sbu_id');
+
+            if ($vendorId > 0 && $organizationId > 0) {
+                $vendorInOrganization = ThirdParty::query()
+                    ->whereKey($vendorId)
+                    ->whereHas('organizations', fn ($query) => $query->where('organizations.id', $organizationId))
+                    ->exists();
+
+                if (! $vendorInOrganization) {
+                    $validator->errors()->add('contractor_company_id', 'Selected contractor company is not linked with the chosen organization.');
+                }
+            }
+
+            if ($vendorId > 0 && $sbuId > 0) {
+                $vendorInSbu = ThirdParty::query()
+                    ->whereKey($vendorId)
+                    ->whereHas('sbus', fn ($query) => $query->where('sbus.id', $sbuId))
+                    ->exists();
+
+                if (! $vendorInSbu) {
+                    $validator->errors()->add('contractor_company_id', 'Selected contractor company is not linked with the chosen SBU.');
+                }
+            }
+
             $biometricId = (string) $this->input('biometric_id', '');
             if ($biometricId === '') {
                 return;
@@ -132,10 +163,8 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
             'photo.mimes' => 'Photo must be in JPG, JPEG, PNG, or WEBP format.',
             'photo.max' => 'Photo size must not exceed 2 MB.',
 
-            'contractor_company_name.required' => 'Please enter contractor company name.',
-            'contractor_company_name.min' => 'Contractor company name must be at least 2 characters.',
-            'contractor_company_name.max' => 'Contractor company name cannot exceed 150 characters.',
-            'contractor_company_name.regex' => 'Contractor company name must contain valid text and cannot include script tags or invalid symbols.',
+            'contractor_company_id.required' => 'Please select contractor company.',
+            'contractor_company_id.exists' => 'Selected contractor company is invalid.',
 
             'supervisor_name.required' => 'Please enter supervisor name.',
             'supervisor_name.min' => 'Supervisor name must be at least 3 characters.',

@@ -12,7 +12,7 @@ class OutsourcedEmployeeService
     public function getTableData(array $filters = []): array
     {
         $query = OutsourcedEmployee::query()
-            ->with(['organization:id,name', 'sbu:id,name', 'department:id,name']);
+            ->with(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name']);
 
         $organization = trim((string) ($filters['filter_organization'] ?? ''));
         $sbu = trim((string) ($filters['filter_sbu'] ?? ''));
@@ -56,7 +56,8 @@ class OutsourcedEmployeeService
                     'cnic_number' => $row->cnic_number,
                     'mobile_number' => $row->mobile_number,
                     'photo_url' => $row->photo_path ? asset('storage/' . $row->photo_path) : null,
-                    'contractor_company_name' => $row->contractor_company_name,
+                    'contractor_company_id' => $row->contractor_company_id,
+                    'contractor_company_name' => $row->contractorCompany?->third_party_name ?? '-',
                     'supervisor_name' => $row->supervisor_name,
                     'supervisor_contact_number' => $row->supervisor_contact_number,
                     'organization_id' => $row->organization_id,
@@ -84,7 +85,7 @@ class OutsourcedEmployeeService
                 $path = $photo->store("employees/outsourced/{$row->id}/profile", 'public');
                 $row->update(['photo_path' => $path]);
             }
-            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name']);
+            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name']);
         });
     }
 
@@ -99,13 +100,13 @@ class OutsourcedEmployeeService
                 $data['photo_path'] = $photo->store("employees/outsourced/{$row->id}/profile", 'public');
             }
             $row->update($data);
-            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name']);
+            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name']);
         });
     }
 
     public function findForEdit(int $id): OutsourcedEmployee
     {
-        return OutsourcedEmployee::query()->with(['organization:id,name', 'sbu:id,name', 'department:id,name'])->findOrFail($id);
+        return OutsourcedEmployee::query()->with(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name'])->findOrFail($id);
     }
 }
 

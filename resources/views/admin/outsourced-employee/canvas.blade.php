@@ -41,24 +41,6 @@
                 </div>
             </div>
 
-            <hr>
-            <div class="mb-3 fw-semibold">Vendor Details</div>
-            <div class="row g-3">
-                <div class="col-12">
-                    <label class="form-label">Contractor Company Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" name="contractor_company_name" id="oeCompanyName" placeholder="Enter contractor company name">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Supervisor Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" name="supervisor_name" id="oeSupervisorName" placeholder="Enter supervisor name">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Supervisor Contact Number <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control contact-mask" name="supervisor_contact_number" id="oeSupervisorContact" placeholder="03XXXXXXXXX">
-                </div>
-            </div>
-
-            <hr>
             <div class="mb-3 fw-semibold">Work Details</div>
             <div class="row g-3">
                 <div class="col-md-6">
@@ -74,6 +56,12 @@
                     <label class="form-label">SBU <span class="text-danger">*</span></label>
                     <select class="form-select" name="sbu_id" id="oeSbuId">
                         <option value="">Select SBU</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Contractor Company Name <span class="text-danger">*</span></label>
+                    <select class="form-select" name="contractor_company_id" id="oeCompanyName">
+                        <option value="">Select organization and SBU first</option>
                     </select>
                 </div>
                 <div class="col-md-6">
@@ -98,6 +86,19 @@
                 <div class="col-md-6">
                     <label class="form-label">Date of Deployment <span class="text-danger">*</span></label>
                     <input type="date" class="form-control" name="date_of_deployment" id="oeDeploymentDate">
+                </div>
+            </div>
+
+            <hr>
+            <div class="mb-3 fw-semibold">Vendor Details</div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Supervisor Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="supervisor_name" id="oeSupervisorName" placeholder="Enter supervisor name">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Supervisor Contact Number <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control contact-mask" name="supervisor_contact_number" id="oeSupervisorContact" placeholder="03XXXXXXXXX">
                 </div>
             </div>
 
@@ -145,7 +146,18 @@
     </div>
 </div>
 
+@php
+    $outsourcedVendorOptions = ($outsourcedVendors ?? collect())->map(function ($vendor) {
+        return [
+            'id' => $vendor->id,
+            'third_party_name' => $vendor->third_party_name,
+            'organization_ids' => $vendor->organizations->pluck('id')->map(fn ($id) => (int) $id)->values(),
+            'sbu_ids' => $vendor->sbus->pluck('id')->map(fn ($id) => (int) $id)->values(),
+        ];
+    })->values();
+@endphp
 <script>
     window.outsourcedOrganizations = @json(($organizations ?? collect())->values());
+    window.outsourcedVendors = @json($outsourcedVendorOptions);
 </script>
 

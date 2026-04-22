@@ -15,7 +15,7 @@ class OutsourcedEmployee extends Model
         'cnic_number',
         'mobile_number',
         'photo_path',
-        'contractor_company_name',
+        'contractor_company_id',
         'supervisor_name',
         'supervisor_contact_number',
         'organization_id',
@@ -46,6 +46,11 @@ class OutsourcedEmployee extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    public function contractorCompany(): BelongsTo
+    {
+        return $this->belongsTo(ThirdParty::class, 'contractor_company_id');
     }
 }
 
