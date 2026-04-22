@@ -276,12 +276,22 @@
                                                     <label class="form-label fw-semibold">Working days <span class="text-danger">*</span></label>
                                                     <div class="d-flex flex-wrap gap-3">
                                                         @php
-                                                            $workingDays = isset($employee->working_days) ? (is_array($employee->working_days) ? $employee->working_days : explode(',', $employee->working_days)) : [];
+                                                            $workingDaysRaw = isset($employee->working_days) ? (is_array($employee->working_days) ? $employee->working_days : explode(',', $employee->working_days)) : [];
+                                                            $workingDays = collect($workingDaysRaw)->map(fn($d) => strtolower(trim((string) $d)))->values()->all();
+                                                            $workingDayOptions = [
+                                                                'monday' => 'Mon',
+                                                                'tuesday' => 'Tue',
+                                                                'wednesday' => 'Wed',
+                                                                'thursday' => 'Thu',
+                                                                'friday' => 'Fri',
+                                                                'saturday' => 'Sat',
+                                                                'sunday' => 'Sun',
+                                                            ];
                                                         @endphp
-                                                        @foreach(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $day)
+                                                        @foreach($workingDayOptions as $dayValue => $dayLabel)
                                                         <div class="form-check mb-0">
-                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDay{{ $day }}" name="working_days[]" value="{{ $day }}" {{ in_array($day, $workingDays) ? 'checked' : '' }}>
-                                                            <label class="form-check-label" for="employmentCustomDay{{ $day }}">{{ $day }}</label>
+                                                            <input class="form-check-input" type="checkbox" id="employmentCustomDay{{ $dayLabel }}" name="working_days[]" value="{{ $dayValue }}" {{ in_array($dayValue, $workingDays, true) ? 'checked' : '' }}>
+                                                            <label class="form-check-label" for="employmentCustomDay{{ $dayLabel }}">{{ $dayLabel }}</label>
                                                         </div>
                                                         @endforeach
                                                     </div>
@@ -309,11 +319,21 @@
                                                     <label class="form-label fw-semibold d-block mb-2">Hybrid - on-site days <span class="text-danger">*</span></label>
                                                     <div class="d-flex flex-wrap gap-2">
                                                         @php
-                                                            $hybridDays = isset($employee->hybrid_days) ? (is_array($employee->hybrid_days) ? $employee->hybrid_days : explode(',', $employee->hybrid_days)) : [];
+                                                            $hybridDaysRaw = isset($employee->hybrid_days) ? (is_array($employee->hybrid_days) ? $employee->hybrid_days : explode(',', $employee->hybrid_days)) : [];
+                                                            $hybridDays = collect($hybridDaysRaw)->map(fn($d) => strtolower(trim((string) $d)))->values()->all();
+                                                            $hybridDayOptions = [
+                                                                'mon' => 'Mon',
+                                                                'tue' => 'Tue',
+                                                                'wed' => 'Wed',
+                                                                'thu' => 'Thu',
+                                                                'fri' => 'Fri',
+                                                                'sat' => 'Sat',
+                                                                'sun' => 'Sun',
+                                                            ];
                                                         @endphp
-                                                        @foreach(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $day)
-                                                        <input type="checkbox" class="btn-check" name="hybrid_days[]" id="employmentHybridDay{{ $day }}" value="{{ $day }}" {{ in_array($day, $hybridDays) ? 'checked' : '' }}>
-                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDay{{ $day }}">{{ $day }}</label>
+                                                        @foreach($hybridDayOptions as $dayValue => $dayLabel)
+                                                        <input type="checkbox" class="btn-check" name="hybrid_days[]" id="employmentHybridDay{{ $dayLabel }}" value="{{ $dayValue }}" {{ in_array($dayValue, $hybridDays, true) ? 'checked' : '' }}>
+                                                        <label class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold" for="employmentHybridDay{{ $dayLabel }}">{{ $dayLabel }}</label>
                                                         @endforeach
                                                     </div>
                                                 </div>

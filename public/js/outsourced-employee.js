@@ -188,6 +188,7 @@
 
         outsourcedTable = initUserDataTable('#outsourcedEmployeeTable', {
             pageLength: 10,
+            searching: true,
             processing: true,
             ajax: {
                 url: window.outsourcedEmployeeDataUrl,

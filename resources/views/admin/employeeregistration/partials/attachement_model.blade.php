@@ -166,7 +166,7 @@
 
         // Clear previous validation errors
         document.querySelectorAll('.attachment-error-msg').forEach(el => el.remove());
-        document.querySelectorAll('#addAttachmentModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('#attachmentModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
         if (!employeeId) {
             Swal.fire({
@@ -296,7 +296,7 @@
 
     function resetAttachmentForm() {
         document.getElementById('attachmentName').value = '';
-        document.getElementById('attachmentType').value = 'Document';
+        document.getElementById('attachmentType').value = '';
         document.getElementById('attachmentDesc').value = '';
         document.getElementById('attachmentUpload').value = '';
         document.getElementById('attachmentUploadPreview').innerHTML = '';
@@ -304,7 +304,7 @@
 
         // Clear errors
         document.querySelectorAll('.attachment-error-msg').forEach(el => el.remove());
-        document.querySelectorAll('#addAttachmentModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('#attachmentModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
     }
 
     function renderAttachmentListing() {

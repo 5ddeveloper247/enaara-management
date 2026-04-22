@@ -22,6 +22,7 @@
     function initializeDataTable() {
         employeeTable = initUserDataTable('#employeeTable', {
             pageLength: 10,
+            searching: true,
             lengthMenu: [
                 [10, 25, 50, 100, 200],
                 [10, 25, 50, 100, 200]

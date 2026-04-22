@@ -364,7 +364,7 @@ class EmployeeStepRequest extends FormRequest
                 ],
                 'contractual_type' => [
                     'nullable',
-                    Rule::in(['time_bound', 'open', 'project_based']),
+                    Rule::in(['time_bound', 'open', 'open_ended', 'project_based']),
                     Rule::requiredIf(fn () => $this->input('employment_category') === 'employee' && $this->input('employment_type') === 'contractual'),
                 ],
                 'contract_start_date' => [

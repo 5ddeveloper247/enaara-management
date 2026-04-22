@@ -285,12 +285,12 @@ class EmployeeUpdateRequest extends FormRequest
             'join_date' => ['required', 'date'],
             'floor_access' => ['nullable', 'boolean'],
             'biometric_id' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9\-_]+$/'],
-            'employment_category' => ['required', Rule::in(['intern', 'consultant', 'employee'])],
+            'employment_category' => ['required', Rule::in(['intern', 'consultant', 'employee', 'contractual'])],
             'intern_type' => ['nullable', Rule::in(['paid', 'unpaid']), 'required_if:employment_category,intern'],
             'intern_duration' => ['nullable', 'string', 'max:100', 'required_if:employment_category,intern'],
             'contractual_type' => [
                 'nullable',
-                Rule::in(['time_bound', 'open', 'project_based']),
+                Rule::in(['time_bound', 'open', 'open_ended', 'project_based']),
                 Rule::requiredIf(fn () => $this->input('employment_category') === 'employee' && $this->input('employment_type') === 'contractual'),
             ],
             'contract_start_date' => [
