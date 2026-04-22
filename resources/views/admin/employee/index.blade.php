@@ -48,7 +48,9 @@
     <!-- Common Helper Functions -->
     <script src="{{ asset('js/helpers.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Employee Module JavaScript -->
     <script src="{{ asset('js/employee.js') }}"></script>
     <script src="{{ asset('js/outsourced-employee.js') }}"></script>
+    <script src="{{ asset('js/employee-export.js') }}"></script>
 @endpush

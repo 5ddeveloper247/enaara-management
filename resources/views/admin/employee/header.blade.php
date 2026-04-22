@@ -18,7 +18,7 @@
 
     <div class="col-md-6 text-end">
         <button type="button" class="btn btn-outline-secondary me-2" id="exportBtn">
-            <i class="bi bi-download me-1"></i>Export
+            <i class="bi bi-download me-1"></i>Export Record
         </button>
         <a href="{{ route('admin.register.index') }}"
             class="btn btn-primary bg-main border-0 me-2"

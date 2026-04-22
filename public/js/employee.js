@@ -810,48 +810,6 @@
             }
         });
 
-        $('#exportBtn').on('click', function () {
-            var f = window.employeeFilters || {};
-            var params = {
-                filter_employee_type: f.employeeType || '',
-                filter_organization: f.organization || '',
-                filter_sbu: f.sbu || '',
-                filter_department: f.department || '',
-                filter_name: f.name || '',
-                filter_cnic: f.cnic || '',
-            };
-
-            $.get(window.employeeDataUrl, params, function (res) {
-                if (!res || !res.success || !res.data || !res.data.length) {
-                    alert('No employee data to export.');
-                    return;
-                }
-
-                exportEmployeesToCsv(res.data);
-
-                if (window.Swal) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Export Successful',
-                        text: 'Employee records have been exported successfully.',
-                        confirmButtonColor: '#012445'
-                    });
-                } else {
-                    alert('Employee records have been exported successfully.');
-                }
-            }).fail(function () {
-                if (window.Swal) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Export Failed',
-                        text: 'Could not export employees. Please try again.',
-                        confirmButtonColor: '#dc3545'
-                    });
-                } else {
-                    alert('Could not export employees. Please try again.');
-                }
-            });
-        });
 
         const statTargets = ['#total-workforce', '#internal-staff', '#outsourced-staff', '#biometric-sync'];
         const syncStatButtons = function (activeTarget) {
@@ -890,81 +848,6 @@
         });
 
         window.syncEmployeeStatTabs();
-    }
-
-    function csvEscape(val) {
-        if (val === null || val === undefined) {
-            return '';
-        }
-
-        var s = String(val).replace(/"/g, '""');
-        if (/[",\r\n]/.test(s)) {
-            return '"' + s + '"';
-        }
-        return s;
-    }
-
-    function exportEmployeesToCsv(rows) {
-        var headers = [
-            'Employee No',
-            'Full Name',
-            'Organization',
-            'SBU',
-            'Department',
-            'Category',
-            'CNIC',
-            'Nationality',
-            'Gender',
-            'Date of Joining',
-            'Designation',
-            'Verification Status',
-            'Email',
-            'Cell Number',
-            'Employment Type',
-            'Employee Type',
-            'TAS ID',
-            'Sync Status',
-            'Site',
-            'Vendor'
-        ];
-
-        var lines = [headers.join(',')];
-
-        rows.forEach(function (r) {
-            lines.push([
-                csvEscape(normalizeValue(r.employee_code, '')),
-                csvEscape(normalizeValue(r.full_name, '')),
-                csvEscape(normalizeValue(r.organization, '')),
-                csvEscape(normalizeValue(r.sbu, '')),
-                csvEscape(normalizeValue(r.department, '')),
-                csvEscape(normalizeValue(r.employment_category, '')),
-                csvEscape(normalizeValue(r.cnic, '')),
-                csvEscape(normalizeValue(r.nationality, '')),
-                csvEscape(normalizeValue(r.gender, '')),
-                csvEscape(normalizeValue(r.join_date, '')),
-                csvEscape(normalizeValue(r.designation, '')),
-                csvEscape(normalizeValue(r.verification_status, '')),
-                csvEscape(normalizeValue(r.email, '')),
-                csvEscape(normalizeValue(r.cell_no, '')),
-                csvEscape(normalizeValue(r.employment_type, '')),
-                csvEscape(normalizeValue(r.employee_type, '')),
-                csvEscape(normalizeValue(r.biometric_id, '')),
-                csvEscape(normalizeValue(r.sync_status, '')),
-                csvEscape(normalizeValue(r.site, '')),
-                csvEscape(normalizeValue(r.vendor, ''))
-            ].join(','));
-        });
-
-        var blob = new Blob(['\ufeff' + lines.join('\r\n')], {
-            type: 'text/csv;charset=utf-8;'
-        });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'employees_' + new Date().toISOString().slice(0, 10) + '.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(a.href);
     }
 
     function initializeAddEmployeeCanvas() {}
