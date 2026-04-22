@@ -8,6 +8,7 @@
     window.outsourcedEmployeeShowUrlBase = "{{ url('admin/outsourced-employees') }}";
 </script>
 
+{{--
 <div id="employeeListingTabsTemplate" class="d-none">
     <ul class="nav nav-pills employee-listing-tabs gap-2 mb-0" role="tablist">
         <li class="nav-item" role="presentation">
@@ -24,6 +25,7 @@
         </li>
     </ul>
 </div>
+--}}
 
 <div id="tableViewWrapper" class="row g-3">
     <div class="col-12">

@@ -867,6 +867,7 @@
             var s = res.stats;
 
             $('#statTotalEmployees').text(s.total);
+            $('#statWorkforceInline').text(s.total);
             $('#statActive').text(s.active);
             $('#statBiometricLinked').text(s.biometric_linked);
             $('#statPendingSync').text(s.pending_sync);
@@ -874,6 +875,7 @@
             $('#statPermanent').text(s.permanent);
             $('#statContract').text(s.contract);
             $('#statOutsourced').text(s.outsourced);
+            $('#statOutsourcedInline').text(s.outsourced);
             $('#statVendors').text(s.vendors);
             $('#statSynced').text(s.synced);
             $('#statPending').text(s.pending);

@@ -86,11 +86,28 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <h6 class="opacity-75 text-white mb-1 small fw-normal text-uppercase">
-                                    Internal Employees
+                                    Total Workforce
                                 </h6>
-                                <div class="h4 mb-0 fw-bold text-white" id="statInternal">0</div>
+                                <div class="h4 mb-0 fw-bold text-white" id="statWorkforceInline">0</div>
                             </div>
                             <div class="text-white opacity-25">
+                                <i class="bi bi-people fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card border-0 rounded-3 shadow h-100">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="opacity-75 text-black mb-1 small fw-normal text-uppercase">
+                                    Internal Workers
+                                </h6>
+                                <div class="h4 mb-0 fw-bold text-black" id="statInternal">0</div>
+                            </div>
+                            <div class="text-black opacity-25">
                                 <i class="bi bi-person-badge fs-1"></i>
                             </div>
                         </div>
@@ -103,29 +120,12 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <h6 class="opacity-75 text-black mb-1 small fw-normal text-uppercase">
-                                    Permanent
+                                    Outsourced Workers
                                 </h6>
-                                <div class="h4 mb-0 fw-bold text-black" id="statPermanent">0</div>
+                                <div class="h4 mb-0 fw-bold text-black" id="statOutsourcedInline">0</div>
                             </div>
                             <div class="text-black opacity-25">
-                                <i class="bi bi-shield-check fs-1"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card stat-card border-0 rounded-3 shadow h-100">
-                    <div class="card-body p-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <h6 class="opacity-75 text-black mb-1 small fw-normal text-uppercase">
-                                    Contract
-                                </h6>
-                                <div class="h4 mb-0 fw-bold text-black" id="statContract">0</div>
-                            </div>
-                            <div class="text-black opacity-25">
-                                <i class="bi bi-file-earmark-text fs-1"></i>
+                                <i class="bi bi-building fs-1"></i>
                             </div>
                         </div>
                     </div>
