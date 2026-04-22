@@ -40,17 +40,10 @@
 @php
     $bioOrgs = ($organizations ?? collect())->map(fn ($o) => ['id' => $o->id, 'name' => $o->name])->values();
     $bioSbus = ($sbus ?? collect())->map(fn ($s) => ['id' => $s->id, 'name' => $s->name, 'organization_id' => $s->organization_id])->values();
-    $bioFloors = ($floors ?? collect())->map(fn ($f) => [
-        'id' => $f->id,
-        'sbu_id' => $f->sbu_id,
-        'name' => $f->name,
-        'floor_number' => $f->floor_number,
-    ])->values();
 @endphp
 <script>
     window.biometricOrganizations = @json($bioOrgs);
     window.biometricSbus = @json($bioSbus);
-    window.biometricFloors = @json($bioFloors);
 </script>
 <script src="{{ asset('js/biometric-device.js') }}"></script>
 @endpush

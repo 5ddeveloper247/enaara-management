@@ -12,7 +12,7 @@ class BiometricDeviceService
     public function getList(): Collection
     {
         return BiometricDevice::query()
-            ->with(['organization', 'sbu', 'floor', 'creator'])
+            ->with(['organization', 'sbu', 'creator'])
             ->orderByDesc('id')
             ->get();
     }
@@ -41,7 +41,6 @@ class BiometricDeviceService
             $row = [
                 'organization_id' => (int) $data['organization_id'],
                 'sbu_id' => (int) $data['sbu_id'],
-                'sbu_floor_id' => (int) $data['sbu_floor_id'],
                 'device_name' => $data['device_name'],
                 'serial_number' => $data['serial_number'],
                 'device_type' => $data['device_type'],
@@ -70,7 +69,7 @@ class BiometricDeviceService
     public function findById(int $id): ?BiometricDevice
     {
         return BiometricDevice::query()
-            ->with(['organization', 'sbu', 'floor', 'creator'])
+            ->with(['organization', 'sbu', 'creator'])
             ->find($id);
     }
 
@@ -81,7 +80,6 @@ class BiometricDeviceService
         $device->update([
             'organization_id' => (int) $data['organization_id'],
             'sbu_id' => (int) $data['sbu_id'],
-            'sbu_floor_id' => (int) $data['sbu_floor_id'],
             'device_name' => $data['device_name'],
             'serial_number' => $data['serial_number'],
             'device_type' => $data['device_type'],
@@ -93,7 +91,7 @@ class BiometricDeviceService
             'installation_date' => $data['installation_date'],
         ]);
 
-        return $device->fresh(['organization', 'sbu', 'floor', 'creator']);
+        return $device->fresh(['organization', 'sbu', 'creator']);
     }
 
     public function destroy(int $id): void

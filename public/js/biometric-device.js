@@ -17,32 +17,11 @@
         return Array.isArray(window.biometricSbus) ? window.biometricSbus : [];
     }
 
-    function getFloors() {
-        return Array.isArray(window.biometricFloors) ? window.biometricFloors : [];
-    }
-
     function filterSbusByOrg(orgId) {
         var id = String(orgId || '');
         return getSbus().filter(function(s) {
             return String(s.organization_id) === id;
         });
-    }
-
-    function filterFloorsBySbu(sbuId) {
-        var id = String(sbuId || '');
-        return getFloors().filter(function(f) {
-            return String(f.sbu_id) === id;
-        }).sort(function(a, b) {
-            return (parseInt(b.id, 10) || 0) - (parseInt(a.id, 10) || 0);
-        });
-    }
-
-    function floorLabel(f) {
-        var n = f.name || '';
-        if (f.floor_number !== undefined && f.floor_number !== null && String(f.floor_number) !== '') {
-            return n + ' (' + f.floor_number + ')';
-        }
-        return n || ('Floor #' + f.id);
     }
 
     function populateSbuSelect($sel, orgId, selectedId, placeholderDisabled) {
@@ -61,26 +40,6 @@
             $sel.append(opt);
         });
         if (placeholderDisabled && list.length === 0) {
-            $sel.prop('disabled', true);
-        }
-    }
-
-    function populateFloorSelect($sel, sbuId, selectedId) {
-        var list = filterFloorsBySbu(sbuId);
-        $sel.empty();
-        if (!sbuId) {
-            $sel.append($('<option>', { value: '', text: 'Select SBU first' }));
-            $sel.prop('disabled', true);
-            return;
-        }
-        $sel.prop('disabled', false);
-        $sel.append($('<option>', { value: '', text: 'Select floor' }));
-        list.forEach(function(f) {
-            var opt = $('<option>', { value: f.id, text: floorLabel(f) });
-            if (String(selectedId) === String(f.id)) opt.prop('selected', true);
-            $sel.append(opt);
-        });
-        if (list.length === 0) {
             $sel.prop('disabled', true);
         }
     }
@@ -135,7 +94,6 @@
         return {
             organization_id: { presence: { allowEmpty: false }, numericality: { onlyInteger: true, greaterThan: 0 } },
             sbu_id: { presence: { allowEmpty: false }, numericality: { onlyInteger: true, greaterThan: 0 } },
-            sbu_floor_id: { presence: { allowEmpty: false }, numericality: { onlyInteger: true, greaterThan: 0 } },
             device_name: { presence: { allowEmpty: false }, nameLikeField: true, length: { maximum: 255 } },
             serial_number: { presence: { allowEmpty: false }, serialField: true, length: { maximum: 100 } },
             device_type: { presence: { allowEmpty: false }, nameLikeField: true, length: { maximum: 100 } },
@@ -209,7 +167,6 @@
         $('#detailBdBrand').text(get('data-bd-brand'));
         $('#detailBdOrg').text(get('data-bd-org'));
         $('#detailBdSbu').text(get('data-bd-sbu'));
-        $('#detailBdFloor').text(get('data-bd-floor'));
         var ip = get('data-bd-ip');
         var port = get('data-bd-port');
         $('#detailBdIpPort').text((ip !== '—' && port) ? ip + ':' + port : '—');
@@ -233,7 +190,6 @@
         }
         clearFormMessages('#addBiometricDeviceForm');
         populateSbuSelect($('#bd_sbu_id'), '', '', true);
-        populateFloorSelect($('#bd_sbu_floor_id'), '', '');
     }
 
     function resetEditForm() {
@@ -244,7 +200,6 @@
         clearFormMessages('#editBiometricDeviceForm');
         $('#editBiometricDeviceForm').attr('data-update-url', '');
         populateSbuSelect($('#edit_bd_sbu_id'), '', '', true);
-        populateFloorSelect($('#edit_bd_sbu_floor_id'), '', '');
     }
 
     function storeDevice() {
@@ -305,7 +260,6 @@
                     $('#edit_bd_id').val(data.id || '');
                     $('#edit_bd_organization_id').val(String(data.organization_id || ''));
                     populateSbuSelect($('#edit_bd_sbu_id'), data.organization_id, data.sbu_id, false);
-                    populateFloorSelect($('#edit_bd_sbu_floor_id'), data.sbu_id, data.sbu_floor_id);
                     $('#edit_bd_device_name').val(data.device_name || '');
                     $('#edit_bd_serial_number').val(data.serial_number || '');
                     $('#edit_bd_device_type').val(data.device_type || '');
@@ -407,26 +361,16 @@
 
     $(document).ready(function() {
         populateSbuSelect($('#bd_sbu_id'), '', '', true);
-        populateFloorSelect($('#bd_sbu_floor_id'), '', '');
         populateSbuSelect($('#edit_bd_sbu_id'), '', '', true);
-        populateFloorSelect($('#edit_bd_sbu_floor_id'), '', '');
 
         $('#bd_organization_id').on('change', function() {
             var orgId = $(this).val();
             populateSbuSelect($('#bd_sbu_id'), orgId, '', false);
-            populateFloorSelect($('#bd_sbu_floor_id'), '', '');
-        });
-        $('#bd_sbu_id').on('change', function() {
-            populateFloorSelect($('#bd_sbu_floor_id'), $(this).val(), '');
         });
 
         $('#edit_bd_organization_id').on('change', function() {
             var orgId = $(this).val();
             populateSbuSelect($('#edit_bd_sbu_id'), orgId, '', false);
-            populateFloorSelect($('#edit_bd_sbu_floor_id'), '', '');
-        });
-        $('#edit_bd_sbu_id').on('change', function() {
-            populateFloorSelect($('#edit_bd_sbu_floor_id'), $(this).val(), '');
         });
 
         var detailCanvas = document.getElementById('biometricDeviceDetailCanvas');

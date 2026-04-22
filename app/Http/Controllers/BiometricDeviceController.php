@@ -6,7 +6,6 @@ use App\Http\Requests\Admin\BiometricDevice\BiometricDeviceStoreRequest;
 use App\Http\Requests\Admin\BiometricDevice\BiometricDeviceUpdateRequest;
 use App\Models\Organization;
 use App\Models\Sbu;
-use App\Models\SbuFloor;
 use App\Services\BiometricDeviceService;
 use Illuminate\View\View;
 
@@ -26,17 +25,11 @@ class BiometricDeviceController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
-        $floors = SbuFloor::query()
-            ->select(['id', 'sbu_id', 'name', 'floor_number'])
-            ->where('is_active', true)
-            ->orderByDesc('id')
-            ->get();
 
         return view('admin.biometric-device.index', [
             'devices' => $devices,
             'organizations' => $organizations,
             'sbus' => $sbus,
-            'floors' => $floors,
             'totalDevices' => $counts['total'],
             'activeDevices' => $counts['active'],
             'inactiveDevices' => $counts['inactive'],
@@ -135,7 +128,6 @@ class BiometricDeviceController extends Controller
                     'id' => $device->id,
                     'organization_id' => $device->organization_id,
                     'sbu_id' => $device->sbu_id,
-                    'sbu_floor_id' => $device->sbu_floor_id,
                     'device_name' => $device->device_name,
                     'serial_number' => $device->serial_number,
                     'device_type' => $device->device_type,

@@ -30,7 +30,7 @@
                         </div>
                         <div class="mb-2">
                             <i class="bi bi-diagram-3 me-1 text-main small"></i>
-                            <small class="text-muted small">{{ $d->sbu?->name ?? '—' }} · {{ $d->floor?->name ?? '—' }}</small>
+                            <small class="text-muted small">{{ $d->sbu?->name ?? '—' }}</small>
                         </div>
                         <div class="mb-2">
                             <i class="bi bi-hdd-network me-1 text-main small"></i>
@@ -63,7 +63,6 @@
                                 data-bd-brand="{{ e($d->brand_model) }}"
                                 data-bd-org="{{ e($d->organization?->name ?? '') }}"
                                 data-bd-sbu="{{ e($d->sbu?->name ?? '') }}"
-                                data-bd-floor="{{ e($d->floor?->name ?? '') }}"
                                 data-bd-ip="{{ e($d->ip_address) }}"
                                 data-bd-port="{{ $d->port }}"
                                 data-bd-conn="{{ e($d->connection_type) }}"

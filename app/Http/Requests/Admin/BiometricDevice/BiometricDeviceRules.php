@@ -29,14 +29,6 @@ final class BiometricDeviceRules
                     $q->where('organization_id', $orgId)->where('is_active', true);
                 }),
             ],
-            'sbu_floor_id' => [
-                'required',
-                'integer',
-                Rule::exists('sbu_floors', 'id')->where(function ($q) use ($request) {
-                    $sbuId = (int) $request->input('sbu_id');
-                    $q->where('sbu_id', $sbuId)->where('is_active', true);
-                }),
-            ],
             'device_name' => [
                 'required',
                 'string',
@@ -80,8 +72,6 @@ final class BiometricDeviceRules
             'organization_id.exists' => 'The selected organisation is invalid or inactive.',
             'sbu_id.required' => 'SBU is required.',
             'sbu_id.exists' => 'The selected SBU must belong to the organisation and be active.',
-            'sbu_floor_id.required' => 'Floor is required.',
-            'sbu_floor_id.exists' => 'The selected floor must belong to the SBU and be active.',
             'device_name.required' => 'Device name is required.',
             'device_name.regex' => 'Device name must contain letters and cannot be only digits.',
             'device_type.required' => 'Device type is required.',

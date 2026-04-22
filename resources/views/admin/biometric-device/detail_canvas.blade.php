@@ -36,10 +36,6 @@
                 <small class="opacity-75 text-white d-block mb-1">SBU</small>
                 <div class="fw-semibold small" id="detailBdSbu">—</div>
             </div>
-            <div class="p-3 rounded-3 border mb-2" style="border-color: #ffffff1a !important;">
-                <small class="opacity-75 text-white d-block mb-1">Floor</small>
-                <div class="fw-semibold small" id="detailBdFloor">—</div>
-            </div>
         </div>
         <hr class="my-4" style="border-color: #ffffffab !important">
         <div class="mb-4">
@@ -60,6 +56,7 @@
                 <small class="opacity-75 text-white d-block mb-1">Device status</small>
                 <div class="fw-semibold small" id="detailBdDeviceStatus">—</div>
             </div>
+            {{--
             <div class="p-3 rounded-3 border mb-2" style="border-color: #ffffff1a !important;">
                 <small class="opacity-75 text-white d-block mb-1">Online status (auto)</small>
                 <div class="fw-semibold small" id="detailBdOnline">—</div>
@@ -68,6 +65,7 @@
                 <small class="opacity-75 text-white d-block mb-1">Last sync time</small>
                 <div class="fw-semibold small" id="detailBdLastSync">—</div>
             </div>
+            --}}
         </div>
         <hr class="my-4" style="border-color: #ffffffab !important">
         <div class="mb-4">
@@ -80,6 +78,7 @@
                 <small class="opacity-75 text-white d-block mb-1">Created by</small>
                 <div class="fw-semibold small" id="detailBdCreatedBy">—</div>
             </div>
+            {{--
             <div class="p-3 rounded-3 border mb-2" style="border-color: #ffffff1a !important;">
                 <small class="opacity-75 text-white d-block mb-1">Created date</small>
                 <div class="fw-semibold small" id="detailBdCreatedAt">—</div>
@@ -88,6 +87,7 @@
                 <small class="opacity-75 text-white d-block mb-1">Updated date</small>
                 <div class="fw-semibold small" id="detailBdUpdatedAt">—</div>
             </div>
+            --}}
         </div>
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>

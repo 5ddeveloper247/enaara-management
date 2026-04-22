@@ -39,8 +39,8 @@
                     </div>
                     <div class="col-md-6">
                         <div class="p-3 rounded-3 border">
-                            <small class="text-muted d-block mb-2">SBU · Floor</small>
-                            <div class="fw-semibold">{{ $device->sbu?->name ?? '—' }} · {{ $device->floor?->name ?? '—' }}</div>
+                            <small class="text-muted d-block mb-2">SBU</small>
+                            <div class="fw-semibold">{{ $device->sbu?->name ?? '—' }}</div>
                         </div>
                     </div>
                     <div class="col-md-6">

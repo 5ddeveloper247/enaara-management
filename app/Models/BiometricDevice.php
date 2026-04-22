@@ -13,7 +13,6 @@ class BiometricDevice extends Model
     protected $fillable = [
         'organization_id',
         'sbu_id',
-        'sbu_floor_id',
         'device_name',
         'serial_number',
         'device_type',
@@ -42,11 +41,6 @@ class BiometricDevice extends Model
     public function sbu(): BelongsTo
     {
         return $this->belongsTo(Sbu::class, 'sbu_id');
-    }
-
-    public function floor(): BelongsTo
-    {
-        return $this->belongsTo(SbuFloor::class, 'sbu_floor_id');
     }
 
     public function creator(): BelongsTo

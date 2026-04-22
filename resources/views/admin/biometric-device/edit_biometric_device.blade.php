@@ -48,12 +48,6 @@
                     <option value="">Select organisation first</option>
                 </select>
             </div>
-            <div class="mb-3">
-                <label for="edit_bd_sbu_floor_id" class="form-label fw-semibold small text-white">Floor <span class="text-danger">*</span></label>
-                <select class="form-select" id="edit_bd_sbu_floor_id" name="sbu_floor_id" disabled>
-                    <option value="">Select SBU first</option>
-                </select>
-            </div>
 
             <h6 class="text-white-50 small text-uppercase mb-3 mt-4">Connectivity</h6>
             <div class="mb-3">
