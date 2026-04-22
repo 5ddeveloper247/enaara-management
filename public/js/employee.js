@@ -463,6 +463,9 @@
         var dept = normalizeValue(row.department, '');
         var code = normalizeValue(row.employee_code, '');
         var info = (dept && code) ? (dept + ' - ' + code) : (dept || code || '-');
+        var assignedFloors = Array.isArray(row.assigned_floor_names) ?
+            row.assigned_floor_names.filter(function (name) { return !!name; }).join('||') :
+            '';
 
         var summary = normalizeValue(row.summary, '');
         if (!summary) {
@@ -495,6 +498,7 @@
             ' data-site-assignment="' + escAttr(normalizeValue(row.site)) + '"' +
             ' data-vendor="' + escAttr(normalizeValue(row.vendor)) + '"' +
             ' data-floor-access="' + (row.floor_access ? '1' : '0') + '"' +
+            ' data-assigned-floors="' + escAttr(assignedFloors) + '"' +
             ' data-employee-status="' + escAttr(normalizeValue(row.employee_status)) + '"' +
             ' data-email="' + escAttr(normalizeValue(row.email)) + '"' +
             ' data-cell="' + escAttr(normalizeValue(row.cell_no)) + '"' +
@@ -527,6 +531,7 @@
             siteAssignment: button.dataset.siteAssignment || '-',
             vendor: button.dataset.vendor || '-',
             floorAccess: button.dataset.floorAccess === '1',
+            assignedFloors: button.dataset.assignedFloors ? button.dataset.assignedFloors.split('||').filter(Boolean) : [],
             employeeStatus: button.dataset.employeeStatus || '-',
             email: button.dataset.email || '-',
             cell: button.dataset.cell || '-',
@@ -679,8 +684,11 @@
             $('#detailVendor').text('-');
         }
 
-        if (d.floorAccess) {
-            $('#detailFloorAccess').html('<span class="badge bg-primary"><i class="bi bi-building me-1"></i>10th Floor</span>');
+        if (Array.isArray(d.assignedFloors) && d.assignedFloors.length > 0) {
+            var floorBadges = d.assignedFloors.map(function (floorName) {
+                return '<span class="badge bg-primary me-1 mb-1"><i class="bi bi-building me-1"></i>' + escHtml(floorName) + '</span>';
+            }).join('');
+            $('#detailFloorAccess').html(floorBadges);
         } else {
             $('#detailFloorAccess').html('<span class="badge bg-secondary">No Access</span>');
         }

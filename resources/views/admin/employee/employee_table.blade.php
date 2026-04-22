@@ -190,6 +190,7 @@
                     data-biometric-id="${rowData.biometric_id || '-'}"
                     data-sync-status="${rowData.sync_status || 'Not Linked'}"
                     data-employee-status="${rowData.employee_status || '-'}"
+                    data-assigned-floors="${attrSafe(Array.isArray(rowData.assigned_floor_names) ? rowData.assigned_floor_names.filter(Boolean).join('||') : '')}"
                     data-email="${attrSafe(rowData.email)}"
                     data-cell="${attrSafe(rowData.cell_no)}"
                     data-cnic="${attrSafe(rowData.cnic)}"

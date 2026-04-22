@@ -1098,6 +1098,7 @@ class EmployeeService
                 'organization:id,name',
                 'sbu:id,name',
                 'role:id,name',
+                'assignedFloors:id,name',
                 'mediaFiles' => static function ($q): void {
                     $q->select(['id', 'module_id', 'file_type', 'file_path', 'file_name'])
                         ->where('module_name', 'employee')
@@ -1254,6 +1255,7 @@ class EmployeeService
                 'cell_no'             => $emp->contact?->cell_no ?? '-',
                 'employment_type'     => $emp->employment_type ?? '-',
                 'employee_type'       => $employeeType,
+                'assigned_floor_names' => $emp->assignedFloors->pluck('name')->filter()->values()->all(),
                 'biometric_id'        => $biometricId,
                 'sync_status'         => $syncStatus,
                 'site'                => $emp->site ?? '-',
