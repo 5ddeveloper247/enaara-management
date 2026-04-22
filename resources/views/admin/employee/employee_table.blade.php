@@ -43,7 +43,7 @@
                 <th>Gender</th>
                 <th>Date of Joining</th>
                 <th>Designation</th>
-                <th>Verification Status</th>
+                <th>Status</th>
                 <th>Email</th>
                 <th>Cell Number</th>
                 <th>Summary</th>
@@ -169,7 +169,7 @@
                 // Total fallback: Construct button with full data attributes for extractEmployeeData
                 const initials = (rowData.full_name || '??').split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2);
                 avatarHtml = `<div class="user-avatar flex-shrink-0 d-flex align-items-center justify-content-center" style="width:36px;height:36px;font-size:0.75rem;">${initials}</div>`;
-                verificationBadge = `<span class="badge ${rowData.verification_status === 'Verified' ? 'bg-success' : 'bg-warning'}">${rowData.verification_status || 'Pending'}</span>`;
+                verificationBadge = `<span class="badge ${rowData.employee_status === 'Active' ? 'bg-success' : rowData.employee_status === 'Suspend' ? 'bg-warning text-dark' : rowData.employee_status === 'Terminated' ? 'bg-danger' : 'bg-secondary'}">${rowData.employee_status || '-'}</span>`;
                 
                 const dept = norm(rowData.department);
                 const empNo = norm(rowData.employee_code);
@@ -189,7 +189,7 @@
                     data-employee-type="${attrSafe(rowData.employee_type)}"
                     data-biometric-id="${rowData.biometric_id || '-'}"
                     data-sync-status="${rowData.sync_status || 'Not Linked'}"
-                    data-verification-status="${rowData.verification_status || 'Pending'}"
+                    data-employee-status="${rowData.employee_status || '-'}"
                     data-email="${attrSafe(rowData.email)}"
                     data-cell="${attrSafe(rowData.cell_no)}"
                     data-cnic="${attrSafe(rowData.cnic)}"

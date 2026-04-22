@@ -114,10 +114,10 @@
                     orderable: true
                 }, // 12 Designation
                 {
-                    data: 'verification_status',
+                    data: 'employee_status',
                     render: renderVerificationStatus,
                     orderable: false
-                }, // 13 Verification Status
+                }, // 13 Status
                 {
                     data: 'email',
                     render: renderEmail,
@@ -365,9 +365,9 @@
         data = normalizeValue(data);
         if (data === '-') return '<span class="text-muted">-</span>';
 
-        var cls = data === 'Verified' ? 'bg-success' :
-            data === 'Pending' ? 'bg-warning text-dark' :
-            data === 'Rejected' ? 'bg-danger' :
+        var cls = data === 'Active' ? 'bg-success' :
+            data === 'Suspend' ? 'bg-warning text-dark' :
+            data === 'Terminated' ? 'bg-danger' :
             'bg-secondary';
 
         return '<span class="badge px-2 rounded-1 ' + cls + '">' + escHtml(data) + '</span>';
@@ -495,7 +495,7 @@
             ' data-site-assignment="' + escAttr(normalizeValue(row.site)) + '"' +
             ' data-vendor="' + escAttr(normalizeValue(row.vendor)) + '"' +
             ' data-floor-access="' + (row.floor_access ? '1' : '0') + '"' +
-            ' data-verification-status="' + escAttr(normalizeValue(row.verification_status)) + '"' +
+            ' data-employee-status="' + escAttr(normalizeValue(row.employee_status)) + '"' +
             ' data-email="' + escAttr(normalizeValue(row.email)) + '"' +
             ' data-cell="' + escAttr(normalizeValue(row.cell_no)) + '"' +
             ' data-cnic="' + escAttr(normalizeValue(row.cnic)) + '"' +
@@ -527,7 +527,7 @@
             siteAssignment: button.dataset.siteAssignment || '-',
             vendor: button.dataset.vendor || '-',
             floorAccess: button.dataset.floorAccess === '1',
-            verificationStatus: button.dataset.verificationStatus || '-',
+            employeeStatus: button.dataset.employeeStatus || '-',
             email: button.dataset.email || '-',
             cell: button.dataset.cell || '-',
             cnic: button.dataset.cnic || '-',
@@ -576,12 +576,12 @@
         $('#detailSummary').text(normalizeValue(d.summary));
         $('#editEmployeeBtn').attr('data-employee-id', d.dbId);
 
-        var verification = normalizeValue(d.verificationStatus);
-        var verificationCls = verification === 'Verified' ?
+        var verification = normalizeValue(d.employeeStatus);
+        var verificationCls = verification === 'Active' ?
             'bg-success' :
-            verification === 'Pending' ?
+            verification === 'Suspend' ?
             'bg-warning text-dark' :
-            verification === 'Rejected' ?
+            verification === 'Terminated' ?
             'bg-danger' :
             'bg-secondary';
 

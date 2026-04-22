@@ -264,8 +264,7 @@
                                                             </div>
                                                             <div class="emp-dept-opt-list" id="employmentFloorList"></div>
                                                         </div>
-                                                        <small class="text-muted d-block mt-1" id="employmentFloorHint">No floors are set up for this SBU yet.</small>
-                                                        <small class="text-muted">Floors are loaded based on selected SBU. You can select multiple floors.</small>
+                                                        <small class="text-muted d-block mt-1">Assign Floor Access</small>
                                                     </div>
                                                 </div>
                                             </div>
