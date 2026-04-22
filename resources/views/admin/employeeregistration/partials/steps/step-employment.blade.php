@@ -12,7 +12,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label">Employee Number</label>
-                                                <input type="text" name="employee_number" class="form-control" value="{{ $employee->employee_number ?? '' }}" placeholder="e.g. EMP-CEO-VIUQ" disabled>
+                                                <input type="text" name="employee_number" class="form-control" value="{{ $employee->employee_code ?? '' }}" placeholder="e.g. EMP-CEO-VIUQ" disabled>
                                             </div>
                                             <div class="col-12">
                                                 <div class="border rounded p-3" style="background-color: #01244518">
