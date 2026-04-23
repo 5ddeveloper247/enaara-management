@@ -484,8 +484,14 @@
         // =============================================
         function initResetPassword() {
             $('#usersTable').on('click', '.reset-password-btn', function () {
-                var userId = this.getAttribute('data-user-id');
+                var resetBtn = this;
+                if (resetBtn.disabled || resetBtn.getAttribute('data-reset-loading') === '1') {
+                    return;
+                }
+                var userId = resetBtn.getAttribute('data-user-id');
                 if (!userId || !window.usersResetPasswordUrl) return;
+
+                resetBtn.setAttribute('data-reset-loading', '1');
 
                 Swal.fire({
                     title: 'Reset Password',
@@ -495,29 +501,46 @@
                     confirmButtonColor: '#012445',
                     cancelButtonColor: '#dc3545',
                     confirmButtonText: 'Yes, reset it!'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        fetch(window.usersResetPasswordUrl + '/' + userId + '/reset-password', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept':       'application/json',
-                                'X-CSRF-TOKEN': window.csrfToken,
-                            },
-                            body: JSON.stringify({}),
-                        })
-                        .then(function (r) { return r.json(); })
-                        .then(function (data) {
-                            if (data.success) {
-                                showSuccess(data.message || 'Done.', 'Done!');
-                            } else {
-                                showError(data.message || 'Request failed.');
-                            }
-                        })
-                        .catch(function () {
-                            showError('Network error.');
-                        });
+                }).then(function (result) {
+                    if (!result.isConfirmed) {
+                        resetBtn.removeAttribute('data-reset-loading');
+                        return;
                     }
+
+                    resetBtn.disabled = true;
+
+                    fetch(window.usersResetPasswordUrl + '/' + userId + '/reset-password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept':       'application/json',
+                            'X-CSRF-TOKEN': window.csrfToken,
+                        },
+                        body: JSON.stringify({}),
+                    })
+                    .then(function (r) {
+                        return r.text().then(function (text) {
+                            try {
+                                return text ? JSON.parse(text) : {};
+                            } catch (e) {
+                                return { success: false, message: 'Unexpected server response.' };
+                            }
+                        });
+                    })
+                    .then(function (data) {
+                        if (data.success) {
+                            showSuccess(data.message || 'Done.', 'Done!');
+                        } else {
+                            showError(data.message || 'Request failed.');
+                        }
+                    })
+                    .catch(function () {
+                        showError('Network error.');
+                    })
+                    .finally(function () {
+                        resetBtn.disabled = false;
+                        resetBtn.removeAttribute('data-reset-loading');
+                    });
                 });
             });
         }
