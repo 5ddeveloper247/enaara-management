@@ -241,17 +241,18 @@
                 tbody.appendChild(deptTr);
 
                 employees.filter(function(e) { return Number(e.departmentId) === Number(dept.id); }).forEach(function(emp) {
+                    var empRef = emp.id ?? emp.employeeId ?? emp.employee_id ?? '';
                     var tr = document.createElement('tr');
                     tr.className = 'roster-emp-row';
                     tr.setAttribute('data-dept-id', String(dept.id));
                     tr.innerHTML = '<td></td><td class="text-muted">' + escapeHtml(emp.name) + '</td>';
                     days.forEach(function(d) {
                         var iso = dateToISO(d);
-                        var k = emp.id + '-' + iso;
+                        var k = empRef + '-' + iso;
                         var s = shiftsByEmpDay[k];
                         var td = document.createElement('td');
                         td.className = 'roster-day-cell shift-cell';
-                        td.setAttribute('data-employee-id', String(emp.id));
+                        td.setAttribute('data-employee-id', String(empRef));
                         td.setAttribute('data-roster-date', iso);
                         td.setAttribute('data-day', String(d.getDate()));
                         if (d.getMonth() !== rosterViewDate.getMonth() || d.getFullYear() !== rosterViewDate.getFullYear()) {
@@ -404,10 +405,14 @@
         var rosterId = document.getElementById('rosterShiftRosterId').value;
         var notes = document.getElementById('rosterShiftNotes').value.trim();
 
-        if (!employeeId || !rosterDate || !shiftPlannerId) return;
+        var parsedEmployeeId = parseInt(employeeId, 10);
+        if (!employeeId || !rosterDate || !shiftPlannerId || !Number.isFinite(parsedEmployeeId) || parsedEmployeeId <= 0) {
+            showError('Employee is required.');
+            return;
+        }
 
         var payload = {
-            employee_id: parseInt(employeeId, 10),
+            employee_id: parsedEmployeeId,
             employee_type: employeeType,
             shift_planner_id: parseInt(shiftPlannerId, 10),
             roster_date: rosterDate,
@@ -538,7 +543,10 @@
                 var empName = '';
                 var deptName = '';
                 if (rosterData && rosterData.employees) {
-                    var emp = rosterData.employees.find(function(e) { return String(e.id) === String(employeeId); });
+                    var emp = rosterData.employees.find(function(e) {
+                        var ref = e.id ?? e.employeeId ?? e.employee_id ?? '';
+                        return String(ref) === String(employeeId);
+                    });
                     if (emp) {
                         empName = emp.name;
                         deptName = emp.departmentName;
