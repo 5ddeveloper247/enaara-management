@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\OutsourcedEmployee;
+use App\Models\SbuFloor;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -82,6 +83,7 @@ class OutsourcedEmployeeService
         return DB::transaction(function () use ($data, $photo) {
             $floorIds = $data['assigned_floor_ids'] ?? [];
             unset($data['assigned_floor_ids']);
+            $data['placement_floor'] = $this->resolvePlacementFloor((array) $floorIds);
             
             $row = OutsourcedEmployee::create($data);
             if (!empty($floorIds)) {
@@ -101,6 +103,7 @@ class OutsourcedEmployeeService
             $row = OutsourcedEmployee::query()->findOrFail($id);
             $floorIds = $data['assigned_floor_ids'] ?? [];
             unset($data['assigned_floor_ids']);
+            $data['placement_floor'] = $this->resolvePlacementFloor((array) $floorIds);
             
             $row->assignedFloors()->sync($floorIds);
             
@@ -113,6 +116,27 @@ class OutsourcedEmployeeService
             $row->update($data);
             return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors']);
         });
+    }
+
+    private function resolvePlacementFloor(array $floorIds): string
+    {
+        $floorIds = collect($floorIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($floorIds === []) {
+            return '';
+        }
+
+        return SbuFloor::query()
+            ->whereIn('id', $floorIds)
+            ->orderBy('name')
+            ->pluck('name')
+            ->filter()
+            ->implode(', ');
     }
 
     public function findForEdit(int $id): OutsourcedEmployee
