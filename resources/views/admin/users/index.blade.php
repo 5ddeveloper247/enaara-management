@@ -489,7 +489,7 @@
 
                 Swal.fire({
                     title: 'Reset Password',
-                    text: 'Send a new temporary password to this user by email? They must sign in and choose a new password.',
+                    text: 'A temporary password will be emailed to the user.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#012445',
