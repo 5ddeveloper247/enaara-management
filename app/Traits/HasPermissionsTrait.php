@@ -6,6 +6,25 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 trait HasPermissionsTrait {
 
+  protected static function resolveCurrentUserRoleIds(): array
+  {
+    $loggedUser = Auth::user();
+
+    if (!$loggedUser) {
+      return [];
+    }
+
+    $roleIds = UserRole::where('user_id', $loggedUser->id)
+      ->whereNotNull('role_id')
+      ->pluck('role_id')
+      ->map(fn ($id) => (int) $id)
+      ->unique()
+      ->values()
+      ->all();
+
+    return $roleIds;
+  }
+
   public function getModulesPremissions(){
     $hasAccess = false;
 
@@ -16,22 +35,19 @@ trait HasPermissionsTrait {
         return $hasAccess;
     }
 
-    $userId = $loggedInUser->id;
+    $roleIdList = self::resolveCurrentUserRoleIds();
 
-    $userRoles = UserRole::where('user_id', $userId)->get();
+    if (!empty($roleIdList)) {
+      foreach ($roleIdList as $roleId) {
+        $permissionCheck = RolePrivilege::hasPermission(
+          $roleId,
+          $currentRoute
+        );
 
-    if ($userRoles) {
-        foreach ($userRoles as $roleItem) {
-
-            $permissionCheck = RolePrivilege::hasPermission(
-                $roleItem->role_id,
-                $currentRoute
-            );
-
-            if ($permissionCheck) {
-                $hasAccess = $permissionCheck;
-            }
+        if ($permissionCheck) {
+          return $permissionCheck;
         }
+      }
     }
 
     return $hasAccess;
@@ -47,22 +63,19 @@ trait HasPermissionsTrait {
         return $permissionGranted;
     }
 
-    $userId = $currentUser->id;
+    $roleIdList = self::resolveCurrentUserRoleIds();
 
-    $assignedRoles = UserRole::where('user_id', $userId)->get();
+    if (!empty($roleIdList)) {
+      foreach ($roleIdList as $roleId) {
+        $permissionResult = RolePrivilege::hasPermission(
+          $roleId,
+          $routeName
+        );
 
-    if ($assignedRoles) {
-        foreach ($assignedRoles as $roleRecord) {
-
-            $permissionResult = RolePrivilege::hasPermission(
-                $roleRecord->role_id,
-                $routeName
-            );
-
-            if ($permissionResult) {
-                $permissionGranted = $permissionResult;
-            }
+        if ($permissionResult) {
+          return $permissionResult;
         }
+      }
     }
 
     return $permissionGranted;
@@ -75,11 +88,7 @@ trait HasPermissionsTrait {
         return collect();
     }
 
-    $userId = $loggedUser->id;
-
-    $userRoles = UserRole::where('user_id', $userId)->get();
-
-    $roleIdList = $userRoles->pluck('role_id')->toArray();
+    $roleIdList = self::resolveCurrentUserRoleIds();
 
     if (empty($roleIdList)) {
         return collect();
