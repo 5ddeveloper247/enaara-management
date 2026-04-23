@@ -5,8 +5,98 @@
         initializeEventHandlers();
     });
 
+    const SBU_LIMITED_FIELDS = [
+        { fieldName: 'name', inputId: 'name', lenId: 'sbuNameLen', metaId: 'sbuNameMeta', max: 50 },
+        { fieldName: 'city', inputId: 'city', lenId: 'sbuCityLen', metaId: 'sbuCityMeta', max: 50 },
+        { fieldName: 'address', inputId: 'address', lenId: 'sbuAddressLen', metaId: 'sbuAddressMeta', max: 255 },
+    ];
+
+    const EDIT_SBU_LIMITED_FIELDS = [
+        { fieldName: 'name', inputId: 'edit_name', lenId: 'editSbuNameLen', metaId: 'editSbuNameMeta', max: 50 },
+        { fieldName: 'city', inputId: 'edit_city', lenId: 'editSbuCityLen', metaId: 'editSbuCityMeta', max: 50 },
+        { fieldName: 'address', inputId: 'edit_address', lenId: 'editSbuAddressLen', metaId: 'editSbuAddressMeta', max: 255 },
+    ];
+
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
+    }
+
+    function syncSbuLimitedFieldsState() {
+        const form = document.getElementById('addSbuForm');
+        if (!form) return;
+        SBU_LIMITED_FIELDS.forEach(function (cfg) {
+            const el = document.getElementById(cfg.inputId);
+            if (!el) return;
+            const max = cfg.max;
+            if (el.value.length > max) {
+                el.value = el.value.substring(0, max);
+            }
+            const len = el.value.length;
+            const lenEl = document.getElementById(cfg.lenId);
+            const metaEl = document.getElementById(cfg.metaId);
+            if (lenEl) lenEl.textContent = String(len);
+            if (metaEl) metaEl.classList.toggle('text-danger', len >= max);
+            
+            // Remove previous client-length error if any
+            $(el).siblings('.validation-error-dynamic[data-client-length="1"]').remove();
+            
+            if (len >= max) {
+                $(el).addClass('is-invalid');
+                const feedback = $('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + cfg.fieldName + '" data-client-length="1">Maximum length is ' + max + ' characters.</div>');
+                $(el).after(feedback);
+            } else if (!$(el).siblings('.validation-error-dynamic:not([data-client-length])').length) {
+                $(el).removeClass('is-invalid');
+            }
+        });
+        syncSaveSbuButtonState();
+    }
+
+    function syncEditSbuLimitedFieldsState() {
+        const form = document.getElementById('editSbuForm');
+        if (!form) return;
+        EDIT_SBU_LIMITED_FIELDS.forEach(function (cfg) {
+            const el = document.getElementById(cfg.inputId);
+            if (!el) return;
+            const max = cfg.max;
+            if (el.value.length > max) {
+                el.value = el.value.substring(0, max);
+            }
+            const len = el.value.length;
+            const lenEl = document.getElementById(cfg.lenId);
+            const metaEl = document.getElementById(cfg.metaId);
+            if (lenEl) lenEl.textContent = String(len);
+            if (metaEl) metaEl.classList.toggle('text-danger', len >= max);
+
+            // Remove previous client-length error if any
+            $(el).siblings('.validation-error-dynamic[data-client-length="1"]').remove();
+
+            if (len >= max) {
+                $(el).addClass('is-invalid');
+                const feedback = $('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + cfg.fieldName + '" data-client-length="1">Maximum length is ' + max + ' characters.</div>');
+                $(el).after(feedback);
+            } else if (!$(el).siblings('.validation-error-dynamic:not([data-client-length])').length) {
+                $(el).removeClass('is-invalid');
+            }
+        });
+        syncUpdateSbuButtonState();
+    }
+
+    function syncSaveSbuButtonState() {
+        const form = document.getElementById('addSbuForm');
+        const btn = document.getElementById('saveSbuBtn');
+        if (!form || !btn) return;
+        const isValid = form.checkValidity();
+        const hasClientErrors = $(form).find('.validation-error-dynamic[data-client-length="1"]').length > 0;
+        btn.disabled = !isValid || hasClientErrors;
+    }
+
+    function syncUpdateSbuButtonState() {
+        const form = document.getElementById('editSbuForm');
+        const btn = document.getElementById('updateSbuBtn');
+        if (!form || !btn) return;
+        const isValid = form.checkValidity();
+        const hasClientErrors = $(form).find('.validation-error-dynamic[data-client-length="1"]').length > 0;
+        btn.disabled = !isValid || hasClientErrors;
     }
 
     function applyFilters() {
@@ -54,6 +144,7 @@
         $(formSelector + ' .is-invalid').removeClass('is-invalid');
         $(formSelector + ' .invalid-feedback').remove();
         $(formSelector + ' .form-alert-box').remove();
+        $(formSelector + ' .validation-error-dynamic').remove();
     }
 
     function showFormMessage(formSelector, message, type = 'danger') {
@@ -79,6 +170,7 @@
         $('#is_active').val('1');
         $('#sbuScheduleModeStandard').prop('checked', true);
         toggleAddSbuScheduleMode();
+        syncSbuLimitedFieldsState();
     }
 
     function resetEditSbuForm() {
@@ -94,6 +186,7 @@
         $('#deleteSbuBtn').attr('data-delete-url', '');
         $('#editSbuScheduleModeStandard').prop('checked', true);
         toggleEditSbuScheduleMode();
+        syncEditSbuLimitedFieldsState();
     }
 
     function getAddSelectedOrganizationOption() {
@@ -211,7 +304,7 @@
                     checkboxes.addClass('is-invalid');
                     const wrapper = checkboxes.first().closest('.mb-3');
                     if (!wrapper.find('[data-error-for="working_days"]').length) {
-                        wrapper.append('<div class="invalid-feedback d-block" data-error-for="working_days">' + message + '</div>');
+                        wrapper.append('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="working_days">' + message + '</div>');
                     }
                 }
                 return;
@@ -221,7 +314,7 @@
             if (input.length) {
                 input.first().addClass('is-invalid');
                 if ($(formSelector + ' [data-error-for="' + normalizedField + '"]').length === 0) {
-                    input.first().after('<div class="invalid-feedback d-block" data-error-for="' + normalizedField + '">' + message + '</div>');
+                    input.first().after('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + normalizedField + '">' + message + '</div>');
                 }
             }
         });
@@ -230,6 +323,10 @@
         if (firstInvalid.length) {
             firstInvalid.trigger('focus');
         }
+        
+        // Re-sync counters to ensure character limit feedback is preserved if any
+        if (formSelector === '#addSbuForm') syncSbuLimitedFieldsState();
+        else syncEditSbuLimitedFieldsState();
     }
 
     function storeSbu() {
@@ -254,7 +351,7 @@
             beforeSend: function() {
                 $('#saveSbuBtn')
                     .prop('disabled', true)
-                    .html('Saving...');
+                    .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
             },
             success: function(response) {
                 if (response.success) {
@@ -265,15 +362,21 @@
                         offcanvas.hide();
                     }
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: response.message || 'SBU created successfully.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
+                    if (window.showSuccess) {
+                        window.showSuccess(response.message || 'SBU created successfully.').then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: response.message || 'SBU created successfully.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    }
                 } else {
                     showFormMessage('#addSbuForm', response.message || 'Failed to create SBU.');
                 }
@@ -281,31 +384,23 @@
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                     showValidationErrors('#addSbuForm', xhr.responseJSON.errors);
-                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
-                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
-                        errorMessage += `<li>${err}</li>`;
-                    });
-                    errorMessage += '</ul></div>';
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Please check the following:',
-                        html: errorMessage,
-                        confirmButtonColor: '#1a237e',
-                        confirmButtonText: 'Understood'
-                    });
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'System Error',
-                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to create SBU.'
-                    });
+                    if (window.showError) {
+                        window.showError((xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to create SBU.');
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to create SBU.'
+                        });
+                    }
                 }
             },
             complete: function() {
                 $('#saveSbuBtn')
                     .prop('disabled', false)
                     .html('<i class="bi bi-check-lg me-1"></i>Create SBU');
+                syncSaveSbuButtonState();
             }
         });
     }
@@ -367,6 +462,8 @@
 
                     $('#editSbuForm').attr('data-update-url', $(button).data('update-url'));
                     $('#deleteSbuBtn').attr('data-delete-url', $(button).data('delete-url'));
+                    
+                    syncEditSbuLimitedFieldsState();
                 } else {
                     showFormMessage('#editSbuForm', response.message || 'Failed to load SBU data.');
                 }
@@ -404,7 +501,7 @@
             beforeSend: function() {
                 $('#updateSbuBtn')
                     .prop('disabled', true)
-                    .html('Updating...');
+                    .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...');
             },
             success: function(response) {
                 if (response.success) {
@@ -415,15 +512,21 @@
                         offcanvas.hide();
                     }
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: response.message || 'SBU updated successfully.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
+                    if (window.showSuccess) {
+                        window.showSuccess(response.message || 'SBU updated successfully.').then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: response.message || 'SBU updated successfully.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    }
                 } else {
                     showFormMessage('#editSbuForm', response.message || 'Failed to update SBU.');
                 }
@@ -431,31 +534,23 @@
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                     showValidationErrors('#editSbuForm', xhr.responseJSON.errors);
-                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
-                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
-                        errorMessage += `<li>${err}</li>`;
-                    });
-                    errorMessage += '</ul></div>';
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Please check the following:',
-                        html: errorMessage,
-                        confirmButtonColor: '#1a237e',
-                        confirmButtonText: 'Understood'
-                    });
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'System Error',
-                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update SBU.'
-                    });
+                    if (window.showError) {
+                        window.showError((xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update SBU.');
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update SBU.'
+                        });
+                    }
                 }
             },
             complete: function() {
                 $('#updateSbuBtn')
                     .prop('disabled', false)
                     .html('<i class="bi bi-check-lg me-1"></i>Update SBU');
+                syncUpdateSbuButtonState();
             }
         });
     }
@@ -506,25 +601,35 @@
                             offcanvas.hide();
                         }
 
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Deleted',
-                            text: response.message || 'SBU deleted successfully.',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            location.reload();
-                        });
+                        if (window.showSuccess) {
+                            window.showSuccess(response.message || 'SBU deleted successfully.', 'Deleted').then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted',
+                                text: response.message || 'SBU deleted successfully.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        }
                     } else {
                         showFormMessage('#editSbuForm', response.message || 'Failed to delete SBU.');
                     }
                 },
                 error: function(xhr) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'System Error',
-                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete SBU.'
-                    });
+                    if (window.showError) {
+                        window.showError((xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete SBU.');
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete SBU.'
+                        });
+                    }
                 },
                 complete: function() {
                     $('#deleteSbuBtn')
@@ -552,6 +657,9 @@
             addSbuCanvas.addEventListener('show.bs.offcanvas', function() {
                 resetAddSbuForm();
             });
+            addSbuCanvas.addEventListener('shown.bs.offcanvas', function () {
+                syncSbuLimitedFieldsState();
+            });
         }
 
         const editSbuCanvas = document.getElementById('editSbuCanvas');
@@ -566,6 +674,10 @@
 
             editSbuCanvas.addEventListener('hidden.bs.offcanvas', function() {
                 resetEditSbuForm();
+            });
+            
+            editSbuCanvas.addEventListener('shown.bs.offcanvas', function () {
+                syncEditSbuLimitedFieldsState();
             });
         }
 
@@ -587,9 +699,11 @@
                 $('#sbuScheduleModeStandard').prop('checked', true);
             }
             toggleAddSbuScheduleMode();
+            syncSaveSbuButtonState();
         });
         $('#sbuScheduleModeStandard, #sbuScheduleModeCustom').on('change', function() {
             toggleAddSbuScheduleMode();
+            syncSaveSbuButtonState();
         });
 
         $(document).on('click', '#updateSbuBtn', function(e) {
@@ -604,9 +718,11 @@
                 $('#editSbuScheduleModeCustom').prop('checked', true);
             }
             toggleEditSbuScheduleMode();
+            syncUpdateSbuButtonState();
         });
         $('#editSbuScheduleModeStandard, #editSbuScheduleModeCustom').on('change', function() {
             toggleEditSbuScheduleMode();
+            syncUpdateSbuButtonState();
         });
 
         $(document).on('click', '.delete-sbu-btn', function(e) {
@@ -614,7 +730,26 @@
             deleteSbu(this);
         });
 
+        // Add real-time validation listeners
+        const addSbuForm = document.getElementById('addSbuForm');
+        if (addSbuForm) {
+            addSbuForm.querySelectorAll('input, select, textarea').forEach(function (el) {
+                el.addEventListener('change', syncSbuLimitedFieldsState);
+                el.addEventListener('input', syncSbuLimitedFieldsState);
+            });
+        }
+
+        const editSbuForm = document.getElementById('editSbuForm');
+        if (editSbuForm) {
+            editSbuForm.querySelectorAll('input, select, textarea').forEach(function (el) {
+                el.addEventListener('change', syncEditSbuLimitedFieldsState);
+                el.addEventListener('input', syncEditSbuLimitedFieldsState);
+            });
+        }
+
         toggleAddSbuScheduleMode();
         toggleEditSbuScheduleMode();
+        syncSbuLimitedFieldsState();
+        syncEditSbuLimitedFieldsState();
     }
 })();

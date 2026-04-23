@@ -28,23 +28,26 @@
 
             <div class="mb-3">
                 <label for="edit_name" class="form-label fw-semibold small text-white">
-                    SBU Name <span class="text-danger">*</span>
+                    SBU Name <span class="text-danger">*</span> <span class="text-white-50 fw-normal">(max 50)</span>
                 </label>
-                <input type="text" class="form-control" id="edit_name" name="name" placeholder="Enter SBU name" required>
+                <input type="text" class="form-control" id="edit_name" name="name" placeholder="Enter SBU name" maxlength="50" required>
+                <small class="d-block mt-1 text-white-50" id="editSbuNameMeta"><span id="editSbuNameLen">0</span> / 50</small>
             </div>
 
             <div class="mb-3">
                 <label for="edit_city" class="form-label fw-semibold small text-white">
-                    City
+                    City <span class="text-white-50 fw-normal">(max 50)</span>
                 </label>
-                <input type="text" class="form-control" id="edit_city" name="city" placeholder="Enter city">
+                <input type="text" class="form-control" id="edit_city" name="city" placeholder="Enter city" maxlength="50">
+                <small class="d-block mt-1 text-white-50" id="editSbuCityMeta"><span id="editSbuCityLen">0</span> / 50</small>
             </div>
 
             <div class="mb-3">
                 <label for="edit_address" class="form-label fw-semibold small text-white">
-                    Address
+                    Address <span class="text-white-50 fw-normal">(max 255)</span>
                 </label>
-                <textarea class="form-control" id="edit_address" name="address" rows="3" placeholder="Enter address"></textarea>
+                <textarea class="form-control" id="edit_address" name="address" rows="3" placeholder="Enter address" maxlength="255"></textarea>
+                <small class="d-block mt-1 text-white-50" id="editSbuAddressMeta"><span id="editSbuAddressLen">0</span> / 255</small>
             </div>
 
             <div class="mb-3">
