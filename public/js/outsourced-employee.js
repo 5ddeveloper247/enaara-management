@@ -893,7 +893,18 @@
                     if (canvas && window.bootstrap) {
                         bootstrap.Offcanvas.getOrCreateInstance(canvas).hide();
                     }
-                    if (outsourcedTable) outsourcedTable.ajax.reload(null, false);
+                    if (!outsourcedTable) {
+                        initOutsourcedTable();
+                    }
+                    if (outsourcedTable) {
+                        outsourcedTable.ajax.reload(function () {
+                            if (typeof window.updateEmployeeStats === 'function') {
+                                window.updateEmployeeStats();
+                            }
+                        }, false);
+                    } else if (typeof window.updateEmployeeStats === 'function') {
+                        window.updateEmployeeStats();
+                    }
                 } catch (err) {
                     showError('Network error');
                 } finally {

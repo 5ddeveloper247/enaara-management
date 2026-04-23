@@ -888,6 +888,8 @@
         });
     }
 
+    window.updateEmployeeStats = updateEmployeeStats;
+
     function escHtml(str) {
         if (str === null || str === undefined) return '';
         return String(str)
