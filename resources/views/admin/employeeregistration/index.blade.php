@@ -13,9 +13,9 @@
         @include('admin.employeeregistration.partials.header-toolbar')
 
         <div class="row">
-            @include('admin.employeeregistration.partials.sidebar-summary')
+            {{-- @include('admin.employeeregistration.partials.sidebar-summary') --}}
 
-            <div class="col-12 col-xl-9">
+            <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                     @include('admin.employeeregistration.partials.wizard-tabs')
 

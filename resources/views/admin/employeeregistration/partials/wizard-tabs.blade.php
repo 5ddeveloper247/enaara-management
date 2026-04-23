@@ -1,4 +1,4 @@
-            <div class="col-md-9">
+            <div>
                 <div class="card border-0 shadow-sm overflow-hidden bg-white">
                     <div class="d-flex flex-wrap bg-main">
                         <button type="button"

@@ -1,4 +1,4 @@
-<div class="wizard-pane" id="stepPane5">
+<div class="wizard-pane px-3" id="stepPane5">
     <div id="step-5">
         <section class="d-grid gap-3">
 
