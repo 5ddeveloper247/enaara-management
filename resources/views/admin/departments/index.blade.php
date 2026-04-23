@@ -125,6 +125,50 @@
             
             var allSbus = [];
             var allParentDepartments = [];
+            var DEPT_LIMITED_FIELDS = [
+                { fieldName: 'name', inputId: 'editDepartmentName', errorId: 'editDepartmentNameError', lenId: 'editDepartmentNameLen', metaId: 'editDepartmentNameMeta', max: 50 },
+                { fieldName: 'code', inputId: 'editDepartmentCode', errorId: 'editDepartmentCodeError', lenId: 'editDepartmentCodeLen', metaId: 'editDepartmentCodeMeta', max: 10 },
+                { fieldName: 'description', inputId: 'editDepartmentDescription', errorId: 'editDepartmentDescriptionError', lenId: 'editDepartmentDescriptionLen', metaId: 'editDepartmentDescriptionMeta', max: 255 }
+            ];
+
+            function clearDepartmentValidationErrors() {
+                $('#editDepartmentForm .invalid-feedback').text('').hide().removeAttr('data-max-reached');
+                $('#editDepartmentForm .form-select, #editDepartmentForm .form-control').removeClass('is-invalid');
+            }
+
+            function syncDepartmentLimitedFieldsState() {
+                DEPT_LIMITED_FIELDS.forEach(function(cfg) {
+                    var el = document.getElementById(cfg.inputId);
+                    if (!el) return;
+                    var max = cfg.max;
+                    if (el.value.length > max) {
+                        el.value = el.value.substring(0, max);
+                    }
+                    var len = el.value.length;
+                    var lenEl = document.getElementById(cfg.lenId);
+                    var metaEl = document.getElementById(cfg.metaId);
+                    var errorEl = document.getElementById(cfg.errorId);
+                    if (lenEl) lenEl.textContent = String(len);
+                    if (metaEl) metaEl.classList.toggle('text-danger', len >= max);
+                    if (errorEl && errorEl.dataset.maxReached === '1') {
+                        errorEl.textContent = '';
+                        errorEl.style.display = 'none';
+                        errorEl.removeAttribute('data-max-reached');
+                    }
+                    if (len === max && errorEl && (!errorEl.textContent || errorEl.dataset.maxReached === '1')) {
+                        el.classList.add('is-invalid');
+                        errorEl.textContent = 'You cannot enter more than ' + max + ' characters.';
+                        errorEl.style.display = 'block';
+                        errorEl.dataset.maxReached = '1';
+                    } else if (errorEl && errorEl.dataset.maxReached !== '1') {
+                        if (!errorEl.textContent) {
+                            el.classList.remove('is-invalid');
+                        }
+                    } else if (len < max) {
+                        el.classList.remove('is-invalid');
+                    }
+                });
+            }
             
             function getSelectedSbuData() {
                 var sbuId = $('#editSbuId').val();
@@ -213,10 +257,10 @@
 
             function updateSbuDropdown(orgId, selectedSbuId = null) {
                 var sbuSelect = $('#editSbuId');
-                sbuSelect.empty().append('<option value="">Please select Organization first...</option>');
+                sbuSelect.empty().append('<option value="" hidden selected>Please select Organization first...</option>');
                 
                 if (orgId) {
-                    sbuSelect.empty().append('<option value="">Select SBU</option>');
+                    sbuSelect.empty().append('<option value="" hidden selected>Select SBU</option>');
                     var filteredSbus = allSbus.filter(function(sbu) {
                         return sbu.organization_id == orgId;
                     });
@@ -243,10 +287,10 @@
                 var parentSelect = $('#editParentDepartmentId');
                 var currentDeptId = $('#editDepartmentId').val(); // Don't show current dept as its own parent
 
-                parentSelect.empty().append('<option value="">Please select SBU first...</option>');
+                parentSelect.empty().append('<option value="" hidden selected>Please select SBU first...</option>');
                 
                 if (sbuId) {
-                    parentSelect.empty().append('<option value="">None</option>');
+                    parentSelect.empty().append('<option value="" hidden selected>None</option>');
                     var filteredDepts = allParentDepartments.filter(function(dept) {
                         return dept.sbu_id == sbuId && dept.id != currentDeptId;
                     });
@@ -278,7 +322,7 @@
                     },
                     success: function(response) {
                         var orgSelect = $('#editOrganizationId');
-                        orgSelect.empty().append('<option value="">Select Organization</option>');
+                        orgSelect.empty().append('<option value="" hidden selected>Select Organization</option>');
                         response.organizations.forEach(function(org) {
                             orgSelect.append('<option value="' + org.id + '">' + org.name + '</option>');
                         });
@@ -300,8 +344,8 @@
                         $('#deptScheduleModeStandard').prop('checked', true);
                         $('#editDepartmentIsActive').prop('checked', true);
                         
-                        $('.invalid-feedback').text('').hide();
-                        $('.form-select, .form-control').removeClass('is-invalid');
+                        clearDepartmentValidationErrors();
+                        syncDepartmentLimitedFieldsState();
                         toggleDepartmentScheduleMode();
                     },
                     error: function(xhr) {
@@ -345,7 +389,7 @@
                         $('#editDepartmentIsActive').prop('checked', response.department.is_active);
                         
                         var orgSelect = $('#editOrganizationId');
-                        orgSelect.empty().append('<option value="">Select Organization</option>');
+                        orgSelect.empty().append('<option value="" hidden selected>Select Organization</option>');
                         response.organizations.forEach(function(org) {
                             var selected = org.id == response.department.organization_id ? 'selected' : '';
                             orgSelect.append('<option value="' + org.id + '" ' + selected + '>' + org.name + '</option>');
@@ -367,8 +411,8 @@
                         }
                         toggleDepartmentScheduleMode();
                         
-                        $('.invalid-feedback').text('').hide();
-                        $('.form-select, .form-control').removeClass('is-invalid');
+                        clearDepartmentValidationErrors();
+                        syncDepartmentLimitedFieldsState();
                     },
                     error: function(xhr) {
                         console.error('Error loading department:', xhr);
@@ -397,8 +441,7 @@
                     is_active: $('#editDepartmentIsActive').is(':checked') ? 1 : 0
                 };
                 
-                $('.invalid-feedback').text('').hide();
-                $('.form-select, .form-control').removeClass('is-invalid');
+                clearDepartmentValidationErrors();
                 
                 var url, method;
                 if (formMode === 'add') {
@@ -434,21 +477,7 @@
                     error: function(xhr) {
                         if (xhr.status === 422) {
                             var errors = xhr.responseJSON.errors;
-                            let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
-                            Object.values(errors).flat().forEach(err => {
-                                errorMessage += `<li>${err}</li>`;
-                            });
-                            errorMessage += '</ul></div>';
-
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'Please check the following:',
-                                html: errorMessage,
-                                confirmButtonColor: '#1a237e',
-                                confirmButtonText: 'Dismiss'
-                            });
-
-                            // Also highlight fields and show error text
+                            var firstInvalid = null;
                             $.each(errors, function(field, messages) {
                                 var fieldMap = {
                                     'organization_id': 'editOrganizationId',
@@ -465,13 +494,23 @@
                                 };
                                 if (field === 'working_days' || field.indexOf('working_days.') === 0) {
                                     $('#editWorkingDaysError').text(messages[0]).show();
+                                    if (!firstInvalid) {
+                                        firstInvalid = $('.dept-working-day').first();
+                                    }
                                     return;
                                 }
                                 var fieldId = '#' + (fieldMap[field] || 'edit' + field);
                                 var errorId = fieldId + 'Error';
                                 $(fieldId).addClass('is-invalid');
                                 $(errorId).text(messages[0]).show();
+                                if (!firstInvalid) {
+                                    firstInvalid = $(fieldId).first();
+                                }
                             });
+                            syncDepartmentLimitedFieldsState();
+                            if (firstInvalid && firstInvalid.length) {
+                                firstInvalid.trigger('focus');
+                            }
                         } else {
                             showError((xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Something went wrong. Please try again.', 'System Error');
                         }
@@ -560,7 +599,15 @@
                     });
                 });
             }
+            var editDepartmentForm = document.getElementById('editDepartmentForm');
+            if (editDepartmentForm) {
+                editDepartmentForm.querySelectorAll('input, select, textarea').forEach(function(el) {
+                    el.addEventListener('input', syncDepartmentLimitedFieldsState);
+                    el.addEventListener('change', syncDepartmentLimitedFieldsState);
+                });
+            }
             toggleDepartmentScheduleMode();
+            syncDepartmentLimitedFieldsState();
         });
     </script>
 @endpush

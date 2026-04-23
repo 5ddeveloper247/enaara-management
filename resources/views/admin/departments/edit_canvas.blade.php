@@ -14,7 +14,7 @@
             <div class="mb-3">
                 <label for="editOrganizationId" class="form-label text-white">Organization <span class="text-danger">*</span></label>
                 <select name="organization_id" id="editOrganizationId" class="form-select" required>
-                    <option value="">Select Organization</option>
+                    <option value="" hidden selected>Select Organization</option>
                 </select>
                 <div class="invalid-feedback" id="editOrganizationIdError"></div>
             </div>
@@ -22,35 +22,38 @@
             <div class="mb-3">
                 <label for="editSbuId" class="form-label text-white">SBU <span class="text-danger">*</span></label>
                 <select name="sbu_id" id="editSbuId" class="form-select" required>
-                    <option value="">Please select Organization first...</option>
+                    <option value="" hidden selected>Please select Organization first...</option>
                 </select>
                 <div class="invalid-feedback" id="editSbuIdError"></div>
             </div>
 
             <div class="mb-3">
-                <label for="editDepartmentName" class="form-label text-white">Name <span class="text-danger">*</span></label>
+                <label for="editDepartmentName" class="form-label text-white">Name <span class="text-danger">*</span> <span class="text-white-50 fw-normal">(max 50)</span></label>
                 <input type="text" name="name" id="editDepartmentName" class="form-control" required maxlength="50" placeholder="Enter department name">
                 <div class="invalid-feedback" id="editDepartmentNameError"></div>
+                <small class="d-block mt-1 text-white-50" id="editDepartmentNameMeta"><span id="editDepartmentNameLen">0</span> / 50</small>
             </div>
 
             <div class="mb-3">
-                <label for="editDepartmentCode" class="form-label text-white">Code</label>
+                <label for="editDepartmentCode" class="form-label text-white">Code <span class="text-white-50 fw-normal">(max 10)</span></label>
                 <input type="text" name="code" id="editDepartmentCode" class="form-control" maxlength="10" placeholder="Enter department code (e.g. DEPT-001)">
                 <div class="invalid-feedback" id="editDepartmentCodeError"></div>
+                <small class="d-block mt-1 text-white-50" id="editDepartmentCodeMeta"><span id="editDepartmentCodeLen">0</span> / 10</small>
             </div>
 
             <div class="mb-3">
                 <label for="editParentDepartmentId" class="form-label text-white">Parent Department</label>
                 <select name="parent_department_id" id="editParentDepartmentId" class="form-select">
-                    <option value="">Please select SBU first...</option>
+                    <option value="" hidden selected>Please select SBU first...</option>
                 </select>
                 <div class="invalid-feedback" id="editParentDepartmentIdError"></div>
             </div>
 
             <div class="mb-3">
-                <label for="editDepartmentDescription" class="form-label text-white">Description</label>
-                <textarea name="description" id="editDepartmentDescription" class="form-control" rows="3" placeholder="Enter department description"></textarea>
+                <label for="editDepartmentDescription" class="form-label text-white">Description <span class="text-white-50 fw-normal">(max 255)</span></label>
+                <textarea name="description" id="editDepartmentDescription" class="form-control" rows="3" placeholder="Enter department description" maxlength="255"></textarea>
                 <div class="invalid-feedback" id="editDepartmentDescriptionError"></div>
+                <small class="d-block mt-1 text-white-50" id="editDepartmentDescriptionMeta"><span id="editDepartmentDescriptionLen">0</span> / 255</small>
             </div>
 
             <div class="mb-3 d-none" id="deptScheduleModeSection">
