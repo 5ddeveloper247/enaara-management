@@ -9,6 +9,86 @@
         return $('meta[name="csrf-token"]').attr('content');
     }
 
+    const FLOOR_LIMITED_FIELDS = [
+        { fieldName: 'name', inputId: 'name', lenId: 'floorNameLen', metaId: 'floorNameMeta', max: 50 },
+        { fieldName: 'floor_number', inputId: 'floor_number', lenId: 'floorNumberLen', metaId: 'floorNumberMeta', max: 50 }
+    ];
+
+    const EDIT_FLOOR_LIMITED_FIELDS = [
+        { fieldName: 'name', inputId: 'edit_name', lenId: 'editFloorNameLen', metaId: 'editFloorNameMeta', max: 50 },
+        { fieldName: 'floor_number', inputId: 'edit_floor_number', lenId: 'editFloorNumberLen', metaId: 'editFloorNumberMeta', max: 50 }
+    ];
+
+    function syncSaveFloorButtonState() {
+        const form = document.getElementById('addSbuFloorForm');
+        const btn = document.getElementById('saveSbuFloorBtn');
+        if (!form || !btn) return;
+        const isValid = form.checkValidity();
+        const hasClientErrors = $(form).find('.validation-error-dynamic[data-client-length="1"]').length > 0;
+        btn.disabled = !isValid || hasClientErrors;
+    }
+
+    function syncUpdateFloorButtonState() {
+        const form = document.getElementById('editSbuFloorForm');
+        const btn = document.getElementById('updateSbuFloorBtn');
+        if (!form || !btn) return;
+        const isValid = form.checkValidity();
+        const hasClientErrors = $(form).find('.validation-error-dynamic[data-client-length="1"]').length > 0;
+        btn.disabled = !isValid || hasClientErrors;
+    }
+
+    function syncFloorLimitedFieldsState() {
+        const form = document.getElementById('addSbuFloorForm');
+        if (!form) return;
+        FLOOR_LIMITED_FIELDS.forEach(function(cfg) {
+            const el = document.getElementById(cfg.inputId);
+            if (!el) return;
+            const max = cfg.max;
+            if (el.value.length > max) {
+                el.value = el.value.substring(0, max);
+            }
+            const len = el.value.length;
+            const lenEl = document.getElementById(cfg.lenId);
+            const metaEl = document.getElementById(cfg.metaId);
+            if (lenEl) lenEl.textContent = String(len);
+            if (metaEl) metaEl.classList.toggle('text-danger', len >= max);
+            $(el).siblings('.validation-error-dynamic[data-client-length="1"], .validation-error-dynamic[data-max-reached="1"]').remove();
+            if (len === max) {
+                $(el).addClass('is-invalid');
+                $(el).after('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + cfg.fieldName + '" data-max-reached="1">You cannot enter more than ' + max + ' characters.</div>');
+            } else if (!$(el).siblings('.validation-error-dynamic:not([data-client-length]):not([data-max-reached])').length) {
+                $(el).removeClass('is-invalid');
+            }
+        });
+        syncSaveFloorButtonState();
+    }
+
+    function syncEditFloorLimitedFieldsState() {
+        const form = document.getElementById('editSbuFloorForm');
+        if (!form) return;
+        EDIT_FLOOR_LIMITED_FIELDS.forEach(function(cfg) {
+            const el = document.getElementById(cfg.inputId);
+            if (!el) return;
+            const max = cfg.max;
+            if (el.value.length > max) {
+                el.value = el.value.substring(0, max);
+            }
+            const len = el.value.length;
+            const lenEl = document.getElementById(cfg.lenId);
+            const metaEl = document.getElementById(cfg.metaId);
+            if (lenEl) lenEl.textContent = String(len);
+            if (metaEl) metaEl.classList.toggle('text-danger', len >= max);
+            $(el).siblings('.validation-error-dynamic[data-client-length="1"], .validation-error-dynamic[data-max-reached="1"]').remove();
+            if (len === max) {
+                $(el).addClass('is-invalid');
+                $(el).after('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + cfg.fieldName + '" data-max-reached="1">You cannot enter more than ' + max + ' characters.</div>');
+            } else if (!$(el).siblings('.validation-error-dynamic:not([data-client-length]):not([data-max-reached])').length) {
+                $(el).removeClass('is-invalid');
+            }
+        });
+        syncUpdateFloorButtonState();
+    }
+
     function ucfirst(str) {
         if (!str) return '—';
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -124,6 +204,7 @@
         $(formSelector + ' .is-invalid').removeClass('is-invalid');
         $(formSelector + ' .invalid-feedback').remove();
         $(formSelector + ' .form-alert-box').remove();
+        $(formSelector + ' .validation-error-dynamic').remove();
         $('#add_floor_biometric_section, #edit_floor_biometric_section').removeClass('border border-danger');
         $('#add_biometric_devices_feedback, #edit_biometric_devices_feedback').remove();
     }
@@ -167,8 +248,12 @@
             }
 
             if (input.length) {
-                input.addClass('is-invalid');
-                input.after('<div class="invalid-feedback d-block">' + messages[0] + '</div>');
+                const normalizedField = String(field).replace(/\.\d+$/, '');
+                const firstMessage = Array.isArray(messages) ? messages[0] : messages;
+                input.first().addClass('is-invalid');
+                if ($(formSelector + ' [data-error-for="' + normalizedField + '"]').length === 0) {
+                    input.first().after('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + normalizedField + '">' + firstMessage + '</div>');
+                }
                 if (!firstInvalid) {
                     firstInvalid = input.first();
                 }
@@ -178,6 +263,9 @@
         if (firstInvalid && firstInvalid.length) {
             firstInvalid.trigger('focus');
         }
+
+        if (formSelector === '#addSbuFloorForm') syncFloorLimitedFieldsState();
+        else syncEditFloorLimitedFieldsState();
     }
 
     function getAllSbus() {
@@ -267,7 +355,7 @@
 
         if (!orgId) {
             sbuSelect.prop('disabled', true);
-            sbuSelect.html('<option value="">' + (placeholder || 'First select organization') + '</option>');
+            sbuSelect.html('<option value="" hidden selected>' + (placeholder || 'First select organization') + '</option>');
             return;
         }
 
@@ -275,7 +363,7 @@
             return String(sbu.organization_id) === orgId;
         });
 
-        let options = '<option value="">Select SBU</option>';
+        let options = '<option value="" hidden selected>Select SBU</option>';
         filtered.forEach(function(sbu) {
             options += '<option value="' + sbu.id + '">' + sbu.name + '</option>';
         });
@@ -298,6 +386,7 @@
         $('#is_restricted').val('0');
         $('#is_active').val('1');
         refreshAddFloorBiometricList();
+        syncFloorLimitedFieldsState();
     }
 
     function resetEditFloorForm() {
@@ -316,6 +405,7 @@
         $('#editSbuFloorForm').attr('data-update-url', '');
         $('#deleteSbuFloorBtn').attr('data-delete-url', '');
         refreshEditFloorBiometricList([]);
+        syncEditFloorLimitedFieldsState();
     }
 
     function storeFloor() {
@@ -367,31 +457,15 @@
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                     showValidationErrors('#addSbuFloorForm', xhr.responseJSON.errors);
-                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
-                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
-                        errorMessage += `<li>${err}</li>`;
-                    });
-                    errorMessage += '</ul></div>';
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Please check the following:',
-                        html: errorMessage,
-                        confirmButtonColor: '#1a237e',
-                        confirmButtonText: 'Understood'
-                    });
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'System Error',
-                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to create SBU floor.'
-                    });
+                    showFormMessage('#addSbuFloorForm', (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to create SBU floor.');
                 }
             },
             complete: function() {
                 $('#saveSbuFloorBtn')
                     .prop('disabled', false)
                     .html('<i class="bi bi-check-lg me-1"></i>Create Floor');
+                syncSaveFloorButtonState();
             }
         });
     }
@@ -435,6 +509,7 @@
                     $('#editSbuFloorForm').attr('data-update-url', $(button).data('update-url'));
                     $('#deleteSbuFloorBtn').attr('data-delete-url', $(button).data('delete-url'));
                     refreshEditFloorBiometricList(data.biometric_device_ids || []);
+                    syncEditFloorLimitedFieldsState();
                 } else {
                     showFormMessage('#editSbuFloorForm', response.message || 'Failed to load floor data.');
                 }
@@ -499,31 +574,15 @@
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                     showValidationErrors('#editSbuFloorForm', xhr.responseJSON.errors);
-                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
-                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
-                        errorMessage += `<li>${err}</li>`;
-                    });
-                    errorMessage += '</ul></div>';
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Please check the following:',
-                        html: errorMessage,
-                        confirmButtonColor: '#1a237e',
-                        confirmButtonText: 'Understood'
-                    });
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'System Error',
-                        text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update SBU floor.'
-                    });
+                    showFormMessage('#editSbuFloorForm', (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update SBU floor.');
                 }
             },
             complete: function() {
                 $('#updateSbuFloorBtn')
                     .prop('disabled', false)
                     .html('<i class="bi bi-check-lg me-1"></i>Update Floor');
+                syncUpdateFloorButtonState();
             }
         });
     }
@@ -641,19 +700,23 @@
         $('#organization_id').on('change', function() {
             setSbuOptions('#sbu_id', $(this).val(), 'First select organization');
             refreshAddFloorBiometricList();
+            syncSaveFloorButtonState();
         });
 
         $('#sbu_id').on('change', function() {
             refreshAddFloorBiometricList();
+            syncSaveFloorButtonState();
         });
 
         $('#edit_organization_id').on('change', function() {
             setSbuOptions('#edit_sbu_id', $(this).val(), 'First select organization');
             refreshEditFloorBiometricList([]);
+            syncUpdateFloorButtonState();
         });
 
         $('#edit_sbu_id').on('change', function() {
             refreshEditFloorBiometricList([]);
+            syncUpdateFloorButtonState();
         });
 
         $('#clearFiltersBtn').on('click', function() {
@@ -675,9 +738,27 @@
             deleteFloor(this);
         });
 
+        const addFloorForm = document.getElementById('addSbuFloorForm');
+        if (addFloorForm) {
+            addFloorForm.querySelectorAll('input, select, textarea').forEach(function(el) {
+                el.addEventListener('change', syncFloorLimitedFieldsState);
+                el.addEventListener('input', syncFloorLimitedFieldsState);
+            });
+        }
+
+        const editFloorForm = document.getElementById('editSbuFloorForm');
+        if (editFloorForm) {
+            editFloorForm.querySelectorAll('input, select, textarea').forEach(function(el) {
+                el.addEventListener('change', syncEditFloorLimitedFieldsState);
+                el.addEventListener('input', syncEditFloorLimitedFieldsState);
+            });
+        }
+
         setSbuOptions('#sbu_id', $('#organization_id').val(), 'First select organization');
         setSbuOptions('#edit_sbu_id', $('#edit_organization_id').val(), 'First select organization');
         refreshAddFloorBiometricList();
         refreshEditFloorBiometricList([]);
+        syncFloorLimitedFieldsState();
+        syncEditFloorLimitedFieldsState();
     }
 })();

@@ -18,7 +18,7 @@
                     Organization <span class="text-danger">*</span>
                 </label>
                 <select class="form-select" id="organization_id" name="organization_id" required>
-                    <option value="">Select Organization</option>
+                    <option value="" hidden selected>Select Organization</option>
                     @foreach ($organizations as $organization)
                         <option value="{{ $organization->id }}">{{ $organization->name }}</option>
                     @endforeach
@@ -30,24 +30,26 @@
                     SBU <span class="text-danger">*</span>
                 </label>
                 <select class="form-select" id="sbu_id" name="sbu_id" required>
-                    <option value="">First select organization</option>
+                    <option value="" hidden selected>First select organization</option>
                 </select>
             </div>
 
             <div class="mb-3">
                 <label for="name" class="form-label fw-semibold small text-white">
-                    Floor Name <span class="text-danger">*</span>
+                    Floor Name <span class="text-danger">*</span> <span class="text-white-50 fw-normal">(max 50)</span>
                 </label>
                 <input type="text" class="form-control" id="name" name="name"
-                    placeholder="Enter floor name" required>
+                    placeholder="Enter floor name" maxlength="50" required>
+                <small class="d-block mt-1 text-white-50" id="floorNameMeta"><span id="floorNameLen">0</span> / 50</small>
             </div>
 
             <div class="mb-3">
                 <label for="floor_number" class="form-label fw-semibold small text-white">
-                    Floor Number
+                    Floor Number <span class="text-white-50 fw-normal">(max 50)</span>
                 </label>
                 <input type="text" class="form-control" id="floor_number" name="floor_number"
-                    placeholder="Enter floor number">
+                    placeholder="Enter floor number" maxlength="50">
+                <small class="d-block mt-1 text-white-50" id="floorNumberMeta"><span id="floorNumberLen">0</span> / 50</small>
             </div>
 
             <div class="mb-3">
