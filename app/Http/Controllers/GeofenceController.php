@@ -30,8 +30,9 @@ class GeofenceController extends Controller
         }
 
         $geofences = Geofence::with('sbu')->orderBy('name')->get();
+        $totalFences = $geofences->count();
 
-        return view('admin.geofencing.index', compact('sbus', 'geofences'));
+        return view('admin.geofencing.index', compact('sbus', 'geofences', 'totalFences'));
     }
 
     public function store(StoreGeofenceRequest $request)

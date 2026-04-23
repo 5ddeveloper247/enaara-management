@@ -643,7 +643,6 @@
                 error: function(xhr) {
                     if (xhr.status === 422) {
                         var errors = xhr.responseJSON.errors;
-                        var errorList = '';
                         var fieldMap = {
                             'organization_id': 'editOrganizationId',
                             'sbu_id': 'editSbuId',
@@ -658,14 +657,15 @@
                             var errorId = field === 'department_ids' ? '#editDepartmentIdError' : (fieldId + 'Error');
                             $(fieldId).addClass('is-invalid');
                             $(errorId).text(messages[0]).show();
-                            errorList += '<li>' + messages[0] + '</li>';
                         });
-                        Swal.fire({
-                            title: 'Please check the following:',
-                            html: '<ul class="text-start ps-3 mb-0">' + errorList + '</ul>',
-                            icon: 'warning',
-                            confirmButtonColor: '#1a237e',
-                        });
+                        var firstField = Object.keys(errors)[0] || null;
+                        if (firstField) {
+                            var firstFieldId = fieldMap[firstField] || ('edit' + firstField);
+                            var firstEl = document.getElementById(firstFieldId);
+                            if (firstEl && typeof firstEl.focus === 'function') {
+                                firstEl.focus();
+                            }
+                        }
                     } else {
                         var errorMsg = formMode === 'add' ? 'Failed to create leave type. Please try again.' : 'Failed to update leave type. Please try again.';
                         showError(errorMsg);
