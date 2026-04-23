@@ -36,15 +36,13 @@
             const metaEl = document.getElementById(cfg.metaId);
             if (lenEl) lenEl.textContent = String(len);
             if (metaEl) metaEl.classList.toggle('text-danger', len >= max);
-            
-            // Remove previous client-length error if any
-            $(el).siblings('.validation-error-dynamic[data-client-length="1"]').remove();
-            
-            if (len >= max) {
-                $(el).addClass('is-invalid');
-                const feedback = $('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + cfg.fieldName + '" data-client-length="1">Maximum length is ' + max + ' characters.</div>');
+
+            $(el).siblings('.validation-error-dynamic[data-client-length="1"], .validation-error-dynamic[data-max-reached="1"]').remove();
+
+            if (len === max) {
+                const feedback = $('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + cfg.fieldName + '" data-max-reached="1">You cannot enter more than ' + max + ' characters.</div>');
                 $(el).after(feedback);
-            } else if (!$(el).siblings('.validation-error-dynamic:not([data-client-length])').length) {
+            } else if (!$(el).siblings('.validation-error-dynamic:not([data-client-length]):not([data-max-reached])').length) {
                 $(el).removeClass('is-invalid');
             }
         });
@@ -67,14 +65,12 @@
             if (lenEl) lenEl.textContent = String(len);
             if (metaEl) metaEl.classList.toggle('text-danger', len >= max);
 
-            // Remove previous client-length error if any
-            $(el).siblings('.validation-error-dynamic[data-client-length="1"]').remove();
+            $(el).siblings('.validation-error-dynamic[data-client-length="1"], .validation-error-dynamic[data-max-reached="1"]').remove();
 
-            if (len >= max) {
-                $(el).addClass('is-invalid');
-                const feedback = $('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + cfg.fieldName + '" data-client-length="1">Maximum length is ' + max + ' characters.</div>');
+            if (len === max) {
+                const feedback = $('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="' + cfg.fieldName + '" data-max-reached="1">You cannot enter more than ' + max + ' characters.</div>');
                 $(el).after(feedback);
-            } else if (!$(el).siblings('.validation-error-dynamic:not([data-client-length])').length) {
+            } else if (!$(el).siblings('.validation-error-dynamic:not([data-client-length]):not([data-max-reached])').length) {
                 $(el).removeClass('is-invalid');
             }
         });

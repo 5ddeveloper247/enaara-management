@@ -18,7 +18,7 @@
                     Organization <span class="text-danger">*</span>
                 </label>
                 <select class="form-select" id="organization_id" name="organization_id" required>
-                    <option value="">Select Organization</option>
+                    <option value="" hidden selected>Select Organization</option>
                     @foreach ($organizations as $org)
                         <option value="{{ $org->id }}" data-working-days="{{ implode(',', $org->working_days ?? []) }}" data-working-start-time="{{ $org->working_start_time ? substr((string) $org->working_start_time, 0, 5) : '' }}" data-working-end-time="{{ $org->working_end_time ? substr((string) $org->working_end_time, 0, 5) : '' }}" data-opening-grace-period="{{ $org->opening_grace_period ?? '' }}" data-closing-grace-period="{{ $org->closing_grace_period ?? '' }}">{{ $org->name }}</option>
                     @endforeach
