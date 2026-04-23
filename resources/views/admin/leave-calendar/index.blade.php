@@ -101,11 +101,27 @@
 
     .holiday-single-day-event {
         border-radius: 6px !important;
-        padding: 2px 6px !important;
+        padding: 2px 8px !important;
         margin: 1px 0 !important;
         min-height: 22px;
-        display: flex;
+        display: block;
+    }
+
+    .holiday-single-day-event .fc-event-main {
+        padding-left: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .holiday-single-day-event .fc-event-title {
+        display: inline-flex;
         align-items: center;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .holiday-single-day-event .holiday-dot {
@@ -115,12 +131,16 @@
         border-radius: 50%;
         margin-right: 6px;
         background: #0dcaf0;
+        position: static !important;
+        flex-shrink: 0;
     }
 
     .fc-daygrid-event {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        margin-left: 2px !important;
+        margin-right: 2px !important;
     }
 </style>
 @endpush
