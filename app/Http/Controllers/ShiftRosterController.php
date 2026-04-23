@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ShiftRosterEntry;
 use App\Models\ShiftRosterAssignment;
 use App\Models\Employee;
+use App\Models\OutsourcedEmployee;
 use App\Models\ShiftPlanner;
 use App\Services\ShiftRosterService;
 use App\Http\Requests\Admin\ShiftRoster\ShiftRosterRequest;
@@ -59,8 +60,11 @@ class ShiftRosterController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $rosters = ShiftRosterEntry::with(['employee', 'shift', 'assignment'])
-            ->whereHas('employee', fn ($q) => $q->where('engagement_mode', 'shifts'))
+        $rosters = ShiftRosterEntry::with(['employee', 'outsourcedEmployee', 'shift', 'assignment'])
+            ->where(function ($query) {
+                $query->whereHas('employee', fn ($q) => $q->where('engagement_mode', 'shifts'))
+                    ->orWhereHas('outsourcedEmployee');
+            })
             ->orderBy('roster_date', 'desc')
             ->orderBy('updated_at', 'desc')
             ->get();
@@ -69,11 +73,15 @@ class ShiftRosterController extends Controller
             ->shiftBasedWorkArrangement()
             ->orderBy('full_name')
             ->get();
+        $outsourcedEmployees = OutsourcedEmployee::with('department')
+            ->whereNull('deleted_at')
+            ->orderBy('full_name')
+            ->get();
         $shifts = ShiftPlanner::where('is_active', 1)
             ->orderBy('name')
             ->get();
 
-        return view('admin.shift-planner.roster', compact('rosters', 'employees', 'shifts'));
+        return view('admin.shift-planner.roster', compact('rosters', 'employees', 'outsourcedEmployees', 'shifts'));
     }
 
     public function show($id)

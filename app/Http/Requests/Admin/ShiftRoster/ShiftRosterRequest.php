@@ -3,7 +3,8 @@
 namespace App\Http\Requests\Admin\ShiftRoster;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use App\Models\Employee;
+use App\Models\OutsourcedEmployee;
 
 class ShiftRosterRequest extends FormRequest
 {
@@ -21,10 +22,10 @@ class ShiftRosterRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'employee_type' => ['required', 'in:employee,outsourced'],
             'employee_id' => [
                 'required',
                 'integer',
-                Rule::exists('employees', 'id')->where(fn ($q) => $q->where('engagement_mode', 'shifts')),
             ],
             'shift_planner_id' => ['required', 'integer', 'exists:shift_planners,id'],
             'roster_date' => ['required', 'date'],
@@ -47,8 +48,10 @@ class ShiftRosterRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'employee_type.required' => 'Employee type is required.',
+            'employee_type.in' => 'Employee type is invalid.',
             'employee_id.required' => 'Employee is required.',
-            'employee_id.exists' => 'Selected employee does not exist or is not on shift-based work arrangement.',
+            'employee_id.integer' => 'Selected employee is invalid.',
 
             'shift_planner_id.required' => 'Shift is required.',
             'shift_planner_id.exists' => 'Selected shift does not exist.',
@@ -62,12 +65,43 @@ class ShiftRosterRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($v) {
+            $type = $this->input('employee_type');
+            $id = (int) $this->input('employee_id');
+            if (! $type || ! $id) {
+                return;
+            }
+
+            if ($type === 'employee') {
+                $exists = Employee::query()
+                    ->whereKey($id)
+                    ->where('engagement_mode', 'shifts')
+                    ->exists();
+                if (! $exists) {
+                    $v->errors()->add('employee_id', 'Selected employee does not exist or is not shift-based.');
+                }
+                return;
+            }
+
+            $exists = OutsourcedEmployee::query()
+                ->whereKey($id)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (! $exists) {
+                $v->errors()->add('employee_id', 'Selected outsourced employee does not exist.');
+            }
+        });
+    }
+
     /**
      * Prepare data before validation
      */
     protected function prepareForValidation(): void
     {
         $this->merge([
+            'employee_type' => $this->input('employee_type', 'employee'),
             'status' => $this->has('status') ? $this->status : 1,
             'late_check_in' => $this->has('late_check_in') ? true : false,
         ]);

@@ -3,10 +3,9 @@
 namespace App\Services;
 
 use App\Models\Employee;
+use App\Models\OutsourcedEmployee;
 use App\Models\ShiftPlanner;
-use App\Models\ShiftRosterAssignment;
 use App\Models\ShiftRosterEntry;
-use App\Jobs\ProcessShiftAssignment;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
@@ -19,33 +18,44 @@ class ShiftRosterService
      */
     public function store(array $data)
     {
-        DB::beginTransaction();
-        try {
-            // Create a single-day assignment record
-            $assignment = ShiftRosterAssignment::create([
-                'shift_planner_id' => $data['shift_planner_id'],
-                'start_date' => $data['roster_date'],
-                'end_date' => $data['roster_date'],
-                'days' => [strtolower(Carbon::parse($data['roster_date'])->format('l'))],
-                'assign_mode' => 'custom',
-                'check_conflicts' => true,
-                'override_existing' => true,
-                'status' => 'pending'
-            ]);
+        return DB::transaction(function () use ($data) {
+            $shift = ShiftPlanner::findOrFail((int) $data['shift_planner_id']);
 
-            $assignment->employees()->attach($data['employee_id']);
+            $payload = [
+                'shift_planner_id' => $shift->id,
+                'roster_date' => $data['roster_date'],
+                'start_time' => $data['start_time'] ?? $this->formatShiftTime($shift->start_time),
+                'end_time' => $data['end_time'] ?? $this->formatShiftTime($shift->end_time),
+                'check_in' => $data['check_in'] ?? null,
+                'check_out' => $data['check_out'] ?? null,
+                'floor' => $data['floor'] ?? null,
+                'late_check_in' => (bool) ($data['late_check_in'] ?? false),
+                'status' => (($data['status'] ?? 1) == 1) ? 'pending' : 'cancelled',
+                'assignment_id' => null,
+            ];
 
-            DB::commit();
+            if (($data['employee_type'] ?? 'employee') === 'outsourced') {
+                $payload['employee_id'] = null;
+                $payload['outsourced_employee_id'] = (int) $data['employee_id'];
+                return ShiftRosterEntry::updateOrCreate(
+                    [
+                        'outsourced_employee_id' => (int) $data['employee_id'],
+                        'roster_date' => $data['roster_date'],
+                    ],
+                    $payload
+                );
+            }
 
-            // Dispatch job to generate entry
-            ProcessShiftAssignment::dispatch($assignment);
-
-            return $assignment;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Shift Roster Store Error: ' . $e->getMessage());
-            throw $e;
-        }
+            $payload['employee_id'] = (int) $data['employee_id'];
+            $payload['outsourced_employee_id'] = null;
+            return ShiftRosterEntry::updateOrCreate(
+                [
+                    'employee_id' => (int) $data['employee_id'],
+                    'roster_date' => $data['roster_date'],
+                ],
+                $payload
+            );
+        });
     }
 
     /**
@@ -54,15 +64,28 @@ class ShiftRosterService
     public function update(array $data, $id)
     {
         $entry = ShiftRosterEntry::findOrFail($id);
-        
-        $entry->update([
+
+        $payload = [
             'shift_planner_id' => $data['shift_planner_id'],
             'roster_date' => $data['roster_date'],
             'start_time' => $data['start_time'] ?? $entry->start_time,
             'end_time' => $data['end_time'] ?? $entry->end_time,
+            'check_in' => $data['check_in'] ?? $entry->check_in,
+            'check_out' => $data['check_out'] ?? $entry->check_out,
             'floor' => $data['floor'] ?? $entry->floor,
-            'status' => $data['status'] ?? $entry->status,
-        ]);
+            'late_check_in' => (bool) ($data['late_check_in'] ?? $entry->late_check_in),
+            'status' => isset($data['status']) ? ((int) $data['status'] === 1 ? 'pending' : 'cancelled') : $entry->status,
+        ];
+
+        if (($data['employee_type'] ?? 'employee') === 'outsourced') {
+            $payload['outsourced_employee_id'] = (int) $data['employee_id'];
+            $payload['employee_id'] = null;
+        } else {
+            $payload['employee_id'] = (int) $data['employee_id'];
+            $payload['outsourced_employee_id'] = null;
+        }
+
+        $entry->update($payload);
 
         return $entry;
     }
@@ -81,64 +104,60 @@ class ShiftRosterService
      */
     public function bulkAssign(array $data): array
     {
-        DB::beginTransaction();
+        return DB::transaction(function () use ($data) {
+            $shift = ShiftPlanner::findOrFail((int) $data['shift_planner_id']);
+            $refs = $this->parseAssigneeRefs($data['employee_ids'] ?? []);
+            $days = array_map('strtolower', $data['days'] ?? []);
+            $excludeWeekends = (bool) ($data['exclude_weekends'] ?? false);
+            $checkConflicts = (bool) ($data['check_conflicts'] ?? true);
+            $overrideExisting = (bool) ($data['override_existing'] ?? false);
 
-        try {
-            // 1. Pre-validation: Check for existing entries in the range if not overriding
-            if (($data['check_conflicts'] ?? 1) == 1 && !($data['override_existing'] ?? 0)) {
-                $days = $data['days'] ?? [];
-                $conflictingEmployees = ShiftRosterEntry::whereIn('employee_id', $data['employee_ids'])
-                    ->whereBetween('roster_date', [$data['start_date'], $data['end_date']])
-                    ->with('employee')
-                    ->get()
-                    ->filter(function($entry) use ($days) {
-                        return in_array(strtolower($entry->roster_date->format('l')), $days);
-                    })
-                    ->pluck('employee.full_name')
-                    ->unique();
-
-                if ($conflictingEmployees->isNotEmpty()) {
+            if ($checkConflicts && ! $overrideExisting) {
+                $conflicts = $this->collectBulkConflicts(
+                    $refs,
+                    $data['start_date'],
+                    $data['end_date'],
+                    $days
+                );
+                if ($conflicts !== []) {
                     return [
                         'success' => false,
-                        'message' => 'Some employees already have shifts assigned on the selected days: ' . $conflictingEmployees->implode(', '),
-                        'conflicts' => $conflictingEmployees->values()->all()
+                        'message' => 'Some employees already have shifts assigned on selected days: ' . implode(', ', $conflicts),
+                        'conflicts' => $conflicts,
                     ];
                 }
             }
 
-            // 2. Create the Assignment record (The "Request")
-            $assignment = ShiftRosterAssignment::create([
-                'shift_planner_id' => $data['shift_planner_id'],
-                'start_date' => $data['start_date'],
-                'end_date' => $data['end_date'],
-                'days' => $data['days'] ?? [],
-                'assign_mode' => $data['assign_mode'] ?? 'default',
-                'check_conflicts' => ($data['check_conflicts'] ?? 1) == 1,
-                'override_existing' => ($data['override_existing'] ?? 0) == 1,
-                'exclude_weekends' => ($data['exclude_weekends'] ?? 0) == 1,
-                'status' => 'pending'
-            ]);
+            $period = CarbonPeriod::create($data['start_date'], $data['end_date']);
+            $totalAssigned = 0;
 
-            // 3. Link employees
-            if (!empty($data['employee_ids'])) {
-                $assignment->employees()->attach($data['employee_ids']);
+            foreach ($period as $date) {
+                $dayName = strtolower($date->format('l'));
+                if (! in_array($dayName, $days, true)) {
+                    continue;
+                }
+                if ($excludeWeekends && in_array($dayName, ['saturday', 'sunday'], true)) {
+                    continue;
+                }
+
+                foreach ($refs as $ref) {
+                    $this->upsertAssigneeShiftEntry(
+                        $ref['type'],
+                        $ref['id'],
+                        $date->toDateString(),
+                        $shift,
+                        $overrideExisting
+                    );
+                    $totalAssigned++;
+                }
             }
-
-            DB::commit();
-
-            // 3. Dispatch the background job to process the range
-            ProcessShiftAssignment::dispatch($assignment);
 
             return [
                 'success' => true,
-                'message' => 'Shift assignment request submitted and is being processed in the background.',
-                'assignment_id' => $assignment->id
+                'message' => 'Shift assignment completed successfully.',
+                'total_assigned' => $totalAssigned,
             ];
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Shift Roster Bulk Assign Error: ' . $e->getMessage());
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -159,16 +178,28 @@ class ShiftRosterService
             ->shiftBasedWorkArrangement()
             ->orderBy('department_id')
             ->get();
+        $outsourcedEmployees = OutsourcedEmployee::with('department')
+            ->whereNull('deleted_at')
+            ->orderBy('department_id')
+            ->orderBy('full_name')
+            ->get();
 
         $shiftEmployeeIds = $employees->pluck('id')->all();
+        $outsourcedIds = $outsourcedEmployees->pluck('id')->all();
 
         // Build Department List
         $departments = [];
-        $deptIds = $employees->pluck('department_id')->unique();
+        $deptIds = $employees->pluck('department_id')
+            ->merge($outsourcedEmployees->pluck('department_id'))
+            ->unique();
         foreach ($deptIds as $did) {
+            $deptId = (int) ($did ?? 0);
             $emp = $employees->firstWhere('department_id', $did);
+            if (! $emp) {
+                $emp = $outsourcedEmployees->firstWhere('department_id', $did);
+            }
             $departments[] = [
-                'id' => (int) $did,
+                'id' => $deptId,
                 'name' => $emp->department->name ?? 'Unassigned'
             ];
         }
@@ -176,16 +207,34 @@ class ShiftRosterService
 
         // Build Employee Payload
         $empPayload = $employees->map(fn($e) => [
-            'id' => $e->id,
+            'id' => 'employee:' . $e->id,
+            'sourceType' => 'employee',
+            'sourceId' => $e->id,
             'name' => $e->full_name,
             'departmentId' => (int) $e->department_id,
             'departmentName' => $e->department->name ?? 'Unassigned'
-        ])->values()->all();
+        ])->values();
+        $outsourcedPayload = $outsourcedEmployees->map(fn($e) => [
+            'id' => 'outsourced:' . $e->id,
+            'sourceType' => 'outsourced',
+            'sourceId' => $e->id,
+            'name' => $e->full_name,
+            'departmentId' => (int) ($e->department_id ?? 0),
+            'departmentName' => $e->department->name ?? 'Unassigned'
+        ])->values();
+        $empPayload = $empPayload->concat($outsourcedPayload)->values()->all();
 
         $entriesQuery = ShiftRosterEntry::with('shift')
             ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()]);
-        if ($shiftEmployeeIds !== []) {
-            $entriesQuery->whereIn('employee_id', $shiftEmployeeIds);
+        if ($shiftEmployeeIds !== [] || $outsourcedIds !== []) {
+            $entriesQuery->where(function ($q) use ($shiftEmployeeIds, $outsourcedIds) {
+                if ($shiftEmployeeIds !== []) {
+                    $q->whereIn('employee_id', $shiftEmployeeIds);
+                }
+                if ($outsourcedIds !== []) {
+                    $q->orWhereIn('outsourced_employee_id', $outsourcedIds);
+                }
+            });
         } else {
             $entriesQuery->whereRaw('1 = 0');
         }
@@ -204,7 +253,11 @@ class ShiftRosterService
 
             return [
                 'rosterId' => $entry->id,
-                'employeeId' => $entry->employee_id,
+                'employeeId' => $entry->employee_id
+                    ? ('employee:' . $entry->employee_id)
+                    : ('outsourced:' . $entry->outsourced_employee_id),
+                'employeeType' => $entry->employee_id ? 'employee' : 'outsourced',
+                'sourceId' => $entry->employee_id ?: $entry->outsourced_employee_id,
                 // Full date is used by the front-end to correctly align Mon->Sun columns.
                 'rosterDate' => $entry->roster_date->toDateString(),
                 // Kept for backward compatibility/fallbacks.
@@ -229,5 +282,96 @@ class ShiftRosterService
     {
         if (!$value) return '00:00';
         return Carbon::parse($value)->format('H:i');
+    }
+
+    /**
+     * @param array<int, string> $refs
+     * @return array<int, array{type:string,id:int}>
+     */
+    private function parseAssigneeRefs(array $refs): array
+    {
+        $parsed = [];
+        foreach ($refs as $ref) {
+            [$type, $id] = array_pad(explode(':', (string) $ref, 2), 2, null);
+            $id = (int) $id;
+            if (! in_array($type, ['employee', 'outsourced'], true) || ! $id) {
+                continue;
+            }
+            $parsed[] = ['type' => $type, 'id' => $id];
+        }
+        return $parsed;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function collectBulkConflicts(array $refs, string $startDate, string $endDate, array $days): array
+    {
+        $employeeIds = collect($refs)->where('type', 'employee')->pluck('id')->all();
+        $outsourcedIds = collect($refs)->where('type', 'outsourced')->pluck('id')->all();
+
+        $conflictingEntries = ShiftRosterEntry::query()
+            ->with(['employee:id,full_name', 'outsourcedEmployee:id,full_name'])
+            ->whereBetween('roster_date', [$startDate, $endDate])
+            ->where(function ($query) use ($employeeIds, $outsourcedIds) {
+                if ($employeeIds !== []) {
+                    $query->whereIn('employee_id', $employeeIds);
+                }
+                if ($outsourcedIds !== []) {
+                    $query->orWhereIn('outsourced_employee_id', $outsourcedIds);
+                }
+            })
+            ->get()
+            ->filter(function ($entry) use ($days) {
+                return in_array(strtolower($entry->roster_date->format('l')), $days, true);
+            });
+
+        $names = [];
+        foreach ($conflictingEntries as $entry) {
+            $name = $entry->employee?->full_name ?? $entry->outsourcedEmployee?->full_name;
+            if ($name) {
+                $names[] = $name;
+            }
+        }
+
+        return array_values(array_unique($names));
+    }
+
+    private function upsertAssigneeShiftEntry(string $type, int $id, string $date, ShiftPlanner $shift, bool $overrideExisting): void
+    {
+        $basePayload = [
+            'shift_planner_id' => $shift->id,
+            'start_time' => $this->formatShiftTime($shift->start_time),
+            'end_time' => $this->formatShiftTime($shift->end_time),
+            'floor' => $shift->floor ?? null,
+            'status' => 'pending',
+        ];
+
+        if ($type === 'outsourced') {
+            if ($overrideExisting) {
+                ShiftRosterEntry::updateOrCreate(
+                    ['outsourced_employee_id' => $id, 'roster_date' => $date],
+                    ['employee_id' => null] + $basePayload
+                );
+                return;
+            }
+            ShiftRosterEntry::firstOrCreate(
+                ['outsourced_employee_id' => $id, 'roster_date' => $date, 'shift_planner_id' => $shift->id],
+                ['employee_id' => null] + $basePayload
+            );
+            return;
+        }
+
+        if ($overrideExisting) {
+            ShiftRosterEntry::updateOrCreate(
+                ['employee_id' => $id, 'roster_date' => $date],
+                ['outsourced_employee_id' => null] + $basePayload
+            );
+            return;
+        }
+        ShiftRosterEntry::firstOrCreate(
+            ['employee_id' => $id, 'roster_date' => $date, 'shift_planner_id' => $shift->id],
+            ['outsourced_employee_id' => null] + $basePayload
+        );
     }
 }

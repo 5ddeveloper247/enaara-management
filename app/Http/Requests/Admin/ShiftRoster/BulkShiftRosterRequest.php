@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\ShiftRoster;
 
 use App\Models\Employee;
+use App\Models\OutsourcedEmployee;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BulkShiftRosterRequest extends FormRequest
@@ -18,19 +19,57 @@ class BulkShiftRosterRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($v) {
-            $ids = array_values(array_unique(array_filter(array_map('intval', $this->input('employee_ids', [])))));
-            if ($ids === []) {
+            $refs = collect($this->input('employee_ids', []))
+                ->map(fn ($r) => trim((string) $r))
+                ->filter()
+                ->unique()
+                ->values();
+
+            if ($refs->isEmpty()) {
                 return;
             }
-            $validCount = Employee::query()
-                ->whereKey($ids)
-                ->where('engagement_mode', 'shifts')
-                ->count();
-            if ($validCount !== count($ids)) {
-                $v->errors()->add(
-                    'employee_ids',
-                    'Only employees with shift-based work arrangement can be assigned on the roster.'
-                );
+
+            $employeeIds = [];
+            $outsourcedIds = [];
+
+            foreach ($refs as $ref) {
+                [$type, $id] = array_pad(explode(':', $ref, 2), 2, null);
+                $id = (int) $id;
+                if (! $type || ! $id) {
+                    $v->errors()->add('employee_ids', 'Invalid employee selection format.');
+                    return;
+                }
+                if ($type === 'employee') {
+                    $employeeIds[] = $id;
+                    continue;
+                }
+                if ($type === 'outsourced') {
+                    $outsourcedIds[] = $id;
+                    continue;
+                }
+                $v->errors()->add('employee_ids', 'Invalid employee type selected.');
+                return;
+            }
+
+            if ($employeeIds !== []) {
+                $validEmployeeCount = Employee::query()
+                    ->whereKey($employeeIds)
+                    ->where('engagement_mode', 'shifts')
+                    ->count();
+                if ($validEmployeeCount !== count(array_unique($employeeIds))) {
+                    $v->errors()->add('employee_ids', 'Only shift-based employees can be assigned.');
+                    return;
+                }
+            }
+
+            if ($outsourcedIds !== []) {
+                $validOutsourcedCount = OutsourcedEmployee::query()
+                    ->whereKey($outsourcedIds)
+                    ->whereNull('deleted_at')
+                    ->count();
+                if ($validOutsourcedCount !== count(array_unique($outsourcedIds))) {
+                    $v->errors()->add('employee_ids', 'One or more selected outsourced employees are invalid.');
+                }
             }
         });
     }
@@ -43,7 +82,7 @@ class BulkShiftRosterRequest extends FormRequest
         return [
             // Employees
             'employee_ids' => ['required', 'array', 'min:1'],
-            'employee_ids.*' => ['required', 'integer', 'exists:employees,id'],
+            'employee_ids.*' => ['required', 'string', 'regex:/^(employee|outsourced):\d+$/'],
 
             // Shift
             'shift_planner_id' => ['required', 'integer', 'exists:shift_planners,id'],
@@ -75,6 +114,7 @@ class BulkShiftRosterRequest extends FormRequest
             'employee_ids.array' => 'Employees must be a valid array.',
             'employee_ids.min' => 'Select at least one employee.',
             'employee_ids.*.exists' => 'One or more selected employees are invalid.',
+            'employee_ids.*.regex' => 'Employee selection format is invalid.',
 
             'shift_planner_id.required' => 'Shift is required.',
             'shift_planner_id.exists' => 'Selected shift does not exist.',

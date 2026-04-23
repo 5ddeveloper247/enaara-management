@@ -7,6 +7,7 @@ use App\Services\ShiftPlannerService;
 use App\Http\Requests\Admin\ShiftPlanner\ShiftPlannerRequest;
 use App\Models\ShiftPlanner;
 use App\Models\Employee;
+use App\Models\OutsourcedEmployee;
 use App\Models\ShiftRosterEntry;
 class ShiftPlannerController extends Controller
 {
@@ -29,18 +30,26 @@ class ShiftPlannerController extends Controller
             ->orderBy('full_name')
             ->get();
 
+        $outsourcedEmployees = OutsourcedEmployee::with('department')
+            ->whereNull('deleted_at')
+            ->orderBy('full_name')
+            ->get();
+
         $shifts = ShiftPlanner::where('is_active', 1)
             ->orderBy('name')
             ->get();
 
-        $rosters = ShiftRosterEntry::with(['employee.department', 'shift'])
-            ->whereHas('employee', fn ($q) => $q->where('engagement_mode', 'shifts'))
+        $rosters = ShiftRosterEntry::with(['employee.department', 'outsourcedEmployee.department', 'shift'])
+            ->where(function ($query) {
+                $query->whereHas('employee', fn ($q) => $q->where('engagement_mode', 'shifts'))
+                    ->orWhereHas('outsourcedEmployee');
+            })
             ->orderBy('roster_date', 'asc')
             ->get();
 
         $departments = \App\Models\Department::orderBy('name')->get();
 
-        return view('admin.shift-planner.index', compact('employees', 'shifts', 'rosters', 'departments'));
+        return view('admin.shift-planner.index', compact('employees', 'outsourcedEmployees', 'shifts', 'rosters', 'departments'));
     }
 
     public function show($id)

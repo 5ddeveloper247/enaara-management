@@ -8,6 +8,7 @@
     <div class="offcanvas-body">
         <form id="rosterShiftForm">
             <input type="hidden" id="rosterShiftRosterId" name="roster_id" value="">
+            <input type="hidden" id="rosterShiftEmployeeType" name="employee_type" value="employee">
             <input type="hidden" id="rosterShiftEmployeeId" name="employee_id" value="">
             <input type="hidden" id="rosterShiftDay" name="day" value="">
 

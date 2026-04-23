@@ -340,9 +340,15 @@
         var checkOutEl = document.getElementById('rosterCheckOut');
         var floorEl = document.getElementById('rosterFloor');
         var lateCheckInEl = document.getElementById('rosterLateCheckIn');
+        var employeeTypeEl = document.getElementById('rosterShiftEmployeeType');
 
         if (!canvas) return;
-        document.getElementById('rosterShiftEmployeeId').value = employeeId;
+        var employeeRef = String(employeeId || '');
+        var refParts = employeeRef.split(':');
+        var employeeType = (refParts.length === 2) ? refParts[0] : 'employee';
+        var employeeSourceId = (refParts.length === 2) ? refParts[1] : employeeRef;
+        document.getElementById('rosterShiftEmployeeId').value = employeeSourceId;
+        if (employeeTypeEl) employeeTypeEl.value = employeeType;
         document.getElementById('rosterShiftDay').value = rosterDate;
         document.getElementById('rosterShiftEmployeeName').textContent = employeeName;
         document.getElementById('rosterShiftDepartmentName').textContent = deptName || '';
@@ -392,6 +398,7 @@
         if (!base || !storeUrl) return;
 
         var employeeId = document.getElementById('rosterShiftEmployeeId').value;
+        var employeeType = document.getElementById('rosterShiftEmployeeType')?.value || 'employee';
         var rosterDate = document.getElementById('rosterShiftDay').value;
         var shiftPlannerId = document.getElementById('rosterShiftPlannerId').value;
         var rosterId = document.getElementById('rosterShiftRosterId').value;
@@ -401,6 +408,7 @@
 
         var payload = {
             employee_id: parseInt(employeeId, 10),
+            employee_type: employeeType,
             shift_planner_id: parseInt(shiftPlannerId, 10),
             roster_date: rosterDate,
             start_time: document.getElementById('rosterStartTime').value,

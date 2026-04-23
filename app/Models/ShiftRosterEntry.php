@@ -15,6 +15,7 @@ class ShiftRosterEntry extends Model
     protected $fillable = [
         'assignment_id',
         'employee_id',
+        'outsourced_employee_id',
         'shift_planner_id',
         'roster_date',
         'start_time',
@@ -41,6 +42,11 @@ class ShiftRosterEntry extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function outsourcedEmployee(): BelongsTo
+    {
+        return $this->belongsTo(OutsourcedEmployee::class, 'outsourced_employee_id');
     }
 
     public function shift(): BelongsTo

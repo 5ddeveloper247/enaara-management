@@ -135,10 +135,10 @@
                                  data-site="{{ strtolower($employee->site ?? '') }}">
                                 <input class="form-check-input"
                                        type="checkbox"
-                                       value="{{ $employee->id }}"
-                                       id="emp{{ $employee->id }}"
+                                       value="employee:{{ $employee->id }}"
+                                       id="emp_employee_{{ $employee->id }}"
                                        name="employee_ids[]">
-                                <label class="form-check-label text-white small" for="emp{{ $employee->id }}">
+                                <label class="form-check-label text-white small" for="emp_employee_{{ $employee->id }}">
                                     {{ $employee->full_name }}
                                     @if(!empty($employee->department->name ?? null))
                                         <span class="opacity-50 ms-2">[{{ $employee->department->name }}]</span>
@@ -146,8 +146,29 @@
                                 </label>
                             </div>
                         @empty
-                            <div class="text-white-50 small text-center py-4">No active employees found.</div>
                         @endforelse
+                        @forelse($outsourcedEmployees ?? [] as $employee)
+                            <div class="form-check mb-2 employee-item"
+                                 data-department="{{ strtolower($employee->department->name ?? '') }}"
+                                 data-site="">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       value="outsourced:{{ $employee->id }}"
+                                       id="emp_outsourced_{{ $employee->id }}"
+                                       name="employee_ids[]">
+                                <label class="form-check-label text-white small" for="emp_outsourced_{{ $employee->id }}">
+                                    {{ $employee->full_name }}
+                                    <span class="badge bg-info ms-2">Outsourced</span>
+                                    @if(!empty($employee->department->name ?? null))
+                                        <span class="opacity-50 ms-2">[{{ $employee->department->name }}]</span>
+                                    @endif
+                                </label>
+                            </div>
+                        @empty
+                        @endforelse
+                        @if(($employees ?? collect())->isEmpty() && ($outsourcedEmployees ?? collect())->isEmpty())
+                            <div class="text-white-50 small text-center py-4">No active employees found.</div>
+                        @endif
                     </div>
                 </div>
 
