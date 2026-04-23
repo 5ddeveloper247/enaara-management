@@ -83,7 +83,7 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
                 }),
             ],
             'job_role_trade' => ['required', 'string', 'min:2', 'max:150', 'regex:/^(?!.*[<>])(?=.*\p{L})[\p{L}\p{M}\p{N}\p{Zs}\.\-\'",&()\/#]+$/u'],
-            'assigned_floor_ids' => ['nullable', 'array'],
+            'assigned_floor_ids' => ['required', 'array', 'min:1'],
             'assigned_floor_ids.*' => [
                 'integer',
                 Rule::exists('sbu_floors', 'id')->where(function ($query) {
@@ -194,7 +194,9 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
             'job_role_trade.max' => 'Job role / trade cannot exceed 150 characters.',
             'job_role_trade.regex' => 'Job role / trade must contain valid text and cannot include script tags or invalid symbols.',
 
+            'assigned_floor_ids.required' => 'Please select at least one assigned floor.',
             'assigned_floor_ids.array' => 'Assigned floors must be an array.',
+            'assigned_floor_ids.min' => 'Please select at least one assigned floor.',
             'assigned_floor_ids.*.integer' => 'Invalid floor selection.',
             'assigned_floor_ids.*.exists' => 'Selected floor does not exist in the chosen SBU.',
 

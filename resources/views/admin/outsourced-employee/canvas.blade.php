@@ -55,31 +55,27 @@
                 <div class="col-md-6">
                     <label class="form-label">SBU <span class="text-danger">*</span></label>
                     <select class="form-select" name="sbu_id" id="oeSbuId">
-                        <option value="">Select SBU</option>
+                        <option value="">Select organization first</option>
                     </select>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Contractor Company Name <span class="text-danger">*</span></label>
                     <select class="form-select" name="contractor_company_id" id="oeCompanyName">
-                        <option value="">Select organization and SBU first</option>
+                        <option value="">Select organization first</option>
                     </select>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Department <span class="text-danger">*</span></label>
                     <select class="form-select" name="department_id" id="oeDepartmentId">
-                        <option value="">Select department</option>
+                        <option value="">Select SBU first</option>
                     </select>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Job Role / Trade <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" name="job_role_trade" id="oeJobRole" placeholder="Enter job role / trade">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Assigned Floors</label>
+                <div class="col-12">
+                    <label class="form-label">Assigned Floors <span class="text-danger">*</span></label>
                     <select name="assigned_floor_ids[]" id="oeAssignedFloorsSelect" class="form-select d-none" multiple></select>
                     <div class="emp-dept-input-box" id="oeFloorBox">
                         <div id="oeFloorChips" style="display:contents"></div>
-                        <span class="emp-dept-ph" id="oeFloorPh">Select Floors...</span>
+                        <span class="emp-dept-ph" id="oeFloorPh">Select SBU first</span>
                         <svg class="emp-dept-chevron" id="oeFloorChevron" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
@@ -90,6 +86,10 @@
                         </div>
                         <div class="emp-dept-opt-list" id="oeFloorList"></div>
                     </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Job Role / Trade <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="job_role_trade" id="oeJobRole" placeholder="Enter job role / trade">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Date of Deployment <span class="text-danger">*</span></label>

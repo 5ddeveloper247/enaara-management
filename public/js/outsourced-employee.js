@@ -176,7 +176,11 @@
     function populateSbuOptions(orgId, selectedSbuId) {
         const sbuSelect = document.getElementById('oeSbuId');
         const org = getOrganizationById(orgId);
-        const sbus = org && Array.isArray(org.sbus) ? org.sbus : [];
+        if (!org || !String(orgId || '').trim()) {
+            fillSelectOptions(sbuSelect, [], 'Select organization first', 'id', 'name', selectedSbuId);
+            return;
+        }
+        const sbus = Array.isArray(org.sbus) ? org.sbus : [];
         fillSelectOptions(sbuSelect, sbus, 'Select SBU', 'id', 'name', selectedSbuId);
     }
 
@@ -184,7 +188,11 @@
         const departmentSelect = document.getElementById('oeDepartmentId');
         const org = getOrganizationById(orgId);
         const sbu = getSbuById(org, sbuId);
-        const departments = sbu && Array.isArray(sbu.departments) ? sbu.departments : [];
+        if (!sbu || !String(sbuId || '').trim()) {
+            fillSelectOptions(departmentSelect, [], 'Select SBU first', 'id', 'name', selectedDepartmentId);
+            return;
+        }
+        const departments = Array.isArray(sbu.departments) ? sbu.departments : [];
         fillSelectOptions(departmentSelect, departments, 'Select department', 'id', 'name', selectedDepartmentId);
     }
 
@@ -290,13 +298,27 @@
         syncOutsourcedFloorDropdownState();
     }
 
+    function setOutsourcedFloorPlaceholder(text) {
+        const floorPh = document.getElementById('oeFloorPh');
+        if (floorPh) {
+            floorPh.textContent = text;
+        }
+    }
+
     function populateOutsourcedFloors(orgId, sbuId, selectedFloorIds = []) {
         const floorSelect = document.getElementById('oeAssignedFloorsSelect');
         if (!floorSelect) return;
         availableFloors = [];
         const org = getOrganizationById(orgId);
         const sbu = getSbuById(org, sbuId);
-        if (sbu && sbu.floors) {
+        if (!sbu || !String(sbuId || '').trim()) {
+            floorSelect.innerHTML = '';
+            setOutsourcedFloorPlaceholder('Select SBU first');
+            renderOutsourcedFloorChips();
+            buildOutsourcedFloorDropdownOptions();
+            return;
+        }
+        if (sbu.floors) {
             availableFloors = sbu.floors;
         }
         floorSelect.innerHTML = '';
@@ -308,6 +330,7 @@
             }
             floorSelect.add(opt);
         });
+        setOutsourcedFloorPlaceholder('Select Floors...');
         renderOutsourcedFloorChips();
         buildOutsourcedFloorDropdownOptions();
     }
@@ -421,19 +444,32 @@
 
     function clearOutsourcedValidation(form) {
         form.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
+        const floorBox = document.getElementById('oeFloorBox');
+        if (floorBox) floorBox.classList.remove('is-invalid');
         form.querySelectorAll('.field-error-msg').forEach((el) => el.remove());
     }
 
     function showOutsourcedFieldErrors(form, errors) {
         if (!errors) return;
         Object.entries(errors).forEach(([field, messages]) => {
-            const input = form.querySelector(`[name="${field}"]`);
+            let input = form.querySelector(`[name="${field}"]`);
+            if (!input && field === 'assigned_floor_ids') {
+                input = document.getElementById('oeAssignedFloorsSelect');
+            }
+            if (!input && field.indexOf('assigned_floor_ids.') === 0) {
+                input = document.getElementById('oeAssignedFloorsSelect');
+            }
             if (!input) return;
-            input.classList.add('is-invalid');
+            const anchor = input.classList.contains('d-none') ? document.getElementById('oeFloorBox') : input;
+            if (anchor && anchor !== input) {
+                anchor.classList.add('is-invalid');
+            } else {
+                input.classList.add('is-invalid');
+            }
             const msg = document.createElement('div');
             msg.className = 'field-error-msg text-danger small mt-1';
             msg.textContent = Array.isArray(messages) ? messages[0] : String(messages);
-            input.insertAdjacentElement('afterend', msg);
+            (anchor || input).insertAdjacentElement('afterend', msg);
         });
     }
 
@@ -811,6 +847,18 @@
             outsourcedForm.addEventListener('submit', async function (e) {
                 e.preventDefault();
                 clearOutsourcedValidation(outsourcedForm);
+                const floorSelect = document.getElementById('oeAssignedFloorsSelect');
+                if (floorSelect && Array.from(floorSelect.options).filter(function (o) { return o.selected; }).length === 0) {
+                    const floorBox = document.getElementById('oeFloorBox');
+                    if (floorBox) {
+                        floorBox.classList.add('is-invalid');
+                        const msg = document.createElement('div');
+                        msg.className = 'field-error-msg text-danger small mt-1';
+                        msg.textContent = 'Please select at least one assigned floor.';
+                        floorBox.insertAdjacentElement('afterend', msg);
+                    }
+                    return;
+                }
                 const id = document.getElementById('outsourcedEmployeeId').value;
                 const submitBtn = document.getElementById('outsourcedEmployeeSubmitBtn');
                 const originalText = submitBtn ? submitBtn.textContent : 'Save';
