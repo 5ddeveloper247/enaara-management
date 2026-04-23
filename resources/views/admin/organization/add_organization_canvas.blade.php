@@ -30,23 +30,27 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="orgName" class="form-label fw-semibold small text-white">Organization Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="orgName" name="name" value="{{ old('name') }}" placeholder="e.g., Enaara Construction" required>
+                    <label for="orgName" class="form-label fw-semibold small text-white">Organization Name <span class="text-danger">*</span> <span class="text-white-50 fw-normal">(max 50)</span></label>
+                    <input type="text" class="form-control" id="orgName" name="name" value="{{ old('name') }}" placeholder="e.g., Enaara Construction" maxlength="50" required>
+                    <small class="d-block mt-1 text-white-50" id="orgNameMeta"><span id="orgNameLen">0</span> / 50</small>
                 </div>
 
                 <div class="mb-3">
-                    <label for="orgCode" class="form-label fw-semibold small text-white">Organization Code</label>
-                    <input type="text" class="form-control" id="orgCode" name="code" value="{{ old('code') }}" placeholder="e.g., ENR-001" maxlength="64">
+                    <label for="orgCode" class="form-label fw-semibold small text-white">Organization Code <span class="text-white-50 fw-normal">(max 10)</span></label>
+                    <input type="text" class="form-control" id="orgCode" name="code" value="{{ old('code') }}" placeholder="e.g., ENR-001" maxlength="10">
+                    <small class="d-block mt-1 text-white-50" id="orgCodeMeta"><span id="orgCodeLen">0</span> / 10</small>
                 </div>
 
                 <div class="mb-3">
-                    <label for="orgEmail" class="form-label fw-semibold small text-white">Email</label>
-                    <input type="email" class="form-control" id="orgEmail" name="email" value="{{ old('email') }}" placeholder="e.g., info@company.com">
+                    <label for="orgEmail" class="form-label fw-semibold small text-white">Email <span class="text-white-50 fw-normal">(max 255)</span></label>
+                    <input type="email" class="form-control" id="orgEmail" name="email" value="{{ old('email') }}" placeholder="e.g., info@company.com" maxlength="255">
+                    <small class="d-block mt-1 text-white-50" id="orgEmailMeta"><span id="orgEmailLen">0</span> / 255</small>
                 </div>
 
                 <div class="mb-3">
-                    <label for="orgTaxNo" class="form-label fw-semibold small text-white">Tax Number</label>
-                    <input type="text" class="form-control" id="orgTaxNo" name="tax_no" value="{{ old('tax_no') }}" placeholder="e.g., TAX-123456" maxlength="64">
+                    <label for="orgTaxNo" class="form-label fw-semibold small text-white">Tax Number <span class="text-white-50 fw-normal">(max 10)</span></label>
+                    <input type="text" class="form-control" id="orgTaxNo" name="tax_no" value="{{ old('tax_no') }}" placeholder="e.g., TAX-123456" maxlength="10">
+                    <small class="d-block mt-1 text-white-50" id="orgTaxNoMeta"><span id="orgTaxNoLen">0</span> / 10</small>
                 </div>
             </div>
 
@@ -58,13 +62,15 @@
                 </h6>
 
                 <div class="mb-3">
-                    <label for="orgDescription" class="form-label fw-semibold small text-white">Description</label>
-                    <textarea class="form-control" id="orgDescription" name="description" rows="3" placeholder="Enter company description">{{ old('description') }}</textarea>
+                    <label for="orgDescription" class="form-label fw-semibold small text-white">Description <span class="text-white-50 fw-normal">(max 255)</span></label>
+                    <textarea class="form-control" id="orgDescription" name="description" rows="3" maxlength="255" placeholder="Enter company description">{{ old('description') }}</textarea>
+                    <small class="d-block mt-1 text-white-50" id="orgDescriptionMeta"><span id="orgDescriptionLen">0</span> / 255</small>
                 </div>
 
                 <div class="mb-3">
-                    <label for="orgAddress" class="form-label fw-semibold small text-white">Address</label>
-                    <textarea class="form-control" id="orgAddress" name="address" rows="3" placeholder="Enter company address">{{ old('address') }}</textarea>
+                    <label for="orgAddress" class="form-label fw-semibold small text-white">Address <span class="text-white-50 fw-normal">(max 255)</span></label>
+                    <textarea class="form-control" id="orgAddress" name="address" rows="3" maxlength="255" placeholder="Enter company address">{{ old('address') }}</textarea>
+                    <small class="d-block mt-1 text-white-50" id="orgAddressMeta"><span id="orgAddressLen">0</span> / 255</small>
                 </div>
 
                 <div id="scheduleModeSection" class="mb-3 d-none">
@@ -150,9 +156,63 @@
         const openingGracePeriod = document.getElementById('orgOpeningGracePeriod');
         const closingGracePeriod = document.getElementById('orgClosingGracePeriod');
 
+        const ORG_LIMITED_FIELDS = [
+            { fieldName: 'name', inputId: 'orgName', lenId: 'orgNameLen', metaId: 'orgNameMeta', max: 50 },
+            { fieldName: 'code', inputId: 'orgCode', lenId: 'orgCodeLen', metaId: 'orgCodeMeta', max: 10 },
+            { fieldName: 'email', inputId: 'orgEmail', lenId: 'orgEmailLen', metaId: 'orgEmailMeta', max: 255 },
+            { fieldName: 'tax_no', inputId: 'orgTaxNo', lenId: 'orgTaxNoLen', metaId: 'orgTaxNoMeta', max: 10 },
+            { fieldName: 'description', inputId: 'orgDescription', lenId: 'orgDescriptionLen', metaId: 'orgDescriptionMeta', max: 255 },
+            { fieldName: 'address', inputId: 'orgAddress', lenId: 'orgAddressLen', metaId: 'orgAddressMeta', max: 255 },
+        ];
+
         function clearValidationErrors(form) {
             form.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
             form.querySelectorAll('.validation-error-dynamic').forEach((el) => el.remove());
+            ORG_LIMITED_FIELDS.forEach(function (cfg) {
+                const meta = document.getElementById(cfg.metaId);
+                if (meta) meta.classList.remove('text-danger');
+            });
+        }
+
+        function removeClientLengthFeedback(fieldName) {
+            const fb = addOrgForm.querySelector('[data-error-for="' + fieldName + '"][data-client-length="1"]');
+            if (fb) fb.remove();
+        }
+
+        function syncOrgLimitedFieldsState() {
+            if (!addOrgForm) return;
+            ORG_LIMITED_FIELDS.forEach(function (cfg) {
+                const el = document.getElementById(cfg.inputId);
+                if (!el) return;
+                const max = cfg.max;
+                if (el.value.length > max) {
+                    el.value = el.value.substring(0, max);
+                }
+                const len = el.value.length;
+                const lenEl = document.getElementById(cfg.lenId);
+                const metaEl = document.getElementById(cfg.metaId);
+                if (lenEl) lenEl.textContent = String(len);
+                if (metaEl) metaEl.classList.toggle('text-danger', len >= max);
+                removeClientLengthFeedback(cfg.fieldName);
+                if (len >= max) {
+                    el.classList.add('is-invalid');
+                    const feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback d-block validation-error-dynamic';
+                    feedback.dataset.errorFor = cfg.fieldName;
+                    feedback.dataset.clientLength = '1';
+                    feedback.textContent = 'Maximum length is ' + max + ' characters.';
+                    el.insertAdjacentElement('afterend', feedback);
+                } else if (!addOrgForm.querySelector('[data-error-for="' + cfg.fieldName + '"]:not([data-client-length])')) {
+                    el.classList.remove('is-invalid');
+                }
+            });
+            syncSaveOrganizationButtonState();
+        }
+
+        function syncSaveOrganizationButtonState() {
+            if (!saveOrgBtn || !addOrgForm) return;
+            const htmlValid = typeof addOrgForm.checkValidity === 'function' ? addOrgForm.checkValidity() : true;
+            saveOrgBtn.disabled = !htmlValid;
         }
 
         function appendFieldError(form, fieldName, message) {
@@ -174,7 +234,7 @@
             const fieldElement = form.querySelector(`[name="${normalizedField}"]`) || form.querySelector(`[name="${normalizedField}[]"]`);
             if (!fieldElement) return;
             fieldElement.classList.add('is-invalid');
-            if (form.querySelector(`[data-error-for="${normalizedField}"]`)) return;
+            if (form.querySelector('[data-error-for="' + normalizedField + '"]:not([data-client-length])')) return;
             const feedback = document.createElement('div');
             feedback.className = 'invalid-feedback d-block validation-error-dynamic';
             feedback.dataset.errorFor = normalizedField;
@@ -230,6 +290,11 @@
             }
         }
 
+        addOrgForm.querySelectorAll('input, select, textarea').forEach(function (el) {
+            el.addEventListener('change', syncOrgLimitedFieldsState);
+            el.addEventListener('input', syncOrgLimitedFieldsState);
+        });
+
         if (addOrgCanvas) {
             addOrgCanvas.addEventListener('hidden.bs.offcanvas', function() {
                 addOrgForm.reset();
@@ -237,6 +302,10 @@
                 clearValidationErrors(addOrgForm);
                 scheduleModeStandard.checked = true;
                 toggleScheduleMode();
+                syncOrgLimitedFieldsState();
+            });
+            addOrgCanvas.addEventListener('shown.bs.offcanvas', function () {
+                syncOrgLimitedFieldsState();
             });
         }
 
@@ -252,6 +321,11 @@
         if (addOrgForm) {
             addOrgForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                syncOrgLimitedFieldsState();
+                if (!addOrgForm.checkValidity()) {
+                    addOrgForm.reportValidity();
+                    return;
+                }
 
                 const formData = new FormData(addOrgForm);
                 const originalHtml = saveOrgBtn.innerHTML;
@@ -279,25 +353,7 @@
                         });
                     } else if (status === 422) {
                         showValidationErrors(addOrgForm, data.errors || {});
-                        let errorMessage = '';
-                        if (data.errors) {
-                            errorMessage = '<div class="text-start mt-2">';
-                            errorMessage += '<ul class="mb-0">';
-                            Object.values(data.errors).flat().forEach(err => {
-                                errorMessage += `<li>${err}</li>`;
-                            });
-                            errorMessage += '</ul></div>';
-                        } else {
-                            errorMessage = data.message || 'Validation failed.';
-                        }
-                        
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Please check the following:',
-                            html: errorMessage,
-                            confirmButtonColor: '#1a237e',
-                            confirmButtonText: 'Dismiss'
-                        });
+                        syncOrgLimitedFieldsState();
                     } else {
                         showError(data.message || 'Failed to create organization.', 'System Error');
                     }
@@ -309,10 +365,12 @@
                 .finally(() => {
                     saveOrgBtn.innerHTML = originalHtml;
                     saveOrgBtn.disabled = false;
+                    syncSaveOrganizationButtonState();
                 });
             });
         }
         toggleScheduleMode();
+        syncOrgLimitedFieldsState();
     });
 
 

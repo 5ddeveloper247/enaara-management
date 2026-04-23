@@ -31,23 +31,27 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="editOrgName" class="form-label fw-semibold small text-white">Organization Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="editOrgName" name="name" placeholder="e.g., Enaara Construction" required>
+                    <label for="editOrgName" class="form-label fw-semibold small text-white">Organization Name <span class="text-danger">*</span> <span class="text-white-50 fw-normal">(max 50)</span></label>
+                    <input type="text" class="form-control" id="editOrgName" name="name" placeholder="e.g., Enaara Construction" maxlength="50" required>
+                    <small class="d-block mt-1 text-white-50" id="editOrgNameMeta"><span id="editOrgNameLen">0</span> / 50</small>
                 </div>
 
                 <div class="mb-3">
-                    <label for="editOrgCode" class="form-label fw-semibold small text-white">Organization Code</label>
-                    <input type="text" class="form-control" id="editOrgCode" name="code" placeholder="e.g., ENR-001" maxlength="64">
+                    <label for="editOrgCode" class="form-label fw-semibold small text-white">Organization Code <span class="text-white-50 fw-normal">(max 10)</span></label>
+                    <input type="text" class="form-control" id="editOrgCode" name="code" placeholder="e.g., ENR-001" maxlength="10">
+                    <small class="d-block mt-1 text-white-50" id="editOrgCodeMeta"><span id="editOrgCodeLen">0</span> / 10</small>
                 </div>
 
                 <div class="mb-3">
-                    <label for="editOrgEmail" class="form-label fw-semibold small text-white">Email</label>
-                    <input type="email" class="form-control" id="editOrgEmail" name="email" placeholder="e.g., info@company.com">
+                    <label for="editOrgEmail" class="form-label fw-semibold small text-white">Email <span class="text-white-50 fw-normal">(max 255)</span></label>
+                    <input type="email" class="form-control" id="editOrgEmail" name="email" placeholder="e.g., info@company.com" maxlength="255">
+                    <small class="d-block mt-1 text-white-50" id="editOrgEmailMeta"><span id="editOrgEmailLen">0</span> / 255</small>
                 </div>
 
                 <div class="mb-3">
-                    <label for="editOrgTaxNo" class="form-label fw-semibold small text-white">Tax Number</label>
-                    <input type="text" class="form-control" id="editOrgTaxNo" name="tax_no" placeholder="e.g., TAX-123456" maxlength="64">
+                    <label for="editOrgTaxNo" class="form-label fw-semibold small text-white">Tax Number <span class="text-white-50 fw-normal">(max 10)</span></label>
+                    <input type="text" class="form-control" id="editOrgTaxNo" name="tax_no" placeholder="e.g., TAX-123456" maxlength="10">
+                    <small class="d-block mt-1 text-white-50" id="editOrgTaxNoMeta"><span id="editOrgTaxNoLen">0</span> / 10</small>
                 </div>
             </div>
 
@@ -59,13 +63,15 @@
                 </h6>
 
                 <div class="mb-3">
-                    <label for="editOrgDescription" class="form-label fw-semibold small text-white">Description</label>
-                    <textarea class="form-control" id="editOrgDescription" name="description" rows="3" placeholder="Enter organization description"></textarea>
+                    <label for="editOrgDescription" class="form-label fw-semibold small text-white">Description <span class="text-white-50 fw-normal">(max 255)</span></label>
+                    <textarea class="form-control" id="editOrgDescription" name="description" rows="3" maxlength="255" placeholder="Enter organization description"></textarea>
+                    <small class="d-block mt-1 text-white-50" id="editOrgDescriptionMeta"><span id="editOrgDescriptionLen">0</span> / 255</small>
                 </div>
 
                 <div class="mb-3">
-                    <label for="editOrgAddress" class="form-label fw-semibold small text-white">Address</label>
-                    <textarea class="form-control" id="editOrgAddress" name="address" rows="3" placeholder="Enter organization address"></textarea>
+                    <label for="editOrgAddress" class="form-label fw-semibold small text-white">Address <span class="text-white-50 fw-normal">(max 255)</span></label>
+                    <textarea class="form-control" id="editOrgAddress" name="address" rows="3" maxlength="255" placeholder="Enter organization address"></textarea>
+                    <small class="d-block mt-1 text-white-50" id="editOrgAddressMeta"><span id="editOrgAddressLen">0</span> / 255</small>
                 </div>
 
                 <div id="editScheduleModeSection" class="mb-3 d-none">
@@ -153,9 +159,63 @@ document.addEventListener('DOMContentLoaded', function () {
     const editOpeningGracePeriod = document.getElementById('editOrgOpeningGracePeriod');
     const editClosingGracePeriod = document.getElementById('editOrgClosingGracePeriod');
 
+    const EDIT_ORG_LIMITED_FIELDS = [
+        { fieldName: 'name', inputId: 'editOrgName', lenId: 'editOrgNameLen', metaId: 'editOrgNameMeta', max: 50 },
+        { fieldName: 'code', inputId: 'editOrgCode', lenId: 'editOrgCodeLen', metaId: 'editOrgCodeMeta', max: 10 },
+        { fieldName: 'email', inputId: 'editOrgEmail', lenId: 'editOrgEmailLen', metaId: 'editOrgEmailMeta', max: 255 },
+        { fieldName: 'tax_no', inputId: 'editOrgTaxNo', lenId: 'editOrgTaxNoLen', metaId: 'editOrgTaxNoMeta', max: 10 },
+        { fieldName: 'description', inputId: 'editOrgDescription', lenId: 'editOrgDescriptionLen', metaId: 'editOrgDescriptionMeta', max: 255 },
+        { fieldName: 'address', inputId: 'editOrgAddress', lenId: 'editOrgAddressLen', metaId: 'editOrgAddressMeta', max: 255 },
+    ];
+
     function clearValidationErrors(form) {
         form.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
         form.querySelectorAll('.validation-error-dynamic').forEach((el) => el.remove());
+        EDIT_ORG_LIMITED_FIELDS.forEach(function (cfg) {
+            const meta = document.getElementById(cfg.metaId);
+            if (meta) meta.classList.remove('text-danger');
+        });
+    }
+
+    function removeEditClientLengthFeedback(form, fieldName) {
+        const fb = form.querySelector('[data-error-for="' + fieldName + '"][data-client-length="1"]');
+        if (fb) fb.remove();
+    }
+
+    function syncEditOrgLimitedFieldsState() {
+        if (!editForm) return;
+        EDIT_ORG_LIMITED_FIELDS.forEach(function (cfg) {
+            const el = document.getElementById(cfg.inputId);
+            if (!el) return;
+            const max = cfg.max;
+            if (el.value.length > max) {
+                el.value = el.value.substring(0, max);
+            }
+            const len = el.value.length;
+            const lenEl = document.getElementById(cfg.lenId);
+            const metaEl = document.getElementById(cfg.metaId);
+            if (lenEl) lenEl.textContent = String(len);
+            if (metaEl) metaEl.classList.toggle('text-danger', len >= max);
+            removeEditClientLengthFeedback(editForm, cfg.fieldName);
+            if (len >= max) {
+                el.classList.add('is-invalid');
+                const feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback d-block validation-error-dynamic';
+                feedback.dataset.errorFor = cfg.fieldName;
+                feedback.dataset.clientLength = '1';
+                feedback.textContent = 'Maximum length is ' + max + ' characters.';
+                el.insertAdjacentElement('afterend', feedback);
+            } else if (!editForm.querySelector('[data-error-for="' + cfg.fieldName + '"]:not([data-client-length])')) {
+                el.classList.remove('is-invalid');
+            }
+        });
+        syncUpdateOrganizationButtonState();
+    }
+
+    function syncUpdateOrganizationButtonState() {
+        if (!updateBtn || !editForm) return;
+        const ok = typeof editForm.checkValidity === 'function' ? editForm.checkValidity() : true;
+        updateBtn.disabled = !ok;
     }
 
     function appendFieldError(form, fieldName, message) {
@@ -177,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const fieldElement = form.querySelector(`[name="${normalizedField}"]`) || form.querySelector(`[name="${normalizedField}[]"]`);
         if (!fieldElement) return;
         fieldElement.classList.add('is-invalid');
-        if (form.querySelector(`[data-error-for="${normalizedField}"]`)) return;
+        if (form.querySelector('[data-error-for="' + normalizedField + '"]:not([data-client-length])')) return;
         const feedback = document.createElement('div');
         feedback.className = 'invalid-feedback d-block validation-error-dynamic';
         feedback.dataset.errorFor = normalizedField;
@@ -321,6 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 editScheduleModeCustom.checked = true;
             }
             toggleEditScheduleMode();
+            syncEditOrgLimitedFieldsState();
         })
         .catch(error => {
             console.error('Edit fetch error:', error);
@@ -339,8 +400,18 @@ document.addEventListener('DOMContentLoaded', function () {
     editScheduleModeStandard?.addEventListener('change', toggleEditScheduleMode);
     editScheduleModeCustom?.addEventListener('change', toggleEditScheduleMode);
 
+    editForm.querySelectorAll('input, select, textarea').forEach(function (el) {
+        el.addEventListener('input', syncEditOrgLimitedFieldsState);
+        el.addEventListener('change', syncEditOrgLimitedFieldsState);
+    });
+
     editForm.addEventListener('submit', function (e) {
         e.preventDefault();
+        syncEditOrgLimitedFieldsState();
+        if (!editForm.checkValidity()) {
+            editForm.reportValidity();
+            return;
+        }
 
         if (!editForm.action || editForm.action.includes('javascript:void(0)')) {
             Swal.fire({
@@ -378,25 +449,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             } else if (status === 422) {
                 showValidationErrors(editForm, data.errors || {});
-                let errorMessage = '';
-                if (data.errors) {
-                    errorMessage = '<div class="text-start mt-2">';
-                    errorMessage += '<ul class="mb-0">';
-                    Object.values(data.errors).flat().forEach(err => {
-                        errorMessage += `<li>${err}</li>`;
-                    });
-                    errorMessage += '</ul></div>';
-                } else {
-                    errorMessage = data.message || 'Validation failed.';
-                }
-                
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Please check the following:',
-                    html: errorMessage,
-                    confirmButtonColor: '#1a237e',
-                    confirmButtonText: 'Dismiss'
-                });
+                syncEditOrgLimitedFieldsState();
             } else {
                 showError(data.message || 'Failed to update organization.');
             }
@@ -408,6 +461,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .finally(() => {
             updateBtn.innerHTML = originalHtml;
             updateBtn.disabled = false;
+            syncEditOrgLimitedFieldsState();
         });
     });
 
@@ -429,8 +483,10 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             editScheduleModeStandard.checked = true;
             toggleEditScheduleMode();
+            syncEditOrgLimitedFieldsState();
         });
     }
     toggleEditScheduleMode();
+    syncEditOrgLimitedFieldsState();
 });
 </script>

@@ -64,12 +64,17 @@ class OrganizationStoreRequest extends FormRequest
     {
         return [
             'name.required' => 'Organization name is required.',
+            'name.max' => 'Organization name must not exceed 50 characters.',
             'name.unique'   => 'This organization name is already registered.',
+            'code.max' => 'Organization code must not exceed 10 characters.',
             'code.unique'   => 'This organization code is already taken.',
+            'tax_no.max' => 'Tax number must not exceed 10 characters.',
             'tax_no.unique' => 'This tax number is already registered.',
             'parent_id.exists' => 'Selected parent company does not exist.',
             'email.email'   => 'Please enter a valid email address.',
+            'email.max' => 'Email must not exceed 255 characters.',
             'description.max' => 'Description must not exceed 255 characters.',
+            'address.max' => 'Address must not exceed 255 characters.',
             'working_days.*.in' => 'Selected working day is invalid.',
             'working_start_time.date_format' => 'Working start time must be in HH:MM format.',
             'working_end_time.date_format' => 'Working end time must be in HH:MM format.',
