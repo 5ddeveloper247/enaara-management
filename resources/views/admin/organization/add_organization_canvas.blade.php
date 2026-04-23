@@ -19,7 +19,7 @@
                 <div class="mb-3">
                     <label for="parentId" class="form-label fw-semibold small text-white">Parent Organization</label>
                     <select class="form-select" id="parentId" name="parent_id">
-                        <option value="">Select Parent Organization (Optional)</option>
+                        <option value="" hidden {{ old('parent_id') ? '' : 'selected' }}>Select Parent Organization (Optional)</option>
                         @foreach($organizations as $organization)
                         <option value="{{ $organization->id }}" data-working-days="{{ implode(',', $organization->working_days ?? []) }}" data-working-start-time="{{ $organization->working_start_time ? substr((string) $organization->working_start_time, 0, 5) : '' }}" data-working-end-time="{{ $organization->working_end_time ? substr((string) $organization->working_end_time, 0, 5) : '' }}" data-opening-grace-period="{{ $organization->opening_grace_period ?? '' }}" data-closing-grace-period="{{ $organization->closing_grace_period ?? '' }}" {{ old('parent_id') == $organization->id ? 'selected' : '' }}>
                             {{ $organization->name }}
