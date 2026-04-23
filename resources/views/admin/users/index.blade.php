@@ -67,23 +67,47 @@
         // =============================================
         function initDataTable() {
             usersTable = initUserDataTable('#usersTable', {
+                search: { smart: false },
                 ajax: {
                     url: window.usersDataUrl,
                     type: 'GET',
                     dataSrc: 'data',
                 },
                 columns: [
-                    { data: null,             render: renderUser,       orderable: true  },
-                    { data: 'employee_code',  render: renderEmpCode,    orderable: true  },
-                    { data: 'sbu_name',       render: renderSbu,        orderable: true  },
-                    { data: 'department',     render: renderDept,       orderable: true  },
-                    { data: 'role',           render: renderRole,       orderable: true  },
-                    { data: 'last_login',     render: renderLastLogin,  orderable: false },
-                    { data: 'is_active',      render: renderStatus,     orderable: true  },
-                    { data: null,             render: renderActions,    orderable: false, className: 'text-end no-toggle' },
+                    {
+                        data: null,
+                        orderable: true,
+                        render: function (data, type, row) {
+                            if (type === 'filter') {
+                                return [
+                                    row.name,
+                                    row.email,
+                                    row.employee_code,
+                                    row.sbu_name,
+                                    row.department,
+                                    row.role,
+                                    row.last_login,
+                                ].map(function (v) {
+                                    if (v === null || v === undefined || v === '-') return '';
+                                    return String(v);
+                                }).join(' ');
+                            }
+                            if (type === 'sort') {
+                                return (row && row.name) ? String(row.name) : '';
+                            }
+                            return renderUserRow(row);
+                        },
+                    },
+                    { data: 'employee_code',  render: renderEmpCode,    orderable: true,  searchable: false },
+                    { data: 'sbu_name',       render: renderSbu,        orderable: true,  searchable: false },
+                    { data: 'department',     render: renderDept,       orderable: true,  searchable: false },
+                    { data: 'role',           render: renderRole,       orderable: true,  searchable: false },
+                    { data: 'last_login',     render: renderLastLogin,  orderable: false, searchable: false },
+                    { data: 'is_active',      render: renderStatus,     orderable: true,  searchable: false },
+                    { data: null,             render: renderActions,    orderable: false, searchable: false, className: 'text-end no-toggle' },
                 ],
                 columnDefs: [
-                    { targets: 7, orderable: false, className: 'no-toggle' },
+                    { targets: 7, orderable: false, searchable: false, className: 'no-toggle' },
                 ],
                 buttons: [{
                     extend: 'colvis',
@@ -102,7 +126,7 @@
         // =============================================
         // COLUMN RENDERERS
         // =============================================
-        function renderUser(row) {
+        function renderUserRow(row) {
             var initials = esc(row.initials);
             var name     = esc(row.name);
             var email    = esc(row.email);
