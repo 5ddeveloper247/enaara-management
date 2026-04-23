@@ -203,7 +203,7 @@
                     <div class="col-md-6">
                         <label for="level_id" class="form-label">Role <span class="text-danger">*</span></label>
                         <select name="level_id" id="level_id" class="form-select @error('level_id') is-invalid @enderror" required>
-                            <option value="">— Select Role Level —</option>
+                            <option value="" hidden {{ old('level_id', $selectedLevelId) ? '' : 'selected' }}>— Select Role Level —</option>
                             @foreach($levels ?? [] as $level)
                             <option value="{{ $level->id }}" {{ (string) old('level_id', $selectedLevelId) === (string) $level->id ? 'selected' : '' }}>
                                 {{ $level->name }}
@@ -225,7 +225,7 @@
                     <div class="col-md-4">
                         <label for="organization_id" class="form-label">Organization</label>
                         <select name="organization_id" id="organization_id" class="form-select @error('organization_id') is-invalid @enderror">
-                            <option value="">Select Organization</option>
+                            <option value="" hidden {{ old('organization_id', $role->organization_id) ? '' : 'selected' }}>Select Organization</option>
                             @foreach($organizations ?? [] as $organization)
                             <option value="{{ $organization->id }}"
                                 {{ old('organization_id', $role->organization_id) == $organization->id ? 'selected' : '' }}>
@@ -265,7 +265,7 @@
                     <div class="col-md-4">
                         <label for="parent_role_id" class="form-label">Parent Role</label>
                         <select name="parent_role_id" id="parent_role_id" class="form-select @error('parent_role_id') is-invalid @enderror">
-                            <option value="">Select Parent Role</option>
+                            <option value="" hidden {{ old('parent_role_id', $role->parent_role_id) ? '' : 'selected' }}>Select Parent Role</option>
                             @foreach($parentRoles ?? [] as $parentRole)
                             <option value="{{ $parentRole->id }}"
                                 {{ old('parent_role_id', $role->parent_role_id) == $parentRole->id ? 'selected' : '' }}>
@@ -358,7 +358,7 @@
 
         function resetSelect(select, placeholder) {
             if (!select) return;
-            select.innerHTML = `<option value="">${placeholder}</option>`;
+            select.innerHTML = `<option value="" hidden selected>${placeholder}</option>`;
         }
 
         function resetSbuSelect() {
