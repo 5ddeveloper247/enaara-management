@@ -16,6 +16,7 @@ trait HasPermissionsTrait {
 
     $roleIds = UserRole::where('user_id', $loggedUser->id)
       ->whereNotNull('role_id')
+      ->whereNull('deleted_at')
       ->pluck('role_id')
       ->map(fn ($id) => (int) $id)
       ->unique()

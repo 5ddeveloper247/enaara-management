@@ -52,6 +52,7 @@ class RolePrivilege extends Model
             ->where('role_privileges.role_id', $roleId)
             ->whereIn('modules.route', $routeVariations)
             ->whereNull('role_privileges.deleted_at')
+            ->where('roles.is_active', true)
             ->whereNull('modules.deleted_at')
             ->first();
         return $row;
@@ -66,6 +67,7 @@ class RolePrivilege extends Model
             ->where('modules.module_category_id', $moduleCatId)
             ->where('modules.show_in_menu', 1)
             ->whereNull('role_privileges.deleted_at')
+            ->where('roles.is_active', true)
             ->whereNull('modules.deleted_at')
             ->orderBy('modules.display_order')
             ->distinct('modules.id')
