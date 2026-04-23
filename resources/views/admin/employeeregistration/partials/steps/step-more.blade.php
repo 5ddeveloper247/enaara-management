@@ -1,11 +1,11 @@
-                        <div class="wizard-pane" id="stepPane6">
+                        <div class="wizard-pane px-3" id="stepPane6">
                             <div id="step-6">
                                 <section class="d-grid gap-3">
-                                    <div>
-                                        <div class="fw-bold text-dark mb-3">
-                                            <span>More Details Information</span>
-                                        </div>
-                                        <div class="more-sub-nav d-flex flex-wrap gap-2 mb-3">
+                                    {{-- <div class="fw-bold text-dark mb-3">
+                                        <span>More Details Information</span>
+                                    </div> --}}
+                                 <div class="d-flex gap-2 align-items-start">
+                                        <div class="more-sub-nav d-flex flex-column gap-2 mb-3 flex-shrink-0">
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab active"
                                                 data-more-step="1"><span class="more-step-index">1</span><span>Contact</span></button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
@@ -22,7 +22,7 @@
                                                 data-more-step="7"><span class="more-step-index">7</span><span>Attachments</span></button>
                                         </div>
 
-                                        <div class="more-sub-pane active" id="moreStepPane1">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0 active" id="moreStepPane1">
                                             <div class="card border-0 bg-light">
                                                 <div class="card-body p-3">
                                                     <div class="fw-bold text-uppercase small mb-3">Contact</div>
@@ -70,7 +70,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="more-sub-pane" id="moreStepPane2">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane2">
                                             <div>
                                                 <div class="fw-bold text-uppercase small mb-3">Family</div>
                                                 <div class="family-members-wrap bg-white">
@@ -234,7 +234,7 @@
                                             </div>
                                         </template>
 
-                                        <div class="more-sub-pane" id="moreStepPane3">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane3">
                                             <div>
                                                 <div class="fw-bold text-uppercase small mb-3">Academic</div>
                                                 <div class="academic-records-wrap bg-white">
@@ -324,7 +324,7 @@
                                             </div>
                                         </template>
 
-                                        <div class="more-sub-pane" id="moreStepPane4">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane4">
                                             <div>
                                                 <div class="fw-bold text-uppercase small mb-3">Employment</div>
                                                 <div class="employment-records-wrap bg-white">
@@ -416,7 +416,7 @@
                                             </div>
                                         </template>
 
-                                        <div class="more-sub-pane" id="moreStepPane5">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane5">
                                             <div>
                                                 <div class="fw-bold text-uppercase small mb-3">Medical</div>
                                                 <div class="card border-0 bg-light">
@@ -478,7 +478,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="more-sub-pane" id="moreStepPane6">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane6">
                                             <div>
                                                 <div class="fw-bold text-uppercase small mb-3">Reference</div>
                                                  <div class="row g-3">
@@ -580,7 +580,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="more-sub-pane" id="moreStepPane7">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane7">
                                             <div class="d-flex justify-content-between align-items-center mb-3">
                                                 <div class="fw-bold text-uppercase small">Attachments</div>
                                                 <button type="button" class="btn btn-sm bg-main text-white border-0 rounded-2 px-3" data-bs-toggle="modal" data-bs-target="#attachmentModal">

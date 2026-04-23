@@ -1,4 +1,4 @@
-                        <div class="wizard-pane" id="stepPane3">
+                        <div class="wizard-pane px-3" id="stepPane3">
                             <div class="d-grid gap-3" id="step-3">
                                 <div class="card bg-light border-0 shadow-sm">
                                     <div class="card-body p-3">

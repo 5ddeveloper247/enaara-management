@@ -1,4 +1,4 @@
-                        <div class="wizard-pane" id="stepPane4">
+                        <div class="wizard-pane px-3" id="stepPane4">
                             <div id="step-4">
                                 @php
                                     $af = $editData['armed_force'] ?? [];
