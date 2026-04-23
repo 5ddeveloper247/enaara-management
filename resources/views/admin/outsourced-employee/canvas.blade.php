@@ -75,13 +75,21 @@
                     <input type="text" class="form-control" name="job_role_trade" id="oeJobRole" placeholder="Enter job role / trade">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Placement (Floor) <span class="text-danger">*</span></label>
-                    <select class="form-select" name="placement_floor" id="oePlacementFloor">
-                        <option value="">Select floor</option>
-                        @foreach(($floors ?? []) as $floor)
-                            <option value="{{ $floor->name }}">{{ $floor->name }}</option>
-                        @endforeach
-                    </select>
+                    <label class="form-label">Assigned Floors</label>
+                    <select name="assigned_floor_ids[]" id="oeAssignedFloorsSelect" class="form-select d-none" multiple></select>
+                    <div class="emp-dept-input-box" id="oeFloorBox">
+                        <div id="oeFloorChips" style="display:contents"></div>
+                        <span class="emp-dept-ph" id="oeFloorPh">Select Floors...</span>
+                        <svg class="emp-dept-chevron" id="oeFloorChevron" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="emp-dept-dropdown" id="oeFloorDd" style="display:none">
+                        <div class="emp-dept-search-row">
+                            <input id="oeFloorSearch" placeholder="Search Floor..." autocomplete="off">
+                        </div>
+                        <div class="emp-dept-opt-list" id="oeFloorList"></div>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Date of Deployment <span class="text-danger">*</span></label>
@@ -106,8 +114,8 @@
             <div class="mb-3 fw-semibold">Attendance</div>
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label">Biometric ID</label>
-                    <input type="text" class="form-control" name="biometric_id" id="oeBiometricId" placeholder="Enter biometric ID">
+                    <label class="form-label">Biometric / TAS ID</label>
+                    <input type="text" class="form-control" name="biometric_id" id="oeBiometricId" placeholder="Enter Biometric / TAS ID">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Attendance Access <span class="text-danger">*</span></label>

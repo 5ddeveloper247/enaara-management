@@ -68,6 +68,11 @@ class EmployeeService
                         ->where('is_active', true)
                         ->orderBy('name');
                 },
+                'sbus.floors' => static function ($query): void {
+                    $query->select(['id', 'sbu_id', 'name'])
+                        ->where('is_active', true)
+                        ->orderBy('name');
+                },
             ])
             ->orderBy('name')
             ->get();
@@ -1295,10 +1300,7 @@ class EmployeeService
 
         $permanent = (clone $base)->where('employment_type', 'Permanent')->count();
         $contract = (clone $base)->where('employment_type', 'Contract')->count();
-        $vendors = OutsourcedEmployee::query()
-            ->whereNotNull('contractor_company_id')
-            ->distinct('contractor_company_id')
-            ->count('contractor_company_id');
+        $vendors = ThirdParty::query()->where('is_active', true)->count();
 
         return [
             'total'            => $total,

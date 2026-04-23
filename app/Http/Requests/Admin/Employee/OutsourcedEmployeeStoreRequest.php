@@ -83,7 +83,13 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
                 }),
             ],
             'job_role_trade' => ['required', 'string', 'min:2', 'max:150', 'regex:/^(?!.*[<>])(?=.*\p{L})[\p{L}\p{M}\p{N}\p{Zs}\.\-\'",&()\/#]+$/u'],
-            'placement_floor' => ['required', 'string', 'min:1', 'max:120', 'regex:/^(?!.*[<>])(?=.*[\p{L}\p{N}])[\p{L}\p{M}\p{N}\p{Zs}\.\-\'",&()\/#]+$/u'],
+            'assigned_floor_ids' => ['nullable', 'array'],
+            'assigned_floor_ids.*' => [
+                'integer',
+                Rule::exists('sbu_floors', 'id')->where(function ($query) {
+                    return $query->where('sbu_id', (int) $this->input('sbu_id'));
+                }),
+            ],
             'date_of_deployment' => ['required', 'date'],
 
             'biometric_id' => [
@@ -188,9 +194,9 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
             'job_role_trade.max' => 'Job role / trade cannot exceed 150 characters.',
             'job_role_trade.regex' => 'Job role / trade must contain valid text and cannot include script tags or invalid symbols.',
 
-            'placement_floor.required' => 'Please select placement floor.',
-            'placement_floor.max' => 'Placement floor cannot exceed 120 characters.',
-            'placement_floor.regex' => 'Placement floor must contain valid text/number and cannot include script tags or invalid symbols.',
+            'assigned_floor_ids.array' => 'Assigned floors must be an array.',
+            'assigned_floor_ids.*.integer' => 'Invalid floor selection.',
+            'assigned_floor_ids.*.exists' => 'Selected floor does not exist in the chosen SBU.',
 
             'date_of_deployment.required' => 'Please select date of deployment.',
             'date_of_deployment.date' => 'Date of deployment must be a valid date.',

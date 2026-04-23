@@ -213,6 +213,105 @@
         fillSelectOptions(vendorSelect, vendors, 'Select contractor company', 'id', 'third_party_name', selectedVendorId);
     }
 
+    let availableFloors = [];
+    
+    function renderOutsourcedFloorChips() {
+        const floorSelect = document.getElementById('oeAssignedFloorsSelect');
+        const floorChips = document.getElementById('oeFloorChips');
+        const floorPh = document.getElementById('oeFloorPh');
+        if (!floorSelect || !floorChips || !floorPh) return;
+        const selectedOptions = Array.from(floorSelect.options).filter(o => o.selected);
+        floorChips.innerHTML = '';
+        
+        if (selectedOptions.length === 0) {
+            floorPh.style.display = 'inline-block';
+        } else {
+            floorPh.style.display = 'none';
+            selectedOptions.forEach(opt => {
+                const chip = document.createElement('div');
+                chip.className = 'emp-dept-chip';
+                chip.innerHTML = `${escHtml(opt.text)} <span class="emp-floor-chip-rm flex-shrink-0" data-id="${opt.value}">&times;</span>`;
+                floorChips.appendChild(chip);
+            });
+        }
+    }
+    
+    function syncOutsourcedFloorDropdownState() {
+        const floorSelect = document.getElementById('oeAssignedFloorsSelect');
+        const floorList = document.getElementById('oeFloorList');
+        if (!floorList || !floorSelect) return;
+        const selectedIds = Array.from(floorSelect.options).filter(o => o.selected).map(o => o.value);
+        const items = floorList.querySelectorAll('.emp-floor-list-opt');
+        items.forEach(item => {
+            const id = item.getAttribute('data-id');
+            if (selectedIds.includes(id)) {
+                item.style.backgroundColor = '#eef2f6';
+                item.style.fontWeight = 'bold';
+            } else {
+                item.style.backgroundColor = 'transparent';
+                item.style.fontWeight = 'normal';
+            }
+        });
+    }
+    
+    function buildOutsourcedFloorDropdownOptions(filter = '') {
+        const floorSelect = document.getElementById('oeAssignedFloorsSelect');
+        const floorList = document.getElementById('oeFloorList');
+        if (!floorList || !floorSelect) return;
+        floorList.innerHTML = '';
+        const lowerFilter = filter.toLowerCase();
+        
+        availableFloors.forEach(floor => {
+            const floorName = String(floor.name || '');
+            if (floorName.toLowerCase().includes(lowerFilter)) {
+                const div = document.createElement('div');
+                div.className = 'emp-floor-list-opt p-2 border-bottom text-dark';
+                div.style.cursor = 'pointer';
+                div.setAttribute('data-id', floor.id);
+                div.innerText = floorName;
+                
+                div.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    let opt = Array.from(floorSelect.options).find(o => o.value == floor.id);
+                    if (opt) {
+                        opt.selected = !opt.selected;
+                    } else {
+                        opt = new Option(floorName, floor.id);
+                        opt.selected = true;
+                        floorSelect.add(opt);
+                    }
+                    renderOutsourcedFloorChips();
+                    syncOutsourcedFloorDropdownState();
+                });
+                
+                floorList.appendChild(div);
+            }
+        });
+        syncOutsourcedFloorDropdownState();
+    }
+
+    function populateOutsourcedFloors(orgId, sbuId, selectedFloorIds = []) {
+        const floorSelect = document.getElementById('oeAssignedFloorsSelect');
+        if (!floorSelect) return;
+        availableFloors = [];
+        const org = getOrganizationById(orgId);
+        const sbu = getSbuById(org, sbuId);
+        if (sbu && sbu.floors) {
+            availableFloors = sbu.floors;
+        }
+        floorSelect.innerHTML = '';
+        availableFloors.sort((a,b) => String(a.name).localeCompare(String(b.name)));
+        availableFloors.forEach(floor => {
+            const opt = new Option(floor.name, floor.id);
+            if (selectedFloorIds.includes(parseInt(floor.id))) {
+                opt.selected = true;
+            }
+            floorSelect.add(opt);
+        });
+        renderOutsourcedFloorChips();
+        buildOutsourcedFloorDropdownOptions();
+    }
+
     function initOutsourcedTable() {
         if (!document.getElementById('outsourcedEmployeeTable') || outsourcedTable) return;
 
@@ -350,6 +449,7 @@
         populateSbuOptions('', '');
         populateDepartmentOptions('', '', '');
         populateVendorOptions('', '', '');
+        populateOutsourcedFloors('', '');
         clearOutsourcedValidation(form);
     }
 
@@ -378,7 +478,7 @@
             populateDepartmentOptions(d.organization_id || '', d.sbu_id || '', d.department_id || '');
             populateVendorOptions(d.organization_id || '', d.sbu_id || '', d.contractor_company_id || '');
             document.getElementById('oeJobRole').value = d.job_role_trade || '';
-            document.getElementById('oePlacementFloor').value = d.placement_floor || '';
+            populateOutsourcedFloors(d.organization_id || '', d.sbu_id || '', d.assigned_floor_ids || []);
             document.getElementById('oeDeploymentDate').value = d.date_of_deployment || '';
             document.getElementById('oeBiometricId').value = d.biometric_id || '';
             document.getElementById('oeAttendanceAccess').value = d.attendance_access ? '1' : '0';
@@ -580,6 +680,40 @@
             });
         }
 
+        const floorBox = document.getElementById('oeFloorBox');
+        const floorDd = document.getElementById('oeFloorDd');
+        const floorSearch = document.getElementById('oeFloorSearch');
+        const floorSelect = document.getElementById('oeAssignedFloorsSelect');
+
+        if (floorSearch) {
+            floorSearch.addEventListener('input', function(e) {
+                buildOutsourcedFloorDropdownOptions(e.target.value);
+            });
+        }
+        
+        if (floorBox) {
+            floorBox.addEventListener('click', function(e) {
+                if (e.target.classList && e.target.classList.contains('emp-floor-chip-rm') || e.target.closest('.emp-floor-chip-rm')) {
+                    const el = e.target.classList.contains('emp-floor-chip-rm') ? e.target : e.target.closest('.emp-floor-chip-rm');
+                    const idToRemove = el.getAttribute('data-id');
+                    const opt = Array.from(floorSelect.options).find(o => o.value == idToRemove);
+                    if (opt) opt.selected = false;
+                    renderOutsourcedFloorChips();
+                    syncOutsourcedFloorDropdownState();
+                    return;
+                }
+                if (floorDd) {
+                    floorDd.style.display = floorDd.style.display === 'none' ? 'block' : 'none';
+                }
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (floorBox && floorDd && !floorBox.contains(e.target) && !floorDd.contains(e.target)) {
+                floorDd.style.display = 'none';
+            }
+        });
+
         if (photoTrigger && photoInput) {
             photoTrigger.addEventListener('click', function () {
                 photoInput.click();
@@ -770,6 +904,7 @@
                 populateSbuOptions(orgId, '');
                 populateDepartmentOptions(orgId, '', '');
                 populateVendorOptions(orgId, '', '');
+                populateOutsourcedFloors(orgId, '');
             });
         }
 
@@ -778,12 +913,14 @@
                 const orgId = organizationSelect ? organizationSelect.value : '';
                 populateDepartmentOptions(orgId, sbuSelect.value || '', '');
                 populateVendorOptions(orgId, sbuSelect.value || '', '');
+                populateOutsourcedFloors(orgId, sbuSelect.value || '');
             });
         }
 
         populateSbuOptions('', '');
         populateDepartmentOptions('', '', '');
         populateVendorOptions('', '', '');
+        populateOutsourcedFloors('', '');
 
         const internalTab = document.getElementById('internal-staff-tab');
         const outsourcedTab = document.getElementById('outsourced-staff-tab');

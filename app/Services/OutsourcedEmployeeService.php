@@ -12,7 +12,7 @@ class OutsourcedEmployeeService
     public function getTableData(array $filters = []): array
     {
         $query = OutsourcedEmployee::query()
-            ->with(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name']);
+            ->with(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors:id,name']);
 
         $organization = trim((string) ($filters['filter_organization'] ?? ''));
         $sbu = trim((string) ($filters['filter_sbu'] ?? ''));
@@ -67,7 +67,7 @@ class OutsourcedEmployeeService
                     'department_id' => $row->department_id,
                     'department' => $row->department?->name ?? '-',
                     'job_role_trade' => $row->job_role_trade,
-                    'placement_floor' => $row->placement_floor,
+                    'placement_floor' => $row->assignedFloors->pluck('name')->implode(', '),
                     'date_of_deployment' => optional($row->date_of_deployment)->format('Y-m-d'),
                     'biometric_id' => $row->biometric_id,
                     'attendance_access' => (bool) $row->attendance_access,
@@ -80,12 +80,18 @@ class OutsourcedEmployeeService
     public function store(array $data, ?UploadedFile $photo = null): OutsourcedEmployee
     {
         return DB::transaction(function () use ($data, $photo) {
+            $floorIds = $data['assigned_floor_ids'] ?? [];
+            unset($data['assigned_floor_ids']);
+            
             $row = OutsourcedEmployee::create($data);
+            if (!empty($floorIds)) {
+                $row->assignedFloors()->sync($floorIds);
+            }
             if ($photo) {
                 $path = $photo->store("employees/outsourced/{$row->id}/profile", 'public');
                 $row->update(['photo_path' => $path]);
             }
-            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name']);
+            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors']);
         });
     }
 
@@ -93,6 +99,11 @@ class OutsourcedEmployeeService
     {
         return DB::transaction(function () use ($id, $data, $photo) {
             $row = OutsourcedEmployee::query()->findOrFail($id);
+            $floorIds = $data['assigned_floor_ids'] ?? [];
+            unset($data['assigned_floor_ids']);
+            
+            $row->assignedFloors()->sync($floorIds);
+            
             if ($photo) {
                 if (! empty($row->photo_path) && Storage::disk('public')->exists($row->photo_path)) {
                     Storage::disk('public')->delete($row->photo_path);
@@ -100,13 +111,15 @@ class OutsourcedEmployeeService
                 $data['photo_path'] = $photo->store("employees/outsourced/{$row->id}/profile", 'public');
             }
             $row->update($data);
-            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name']);
+            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors']);
         });
     }
 
     public function findForEdit(int $id): OutsourcedEmployee
     {
-        return OutsourcedEmployee::query()->with(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name'])->findOrFail($id);
+        $employee = OutsourcedEmployee::query()->with(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors:id,name'])->findOrFail($id);
+        $employee->assigned_floor_ids = $employee->assignedFloors->pluck('id')->toArray();
+        return $employee;
     }
 }
 

@@ -103,7 +103,7 @@
                 </div>
                 <div class="col-6">
                     <div class="p-3 rounded-3 border" style="border-color:#ffffff1a !important;">
-                        <small class="opacity-75 text-white d-block mb-2">Placement (Floor)</small>
+                        <small class="opacity-75 text-white d-block mb-2">Assigned Floors</small>
                         <div class="fw-semibold small" id="oeDetailPlacementFloor">-</div>
                     </div>
                 </div>

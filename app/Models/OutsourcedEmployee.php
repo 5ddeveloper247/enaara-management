@@ -52,5 +52,15 @@ class OutsourcedEmployee extends Model
     {
         return $this->belongsTo(ThirdParty::class, 'contractor_company_id');
     }
+
+    public function assignedFloors()
+    {
+        return $this->belongsToMany(
+            SbuFloor::class,
+            'outsourced_employee_floor_privileges',
+            'outsourced_employee_id',
+            'sbu_floor_id'
+        );
+    }
 }
 
