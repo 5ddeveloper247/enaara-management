@@ -553,7 +553,7 @@ class EmployeeStepRequest extends FormRequest
                 'family.*.is_next_of_kin' => ['nullable', 'boolean'],
                 'family.*.nok_cnic' => ['nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
                 'family.*.nok_cnic_expiry_date' => ['nullable', 'date', 'after:today'],
-                'family.*.nok_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                'family.*.nok_contact' => ['nullable', 'string', 'max:15', 'regex:' . $this->contactRegex()],
 
                 // Academics
                 'academics'                => ['nullable', 'array'],
@@ -656,7 +656,7 @@ class EmployeeStepRequest extends FormRequest
                     'is_next_of_kin' => ['nullable', 'boolean'],
                     'nok_cnic'       => ['nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
                     'nok_cnic_expiry_date' => ['nullable', 'date', 'after:today'],
-                    'nok_contact'    => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                    'nok_contact'    => ['nullable', 'string', 'max:15', 'regex:' . $this->contactRegex()],
                 ]);
 
             case 'academic_row':
@@ -917,6 +917,7 @@ class EmployeeStepRequest extends FormRequest
             'nok_dob.required' => 'The Next of Kin (NOK) date of birth is mandatory.',
             'nok_dob.before' => 'The Next of Kin (NOK) date of birth must be a past date.',
             'nok_contact.required' => 'The Next of Kin (NOK) contact number is mandatory.',
+            'nok_contact.max' => 'The Next of Kin (NOK) contact number must not exceed 15 digits.',
             'nok_contact.regex' => 'The Next of Kin (NOK) contact number must be a valid phone number.',
 
             // Employment - Department (required for role level >= 4)
@@ -1112,6 +1113,8 @@ class EmployeeStepRequest extends FormRequest
             'family.*.dob.required_with' => 'Family member date of birth is required.',
             'family.*.dob.before' => 'Family member date of birth must be before today.',
             'family.*.relation.required_with' => 'Family member relation is required.',
+            'family.*.nok_contact.max' => 'NOK contact must not exceed 15 digits.',
+            'family.*.nok_contact.regex' => 'NOK contact must be a valid phone number (11 to 15 digits).',
 
             'family.*.occupation.regex' => 'Family member occupation contains invalid characters.',
 
