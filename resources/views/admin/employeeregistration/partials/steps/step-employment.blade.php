@@ -28,8 +28,8 @@
                                                         <input type="radio" class="btn-check"
                                                             name="employment_category"
                                                             id="employmentDetailsCategoryContractual"
-                                                            value="contractual"
-                                                            {{ ($employee->employment_category ?? '') == 'contractual' ? 'checked' : '' }}>
+                                                            value="consultant"
+                                                            {{ in_array(($employee->employment_category ?? ''), ['consultant', 'contractual'], true) ? 'checked' : '' }}>
                                                         <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                                             for="employmentDetailsCategoryContractual">Consultant /
                                                             Retainer</label>
@@ -71,7 +71,7 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="row g-3 {{ ($employee->employment_category ?? '') == 'contractual' ? '' : 'd-none' }} mt-1"
+                                                    <div class="row g-3 {{ in_array(($employee->employment_category ?? ''), ['consultant', 'contractual'], true) ? '' : 'd-none' }} mt-1"
                                                         id="employmentDetailsContractualFields">
                                                         <div class="col-md-6">
                                                             <label class="form-label">Start Date <span
