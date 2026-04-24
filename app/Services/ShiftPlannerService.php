@@ -6,6 +6,7 @@ use App\Models\ShiftPlanner;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class ShiftPlannerService
 {
@@ -17,6 +18,9 @@ class ShiftPlannerService
         DB::beginTransaction();
 
         try {
+            $this->ensureUniqueShiftName($data);
+            $this->ensureUniqueShiftTime($data);
+
             $shiftPlannerData = [
                 'name' => $data['name'],
                 'code' => $data['code'] ?? null,
@@ -54,6 +58,8 @@ class ShiftPlannerService
 
         try {
             $shiftPlanner = ShiftPlanner::findOrFail($id);
+            $this->ensureUniqueShiftName($data, (int) $id);
+            $this->ensureUniqueShiftTime($data, (int) $id);
 
             $shiftPlannerData = [
                 'name' => $data['name'],
@@ -115,5 +121,38 @@ class ShiftPlannerService
         }
 
         return $start->diffInMinutes($end);
+    }
+
+    private function ensureUniqueShiftName(array $data, ?int $ignoreId = null): void
+    {
+        $existsQuery = ShiftPlanner::query()
+            ->where('name', $data['name']);
+
+        if ($ignoreId) {
+            $existsQuery->where('id', '!=', $ignoreId);
+        }
+
+        if ($existsQuery->exists()) {
+            throw ValidationException::withMessages([
+                'name' => ['Shift name already exists.'],
+            ]);
+        }
+    }
+
+    private function ensureUniqueShiftTime(array $data, ?int $ignoreId = null): void
+    {
+        $existsQuery = ShiftPlanner::query()
+            ->where('start_time', $data['start_time'])
+            ->where('end_time', $data['end_time']);
+
+        if ($ignoreId) {
+            $existsQuery->where('id', '!=', $ignoreId);
+        }
+
+        if ($existsQuery->exists()) {
+            throw ValidationException::withMessages([
+                'start_time' => ['Shift already registered on this time.'],
+            ]);
+        }
     }
 }

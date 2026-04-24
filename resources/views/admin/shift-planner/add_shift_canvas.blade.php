@@ -153,6 +153,7 @@
         const addShiftForm = document.getElementById('addShiftForm');
         const saveBtn = document.getElementById('saveShiftBtn');
         const canvasLabel = document.getElementById('addShiftCanvasLabel');
+        let isShiftSaving = false;
 
         const shiftIdInput = document.getElementById('shiftId');
         const shiftName = document.getElementById('shiftName');
@@ -294,11 +295,90 @@
         if (saveBtn) {
             saveBtn.addEventListener('click', function() {
                 if (addShiftForm.checkValidity()) {
-                    addShiftForm.submit();
+                    submitShiftForm();
                 } else {
                     addShiftForm.reportValidity();
                 }
             });
+        }
+
+        if (addShiftForm) {
+            addShiftForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (addShiftForm.checkValidity()) {
+                    submitShiftForm();
+                } else {
+                    addShiftForm.reportValidity();
+                }
+            });
+        }
+
+        function submitShiftForm() {
+            if (isShiftSaving) {
+                return;
+            }
+
+            const actionUrl = addShiftForm.getAttribute('action');
+            if (!actionUrl) {
+                showError('Unable to submit form.');
+                return;
+            }
+
+            const originalBtnHtml = saveBtn ? saveBtn.innerHTML : '';
+            isShiftSaving = true;
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+            }
+
+            const formData = new FormData(addShiftForm);
+
+            fetch(actionUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData,
+                credentials: 'same-origin'
+            })
+                .then(async (response) => {
+                    const data = await response.json().catch(() => ({}));
+                    return {
+                        ok: response.ok,
+                        status: response.status,
+                        data
+                    };
+                })
+                .then((result) => {
+                    if (result.ok && result.data && result.data.success) {
+                        showSuccess(result.data.message || 'Shift saved successfully.');
+                        const offcanvas = bootstrap.Offcanvas.getInstance(addShiftCanvas);
+                        if (offcanvas) {
+                            offcanvas.hide();
+                        }
+                        window.location.reload();
+                        return;
+                    }
+
+                    if (result.status === 422 && result.data && result.data.errors) {
+                        const messages = Object.values(result.data.errors).flat().filter(Boolean);
+                        showError(messages.length ? messages.join('<br>') : 'Validation failed.');
+                        return;
+                    }
+
+                    showError((result.data && result.data.message) ? result.data.message : 'Failed to save shift.');
+                })
+                .catch(() => {
+                    showError('Failed to save shift.');
+                })
+                .finally(() => {
+                    isShiftSaving = false;
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalBtnHtml;
+                    }
+                });
         }
     });
 </script>

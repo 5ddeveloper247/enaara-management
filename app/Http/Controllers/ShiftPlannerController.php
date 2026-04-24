@@ -9,6 +9,7 @@ use App\Models\ShiftPlanner;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftRosterEntry;
+use Illuminate\Validation\ValidationException;
 class ShiftPlannerController extends Controller
 {
     protected $shiftPlannerService;
@@ -92,6 +93,19 @@ class ShiftPlannerController extends Controller
             return redirect()
                 ->route('admin.shift-planner.index')
                 ->with('success', 'Shift created successfully.');
+        } catch (ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors($e->errors());
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -129,6 +143,19 @@ class ShiftPlannerController extends Controller
             return redirect()
                 ->route('admin.shift-planner.index')
                 ->with('success', 'Shift updated successfully.');
+        } catch (ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors($e->errors());
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([
