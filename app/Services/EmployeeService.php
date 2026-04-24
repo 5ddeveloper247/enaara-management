@@ -1329,10 +1329,14 @@ class EmployeeService
 
     public function attachmentsForEditPayload(Employee $employee): array
     {
-        $employee->loadMissing('mediaFiles');
+        $employeeId = (int) $employee->id;
 
-        return $employee->mediaFiles
+        return MediaFile::query()
+            ->where('module_name', 'employee')
+            ->where('module_id', $employeeId)
             ->where('file_type', 'attachment')
+            ->orderByDesc('id')
+            ->get()
             ->map(fn ($m) => [
                 'id' => $m->id,
                 'name' => $m->title ?: $m->file_name,

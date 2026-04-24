@@ -107,7 +107,7 @@
 </div>
 
 <script>
-    let employeeAttachments = [];
+    window.employeeAttachments = window.employeeAttachments || [];
     let attachmentUploadedFiles = [];
 
     function escAtt(s) {
@@ -229,7 +229,7 @@
                     existingFiles: data.files || []
                 };
 
-                employeeAttachments.push(attachment);
+                window.employeeAttachments.push(attachment);
                 renderAttachmentListing();
                 resetAttachmentForm();
                 
@@ -315,14 +315,14 @@
         const onPageContainer = document.getElementById('onPageAttachmentListing');
         const onPageEmpty = document.getElementById('onPageAttachmentListingEmpty');
 
-        if (badge) badge.textContent = employeeAttachments.length;
-        if (modalEmpty) modalEmpty.classList.toggle('d-none', employeeAttachments.length > 0);
-        if (onPageEmpty) onPageEmpty.classList.toggle('d-none', employeeAttachments.length > 0);
+        if (badge) badge.textContent = window.employeeAttachments.length;
+        if (modalEmpty) modalEmpty.classList.toggle('d-none', window.employeeAttachments.length > 0);
+        if (onPageEmpty) onPageEmpty.classList.toggle('d-none', window.employeeAttachments.length > 0);
         
         if (modalContainer) modalContainer.innerHTML = '';
         if (onPageContainer) onPageContainer.innerHTML = '';
 
-        employeeAttachments.forEach(a => {
+        window.employeeAttachments.forEach(a => {
             const nameSafe = escAtt(a.name);
             const typeSafe = escAtt(a.type || '');
             const descSafe = escAtt(a.desc || '');
@@ -412,7 +412,7 @@
     function deleteAttachment(localId, dbId = null) {
         if (!dbId && !localId.startsWith('existing-')) {
             // It's a local un-saved attachment (should rarely happen now)
-            employeeAttachments = employeeAttachments.filter(x => x.localId !== localId);
+            window.employeeAttachments = window.employeeAttachments.filter(x => x.localId !== localId);
             renderAttachmentListing();
             return;
         }
@@ -443,7 +443,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        employeeAttachments = employeeAttachments.filter(x => x.localId !== localId);
+                        window.employeeAttachments = window.employeeAttachments.filter(x => x.localId !== localId);
                         renderAttachmentListing();
                         showToast(data.message, 'success');
                     } else {
@@ -459,10 +459,10 @@
     }
 
     window.getAttachmentPayload = function() {
-        const keptAttachmentIds = employeeAttachments
+        const keptAttachmentIds = window.employeeAttachments
             .filter(a => !!a.existingId)
             .map(a => a.existingId);
-        const newAttachments = employeeAttachments
+        const newAttachments = window.employeeAttachments
             .filter(a => !a.existingId && Array.isArray(a.files) && a.files.length);
 
         return {
@@ -472,7 +472,7 @@
     };
 
     window.setExistingAttachments = function(attachments) {
-        employeeAttachments = (attachments || []).map((a) => ({
+        window.employeeAttachments = (attachments || []).map((a) => ({
             localId: 'existing-' + a.id,
             existingId: a.id,
             name: a.name || a.file_name || 'Attachment',

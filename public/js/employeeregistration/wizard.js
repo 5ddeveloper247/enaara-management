@@ -2653,6 +2653,10 @@
     }
 })();
 
+if (typeof window.setExistingAttachments === 'function' && window.editData && Array.isArray(window.editData.attachments)) {
+    window.setExistingAttachments(window.editData.attachments);
+}
+
 // --- Medical disability toggling (Robust version) ---
 document.addEventListener('change', function(e) {
     if (e.target && e.target.name === 'has_disability') {
