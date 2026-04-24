@@ -9,6 +9,7 @@
     <div class="offcanvas-body">
         <form id="addShiftForm" method="POST" action="{{ route('admin.shift-planner.store') }}">
             @csrf
+            <div id="shiftFormErrorBox" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
 
             <!-- Hidden ID for update -->
             <input type="hidden" name="id" id="shiftId">
@@ -317,6 +318,7 @@
             if (isShiftSaving) {
                 return;
             }
+            clearFormErrors();
 
             const actionUrl = addShiftForm.getAttribute('action');
             if (!actionUrl) {
@@ -362,8 +364,7 @@
                     }
 
                     if (result.status === 422 && result.data && result.data.errors) {
-                        const messages = Object.values(result.data.errors).flat().filter(Boolean);
-                        showError(messages.length ? messages.join('<br>') : 'Validation failed.');
+                        applyFormErrors(result.data.errors);
                         return;
                     }
 
@@ -379,6 +380,55 @@
                         saveBtn.innerHTML = originalBtnHtml;
                     }
                 });
+        }
+
+        function clearFormErrors() {
+            const errorBox = document.getElementById('shiftFormErrorBox');
+            if (errorBox) {
+                errorBox.classList.add('d-none');
+                errorBox.innerHTML = '';
+            }
+            if (!addShiftForm) {
+                return;
+            }
+            addShiftForm.querySelectorAll('.is-invalid').forEach((field) => {
+                field.classList.remove('is-invalid');
+            });
+            addShiftForm.querySelectorAll('.invalid-feedback.dynamic-error').forEach((node) => {
+                node.remove();
+            });
+        }
+
+        function applyFormErrors(errors) {
+            clearFormErrors();
+            const errorBox = document.getElementById('shiftFormErrorBox');
+            const generalMessages = [];
+
+            Object.entries(errors || {}).forEach(([field, messages]) => {
+                const list = Array.isArray(messages) ? messages : [messages];
+                const message = String(list[0] || '').trim();
+
+                const input = addShiftForm.querySelector('[name="' + field + '"]');
+                if (!message) {
+                    return;
+                }
+
+                if (!input) {
+                    generalMessages.push(message);
+                    return;
+                }
+
+                input.classList.add('is-invalid');
+                const feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback dynamic-error';
+                feedback.textContent = message;
+                input.insertAdjacentElement('afterend', feedback);
+            });
+
+            if (errorBox && generalMessages.length) {
+                errorBox.classList.remove('d-none');
+                errorBox.innerHTML = generalMessages.join('<br>');
+            }
         }
     });
 </script>
