@@ -1334,7 +1334,10 @@ class EmployeeService
         return MediaFile::query()
             ->whereIn('module_name', ['employee', 'employees', 'Employee', 'Employees'])
             ->where('module_id', $employeeId)
-            ->whereIn('file_type', ['attachment', 'attachments', 'Attachment', 'Attachments'])
+            ->where(function ($query) use ($employeeId) {
+                $query->whereIn('file_type', ['attachment', 'attachments', 'Attachment', 'Attachments'])
+                    ->orWhere('file_path', 'like', "employees/{$employeeId}/attachments/%");
+            })
             ->orderByDesc('id')
             ->get()
             ->map(fn ($m) => [
@@ -1567,9 +1570,16 @@ class EmployeeService
         ]));
     }
 
-    public function update(int $id, array $data, array $files = [], array $attachments = [], array $keptAttachmentIds = []): Employee
+    public function update(
+        int $id,
+        array $data,
+        array $files = [],
+        array $attachments = [],
+        array $keptAttachmentIds = [],
+        bool $syncAttachments = false
+    ): Employee
     {
-        return DB::transaction(function () use ($id, $data, $files, $attachments, $keptAttachmentIds) {
+        return DB::transaction(function () use ($id, $data, $files, $attachments, $keptAttachmentIds, $syncAttachments) {
             $employee = Employee::findOrFail($id);
             $role      = Role::find($data['role_id'] ?? $employee->role_id);
             $orgLevel  = $role && $role->isOrganizationLevelRole();
@@ -1758,13 +1768,15 @@ class EmployeeService
                 $this->saveMediaFiles($employee->id, $files);
             }
 
-            $employee->mediaFiles()
-                ->where('file_type', 'attachment')
-                ->when(!empty($keptAttachmentIds), fn($q) => $q->whereNotIn('id', $keptAttachmentIds))
-                ->when(empty($keptAttachmentIds), fn($q) => $q)
-                ->delete();
+            if ($syncAttachments) {
+                $employee->mediaFiles()
+                    ->where('file_type', 'attachment')
+                    ->when(!empty($keptAttachmentIds), fn($q) => $q->whereNotIn('id', $keptAttachmentIds))
+                    ->when(empty($keptAttachmentIds), fn($q) => $q)
+                    ->delete();
 
-            $this->saveAttachmentFiles($employee->id, $attachments);
+                $this->saveAttachmentFiles($employee->id, $attachments);
+            }
 
             Log::info('Employee updated', ['id' => $employee->id]);
 

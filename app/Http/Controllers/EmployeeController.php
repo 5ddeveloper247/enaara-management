@@ -138,7 +138,8 @@ class EmployeeController extends Controller
             $photos   = $request->hasFile('profile_photo') ? [$request->file('profile_photo')] : [];
             $attachments = $this->extractAttachments($request);
             $keptAttachmentIds = array_values(array_filter(array_map('intval', $request->input('kept_attachment_ids', []))));
-            $employee = $this->employeeService->update($id, $request->validated(), $photos, $attachments, $keptAttachmentIds);
+            $syncAttachments = $request->has('kept_attachment_ids') || $request->has('attachments') || $request->hasFile('attachments');
+            $employee = $this->employeeService->update($id, $request->validated(), $photos, $attachments, $keptAttachmentIds, $syncAttachments);
 
             Log::info('Employee updated successfully', ['employee_id' => $employee->id]);
 
@@ -168,6 +169,7 @@ class EmployeeController extends Controller
             $photos   = $request->hasFile('profile_photo') ? [$request->file('profile_photo')] : [];
             $attachments = $this->extractAttachments($request);
             $keptAttachmentIds = array_values(array_filter(array_map('intval', $request->input('kept_attachment_ids', []))));
+            $syncAttachments = $request->has('kept_attachment_ids') || $request->has('attachments') || $request->hasFile('attachments');
 
             $moduleNames = [
                 1 => 'General Information',
@@ -185,7 +187,7 @@ class EmployeeController extends Controller
                 $message = $moduleName . ' saved successfully.';
             } else {
                 // Update existing record
-                $employee = $this->employeeService->update((int)$employeeId, $data, $photos, $attachments, $keptAttachmentIds);
+                $employee = $this->employeeService->update((int)$employeeId, $data, $photos, $attachments, $keptAttachmentIds, $syncAttachments);
                 $message = $moduleName . ' saved successfully.';
             }
 
@@ -448,6 +450,33 @@ class EmployeeController extends Controller
             return response()->json(['success' => false, 'message' => 'Attachment not found.'], 404);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Internal server error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function attachments(int $id)
+    {
+        if (!validatePermissions('admin/employees')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        try {
+            $employee = \App\Models\Employee::query()->findOrFail($id);
+            $attachments = $this->employeeService->attachmentsForEditPayload($employee);
+
+            return response()->json([
+                'success' => true,
+                'attachments' => $attachments,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Employee attachments fetch failed', [
+                'employee_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to fetch attachments.',
+            ], 500);
         }
     }
 

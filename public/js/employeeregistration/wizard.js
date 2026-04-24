@@ -508,6 +508,14 @@
             });
         }
 
+        if (typeof window.getAttachmentPayload === 'function') {
+            const attachmentPayload = window.getAttachmentPayload();
+            const keptIds = Array.isArray(attachmentPayload?.keptAttachmentIds) ? attachmentPayload.keptAttachmentIds : [];
+            keptIds.forEach((id) => {
+                formData.append('kept_attachment_ids[]', id);
+            });
+        }
+
         if (window.croppedImageBlob) {
             const photoName = window.profilePhotoUploadName || 'profile-photo.jpg';
             formData.append('profile_photo', window.croppedImageBlob, photoName);

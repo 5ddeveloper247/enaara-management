@@ -210,6 +210,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/employees/delete-photo', [EmployeeController::class, 'deletePhoto'])->name('admin.employee.delete_photo');
     Route::post('/employees/save-attachment', [EmployeeController::class, 'saveAttachment'])->name('admin.employee.save_attachment');
     Route::post('/employees/delete-attachment', [EmployeeController::class, 'deleteAttachment'])->name('admin.employee.delete_attachment');
+    Route::get('/employees/{id}/attachments', [EmployeeController::class, 'attachments'])->name('admin.employee.attachments');
     Route::get('/employees/{id}/edit', [EmployeeController::class, 'edit'])->name('admin.employee.edit');
     Route::post('/employees/{id}/update', [EmployeeController::class, 'update'])->name('admin.employee.update');
     Route::delete('/employees/{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');

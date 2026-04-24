@@ -506,4 +506,30 @@
         }));
         renderAttachmentListing();
     };
+
+    window.fetchExistingAttachments = function() {
+        const employeeId = document.getElementById('saved_employee_id')?.value;
+        const fetchUrl = window.employeeAttachmentsFetchUrl;
+        if (!employeeId || !fetchUrl) {
+            return;
+        }
+
+        fetch(fetchUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.success && Array.isArray(data.attachments)) {
+                window.setExistingAttachments(data.attachments);
+            }
+        })
+        .catch(() => {});
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        window.fetchExistingAttachments();
+    });
 </script>
