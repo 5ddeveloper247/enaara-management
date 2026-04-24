@@ -20,7 +20,7 @@
                                                     <label class="form-label">Rank</label>
                                                     <input type="text" name="rank" class="form-control" id="armedDetailsRankInput"
                                                         value="{{ $af['rank'] ?? '' }}"
-                                                        placeholder="Enter rank">
+                                                        placeholder="Enter rank" maxlength="50">
                                                 </div>
                                             </div>
                                         </div>

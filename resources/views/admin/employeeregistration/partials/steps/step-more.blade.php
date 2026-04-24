@@ -410,7 +410,7 @@
                                                         <label class="form-label">Reason for Leaving</label>
                                                         <input type="text" class="form-control employment-field-input" name="employments[][reason_for_leaving]"
                                                             data-employment-reason placeholder="Enter reason for leaving">
-                                                        <div class="employment-field-preview" data-employment-preview-reason>-</div>
+                                                        <div class="employment-field-preview" data-employment-preview-reason-for-leaving>-</div>
                                                     </div>
                                                 </div>
                                             </div>

@@ -535,7 +535,12 @@
 
             if (response.status === 422) {
                 showFieldErrors(data.errors);
-                // Subtle toast-like error for better UX instead of a modal summary
+                if (step === 6 && typeof window.setMoreSubStep === 'function' && data.errors) {
+                    const refKeys = Object.keys(data.errors).filter((k) => k.startsWith('ref'));
+                    if (refKeys.length) {
+                        window.setMoreSubStep(6);
+                    }
+                }
                 Swal.fire({
                     toast: true,
                     position: 'top-end',
@@ -681,6 +686,22 @@
             const res = await response.json();
             if (response.status === 422) {
                 showFieldErrors(res.errors);
+                if (subsection === 'references' && typeof window.setMoreSubStep === 'function' && res.errors) {
+                    const refKeys = Object.keys(res.errors).filter((k) => k.startsWith('ref'));
+                    if (refKeys.length) {
+                        window.setMoreSubStep(6);
+                    }
+                }
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Validation Failed',
+                    text: 'Please check the highlighted fields.',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
             } else if (res.success) {
                 showToast(`${subsection.charAt(0).toUpperCase() + subsection.slice(1)} information saved successfully`);
                 if (onSuccess) onSuccess();
@@ -1884,7 +1905,7 @@
                     if (currentStep === maxStepReached) maxStepReached = Math.min(totalSteps, currentStep + 1);
                     if (onSuccess) onSuccess();
                     // Ensure Step 6 starts at sub-step 1 (Contact)
-                    setMoreSubStep(1);
+                    window.setMoreSubStep(1);
                 });
             } else {
                 showError(data.message || 'Something went wrong.');
@@ -2116,19 +2137,19 @@
 
     window.nextMoreSubStep = function() {
         if (currentMoreStep < totalMoreSteps) {
-            setMoreSubStep(currentMoreStep + 1);
+            window.setMoreSubStep(currentMoreStep + 1);
         }
     };
 
     window.prevMoreSubStep = function() {
         if (currentMoreStep > 1) {
-            setMoreSubStep(currentMoreStep - 1);
+            window.setMoreSubStep(currentMoreStep - 1);
         }
     };
 
     document.querySelectorAll('.more-sub-tab').forEach(tab => {
         tab.addEventListener('click', function() {
-            setMoreSubStep(parseInt(this.getAttribute('data-more-step')));
+            window.setMoreSubStep(parseInt(this.getAttribute('data-more-step')));
         });
     });
 

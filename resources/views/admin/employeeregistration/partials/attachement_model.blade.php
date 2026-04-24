@@ -487,10 +487,4 @@
         }));
         renderAttachmentListing();
     };
-
-    document.addEventListener('DOMContentLoaded', function() {
-        if (window.editData && window.editData.attachments && typeof window.setExistingAttachments === 'function') {
-            window.setExistingAttachments(window.editData.attachments);
-        }
-    });
 </script>

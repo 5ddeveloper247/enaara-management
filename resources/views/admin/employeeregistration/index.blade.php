@@ -56,6 +56,9 @@
             exEmployments: @json($employee?->exEmployments ?? []),
             attachments: @json($editData['attachments'] ?? [])
         };
+        if (typeof window.setExistingAttachments === 'function') {
+            window.setExistingAttachments(window.editData.attachments || []);
+        }
     </script>
     <!-- Cropper.js Script -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>

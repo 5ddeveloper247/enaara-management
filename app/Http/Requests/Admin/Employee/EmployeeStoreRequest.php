@@ -132,6 +132,12 @@ class EmployeeStoreRequest extends FormRequest
         if ($this->has('banks')) {
             $this->normalizeBankRowsFromRequest();
         }
+
+        foreach (['ref1_relationship', 'ref2_relationship'] as $refRel) {
+            if ($this->has($refRel) && trim((string) $this->input($refRel)) === '') {
+                $this->merge([$refRel => null]);
+            }
+        }
     }
 
     protected function nameRegex(): string
@@ -389,7 +395,7 @@ class EmployeeStoreRequest extends FormRequest
                 ),
             ],
             'service_no'             => ['nullable', 'string', 'max:100', 'regex:' . $this->alphanumericCodeRegex()],
-            'rank'                   => ['nullable', 'string', 'min:1', 'max:20', 'regex:/^[A-Za-z0-9\s\.\-\/]+$/'],
+            'rank'                   => ['nullable', 'string', 'min:1', 'max:50', 'regex:/^[A-Za-z0-9\s\.\-\/]+$/'],
             'medical_category'       => ['nullable', 'string', 'min:1', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
             'date_of_commissioning'  => ['nullable', 'date'],
             'date_of_retirement'     => ['nullable', 'date'],
@@ -455,12 +461,12 @@ class EmployeeStoreRequest extends FormRequest
             'ref1_designation'  => ['nullable', 'string', 'max:255'],
             'ref1_organization' => ['nullable', 'string', 'max:255'],
             'ref1_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-            'ref1_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
+            'ref1_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Colleague', 'Academic', 'Professional', 'Other'])],
             'ref2_name'         => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
             'ref2_designation'  => ['nullable', 'string', 'max:255'],
             'ref2_organization' => ['nullable', 'string', 'max:255'],
             'ref2_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-            'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
+            'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Colleague', 'Academic', 'Professional', 'Other'])],
 
             // Files & Account
             'profile_photo'          => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png'],

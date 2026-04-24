@@ -20,11 +20,15 @@ class RegistrationController extends Controller
     {
         $data = $this->employeeService->getFormData();
         $employee = null;
-        if ($request->has('id')) {
-            $employee = Employee::find($request->id);
+        $editData = [];
+        if ($request->filled('id')) {
+            $employee = Employee::find((int) $request->id);
+            if ($employee) {
+                $editData['attachments'] = $this->employeeService->attachmentsForEditPayload($employee);
+            }
         }
         $data['employee'] = $employee;
-        $data['editData'] = [];
+        $data['editData'] = $editData;
         return view('admin.employeeregistration.index', $data);
     }
 }

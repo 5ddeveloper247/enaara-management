@@ -1327,6 +1327,25 @@ class EmployeeService
         return strtoupper(substr($name, 0, 2)) ?: '??';
     }
 
+    public function attachmentsForEditPayload(Employee $employee): array
+    {
+        $employee->loadMissing('mediaFiles');
+
+        return $employee->mediaFiles
+            ->where('file_type', 'attachment')
+            ->map(fn ($m) => [
+                'id' => $m->id,
+                'name' => $m->title ?: $m->file_name,
+                'type' => $m->attachment_type,
+                'description' => $m->description,
+                'file_name' => $m->file_name,
+                'mime_type' => $m->mime_type,
+                'url' => Storage::url($m->file_path),
+            ])
+            ->values()
+            ->all();
+    }
+
     public function edit(int $id): View
     {
         $employee = Employee::with([
@@ -1349,19 +1368,7 @@ class EmployeeService
 
         $photo     = $employee->mediaFiles->where('file_type', 'photo')->first();
         $photoUrl  = $photo ? Storage::url($photo->file_path) : null;
-        $attachments = $employee->mediaFiles
-            ->where('file_type', 'attachment')
-            ->map(fn($m) => [
-                'id' => $m->id,
-                'name' => $m->title ?: $m->file_name,
-                'type' => $m->attachment_type,
-                'description' => $m->description,
-                'file_name' => $m->file_name,
-                'mime_type' => $m->mime_type,
-                'url' => Storage::url($m->file_path),
-            ])
-            ->values()
-            ->all();
+        $attachments = $this->attachmentsForEditPayload($employee);
 
         $police     = $employee->policeVerification;
         $armedForce = $employee->armedForce;

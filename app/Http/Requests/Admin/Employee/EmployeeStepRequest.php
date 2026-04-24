@@ -172,6 +172,12 @@ class EmployeeStepRequest extends FormRequest
             $this->merge(['family' => $family]);
         }
 
+        foreach (['ref1_relationship', 'ref2_relationship'] as $refRel) {
+            if ($this->has($refRel) && trim((string) $this->input($refRel)) === '') {
+                $this->merge([$refRel => null]);
+            }
+        }
+
         if ((string) $this->input('subsection') === 'family_row') {
             if ($this->filled('nok_cnic')) {
                 $this->merge(['nok_cnic' => str_replace('-', '', (string) $this->input('nok_cnic'))]);
@@ -503,7 +509,7 @@ class EmployeeStepRequest extends FormRequest
         elseif ($step === 4) {
             $stepRules = [
                 'service_no' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphanumericCodeRegex()],
-                'rank' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9\s\.\-\/]+$/'],
+                'rank' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9\s\.\-\/]+$/'],
                 'medical_category' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
                 'date_of_commissioning' => ['nullable', 'date', 'before_or_equal:today'],
                 'date_of_retirement' => ['nullable', 'date', 'after_or_equal:date_of_commissioning'],
@@ -582,13 +588,13 @@ class EmployeeStepRequest extends FormRequest
                 'ref1_designation'  => ['nullable', 'string', 'max:255'],
                 'ref1_organization' => ['nullable', 'string', 'max:255'],
                 'ref1_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-                'ref1_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
+                'ref1_relationship' => ['nullable', Rule::in($this->referenceRelationshipValues())],
 
                 'ref2_name'         => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
                 'ref2_designation'  => ['nullable', 'string', 'max:255'],
                 'ref2_organization' => ['nullable', 'string', 'max:255'],
                 'ref2_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-                'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Academic', 'Professional', 'Other'])],
+                'ref2_relationship' => ['nullable', Rule::in($this->referenceRelationshipValues())],
 
                 // Account
                 'create_user_account' => ['nullable', 'boolean'],
@@ -712,12 +718,12 @@ class EmployeeStepRequest extends FormRequest
                     'ref1_designation'  => ['nullable', 'string', 'max:50'],
                     'ref1_organization' => ['nullable', 'string', 'max:100'],
                     'ref1_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-                    'ref1_relationship' => ['nullable', 'string', 'max:50'],
+                    'ref1_relationship' => ['nullable', Rule::in($this->referenceRelationshipValues())],
                     'ref2_name'         => ['nullable', 'string', 'max:50', 'regex:' . $this->nameRegex()],
                     'ref2_designation'  => ['nullable', 'string', 'max:50'],
                     'ref2_organization' => ['nullable', 'string', 'max:100'],
                     'ref2_contact'      => ['nullable', 'string', 'regex:' . $this->contactRegex()],
-                    'ref2_relationship' => ['nullable', 'string', 'max:50'],
+                    'ref2_relationship' => ['nullable', Rule::in($this->referenceRelationshipValues())],
                 ]);
         }
 
@@ -1154,6 +1160,8 @@ class EmployeeStepRequest extends FormRequest
             'ref1_contact.regex' => 'Reference 1 contact number must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
             'ref2_name.regex' => 'Reference 2 name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
             'ref2_contact.regex' => 'Reference 2 contact number must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
+            'ref1_relationship.in' => 'Reference 1 relationship must be one of: Family, Friend, Colleague, Academic, Professional, Other.',
+            'ref2_relationship.in' => 'Reference 2 relationship must be one of: Family, Friend, Colleague, Academic, Professional, Other.',
 
             // Files
             'profile_photo.mimes' => 'Profile photo must be a JPG, JPEG, PNG, GIF, or SVG file.',
@@ -1178,6 +1186,11 @@ class EmployeeStepRequest extends FormRequest
             'password.max' => 'Password must not exceed 64 characters.',
             'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, and one number.',
         ];
+    }
+
+    protected function referenceRelationshipValues(): array
+    {
+        return ['Family', 'Friend', 'Colleague', 'Academic', 'Professional', 'Other'];
     }
 }
 
