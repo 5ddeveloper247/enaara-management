@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\User;
 use App\Models\UserRole;
@@ -37,10 +38,54 @@ class UserService
             ->orderByDesc('id')
             ->get();
 
-        $data = $users->map(function ($user) {
+        $departmentIds = [];
+        foreach ($users as $user) {
+            $employee = $user->employee;
+            if (! $employee) {
+                continue;
+            }
+            $ids = is_array($employee->department_ids) ? $employee->department_ids : [];
+            foreach ($ids as $id) {
+                $val = (int) $id;
+                if ($val > 0) {
+                    $departmentIds[] = $val;
+                }
+            }
+            if ($employee->department_id) {
+                $departmentIds[] = (int) $employee->department_id;
+            }
+        }
+        $departmentIds = array_values(array_unique(array_filter($departmentIds)));
+        $departmentNameById = empty($departmentIds)
+            ? []
+            : Department::query()
+                ->whereIn('id', $departmentIds)
+                ->pluck('name', 'id')
+                ->all();
+
+        $data = $users->map(function ($user) use ($departmentNameById) {
             $role       = $user->roles->first();
             $employee   = $user->employee;
-            $department = $employee?->department?->name ?? '-';
+            $department = '-';
+            if ($employee) {
+                $ids = is_array($employee->department_ids) ? $employee->department_ids : [];
+                if ($employee->department_id) {
+                    $ids[] = $employee->department_id;
+                }
+                $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+                $names = [];
+                foreach ($ids as $id) {
+                    $name = $departmentNameById[$id] ?? null;
+                    if ($name) {
+                        $names[] = $name;
+                    }
+                }
+                if (! empty($names)) {
+                    $department = implode(', ', $names);
+                } else {
+                    $department = $employee?->department?->name ?? '-';
+                }
+            }
             $empCode    = $employee?->employee_code ?? '-';
             $sbuName    = $employee?->sbu?->name ?? '-';
             
