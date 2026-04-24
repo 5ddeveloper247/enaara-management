@@ -8,19 +8,29 @@
     </div>
     <div class="offcanvas-body">
         <form id="editFenceForm">
+            <div id="editFenceFormErrorBox" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
             <input type="hidden" id="editFenceId">
             
-            <!-- SBU Selection Section -->
+            <!-- Organization/SBU Selection Section -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
                     <i class="bi bi-building me-2"></i>Unit Mapping
                 </h6>
                 <div class="mb-3">
+                    <label for="editFenceOrganization" class="form-label fw-semibold small text-white">Select Organization <span class="text-danger">*</span></label>
+                    <select class="form-select" id="editFenceOrganization" required>
+                        <option value="">Choose an Organization...</option>
+                        @foreach($organizations as $organization)
+                            <option value="{{ $organization->id }}">{{ $organization->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label for="editFenceSbu" class="form-label fw-semibold small text-white">Select SBU <span class="text-danger">*</span></label>
-                    <select class="form-select" id="editFenceSbu" required>
-                        <option value="">Choose an SBU...</option>
+                    <select class="form-select" id="editFenceSbu" required disabled>
+                        <option value="">Please select organization first</option>
                         @foreach($sbus as $sbu)
-                            <option value="{{ $sbu->id }}">{{ $sbu->name }}</option>
+                            <option value="{{ $sbu->id }}" data-organization-id="{{ $sbu->organization_id }}">{{ $sbu->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -161,6 +171,76 @@
 document.addEventListener('DOMContentLoaded', function() {
     let editPreviewMap = null;
     let editPreviewMarker = null;
+    const editOrganizationSelect = document.getElementById('editFenceOrganization');
+    const editSbuSelect = document.getElementById('editFenceSbu');
+    const initialEditSbuOptions = editSbuSelect ? Array.from(editSbuSelect.options).map((opt) => ({
+        value: opt.value,
+        text: opt.textContent,
+        organizationId: opt.getAttribute('data-organization-id') || ''
+    })) : [];
+    function filterEditSbuByOrganization(selectedOrganizationId) {
+        if (!editSbuSelect) {
+            return;
+        }
+
+        const currentSbu = editSbuSelect.value;
+        if (!selectedOrganizationId) {
+            editSbuSelect.innerHTML = '<option value="">Please select organization first</option>';
+            editSbuSelect.value = '';
+            editSbuSelect.disabled = true;
+            return;
+        }
+
+        editSbuSelect.innerHTML = '<option value="">Choose an SBU...</option>';
+        editSbuSelect.disabled = false;
+
+        initialEditSbuOptions.forEach((opt) => {
+            if (!opt.value || !opt.organizationId) {
+                return;
+            }
+            if (String(opt.organizationId) !== String(selectedOrganizationId)) {
+                return;
+            }
+            const optionEl = document.createElement('option');
+            optionEl.value = opt.value;
+            optionEl.textContent = opt.text;
+            optionEl.setAttribute('data-organization-id', opt.organizationId);
+            editSbuSelect.appendChild(optionEl);
+        });
+
+        if (selectedOrganizationId && currentSbu) {
+            editSbuSelect.value = currentSbu;
+        } else {
+            editSbuSelect.value = '';
+        }
+    }
+
+    editOrganizationSelect?.addEventListener('change', function() {
+        clearEditFormErrors();
+        filterEditSbuByOrganization(this.value);
+    });
+    filterEditSbuByOrganization(editOrganizationSelect ? editOrganizationSelect.value : '');
+
+    window.prefillEditFenceUnitMapping = function(organizationId, sbuId) {
+        const normalizedSbuId = sbuId ? String(sbuId) : '';
+        let normalizedOrgId = organizationId ? String(organizationId) : '';
+
+        if (!normalizedOrgId && normalizedSbuId) {
+            const match = initialEditSbuOptions.find((opt) => String(opt.value) === normalizedSbuId);
+            normalizedOrgId = match ? String(match.organizationId || '') : '';
+        }
+
+        if (editOrganizationSelect) {
+            editOrganizationSelect.value = normalizedOrgId;
+        }
+
+        filterEditSbuByOrganization(normalizedOrgId);
+
+        if (editSbuSelect && normalizedSbuId) {
+            editSbuSelect.value = normalizedSbuId;
+        }
+    };
+
 
     const editFormEl = document.getElementById('editFenceForm');
     // Prevent accidental form submission when user presses Enter in an input.
@@ -209,6 +289,8 @@ document.addEventListener('DOMContentLoaded', function() {
         editFenceCanvasEl.addEventListener('hidden.bs.offcanvas', function () {
             document.getElementById('editFenceForm').reset();
             document.getElementById('editFenceId').value = '';
+            clearEditFormErrors();
+            filterEditSbuByOrganization('');
         });
     }
 
@@ -223,29 +305,63 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error:', error));
     }
 
-    function showValidationErrors(response) {
-        const errors = response?.errors || {};
-        const messages = [];
+    function clearEditFormErrors() {
+        const errorBox = document.getElementById('editFenceFormErrorBox');
+        if (errorBox) {
+            errorBox.classList.add('d-none');
+            errorBox.innerHTML = '';
+        }
+        if (!editFormEl) return;
+        editFormEl.querySelectorAll('.is-invalid').forEach((field) => field.classList.remove('is-invalid'));
+        editFormEl.querySelectorAll('.invalid-feedback.dynamic-error').forEach((node) => node.remove());
+    }
 
-        for (const value of Object.values(errors)) {
-            if (Array.isArray(value) && value.length > 0) {
-                messages.push(value[0]);
-            } else if (typeof value === 'string' && value.trim() !== '') {
-                messages.push(value);
+    function resolveEditFieldElement(field) {
+        const map = {
+            siteName: 'editFenceSiteName',
+            address: 'editFenceAddress',
+            lat: 'editFenceAddress',
+            lng: 'editFenceAddress',
+            radius: 'editFenceRadius',
+            radiusUnit: 'editFenceRadiusUnit',
+            type: 'editFenceType',
+            organization_id: 'editFenceOrganization',
+            sbu_id: 'editFenceSbu',
+            status: 'editFenceStatus'
+        };
+        const id = map[field];
+        return id ? document.getElementById(id) : null;
+    }
+
+    function applyEditFormErrors(errors, fallbackMessage = '') {
+        clearEditFormErrors();
+        const errorBox = document.getElementById('editFenceFormErrorBox');
+        const generalMessages = [];
+
+        Object.entries(errors || {}).forEach(([field, value]) => {
+            const message = Array.isArray(value) ? String(value[0] || '').trim() : String(value || '').trim();
+            if (!message) return;
+            const element = resolveEditFieldElement(field);
+            if (!element) {
+                generalMessages.push(message);
+                return;
             }
-        }
-
-        if (messages.length === 0 && response?.message) {
-            messages.push(response.message);
-        }
-
-        const uniqueMessages = [...new Set(messages)];
-        Swal.fire({
-            icon: 'warning',
-            title: 'Validation Error',
-            html: uniqueMessages.join('<br>'),
-            confirmButtonColor: '#1a237e'
+            element.classList.add('is-invalid');
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback dynamic-error';
+            feedback.textContent = message;
+            element.insertAdjacentElement('afterend', feedback);
         });
+
+        const hasFieldErrors = Object.keys(errors || {}).length > 0;
+        if (!generalMessages.length && fallbackMessage && !hasFieldErrors) {
+            generalMessages.push(fallbackMessage);
+        }
+
+        if (errorBox && generalMessages.length) {
+            errorBox.classList.remove('d-none');
+            errorBox.innerHTML = [...new Set(generalMessages)].join('<br>');
+        }
     }
 
     document.getElementById('editDropPinBtn')?.addEventListener('click', function() {
@@ -275,7 +391,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('editSearchAddressBtn')?.addEventListener('click', function() {
         const address = document.getElementById('editFenceAddress').value;
-        if (!address) return;
+        if (!address) {
+            applyEditFormErrors({ address: ['Please enter an address to search.'] });
+            return;
+        }
 
         const btn = this;
         const orgHtml = btn.innerHTML;
@@ -288,7 +407,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data && data.length > 0) {
                     editUpdateLocation(parseFloat(data[0].lat), parseFloat(data[0].lon));
                     document.getElementById('editFenceAddress').value = data[0].display_name;
+                } else {
+                    applyEditFormErrors({ address: ['Location not found. Please try a different search term.'] });
                 }
+            })
+            .catch(() => {
+                applyEditFormErrors({}, 'Error searching for location. Please try again.');
             })
             .finally(() => {
                 btn.innerHTML = orgHtml;
@@ -321,19 +445,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (updateBtn) {
         updateBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            clearEditFormErrors();
             const lat = document.getElementById('editFenceLat').value;
             const lng = document.getElementById('editFenceLng').value;
 
             const hasValidLatLng = lat !== '' && lng !== '' && !isNaN(lat) && !isNaN(lng);
 
             if (!hasValidLatLng) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Warning',
-                    text: 'Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.',
-                    confirmButtonColor: '#1a237e'
+                applyEditFormErrors({
+                    address: ['Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.']
                 });
-                document.getElementById('editFenceAddress').focus();
+                const addressEl = document.getElementById('editFenceAddress');
+                if (addressEl) addressEl.focus();
                 return;
             }
 
@@ -346,6 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 radius: document.getElementById('editFenceRadius').value,
                 radiusUnit: document.getElementById('editFenceRadiusUnit').value,
                 type: document.getElementById('editFenceType').value,
+                organization_id: document.getElementById('editFenceOrganization').value,
                 sbu_id: document.getElementById('editFenceSbu').value,
                 status: document.getElementById('editFenceStatus').value,
                 antiSpoofing: document.getElementById('editEnableAntiSpoofing').checked ? 1 : 0,
@@ -377,11 +501,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateBtn.disabled = false;
                     const response = xhr.responseJSON;
                     if (xhr.status === 422) {
-                        showValidationErrors(response);
+                        applyEditFormErrors(response?.errors || {}, response?.message || 'Validation failed.');
                         return;
                     }
-                    const err = response?.message || 'Error occurred while updating the geofence.';
-                    showError(err);
+                    applyEditFormErrors({}, response?.message || 'Error occurred while updating the geofence.');
                 }
             });
         });

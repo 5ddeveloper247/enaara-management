@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Geofence;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class GeofenceService
 {
@@ -19,6 +20,7 @@ class GeofenceService
     {
         try {
             DB::beginTransaction();
+            $this->ensureUniqueSiteName($data);
 
             $geofence = Geofence::create([
                 'name' => $data['siteName'],
@@ -28,6 +30,7 @@ class GeofenceService
                 'radius' => $data['radius'],
                 'radius_unit' => $data['radiusUnit'],
                 'type' => $data['type'],
+                'organization_id' => $data['organization_id'],
                 'sbu_id' => $data['sbu_id'],
                 'anti_spoofing' => $data['antiSpoofing'] ?? false,
                 'offline_sync' => $data['offlineSync'] ?? true,
@@ -57,6 +60,7 @@ class GeofenceService
     {
         try {
             DB::beginTransaction();
+            $this->ensureUniqueSiteName($data, (int) $geofence->id);
 
             $geofence->update([
                 'name' => $data['siteName'],
@@ -66,6 +70,7 @@ class GeofenceService
                 'radius' => $data['radius'],
                 'radius_unit' => $data['radiusUnit'],
                 'type' => $data['type'],
+                'organization_id' => $data['organization_id'],
                 'sbu_id' => $data['sbu_id'],
                 'anti_spoofing' => $data['antiSpoofing'] ?? $geofence->anti_spoofing,
                 'offline_sync' => $data['offlineSync'] ?? $geofence->offline_sync,
@@ -103,6 +108,24 @@ class GeofenceService
             DB::rollBack();
             Log::error('Error deleting Geofence: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    private function ensureUniqueSiteName(array $data, ?int $ignoreId = null): void
+    {
+        $existsQuery = Geofence::query()
+            ->where('name', $data['siteName'])
+            ->where('organization_id', $data['organization_id'])
+            ->where('sbu_id', $data['sbu_id']);
+
+        if ($ignoreId) {
+            $existsQuery->where('id', '!=', $ignoreId);
+        }
+
+        if ($existsQuery->exists()) {
+            throw ValidationException::withMessages([
+                'siteName' => ['Site name already exists for the selected organization and SBU.'],
+            ]);
         }
     }
 }

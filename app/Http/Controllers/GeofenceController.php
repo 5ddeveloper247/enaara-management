@@ -5,8 +5,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Sbu;
 use App\Models\Geofence;
+use App\Models\Organization;
 use App\Services\GeofenceService;
 use App\Http\Requests\Admin\Geofencing\StoreGeofenceRequest;
+use Illuminate\Validation\ValidationException;
 
 class GeofenceController extends Controller
 {
@@ -23,16 +25,21 @@ class GeofenceController extends Controller
         //    abort(403, 'Unauthorized action.');
         // }
 
-        $sbus = Sbu::where('is_active', true)->get();
-        // Fallback if sbus don't have is_active or need specific fetching
-        if ($sbus->isEmpty()) {
-            $sbus = Sbu::all();
+        $organizations = Organization::query()->where('is_active', true)->orderBy('name')->get();
+        if ($organizations->isEmpty()) {
+            $organizations = Organization::query()->orderBy('name')->get();
         }
 
-        $geofences = Geofence::with('sbu')->orderBy('name')->get();
+        $sbus = Sbu::where('is_active', true)->orderBy('name')->get();
+        // Fallback if sbus don't have is_active or need specific fetching
+        if ($sbus->isEmpty()) {
+            $sbus = Sbu::orderBy('name')->get();
+        }
+
+        $geofences = Geofence::with(['sbu', 'organization'])->orderBy('name')->get();
         $totalFences = $geofences->count();
 
-        return view('admin.geofencing.index', compact('sbus', 'geofences', 'totalFences'));
+        return view('admin.geofencing.index', compact('organizations', 'sbus', 'geofences', 'totalFences'));
     }
 
     public function store(StoreGeofenceRequest $request)
@@ -50,6 +57,12 @@ class GeofenceController extends Controller
                 'geofence' => $geofence->load('sbu')
             ], 201);
             
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -64,11 +77,14 @@ class GeofenceController extends Controller
         //    abort(403, 'Unauthorized action.');
         // }
 
-        $geofence = Geofence::findOrFail($id);
+        $geofence = Geofence::with('sbu')->findOrFail($id);
+        $organizationId = $geofence->organization_id ?? $geofence->sbu?->organization_id;
         
         return response()->json([
             'success' => true,
-            'geofence' => $geofence
+            'geofence' => array_merge($geofence->toArray(), [
+                'organization_id' => $organizationId,
+            ]),
         ]);
     }
 
@@ -88,6 +104,12 @@ class GeofenceController extends Controller
                 'geofence' => $updatedGeofence->load('sbu')
             ]);
             
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

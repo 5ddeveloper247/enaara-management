@@ -8,17 +8,27 @@
     </div>
     <div class="offcanvas-body">
         <form id="addFenceForm">
-            <!-- SBU Selection Section -->
+            <div id="addFenceFormErrorBox" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+            <!-- Organization/SBU Selection Section -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
                     <i class="bi bi-building me-2"></i>Unit Mapping
                 </h6>
                 <div class="mb-3">
+                    <label for="fenceOrganization" class="form-label fw-semibold small text-white">Select Organization <span class="text-danger">*</span></label>
+                    <select class="form-select" id="fenceOrganization" required>
+                        <option value="">Choose an Organization...</option>
+                        @foreach($organizations as $organization)
+                            <option value="{{ $organization->id }}">{{ $organization->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label for="fenceSbu" class="form-label fw-semibold small text-white">Select SBU <span class="text-danger">*</span></label>
-                    <select class="form-select" id="fenceSbu" required>
-                        <option value="">Choose an SBU...</option>
+                    <select class="form-select" id="fenceSbu" required disabled>
+                        <option value="">Please select organization first</option>
                         @foreach($sbus as $sbu)
-                            <option value="{{ $sbu->id }}">{{ $sbu->name }}</option>
+                            <option value="{{ $sbu->id }}" data-organization-id="{{ $sbu->organization_id }}">{{ $sbu->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -206,12 +216,62 @@ document.addEventListener('DOMContentLoaded', function() {
     let saveBtn = null;
 
     const formEl = document.getElementById('addFenceForm');
+    const organizationSelect = document.getElementById('fenceOrganization');
+    const sbuSelect = document.getElementById('fenceSbu');
+    const initialSbuOptions = sbuSelect ? Array.from(sbuSelect.options).map((opt) => ({
+        value: opt.value,
+        text: opt.textContent,
+        organizationId: opt.getAttribute('data-organization-id') || ''
+    })) : [];
     // Prevent accidental form submission when user presses Enter in an input.
     formEl?.addEventListener('submit', function(e) {
         e.preventDefault();
     });
 
     // Initialize preview map - Rawalpindi, Pakistan
+    function filterSbuByOrganization(selectedOrganizationId) {
+        if (!sbuSelect) {
+            return;
+        }
+
+        const currentSbu = sbuSelect.value;
+        if (!selectedOrganizationId) {
+            sbuSelect.innerHTML = '<option value="">Please select organization first</option>';
+            sbuSelect.value = '';
+            sbuSelect.disabled = true;
+            return;
+        }
+
+        sbuSelect.innerHTML = '<option value="">Choose an SBU...</option>';
+        sbuSelect.disabled = false;
+
+        initialSbuOptions.forEach((opt) => {
+            if (!opt.value || !opt.organizationId) {
+                return;
+            }
+            if (String(opt.organizationId) !== String(selectedOrganizationId)) {
+                return;
+            }
+            const optionEl = document.createElement('option');
+            optionEl.value = opt.value;
+            optionEl.textContent = opt.text;
+            optionEl.setAttribute('data-organization-id', opt.organizationId);
+            sbuSelect.appendChild(optionEl);
+        });
+
+        if (selectedOrganizationId && currentSbu) {
+            sbuSelect.value = currentSbu;
+        } else {
+            sbuSelect.value = '';
+        }
+    }
+
+    organizationSelect?.addEventListener('change', function() {
+        clearFormErrors();
+        filterSbuByOrganization(this.value);
+    });
+    filterSbuByOrganization(organizationSelect ? organizationSelect.value : '');
+
     const mapContainer = document.getElementById('fenceMapPreview');
     if (mapContainer) {
         previewMap = L.map('fenceMapPreview').setView([33.5651, 73.0169], 13);
@@ -243,29 +303,62 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error in reverse geocoding:', error));
     }
 
-    function showValidationErrors(response) {
-        const errors = response?.errors || {};
-        const messages = [];
+    function clearFormErrors() {
+        const errorBox = document.getElementById('addFenceFormErrorBox');
+        if (errorBox) {
+            errorBox.classList.add('d-none');
+            errorBox.innerHTML = '';
+        }
+        if (!formEl) return;
+        formEl.querySelectorAll('.is-invalid').forEach((field) => field.classList.remove('is-invalid'));
+        formEl.querySelectorAll('.invalid-feedback.dynamic-error').forEach((node) => node.remove());
+    }
 
-        for (const value of Object.values(errors)) {
-            if (Array.isArray(value) && value.length > 0) {
-                messages.push(value[0]);
-            } else if (typeof value === 'string' && value.trim() !== '') {
-                messages.push(value);
+    function resolveAddFieldElement(field) {
+        const map = {
+            siteName: 'fenceSiteName',
+            address: 'fenceAddress',
+            lat: 'fenceAddress',
+            lng: 'fenceAddress',
+            radius: 'fenceRadius',
+            radiusUnit: 'fenceRadiusUnit',
+            type: 'fenceType',
+            organization_id: 'fenceOrganization',
+            sbu_id: 'fenceSbu'
+        };
+        const id = map[field];
+        return id ? document.getElementById(id) : null;
+    }
+
+    function applyFormErrors(errors, fallbackMessage = '') {
+        clearFormErrors();
+        const errorBox = document.getElementById('addFenceFormErrorBox');
+        const generalMessages = [];
+
+        Object.entries(errors || {}).forEach(([field, value]) => {
+            const message = Array.isArray(value) ? String(value[0] || '').trim() : String(value || '').trim();
+            if (!message) return;
+            const element = resolveAddFieldElement(field);
+            if (!element) {
+                generalMessages.push(message);
+                return;
             }
-        }
-
-        if (messages.length === 0 && response?.message) {
-            messages.push(response.message);
-        }
-
-        const uniqueMessages = [...new Set(messages)];
-        Swal.fire({
-            icon: 'warning',
-            title: 'Validation Error',
-            html: uniqueMessages.join('<br>'),
-            confirmButtonColor: '#1a237e'
+            element.classList.add('is-invalid');
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback dynamic-error';
+            feedback.textContent = message;
+            element.insertAdjacentElement('afterend', feedback);
         });
+
+        const hasFieldErrors = Object.keys(errors || {}).length > 0;
+        if (!generalMessages.length && fallbackMessage && !hasFieldErrors) {
+            generalMessages.push(fallbackMessage);
+        }
+
+        if (errorBox && generalMessages.length) {
+            errorBox.classList.remove('d-none');
+            errorBox.innerHTML = [...new Set(generalMessages)].join('<br>');
+        }
     }
 
     // Drop pin button
@@ -287,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.add('text-white');
             }, 3000);
         } else {
-            showError('Map is not available right now.', 'Unavailable');
+            applyFormErrors({}, 'Map is not available right now.');
         }
     });
 
@@ -308,12 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('searchAddressBtn')?.addEventListener('click', function() {
         const address = document.getElementById('fenceAddress').value;
         if (!address) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Warning',
-                text: 'Please enter an address to search.',
-                confirmButtonColor: '#1a237e'
-            });
+            applyFormErrors({ address: ['Please enter an address to search.'] });
             return;
         }
 
@@ -331,17 +419,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateLocation(lat, lng);
                     document.getElementById('fenceAddress').value = data[0].display_name;
                 } else {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Not Found',
-                        text: 'Location not found. Please try a different search term.',
-                        confirmButtonColor: '#1a237e'
-                    });
+                    applyFormErrors({ address: ['Location not found. Please try a different search term.'] });
                 }
             })
             .catch(error => {
                 console.error('Error during geocoding:', error);
-                showError('Error searching for location. Please try again.');
+                applyFormErrors({}, 'Error searching for location. Please try again.');
             })
             .finally(() => {
                 btn.innerHTML = originalHtml;
@@ -378,6 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const addFenceCanvas = document.getElementById('addFenceCanvas');
     if (addFenceCanvas) {
         addFenceCanvas.addEventListener('shown.bs.offcanvas', function() {
+            clearFormErrors();
             if (previewMap) {
                 previewMap.invalidateSize();
                 const lat = parseFloat(document.getElementById('fenceLat').value);
@@ -390,6 +474,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         addFenceCanvas.addEventListener('hidden.bs.offcanvas', function() {
             document.getElementById('addFenceForm').reset();
+            clearFormErrors();
+            filterSbuByOrganization('');
             if (previewMarker) {
                 previewMap.removeLayer(previewMarker);
                 previewMarker = null;
@@ -402,19 +488,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (saveBtn) {
         saveBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            clearFormErrors();
             const lat = document.getElementById('fenceLat').value;
             const lng = document.getElementById('fenceLng').value;
 
             const hasValidLatLng = lat !== '' && lng !== '' && !isNaN(lat) && !isNaN(lng);
 
             if (!hasValidLatLng) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Warning',
-                    text: 'Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.',
-                    confirmButtonColor: '#1a237e'
+                applyFormErrors({
+                    address: ['Please set the map location first. Press Enter/Search for the address or click "Drop Pin" on the map.']
                 });
-                document.getElementById('fenceAddress').focus();
+                const addressEl = document.getElementById('fenceAddress');
+                if (addressEl) addressEl.focus();
                 return;
             }
 
@@ -426,6 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 radius: document.getElementById('fenceRadius').value,
                 radiusUnit: document.getElementById('fenceRadiusUnit').value,
                 type: document.getElementById('fenceType').value,
+                organization_id: document.getElementById('fenceOrganization').value,
                 sbu_id: document.getElementById('fenceSbu').value,
                 antiSpoofing: document.getElementById('enableAntiSpoofing').checked ? 1 : 0,
                 offlineSync: document.getElementById('enableOfflineSync').checked ? 1 : 0,
@@ -457,11 +543,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     saveBtn.disabled = false;
                     const response = xhr.responseJSON;
                     if (xhr.status === 422) {
-                        showValidationErrors(response);
+                        applyFormErrors(response?.errors || {}, response?.message || 'Validation failed.');
                         return;
                     }
-                    const err = response?.message || 'Error occurred while saving the geofence.';
-                    showError(err);
+                    applyFormErrors({}, response?.message || 'Error occurred while saving the geofence.');
                 }
             });
         });

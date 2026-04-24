@@ -608,7 +608,13 @@
                     if (response.success && response.geofence) {
                         const gf = response.geofence;
                         $('#editFenceId').val(gf.id);
-                        $('#editFenceSbu').val(gf.sbu_id);
+                        if (typeof window.prefillEditFenceUnitMapping === 'function') {
+                            window.prefillEditFenceUnitMapping(gf.organization_id, gf.sbu_id);
+                        } else {
+                            $('#editFenceOrganization').val(gf.organization_id || '');
+                            $('#editFenceOrganization').trigger('change');
+                            $('#editFenceSbu').val(gf.sbu_id);
+                        }
                         $('#editFenceSiteName').val(gf.name);
                         $('#editFenceAddress').val(gf.address);
                         $('#editFenceLat').val(gf.latitude);

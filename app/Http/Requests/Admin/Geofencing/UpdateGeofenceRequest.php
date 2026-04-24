@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Geofencing;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateGeofenceRequest extends FormRequest
 {
@@ -21,15 +22,34 @@ class UpdateGeofenceRequest extends FormRequest
      */
     public function rules(): array
     {
+        $geofenceId = $this->route('id');
+
         return [
-            'siteName' => 'required|string|max:255',
+            'siteName' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('geofences', 'name')
+                    ->ignore($geofenceId)
+                    ->where(function ($query) {
+                        return $query
+                            ->where('organization_id', $this->input('organization_id'))
+                            ->where('sbu_id', $this->input('sbu_id'));
+                    }),
+            ],
             'address' => 'required|string|max:255',
             'lat' => 'required|numeric|between:-90,90',
             'lng' => 'required|numeric|between:-180,180',
             'radius' => 'required|integer|min:1|max:10000',
             'radiusUnit' => 'required|string|in:meters,kilometers',
             'type' => 'required|string|in:hard-lock,soft-lock',
-            'sbu_id' => 'required|exists:sbus,id',
+            'organization_id' => 'required|exists:organizations,id',
+            'sbu_id' => [
+                'required',
+                Rule::exists('sbus', 'id')->where(function ($query) {
+                    return $query->where('organization_id', $this->input('organization_id'));
+                }),
+            ],
             'antiSpoofing' => 'boolean',
             'offlineSync' => 'boolean',
             'autoCheckIn' => 'boolean',
@@ -47,6 +67,7 @@ class UpdateGeofenceRequest extends FormRequest
             'radius' => 'Radius',
             'radiusUnit' => 'Radius unit',
             'type' => 'Fence type',
+            'organization_id' => 'Organization',
             'sbu_id' => 'SBU',
             'antiSpoofing' => 'Anti-spoofing',
             'offlineSync' => 'Offline sync',
@@ -60,6 +81,7 @@ class UpdateGeofenceRequest extends FormRequest
         return [
             'siteName.required' => 'Please enter the site name.',
             'siteName.max' => 'Site name must not be greater than :max characters.',
+            'siteName.unique' => 'Site name already exists for the selected organization and SBU.',
 
             'address.required' => 'Please enter the address/location name.',
             'address.max' => 'Address must not be greater than :max characters.',
@@ -83,8 +105,11 @@ class UpdateGeofenceRequest extends FormRequest
             'type.required' => 'Please select a fence type.',
             'type.in' => 'Fence type must be either "hard-lock" or "soft-lock".',
 
+            'organization_id.required' => 'Please select an organization.',
+            'organization_id.exists' => 'Selected organization is invalid. Please choose a valid organization.',
+
             'sbu_id.required' => 'Please select an SBU.',
-            'sbu_id.exists' => 'Selected SBU is invalid. Please choose a valid SBU.',
+            'sbu_id.exists' => 'Selected SBU is invalid for the selected organization.',
 
             'antiSpoofing.boolean' => 'Anti-spoofing must be a valid boolean value.',
             'offlineSync.boolean' => 'Offline sync must be a valid boolean value.',

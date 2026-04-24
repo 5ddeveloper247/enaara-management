@@ -20,6 +20,7 @@ class Geofence extends Model
         'radius',
         'radius_unit',
         'type',
+        'organization_id',
         'sbu_id',
         'anti_spoofing',
         'offline_sync',
@@ -39,5 +40,10 @@ class Geofence extends Model
     public function sbu()
     {
         return $this->belongsTo(Sbu::class);
+    }
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
     }
 }
