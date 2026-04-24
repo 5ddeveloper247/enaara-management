@@ -186,7 +186,7 @@
                                                 <div class="fw-bold text-uppercase small mb-3">Organization and Role
                                                 </div>
                                                 <div class="row g-3">
-                                                    <div class="col-md-6">
+                                                    <div class="col-12">
                                                         <label class="form-label">Organization <span
                                                                 class="text-danger">*</span></label>
                                                         <select name="organization_id" class="form-select"
