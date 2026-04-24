@@ -204,7 +204,15 @@
                 extend: 'colvis',
                 text: 'Select Columns',
                 className: 'btn btn-sm border-0 bg-main text-black',
-                columns: [0, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+                columns: [
+                    0, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                    // 16, // Summary
+                    17,
+                    // 18, // Site Assignment
+                    // 19, // Vendor
+                    // 20, // Sync Status
+                    21
+                ],
             }],
             dom: '<"row px-4 py-3 align-items-center"<"col-lg-3 col-md-4"l><"col-lg-5 col-md-4 d-flex justify-content-center"<"employee-listing-tab-slot">><"col-lg-4 col-md-4 d-flex justify-content-end gap-2"<B><f>>>r<"employee-datatable-scroll"t><"row px-4 py-2"<"col-md-5"i><"col-md-7"p>>',
             initComplete: function () {
