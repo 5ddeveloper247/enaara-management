@@ -179,10 +179,7 @@
                 return '<span class="badge px-3 rounded-1 bg-primary">' + esc(departments[0] || data) + '</span>';
             }
 
-            return '<div class="d-flex align-items-center gap-1">' +
-                '<span class="badge px-3 rounded-1 bg-primary">' + esc(departments[0]) + '</span>' +
-                '<button type="button" class="badge rounded-1 border-0 px-3 view-assigned-depts-btn" style="background:#00bcd4;color:#fff;" data-departments="' + escAttr(departments.join(',')) + '">Multiple (' + departments.length + ')</button>' +
-                '</div>';
+            return '<button type="button" class="badge bg-info text-white rounded-1 border-0 px-3 view-assigned-depts-btn" data-departments="' + escAttr(departments.join(',')) + '">Multiple (' + departments.length + ')</button>';
         }
 
         function renderRole(data) {
