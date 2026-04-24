@@ -79,7 +79,7 @@
                                                             <input type="date" name="contract_start_date"
                                                                 class="form-control"
                                                                 id="employmentDetailsContractStartDateInput"
-                                                                value="{{ isset($employee->contract_start_date) ? $employee->contract_start_date->format('Y-m-d') : '' }}"
+                                                                value="{{ isset($employee->contract_start_date) && $employee->contract_start_date ? (is_string($employee->contract_start_date) ? date('Y-m-d', strtotime($employee->contract_start_date)) : $employee->contract_start_date->format('Y-m-d')) : '' }}"
                                                                 placeholder="yyyy-mm-dd">
                                                         </div>
                                                         <div class="col-md-6">
@@ -88,7 +88,7 @@
                                                             <input type="date" name="contract_end_date"
                                                                 class="form-control"
                                                                 id="employmentDetailsContractEndDateInput"
-                                                                value="{{ isset($employee->contract_end_date) ? $employee->contract_end_date->format('Y-m-d') : '' }}"
+                                                                value="{{ isset($employee->contract_end_date) && $employee->contract_end_date ? (is_string($employee->contract_end_date) ? date('Y-m-d', strtotime($employee->contract_end_date)) : $employee->contract_end_date->format('Y-m-d')) : '' }}"
                                                                 placeholder="yyyy-mm-dd">
                                                         </div>
                                                     </div>
@@ -156,7 +156,7 @@
                                                                         name="employee_contract_start_date"
                                                                         class="form-control"
                                                                         id="employmentDetailsEmployeeContractStartDateInput"
-                                                                        value="{{ isset($employee->contract_start_date) ? $employee->contract_start_date->format('Y-m-d') : '' }}"
+                                                                        value="{{ isset($employee->contract_start_date) && $employee->contract_start_date ? (is_string($employee->contract_start_date) ? date('Y-m-d', strtotime($employee->contract_start_date)) : $employee->contract_start_date->format('Y-m-d')) : '' }}"
                                                                         placeholder="yyyy-mm-dd">
                                                                 </div>
                                                                 <div class="col-md-6">
@@ -166,7 +166,7 @@
                                                                         name="employee_contract_end_date"
                                                                         class="form-control"
                                                                         id="employmentDetailsEmployeeContractEndDateInput"
-                                                                        value="{{ isset($employee->contract_end_date) ? $employee->contract_end_date->format('Y-m-d') : '' }}"
+                                                                        value="{{ isset($employee->contract_end_date) && $employee->contract_end_date ? (is_string($employee->contract_end_date) ? date('Y-m-d', strtotime($employee->contract_end_date)) : $employee->contract_end_date->format('Y-m-d')) : '' }}"
                                                                         placeholder="yyyy-mm-dd">
                                                                 </div>
                                                             </div>
@@ -528,8 +528,9 @@
                                                                     -</div>
                                                                 <div>
                                                                     <div class="text-muted"
-                                                                        style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">
-                                                                        Source Organization
+                                                                        style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;"
+                                                                        title="Working days, hours, and grace periods below follow this organization's standard schedule (master defaults).">
+                                                                        Default schedule source
                                                                     </div>
                                                                     <div class="fw-semibold text-dark small"
                                                                         id="employmentWorkArrangementOrgName">-</div>

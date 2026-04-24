@@ -34,6 +34,8 @@
                                          <i class="bi bi-cloud-arrow-up"></i>
                                          <span>Upload Photo</span>
                                      </label>
+                                     <input type="file" id="profilePhotoInput" accept=".jpg,.jpeg,.png,.gif,.svg"
+                                         class="d-none" onchange="openCropper(this)">
                                  </div>
 
                                  <button type="button"
@@ -74,7 +76,10 @@
                                      <div class="d-flex flex-wrap gap-2">
                                          <input class="btn-check" type="checkbox" name="is_ex_armed_force"
                                              id="giExArmyRetiredCheckbox" value="1"
-                                             {{ $employee->is_ex_armed_force ?? false ? 'checked' : '' }}>
+                                             @checked(
+                                                 (bool) ($employee?->is_ex_armed_force ?? false)
+                                                     || !empty($editData['armed_force'] ?? null)
+                                             )>
                                          <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
                                              for="giExArmyRetiredCheckbox">Ex-Army Retired</label>
 

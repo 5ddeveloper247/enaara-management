@@ -50,10 +50,10 @@
         window.orgsData = @json($orgsData ?? []);
         window.rolesData = @json($rolesData ?? []);
         window.editData = {
-            bankDetails: @json($employee->bankDetails ?? []),
-            familyMembers: @json($employee->familyMembers ?? []),
-            academics: @json($employee->academics ?? []),
-            exEmployments: @json($employee->exEmployments ?? []),
+            bankDetails: @json($employee?->bankDetails ?? []),
+            familyMembers: @json($employee?->familyMembers ?? []),
+            academics: @json($employee?->academics ?? []),
+            exEmployments: @json($employee?->exEmployments ?? []),
             attachments: @json($editData['attachments'] ?? [])
         };
     </script>

@@ -24,6 +24,7 @@ class RegistrationController extends Controller
             $employee = Employee::find($request->id);
         }
         $data['employee'] = $employee;
+        $data['editData'] = [];
         return view('admin.employeeregistration.index', $data);
     }
 }

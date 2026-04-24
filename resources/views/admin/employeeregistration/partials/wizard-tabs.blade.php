@@ -20,7 +20,7 @@
                             Police Verification
                         </button>
                         <button type="button"
-                            class="profile-tab btn btn-link text-decoration-none text-white fw-semibold px-3 py-3 rounded-0 border-0"
+                            class="profile-tab btn btn-link text-decoration-none text-white fw-semibold px-3 py-3 rounded-0 border-0 {{ (bool) ($employee?->is_ex_armed_force ?? false) || !empty($editData['armed_force'] ?? null) ? '' : 'd-none' }}"
                             data-step="4">
                             <i class="bi bi-signpost-2 me-1"></i>
                             Armed Details

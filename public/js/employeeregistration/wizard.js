@@ -16,6 +16,31 @@
         maxStepReached = totalSteps; 
     }
 
+    function goToStep(step) {
+        const s = Math.max(1, Math.min(totalSteps, step));
+        currentStep = s;
+        syncStepUi();
+    }
+
+    function isExArmedForceChecked() {
+        const el = document.getElementById('giExArmyRetiredCheckbox');
+        return !!(el && el.checked);
+    }
+
+    function getNextStepAfter(step) {
+        if (step === 3 && !isExArmedForceChecked()) {
+            return 5;
+        }
+        return Math.min(totalSteps, step + 1);
+    }
+
+    function getPrevStepBefore(step) {
+        if (step === 5 && !isExArmedForceChecked()) {
+            return 3;
+        }
+        return Math.max(1, step - 1);
+    }
+
     // Core selects and global data
     const orgSelect = document.getElementById('employmentOrganizationSelect');
     const sbuSelect = document.getElementById('employmentSbuSelect');
@@ -82,18 +107,18 @@
 
     // Conditional Visibility Handling
     function syncConditionalVisibility() {
-        // Armed Forces Tab
         const armyCheck = document.getElementById('giExArmyRetiredCheckbox');
         const armyTab = document.querySelector('.profile-tab[data-step="4"]');
+        const armyPane = document.getElementById('stepPane4');
         if (armyCheck && armyTab) {
-            // Logic: SHOW tab if checked. Hide if unchecked.
             if (armyCheck.checked) {
                 armyTab.classList.remove('d-none');
+                if (armyPane) armyPane.classList.remove('d-none');
             } else {
                 armyTab.classList.add('d-none');
-                // If we are currently on step 4 but it's now hidden, move to step 1
+                if (armyPane) armyPane.classList.add('d-none');
                 if (currentStep === 4) {
-                    goToStep(1);
+                    goToStep(3);
                 }
             }
         }
@@ -476,7 +501,8 @@
         }
 
         if (window.croppedImageBlob) {
-            formData.append('profile_photo', window.croppedImageBlob, window.originalFileName);
+            const photoName = window.profilePhotoUploadName || 'profile-photo.jpg';
+            formData.append('profile_photo', window.croppedImageBlob, photoName);
         }
 
         const nextBtn = document.getElementById('nextBtn');
@@ -520,9 +546,8 @@
                     const idInput = document.getElementById('saved_employee_id');
                     if (idInput) idInput.value = data.employee_id;
                     
-                    // Unlock next step
                     if (step === maxStepReached) {
-                        maxStepReached = Math.min(totalSteps, step + 1);
+                        maxStepReached = Math.min(totalSteps, getNextStepAfter(step));
                     }
                 }
                 
@@ -565,6 +590,9 @@
     document.querySelectorAll('.profile-tab').forEach((tab) => {
         tab.addEventListener('click', function () {
             const step = Number(this.getAttribute('data-step'));
+            if (step === 4 && !isExArmedForceChecked()) {
+                return;
+            }
             if (step <= maxStepReached) {
                 currentStep = step;
                 syncStepUi();
@@ -601,7 +629,7 @@
 
         if (currentStep < totalSteps) {
             processStepSave(currentStep, () => {
-                currentStep += 1;
+                currentStep = getNextStepAfter(currentStep);
                 syncStepUi();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
@@ -672,13 +700,12 @@
         }
 
         if (currentStep > 1) {
-            currentStep -= 1;
+            currentStep = getPrevStepBefore(currentStep);
             syncStepUi();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     });
 
-    // CNIC Formatting
     function formatCNIC(input) {
         if (!input) return;
         let val = input.value.replace(/\D/g, '');
@@ -693,6 +720,28 @@
         }
         input.value = formatted;
     }
+
+    window.formatCNIC = formatCNIC;
+
+    function initCnicMaskDisplayFromValues() {
+        document.querySelectorAll('input.cnic-mask').forEach(function (el) {
+            if (el.value && /\d/.test(el.value)) {
+                formatCNIC(el);
+            }
+        });
+    }
+
+    function scheduleInitCnicMaskDisplay() {
+        const run = function () {
+            setTimeout(initCnicMaskDisplayFromValues, 0);
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', run);
+        } else {
+            run();
+        }
+    }
+    scheduleInitCnicMaskDisplay();
 
     document.addEventListener('input', function (e) {
         if (e.target.classList.contains('cnic-mask')) {
@@ -786,6 +835,7 @@
 
             canvas.toBlob(function(blob) {
                 window.croppedImageBlob = blob;
+                window.profilePhotoUploadName = 'profile-photo.jpg';
 
                 // Update preview
                 const avatarPreviewImage = document.getElementById('avatarPreviewImage');
@@ -818,7 +868,7 @@
                     const formData = new FormData();
                     formData.append('employee_id', employeeId);
                     formData.append('subsection', 'photo');
-                    formData.append('profile_photo', blob, window.originalFileName);
+                    formData.append('profile_photo', blob, window.profilePhotoUploadName || 'profile-photo.jpg');
                     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
                     fetch('/admin/employees/save-subsection', {
@@ -1164,23 +1214,31 @@
 
     // Dynamic Sidebar Updates
     function updateSidebarSummary() {
+        if (!document.getElementById('summaryName')) {
+            return;
+        }
         const nameInput = document.querySelector('input[name="full_name"]');
         if (nameInput) document.getElementById('summaryName').textContent = nameInput.value || 'Not provided';
-        if (nameInput) document.getElementById('sidebarEmployeeName').textContent = nameInput.value || 'New Employee';
+        const sidebarName = document.getElementById('sidebarEmployeeName');
+        if (nameInput && sidebarName) sidebarName.textContent = nameInput.value || 'New Employee';
 
         const cnicInput = document.querySelector('input[name="cnic"]');
-        if (cnicInput) document.getElementById('summaryCnic').textContent = cnicInput.value || 'Not provided';
+        const summaryCnic = document.getElementById('summaryCnic');
+        if (cnicInput && summaryCnic) summaryCnic.textContent = cnicInput.value || 'Not provided';
 
         const genderSelect = document.querySelector('select[name="gender"]');
-        if (genderSelect) document.getElementById('summaryGender').textContent = genderSelect.value || 'Not selected';
+        const summaryGender = document.getElementById('summaryGender');
+        if (genderSelect && summaryGender) summaryGender.textContent = genderSelect.value || 'Not selected';
 
         const religionSelect = document.querySelector('select[name="religion"]');
-        if (religionSelect) document.getElementById('summaryReligion').textContent = religionSelect.value || 'Not selected';
+        const summaryReligion = document.getElementById('summaryReligion');
+        if (religionSelect && summaryReligion) summaryReligion.textContent = religionSelect.value || 'Not selected';
 
         const nationalitySelect = document.querySelector('select[name="nationality"]');
-        if (nationalitySelect) {
+        const summaryNationality = document.getElementById('summaryNationality');
+        if (nationalitySelect && summaryNationality) {
             const label = nationalitySelect.options[nationalitySelect.selectedIndex]?.text;
-            document.getElementById('summaryNationality').textContent = (label && label !== 'Select Nationality') ? label : 'Not selected';
+            summaryNationality.textContent = (label && label !== 'Select Nationality') ? label : 'Not selected';
         }
     }
 
@@ -1254,6 +1312,7 @@
         if (avatarPlaceholderIcon) avatarPlaceholderIcon.classList.remove('d-none');
         if (rBtn) rBtn.classList.add('d-none');
         if (inp) inp.value = '';
+        window.profilePhotoUploadName = '';
     }
 
     // Organization -> SBU -> Roles dependent dropdowns
@@ -1391,6 +1450,8 @@
             populateSbus(orgId);
             populateRoles(orgId, null);
             populateFloors(orgId, null);
+            const sbuIdAfterOrg = sbuSelect && sbuSelect.value ? sbuSelect.value : null;
+            populateDepartments(orgId, sbuIdAfterOrg);
         });
     }
 
@@ -1657,9 +1718,7 @@
 
         if (availableDepartments.length === 0) {
             if (deptHint) deptHint.style.display = 'block';
-            const currentSelected = Array.from(deptSelect.options).filter(o => o.selected);
             deptSelect.innerHTML = '';
-            currentSelected.forEach(opt => deptSelect.add(opt));
         } else {
             if (deptHint) deptHint.style.display = 'none';
             const currentSelectedIds = Array.from(deptSelect.options).filter(o => o.selected).map(o => parseInt(o.value));
@@ -2402,7 +2461,10 @@
             const nokCnicEl = row.querySelector('[data-family-nok-cnic]');
             const nokExpiryEl = row.querySelector('[data-family-nok-cnic-expiry]');
             const nokContactEl = row.querySelector('[data-family-nok-contact]');
-            if (nokCnicEl && data.nok_cnic) nokCnicEl.value = data.nok_cnic;
+            if (nokCnicEl && data.nok_cnic) {
+                nokCnicEl.value = data.nok_cnic;
+                formatCNIC(nokCnicEl);
+            }
             if (nokExpiryEl && data.nok_cnic_expiry_date) nokExpiryEl.value = data.nok_cnic_expiry_date;
             if (nokContactEl && data.nok_contact) nokContactEl.value = data.nok_contact;
             if (data.is_next_of_kin) {

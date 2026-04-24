@@ -1,4 +1,4 @@
-                        <div class="wizard-pane px-3" id="stepPane4">
+                        <div class="wizard-pane px-3 {{ (bool) ($employee?->is_ex_armed_force ?? false) || !empty($editData['armed_force'] ?? null) ? '' : 'd-none' }}" id="stepPane4">
                             <div id="step-4">
                                 @php
                                     $af = $editData['armed_force'] ?? [];
