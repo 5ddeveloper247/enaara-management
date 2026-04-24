@@ -230,6 +230,8 @@
 
             // ── Action button ─────────────────────────────────────────
             let actionBtnHtml;
+            const summary = norm(rowData.summary, '') || [norm(rowData.full_name, ''), employeeId !== '—' ? employeeId : '']
+                .filter(Boolean).join(' - ') || '-';
             if (cells && cells.length >= 23) {
                 // Restyle the existing button to outline + full width
                 const tempDiv = document.createElement('div');
@@ -249,8 +251,11 @@
                         data-bs-toggle="offcanvas"
                         data-bs-target="#employeeDetailCanvas"
                         data-db-id="${rowData.id || ''}"
+                        data-tas-id="${attrSafe(norm(rowData.biometric_id))}"
                         data-employee-id="${attrSafe(employeeId)}"
                         data-employee-name="${attrSafe(rowData.full_name)}"
+                        data-employee-avatar="${attrSafe(rowData.initials || '??')}"
+                        data-photo-url="${attrSafe(rowData.photo_url || '')}"
                         data-employee-info="${attrSafe(info)}"
                         data-organization="${attrSafe(rowData.organization)}"
                         data-sbu="${attrSafe(rowData.sbu)}"
@@ -258,14 +263,21 @@
                         data-employment-type="${attrSafe(rowData.employment_type)}"
                         data-employment-category="${attrSafe(rowData.employment_category)}"
                         data-employee-type="${attrSafe(rowData.employee_type)}"
-                        data-biometric-id="${rowData.biometric_id || '-'}"
-                        data-sync-status="${rowData.sync_status || 'Not Linked'}"
+                        data-biometric-id="${attrSafe(norm(rowData.biometric_id))}"
+                        data-sync-status="${attrSafe(norm(rowData.sync_status, 'Not Linked'))}"
+                        data-site-assignment="${attrSafe(norm(rowData.site))}"
+                        data-vendor="${attrSafe(norm(rowData.vendor))}"
+                        data-floor-access="${rowData.floor_access ? '1' : '0'}"
                         data-employee-status="${rowData.employee_status || '-'}"
                         data-assigned-floors="${attrSafe(floors)}"
                         data-email="${attrSafe(rowData.email)}"
                         data-cell="${attrSafe(rowData.cell_no)}"
                         data-cnic="${attrSafe(rowData.cnic)}"
-                        data-designation="${attrSafe(rowData.designation)}">
+                        data-nationality="${attrSafe(norm(rowData.nationality))}"
+                        data-gender="${attrSafe(norm(rowData.gender))}"
+                        data-join-date="${attrSafe(norm(rowData.join_date))}"
+                        data-designation="${attrSafe(rowData.designation)}"
+                        data-summary="${attrSafe(summary)}">
                         <i class="bi bi-eye me-1"></i> View Details
                     </button>`;
             }
