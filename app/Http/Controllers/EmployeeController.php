@@ -195,6 +195,7 @@ class EmployeeController extends Controller
                 'success' => true,
                 'message' => $message,
                 'employee_id' => $employee->id,
+                'employee_code' => $employee->employee_code,
                 'next_step' => $step + 1
             ]);
         } catch (\Exception $e) {

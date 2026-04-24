@@ -459,6 +459,56 @@
         }
     }
 
+    const employmentCodeInput = document.getElementById('employmentEmployeeNumberInput');
+    const orgSelectForCode = document.getElementById('employmentOrganizationSelect');
+    const roleSelectForCode = document.getElementById('employmentRoleSelect');
+    const sbuSelectForCode = document.getElementById('employmentSbuSelect');
+    let employeeCodePreviewTimer = null;
+
+    function updateEmployeeCodePreview() {
+        if (!employmentCodeInput) return;
+        if (!window.previewEmployeeCodeUrl) return;
+
+        const organizationId = orgSelectForCode?.value || '';
+        const roleId = roleSelectForCode?.value || '';
+        const sbuId = sbuSelectForCode?.value || '';
+
+        if (!organizationId || !roleId) {
+            return;
+        }
+
+        const params = new URLSearchParams({
+            organization_id: organizationId,
+            role_id: roleId
+        });
+        if (sbuId) {
+            params.set('sbu_id', sbuId);
+        }
+
+        fetch(window.previewEmployeeCodeUrl + '?' + params.toString(), {
+            headers: { Accept: 'application/json' }
+        })
+        .then((response) => response.json())
+        .then((res) => {
+            if (res && res.success && res.code && employmentCodeInput) {
+                employmentCodeInput.value = res.code;
+            }
+        })
+        .catch(() => {});
+    }
+
+    function scheduleEmployeeCodePreview() {
+        if (employeeCodePreviewTimer) {
+            clearTimeout(employeeCodePreviewTimer);
+        }
+        employeeCodePreviewTimer = setTimeout(updateEmployeeCodePreview, 200);
+    }
+
+    if (orgSelectForCode) orgSelectForCode.addEventListener('change', scheduleEmployeeCodePreview);
+    if (roleSelectForCode) roleSelectForCode.addEventListener('change', scheduleEmployeeCodePreview);
+    if (sbuSelectForCode) sbuSelectForCode.addEventListener('change', scheduleEmployeeCodePreview);
+    updateEmployeeCodePreview();
+
     async function processStepSave(step, onSuccess) {
         const form = document.getElementById('employeeForm');
         if (!form) return;
@@ -566,6 +616,12 @@
                 if (data.employee_id) {
                     const idInput = document.getElementById('saved_employee_id');
                     if (idInput) idInput.value = data.employee_id;
+                    if (data.employee_code) {
+                        const employeeNoInput = document.getElementById('employmentEmployeeNumberInput');
+                        if (employeeNoInput) {
+                            employeeNoInput.value = data.employee_code;
+                        }
+                    }
                     
                     if (step === maxStepReached) {
                         maxStepReached = Math.min(totalSteps, getNextStepAfter(step));

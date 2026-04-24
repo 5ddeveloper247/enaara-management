@@ -8,7 +8,7 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label class="form-label">Employee Number</label>
-                                                <input type="text" name="employee_number" class="form-control"
+                                                <input type="text" name="employee_number" id="employmentEmployeeNumberInput" class="form-control"
                                                     value="{{ $employee->employee_code ?? '' }}"
                                                     placeholder="e.g. EMP-CEO-VIUQ" disabled>
                                             </div>
