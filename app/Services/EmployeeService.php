@@ -1332,9 +1332,9 @@ class EmployeeService
         $employeeId = (int) $employee->id;
 
         return MediaFile::query()
-            ->where('module_name', 'employee')
+            ->whereIn('module_name', ['employee', 'employees', 'Employee', 'Employees'])
             ->where('module_id', $employeeId)
-            ->where('file_type', 'attachment')
+            ->whereIn('file_type', ['attachment', 'attachments', 'Attachment', 'Attachments'])
             ->orderByDesc('id')
             ->get()
             ->map(fn ($m) => [

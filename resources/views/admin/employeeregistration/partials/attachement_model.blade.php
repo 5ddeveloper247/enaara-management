@@ -95,7 +95,7 @@
                     <div class="d-flex justify-content-end mt-4 gap-2 pt-3 border-top"
                         style="border-color:#ffffffab !important">
                         <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-outline-light" onclick="saveAttachment()">
+                        <button type="button" class="btn btn-outline-light" id="attachmentSaveBtn" onclick="saveAttachment()">
                             <i class="bi bi-floppy me-1"></i>Save Attachment
                         </button>
                     </div>
@@ -109,6 +109,7 @@
 <script>
     window.employeeAttachments = window.employeeAttachments || [];
     let attachmentUploadedFiles = [];
+    let isAttachmentSaving = false;
 
     function escAtt(s) {
         return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -159,6 +160,11 @@
     }
 
     function saveAttachment() {
+        if (isAttachmentSaving) {
+            return;
+        }
+
+        const saveBtn = document.getElementById('attachmentSaveBtn');
         const name = document.getElementById('attachmentName').value.trim();
         const type = document.getElementById('attachmentType').value;
         const desc = document.getElementById('attachmentDesc').value.trim();
@@ -179,7 +185,13 @@
         }
 
         const files = attachmentUploadedFiles.filter(Boolean);
-        
+
+        isAttachmentSaving = true;
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+        }
+
         const formData = new FormData();
         formData.append('employee_id', employeeId);
         formData.append('step', 6);
@@ -291,6 +303,13 @@
                 text: 'Details: ' + error.message,
                 confirmButtonColor: '#1a237e'
             });
+        })
+        .finally(() => {
+            isAttachmentSaving = false;
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="bi bi-floppy me-1"></i>Save Attachment';
+            }
         });
     }
 
