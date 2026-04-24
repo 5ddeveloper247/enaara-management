@@ -420,14 +420,16 @@
         data = normalizeValue(data);
         if (data === '-') return '<span class="text-muted">-</span>';
 
-        if (data === 'Permanent') {
-            return '<span class="badge px-2 rounded-1 bg-success">' + escHtml(data) + '</span>';
-        }
-        if (data === 'Contract') {
-            return '<span class="badge px-2 rounded-1 bg-info">' + escHtml(data) + '</span>';
-        }
+        var normalized = String(data).trim().toLowerCase();
+        var display = normalized
+            .replace(/[_-]+/g, ' ')
+            .replace(/\b\w/g, function (c) { return c.toUpperCase(); });
 
-        return '<span class="badge px-2 rounded-1" style="background-color:#9c27b0;color:white;">' + escHtml(data) + '</span>';
+        var cls = normalized === 'permanent' ? 'bg-success'
+            : normalized === 'contract' || normalized === 'contractual' ? 'bg-info text-dark'
+            : 'bg-main text-white';
+
+        return '<span class="badge px-2 rounded-1 ' + cls + '">' + escHtml(display) + '</span>';
     }
 
     function renderSite(data) {
@@ -460,11 +462,25 @@
         return '<span class="badge px-2 rounded-1 bg-secondary"><i class="bi bi-dash-circle me-1"></i>Not Linked</span>';
     }
 
-    function renderFloorAccess(data) {
-        if (data) {
-            return '<span class="badge px-2 rounded-1 bg-primary"><i class="bi bi-building me-1"></i>10th Floor</span>';
+    function renderFloorAccess(data, type, row) {
+        var floors = Array.isArray(row && row.assigned_floor_names)
+            ? row.assigned_floor_names.filter(function (name) { return !!normalizeValue(name, '').trim(); })
+            : [];
+
+        if (floors.length === 0) {
+            return '<span class="text-muted small">-</span>';
         }
-        return '<span class="text-muted small">-</span>';
+
+        if (floors.length === 1) {
+            return '<span class="badge px-2 rounded-1 bg-main text-white">' + escHtml(floors[0]) + '</span>';
+        }
+
+        var remaining = floors.length - 1;
+        var title = floors.join(', ');
+        return '<div class="d-flex flex-wrap gap-1">' +
+            '<span class="badge px-2 rounded-1 bg-main text-white">' + escHtml(floors[0]) + '</span>' +
+            '<span class="badge px-2 rounded-1 bg-info text-dark" title="' + escAttr(title) + '">+' + remaining + ' more</span>' +
+            '</div>';
     }
 
     function renderActions(data, type, row) {

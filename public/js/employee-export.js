@@ -19,9 +19,6 @@
         { header: 'Employment Type', key: 'employment_type' },
         { header: 'Employee Type', key: 'employee_type' },
         { header: 'TAS ID', key: 'biometric_id' },
-        { header: 'Sync Status', key: 'sync_status' },
-        { header: 'Site', key: 'site' },
-        { header: 'Vendor', key: 'vendor' },
         { header: 'Floor Access', key: 'floor_access' }
     ];
 
@@ -99,6 +96,12 @@
 
     function formatCellValue(mode, row, col) {
         if (col.key === 'floor_access') {
+            var floorNames = Array.isArray(row.assigned_floor_names)
+                ? row.assigned_floor_names.filter(function (name) { return !!normalizeValue(name, ''); })
+                : [];
+            if (floorNames.length) {
+                return floorNames.join(', ');
+            }
             return row.floor_access ? 'Yes' : 'No';
         }
         if (mode === 'outsourced' && col.key === 'attendance_access') {
