@@ -31,6 +31,23 @@
 
     @include('admin.users.side_canvas')
     @include('admin.users.delete-modal')
+
+    <div class="modal fade" id="assignedDepartmentsModal" tabindex="-1" aria-labelledby="assignedDepartmentsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="assignedDepartmentsModalLabel">Assigned Departments</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="assignedDepartmentsList" class="d-flex flex-wrap gap-2"></div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -153,7 +170,19 @@
 
         function renderDept(data) {
             if (!data || data === '-') return '<span class="text-muted">-</span>';
-            return '<span class="badge px-3 rounded-1 bg-primary">' + esc(data) + '</span>';
+            var departments = String(data)
+                .split(',')
+                .map(function (d) { return d.trim(); })
+                .filter(function (d) { return d.length > 0; });
+
+            if (departments.length <= 1) {
+                return '<span class="badge px-3 rounded-1 bg-primary">' + esc(departments[0] || data) + '</span>';
+            }
+
+            return '<div class="d-flex align-items-center gap-1">' +
+                '<span class="badge px-3 rounded-1 bg-primary">' + esc(departments[0]) + '</span>' +
+                '<button type="button" class="badge rounded-1 border-0 px-3 view-assigned-depts-btn" style="background:#00bcd4;color:#fff;" data-departments="' + escAttr(departments.join(',')) + '">Multiple (' + departments.length + ')</button>' +
+                '</div>';
         }
 
         function renderRole(data) {
@@ -664,6 +693,34 @@
                 document.body.removeChild(link);
             });
         }
+
+        $(document).on('click', '.view-assigned-depts-btn', function () {
+            var departmentsRaw = this.getAttribute('data-departments') || '';
+            var departments = departmentsRaw
+                .split(',')
+                .map(function (d) { return d.trim(); })
+                .filter(function (d) { return d.length > 0; });
+
+            var list = document.getElementById('assignedDepartmentsList');
+            if (list) {
+                list.innerHTML = '';
+                if (!departments.length) {
+                    list.innerHTML = '<span class="text-muted">No departments assigned.</span>';
+                } else {
+                    departments.forEach(function (dept) {
+                        var item = document.createElement('span');
+                        item.className = 'badge bg-info-subtle text-info border border-info-subtle px-3 py-2 rounded-pill';
+                        item.textContent = dept;
+                        list.appendChild(item);
+                    });
+                }
+            }
+
+            var modalEl = document.getElementById('assignedDepartmentsModal');
+            if (modalEl) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+        });
 
         function csvCell(val) {
             var s = (val === null || val === undefined || val === '-') ? '' : String(val);
