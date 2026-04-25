@@ -134,6 +134,56 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <script>
+        window.showSessionExpiredAlert = function() {
+            return Swal.fire({
+                icon: 'warning',
+                title: 'Session Expired',
+                text: 'For security reasons, your session has expired. Please sign in again to continue.',
+                confirmButtonColor: '#1a237e',
+                confirmButtonText: 'Sign In Again',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    window.location.href = "{{ route('login') }}";
+                }
+            });
+        };
+
+        window.__sessionExpiredAlertOpen = false;
+        window.handleSessionExpiredResponse = function(statusCode) {
+            if (Number(statusCode) !== 419) {
+                return false;
+            }
+            if (window.__sessionExpiredAlertOpen) {
+                return true;
+            }
+            window.__sessionExpiredAlertOpen = true;
+            window.showSessionExpiredAlert().finally(function() {
+                window.__sessionExpiredAlertOpen = false;
+            });
+            return true;
+        };
+
+        if (window.fetch && !window.__sessionFetchPatched) {
+            window.__sessionFetchPatched = true;
+            const originalFetch = window.fetch.bind(window);
+            window.fetch = function() {
+                return originalFetch.apply(window, arguments).then(function(response) {
+                    window.handleSessionExpiredResponse(response.status);
+                    return response;
+                });
+            };
+        }
+
+        if (window.jQuery) {
+            $(document).ajaxError(function(event, xhr) {
+                window.handleSessionExpiredResponse(xhr && xhr.status);
+            });
+        }
+    </script>
+
     <!-- Custom Admin JS -->
     <script src="{{ asset('js/app.js') }}"></script>
 
