@@ -29,10 +29,10 @@
                 <div class="legend-color" style="background-color: #dc3545; border-color: #dc3545;"></div>
                 <span>Location Violation</span>
             </div>
-            <div class="legend-item">
+            {{-- <div class="legend-item">
                 <div class="legend-color" style="background-color: #6c757d; border-color: #6c757d;"></div>
                 <span>Breadcrumb Trail</span>
-            </div>
+            </div> --}}
         </div>
     </div>
 </div>

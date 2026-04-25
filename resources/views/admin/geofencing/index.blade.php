@@ -164,9 +164,9 @@
                 <button type="button" class="btn btn-outline-secondary me-2" id="refreshMapBtn">
                     <i class="bi bi-arrow-clockwise me-1"></i>Refresh
                 </button>
-                <button type="button" class="btn btn-outline-secondary me-2" id="toggleBreadcrumbsBtn">
+                {{-- <button type="button" class="btn btn-outline-secondary me-2" id="toggleBreadcrumbsBtn">
                     <i class="bi bi-map me-1"></i>Toggle Breadcrumbs
-                </button>
+                </button> --}}
                 <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                     data-bs-target="#addFenceCanvas">
                     <i class="bi bi-plus-circle me-1"></i>Add New Fence
@@ -222,9 +222,9 @@
         let geofencingMap;
         let drawnItems = new L.FeatureGroup();
         let fences = [];
-        let breadcrumbsEnabled = true;
+        /* let breadcrumbsEnabled = true;
         let employeeMarkers = [];
-        let breadcrumbTrails = [];
+        let breadcrumbTrails = []; */
         let fencesTable;
 
         // Dynamic fence data
@@ -257,8 +257,7 @@
                 location.reload();
             });
 
-            // Toggle breadcrumbs
-            $('#toggleBreadcrumbsBtn').on('click', function() {
+            /* $('#toggleBreadcrumbsBtn').on('click', function() {
                 breadcrumbsEnabled = !breadcrumbsEnabled;
                 breadcrumbTrails.forEach(trail => {
                     if (breadcrumbsEnabled) {
@@ -267,10 +266,10 @@
                         geofencingMap.removeLayer(trail);
                     }
                 });
-                $(this).html(breadcrumbsEnabled ? 
-                    '<i class="bi bi-map me-1"></i>Hide Breadcrumbs' : 
+                $(this).html(breadcrumbsEnabled ?
+                    '<i class="bi bi-map me-1"></i>Hide Breadcrumbs' :
                     '<i class="bi bi-map me-1"></i>Show Breadcrumbs');
-            });
+            }); */
 
             // Center map button
             $('#centerMapBtn').on('click', function() {

@@ -12,12 +12,12 @@
                         <i class="bi bi-geo-alt-fill text-main fs-4"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-center">
+                <!-- <div class="d-flex align-items-center">
                     <small class="text-muted">
                         <i class="bi bi-arrow-up text-success"></i>
                         <span class="text-success">0</span> vs last month
                     </small>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -34,12 +34,12 @@
                         <i class="bi bi-check-circle text-success fs-4"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-center">
+                <!-- <div class="d-flex align-items-center">
                     <small class="text-muted">
                         <i class="bi bi-arrow-up text-success"></i>
                         <span class="text-success">0</span> vs last month
                     </small>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -56,12 +56,12 @@
                         <i class="bi bi-people-fill text-success fs-4"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-center">
+                <!-- <div class="d-flex align-items-center">
                     <small class="text-muted">
                         <i class="bi bi-arrow-up text-success"></i>
                         <span class="text-success">0</span> vs yesterday
                     </small>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -78,12 +78,12 @@
                         <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-center">
+                <!-- <div class="d-flex align-items-center">
                     <small class="text-muted">
                         <i class="bi bi-arrow-down text-danger"></i>
                         <span class="text-danger">0</span> vs yesterday
                     </small>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
