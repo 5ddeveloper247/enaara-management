@@ -148,6 +148,58 @@
             </tr>`;
     }
 
+    function destroyWorkflowsTable() {
+        if (typeof $ !== 'undefined' && $.fn.DataTable && $.fn.DataTable.isDataTable('#workflowsTable')) {
+            $('#workflowsTable').DataTable().destroy();
+            workflowsTable = null;
+        }
+    }
+
+    function workflowsDataTableOptions() {
+        return {
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            order: [[0, 'asc']],
+            scrollX: false,
+            responsive: { details: { type: 'column', target: 0 } },
+            columnDefs: [
+                { targets: 0, orderable: false, className: 'dt-control', responsivePriority: 0 },
+                { targets: [1, 2, 3, 4, 5, 6], visible: true },
+                { targets: 7, orderable: false, className: 'no-toggle', responsivePriority: 1 },
+                { targets: 1, responsivePriority: 2 },
+                { targets: [2, 3, 4], responsivePriority: 3 },
+                { targets: [5, 6], responsivePriority: 4 },
+            ],
+            language: {
+                search: '',
+                searchPlaceholder: 'Search workflows...',
+                lengthMenu: 'Show _MENU_ entries',
+                info: 'Showing _START_ to _END_ of _TOTAL_ workflows',
+                infoEmpty: 'No workflows available',
+                zeroRecords: 'No matching workflows found',
+            },
+            buttons: [{
+                extend: 'colvis',
+                text: 'Select Columns',
+                className: 'btn btn-sm border-0 bg-main text-white',
+                columns: [1, 2, 3, 4, 5, 6],
+            }],
+            drawCallback: function () {
+                $('[data-bs-toggle="tooltip"]').tooltip();
+                updateCounters();
+            },
+        };
+    }
+
+    function mountWorkflowsTable() {
+        destroyWorkflowsTable();
+        const tbody = $('#workflowsTableBody');
+        tbody.empty();
+        workflowsData.forEach(wf => tbody.append(buildRow(wf)));
+        workflowsTable = initUserDataTable('#workflowsTable', workflowsDataTableOptions());
+        populateFilterSbuOptions();
+    }
+
     // ─────────────────────────────────────────────
     // DATATABLE INIT
     // ─────────────────────────────────────────────
@@ -157,45 +209,7 @@
             .then(res => {
                 if (!res.success) return;
                 workflowsData = res.data;
-
-                const tbody = $('#workflowsTableBody');
-                tbody.empty();
-                workflowsData.forEach(wf => tbody.append(buildRow(wf)));
-
-                workflowsTable = initUserDataTable('#workflowsTable', {
-                    pageLength: 25,
-                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-                    order: [[0, 'asc']],
-                    scrollX: false,
-                    responsive: { details: { type: 'column', target: 0 } },
-                    columnDefs: [
-                        { targets: 0, orderable: false, className: 'dt-control', responsivePriority: 0 },
-                        { targets: [1, 2, 3, 4, 5, 6], visible: true },
-                        { targets: 7, orderable: false, className: 'no-toggle', responsivePriority: 1 },
-                        { targets: 1, responsivePriority: 2 },
-                        { targets: [2, 3, 4], responsivePriority: 3 },
-                        { targets: [5, 6], responsivePriority: 4 },
-                    ],
-                    language: {
-                        search: '',
-                        searchPlaceholder: 'Search workflows...',
-                        lengthMenu: 'Show _MENU_ entries',
-                        info: 'Showing _START_ to _END_ of _TOTAL_ workflows',
-                        infoEmpty: 'No workflows available',
-                        zeroRecords: 'No matching workflows found',
-                    },
-                    buttons: [{
-                        extend: 'colvis',
-                        text: 'Select Columns',
-                        className: 'btn btn-sm border-0 bg-main text-white',
-                        columns: [1, 2, 3, 4, 5, 6],
-                    }],
-                    drawCallback: function () {
-                        $('[data-bs-toggle="tooltip"]').tooltip();
-                        updateCounters();
-                    },
-                });
-                populateFilterSbuOptions();
+                mountWorkflowsTable();
             })
             .catch(err => console.error('Failed to load workflows:', err));
     }
@@ -209,14 +223,8 @@
             .then(res => {
                 if (!res.success) return;
                 workflowsData = res.data;
-
-                const tbody = $('#workflowsTableBody');
-                tbody.empty();
-                workflowsData.forEach(wf => tbody.append(buildRow(wf)));
-
-                if (workflowsTable) workflowsTable.draw();
+                mountWorkflowsTable();
                 loadStats();
-                populateFilterSbuOptions();
             });
     }
 
@@ -538,10 +546,6 @@
                     reloadTable();
                 } else if (res.errors) {
                     showFieldErrors(res.errors);
-                    const flat = Object.values(res.errors).flat().join('\n');
-                    if (typeof window.showError === 'function') {
-                        window.showError(flat || 'Please fix the highlighted fields.', 'Validation');
-                    }
                 } else {
                     const msg = res.message || (r.status === 422 ? 'Validation failed.' : 'Something went wrong.');
                     if (typeof window.showError === 'function') {
