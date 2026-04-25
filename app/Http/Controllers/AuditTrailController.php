@@ -105,8 +105,8 @@ class AuditTrailController extends Controller
                 'changes' => $audit->changes->map(function ($change) {
                     return [
                         'field' => $change->field,
-                        'before' => $change->old_value,
-                        'after' => $change->new_value,
+                        'before' => $this->formatChangeValue($change->field, $change->old_value),
+                        'after' => $this->formatChangeValue($change->field, $change->new_value),
                     ];
                 })->values(),
                 'context' => $this->formatContext($audit->context),
@@ -176,8 +176,8 @@ class AuditTrailController extends Controller
                     return [
                         'id' => $change->id,
                         'field' => $change->field,
-                        'before' => $change->old_value,
-                        'after' => $change->new_value,
+                        'before' => $this->formatChangeValue($change->field, $change->old_value),
+                        'after' => $this->formatChangeValue($change->field, $change->new_value),
                     ];
                 })->values(),
             ],
@@ -214,5 +214,36 @@ class AuditTrailController extends Controller
         }
 
         return null;
+    }
+
+    private function formatChangeValue(?string $field, mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return '-';
+        }
+
+        $key = strtolower((string) $field);
+        $isBooleanField = str_starts_with($key, 'is_')
+            || str_starts_with($key, 'has_')
+            || str_ends_with($key, '_enabled')
+            || str_ends_with($key, '_active')
+            || str_ends_with($key, '_restricted')
+            || str_ends_with($key, '_verified')
+            || str_ends_with($key, '_sync')
+            || str_ends_with($key, '_access');
+
+        if (! $isBooleanField) {
+            return $value;
+        }
+
+        $normalized = strtolower(trim((string) $value));
+        if (in_array($normalized, ['1', 'true', 'yes'], true)) {
+            return 'Yes';
+        }
+        if (in_array($normalized, ['0', 'false', 'no'], true)) {
+            return 'No';
+        }
+
+        return $value;
     }
 }

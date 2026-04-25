@@ -9,6 +9,7 @@
     let auditTrailsTable = null;
     let auditTrailsData = [];
     let isLoading = false;
+    let selectedAuditDetail = null;
 
     $(document).ready(async function () {
         initializeEventHandlers();
@@ -292,9 +293,7 @@
             }
         });
 
-        $('#exportDetailBtn').on('click', function () {
-            showSuccess('Export detail functionality will be implemented with backend integration.');
-        });
+        $('#exportDetailBtn').on('click', handleExportDetail);
     }
 
     /**
@@ -303,6 +302,7 @@
      * ============================================
      */
     function populateDetailModal(audit) {
+        selectedAuditDetail = audit;
         const timestamp = formatTimestamp(audit.timestamp);
         const category = audit.category || 'System';
         const severity = (audit.severity || 'info').toLowerCase();
@@ -365,11 +365,13 @@
                 const beforeValue = change.before ?? '-';
                 const afterValue = change.after ?? '-';
                 const actionBadge = getChangeActionBadge(beforeValue, afterValue);
+                const displayBefore = formatChangeValue(change.field, beforeValue);
+                const displayAfter = formatChangeValue(change.field, afterValue);
                 changesBody.append(`
                     <tr>
                         <td><strong>${escapeHtml(change.field || '-')}</strong></td>
-                        <td><span class="badge bg-secondary">${escapeHtml(beforeValue)}</span></td>
-                        <td><span class="badge bg-primary">${escapeHtml(afterValue)}</span></td>
+                        <td><span class="badge bg-secondary">${escapeHtml(displayBefore)}</span></td>
+                        <td><span class="badge bg-primary">${escapeHtml(displayAfter)}</span></td>
                         <td class="text-center">${actionBadge}</td>
                     </tr>
                 `);
@@ -460,6 +462,62 @@
         downloadCsv(csv, 'audit_trails_' + new Date().toISOString().split('T')[0] + '.csv');
     }
 
+    function handleExportDetail() {
+        const audit = selectedAuditDetail;
+        if (!audit) {
+            showError('Please open an audit detail first.', 'Info');
+            return;
+        }
+
+        const timestamp = formatTimestamp(audit.timestamp);
+        const userName = audit?.user?.name || 'System';
+        const userRole = audit?.user?.role || 'N/A';
+        const category = audit.category || 'System';
+        const severity = audit.severity || 'info';
+        const organization = audit.organization || 'N/A';
+        const branch = audit.branch || 'N/A';
+        const ipAddress = audit.ipAddress || '-';
+        const device = audit.device || '-';
+        const description = audit.description || '-';
+        const context = audit.context || '-';
+
+        const lines = [
+            ['Audit ID', audit.id ?? '-'],
+            ['Timestamp', `${timestamp.date} ${timestamp.time}`],
+            ['User', userName],
+            ['Role', userRole],
+            ['Category', category],
+            ['Severity', severity],
+            ['Organization', organization],
+            ['Location', branch],
+            ['IP Address', ipAddress],
+            ['Device', device],
+            ['Description', description],
+            ['Context', context],
+            ['', ''],
+            ['Field', 'From', 'To', 'Action'],
+        ];
+
+        if (audit.hasChanges && Array.isArray(audit.changes) && audit.changes.length > 0) {
+            audit.changes.forEach(function (change) {
+                const beforeValue = formatChangeValue(change.field, change.before ?? '-');
+                const afterValue = formatChangeValue(change.field, change.after ?? '-');
+                const action = getChangeActionText(change.before ?? '-', change.after ?? '-');
+                lines.push([change.field || '-', beforeValue, afterValue, action]);
+            });
+        } else {
+            lines.push(['-', '-', '-', 'No Change']);
+        }
+
+        const csv = lines.map(function (row) {
+            return row.map(csvEscape).join(',');
+        }).join('\n');
+
+        const suffix = String(audit.id ?? 'detail');
+        const datePart = new Date().toISOString().split('T')[0];
+        downloadCsv(csv, `audit_detail_${suffix}_${datePart}.csv`);
+    }
+
     /**
      * ============================================
      * HELPERS
@@ -529,6 +587,50 @@
         }
 
         return '<span class="badge bg-warning text-dark">Updated</span>';
+    }
+
+    function getChangeActionText(beforeValue, afterValue) {
+        const before = String(beforeValue ?? '').trim();
+        const after = String(afterValue ?? '').trim();
+        const beforeEmpty = before === '' || before === '-' || before.toLowerCase() === 'null';
+        const afterEmpty = after === '' || after === '-' || after.toLowerCase() === 'null';
+
+        if (beforeEmpty && !afterEmpty) return 'Added';
+        if (!beforeEmpty && afterEmpty) return 'Removed';
+        if (before === after) return 'No Change';
+        return 'Updated';
+    }
+
+    function formatChangeValue(field, value) {
+        if (value === null || value === undefined || value === '') {
+            return '-';
+        }
+
+        const key = String(field || '').toLowerCase();
+        const maybeBooleanField = key.startsWith('is_')
+            || key.startsWith('has_')
+            || key.endsWith('_enabled')
+            || key.endsWith('_active')
+            || key.endsWith('_restricted')
+            || key.endsWith('_verified')
+            || key.endsWith('_sync')
+            || key.endsWith('_access');
+
+        if (typeof value === 'boolean') {
+            return value ? 'Yes' : 'No';
+        }
+
+        const normalized = String(value).trim().toLowerCase();
+        if (maybeBooleanField) {
+            if (normalized === '1' || normalized === 'true' || normalized === 'yes') {
+                return 'Yes';
+            }
+            if (normalized === '0' || normalized === 'false' || normalized === 'no') {
+                return 'No';
+            }
+        }
+
+        return String(value);
     }
 
     function initializeTooltips() {
