@@ -318,7 +318,7 @@ class EmployeeStepRequest extends FormRequest
                 'city_of_birth' => ['nullable', 'string', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
                 'religion' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
                 'sect' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
-                'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widowed'])],
+                'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widow'])],
                 'spouse_name' => [
                     'required_if:marital_status,Married', 'nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()
                 ],

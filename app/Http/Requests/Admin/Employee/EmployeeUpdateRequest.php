@@ -247,7 +247,7 @@ class EmployeeUpdateRequest extends FormRequest
             'city_of_birth' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
             'religion' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'sect' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
-            'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widowed'])],
+            'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widow'])],
             'spouse_name' => ['required_if:marital_status,Married', 'nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
             'spouse_cnic' => [
                 'required_if:marital_status,Married', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'

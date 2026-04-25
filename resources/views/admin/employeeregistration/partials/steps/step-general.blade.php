@@ -239,9 +239,9 @@
                                          <option value="Divorced"
                                              {{ ($employee->marital_status ?? '') == 'Divorced' ? 'selected' : '' }}>
                                              Divorced</option>
-                                         <option value="Widowed"
-                                             {{ ($employee->marital_status ?? '') == 'Widowed' ? 'selected' : '' }}>
-                                             Widowed</option>
+                                        <option value="Widow"
+                                            {{ ($employee->marital_status ?? '') == 'Widow' ? 'selected' : '' }}>
+                                            Widow</option>
                                      </select>
                                  </div>
                                  <div class="col-md-6 {{ ($employee->marital_status ?? '') == 'Married' ? '' : 'd-none' }}"
