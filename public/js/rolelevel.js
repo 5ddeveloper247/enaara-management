@@ -86,6 +86,24 @@
         $('#editRoleLevelForm').attr('data-update-url', '');
     }
 
+    function enforceLevelInputLimit(inputSelector) {
+        const input = document.querySelector(inputSelector);
+        if (!input) {
+            return;
+        }
+
+        input.addEventListener('input', function() {
+            let value = String(this.value || '').replace(/\D/g, '');
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+                this.setCustomValidity('You can enter maximum 10 digits for role level priority.');
+            } else {
+                this.setCustomValidity('');
+            }
+            this.value = value;
+        });
+    }
+
     function showValidationErrors(formSelector, errors) {
         clearFormMessages(formSelector);
         const fieldMap = formSelector === '#addRoleLevelForm'
@@ -174,19 +192,6 @@
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                     showValidationErrors('#addRoleLevelForm', xhr.responseJSON.errors);
-                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
-                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
-                        errorMessage += `<li>${err}</li>`;
-                    });
-                    errorMessage += '</ul></div>';
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Please check the following:',
-                        html: errorMessage,
-                        confirmButtonColor: '#1a237e',
-                        confirmButtonText: 'Understood'
-                    });
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -298,19 +303,6 @@
             error: function(xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                     showValidationErrors('#editRoleLevelForm', xhr.responseJSON.errors);
-                    let errorMessage = '<div class="text-start mt-2"><ul class="mb-0">';
-                    Object.values(xhr.responseJSON.errors).flat().forEach(err => {
-                        errorMessage += `<li>${err}</li>`;
-                    });
-                    errorMessage += '</ul></div>';
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Please check the following:',
-                        html: errorMessage,
-                        confirmButtonColor: '#1a237e',
-                        confirmButtonText: 'Understood'
-                    });
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -389,6 +381,9 @@
     }
 
     function initializeEventHandlers() {
+        enforceLevelInputLimit('#rl_level');
+        enforceLevelInputLimit('#edit_rl_level');
+
         const detailCanvas = document.getElementById('roleLevelDetailCanvas');
         if (detailCanvas) {
             detailCanvas.addEventListener('show.bs.offcanvas', function(event) {

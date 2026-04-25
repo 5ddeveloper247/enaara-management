@@ -37,5 +37,5 @@
 @push('scripts')
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="{{ asset('js/helpers.js') }}"></script>
-<script src="{{ asset('js/rolelevel.js') }}"></script>
+<script src="{{ asset('js/rolelevel.js') }}?v={{ filemtime(public_path('js/rolelevel.js')) }}"></script>
 @endpush

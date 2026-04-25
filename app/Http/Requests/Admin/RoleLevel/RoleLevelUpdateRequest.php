@@ -36,7 +36,7 @@ class RoleLevelUpdateRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:100',
+                'max:50',
                 'unique:role_levels,name,' . $id,
                 function (string $attribute, mixed $value, \Closure $fail) use ($id) {
                     $normalizedInput = $this->normalizeName((string) $value);
@@ -51,8 +51,8 @@ class RoleLevelUpdateRequest extends FormRequest
                     }
                 },
             ],
-            'description' => 'nullable|string|max:1000',
-            'level' => 'required|integer|min:1',
+            'description' => 'nullable|string|max:500',
+            'level' => 'required|integer|min:1|digits_between:1,10|max:9999999999',
             'is_active' => 'boolean',
         ];
     }
@@ -62,9 +62,13 @@ class RoleLevelUpdateRequest extends FormRequest
         return [
             'name.required' => 'Role level name is required.',
             'name.unique' => 'This role level name is already in use.',
+            'name.max' => 'Role level name must not exceed 50 characters.',
             'level.required' => 'Role level priority is required.',
             'level.integer' => 'Role level priority must be a number.',
             'level.min' => 'Role level priority must be at least 1.',
+            'level.digits_between' => 'You can enter maximum 10 digits for role level priority.',
+            'level.max' => 'You can enter maximum 10 digits for role level priority.',
+            'description.max' => 'Description must not exceed 500 characters.',
         ];
     }
 }

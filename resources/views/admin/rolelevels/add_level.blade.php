@@ -17,21 +17,21 @@
                 <label for="rl_name" class="form-label fw-semibold small text-white">
                     Name <span class="text-danger">*</span>
                 </label>
-                <input type="text" class="form-control" id="rl_name" name="name" placeholder="Enter role level name" required>
+                <input type="text" class="form-control" id="rl_name" name="name" placeholder="Enter role level name" maxlength="50" required>
             </div>
 
             <div class="mb-3">
                 <label for="rl_level" class="form-label fw-semibold small text-white">
                     Level <span class="text-danger">*</span>
                 </label>
-                <input type="number" class="form-control" id="rl_level" name="level" placeholder="Enter priority level (e.g. 1, 2, 3)" min="1" required>
+                <input type="number" class="form-control" id="rl_level" name="level" placeholder="Enter priority level (max 10 digits)" min="1" max="9999999999" required>
             </div>
 
             <div class="mb-3">
                 <label for="rl_description" class="form-label fw-semibold small text-white">
                     Description
                 </label>
-                <textarea class="form-control" id="rl_description" name="description" rows="3" placeholder="Enter description"></textarea>
+                <textarea class="form-control" id="rl_description" name="description" rows="3" placeholder="Enter description" maxlength="500"></textarea>
             </div>
 
             <div class="mb-3">
