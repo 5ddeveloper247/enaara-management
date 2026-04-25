@@ -19,7 +19,7 @@
                 <div class="mb-3">
                     <label for="editFenceOrganization" class="form-label fw-semibold small text-white">Select Organization <span class="text-danger">*</span></label>
                     <select class="form-select" id="editFenceOrganization" required>
-                        <option value="">Choose an Organization...</option>
+                        <option value="" selected disabled hidden>Choose an Organization...</option>
                         @foreach($organizations as $organization)
                             <option value="{{ $organization->id }}">{{ $organization->name }}</option>
                         @endforeach
@@ -28,7 +28,7 @@
                 <div class="mb-3">
                     <label for="editFenceSbu" class="form-label fw-semibold small text-white">Select SBU <span class="text-danger">*</span></label>
                     <select class="form-select" id="editFenceSbu" required disabled>
-                        <option value="">Please select organization first</option>
+                        <option value="" selected disabled hidden>Please select organization first</option>
                         @foreach($sbus as $sbu)
                             <option value="{{ $sbu->id }}" data-organization-id="{{ $sbu->organization_id }}">{{ $sbu->name }}</option>
                         @endforeach
@@ -185,13 +185,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const currentSbu = editSbuSelect.value;
         if (!selectedOrganizationId) {
-            editSbuSelect.innerHTML = '<option value="">Please select organization first</option>';
+            editSbuSelect.innerHTML = '<option value="" selected disabled hidden>Please select organization first</option>';
             editSbuSelect.value = '';
             editSbuSelect.disabled = true;
             return;
         }
 
-        editSbuSelect.innerHTML = '<option value="">Choose an SBU...</option>';
+        editSbuSelect.innerHTML = '<option value="" selected disabled hidden>Choose an SBU...</option>';
         editSbuSelect.disabled = false;
 
         initialEditSbuOptions.forEach((opt) => {

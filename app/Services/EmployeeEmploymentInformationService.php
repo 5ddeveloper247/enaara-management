@@ -82,8 +82,6 @@ class EmployeeEmploymentInformationService
             $payload['intern_duration'] = null;
             $payload['employment_type'] = null;
             $payload['contractual_type'] = null;
-            $payload['contract_start_date'] = null;
-            $payload['contract_end_date'] = null;
         } elseif ($cat === 'employee') {
             $payload['intern_type'] = null;
             $payload['intern_duration'] = null;

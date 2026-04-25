@@ -17,7 +17,7 @@
                 <div class="mb-3">
                     <label for="fenceOrganization" class="form-label fw-semibold small text-white">Select Organization <span class="text-danger">*</span></label>
                     <select class="form-select" id="fenceOrganization" required>
-                        <option value="">Choose an Organization...</option>
+                        <option value="" selected disabled hidden>Choose an Organization...</option>
                         @foreach($organizations as $organization)
                             <option value="{{ $organization->id }}">{{ $organization->name }}</option>
                         @endforeach
@@ -26,7 +26,7 @@
                 <div class="mb-3">
                     <label for="fenceSbu" class="form-label fw-semibold small text-white">Select SBU <span class="text-danger">*</span></label>
                     <select class="form-select" id="fenceSbu" required disabled>
-                        <option value="">Please select organization first</option>
+                        <option value="" selected disabled hidden>Please select organization first</option>
                         @foreach($sbus as $sbu)
                             <option value="{{ $sbu->id }}" data-organization-id="{{ $sbu->organization_id }}">{{ $sbu->name }}</option>
                         @endforeach
@@ -236,13 +236,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const currentSbu = sbuSelect.value;
         if (!selectedOrganizationId) {
-            sbuSelect.innerHTML = '<option value="">Please select organization first</option>';
+            sbuSelect.innerHTML = '<option value="" selected disabled hidden>Please select organization first</option>';
             sbuSelect.value = '';
             sbuSelect.disabled = true;
             return;
         }
 
-        sbuSelect.innerHTML = '<option value="">Choose an SBU...</option>';
+        sbuSelect.innerHTML = '<option value="" selected disabled hidden>Choose an SBU...</option>';
         sbuSelect.disabled = false;
 
         initialSbuOptions.forEach((opt) => {

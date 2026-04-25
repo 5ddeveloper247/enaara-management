@@ -1445,11 +1445,7 @@
         endDate.setDate(endDate.getDate() + 1);
         const computedDate = formatDateForInput(endDate);
 
-        const contractualStartInput = document.getElementById('employmentDetailsContractStartDateInput');
         const employeeContractualStartInput = document.getElementById('employmentDetailsEmployeeContractStartDateInput');
-        if (contractualStartInput && (forceFill || !contractualStartInput.value)) {
-            contractualStartInput.value = computedDate;
-        }
         if (employeeContractualStartInput && (forceFill || !employeeContractualStartInput.value)) {
             employeeContractualStartInput.value = computedDate;
         }
