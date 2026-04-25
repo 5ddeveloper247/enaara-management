@@ -72,14 +72,14 @@
     }
 
     function resetSbuAndFloorSelects() {
-        $('#policySbu').empty().append($('<option>', { value: '', text: 'Select SBU' }));
-        $('#policyFloor').empty().append($('<option>', { value: '', text: 'Select Floor' }));
+        $('#policySbu').empty().append($('<option>', { value: '', text: 'Select SBU', selected: true, disabled: true, hidden: true }));
+        $('#policyFloor').empty().append($('<option>', { value: '', text: 'Select Floor', selected: true, disabled: true, hidden: true }));
     }
 
     function repopulateSbus(orgId) {
         const $sbu = $('#policySbu');
-        $sbu.empty().append($('<option>', { value: '', text: 'Select SBU' }));
-        $('#policyFloor').empty().append($('<option>', { value: '', text: 'Select Floor' }));
+        $sbu.empty().append($('<option>', { value: '', text: 'Select SBU', selected: true, disabled: true, hidden: true }));
+        $('#policyFloor').empty().append($('<option>', { value: '', text: 'Select Floor', selected: true, disabled: true, hidden: true }));
         const org = policyScopeTree.find((o) => String(o.id) === String(orgId));
         if (!org || !org.sbus) {
             return;
@@ -91,7 +91,7 @@
 
     function repopulateFloors(sbuId) {
         const $fl = $('#policyFloor');
-        $fl.empty().append($('<option>', { value: '', text: 'Select Floor' }));
+        $fl.empty().append($('<option>', { value: '', text: 'Select Floor', selected: true, disabled: true, hidden: true }));
         if (!sbuId) {
             return;
         }
@@ -394,7 +394,7 @@
             }
             if (value === 'sbu') {
                 repopulateSbus($('#policyOrganization').val());
-                $('#policyFloor').html('<option value="">Select Floor</option>');
+                $('#policyFloor').html('<option value="" selected disabled hidden>Select Floor</option>');
             }
             if (value === 'floor') {
                 repopulateSbus($('#policyOrganization').val());
@@ -408,7 +408,7 @@
                 repopulateSbus($(this).val());
             }
             if (scope === 'floor') {
-                $('#policyFloor').html('<option value="">Select Floor</option>');
+                $('#policyFloor').html('<option value="" selected disabled hidden>Select Floor</option>');
             }
         });
 

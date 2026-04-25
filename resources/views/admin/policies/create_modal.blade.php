@@ -26,7 +26,7 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold">Category <span class="text-danger">*</span></label>
                                 <select class="form-select" id="policyCategory" required>
-                                    <option value="">Select Category</option>
+                                    <option value="" selected disabled hidden>Select Category</option>
                                     <option value="leave">Leave Policy</option>
                                     <option value="attendance">Attendance Grace Period</option>
                                     <option value="geofence">Geofencing Rules</option>
@@ -72,21 +72,21 @@
                             <div class="col-md-6" id="policyOrgWrap" style="display: none;">
                                 <label class="form-label small fw-semibold">Organization <span class="text-danger scope-org-req" style="display:none;">*</span></label>
                                 <select class="form-select" id="policyOrganization">
-                                    <option value="">Select Organization</option>
+                                    <option value="" selected disabled hidden>Select Organization</option>
                                 </select>
                                 <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-organization_id"></div>
                             </div>
                             <div class="col-md-6" id="policySbuWrap" style="display: none;">
                                 <label class="form-label small fw-semibold">SBU <span class="text-danger scope-sbu-req" style="display:none;">*</span></label>
                                 <select class="form-select" id="policySbu">
-                                    <option value="">Select SBU</option>
+                                    <option value="" selected disabled hidden>Select SBU</option>
                                 </select>
                                 <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-sbu_id"></div>
                             </div>
                             <div class="col-md-6" id="policyFloorWrap" style="display: none;">
                                 <label class="form-label small fw-semibold">Floor <span class="text-danger scope-floor-req" style="display:none;">*</span></label>
                                 <select class="form-select" id="policyFloor">
-                                    <option value="">Select Floor</option>
+                                    <option value="" selected disabled hidden>Select Floor</option>
                                 </select>
                                 <div class="policy-field-feedback text-danger small mt-1 d-none" id="policy-fe-sbu_floor_id"></div>
                             </div>
