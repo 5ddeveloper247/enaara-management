@@ -38,7 +38,6 @@
         <label class="form-label small fw-semibold text-muted mb-2">Organization</label>
         <select class="form-select form-select-sm" id="filterOrganization">
             <option value="">All Organizations</option>
-            <option value="global">Global</option>
             @foreach ($organizations as $org)
                 <option value="{{ $org->id }}">{{ $org->name }}</option>
             @endforeach

@@ -286,8 +286,7 @@
             if (status && $(row).data('status') !== status)                 return false;
             if (org) {
                 const rowOrg = String($(row).data('org-id'));
-                if (org === 'global') { if (rowOrg !== 'global') return false; }
-                else                  { if (rowOrg !== org)      return false; }
+                if (rowOrg !== org) return false;
             }
             if (sbu) {
                 const rowSbu = String($(row).data('sbu-id') || '');
@@ -372,7 +371,7 @@
         $sel.find('option:not(:first)').remove();
         workflowScopeTree.forEach((org) => {
             (org.sbus || []).forEach((sbu) => {
-                $sel.append($('<option>', { value: sbu.id, text: `${org.name} — ${sbu.name}` }));
+                $sel.append($('<option>', { value: sbu.id, text: sbu.name }));
             });
         });
         if (current) {

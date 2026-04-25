@@ -23,7 +23,7 @@
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold text-white">Request Type <span class="text-danger">*</span></label>
                         <select class="form-select" id="workflowRequestType" name="request_type" required>
-                            <option value="">Select Request Type</option>
+                            <option value="" selected disabled hidden>Select Request Type</option>
                             <option value="leave">Leave</option>
                             <option value="overtime">Overtime</option>
                             <option value="regularization">Regularization</option>
