@@ -126,19 +126,6 @@
 }
 
 /* ============================================
-   FORM VALIDATION
-   ============================================ */
-.form-control:invalid,
-.form-select:invalid {
-    border-color: #dc3545;
-}
-
-.form-control:valid,
-.form-select:valid {
-    border-color: #198754;
-}
-
-/* ============================================
    FILE UPLOAD
    ============================================ */
 .form-control[type="file"] {
