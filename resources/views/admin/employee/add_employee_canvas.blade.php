@@ -59,7 +59,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="employeeDepartment" class="form-label fw-semibold small text-white">Department <span class="text-danger">*</span></label>
-                    <select class="form-select" id="employeeDepartment" name="department_id" style="pointer-events:none;opacity:0.5;">
+                    <select class="form-select form-select-sm" id="employeeDepartment" name="department_id" style="pointer-events:none;opacity:0.5;">
                         <option value="">Select Department</option>
                     </select>
                 </div>
