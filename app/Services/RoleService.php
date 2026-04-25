@@ -12,6 +12,61 @@ use Illuminate\Validation\ValidationException;
 
 class RoleService
 {
+    protected function normalizeRoleName(string $name): string
+    {
+        return mb_strtolower(trim($name));
+    }
+
+    protected function collectRoleSbuIds(Role $role): array
+    {
+        $ids = $role->sbus->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if (!empty($role->sbu_id)) {
+            $ids[] = (int) $role->sbu_id;
+        }
+        return array_values(array_unique(array_filter($ids)));
+    }
+
+    protected function validateRoleNameUniquenessByScope(array $data, ?int $currentRoleId = null): void
+    {
+        $organizationId = (int) ($data['organization_id'] ?? 0);
+        $name = trim((string) ($data['name'] ?? ''));
+        $targetSbuIds = array_values(array_filter(array_unique(array_map('intval', $data['sbu_ids'] ?? []))));
+        if (empty($targetSbuIds) && !empty($data['sbu_id'])) {
+            $targetSbuIds = [(int) $data['sbu_id']];
+        }
+
+        if ($organizationId <= 0 || $name === '') {
+            return;
+        }
+
+        $existingRoles = Role::query()
+            ->with('sbus:id')
+            ->where('organization_id', $organizationId)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [$this->normalizeRoleName($name)])
+            ->when($currentRoleId, fn ($q) => $q->where('id', '!=', $currentRoleId))
+            ->get();
+
+        foreach ($existingRoles as $existingRole) {
+            $existingSbuIds = $this->collectRoleSbuIds($existingRole);
+
+            if (empty($targetSbuIds)) {
+                if (empty($existingSbuIds)) {
+                    throw ValidationException::withMessages([
+                        'level_id' => 'This role level already exists for the selected organization.',
+                    ]);
+                }
+                continue;
+            }
+
+            $overlap = array_intersect($targetSbuIds, $existingSbuIds);
+            if (!empty($overlap)) {
+                throw ValidationException::withMessages([
+                    'level_id' => 'This role level already exists in one or more selected SBUs for this organization.',
+                ]);
+            }
+        }
+    }
+
     public function getList(): Collection
     {
         return Role::withCount('modules')
@@ -78,6 +133,7 @@ class RoleService
         $data['parent_role_id'] = $data['parent_role_id'] ?? null;
 
         $this->validateScopeData($data);
+        $this->validateRoleNameUniquenessByScope($data);
 
         $role = Role::create($data);
 
@@ -118,6 +174,7 @@ class RoleService
         $data['parent_role_id'] = $data['parent_role_id'] ?? null;
 
         $this->validateScopeData($data, $role->id);
+        $this->validateRoleNameUniquenessByScope($data, $role->id);
 
         $role->update($data);
 
