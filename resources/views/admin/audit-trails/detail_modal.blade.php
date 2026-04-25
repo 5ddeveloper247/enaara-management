@@ -1,3 +1,13 @@
+<style>
+    #auditDetailModal #changesSection thead th {
+        color: #1f2937 !important;
+        background-color: #f8f9fa !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+</style>
+
 <!-- Audit Detail Modal -->
 <div class="modal fade" id="auditDetailModal" tabindex="-1" aria-labelledby="auditDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -74,12 +84,13 @@
                     </h6>
                     <div class="p-3 rounded-3 border">
                         <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
+                            <table class="table table-sm table-bordered align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 30%;">Field</th>
-                                        <th style="width: 35%;">Before</th>
-                                        <th style="width: 35%;">After</th>
+                                        <th class="text-dark fw-semibold" style="width: 28%;">Field</th>
+                                        <th class="text-dark fw-semibold" style="width: 28%;">From</th>
+                                        <th class="text-dark fw-semibold" style="width: 28%;">To</th>
+                                        <th class="text-dark fw-semibold text-center" style="width: 16%;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="changesTableBody">

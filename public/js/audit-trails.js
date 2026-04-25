@@ -362,11 +362,15 @@
             $('#changesSection').show();
 
             audit.changes.forEach(function (change) {
+                const beforeValue = change.before ?? '-';
+                const afterValue = change.after ?? '-';
+                const actionBadge = getChangeActionBadge(beforeValue, afterValue);
                 changesBody.append(`
                     <tr>
                         <td><strong>${escapeHtml(change.field || '-')}</strong></td>
-                        <td><span class="badge bg-secondary">${escapeHtml(change.before ?? '-')}</span></td>
-                        <td><span class="badge bg-primary">${escapeHtml(change.after ?? '-')}</span></td>
+                        <td><span class="badge bg-secondary">${escapeHtml(beforeValue)}</span></td>
+                        <td><span class="badge bg-primary">${escapeHtml(afterValue)}</span></td>
+                        <td class="text-center">${actionBadge}</td>
                     </tr>
                 `);
             });
@@ -506,6 +510,25 @@
             default:
                 return `<span class="badge ${cls} bg-info"><i class="bi bi-info-circle me-1"></i>Info</span>`;
         }
+    }
+
+    function getChangeActionBadge(beforeValue, afterValue) {
+        const before = String(beforeValue ?? '').trim();
+        const after = String(afterValue ?? '').trim();
+        const beforeEmpty = before === '' || before === '-' || before.toLowerCase() === 'null';
+        const afterEmpty = after === '' || after === '-' || after.toLowerCase() === 'null';
+
+        if (beforeEmpty && !afterEmpty) {
+            return '<span class="badge bg-success">Added</span>';
+        }
+        if (!beforeEmpty && afterEmpty) {
+            return '<span class="badge bg-danger">Removed</span>';
+        }
+        if (before === after) {
+            return '<span class="badge bg-secondary">No Change</span>';
+        }
+
+        return '<span class="badge bg-warning text-dark">Updated</span>';
     }
 
     function initializeTooltips() {

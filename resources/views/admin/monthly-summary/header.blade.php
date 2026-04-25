@@ -36,7 +36,7 @@
         <select class="form-select form-select-sm" id="filterBranch">
             <option value="">All Departments</option>
             @foreach ($departments as $dpt)
-                <option value="{{ $dpt->id }}" {{ (string) request('department_id') === (string) $dpt->id ? 'selected' : '' }}>
+                <option value="{{ $dpt->id }}" data-sbu-id="{{ $dpt->sbu_id }}" {{ (string) request('department_id') === (string) $dpt->id ? 'selected' : '' }}>
                     {{ $dpt->name }}
                 </option>
             @endforeach
@@ -46,17 +46,6 @@
         <label class="form-label small fw-semibold text-muted mb-2">Floor</label>
         <select class="form-select form-select-sm" id="filterFloor">
             <option value="">All Floors</option>
-            <option value="ground">Ground Floor</option>
-            <option value="1">Floor 1</option>
-            <option value="2">Floor 2</option>
-            <option value="3">Floor 3</option>
-            <option value="4">Floor 4</option>
-            <option value="5">Floor 5</option>
-            <option value="6">Floor 6</option>
-            <option value="7">Floor 7</option>
-            <option value="8">Floor 8</option>
-            <option value="9" data-restricted="true">Floor 9 (Corporate/HR Zone)</option>
-            <option value="10">Floor 10</option>
         </select>
     </div>
     <div class="col-12">

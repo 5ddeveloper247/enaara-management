@@ -20,6 +20,17 @@
     $(document).ready(function () {
         loadMonthlySummaryData();
         initializeDataTable();
+        const selectedSbuId = $('#filterSBU').val();
+        populateDepartmentOptions(selectedSbuId);
+        populateFloorOptions(selectedSbuId);
+        const queryDepartmentId = new URLSearchParams(window.location.search).get('department_id');
+        if (queryDepartmentId && $('#filterBranch option[value="' + queryDepartmentId + '"]').length) {
+            $('#filterBranch').val(queryDepartmentId);
+        }
+        const queryFloorId = new URLSearchParams(window.location.search).get('floor_id');
+        if (queryFloorId && $('#filterFloor option[value="' + queryFloorId + '"]').length) {
+            $('#filterFloor').val(queryFloorId);
+        }
         initializeEventHandlers();
         initializeFloorFilter();
         updateCounters();
@@ -34,6 +45,48 @@
         } else {
             console.warn('monthlySummaryRows not found, using empty array');
             monthlySummaryData = [];
+        }
+    }
+
+    function populateFloorOptions(sbuId) {
+        const $floor = $('#filterFloor');
+        if (!$floor.length) {
+            return;
+        }
+        const prev = $floor.val();
+        const floors = window.monthlySummaryFloors || [];
+        const sbuKey = sbuId ? String(sbuId) : '';
+        $floor.find('option').not(':first').remove();
+        const list = sbuKey
+            ? floors.filter((f) => String(f.sbu_id) === sbuKey)
+            : floors.slice();
+        list.forEach((f) => {
+            const numPart = f.floor_number != null && f.floor_number !== '' ? ' (' + f.floor_number + ')' : '';
+            $floor.append($('<option>', { value: String(f.id), text: (f.name || 'Floor') + numPart }));
+        });
+        if (prev && $floor.find('option[value="' + prev + '"]').length) {
+            $floor.val(prev);
+        } else {
+            $floor.val('');
+        }
+    }
+
+    function populateDepartmentOptions(sbuId) {
+        const $dept = $('#filterBranch');
+        if (!$dept.length) {
+            return;
+        }
+        const prev = $dept.val();
+        const sbuKey = sbuId ? String(sbuId) : '';
+        $dept.find('option').not(':first').each(function () {
+            const optionSbuId = String($(this).data('sbu-id') || '');
+            const shouldShow = !sbuKey || optionSbuId === sbuKey;
+            $(this).prop('hidden', !shouldShow).prop('disabled', !shouldShow);
+        });
+        if (prev && $dept.find('option[value="' + prev + '"]:not([disabled])').length) {
+            $dept.val(prev);
+        } else {
+            $dept.val('');
         }
     }
 
@@ -113,6 +166,8 @@
     // TABLE ROW BUILDER
     // ============================================
     function buildTableRow(employee) {
+        const floorLabel = employee.floor_name || 'N/A';
+        const floorIds = Array.isArray(employee.sbu_floor_ids) ? employee.sbu_floor_ids.join(',') : '';
         const halfDaysBadge = employee.half_days > 0
             ? `<span class="badge px-2 rounded-1 bg-warning text-dark">${employee.half_days}</span>`
             : '<span class="text-muted">-</span>';
@@ -138,7 +193,7 @@
             : '<span class="text-muted">-</span>';
     
         return `
-            <tr data-floor="${String(employee.floor_name || '').toLowerCase()}">
+            <tr data-sbu-floor-ids="${floorIds}">
                 <td class="dt-control"></td>
                 <td>
                     <div class="d-flex align-items-center">
@@ -148,7 +203,7 @@
                             <small class="text-muted">${employee.employee_code} | ${employee.department}</small>
                             <div class="mt-1">
                                 <span class="badge bg-info-subtle text-info px-2 py-1 rounded-1" style="font-size: 0.7rem;">
-                                    <i class="bi bi-building me-1"></i>${employee.sbu} - ${employee.floor_name}
+                                    <i class="bi bi-building me-1"></i>${escapeHtml(String(employee.sbu ?? ''))} — ${escapeHtml(String(floorLabel))}
                                 </span>
                             </div>
                         </div>
@@ -185,8 +240,9 @@
                             data-early-departures="${employee.early_departures}"
                             data-zone2-verification="${employee.zone2_verification}"
                             data-regularization="${employee.regularization}"
-                            data-floor="${employee.floor_name}"
-                            data-branch="${employee.sbu}">
+                            data-floor="${escapeHtml(String(floorLabel))}"
+                            data-floor-number="${employee.floor_number != null && employee.floor_number !== '' ? String(employee.floor_number) : ''}"
+                            data-branch="${escapeHtml(String(employee.sbu ?? ''))}">
                         <i class="bi bi-calendar3"></i>
                     </button>
                 </td>
@@ -198,6 +254,16 @@
     // EVENT HANDLERS
     // ============================================
     function initializeEventHandlers() {
+        $('#filterSBU').on('change', function () {
+            const sbuId = $(this).val();
+            populateDepartmentOptions(sbuId);
+            populateFloorOptions(sbuId);
+            if (monthlySummaryTable) {
+                monthlySummaryTable.draw();
+                updateCounters();
+            }
+        });
+
         // Apply filters
         $('#applyFiltersBtn').on('click', applyFilters);
 
@@ -225,14 +291,14 @@
         selectedMonth = ($('#filterMonth').val() || selectedMonth);
         const sbu = $('#filterSBU').val();
         const branch = $('#filterBranch').val();
-        const floor = ($('#filterFloor').val() || '').trim().toLowerCase();
+        const floorId = ($('#filterFloor').val() || '').trim();
 
-        // Server-backed filters (month, sbu, department) to keep results accurate.
+        // Server-backed filters (month, sbu, department, floor) to keep results accurate.
         const params = new URLSearchParams();
         if (selectedMonth) params.set('month', selectedMonth);
         if (sbu) params.set('sbu_id', sbu);
         if (branch) params.set('department_id', branch);
-        if (floor) params.set('floor', floor);
+        if (floorId) params.set('floor_id', floorId);
 
         const target = `${window.location.pathname}?${params.toString()}`;
         window.location.href = target;
@@ -304,6 +370,7 @@
             zone2Verification: button.getAttribute('data-zone2-verification') || 'N/A',
             regularization: parseInt(button.getAttribute('data-regularization')) || 0,
             floor: button.getAttribute('data-floor') || '-',
+            floorNumber: button.getAttribute('data-floor-number'),
             branch: button.getAttribute('data-branch') || '-'
         };
 
@@ -315,7 +382,7 @@
         $('#detailEmployeeAvatar').text(data.employeeAvatar);
         $('#detailEmployeeName').text(data.employeeName);
         $('#detailEmployeeInfo').text(`${data.employeeId} | ${data.employeeDept}`);
-        $('#detailEmployeeLocation').html(`<i class="bi bi-building me-1"></i>${data.branch} - Floor ${data.floor}`);
+        $('#detailEmployeeLocation').html(`<i class="bi bi-building me-1"></i>${escapeHtml(data.branch)} — ${escapeHtml(data.floor)}`);
 
         $('#detailTotalDays').text(data.totalDays);
         $('#detailPresent').text(data.present);
@@ -325,8 +392,8 @@
         $('#detailLateArrivals').text(data.lateArrivals);
         $('#detailEarlyDepartures').text(data.earlyDepartures);
 
-        // Zone-2 Verification
-        if (data.floor === '9') {
+        const floorNum = data.floorNumber !== '' && data.floorNumber != null ? parseInt(data.floorNumber, 10) : NaN;
+        if (floorNum === 9) {
             if (data.zone2Verification === 'Verified') {
                 $('#detailZone2Verification').html('<span class="badge bg-info"><i class="bi bi-check-circle me-1"></i>Verified</span>');
             } else {
@@ -421,32 +488,24 @@
     }
 
     function initializeFloorFilter() {
-        // Floor filter is client-side only (month/sbu/department are server-side).
         $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
             if (!settings.nTable || settings.nTable.id !== 'monthlySummaryTable') return true;
 
-            const selectedFloor = ($('#filterFloor').val() || '').toLowerCase();
-            if (!selectedFloor) return true;
+            const selectedFloorId = ($('#filterFloor').val() || '').trim();
+            if (!selectedFloorId) return true;
 
             const rowNode = settings.aoData[dataIndex]?.nTr;
-            const rowFloor = (rowNode?.getAttribute('data-floor') || '').toLowerCase();
-            return rowFloor === selectedFloor;
+            const idsAttr = rowNode?.getAttribute('data-sbu-floor-ids') || '';
+            const ids = idsAttr.split(',').map((s) => s.trim()).filter(Boolean);
+            return ids.includes(selectedFloorId);
         });
 
-        // Reapply floor filter on change without page reload.
         $('#filterFloor').on('change', function () {
             if (monthlySummaryTable) {
                 monthlySummaryTable.draw();
                 updateCounters();
             }
         });
-
-        // Apply initial floor query param if present.
-        const queryFloor = new URLSearchParams(window.location.search).get('floor');
-        if (queryFloor) {
-            $('#filterFloor').val(queryFloor);
-            if (monthlySummaryTable) monthlySummaryTable.draw();
-        }
     }
 
     function getExportRows() {

@@ -57,6 +57,7 @@
 <!-- Monthly Summary Module JavaScript -->
 <script>
     window.monthlySummaryRows = @json($monthlySummary);
+    window.monthlySummaryFloors = @json($floorsForFilter ?? []);
 </script>
 <script src="{{ asset('js/monthly-summary.js') }}"></script>
 @endpush

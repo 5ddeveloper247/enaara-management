@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Sbu;
-use App\Models\Department;
+use App\Models\SbuFloor;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -15,27 +16,51 @@ class MonthlySummaryService
         $month = $request->get('month', now()->format('Y-m'));
         $sbuId = $request->get('sbu_id');
         $departmentId = $request->get('department_id');
+        $floorId = $request->get('floor_id');
 
         $year = Carbon::parse($month . '-01')->year;
 
-        $sbus = Sbu::all();
-        $departments = Department::all();
+        $sbus = Sbu::query()->orderBy('name')->get();
+        $departments = Department::query()->orderBy('name')->get();
+
+        $floorsForFilter = SbuFloor::query()
+            ->where('is_active', true)
+            ->orderBy('sbu_id')
+            ->orderBy('floor_number')
+            ->orderBy('name')
+            ->get(['id', 'sbu_id', 'name', 'floor_number'])
+            ->map(fn (SbuFloor $f) => [
+                'id' => $f->id,
+                'sbu_id' => $f->sbu_id,
+                'name' => $f->name,
+                'floor_number' => $f->floor_number,
+            ])
+            ->values()
+            ->all();
 
         $employeesQuery = Employee::with([
             'sbu',
             'department',
+            'assignedFloors' => static fn ($q) => $q->where('is_active', true)->orderBy('floor_number'),
             'leaveQuotas' => function ($query) use ($year) {
                 $query->where('year', $year)
                     ->with('leaveType');
-            }
+            },
         ]);
 
-        if (!empty($sbuId)) {
+        if (! empty($sbuId)) {
             $employeesQuery->where('sbu_id', $sbuId);
         }
 
-        if (!empty($departmentId)) {
+        if (! empty($departmentId)) {
             $employeesQuery->where('department_id', $departmentId);
+        }
+
+        if ($floorId !== null && $floorId !== '') {
+            $fid = (int) $floorId;
+            if ($fid > 0) {
+                $employeesQuery->whereHas('assignedFloors', static fn ($q) => $q->where('sbu_floors.id', $fid));
+            }
         }
 
         $employees = $employeesQuery->get();
@@ -48,7 +73,8 @@ class MonthlySummaryService
             'monthlySummary',
             'sbus',
             'departments',
-            'month'
+            'month',
+            'floorsForFilter'
         ));
     }
 
@@ -72,6 +98,11 @@ class MonthlySummaryService
             }
         }
 
+        $floors = $employee->relationLoaded('assignedFloors') ? $employee->assignedFloors : collect();
+        $floorNames = $floors->pluck('name')->filter()->implode(', ');
+        $sbuFloorIds = $floors->pluck('id')->map(static fn ($id) => (string) $id)->values()->all();
+        $firstFloor = $floors->first();
+
         return [
             'employee_id' => $employee->id,
             'employee_code' => $employee->employee_code ?? 'N/A',
@@ -81,6 +112,9 @@ class MonthlySummaryService
             'department_id' => $employee->department_id,
             'sbu' => $employee->sbu->name ?? 'N/A',
             'sbu_id' => $employee->sbu_id,
+            'floor_name' => $floorNames !== '' ? $floorNames : 'N/A',
+            'sbu_floor_ids' => $sbuFloorIds,
+            'floor_number' => $firstFloor?->floor_number,
 
             'total_days' => $startDate->daysInMonth,
             'present' => 0,
