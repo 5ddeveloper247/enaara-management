@@ -28,7 +28,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <small class="text-muted d-block mb-1">Active Sites</small>
-                        <h3 class="mb-0 fw-bold" id="activeSitesCount">0</h3>
+                        <h3 class="mb-0 fw-bold" id="activeSitesCount">{{ $activeSitesCount ?? 0 }}</h3>
                     </div>
                     <div>
                         <i class="bi bi-check-circle text-success fs-4"></i>

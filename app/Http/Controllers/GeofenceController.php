@@ -38,8 +38,9 @@ class GeofenceController extends Controller
 
         $geofences = Geofence::with(['sbu', 'organization'])->orderBy('name')->get();
         $totalFences = $geofences->count();
+        $activeSitesCount = $geofences->where('status', 'active')->count();
 
-        return view('admin.geofencing.index', compact('organizations', 'sbus', 'geofences', 'totalFences'));
+        return view('admin.geofencing.index', compact('organizations', 'sbus', 'geofences', 'totalFences', 'activeSitesCount'));
     }
 
     public function store(StoreGeofenceRequest $request)

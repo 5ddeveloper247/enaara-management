@@ -106,7 +106,7 @@
                 <div class="mb-3">
                     <label for="fenceType" class="form-label fw-semibold small text-white">Fence Type <span class="text-danger">*</span></label>
                     <select class="form-select" id="fenceType" required>
-                        <option value="">Select Type</option>
+                        <option value="" selected disabled hidden>Select Type</option>
                         <option value="hard-lock">Hard Lock - Employee cannot punch in if outside</option>
                         <option value="soft-lock">Soft Lock - Employee can punch in, but Admin gets alert</option>
                     </select>
