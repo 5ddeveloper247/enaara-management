@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\Workflow;
 
 use App\Models\Sbu;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class WorkflowStoreRequest extends FormRequest
 {
@@ -27,7 +28,12 @@ class WorkflowStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('workflows', 'name')->whereNull('deleted_at'),
+            ],
             'request_type' => ['required', 'in:leave,overtime,regularization,shift'],
             'status' => ['required', 'in:active,inactive'],
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
@@ -64,6 +70,7 @@ class WorkflowStoreRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'name.unique' => 'Workflow name already exists. Please choose a different name.',
             'approval_levels.required' => 'Please add at least one approval level.',
             'approval_levels.min' => 'At least one approval level is required.',
         ];
