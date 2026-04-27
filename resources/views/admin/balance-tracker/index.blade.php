@@ -369,7 +369,10 @@
                 buttons: [{
                     extend: 'colvis',
                     text: 'Select Columns',
-                    className: 'btn btn-sm border-0 bg-main text-white'
+                    className: 'btn btn-sm border-0 bg-main text-white',
+                    columns: function (idx) {
+                        return idx !== 0;
+                    }
                 }],
                 drawCallback: function () {
                     $('[data-bs-toggle="tooltip"]').tooltip();
