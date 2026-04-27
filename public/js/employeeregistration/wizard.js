@@ -2887,60 +2887,80 @@
     // ─── End Work Arrangement Toggles ────────────────────────────────────────────
 
     // Location Dependent Selects (Nationality -> Province -> District)
+    function resetLocationSelect(select, placeholderText, disabled) {
+        if (!select) return;
+        const text = placeholderText || (select.options[0] ? select.options[0].text : 'Select');
+        if (!select.options.length) {
+            select.add(new Option(text, ''));
+        }
+        select.selectedIndex = 0;
+        select.value = '';
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+        select.options[0].text = text;
+        select.disabled = !!disabled;
+        select.removeAttribute('data-current-value');
+    }
+
     async function loadLocationData(select, url, currentValue = null) {
         if (!select) return;
 
-        // Reset and show loading state
-        const originalText = select.options[0].text;
+        const originalText = select.options[0] ? select.options[0].text : 'Select';
         select.options[0].text = 'Loading...';
         select.disabled = true;
 
         try {
             const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Request failed: ${response.status}`);
+            }
             const data = await response.json();
+            const items = Array.isArray(data) ? data : [];
 
-            // Clear except first option
             while (select.options.length > 1) {
                 select.remove(1);
             }
 
-            data.forEach(item => {
+            items.forEach(item => {
                 const option = new Option(item.name, item.name);
                 select.add(option);
             });
 
-            // Restore placeholder
             select.options[0].text = originalText;
             select.disabled = false;
 
-            // Pre-selection logic
             const valToSelect = currentValue || select.getAttribute('data-current-value');
             if (valToSelect) {
                 select.value = valToSelect;
-                // Trigger change to update dependent selects
                 if (select.value === valToSelect) {
                     select.dispatchEvent(new Event('change'));
                 }
             }
-
         } catch (error) {
             console.error('Failed to load location data:', error);
-            select.options[0].text = 'Error loading data';
+            select.options[0].text = 'Unable to load';
+            select.disabled = false;
         }
     }
 
     function initLocationSelectors() {
-        const selects = document.querySelectorAll('.location-select');
         const nationalitySelect = document.getElementById('giNationalityInput');
         const provinceSelect = document.getElementById('giProvinceSelect');
         const districtSelect = document.getElementById('giDistrictSelect');
+        const spouseNationalitySelect = document.getElementById('giSpouseNationalityInput');
+
+        if (provinceSelect && provinceSelect.options[0]) {
+            resetLocationSelect(provinceSelect, provinceSelect.options[0].text, true);
+        }
+        if (districtSelect && districtSelect.options[0]) {
+            resetLocationSelect(districtSelect, districtSelect.options[0].text, true);
+        }
 
         if (nationalitySelect) {
-            // Load Countries (Nationality) initially
             loadLocationData(nationalitySelect, '/admin/locations/countries');
         }
 
-        const spouseNationalitySelect = document.getElementById('giSpouseNationalityInput');
         if (spouseNationalitySelect) {
             loadLocationData(spouseNationalitySelect, '/admin/locations/countries');
         }
@@ -2949,17 +2969,16 @@
             nationalitySelect.addEventListener('change', function() {
                 const countryName = this.value;
                 if (provinceSelect) {
-                    // Reset district when nationality changes
+                    resetLocationSelect(provinceSelect, 'Select province', true);
                     if (districtSelect) {
-                        while (districtSelect.options.length > 1) districtSelect.remove(1);
-                        districtSelect.selectedIndex = 0;
+                        resetLocationSelect(districtSelect, 'Select district', true);
                     }
 
                     if (countryName) {
+                        provinceSelect.disabled = false;
                         loadLocationData(provinceSelect, `/admin/locations/provinces/${encodeURIComponent(countryName)}`);
                     } else {
-                        while (provinceSelect.options.length > 1) provinceSelect.remove(1);
-                        provinceSelect.selectedIndex = 0;
+                        resetLocationSelect(provinceSelect, 'Select province', true);
                     }
                 }
             });
@@ -2971,11 +2990,12 @@
                 const countryName = nationalitySelect ? nationalitySelect.value : null;
 
                 if (districtSelect) {
+                    resetLocationSelect(districtSelect, 'Select district', true);
                     if (provinceName && countryName) {
+                        districtSelect.disabled = false;
                         loadLocationData(districtSelect, `/admin/locations/districts/${encodeURIComponent(countryName)}/${encodeURIComponent(provinceName)}`);
                     } else {
-                        while (districtSelect.options.length > 1) districtSelect.remove(1);
-                        districtSelect.selectedIndex = 0;
+                        resetLocationSelect(districtSelect, 'Select district', true);
                     }
                 }
             });
