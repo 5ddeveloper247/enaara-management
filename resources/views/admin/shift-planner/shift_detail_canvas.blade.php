@@ -51,13 +51,13 @@
             <div class="row g-3">
                 <div class="col-6">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
-                        <small class="opacity-75 text-white d-block mb-2">Clock-in Window</small>
+                        <small class="opacity-75 text-white d-block mb-2">Allowed Check-in</small>
                         <div class="fw-semibold" id="detailClockInWindow">08:30 - 09:00</div>
                     </div>
                 </div>
                 <div class="col-6">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
-                        <small class="opacity-75 text-white d-block mb-2">Clock-out Window</small>
+                        <small class="opacity-75 text-white d-block mb-2">Allowed Check-out</small>
                         <div class="fw-semibold" id="detailClockOutWindow">18:00 - 18:30</div>
                     </div>
                 </div>
@@ -183,8 +183,8 @@ window.populateShiftDetail = function(card) {
     if (detailShiftName) detailShiftName.textContent = shiftData.shiftName;
     if (detailShiftStart) detailShiftStart.textContent = shiftData.shiftStart;
     if (detailShiftEnd) detailShiftEnd.textContent = shiftData.shiftEnd;
-    if (detailClockInWindow) detailClockInWindow.textContent = shiftData.clockInWindow + ' - ' + shiftData.shiftStart;
-    if (detailClockOutWindow) detailClockOutWindow.textContent = shiftData.shiftEnd + ' - ' + shiftData.clockOutWindow;
+    if (detailClockInWindow) detailClockInWindow.textContent = formatWindowRange(shiftData.clockInWindow, shiftData.shiftStart, true);
+    if (detailClockOutWindow) detailClockOutWindow.textContent = formatWindowRange(shiftData.clockOutWindow, shiftData.shiftEnd, false);
     if (detailGracePeriod) detailGracePeriod.textContent = shiftData.gracePeriod + ' mins';
     if (detailBreakTime) detailBreakTime.textContent = shiftData.breakTime + ' mins';
 
@@ -218,6 +218,20 @@ window.populateShiftDetail = function(card) {
     if (editShiftFromDetailBtn) editShiftFromDetailBtn.setAttribute('data-shift-id', shiftData.shiftId);
     if (deleteShiftFromDetailBtn) deleteShiftFromDetailBtn.setAttribute('data-shift-id', shiftData.shiftId);
 };
+
+function formatWindowRange(rawWindow, boundaryTime, isCheckIn) {
+    const raw = String(rawWindow || '').trim();
+    const boundary = String(boundaryTime || '').trim();
+    if (!raw || raw === '-') return '-';
+
+    const parts = raw.split('-').map(function (p) { return p.trim(); }).filter(function (p) { return p.length > 0; });
+    if (parts.length >= 2) {
+        return parts[0] + ' - ' + parts[1];
+    }
+
+    if (!boundary) return raw;
+    return isCheckIn ? (raw + ' - ' + boundary) : (boundary + ' - ' + raw);
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     // Shift Detail Canvas Handler
