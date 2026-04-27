@@ -187,9 +187,9 @@
             account_title: 255,
             account_no: 16,
             bank_name: 255,
-            branch_code: 50,
+            branch_code: 10,
             branch_address: 500,
-            iban: 30,
+            iban: 34,
             residence_phone: 15,
             emergency_contact: 15,
             cell_no: 15,
@@ -2716,11 +2716,22 @@
                 body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                data = null;
+            }
 
             if (response.status === 422) {
-                showFieldErrors(data.errors);
-            } else if (data.success) {
+                if (data && data.errors && typeof data.errors === 'object') {
+                    showFieldErrors(data.errors);
+                } else if (data && data.message) {
+                    showError(data.message);
+                } else {
+                    showError('Validation failed.');
+                }
+            } else if (response.ok && data && data.success) {
                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Saved', showConfirmButton: false, timer: 2000 });
                 
                 const rec = {
@@ -2750,8 +2761,12 @@
                 renderBankList();
                 resetBankForm();
                 showToast(bankId ? 'Bank account updated' : 'Bank account saved');
+            } else if (data && data.message) {
+                showError(data.message);
+            } else {
+                showError('Unable to save bank details.');
             }
-        } catch (error) { showError('Network error'); }
+        } catch (error) { showError('Unable to connect. Please try again.'); }
         finally {
             saveBtn.disabled = false;
             saveBtn.innerHTML = originalText;

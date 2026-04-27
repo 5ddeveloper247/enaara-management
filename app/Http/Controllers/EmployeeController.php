@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use App\Models\Employee;
 
 class EmployeeController extends Controller
@@ -264,8 +265,14 @@ class EmployeeController extends Controller
                             $row,
                             ! empty($validated['bank_detail_id']) ? (int) $validated['bank_detail_id'] : null
                         );
+                    } catch (ValidationException $e) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Validation failed.',
+                            'errors' => $e->errors(),
+                        ], 422);
                     } catch (\InvalidArgumentException $e) {
-                        return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
+                        return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
                     }
                     $message = 'Bank account saved successfully.';
                     $responseData = [

@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class EmployeeService
 {
@@ -653,6 +654,12 @@ class EmployeeService
             if (empty($row['account_title']) && empty($row['account_no'])) {
                 continue;
             }
+            $this->assertBankIdentifiersUniqueForEmployee(
+                $id,
+                isset($row['account_no']) ? (string) $row['account_no'] : null,
+                isset($row['iban']) ? (string) $row['iban'] : null,
+                null
+            );
             EmployeeBankDetail::create([
                 'employee_id'        => $id,
                 'account_category'   => $row['account_category'] ?? null,
@@ -671,6 +678,12 @@ class EmployeeService
     public function saveBankDetailRow(int $employeeId, array $row, ?int $bankDetailId = null): EmployeeBankDetail
     {
         $wantsSalary = ! empty($row['is_salary_account']);
+        $this->assertBankIdentifiersUniqueForEmployee(
+            $employeeId,
+            isset($row['account_no']) ? (string) $row['account_no'] : null,
+            isset($row['iban']) ? (string) $row['iban'] : null,
+            $bankDetailId
+        );
         $payload = [
             'employee_id'       => $employeeId,
             'account_category'  => $row['account_category'] ?? null,
@@ -701,6 +714,42 @@ class EmployeeService
         $this->normalizeEmployeeBankSalaryFlags($employeeId, (int) $bank->id, $wantsSalary);
 
         return $bank->fresh();
+    }
+
+    private function assertBankIdentifiersUniqueForEmployee(
+        int $employeeId,
+        ?string $accountNo,
+        ?string $iban,
+        ?int $ignoreBankDetailId = null
+    ): void {
+        $accountNo = preg_replace('/\s+/', '', (string) ($accountNo ?? ''));
+        $iban = strtoupper(preg_replace('/\s+/', '', (string) ($iban ?? '')));
+
+            if ($accountNo !== '') {
+            $query = EmployeeBankDetail::query()
+                ->where('account_no', $accountNo);
+            if ($ignoreBankDetailId) {
+                $query->where('id', '!=', $ignoreBankDetailId);
+            }
+            if ($query->exists()) {
+                    throw ValidationException::withMessages([
+                        'account_no' => ['Account number already exists.'],
+                    ]);
+            }
+        }
+
+            if ($iban !== '') {
+            $query = EmployeeBankDetail::query()
+                ->where('iban', $iban);
+            if ($ignoreBankDetailId) {
+                $query->where('id', '!=', $ignoreBankDetailId);
+            }
+            if ($query->exists()) {
+                    throw ValidationException::withMessages([
+                        'iban' => ['IBAN already exists.'],
+                    ]);
+            }
+        }
     }
 
     public function deleteBankDetailRow(int $employeeId, int $bankDetailId): bool

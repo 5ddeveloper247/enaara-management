@@ -6,6 +6,7 @@ use App\Http\Requests\Admin\Employee\Concerns\NormalizesBankRowsFromRequest;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesNokRelationFields;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeRoleScope;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueBankIdentifiers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,6 +16,7 @@ class EmployeeUpdateRequest extends FormRequest
     use NormalizesNokRelationFields;
     use ValidatesExactlyOneSalaryBank;
     use ValidatesEmployeeRoleScope;
+    use ValidatesUniqueBankIdentifiers;
 
     public function withValidator($validator): void
     {
@@ -24,6 +26,7 @@ class EmployeeUpdateRequest extends FormRequest
                 $this->assertAtLeastOnePersonalBank($v);
                 $this->assertAtLeastOneCompanyOperatedBank($v);
             }
+            $this->assertUniqueBankIdentifiers($v);
         });
     }
 
@@ -472,9 +475,9 @@ class EmployeeUpdateRequest extends FormRequest
             'banks.*.account_title' => ['required', 'string', 'min:3', 'max:255', 'regex:' . $this->nameRegex()],
             'banks.*.account_no' => ['required', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
             'banks.*.bank_name' => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
-            'banks.*.branch_code' => ['required', 'string', 'min:1', 'max:50', 'regex:/^[A-Za-z0-9\-]+$/'],
+            'banks.*.branch_code' => ['required', 'string', 'min:1', 'max:10', 'regex:/^[A-Za-z0-9\-]+$/'],
             'banks.*.branch_address' => ['required', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
-            'banks.*.iban' => ['nullable', 'string', 'max:34', 'regex:/^[A-Z0-9]+$/'],
+            'banks.*.iban' => ['required', 'string', 'max:34', 'regex:/^[A-Z0-9]+$/'],
             'banks.*.account_type' => ['required', Rule::in(['Saving', 'Current'])],
             'banks.*.is_salary_account' => ['required', 'boolean'],
 
@@ -706,8 +709,10 @@ class EmployeeUpdateRequest extends FormRequest
             'banks.*.bank_name.required' => 'Bank name is required for each bank account.',
             'banks.*.bank_name.regex' => 'Enter the real bank name (letters required). Numbers-only or account-style values are not accepted.',
             'banks.*.branch_code.required' => 'Branch code is required for each bank account.',
+            'banks.*.branch_code.max' => 'Branch code must not exceed 10 characters.',
             'banks.*.branch_code.regex' => 'Branch code may only contain letters, numbers, and hyphens (no spaces). Use a short code such as GL-102 or HQ01.',
             'banks.*.branch_address.required' => 'Branch address is required for each bank account.',
+            'banks.*.iban.required' => 'IBAN is required for each bank account.',
             'banks.*.iban.regex' => 'IBAN must contain letters and digits only (no spaces).',
             'banks.*.iban.max' => 'IBAN must not exceed 34 characters.',
             'banks.*.account_no.required' => 'Account number is required for each bank account.',

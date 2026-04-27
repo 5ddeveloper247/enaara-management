@@ -72,6 +72,8 @@
                              <div class="col-md-4">
                                  <label class="form-label opacity-75 small fw-bold">IBAN <span class="text-danger">*</span></label>
                                  <input type="text" name="iban" class="form-control" id="bankDetailsIbanInput"
+                                    required
+                                    maxlength="34"
                                      placeholder="Enter IBAN">
                              </div>
                         </div>
@@ -104,6 +106,7 @@
                                          <label class="form-label opacity-75 small fw-bold">Branch Code <span class="text-danger">*</span></label>
                                          <input type="text" name="branch_code" class="form-control"
                                              id="bankDetailsBranchCodeInput"
+                                            maxlength="10"
                                              placeholder="Enter branch code">
                                      </div>
                                 </div>
