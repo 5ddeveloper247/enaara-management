@@ -6,6 +6,7 @@ use App\Http\Requests\Admin\Employee\Concerns\NormalizesBankRowsFromRequest;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeRoleScope;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueBankIdentifiers;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueContactNumbers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -16,6 +17,7 @@ class EmployeeStoreRequest extends FormRequest
     use ValidatesExactlyOneSalaryBank;
     use ValidatesEmployeeRoleScope;
     use ValidatesUniqueBankIdentifiers;
+    use ValidatesUniqueContactNumbers;
 
     public function authorize(): bool { return true; }
 
@@ -28,6 +30,7 @@ class EmployeeStoreRequest extends FormRequest
                 $this->assertAtLeastOneCompanyOperatedBank($v);
             }
             $this->assertUniqueBankIdentifiers($v);
+            $this->assertUniqueContactNumbers($v);
         });
     }
 

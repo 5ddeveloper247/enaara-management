@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesNokRelationFields;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeRoleScope;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueBankIdentifiers;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueContactNumbers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,6 +18,7 @@ class EmployeeUpdateRequest extends FormRequest
     use ValidatesExactlyOneSalaryBank;
     use ValidatesEmployeeRoleScope;
     use ValidatesUniqueBankIdentifiers;
+    use ValidatesUniqueContactNumbers;
 
     public function withValidator($validator): void
     {
@@ -27,6 +29,7 @@ class EmployeeUpdateRequest extends FormRequest
                 $this->assertAtLeastOneCompanyOperatedBank($v);
             }
             $this->assertUniqueBankIdentifiers($v);
+            $this->assertUniqueContactNumbers($v);
         });
     }
 

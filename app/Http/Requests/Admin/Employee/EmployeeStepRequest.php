@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\Employee\Concerns\NormalizesNokRelationFields;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeRoleScope;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueBankIdentifiers;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueContactNumbers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,6 +18,7 @@ class EmployeeStepRequest extends FormRequest
     use ValidatesExactlyOneSalaryBank;
     use ValidatesEmployeeRoleScope;
     use ValidatesUniqueBankIdentifiers;
+    use ValidatesUniqueContactNumbers;
 
     public function withValidator($validator): void
     {
@@ -26,6 +28,9 @@ class EmployeeStepRequest extends FormRequest
             }
             if ((int) $this->input('step') === 5 || (string) $this->input('subsection') === 'bank_row') {
                 $this->assertUniqueBankIdentifiers($v);
+            }
+            if ((int) $this->input('step') === 6 || (string) $this->input('subsection') === 'contact') {
+                $this->assertUniqueContactNumbers($v);
             }
             if ((int) $this->input('step') === 6) {
                 $this->assertFamilyNextOfKinRules($v);
