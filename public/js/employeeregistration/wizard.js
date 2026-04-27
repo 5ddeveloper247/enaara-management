@@ -258,7 +258,7 @@
             pma_lc_ots: 100,
             msr_letter_no: 20,
             addressee: 100,
-            verifying_authority: 255,
+            verifying_authority: 50,
             verification_letter_no: 50,
             police_remarks: 2000,
             account_title: 50,
@@ -781,13 +781,8 @@
                 showInputGuardError(target, errorMessage);
             } else {
                 const valStr = String(target.value ?? '');
-                const unchanged = valStr === originalValue;
-                const siblingGuard = target.nextElementSibling
-                    && target.nextElementSibling.classList
-                    && target.nextElementSibling.classList.contains('input-guard-error');
                 const keepMaxLimitHint = maxLen && valStr.length >= maxLen && target.dataset.maxLimitBlocked === '1';
-                const keepPendingGuard = unchanged && siblingGuard && target.classList.contains('is-invalid');
-                if (!keepMaxLimitHint && !keepPendingGuard) {
+                if (!keepMaxLimitHint) {
                     delete target.dataset.maxLimitBlocked;
                     removeInputGuardError(target);
                 }
@@ -816,6 +811,23 @@
             ) {
                 target.dataset.maxLimitBlocked = '1';
                 showInputGuardError(target, `Maximum ${maxLen} characters allowed.`);
+            }
+        }, true);
+
+        // Clear stale maxlength hint when user leaves a now-valid field.
+        document.addEventListener('focusout', function (e) {
+            const target = e.target;
+            if (!target || !target.name) return;
+            if (!target.closest('#employeeForm')) return;
+
+            const key = fieldKeyFromInput(target);
+            const maxLen = resolveMaxLength(target, key);
+            if (!maxLen) return;
+
+            const valueLength = String(target.value ?? '').length;
+            if (target.dataset.maxLimitBlocked === '1' && valueLength <= maxLen) {
+                delete target.dataset.maxLimitBlocked;
+                removeInputGuardError(target);
             }
         }, true);
 
@@ -873,9 +885,13 @@
 
             input.addEventListener('blur', function () {
                 const value = String(input.value ?? '');
-                if (value.length >= maxLen && input.dataset.maxLimitBlocked === '1') {
+                if (value.length > maxLen) {
+                    input.value = value.slice(0, maxLen);
                     showInputGuardError(input, `Maximum ${maxLen} characters allowed.`);
+                    return;
                 }
+                delete input.dataset.maxLimitBlocked;
+                removeInputGuardError(input);
             });
         }
 
@@ -925,6 +941,17 @@
                 if (input.classList.contains('is-invalid') && cleaned.length > 0) {
                     removeInputGuardError(input);
                 }
+            });
+
+            input.addEventListener('blur', function () {
+                const value = String(input.value ?? '');
+                if (value.length > maxLen) {
+                    input.value = value.slice(0, maxLen);
+                    showInputGuardError(input, `Maximum ${maxLen} characters allowed.`);
+                    return;
+                }
+                delete input.dataset.maxLimitBlocked;
+                removeInputGuardError(input);
             });
         }
 
@@ -1074,6 +1101,22 @@
             });
         }
 
+        function bindClearGuardOnBlurIfValid(selector) {
+            const input = document.querySelector(selector);
+            if (!input || input.dataset.clearGuardOnBlurBound === '1') return;
+            input.dataset.clearGuardOnBlurBound = '1';
+
+            input.addEventListener('blur', function () {
+                const key = fieldKeyFromInput(input);
+                const maxLen = resolveMaxLength(input, key);
+                const value = String(input.value ?? '');
+                if (maxLen && value.length > maxLen) return;
+                if (typeof input.checkValidity === 'function' && !input.checkValidity()) return;
+                delete input.dataset.maxLimitBlocked;
+                removeInputGuardError(input);
+            });
+        }
+
         function bindBankAccountTitleGuard(selector) {
             const input = document.querySelector(selector);
             if (!input || input.dataset.bankAccountTitleGuardBound === '1') return;
@@ -1220,11 +1263,18 @@
         bindPoliceExplicitMaxGuard('#policeVerificationMsrNumberInput', 20);
         bindPoliceExplicitMaxGuard('#policeVerificationLetterNumberInput', 50);
         bindPoliceExplicitMaxGuard('#policeVerificationAddresseeInput', 100);
-        bindPoliceExplicitMaxGuard('#policeVerificationVerifyingAuthorityInput', 255);
+        bindPoliceExplicitMaxGuard('#policeVerificationVerifyingAuthorityInput', 50);
         bindPoliceExplicitMaxGuard('#policeVerificationRemarksInput', 2000);
         bindPolicePatternGuard('#policeVerificationMsrNumberInput', /[0-9]/, 'MSR number must contain digits only.');
         bindPolicePatternGuard('#policeVerificationLetterNumberInput', /[A-Za-z0-9\/\-_]/, 'Verification letter number may only contain letters, numbers, slash (/), hyphen (-), and underscore (_).');
         bindPolicePatternGuard('#policeVerificationVerifyingAuthorityInput', /[A-Za-z\s.\-&,\/()']/, 'Use letters and basic punctuation only.');
+        [
+            '#policeVerificationMsrNumberInput',
+            '#policeVerificationLetterNumberInput',
+            '#policeVerificationAddresseeInput',
+            '#policeVerificationVerifyingAuthorityInput',
+            '#policeVerificationRemarksInput'
+        ].forEach(bindClearGuardOnBlurIfValid);
         bindBankAccountTitleGuard('#bankDetailsAccountTitleInput');
         bindPoliceExplicitMaxGuard('#bankDetailsAccountTitleInput', 50);
         bindPolicePatternGuard(
@@ -1258,6 +1308,16 @@
         bindPoliceExplicitMaxGuard('#moreReferenceTwoOrganizationInput', 100);
         bindPolicePatternGuard('#moreReferenceOneNameInput', /[A-Za-z\s.\-'_]/, 'Use text only.');
         bindPolicePatternGuard('#moreReferenceTwoNameInput', /[A-Za-z\s.\-'_]/, 'Use text only.');
+        [
+            '#moreMedicalLastFitnessTestInput',
+            '#moreMedicalDisabilityDescriptionInput',
+            '#moreReferenceOneNameInput',
+            '#moreReferenceOneDesignationInput',
+            '#moreReferenceOneOrganizationInput',
+            '#moreReferenceTwoNameInput',
+            '#moreReferenceTwoDesignationInput',
+            '#moreReferenceTwoOrganizationInput'
+        ].forEach(bindClearGuardOnBlurIfValid);
         bindPoliceExplicitMaxGuard('#armedDetailsServiceNoInput', 50);
         bindPoliceExplicitMaxGuard('#armedDetailsRankInput', 50);
         bindPoliceExplicitMaxGuard('#armedDetailsMedicalCategoryInput', 50);
@@ -1273,6 +1333,16 @@
         bindPolicePatternGuard('#armedDetailsExArmyUnitInput', /[A-Za-z\s.\-&,\/()']/, 'Use letters and basic punctuation only.');
         bindPolicePatternGuard('#armedDetailsTradeInput', /[A-Za-z\s.\-&,\/()']/, 'Use letters and basic punctuation only.');
         bindPolicePatternGuard('#armedDetailsPmaLcOtsInput', /[A-Za-z0-9\s.\-&,\/()#']/, 'Use letters, numbers, spaces, and basic punctuation only.');
+        [
+            '#armedDetailsServiceNoInput',
+            '#armedDetailsRankInput',
+            '#armedDetailsMedicalCategoryInput',
+            '#armedDetailsRetirementReasonInput',
+            '#armedDetailsCorpsRegimentSquadronInput',
+            '#armedDetailsExArmyUnitInput',
+            '#armedDetailsTradeInput',
+            '#armedDetailsPmaLcOtsInput'
+        ].forEach(bindClearGuardOnBlurIfValid);
         bindMoreContactFieldGuards();
 
         function validatePoliceVerificationDateLogic() {
@@ -4466,6 +4536,17 @@
             }
         }, true);
 
+        moreFamilyMembersContainerEl.addEventListener('focusout', function (e) {
+            const target = e.target;
+            const config = familyFieldConfig(target);
+            if (!config) return;
+            const value = String(target.value ?? '');
+            const cleaned = value.replace(config.clean, '');
+            if (value === cleaned && value.length <= config.max) {
+                removeFamilyInlineError(target);
+            }
+        }, true);
+
         moreFamilyMembersContainerEl.addEventListener('change', function (e) {
             if (e.target && e.target.classList && e.target.classList.contains('family-nok-selector')) {
                 syncFamilyNokFromRadios();
@@ -4719,6 +4800,38 @@
             }
         }, true);
 
+        moreAcademicRecordsContainerEl.addEventListener('focusout', function (e) {
+            const target = e.target;
+            if (!target) return;
+            const cfg = academicFieldConfig(target);
+            if (cfg) {
+                const value = String(target.value ?? '');
+                const cleaned = value.replace(cfg.clean, '');
+                if (value === cleaned && value.length <= cfg.max) {
+                    removeAcademicInlineError(target);
+                }
+            }
+
+            if (target.matches('[data-academic-start-date], [data-academic-end-date]')) {
+                const row = target.closest('[data-academic-row]');
+                if (!row) return;
+                const start = row.querySelector('[data-academic-start-date]')?.value || '';
+                const endInput = row.querySelector('[data-academic-end-date]');
+                const end = endInput?.value || '';
+                if (!start || !end || !endInput) {
+                    if (target.classList.contains('is-invalid')) {
+                        removeAcademicInlineError(target);
+                    }
+                    return;
+                }
+                const startDate = new Date(`${start}T00:00:00`);
+                const endDate = new Date(`${end}T00:00:00`);
+                if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate >= startDate) {
+                    removeAcademicInlineError(endInput);
+                }
+            }
+        }, true);
+
         moreAcademicRecordsContainerEl.addEventListener('change', function (e) {
             const target = e.target;
             if (!target) return;
@@ -4859,6 +4972,45 @@
             }
         }, true);
 
+        moreEmploymentRecordsContainerEl.addEventListener('focusout', function (e) {
+            const target = e.target;
+            if (!target) return;
+            const cfg = employmentFieldConfig(target);
+            if (cfg) {
+                const value = String(target.value ?? '');
+                const cleaned = value.replace(cfg.clean, '');
+                if (value === cleaned && value.length <= cfg.max) {
+                    removeEmploymentInlineError(target);
+                }
+            }
+
+            if (target.matches('[data-employment-from-date], [data-employment-to-date]')) {
+                const row = target.closest('[data-employment-row]');
+                if (!row) return;
+                const fromInput = row.querySelector('[data-employment-from-date]');
+                const toInput = row.querySelector('[data-employment-to-date]');
+                const from = fromInput?.value || '';
+                const to = toInput?.value || '';
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (fromInput && from) {
+                    const fromDate = new Date(`${from}T00:00:00`);
+                    if (!Number.isNaN(fromDate.getTime()) && fromDate <= today) {
+                        removeEmploymentInlineError(fromInput);
+                    }
+                }
+
+                if (fromInput && toInput && from && to) {
+                    const fromDate = new Date(`${from}T00:00:00`);
+                    const toDate = new Date(`${to}T00:00:00`);
+                    if (!Number.isNaN(fromDate.getTime()) && !Number.isNaN(toDate.getTime()) && toDate >= fromDate) {
+                        removeEmploymentInlineError(toInput);
+                    }
+                }
+            }
+        }, true);
+
         moreEmploymentRecordsContainerEl.addEventListener('change', function (e) {
             const target = e.target;
             if (!target) return;
@@ -4895,16 +5047,30 @@
             const target = e.target;
             if (target && target.classList.contains('is-invalid')) {
                 const container = target.closest('[class^="col-"], [class*=" col-"], .col, .form-group, .mb-3');
-                if (container && container.querySelector('.input-guard-error')) {
-                    return;
+                const guardSibling = target.nextElementSibling
+                    && target.nextElementSibling.classList
+                    && target.nextElementSibling.classList.contains('input-guard-error')
+                    ? target.nextElementSibling
+                    : null;
+
+                if (guardSibling) {
+                    const val = String(target.value ?? '');
+                    const key = fieldKeyFromInput(target);
+                    const maxLen = resolveMaxLength(target, key);
+                    if (maxLen && val.length > maxLen) return;
+                    if (target.dataset && target.dataset.maxLimitBlocked === '1' && maxLen && val.length >= maxLen) return;
+                    if (typeof target.checkValidity === 'function' && !target.checkValidity()) return;
                 }
 
                 target.classList.remove('is-invalid');
 
                 // Clear sibling/nearby error message
                 if (container) {
-                    const err = container.querySelector('.field-error-msg');
-                    if (err) err.remove();
+                    const scopedErrors = Array.from(container.querySelectorAll('.field-error-msg'));
+                    scopedErrors.forEach(function (err) {
+                        if (err.classList.contains('input-guard-error') && err !== guardSibling) return;
+                        err.remove();
+                    });
                 } else if (target.nextElementSibling && target.nextElementSibling.classList.contains('field-error-msg')) {
                     target.nextElementSibling.remove();
                 }
@@ -4932,6 +5098,12 @@
             }
 
         });
+
+        mainForm.addEventListener('focusout', function (e) {
+            const target = e.target;
+            if (!target || !target.closest('#stepPane6')) return;
+            clearLocalError({ target: target });
+        }, true);
     }
 })();
 

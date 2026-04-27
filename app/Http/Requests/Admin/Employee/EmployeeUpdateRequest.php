@@ -408,7 +408,7 @@ class EmployeeUpdateRequest extends FormRequest
                 Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== 'In Process'),
                 'nullable',
                 'string',
-                'max:255',
+                'max:50',
                 Rule::when(fn () => ($this->input('verification_status') ?? '') !== 'In Process', ['min:2']),
                 Rule::when(fn () => filled($this->input('addressee')), ['regex:' . $this->alphaTextRegex()]),
             ],

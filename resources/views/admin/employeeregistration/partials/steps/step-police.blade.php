@@ -96,7 +96,7 @@
                                                         <input type="text" name="verifying_authority" class="form-control police-verification-field"
                                                             id="policeVerificationVerifyingAuthorityInput"
                                                             value="{{ $pv->verifying_authority ?? '' }}"
-                                                            maxlength="255"
+                                                            maxlength="50"
                                                             placeholder="Enter verifying authority">
                                                     </div>
                                                     <div class="col-6">

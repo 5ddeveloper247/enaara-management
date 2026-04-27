@@ -491,7 +491,7 @@ class EmployeeStepRequest extends FormRequest
                 'verifying_authority' => [
                     'nullable',
                     'string',
-                    'max:255',
+                    'max:50',
                     'regex:' . $this->alphaTextRegex(),
                     Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
                 ],
