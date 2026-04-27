@@ -358,7 +358,10 @@ class EmployeeStoreRequest extends FormRequest
                 Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== 'In Process'),
                 'nullable',
                 'date',
-                'before_or_equal:today',
+                Rule::when(
+                    fn () => ($this->input('verification_status') ?? '') !== 'In Process',
+                    ['before_or_equal:today']
+                ),
             ],
             'addressee'              => [
                 'bail',
@@ -392,7 +395,10 @@ class EmployeeStoreRequest extends FormRequest
                 'nullable',
                 'date',
                 'after_or_equal:msr_date',
-                'before_or_equal:today',
+                Rule::when(
+                    fn () => ($this->input('verification_status') ?? '') !== 'In Process',
+                    ['before_or_equal:today']
+                ),
             ],
             'next_verification_date' => [
                 'bail',

@@ -110,6 +110,83 @@
     window.employeeAttachments = window.employeeAttachments || [];
     let attachmentUploadedFiles = [];
     let isAttachmentSaving = false;
+    const attachmentAllowedExtensions = new Set(['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx']);
+    const attachmentMaxFileSizeBytes = 10 * 1024 * 1024;
+
+    function attachmentShowInlineError(target, message) {
+        if (!target) return;
+        const parent = target.closest('.col-12, .col-md-6') || target.parentElement;
+        if (!parent) return;
+        target.classList.add('is-invalid');
+        const err = document.createElement('span');
+        err.className = 'text-danger small attachment-error-msg d-block mt-1';
+        err.textContent = message;
+        parent.appendChild(err);
+    }
+
+    function attachmentClearInlineErrors() {
+        document.querySelectorAll('.attachment-error-msg').forEach(el => el.remove());
+        document.querySelectorAll('#attachmentModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    }
+
+    function getAttachmentFileExtension(fileName) {
+        const parts = String(fileName || '').toLowerCase().split('.');
+        return parts.length > 1 ? parts.pop() : '';
+    }
+
+    function validateAttachmentForm(name, type, desc, files) {
+        const errors = {};
+        const nameInput = document.getElementById('attachmentName');
+        const typeInput = document.getElementById('attachmentType');
+        const descInput = document.getElementById('attachmentDesc');
+        const uploadInput = document.getElementById('attachmentUpload');
+
+        if (!name) {
+            errors.name = 'Attachment name is required.';
+        } else if (name.length > 255) {
+            errors.name = 'Attachment name must not exceed 255 characters.';
+        }
+
+        if (type && type.length > 100) {
+            errors.type = 'Attachment type must not exceed 100 characters.';
+        }
+
+        if (desc && desc.length > 1000) {
+            errors.description = 'Attachment description must not exceed 1000 characters.';
+        }
+
+        if (!files.length) {
+            errors.files = 'Please upload at least one valid file.';
+        } else {
+            const invalidType = files.find((f) => !attachmentAllowedExtensions.has(getAttachmentFileExtension(f.name)));
+            if (invalidType) {
+                errors.files = 'Attachment file must be of type: jpg, jpeg, png, pdf, doc, or docx.';
+            } else {
+                const oversize = files.find((f) => f.size > attachmentMaxFileSizeBytes);
+                if (oversize) {
+                    errors.files = 'Each attachment file must not exceed 10 MB.';
+                }
+            }
+        }
+
+        if (Object.keys(errors).length > 0) {
+            if (errors.name) attachmentShowInlineError(nameInput, errors.name);
+            if (errors.type) attachmentShowInlineError(typeInput, errors.type);
+            if (errors.description) attachmentShowInlineError(descInput, errors.description);
+            if (errors.files) {
+                const uploadTarget = uploadInput ? uploadInput.closest('.col-12') : null;
+                if (uploadTarget) {
+                    const err = document.createElement('span');
+                    err.className = 'text-danger small attachment-error-msg d-block mt-1';
+                    err.textContent = errors.files;
+                    uploadTarget.appendChild(err);
+                }
+            }
+            return false;
+        }
+
+        return true;
+    }
 
     function escAtt(s) {
         return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -170,9 +247,7 @@
         const desc = document.getElementById('attachmentDesc').value.trim();
         const employeeId = document.getElementById('saved_employee_id')?.value;
 
-        // Clear previous validation errors
-        document.querySelectorAll('.attachment-error-msg').forEach(el => el.remove());
-        document.querySelectorAll('#attachmentModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        attachmentClearInlineErrors();
 
         if (!employeeId) {
             Swal.fire({
@@ -185,6 +260,9 @@
         }
 
         const files = attachmentUploadedFiles.filter(Boolean);
+        if (!validateAttachmentForm(name, type, desc, files)) {
+            return;
+        }
 
         isAttachmentSaving = true;
         if (saveBtn) {
@@ -321,9 +399,7 @@
         document.getElementById('attachmentUploadPreview').innerHTML = '';
         attachmentUploadedFiles = [];
 
-        // Clear errors
-        document.querySelectorAll('.attachment-error-msg').forEach(el => el.remove());
-        document.querySelectorAll('#attachmentModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        attachmentClearInlineErrors();
     }
 
     function renderAttachmentListing() {

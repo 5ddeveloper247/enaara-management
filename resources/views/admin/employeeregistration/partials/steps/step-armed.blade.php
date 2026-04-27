@@ -14,6 +14,7 @@
                                                     <label class="form-label">Service No</label>
                                                     <input type="text" name="service_no" class="form-control" id="armedDetailsServiceNoInput"
                                                         value="{{ $af['service_no'] ?? '' }}"
+                                                        maxlength="50"
                                                         placeholder="Enter service number">
                                                 </div>
                                                 <div class="col-md-6">
@@ -37,6 +38,7 @@
                                                             <input type="text" name="medical_category" class="form-control"
                                                                 id="armedDetailsMedicalCategoryInput"
                                                                 value="{{ $af['medical_category'] ?? '' }}"
+                                                                maxlength="50"
                                                                 placeholder="Enter medical category">
                                                         </div>
                                                         <div class="col-12">
@@ -56,6 +58,7 @@
                                                             <label class="form-label">Reason of Retirement</label>
                                                             <input type="text" name="reason_of_retirement" class="form-control" id="armedDetailsRetirementReasonInput"
                                                                 value="{{ $af['reason_of_retirement'] ?? '' }}"
+                                                                maxlength="255"
                                                                 placeholder="Enter reason of retirement">
                                                         </div>
                                                     </div>
@@ -73,24 +76,28 @@
                                                             <input type="text" name="corps_regiment" class="form-control"
                                                                 id="armedDetailsCorpsRegimentSquadronInput"
                                                                 value="{{ $af['corps_regiment'] ?? '' }}"
+                                                                maxlength="100"
                                                                 placeholder="Enter corps, regiment, or squadron">
                                                         </div>
                                                         <div class="col-12">
                                                             <label class="form-label">Ex Army Unit</label>
                                                             <input type="text" name="ex_army_unit" class="form-control" id="armedDetailsExArmyUnitInput"
                                                                 value="{{ $af['ex_army_unit'] ?? '' }}"
+                                                                maxlength="100"
                                                                 placeholder="Enter ex army unit">
                                                         </div>
                                                         <div class="col-12">
                                                             <label class="form-label">Trade</label>
                                                             <input type="text" name="trade" class="form-control" id="armedDetailsTradeInput"
                                                                 value="{{ $af['trade'] ?? '' }}"
+                                                                maxlength="50"
                                                                 placeholder="Enter trade">
                                                         </div>
                                                         <div class="col-12">
                                                             <label class="form-label">PMA L/C & OTS (For Army Officers)</label>
                                                             <input type="text" name="pma_lc_ots" class="form-control" id="armedDetailsPmaLcOtsInput"
                                                                 value="{{ $af['pma_lc_ots'] ?? '' }}"
+                                                                maxlength="100"
                                                                 placeholder="Enter PMA L/C & OTS details">
                                                         </div>
                                                     </div>

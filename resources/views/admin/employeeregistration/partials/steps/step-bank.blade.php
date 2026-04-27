@@ -60,12 +60,14 @@
                              <div class="col-md-4">
                                  <label class="form-label opacity-75 small fw-bold">Account Title <span class="text-danger">*</span></label>
                                  <input type="text" name="account_title" class="form-control" id="bankDetailsAccountTitleInput"
+                                     maxlength="50"
                                      placeholder="Enter account title">
                              </div>
 
                              <div class="col-md-4">
                                  <label class="form-label opacity-75 small fw-bold">Account No <span class="text-danger">*</span></label>
                                  <input type="text" name="account_no" class="form-control" id="bankDetailsAccountNumberInput"
+                                     maxlength="16"
                                      placeholder="Enter account number">
                              </div>
 
@@ -92,6 +94,7 @@
                                          <label class="form-label opacity-75 small fw-bold">Branch Name <span class="text-danger">*</span></label>
                                          <input type="text" name="bank_name" class="form-control"
                                              id="bankDetailsBranchNameInput"
+                                             maxlength="100"
                                              placeholder="Enter branch name">
                                      </div>
 
@@ -99,6 +102,7 @@
                                          <label class="form-label opacity-75 small fw-bold">Branch Address <span class="text-danger">*</span></label>
                                          <input type="text" name="branch_address" class="form-control"
                                              id="bankDetailsBranchAddressInput"
+                                             maxlength="150"
                                              placeholder="Enter branch address">
                                      </div>
 

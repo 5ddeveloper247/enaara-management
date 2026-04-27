@@ -129,7 +129,7 @@
                                                     <div class="col-12 col-md-6 col-xl-3">
                                                         <label class="form-label">Name <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control family-field-input" name="family[][name]"
-                                                            data-family-name placeholder="Enter name" required>
+                                                            data-family-name placeholder="Enter name" required maxlength="50">
                                                         <div class="family-field-preview" data-family-preview-name>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
@@ -213,7 +213,7 @@
                                                             <div class="col-12 col-md-6 col-xl-4">
                                                                 <label class="form-label">NOK CNIC <span class="text-danger">*</span></label>
                                                                 <input type="text" class="form-control family-field-input cnic-mask" name="family[][nok_cnic]"
-                                                                    data-family-nok-input data-family-nok-cnic placeholder="00000-0000000-0">
+                                                                    data-family-nok-input data-family-nok-cnic placeholder="00000-0000000-0" maxlength="15">
                                                                 <div class="family-field-preview" data-family-preview-nok-cnic>-</div>
                                                             </div>
                                                             <div class="col-12 col-md-6 col-xl-4">
@@ -287,13 +287,13 @@
                                                     <div class="col-12 col-md-6 col-xl-3">
                                                         <label class="form-label">Degree / Certificate <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control academic-field-input" name="academics[][degree]"
-                                                            data-academic-degree placeholder="Enter degree or certificate" required>
+                                                            data-academic-degree placeholder="Enter degree or certificate" required maxlength="50">
                                                         <div class="academic-field-preview" data-academic-preview-degree>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-3">
                                                         <label class="form-label">Grade / Div / CGPA <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control academic-field-input" name="academics[][grade_cgpa]"
-                                                            data-academic-grade placeholder="Enter grade, division, or CGPA" required>
+                                                            data-academic-grade placeholder="Enter grade, division, or CGPA" required maxlength="20">
                                                         <div class="academic-field-preview" data-academic-preview-grade-cgpa>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
@@ -311,7 +311,7 @@
                                                     <div class="col-12 col-md-6 col-xl-2">
                                                         <label class="form-label">Field of Study</label>
                                                         <input type="text" class="form-control academic-field-input" name="academics[][field_of_study]"
-                                                            data-academic-field-of-study placeholder="Enter field of study">
+                                                            data-academic-field-of-study placeholder="Enter field of study" maxlength="50">
                                                         <div class="academic-field-preview" data-academic-preview-field-of-study>-</div>
                                                     </div>
                                                     <div class="col-12">
@@ -379,13 +379,13 @@
                                                     <div class="col-12 col-md-6 col-xl-3">
                                                         <label class="form-label">Organization <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control employment-field-input" name="employments[][organization]"
-                                                            data-employment-organization placeholder="Enter organization" required>
+                                                            data-employment-organization placeholder="Enter organization" maxlength="100" required>
                                                         <div class="employment-field-preview" data-employment-preview-organization>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-3">
                                                         <label class="form-label">Designation <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control employment-field-input" name="employments[][designation]"
-                                                            data-employment-designation placeholder="Enter designation" required>
+                                                            data-employment-designation placeholder="Enter designation" maxlength="50" required>
                                                         <div class="employment-field-preview" data-employment-preview-designation>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
@@ -403,13 +403,13 @@
                                                     <div class="col-12 col-md-6 col-xl-2">
                                                         <label class="form-label">Salary</label>
                                                         <input type="number" class="form-control employment-field-input" name="employments[][salary]"
-                                                            data-employment-salary placeholder="Enter salary" step="0.01">
+                                                            data-employment-salary placeholder="Enter salary" maxlength="20" step="1">
                                                         <div class="employment-field-preview" data-employment-preview-salary>-</div>
                                                     </div>
                                                     <div class="col-12">
                                                         <label class="form-label">Reason for Leaving</label>
                                                         <input type="text" class="form-control employment-field-input" name="employments[][reason_for_leaving]"
-                                                            data-employment-reason placeholder="Enter reason for leaving">
+                                                            data-employment-reason placeholder="Enter reason for leaving" maxlength="200">
                                                         <div class="employment-field-preview" data-employment-preview-reason-for-leaving>-</div>
                                                     </div>
                                                 </div>
@@ -424,11 +424,11 @@
                                                         <div class="row g-3">
                                                             <div class="col-12">
                                                                 <label class="form-label">Last Medical Fitness Test - Date & Results</label>
-                                                                <textarea name="last_fitness_test" class="form-control" id="moreMedicalLastFitnessTestInput" rows="2"
+                                                                <textarea name="last_fitness_test" class="form-control" id="moreMedicalLastFitnessTestInput" rows="2" maxlength="500"
                                                                     placeholder="Enter date and results of last medical fitness test">{{ $employee?->medical?->last_fitness_test ?? '' }}</textarea>
                                                             </div>
                                                             <div class="col-md-4">
-                                                                <label class="form-label">Do you have any disability?</label>
+                                                                <label class="form-label">Do you have any disability? <span class="text-danger">*</span></label>
                                                                 <div class="d-flex gap-2">
                                                                     <input class="btn-check" type="radio" name="has_disability"
                                                                         id="moreMedicalHasDisabilityYes" value="yes" {{ strtolower($employee?->medical?->has_disability ?? '') == 'yes' ? 'checked' : '' }}>
@@ -469,7 +469,7 @@
                                                             </div>
                                                             <div class="col-12" id="moreMedicalDisabilityDescriptionContainer" style="{{ ($employee?->medical?->disability_type ?? '') == 'Other' ? '' : 'display:none;' }}">
                                                                 <label class="form-label">Specify Disability Details <span class="text-danger">*</span></label>
-                                                                <textarea name="disability_description" class="form-control" id="moreMedicalDisabilityDescriptionInput" rows="2"
+                                                                <textarea name="disability_description" class="form-control" id="moreMedicalDisabilityDescriptionInput" rows="2" maxlength="1000"
                                                                     placeholder="Enter disease or disability description">{{ $employee?->medical?->disability_description ?? '' }}</textarea>
                                                             </div>
                                                         </div>
@@ -494,19 +494,19 @@
                                                                          <label class="form-label">Name</label>
                                                                          <input type="text" name="ref1_name" class="form-control" id="moreReferenceOneNameInput"
                                                                              value="{{ $employee?->references?->where('ref_number', 1)?->first()?->name ?? '' }}"
-                                                                             placeholder="Enter name">
+                                                                            placeholder="Enter name" maxlength="50">
                                                                      </div>
                                                                      <div class="col-6">
                                                                          <label class="form-label">Designation</label>
                                                                          <input type="text" name="ref1_designation" class="form-control" id="moreReferenceOneDesignationInput"
                                                                              value="{{ $employee?->references?->where('ref_number', 1)?->first()?->designation ?? '' }}"
-                                                                             placeholder="Enter designation">
+                                                                            placeholder="Enter designation" maxlength="50">
                                                                      </div>
                                                                      <div class="col-6">
                                                                          <label class="form-label">Organization</label>
                                                                          <input type="text" name="ref1_organization" class="form-control" id="moreReferenceOneOrganizationInput"
                                                                              value="{{ $employee?->references?->where('ref_number', 1)?->first()?->organization ?? '' }}"
-                                                                             placeholder="Enter organization">
+                                                                            placeholder="Enter organization" maxlength="100">
                                                                      </div>
                                                                      <div class="col-6">
                                                                          <label class="form-label">Contact No</label>
@@ -521,6 +521,7 @@
                                                                              <option value="Family" {{ ($employee?->references?->where('ref_number', 1)?->first()?->relationship ?? '') == 'Family' ? 'selected' : '' }}>Family</option>
                                                                              <option value="Friend" {{ ($employee?->references?->where('ref_number', 1)?->first()?->relationship ?? '') == 'Friend' ? 'selected' : '' }}>Friend</option>
                                                                              <option value="Colleague" {{ ($employee?->references?->where('ref_number', 1)?->first()?->relationship ?? '') == 'Colleague' ? 'selected' : '' }}>Colleague</option>
+                                                                            <option value="Academic" {{ ($employee?->references?->where('ref_number', 1)?->first()?->relationship ?? '') == 'Academic' ? 'selected' : '' }}>Academic</option>
                                                                              <option value="Professional" {{ ($employee?->references?->where('ref_number', 1)?->first()?->relationship ?? '') == 'Professional' ? 'selected' : '' }}>Professional</option>
                                                                              <option value="Other" {{ ($employee?->references?->where('ref_number', 1)?->first()?->relationship ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
                                                                          </select>
@@ -541,19 +542,19 @@
                                                                          <label class="form-label">Name</label>
                                                                          <input type="text" name="ref2_name" class="form-control" id="moreReferenceTwoNameInput"
                                                                              value="{{ $employee?->references?->where('ref_number', 2)?->first()?->name ?? '' }}"
-                                                                             placeholder="Enter name">
+                                                                            placeholder="Enter name" maxlength="50">
                                                                      </div>
                                                                      <div class="col-6">
                                                                          <label class="form-label">Designation</label>
                                                                          <input type="text" name="ref2_designation" class="form-control" id="moreReferenceTwoDesignationInput"
                                                                              value="{{ $employee?->references?->where('ref_number', 2)?->first()?->designation ?? '' }}"
-                                                                             placeholder="Enter designation">
+                                                                            placeholder="Enter designation" maxlength="50">
                                                                      </div>
                                                                      <div class="col-6">
                                                                          <label class="form-label">Organization</label>
                                                                          <input type="text" name="ref2_organization" class="form-control" id="moreReferenceTwoOrganizationInput"
                                                                              value="{{ $employee?->references?->where('ref_number', 2)?->first()?->organization ?? '' }}"
-                                                                             placeholder="Enter organization">
+                                                                            placeholder="Enter organization" maxlength="100">
                                                                      </div>
                                                                      <div class="col-6">
                                                                          <label class="form-label">Contact No</label>
@@ -568,6 +569,7 @@
                                                                              <option value="Family" {{ ($employee?->references?->where('ref_number', 2)?->first()?->relationship ?? '') == 'Family' ? 'selected' : '' }}>Family</option>
                                                                              <option value="Friend" {{ ($employee?->references?->where('ref_number', 2)?->first()?->relationship ?? '') == 'Friend' ? 'selected' : '' }}>Friend</option>
                                                                              <option value="Colleague" {{ ($employee?->references?->where('ref_number', 2)?->first()?->relationship ?? '') == 'Colleague' ? 'selected' : '' }}>Colleague</option>
+                                                                            <option value="Academic" {{ ($employee?->references?->where('ref_number', 2)?->first()?->relationship ?? '') == 'Academic' ? 'selected' : '' }}>Academic</option>
                                                                              <option value="Professional" {{ ($employee?->references?->where('ref_number', 2)?->first()?->relationship ?? '') == 'Professional' ? 'selected' : '' }}>Professional</option>
                                                                              <option value="Other" {{ ($employee?->references?->where('ref_number', 2)?->first()?->relationship ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
                                                                          </select>

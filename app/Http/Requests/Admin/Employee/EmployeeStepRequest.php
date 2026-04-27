@@ -475,7 +475,10 @@ class EmployeeStepRequest extends FormRequest
                 'msr_date' => [
                     'nullable',
                     'date',
-                    'before_or_equal:today',
+                    Rule::when(
+                        fn () => ($this->input('verification_status') ?? '') !== $inProcess,
+                        ['before_or_equal:today']
+                    ),
                     Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
                 ],
                 'addressee' => [
@@ -503,7 +506,10 @@ class EmployeeStepRequest extends FormRequest
                     'nullable',
                     'date',
                     'after_or_equal:msr_date',
-                    'before_or_equal:today',
+                    Rule::when(
+                        fn () => ($this->input('verification_status') ?? '') !== $inProcess,
+                        ['before_or_equal:today']
+                    ),
                     Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
                 ],
                 'next_verification_date' => [
@@ -578,8 +584,8 @@ class EmployeeStepRequest extends FormRequest
 
                 // Academics
                 'academics'                => ['nullable', 'array'],
-                'academics.*.degree'       => ['required_with:academics.*', 'string', 'max:255'],
-                'academics.*.grade_cgpa'   => ['required_with:academics.*', 'string', 'max:50'],
+                'academics.*.degree'       => ['required_with:academics.*', 'string', 'max:50'],
+                'academics.*.grade_cgpa'   => ['required_with:academics.*', 'string', 'max:20'],
                 'academics.*.start_date'   => ['required_with:academics.*', 'date'],
                 'academics.*.end_date'     => ['required_with:academics.*', 'date'],
                 'academics.*.institute'    => ['required_with:academics.*', 'string', 'max:255'],
@@ -682,11 +688,11 @@ class EmployeeStepRequest extends FormRequest
 
             case 'academic_row':
                 return array_merge($rules, [
-                    'degree'         => ['required', 'string', 'max:100', $this->maxWordsRule(20, 'Certificate / Degree')],
-                    'grade_cgpa'     => ['required', 'string', 'max:50', $this->maxWordsRule(10, 'Grade / CGPA')],
+                    'degree'         => ['required', 'string', 'max:50', $this->maxWordsRule(20, 'Certificate / Degree')],
+                    'grade_cgpa'     => ['required', 'string', 'max:20', $this->maxWordsRule(10, 'Grade / CGPA')],
                     'start_date'     => ['required', 'date'],
                     'end_date'       => ['required', 'date', 'after_or_equal:start_date'],
-                    'field_of_study' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaNumericTextRegex()],
+                    'field_of_study' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
                     'institute'      => ['nullable', 'string', 'max:150', $this->maxWordsRule(20, 'University')],
                 ]);
 
@@ -1151,14 +1157,14 @@ class EmployeeStepRequest extends FormRequest
 
             // Academics
             'academics.*.degree.required_with' => 'Degree / certificate is required.',
-            'academics.*.degree.max' => 'Degree / certificate must not exceed 255 characters.',
+            'academics.*.degree.max' => 'Degree / certificate must not exceed 50 characters.',
             'academics.*.grade_cgpa.required_with' => 'Grade / CGPA is required.',
-            'academics.*.grade_cgpa.max' => 'Grade / CGPA must not exceed 50 characters.',
+            'academics.*.grade_cgpa.max' => 'Grade / CGPA must not exceed 20 characters.',
             'academics.*.start_date.required_with' => 'Academic start date is required.',
             'academics.*.end_date.required_with' => 'Academic end date is required.',
             'academics.*.start_date.date' => 'Academic start date must be a valid date.',
             'academics.*.end_date.date' => 'Academic end date must be a valid date.',
-            'academics.*.field_of_study.max' => 'Field of study must not exceed 255 characters.',
+            'academics.*.field_of_study.max' => 'Field of study must not exceed 50 characters.',
             'academics.*.field_of_study.regex' => 'Field of study contains invalid characters.',
             'academics.*.institute.max' => 'Institute name must not exceed 255 characters.',
 

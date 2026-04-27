@@ -303,7 +303,7 @@
                                                         <input type="text" name="designation" class="form-control"
                                                             id="designation"
                                                             value="{{ $employee->designation ?? '' }}"
-                                                            maxlength="100"
+                                                            maxlength="50"
                                                             placeholder="Designation">
                                                     </div>
                                                 </div>
@@ -328,7 +328,7 @@
                                                         <input type="text" name="branch" class="form-control"
                                                             id="branch"
                                                             value="{{ $employee->branch ?? '' }}"
-                                                            maxlength="50"
+                                                            maxlength="30"
                                                             placeholder="Branch">
                                                     </div>
                                                     <div class="col-12">
@@ -336,7 +336,7 @@
                                                         <input type="text" name="location" class="form-control"
                                                             id="location"
                                                             value="{{ $employee->location ?? '' }}"
-                                                            maxlength="255"
+                                                            maxlength="100"
                                                             placeholder="Location">
                                                     </div>
                                                 </div>

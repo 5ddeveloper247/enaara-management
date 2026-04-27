@@ -64,7 +64,7 @@
                                                         <input type="text" name="verification_letter_no" class="form-control police-verification-field"
                                                             id="policeVerificationLetterNumberInput"
                                                             value="{{ $pv->verification_letter_no ?? '' }}"
-                                                            maxlength="100"
+                                                            maxlength="50"
                                                             placeholder="Enter verification letter number">
                                                     </div>
                                                     <div class="col-md-6">

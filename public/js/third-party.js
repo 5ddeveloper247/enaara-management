@@ -734,10 +734,10 @@
                     $('#edit_remarks').val(data.remarks || '');
 
                     const companyDocLink = data.company_registration_document_url
-                        ? '<a href="' + escapeHtml(data.company_registration_document_url) + '" target="_blank" class="text-white text-decoration-underline">Current document</a>'
+                        ? '<a href="' + escapeHtml(data.company_registration_document_url) + '" target="_blank" class="text-white text-decoration-underline">View document</a>'
                         : 'No document uploaded';
                     const contractDocLink = data.contract_copy_url
-                        ? '<a href="' + escapeHtml(data.contract_copy_url) + '" target="_blank" class="text-white text-decoration-underline">Current document</a>'
+                        ? '<a href="' + escapeHtml(data.contract_copy_url) + '" target="_blank" class="text-white text-decoration-underline">View document</a>'
                         : 'No document uploaded';
                     $('#edit_company_registration_document_link').html(companyDocLink);
                     $('#edit_contract_copy_link').html(contractDocLink);

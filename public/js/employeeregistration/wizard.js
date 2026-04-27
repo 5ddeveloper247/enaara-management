@@ -82,24 +82,71 @@
         }
     }
 
+    function removeContactMaskError(input) {
+        if (!input) return;
+        input.classList.remove('is-invalid');
+        let next = input.nextElementSibling;
+        while (next && next.classList && next.classList.contains('input-guard-error')) {
+            const toRemove = next;
+            next = next.nextElementSibling;
+            toRemove.remove();
+        }
+    }
+
+    function showContactMaskError(input, message) {
+        if (!input) return;
+        removeContactMaskError(input);
+        input.classList.add('is-invalid');
+        const err = document.createElement('div');
+        err.className = 'field-error-msg text-danger small mt-1 fw-bold input-guard-error';
+        err.setAttribute('role', 'alert');
+        err.textContent = message;
+        input.insertAdjacentElement('afterend', err);
+    }
+
     let contactMaskDelegationBound = false;
     function initContactMasks() {
         if (!contactMaskDelegationBound) {
             contactMaskDelegationBound = true;
             document.addEventListener('input', function (e) {
                 if (e.target.classList && e.target.classList.contains('contact-mask')) {
+                    const original = String(e.target.value ?? '');
                     formatContactMaskInput(e.target);
+                    const sanitized = String(e.target.value ?? '');
+                    if (sanitized !== original) {
+                        showContactMaskError(e.target, 'Only digits are allowed.');
+                    } else if (sanitized.length === 0 || sanitized.length >= 11) {
+                        removeContactMaskError(e.target);
+                    }
                 }
             });
+            document.addEventListener('beforeinput', function (e) {
+                const target = e.target;
+                if (!target || !target.classList || !target.classList.contains('contact-mask')) return;
+                if (e.inputType && e.inputType.startsWith('delete')) return;
+                const inserted = typeof e.data === 'string' ? e.data : '';
+                if (!inserted) return;
+                if (!/^\d+$/.test(inserted)) {
+                    e.preventDefault();
+                    showContactMaskError(target, 'Only digits are allowed.');
+                }
+            }, true);
             document.addEventListener('blur', function (e) {
                 if (e.target.classList && e.target.classList.contains('contact-mask')) {
                     formatContactMaskInput(e.target);
+                    const val = String(e.target.value ?? '');
+                    if (val.length > 0 && val.length < 11) {
+                        showContactMaskError(e.target, 'Enter a valid phone number (11 to 15 digits).');
+                    } else {
+                        removeContactMaskError(e.target);
+                    }
                 }
             }, true);
             document.addEventListener('keypress', function (e) {
                 if (!e.target.classList || !e.target.classList.contains('contact-mask')) return;
                 if (e.which < 48 || e.which > 57) {
                     e.preventDefault();
+                    showContactMaskError(e.target, 'Only digits are allowed.');
                 }
             }, true);
         }
@@ -109,6 +156,26 @@
     window.formatContactMaskInput = formatContactMaskInput;
 
     initContactMasks();
+
+    const fieldKeyById = {
+        employmentDetailsInternDurationInput: 'intern_duration',
+        designation: 'designation',
+        grade: 'grade',
+        branch: 'branch',
+        location: 'location',
+        biometric_id: 'biometric_id',
+        policeVerificationMsrNumberInput: 'msr_letter_no',
+        policeVerificationLetterNumberInput: 'verification_letter_no',
+        policeVerificationAddresseeInput: 'addressee',
+        policeVerificationVerifyingAuthorityInput: 'verifying_authority',
+        policeVerificationRemarksInput: 'police_remarks',
+        bankDetailsAccountTitleInput: 'account_title',
+        bankDetailsAccountNumberInput: 'account_no',
+        bankDetailsIbanInput: 'iban',
+        bankDetailsBranchNameInput: 'bank_name',
+        bankDetailsBranchCodeInput: 'branch_code',
+        bankDetailsBranchAddressInput: 'branch_address',
+    };
 
     function fieldKeyFromName(name) {
         if (!name) return '';
@@ -121,6 +188,16 @@
             return bracketMatches[bracketMatches.length - 1];
         }
         return raw.replace(/\[\]$/, '');
+    }
+
+    function fieldKeyFromInput(input) {
+        if (!input) return '';
+        const keyFromName = fieldKeyFromName(input.name);
+        if (keyFromName) return keyFromName;
+        if (input.id && fieldKeyById[input.id]) {
+            return fieldKeyById[input.id];
+        }
+        return '';
     }
 
     function applyInputGuards() {
@@ -167,7 +244,7 @@
             intern_duration: 10,
             designation: 50,
             grade: 10,
-            branch: 50,
+            branch: 30,
             location: 100,
             site: 100,
             biometric_id: 20,
@@ -178,17 +255,17 @@
             corps_regiment: 100,
             ex_army_unit: 100,
             trade: 50,
-            pma_lc_ots: 50,
+            pma_lc_ots: 100,
             msr_letter_no: 20,
             addressee: 100,
-            verifying_authority: 50,
-            verification_letter_no: 100,
+            verifying_authority: 255,
+            verification_letter_no: 50,
             police_remarks: 2000,
-            account_title: 255,
+            account_title: 50,
             account_no: 16,
-            bank_name: 255,
+            bank_name: 100,
             branch_code: 10,
-            branch_address: 500,
+            branch_address: 150,
             iban: 34,
             residence_phone: 15,
             emergency_contact: 15,
@@ -202,7 +279,22 @@
             nok_cnic: 15,
             relation: 100,
             occupation: 100,
-            name: 100,
+            name: 50,
+            degree: 50,
+            grade_cgpa: 20,
+            field_of_study: 50,
+            institute: 150,
+            organization: 150,
+            reason_for_leaving: 200,
+            ref1_name: 100,
+            ref1_designation: 255,
+            ref1_organization: 255,
+            ref2_name: 100,
+            ref2_designation: 255,
+            ref2_organization: 255,
+            disability_type: 100,
+            disability_description: 1000,
+            last_fitness_test: 500,
         };
 
         const digitsOnlyFields = new Set([
@@ -273,7 +365,7 @@
 
         function syncNativeMaxlengthAttributes() {
             document.querySelectorAll('#employeeForm input[name], #employeeForm textarea[name]').forEach((el) => {
-                const key = fieldKeyFromName(el.name);
+                const key = fieldKeyFromInput(el);
                 const maxLen = maxLengthByField[key];
                 if (maxLen) {
                     el.setAttribute('maxlength', String(maxLen));
@@ -283,7 +375,7 @@
 
         function clampInitialValuesToMaxlength() {
             document.querySelectorAll('#employeeForm input[name], #employeeForm textarea[name]').forEach((el) => {
-                const key = fieldKeyFromName(el.name);
+                const key = fieldKeyFromInput(el);
                 const maxLen = resolveMaxLength(el, key);
                 if (!maxLen) return;
                 const str = String(el.value ?? '');
@@ -307,11 +399,11 @@
 
         document.addEventListener('beforeinput', function (e) {
             const target = e.target;
-            if (!target || !target.name) return;
+            if (!target) return;
             if (!target.closest('#employeeForm')) return;
             if (e.inputType && e.inputType.startsWith('delete')) return;
 
-            const key = fieldKeyFromName(target.name);
+            const key = fieldKeyFromInput(target);
             const maxLen = resolveMaxLength(target, key);
             const inserted = typeof e.data === 'string' ? e.data : '';
 
@@ -412,11 +504,11 @@
         // Fallback guard: some browsers/inputs may not surface max-length errors reliably via beforeinput.
         document.addEventListener('keydown', function (e) {
             const target = e.target;
-            if (!target || !target.name) return;
+            if (!target) return;
             if (!target.closest('#employeeForm')) return;
             if (!shouldTreatAsTextInsertion(e)) return;
 
-            const key = fieldKeyFromName(target.name);
+            const key = fieldKeyFromInput(target);
             const maxLen = resolveMaxLength(target, key);
             const inserted = e.key;
 
@@ -496,10 +588,10 @@
 
         document.addEventListener('paste', function (e) {
             const target = e.target;
-            if (!target || !target.name) return;
+            if (!target) return;
             if (!target.closest('#employeeForm')) return;
 
-            const key = fieldKeyFromName(target.name);
+            const key = fieldKeyFromInput(target);
             const maxLen = resolveMaxLength(target, key);
             let pastedText = e.clipboardData ? (e.clipboardData.getData('text') || '') : '';
             if (!pastedText) return;
@@ -531,10 +623,10 @@
 
         document.addEventListener('input', function (e) {
             const target = e.target;
-            if (!target || !target.name) return;
+            if (!target) return;
             if (!target.closest('#employeeForm')) return;
 
-            const key = fieldKeyFromName(target.name);
+            const key = fieldKeyFromInput(target);
             const maxLen = resolveMaxLength(target, key);
             const originalValue = String(target.value ?? '');
             let value = originalValue;
@@ -706,13 +798,23 @@
         // keep the same inline error style as General tab.
         document.addEventListener('keyup', function (e) {
             const target = e.target;
-            if (!target || !target.name) return;
+            if (!target) return;
             if (!target.closest('#employeeForm')) return;
-            const key = fieldKeyFromName(target.name);
+            const key = fieldKeyFromInput(target);
             const maxLen = resolveMaxLength(target, key);
             if (!maxLen) return;
+            const isTypingKey = shouldTreatAsTextInsertion(e);
+            const isEmploymentStepField = !!target.closest('#stepPane2');
+            const valueLength = String(target.value ?? '').length;
 
-            if (target.dataset.maxLimitBlocked === '1' && String(target.value ?? '').length >= maxLen) {
+            if (
+                valueLength >= maxLen &&
+                (
+                    target.dataset.maxLimitBlocked === '1' ||
+                    (isEmploymentStepField && isTypingKey)
+                )
+            ) {
+                target.dataset.maxLimitBlocked = '1';
                 showInputGuardError(target, `Maximum ${maxLen} characters allowed.`);
             }
         }, true);
@@ -735,6 +837,444 @@
             }
         }, true);
 
+        function bindEmploymentExplicitMaxGuard(selector, maxLen) {
+            const input = document.querySelector(selector);
+            if (!input || input.dataset.employmentMaxGuardBound === '1') return;
+            input.dataset.employmentMaxGuardBound = '1';
+
+            input.addEventListener('keydown', function (e) {
+                if (!shouldTreatAsTextInsertion(e)) return;
+                const value = String(input.value ?? '');
+                const hasSelection = hasTextSelection(input);
+                if (value.length >= maxLen && !hasSelection) {
+                    e.preventDefault();
+                    input.dataset.maxLimitBlocked = '1';
+                    showInputGuardError(input, `Maximum ${maxLen} characters allowed.`);
+                }
+            });
+
+            input.addEventListener('input', function () {
+                const value = String(input.value ?? '');
+                if (value.length > maxLen) {
+                    input.value = value.slice(0, maxLen);
+                    input.dataset.maxLimitBlocked = '1';
+                    showInputGuardError(input, `Maximum ${maxLen} characters allowed.`);
+                    return;
+                }
+                if (value.length === maxLen && input.dataset.maxLimitBlocked === '1') {
+                    showInputGuardError(input, `Maximum ${maxLen} characters allowed.`);
+                    return;
+                }
+                if (value.length < maxLen) {
+                    delete input.dataset.maxLimitBlocked;
+                    removeInputGuardError(input);
+                }
+            });
+
+            input.addEventListener('blur', function () {
+                const value = String(input.value ?? '');
+                if (value.length >= maxLen && input.dataset.maxLimitBlocked === '1') {
+                    showInputGuardError(input, `Maximum ${maxLen} characters allowed.`);
+                }
+            });
+        }
+
+        function bindEmploymentAlphaTextGuard(selector, fieldLabel) {
+            const input = document.querySelector(selector);
+            if (!input || input.dataset.employmentAlphaTextGuardBound === '1') return;
+            input.dataset.employmentAlphaTextGuardBound = '1';
+
+            input.addEventListener('beforeinput', function (e) {
+                if (e.inputType && e.inputType.startsWith('delete')) return;
+                const inserted = typeof e.data === 'string' ? e.data : '';
+                if (!inserted) return;
+                if (!alphaTextAllowedPattern.test(inserted)) {
+                    e.preventDefault();
+                    showInputGuardError(
+                        input,
+                        /\d/.test(inserted)
+                            ? `${fieldLabel} cannot contain digits.`
+                            : `${fieldLabel} may only contain letters, spaces, and punctuation (like dot or hyphen).`
+                    );
+                }
+            }, true);
+
+            input.addEventListener('paste', function (e) {
+                const pastedText = e.clipboardData ? (e.clipboardData.getData('text') || '') : '';
+                if (!pastedText) return;
+                const cleaned = pastedText.replace(/[^A-Za-z\s.\-&,\/()']/g, '');
+                if (cleaned === pastedText) return;
+                e.preventDefault();
+
+                const current = String(input.value ?? '');
+                const start = typeof input.selectionStart === 'number' ? input.selectionStart : current.length;
+                const end = typeof input.selectionEnd === 'number' ? input.selectionEnd : current.length;
+                const nextValue = current.slice(0, start) + cleaned + current.slice(end);
+                input.value = nextValue;
+                showInputGuardError(input, `${fieldLabel} may only contain letters, spaces, and punctuation (like dot or hyphen).`);
+            });
+
+            input.addEventListener('input', function () {
+                const current = String(input.value ?? '');
+                const cleaned = current.replace(/[^A-Za-z\s.\-&,\/()']/g, '');
+                if (cleaned !== current) {
+                    input.value = cleaned;
+                    showInputGuardError(input, `${fieldLabel} may only contain letters, spaces, and punctuation (like dot or hyphen).`);
+                    return;
+                }
+                if (input.classList.contains('is-invalid') && cleaned.length > 0) {
+                    removeInputGuardError(input);
+                }
+            });
+        }
+
+        function bindEmploymentBoundedIntegerGuard(selector, maxAllowed, maxDigits) {
+            const input = document.querySelector(selector);
+            if (!input || input.dataset.employmentBoundedIntegerGuardBound === '1') return;
+            input.dataset.employmentBoundedIntegerGuardBound = '1';
+
+            input.addEventListener('beforeinput', function (e) {
+                if (e.inputType && e.inputType.startsWith('delete')) return;
+                const inserted = typeof e.data === 'string' ? e.data : '';
+                if (!inserted) return;
+                if (!/^\d+$/.test(inserted)) {
+                    e.preventDefault();
+                    showInputGuardError(input, 'Only numeric digits are allowed in this field.');
+                    return;
+                }
+
+                const current = String(input.value ?? '');
+                const start = typeof input.selectionStart === 'number' ? input.selectionStart : current.length;
+                const end = typeof input.selectionEnd === 'number' ? input.selectionEnd : current.length;
+                const next = current.slice(0, start) + inserted + current.slice(end);
+                if (next.length > maxDigits) {
+                    e.preventDefault();
+                    showInputGuardError(input, `Maximum ${maxDigits} digits allowed.`);
+                    return;
+                }
+                const nextNum = Number(next);
+                if (Number.isFinite(nextNum) && nextNum > maxAllowed) {
+                    e.preventDefault();
+                    showInputGuardError(input, `Maximum allowed value is ${maxAllowed}.`);
+                }
+            }, true);
+
+            input.addEventListener('input', function () {
+                let value = String(input.value ?? '');
+                const cleaned = value.replace(/\D/g, '');
+                if (cleaned !== value) {
+                    value = cleaned;
+                }
+
+                if (value.length > maxDigits) {
+                    value = value.slice(0, maxDigits);
+                    input.value = value;
+                    showInputGuardError(input, `Maximum ${maxDigits} digits allowed.`);
+                    return;
+                }
+
+                if (value !== '') {
+                    const numericValue = Number(value);
+                    if (Number.isFinite(numericValue) && numericValue > maxAllowed) {
+                        input.value = String(maxAllowed);
+                        showInputGuardError(input, `Maximum allowed value is ${maxAllowed}.`);
+                        return;
+                    }
+                }
+
+                input.value = value;
+                removeInputGuardError(input);
+            });
+        }
+
+        function bindPoliceExplicitMaxGuard(selector, maxLen) {
+            const input = document.querySelector(selector);
+            if (!input || input.dataset.policeMaxGuardBound === '1') return;
+            input.dataset.policeMaxGuardBound = '1';
+
+            input.addEventListener('keydown', function (e) {
+                if (!shouldTreatAsTextInsertion(e)) return;
+                const value = String(input.value ?? '');
+                const hasSelection = hasTextSelection(input);
+                if (value.length >= maxLen && !hasSelection) {
+                    e.preventDefault();
+                    input.dataset.maxLimitBlocked = '1';
+                    showInputGuardError(input, `Maximum ${maxLen} characters allowed.`);
+                }
+            }, true);
+
+            input.addEventListener('input', function () {
+                const value = String(input.value ?? '');
+                if (value.length > maxLen) {
+                    input.value = value.slice(0, maxLen);
+                    input.dataset.maxLimitBlocked = '1';
+                    showInputGuardError(input, `Maximum ${maxLen} characters allowed.`);
+                    return;
+                }
+                if (value.length === maxLen && input.dataset.maxLimitBlocked === '1') {
+                    showInputGuardError(input, `Maximum ${maxLen} characters allowed.`);
+                    return;
+                }
+                if (value.length < maxLen) {
+                    delete input.dataset.maxLimitBlocked;
+                    removeInputGuardError(input);
+                }
+            });
+        }
+
+        function bindPolicePatternGuard(selector, pattern, message, dynamicMessageBuilder) {
+            const input = document.querySelector(selector);
+            if (!input || input.dataset.policePatternGuardBound === '1') return;
+            input.dataset.policePatternGuardBound = '1';
+
+            const resolveMessage = function (text) {
+                if (typeof dynamicMessageBuilder === 'function') {
+                    const dynamic = dynamicMessageBuilder(String(text || ''));
+                    if (dynamic && typeof dynamic === 'string') {
+                        return dynamic;
+                    }
+                }
+                return message;
+            };
+
+            input.addEventListener('beforeinput', function (e) {
+                if (e.inputType && e.inputType.startsWith('delete')) return;
+                const inserted = typeof e.data === 'string' ? e.data : '';
+                if (!inserted) return;
+                if (!pattern.test(inserted)) {
+                    e.preventDefault();
+                    showInputGuardError(input, resolveMessage(inserted));
+                }
+            }, true);
+
+            input.addEventListener('paste', function (e) {
+                const pastedText = e.clipboardData ? (e.clipboardData.getData('text') || '') : '';
+                if (!pastedText) return;
+                const cleaned = Array.from(pastedText).filter((ch) => pattern.test(ch)).join('');
+                if (cleaned === pastedText) return;
+                e.preventDefault();
+                const current = String(input.value ?? '');
+                const start = typeof input.selectionStart === 'number' ? input.selectionStart : current.length;
+                const end = typeof input.selectionEnd === 'number' ? input.selectionEnd : current.length;
+                input.value = current.slice(0, start) + cleaned + current.slice(end);
+                showInputGuardError(input, resolveMessage(pastedText));
+            });
+
+            input.addEventListener('input', function () {
+                const current = String(input.value ?? '');
+                const cleaned = Array.from(current).filter((ch) => pattern.test(ch)).join('');
+                if (cleaned !== current) {
+                    input.value = cleaned;
+                    showInputGuardError(input, resolveMessage(current));
+                    return;
+                }
+                if (input.classList.contains('is-invalid')) {
+                    removeInputGuardError(input);
+                }
+            });
+        }
+
+        function bindBankAccountTitleGuard(selector) {
+            const input = document.querySelector(selector);
+            if (!input || input.dataset.bankAccountTitleGuardBound === '1') return;
+            input.dataset.bankAccountTitleGuardBound = '1';
+            const allowedPattern = /[A-Za-z\s.\-'_]/;
+
+            input.addEventListener('beforeinput', function (e) {
+                if (e.inputType && e.inputType.startsWith('delete')) return;
+                const inserted = typeof e.data === 'string' ? e.data : '';
+                if (!inserted) return;
+                if (!allowedPattern.test(inserted)) {
+                    e.preventDefault();
+                    showInputGuardError(input, /\d/.test(inserted) ? 'Text only (no numbers).' : 'Use text only.');
+                }
+            }, true);
+
+            input.addEventListener('paste', function (e) {
+                const pastedText = e.clipboardData ? (e.clipboardData.getData('text') || '') : '';
+                if (!pastedText) return;
+                const cleaned = Array.from(pastedText).filter((ch) => allowedPattern.test(ch)).join('');
+                if (cleaned === pastedText) return;
+                e.preventDefault();
+                const current = String(input.value ?? '');
+                const start = typeof input.selectionStart === 'number' ? input.selectionStart : current.length;
+                const end = typeof input.selectionEnd === 'number' ? input.selectionEnd : current.length;
+                input.value = current.slice(0, start) + cleaned + current.slice(end);
+                showInputGuardError(input, /\d/.test(pastedText) ? 'Text only (no numbers).' : 'Use text only.');
+            });
+
+            input.addEventListener('input', function () {
+                const current = String(input.value ?? '');
+                const cleaned = Array.from(current).filter((ch) => allowedPattern.test(ch)).join('');
+                if (cleaned !== current) {
+                    input.value = cleaned;
+                    showInputGuardError(input, /\d/.test(current) ? 'Text only (no numbers).' : 'Use text only.');
+                    return;
+                }
+                if (current.length > 0 && current.trim().length < 3) {
+                    showInputGuardError(input, 'At least 3 characters required.');
+                    return;
+                }
+                removeInputGuardError(input);
+            });
+        }
+
+        function bindMoreContactFieldGuards() {
+            const contactConfigs = [
+                { id: 'moreContactResidencePhoneInput', required: false },
+                { id: 'moreContactEmergencyContactInput', required: false },
+                { id: 'moreContactCellNoInput', required: true },
+            ];
+
+            contactConfigs.forEach((cfg) => {
+                const input = document.getElementById(cfg.id);
+                if (!input || input.dataset.moreContactGuardBound === '1') return;
+                input.dataset.moreContactGuardBound = '1';
+
+                input.addEventListener('beforeinput', function (e) {
+                    if (e.inputType && e.inputType.startsWith('delete')) return;
+                    const inserted = typeof e.data === 'string' ? e.data : '';
+                    if (!inserted) return;
+                    if (!/^\d+$/.test(inserted)) {
+                        e.preventDefault();
+                        showInputGuardError(input, 'Digits only.');
+                        return;
+                    }
+                    const nextLen = nextLengthWithInsert(input, inserted);
+                    if (nextLen > 15) {
+                        e.preventDefault();
+                        showInputGuardError(input, 'Maximum 15 digits allowed.');
+                    }
+                }, true);
+
+                input.addEventListener('input', function () {
+                    const value = String(input.value || '').replace(/\D/g, '');
+                    input.value = value.slice(0, 15);
+                    if (!value) {
+                        if (cfg.required) {
+                            showInputGuardError(input, 'Cell number is required.');
+                        } else {
+                            removeInputGuardError(input);
+                        }
+                        return;
+                    }
+                    if (value.length < 11) {
+                        showInputGuardError(input, 'Enter 11 to 15 digits.');
+                        return;
+                    }
+                    removeInputGuardError(input);
+                });
+            });
+
+            const emailInput = document.getElementById('moreContactEmailInput');
+            if (emailInput && emailInput.dataset.moreContactGuardBound !== '1') {
+                emailInput.dataset.moreContactGuardBound = '1';
+                bindPoliceExplicitMaxGuard('#moreContactEmailInput', 255);
+                emailInput.addEventListener('input', function () {
+                    const value = String(emailInput.value || '').trim();
+                    if (!value) {
+                        showInputGuardError(emailInput, 'Email is required.');
+                        return;
+                    }
+                    if (!isValidEmail(value)) {
+                        showInputGuardError(emailInput, 'Enter a valid email address.');
+                        return;
+                    }
+                    removeInputGuardError(emailInput);
+                });
+            }
+
+            const addressConfigs = [
+                { id: 'moreContactPresentAddressInput', label: 'Present address' },
+                { id: 'moreContactPermanentAddressInput', label: 'Permanent address' },
+            ];
+            addressConfigs.forEach((cfg) => {
+                const field = document.getElementById(cfg.id);
+                if (!field || field.dataset.moreContactGuardBound === '1') return;
+                field.dataset.moreContactGuardBound = '1';
+                bindPoliceExplicitMaxGuard(`#${cfg.id}`, 1000);
+                field.addEventListener('input', function () {
+                    const value = String(field.value || '').trim();
+                    if (!value) {
+                        showInputGuardError(field, `${cfg.label} is required.`);
+                        return;
+                    }
+                    if (value.length < 10) {
+                        showInputGuardError(field, `${cfg.label} must be at least 10 characters.`);
+                        return;
+                    }
+                    removeInputGuardError(field);
+                });
+            });
+        }
+
+        bindEmploymentExplicitMaxGuard('#employmentDetailsInternDurationInput', 10);
+        bindEmploymentExplicitMaxGuard('#designation', 50);
+        bindEmploymentExplicitMaxGuard('#grade', 10);
+        bindEmploymentExplicitMaxGuard('#branch', 30);
+        bindEmploymentExplicitMaxGuard('#location', 100);
+        bindEmploymentExplicitMaxGuard('#biometric_id', 20);
+        bindEmploymentAlphaTextGuard('#designation', 'Designation');
+        bindEmploymentBoundedIntegerGuard('#employmentCustomCheckInGraceInput', 600, 3);
+        bindEmploymentBoundedIntegerGuard('#employmentCustomCheckOutGraceInput', 600, 3);
+        bindPoliceExplicitMaxGuard('#policeVerificationMsrNumberInput', 20);
+        bindPoliceExplicitMaxGuard('#policeVerificationLetterNumberInput', 50);
+        bindPoliceExplicitMaxGuard('#policeVerificationAddresseeInput', 100);
+        bindPoliceExplicitMaxGuard('#policeVerificationVerifyingAuthorityInput', 255);
+        bindPoliceExplicitMaxGuard('#policeVerificationRemarksInput', 2000);
+        bindPolicePatternGuard('#policeVerificationMsrNumberInput', /[0-9]/, 'MSR number must contain digits only.');
+        bindPolicePatternGuard('#policeVerificationLetterNumberInput', /[A-Za-z0-9\/\-_]/, 'Verification letter number may only contain letters, numbers, slash (/), hyphen (-), and underscore (_).');
+        bindPolicePatternGuard('#policeVerificationVerifyingAuthorityInput', /[A-Za-z\s.\-&,\/()']/, 'Use letters and basic punctuation only.');
+        bindBankAccountTitleGuard('#bankDetailsAccountTitleInput');
+        bindPoliceExplicitMaxGuard('#bankDetailsAccountTitleInput', 50);
+        bindPolicePatternGuard(
+            '#bankDetailsAccountNumberInput',
+            /[0-9]/,
+            'Digits only.'
+        );
+        bindPoliceExplicitMaxGuard('#bankDetailsAccountNumberInput', 16);
+        bindPolicePatternGuard(
+            '#bankDetailsIbanInput',
+            /[A-Za-z0-9]/,
+            'Use letters and numbers only (no spaces).'
+        );
+        bindPoliceExplicitMaxGuard('#bankDetailsIbanInput', 34);
+        bindPoliceExplicitMaxGuard('#bankDetailsBranchNameInput', 100);
+        bindPoliceExplicitMaxGuard('#bankDetailsBranchAddressInput', 150);
+        bindPoliceExplicitMaxGuard('#bankDetailsBranchCodeInput', 10);
+        bindPolicePatternGuard('#bankDetailsBranchCodeInput', /[A-Za-z0-9\-]/, 'Branch code may only contain letters, numbers, and hyphens.');
+        bindPolicePatternGuard('#bankDetailsBranchAddressInput', /[A-Za-z0-9\s.\-&,\/()#']/, 'Branch address may only contain letters, numbers, spaces, and basic punctuation.');
+        bindPolicePatternGuard('#bankDetailsBranchNameInput', /[A-Za-z0-9\s.'\-&,\/#()]/, 'Bank name contains invalid characters.');
+        bindPoliceExplicitMaxGuard('#moreContactEmailInput', 255);
+        bindPoliceExplicitMaxGuard('#moreContactPresentAddressInput', 1000);
+        bindPoliceExplicitMaxGuard('#moreContactPermanentAddressInput', 1000);
+        bindPoliceExplicitMaxGuard('#moreMedicalLastFitnessTestInput', 500);
+        bindPoliceExplicitMaxGuard('#moreMedicalDisabilityDescriptionInput', 1000);
+        bindPoliceExplicitMaxGuard('#moreReferenceOneNameInput', 50);
+        bindPoliceExplicitMaxGuard('#moreReferenceOneDesignationInput', 50);
+        bindPoliceExplicitMaxGuard('#moreReferenceOneOrganizationInput', 100);
+        bindPoliceExplicitMaxGuard('#moreReferenceTwoNameInput', 50);
+        bindPoliceExplicitMaxGuard('#moreReferenceTwoDesignationInput', 50);
+        bindPoliceExplicitMaxGuard('#moreReferenceTwoOrganizationInput', 100);
+        bindPolicePatternGuard('#moreReferenceOneNameInput', /[A-Za-z\s.\-'_]/, 'Use text only.');
+        bindPolicePatternGuard('#moreReferenceTwoNameInput', /[A-Za-z\s.\-'_]/, 'Use text only.');
+        bindPoliceExplicitMaxGuard('#armedDetailsServiceNoInput', 50);
+        bindPoliceExplicitMaxGuard('#armedDetailsRankInput', 50);
+        bindPoliceExplicitMaxGuard('#armedDetailsMedicalCategoryInput', 50);
+        bindPoliceExplicitMaxGuard('#armedDetailsRetirementReasonInput', 255);
+        bindPoliceExplicitMaxGuard('#armedDetailsCorpsRegimentSquadronInput', 100);
+        bindPoliceExplicitMaxGuard('#armedDetailsExArmyUnitInput', 100);
+        bindPoliceExplicitMaxGuard('#armedDetailsTradeInput', 50);
+        bindPoliceExplicitMaxGuard('#armedDetailsPmaLcOtsInput', 100);
+        bindPolicePatternGuard('#armedDetailsServiceNoInput', /[A-Za-z0-9\/\-_]/, 'Service number may only contain letters, numbers, slash (/), hyphen (-), and underscore (_).');
+        bindPolicePatternGuard('#armedDetailsRankInput', /[A-Za-z0-9\s.\-\/]/, 'Rank may contain letters, numbers, spaces, dots, hyphens, and slashes only.');
+        bindPolicePatternGuard('#armedDetailsMedicalCategoryInput', /[A-Za-z0-9\s.\-&,\/()#']/, 'Medical category may only contain letters, numbers, spaces, and standard punctuation.');
+        bindPolicePatternGuard('#armedDetailsCorpsRegimentSquadronInput', /[A-Za-z\s.\-&,\/()']/, 'Use letters and basic punctuation only.');
+        bindPolicePatternGuard('#armedDetailsExArmyUnitInput', /[A-Za-z\s.\-&,\/()']/, 'Use letters and basic punctuation only.');
+        bindPolicePatternGuard('#armedDetailsTradeInput', /[A-Za-z\s.\-&,\/()']/, 'Use letters and basic punctuation only.');
+        bindPolicePatternGuard('#armedDetailsPmaLcOtsInput', /[A-Za-z0-9\s.\-&,\/()#']/, 'Use letters, numbers, spaces, and basic punctuation only.');
+        bindMoreContactFieldGuards();
+
         function validatePoliceVerificationDateLogic() {
             const statusInput = document.querySelector('input[name="verification_status"]:checked');
             const status = statusInput ? statusInput.value : '';
@@ -752,7 +1292,7 @@
 
             if (msrDateInput) {
                 const msrDate = parseDate(msrDateInput.value);
-                if (msrDate && msrDate > today) {
+                if (isMandatory && msrDate && msrDate > today) {
                     showInputGuardError(msrDateInput, 'MSR date cannot be in the future.');
                 } else {
                     removeInputGuardError(msrDateInput);
@@ -762,7 +1302,7 @@
             if (letterDateInput) {
                 const msrDate = parseDate(msrDateInput ? msrDateInput.value : '');
                 const letterDate = parseDate(letterDateInput.value);
-                if (letterDate && letterDate > today) {
+                if (isMandatory && letterDate && letterDate > today) {
                     showInputGuardError(letterDateInput, 'Verification letter date cannot be in the future.');
                 } else if (letterDate && msrDate && letterDate < msrDate) {
                     showInputGuardError(letterDateInput, 'Verification letter date must be on or after MSR date.');
@@ -784,6 +1324,37 @@
             }
         }
 
+        function validateArmedDatesLogic() {
+            const commissioningInput = document.getElementById('armedDetailsCommissioningEnrollmentDateInput');
+            const retirementInput = document.getElementById('armedDetailsRetirementDateInput');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const parseDate = function (value) {
+                if (!value) return null;
+                const dt = new Date(`${value}T00:00:00`);
+                return Number.isNaN(dt.getTime()) ? null : dt;
+            };
+
+            if (commissioningInput) {
+                const commissioningDate = parseDate(commissioningInput.value);
+                if (commissioningDate && commissioningDate > today) {
+                    showInputGuardError(commissioningInput, 'Date of commissioning / enrollment cannot be in the future.');
+                } else {
+                    removeInputGuardError(commissioningInput);
+                }
+            }
+
+            if (retirementInput) {
+                const retirementDate = parseDate(retirementInput.value);
+                const commissioningDate = parseDate(commissioningInput ? commissioningInput.value : '');
+                if (retirementDate && commissioningDate && retirementDate < commissioningDate) {
+                    showInputGuardError(retirementInput, 'Date of retirement must be after or equal to date of commissioning / enrollment.');
+                } else {
+                    removeInputGuardError(retirementInput);
+                }
+            }
+        }
+
         document.addEventListener('change', function (e) {
             const target = e.target;
             if (!target) return;
@@ -796,9 +1367,16 @@
             ) {
                 validatePoliceVerificationDateLogic();
             }
+            if (
+                target.name === 'date_of_commissioning'
+                || target.name === 'date_of_retirement'
+            ) {
+                validateArmedDatesLogic();
+            }
         }, true);
 
         validatePoliceVerificationDateLogic();
+        validateArmedDatesLogic();
     }
 
     applyInputGuards();
@@ -1419,11 +1997,119 @@
         }
     });
 
+    function validateMoreContactSubsection() {
+        const pane = document.getElementById('moreStepPane1');
+        if (!pane) return true;
+
+        const residencePhone = String(document.getElementById('moreContactResidencePhoneInput')?.value ?? '').trim();
+        const emergencyContact = String(document.getElementById('moreContactEmergencyContactInput')?.value ?? '').trim();
+        const cellNo = String(document.getElementById('moreContactCellNoInput')?.value ?? '').trim();
+        const contactEmail = String(document.getElementById('moreContactEmailInput')?.value ?? '').trim();
+        const presentAddress = String(document.getElementById('moreContactPresentAddressInput')?.value ?? '').trim();
+        const permanentAddress = String(document.getElementById('moreContactPermanentAddressInput')?.value ?? '').trim();
+
+        const phoneRegex = /^\d{10,15}$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const errors = {};
+
+        if (residencePhone && !phoneRegex.test(residencePhone)) {
+            errors.residence_phone = ['Residence phone must be 10 to 15 digits.'];
+        }
+        if (emergencyContact && !phoneRegex.test(emergencyContact)) {
+            errors.emergency_contact = ['Emergency contact must be 10 to 15 digits.'];
+        }
+        if (!cellNo) {
+            errors.cell_no = ['Cell number is required.'];
+        } else if (!phoneRegex.test(cellNo)) {
+            errors.cell_no = ['Cell number must be 10 to 15 digits.'];
+        }
+        if (!contactEmail) {
+            errors.contact_email = ['Email is required.'];
+        } else if (contactEmail.length > 255) {
+            errors.contact_email = ['Email must not exceed 255 characters.'];
+        } else if (!emailRegex.test(contactEmail)) {
+            errors.contact_email = ['Enter a valid email address.'];
+        }
+        if (!presentAddress) {
+            errors.present_address = ['Present address is required.'];
+        } else if (presentAddress.length < 10) {
+            errors.present_address = ['Present address must be at least 10 characters.'];
+        } else if (presentAddress.length > 1000) {
+            errors.present_address = ['Present address must not exceed 1000 characters.'];
+        }
+        if (!permanentAddress) {
+            errors.permanent_address = ['Permanent address is required.'];
+        } else if (permanentAddress.length < 10) {
+            errors.permanent_address = ['Permanent address must be at least 10 characters.'];
+        } else if (permanentAddress.length > 1000) {
+            errors.permanent_address = ['Permanent address must not exceed 1000 characters.'];
+        }
+
+        if (Object.keys(errors).length > 0) {
+            showFieldErrors(errors, pane);
+            return false;
+        }
+        return true;
+    }
+
+    function validateMoreMedicalSubsection() {
+        const pane = document.getElementById('moreStepPane5');
+        if (!pane) return true;
+
+        const hasDisability = String(document.querySelector('input[name="has_disability"]:checked')?.value ?? '').trim().toLowerCase();
+        const bloodGroup = String(document.getElementById('moreMedicalBloodGroupInput')?.value ?? '').trim();
+        const disabilityType = String(document.getElementById('moreMedicalDisabilityTypeInput')?.value ?? '').trim();
+        const disabilityDescription = String(document.getElementById('moreMedicalDisabilityDescriptionInput')?.value ?? '').trim();
+        const lastFitnessTest = String(document.getElementById('moreMedicalLastFitnessTestInput')?.value ?? '').trim();
+
+        const errors = {};
+        const bloodGroupRegex = /^(A|B|AB|O)[+-]$/;
+
+        if (!['yes', 'no'].includes(hasDisability)) {
+            errors.has_disability = ['Select disability status (Yes or No).'];
+        }
+        if (lastFitnessTest.length > 500) {
+            errors.last_fitness_test = ['Last fitness test must not exceed 500 characters.'];
+        }
+        if (bloodGroup && !bloodGroupRegex.test(bloodGroup)) {
+            errors.blood_group = ['Blood group must be like A+, O-, or AB+.'];
+        }
+        if (hasDisability === 'yes') {
+            if (!disabilityType) {
+                errors.disability_type = ['Disability type is required when disability is Yes.'];
+            } else if (disabilityType.length > 100) {
+                errors.disability_type = ['Disability type must not exceed 100 characters.'];
+            }
+        }
+        if (disabilityType === 'Other') {
+            if (!disabilityDescription) {
+                errors.disability_description = ['Disability details are required when type is Other.'];
+            } else if (disabilityDescription.length > 1000) {
+                errors.disability_description = ['Disability details must not exceed 1000 characters.'];
+            }
+        } else if (disabilityDescription.length > 1000) {
+            errors.disability_description = ['Disability details must not exceed 1000 characters.'];
+        }
+
+        if (Object.keys(errors).length > 0) {
+            showFieldErrors(errors, pane);
+            return false;
+        }
+        return true;
+    }
+
     async function saveMoreSubSection(step, onSuccess) {
         const typeMap = { 1: 'contact', 5: 'medical', 6: 'references' };
         const subsection = typeMap[step];
         if (!subsection) {
             if (onSuccess) onSuccess();
+            return;
+        }
+
+        if (subsection === 'contact' && !validateMoreContactSubsection()) {
+            return;
+        }
+        if (subsection === 'medical' && !validateMoreMedicalSubsection()) {
             return;
         }
 
@@ -1435,10 +2121,89 @@
         nextBtn.disabled = true;
         nextBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>Saving...';
 
+        if (subsection === 'contact') {
+            const contactPane = document.getElementById('moreStepPane1');
+            const residencePhoneInput = document.getElementById('moreContactResidencePhoneInput');
+            const emergencyContactInput = document.getElementById('moreContactEmergencyContactInput');
+            const cellNoInput = document.getElementById('moreContactCellNoInput');
+            const emailInput = document.getElementById('moreContactEmailInput');
+            const presentAddressInput = document.getElementById('moreContactPresentAddressInput');
+            const permanentAddressInput = document.getElementById('moreContactPermanentAddressInput');
+
+            const residencePhone = String(residencePhoneInput?.value ?? '').replace(/\D/g, '');
+            const emergencyContact = String(emergencyContactInput?.value ?? '').replace(/\D/g, '');
+            const cellNo = String(cellNoInput?.value ?? '').replace(/\D/g, '');
+            const contactEmail = String(emailInput?.value ?? '').trim().toLowerCase();
+            const presentAddress = String(presentAddressInput?.value ?? '').trim();
+            const permanentAddress = String(permanentAddressInput?.value ?? '').trim();
+
+            if (residencePhoneInput) residencePhoneInput.value = residencePhone;
+            if (emergencyContactInput) emergencyContactInput.value = emergencyContact;
+            if (cellNoInput) cellNoInput.value = cellNo;
+            if (emailInput) emailInput.value = contactEmail;
+            if (presentAddressInput) presentAddressInput.value = presentAddress;
+            if (permanentAddressInput) permanentAddressInput.value = permanentAddress;
+
+            const errors = {};
+            const phoneRegex = /^[0-9]{11,15}$/;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (residencePhone && !phoneRegex.test(residencePhone)) {
+                errors.residence_phone = ['Residence phone must contain 11 to 15 digits.'];
+            }
+            if (emergencyContact && !phoneRegex.test(emergencyContact)) {
+                errors.emergency_contact = ['Emergency contact must contain 11 to 15 digits.'];
+            }
+            if (!cellNo) {
+                errors.cell_no = ['Cell number is required.'];
+            } else if (!phoneRegex.test(cellNo)) {
+                errors.cell_no = ['Cell number must contain 11 to 15 digits.'];
+            }
+
+            if (!contactEmail) {
+                errors.contact_email = ['Email is required.'];
+            } else if (contactEmail.length > 255) {
+                errors.contact_email = ['Email must not exceed 255 characters.'];
+            } else if (!emailRegex.test(contactEmail)) {
+                errors.contact_email = ['Enter a valid email address.'];
+            }
+
+            if (!presentAddress) {
+                errors.present_address = ['Present address is required.'];
+            } else if (presentAddress.length < 10) {
+                errors.present_address = ['Present address must be at least 10 characters.'];
+            } else if (presentAddress.length > 1000) {
+                errors.present_address = ['Present address must not exceed 1000 characters.'];
+            }
+
+            if (!permanentAddress) {
+                errors.permanent_address = ['Permanent address is required.'];
+            } else if (permanentAddress.length < 10) {
+                errors.permanent_address = ['Permanent address must be at least 10 characters.'];
+            } else if (permanentAddress.length > 1000) {
+                errors.permanent_address = ['Permanent address must not exceed 1000 characters.'];
+            }
+
+            if (Object.keys(errors).length > 0) {
+                showFieldErrors(errors, contactPane || document);
+                nextBtn.disabled = false;
+                nextBtn.textContent = originalText;
+                return;
+            }
+        }
+
         const form = document.getElementById('employeeForm');
         const formData = new FormData(form);
         formData.append('subsection', subsection);
         formData.append('employee_id', employeeId);
+
+        const subsectionErrors = validateMoreSubsectionData(subsection, formData);
+        if (Object.keys(subsectionErrors).length > 0) {
+            showFieldErrors(subsectionErrors);
+            nextBtn.disabled = false;
+            nextBtn.textContent = originalText;
+            return;
+        }
 
         try {
             const response = await fetch('/admin/employees/save-subsection', {
@@ -1480,6 +2245,105 @@
             nextBtn.disabled = false;
             nextBtn.textContent = originalText;
         }
+    }
+
+    function isValidEmail(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+    }
+
+    function isValidContact(value) {
+        return /^\d{11,15}$/.test(String(value || '').trim());
+    }
+
+    function isValidDate(value) {
+        if (!value) return false;
+        const d = new Date(`${value}T00:00:00`);
+        return !Number.isNaN(d.getTime());
+    }
+
+    function dateValue(value) {
+        if (!isValidDate(value)) return null;
+        const d = new Date(`${value}T00:00:00`);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+
+    function validateMoreSubsectionData(subsection, formData) {
+        const errors = {};
+        const addErr = (key, msg) => {
+            if (!errors[key]) errors[key] = [];
+            errors[key].push(msg);
+        };
+        const get = (key) => String(formData.get(key) || '').trim();
+
+        if (subsection === 'contact') {
+            const residencePhone = get('residence_phone');
+            const emergencyContact = get('emergency_contact');
+            const cellNo = get('cell_no');
+            const contactEmail = get('contact_email');
+            const presentAddress = get('present_address');
+            const permanentAddress = get('permanent_address');
+
+            if (residencePhone && !isValidContact(residencePhone)) addErr('residence_phone', 'Residence phone must be 11 to 15 digits.');
+            if (emergencyContact && !isValidContact(emergencyContact)) addErr('emergency_contact', 'Emergency contact must be 11 to 15 digits.');
+            if (!cellNo) addErr('cell_no', 'Cell number is required.');
+            else if (!isValidContact(cellNo)) addErr('cell_no', 'Cell number must be 11 to 15 digits.');
+
+            if (!contactEmail) addErr('contact_email', 'Email is required.');
+            else if (!isValidEmail(contactEmail)) addErr('contact_email', 'Please enter a valid email address.');
+            else if (contactEmail.length > 255) addErr('contact_email', 'Email must not exceed 255 characters.');
+
+            if (!presentAddress) addErr('present_address', 'Present address is required.');
+            else if (presentAddress.length < 10) addErr('present_address', 'Present address must be at least 10 characters.');
+            else if (presentAddress.length > 1000) addErr('present_address', 'Present address must not exceed 1000 characters.');
+
+            if (!permanentAddress) addErr('permanent_address', 'Permanent address is required.');
+            else if (permanentAddress.length < 10) addErr('permanent_address', 'Permanent address must be at least 10 characters.');
+            else if (permanentAddress.length > 1000) addErr('permanent_address', 'Permanent address must not exceed 1000 characters.');
+        }
+
+        if (subsection === 'medical') {
+            const lastFitness = get('last_fitness_test');
+            const hasDisability = get('has_disability');
+            const bloodGroup = get('blood_group');
+            const disabilityType = get('disability_type');
+            const disabilityDescription = get('disability_description');
+
+            if (lastFitness.length > 500) addErr('last_fitness_test', 'Last fitness test must not exceed 500 characters.');
+            if (!['yes', 'no'].includes(hasDisability)) addErr('has_disability', 'Please select disability status.');
+            if (bloodGroup && !/^(A|B|AB|O)[+-]$/.test(bloodGroup)) addErr('blood_group', 'Blood group format is invalid.');
+            if (hasDisability === 'yes' && !disabilityType) addErr('disability_type', 'Disability type is required when disability is Yes.');
+            if (disabilityType && disabilityType.length > 100) addErr('disability_type', 'Disability type must not exceed 100 characters.');
+            if (disabilityType === 'Other' && !disabilityDescription) addErr('disability_description', 'Please specify disability details.');
+            if (disabilityDescription.length > 1000) addErr('disability_description', 'Disability description must not exceed 1000 characters.');
+        }
+
+        if (subsection === 'references') {
+            const refs = [
+                { p: 'ref1', label: 'Reference 1' },
+                { p: 'ref2', label: 'Reference 2' },
+            ];
+            const nameRegex = /^[A-Za-z]+(?:[A-Za-z\s.\-'_]*[A-Za-z])?$/;
+            const allowedRel = ['Family', 'Friend', 'Colleague', 'Academic', 'Professional', 'Other'];
+            refs.forEach(({ p, label }) => {
+                const name = get(`${p}_name`);
+                const designation = get(`${p}_designation`);
+                const org = get(`${p}_organization`);
+                const contact = get(`${p}_contact`);
+                const relation = get(`${p}_relationship`);
+
+                if (name) {
+                    if (name.length > 50) addErr(`${p}_name`, `${label} name must not exceed 50 characters.`);
+                    else if (!nameRegex.test(name)) addErr(`${p}_name`, `${label} name format is invalid.`);
+                }
+                if (designation.length > 50) addErr(`${p}_designation`, `${label} designation must not exceed 50 characters.`);
+                if (org.length > 100) addErr(`${p}_organization`, `${label} organization must not exceed 100 characters.`);
+                if (contact && !isValidContact(contact)) addErr(`${p}_contact`, `${label} contact must be 11 to 15 digits.`);
+                if (relation && !allowedRel.includes(relation)) addErr(`${p}_relationship`, `${label} relationship is invalid.`);
+            });
+        }
+
+        return errors;
     }
 
     function rowHasAnyData(rowElement) {
@@ -2613,6 +3477,128 @@
         document.querySelectorAll('#bankEntryForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
     };
 
+    function validateBankFormBeforeSave() {
+        const bankForm = document.getElementById('bankEntryForm');
+        if (!bankForm) return null;
+
+        const accountCategory = document.querySelector('input[name="account_category"]:checked')?.value || '';
+        const accountType = document.querySelector('input[name="account_type"]:checked')?.value || '';
+        const salaryRaw = document.querySelector('input[name="is_salary_account"]:checked')?.value;
+        const isSalaryAccount = salaryRaw === '1' || salaryRaw === '0';
+
+        const accountTitleInput = document.getElementById('bankDetailsAccountTitleInput');
+        const accountNoInput = document.getElementById('bankDetailsAccountNumberInput');
+        const ibanInput = document.getElementById('bankDetailsIbanInput');
+        const bankNameInput = document.getElementById('bankDetailsBranchNameInput');
+        const branchCodeInput = document.getElementById('bankDetailsBranchCodeInput');
+        const branchAddressInput = document.getElementById('bankDetailsBranchAddressInput');
+
+        const accountTitle = String(accountTitleInput?.value ?? '').trim();
+        const accountNo = String(accountNoInput?.value ?? '').replace(/\s+/g, '');
+        const iban = String(ibanInput?.value ?? '').replace(/\s+/g, '').toUpperCase();
+        const bankName = String(bankNameInput?.value ?? '').trim();
+        const branchCode = String(branchCodeInput?.value ?? '').trim();
+        const branchAddress = String(branchAddressInput?.value ?? '').trim();
+
+        if (accountNoInput) accountNoInput.value = accountNo;
+        if (ibanInput) ibanInput.value = iban;
+        if (accountTitleInput) accountTitleInput.value = accountTitle;
+        if (bankNameInput) bankNameInput.value = bankName;
+        if (branchCodeInput) branchCodeInput.value = branchCode;
+        if (branchAddressInput) branchAddressInput.value = branchAddress;
+
+        const errors = {};
+        const titleRegex = /^[A-Za-z]+(?:[A-Za-z\s.\-'_]*[A-Za-z])?$/;
+        const digitsOnlyRegex = /^[0-9]+$/;
+        const bankNameRegex = /^(?!.*[<>])(?=.*[A-Za-z])[A-Za-z0-9\s.'\-&,\/#()]{2,255}$/;
+        const branchCodeRegex = /^[A-Za-z0-9\-]+$/;
+        const branchAddressRegex = /^[A-Za-z0-9]+[\sA-Za-z0-9.\-&,\/()#']*$/;
+        const ibanRegex = /^[A-Z0-9]+$/;
+
+        if (!['Personal', 'Company'].includes(accountCategory)) {
+            errors.account_category = ['Account category must be Personal or Company operated.'];
+        }
+
+        if (!accountTitle) {
+            errors.account_title = ['Account title is required.'];
+        } else if (accountTitle.length < 3) {
+            errors.account_title = ['Account title must be at least 3 characters.'];
+        } else if (accountTitle.length > 50) {
+            errors.account_title = ['Account title must not exceed 50 characters.'];
+        } else if (!titleRegex.test(accountTitle)) {
+            errors.account_title = ['Account title may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.'];
+        }
+
+        if (!accountNo) {
+            errors.account_no = ['Account number is required.'];
+        } else if (accountNo.length < 8) {
+            errors.account_no = ['Account number must be at least 8 digits.'];
+        } else if (accountNo.length > 16) {
+            errors.account_no = ['Account number must not exceed 16 digits.'];
+        } else if (!digitsOnlyRegex.test(accountNo)) {
+            errors.account_no = ['Account number must contain digits only.'];
+        }
+
+        if (!bankName) {
+            errors.bank_name = ['Bank name is required.'];
+        } else if (bankName.length > 100) {
+            errors.bank_name = ['Bank name must not exceed 100 characters.'];
+        } else if (!bankNameRegex.test(bankName)) {
+            errors.bank_name = ['Enter the real bank name (letters required). Numbers-only or account-style values are not accepted.'];
+        }
+
+        if (!branchCode) {
+            errors.branch_code = ['Branch code is required.'];
+        } else if (branchCode.length > 10) {
+            errors.branch_code = ['Branch code must not exceed 10 characters.'];
+        } else if (!branchCodeRegex.test(branchCode)) {
+            errors.branch_code = ['Branch code may only contain letters, numbers, and hyphens (no spaces).'];
+        }
+
+        if (!branchAddress) {
+            errors.branch_address = ['Branch address is required.'];
+        } else if (branchAddress.length < 2) {
+            errors.branch_address = ['Branch address must be at least 2 characters.'];
+        } else if (branchAddress.length > 150) {
+            errors.branch_address = ['Branch address must not exceed 150 characters.'];
+        } else if (!branchAddressRegex.test(branchAddress)) {
+            errors.branch_address = ['Branch address may only contain letters, numbers, spaces, and basic punctuation.'];
+        }
+
+        if (!iban) {
+            errors.iban = ['IBAN is required.'];
+        } else if (iban.length > 34) {
+            errors.iban = ['IBAN must not exceed 34 characters.'];
+        } else if (!ibanRegex.test(iban)) {
+            errors.iban = ['IBAN must contain letters and digits only (no spaces).'];
+        }
+
+        if (!['Saving', 'Current'].includes(accountType)) {
+            errors.account_type = ['A/C type is required.'];
+        }
+
+        if (!isSalaryAccount) {
+            errors.is_salary_account = ['Indicate whether this account is used for salary (payroll).'];
+        }
+
+        if (Object.keys(errors).length > 0) {
+            showFieldErrors(errors, bankForm);
+            return null;
+        }
+
+        return {
+            account_category: accountCategory,
+            account_title: accountTitle,
+            account_no: accountNo,
+            iban,
+            bank_name: bankName,
+            branch_code: branchCode,
+            branch_address: branchAddress,
+            account_type: accountType,
+            is_salary_account: salaryRaw === '1',
+        };
+    }
+
     function collectStep5Data() {
         const banks = [];
         const editingId = document.getElementById('bank_detail_id').value;
@@ -2736,20 +3722,25 @@
             return;
         }
 
+        const validatedBank = validateBankFormBeforeSave();
+        if (!validatedBank) {
+            return;
+        }
+
         const bankId = document.getElementById('bank_detail_id').value;
         const payload = {
             employee_id: employeeId,
             subsection: 'bank_row',
             bank_detail_id: bankId,
-            account_category: document.querySelector('input[name="account_category"]:checked')?.value || 'Personal',
-            account_title: document.getElementById('bankDetailsAccountTitleInput').value,
-            account_no: document.getElementById('bankDetailsAccountNumberInput').value,
-            iban: document.getElementById('bankDetailsIbanInput').value,
-            bank_name: document.getElementById('bankDetailsBranchNameInput').value,
-            branch_code: document.getElementById('bankDetailsBranchCodeInput').value,
-            branch_address: document.getElementById('bankDetailsBranchAddressInput').value,
-            account_type: document.querySelector('input[name="account_type"]:checked')?.value || 'Saving',
-            is_salary_account: document.querySelector('input[name="is_salary_account"]:checked')?.value === '1'
+            account_category: validatedBank.account_category,
+            account_title: validatedBank.account_title,
+            account_no: validatedBank.account_no,
+            iban: validatedBank.iban,
+            bank_name: validatedBank.bank_name,
+            branch_code: validatedBank.branch_code,
+            branch_address: validatedBank.branch_address,
+            account_type: validatedBank.account_type,
+            is_salary_account: validatedBank.is_salary_account
         };
 
         const saveBtn = document.querySelector('button[onclick="saveBankDetail()"]');
@@ -3063,6 +4054,14 @@
             }
         });
 
+        const rowErrors = validateMoreRowData(type, data);
+        if (Object.keys(rowErrors).length > 0) {
+            showFieldErrors(rowErrors, rowElement);
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalHtml;
+            return false;
+        }
+
         try {
             const response = await fetch('/admin/employees/save-subsection', {
                 method: 'POST',
@@ -3104,6 +4103,115 @@
         } finally {
             saveBtn.disabled = false;
         }
+    }
+
+    function validateMoreRowData(type, data) {
+        const errors = {};
+        const addErr = (key, msg) => {
+            if (!errors[key]) errors[key] = [];
+            errors[key].push(msg);
+        };
+        const v = (k) => String(data[k] || '').trim();
+        const countWords = (text) => String(text || '').trim().split(/\s+/).filter(Boolean).length;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (type === 'family') {
+            const name = v('name');
+            const gender = v('gender');
+            const dob = v('dob');
+            const relation = v('relation');
+            const relationOther = v('relation_other');
+            const occupation = v('occupation');
+            const isNok = String(data.is_next_of_kin || data.is_next_of_kin_hidden || '0') === '1';
+            const nokCnic = String(v('nok_cnic')).replace(/-/g, '');
+            const nokExpiry = v('nok_cnic_expiry_date');
+            const nokContact = v('nok_contact');
+            const personNameRegex = /^(?!.*[<>])(?=.*[A-Za-z])[A-Za-z\s.\-'_]{3,100}$/;
+            const alphaLabelRegex = /^(?!.*[<>])(?=.*[A-Za-z])[A-Za-z\s'.,\-&\/()]{2,100}$/;
+            const alphaNumLabelRegex = /^(?!.*[<>])(?=.*[A-Za-z])[A-Za-z0-9\s'.,\-&\/#()]{1,100}$/;
+
+            if (!name) addErr('name', 'Name is required.');
+            else if (name.length < 3 || name.length > 50) addErr('name', 'Name must be 3 to 50 characters.');
+            else if (!personNameRegex.test(name)) addErr('name', 'Name may only contain letters and standard punctuation.');
+            if (!['Male', 'Female'].includes(gender)) addErr('gender', 'Gender is required.');
+            if (!dob || !isValidDate(dob)) addErr('dob', 'Date of birth is required.');
+            else if (dateValue(dob) >= today) addErr('dob', 'Date of birth must be before today.');
+            if (!relation) addErr('relation', 'Relation is required.');
+            else if (relation.length < 2 || relation.length > 100) addErr('relation', 'Relation must be 2 to 100 characters.');
+            else if (!alphaLabelRegex.test(relation)) addErr('relation', 'Relation may only contain letters and standard punctuation.');
+            if (relation === 'Other' && !relationOther) addErr('relation_other', 'Specify relation when Other is selected.');
+            if (relationOther) {
+                if (relationOther.length < 2 || relationOther.length > 100) addErr('relation_other', 'Specify relation must be 2 to 100 characters.');
+                else if (!alphaLabelRegex.test(relationOther)) addErr('relation_other', 'Specify relation may only contain letters and standard punctuation.');
+            }
+            if (occupation) {
+                if (occupation.length > 100) addErr('occupation', 'Occupation must not exceed 100 characters.');
+                else if (!alphaNumLabelRegex.test(occupation)) addErr('occupation', 'Occupation may only contain letters, numbers, spaces, and standard punctuation.');
+            }
+
+            if (isNok) {
+                if (!/^\d{13,15}$/.test(nokCnic)) addErr('nok_cnic', 'NOK CNIC must be 13 to 15 digits.');
+                if (!nokExpiry || !isValidDate(nokExpiry)) addErr('nok_cnic_expiry_date', 'NOK CNIC expiry date is required.');
+                else if (dateValue(nokExpiry) <= today) addErr('nok_cnic_expiry_date', 'NOK CNIC expiry must be after today.');
+                if (!isValidContact(nokContact)) addErr('nok_contact', 'NOK contact must be 11 to 15 digits.');
+            }
+        }
+
+        if (type === 'academic') {
+            const degree = v('degree');
+            const grade = v('grade_cgpa');
+            const start = v('start_date');
+            const end = v('end_date');
+            const field = v('field_of_study');
+            const institute = v('institute');
+            const alphaNumericTextRegex = /^[A-Za-z0-9]+[\sA-Za-z0-9.\-&,\/()#']*$/;
+
+            if (!degree) addErr('degree', 'Degree is required.');
+            else if (degree.length > 50) addErr('degree', 'Degree must not exceed 50 characters.');
+            else if (countWords(degree) > 20) addErr('degree', 'Certificate / Degree can be at most 20 words.');
+            if (!grade) addErr('grade_cgpa', 'Grade / CGPA is required.');
+            else if (grade.length > 20) addErr('grade_cgpa', 'Grade / CGPA must not exceed 20 characters.');
+            else if (countWords(grade) > 10) addErr('grade_cgpa', 'Grade / CGPA can be at most 10 words.');
+            if (!start || !isValidDate(start)) addErr('start_date', 'Start date is required.');
+            if (!end || !isValidDate(end)) addErr('end_date', 'End date is required.');
+            if (isValidDate(start) && isValidDate(end) && dateValue(end) < dateValue(start)) {
+                addErr('end_date', 'End date must be on or after start date.');
+            }
+            if (field) {
+                if (field.length > 50) addErr('field_of_study', 'Field of study must not exceed 50 characters.');
+                else if (!alphaNumericTextRegex.test(field)) addErr('field_of_study', 'Field of study may only contain letters, numbers, spaces, and standard punctuation.');
+            }
+            if (institute) {
+                if (institute.length > 150) addErr('institute', 'Institute must not exceed 150 characters.');
+                else if (countWords(institute) > 20) addErr('institute', 'University can be at most 20 words.');
+            }
+        }
+
+        if (type === 'employment') {
+            const org = v('organization');
+            const designation = v('designation');
+            const from = v('from_date');
+            const to = v('to_date');
+            const salary = v('salary');
+            const reason = v('reason_for_leaving');
+
+            if (!org) addErr('organization', 'Organization is required.');
+            else if (org.length > 100) addErr('organization', 'Organization must not exceed 100 characters.');
+            if (!designation) addErr('designation', 'Designation is required.');
+            else if (designation.length > 50) addErr('designation', 'Designation must not exceed 50 characters.');
+            if (!from || !isValidDate(from)) addErr('from_date', 'From date is required.');
+            else if (dateValue(from) > today) addErr('from_date', 'From date cannot be in the future.');
+            if (!to || !isValidDate(to)) addErr('to_date', 'To date is required.');
+            if (isValidDate(from) && isValidDate(to) && dateValue(to) < dateValue(from)) {
+                addErr('to_date', 'To date must be on or after from date.');
+            }
+            if (salary && salary.length > 20) addErr('salary', 'Salary must not exceed 20 digits.');
+            else if (salary && !/^\d+$/.test(salary)) addErr('salary', 'Salary must contain digits only.');
+            if (reason && reason.length > 200) addErr('reason_for_leaving', 'Reason for leaving must not exceed 200 characters.');
+        }
+
+        return errors;
     }
 
     async function removeSubsectionRow(type, rowElement) {
@@ -3240,6 +4348,124 @@
 
     const moreFamilyMembersContainerEl = document.getElementById('moreFamilyMembersContainer');
     if (moreFamilyMembersContainerEl) {
+        const removeFamilyInlineError = function (input) {
+            if (!input) return;
+            input.classList.remove('is-invalid');
+            let next = input.nextElementSibling;
+            while (next && next.classList && next.classList.contains('input-guard-error')) {
+                const toRemove = next;
+                next = next.nextElementSibling;
+                toRemove.remove();
+            }
+        };
+        const showFamilyInlineError = function (input, message) {
+            if (!input) return;
+            removeFamilyInlineError(input);
+            input.classList.add('is-invalid');
+            const err = document.createElement('div');
+            err.className = 'field-error-msg text-danger small mt-1 fw-bold input-guard-error';
+            err.setAttribute('role', 'alert');
+            err.textContent = message;
+            input.insertAdjacentElement('afterend', err);
+        };
+        const familyFieldConfig = function (target) {
+            if (!target) return null;
+            if (target.matches('[data-family-name]')) {
+                return {
+                    max: 50,
+                    allowed: /[A-Za-z\s.\-'_]/,
+                    clean: /[^A-Za-z\s.\-'_]/g,
+                    invalidMessage: /\d/.test(String(target.value ?? '')) ? 'Name cannot contain numbers.' : 'Name may contain letters only.',
+                    maxMessage: 'Maximum 50 characters allowed.',
+                };
+            }
+            if (target.matches('[data-family-relation-other]')) {
+                return {
+                    max: 100,
+                    allowed: /[A-Za-z\s'.,\-&\/()]/,
+                    clean: /[^A-Za-z\s'.,\-&\/()]/g,
+                    invalidMessage: 'Use letters and basic punctuation only.',
+                    maxMessage: 'Maximum 100 characters allowed.',
+                };
+            }
+            if (target.matches('[data-family-occupation]')) {
+                return {
+                    max: 100,
+                    allowed: /[A-Za-z0-9\s'.,\-&\/#()]/,
+                    clean: /[^A-Za-z0-9\s'.,\-&\/#()]/g,
+                    invalidMessage: 'Use letters, numbers, and basic punctuation only.',
+                    maxMessage: 'Maximum 100 characters allowed.',
+                };
+            }
+            if (target.matches('[data-family-nok-contact]')) {
+                return {
+                    max: 15,
+                    allowed: /[0-9]/,
+                    clean: /[^0-9]/g,
+                    invalidMessage: 'Only digits are allowed.',
+                    maxMessage: 'Maximum 15 digits allowed.',
+                };
+            }
+            if (target.matches('[data-family-nok-cnic]')) {
+                return {
+                    max: 15,
+                    allowed: /[0-9-]/,
+                    clean: /[^0-9-]/g,
+                    invalidMessage: 'Only digits and hyphen (-) are allowed.',
+                    maxMessage: 'Maximum 15 characters allowed.',
+                };
+            }
+            return null;
+        };
+
+        moreFamilyMembersContainerEl.addEventListener('beforeinput', function (e) {
+            const target = e.target;
+            const config = familyFieldConfig(target);
+            if (!config) return;
+            if (e.inputType && e.inputType.startsWith('delete')) return;
+            const inserted = typeof e.data === 'string' ? e.data : '';
+            if (!inserted) return;
+
+            if (!Array.from(inserted).every((ch) => config.allowed.test(ch))) {
+                e.preventDefault();
+                showFamilyInlineError(target, config.invalidMessage);
+                return;
+            }
+
+            const current = String(target.value ?? '');
+            const start = typeof target.selectionStart === 'number' ? target.selectionStart : current.length;
+            const end = typeof target.selectionEnd === 'number' ? target.selectionEnd : current.length;
+            const nextLength = current.length - (end - start) + inserted.length;
+            if (nextLength > config.max) {
+                e.preventDefault();
+                showFamilyInlineError(target, config.maxMessage);
+            }
+        }, true);
+
+        moreFamilyMembersContainerEl.addEventListener('input', function (e) {
+            const target = e.target;
+            const config = familyFieldConfig(target);
+            if (!config) return;
+
+            const original = String(target.value ?? '');
+            let cleaned = original.replace(config.clean, '');
+            if (cleaned.length > config.max) {
+                cleaned = cleaned.slice(0, config.max);
+                target.value = cleaned;
+                showFamilyInlineError(target, config.maxMessage);
+                return;
+            }
+            if (cleaned !== original) {
+                target.value = cleaned;
+                showFamilyInlineError(target, config.invalidMessage);
+                return;
+            }
+
+            if (target.classList.contains('is-invalid')) {
+                removeFamilyInlineError(target);
+            }
+        }, true);
+
         moreFamilyMembersContainerEl.addEventListener('change', function (e) {
             if (e.target && e.target.classList && e.target.classList.contains('family-nok-selector')) {
                 syncFamilyNokFromRadios();
@@ -3410,6 +4636,108 @@
     const addAcademicBtn = document.getElementById('moreAcademicAddRecordBtn');
     if (addAcademicBtn) addAcademicBtn.onclick = () => addAcademicRecord();
 
+    const moreAcademicRecordsContainerEl = document.getElementById('moreAcademicRecordsContainer');
+    if (moreAcademicRecordsContainerEl) {
+        const removeAcademicInlineError = function (input) {
+            if (!input) return;
+            input.classList.remove('is-invalid');
+            let next = input.nextElementSibling;
+            while (next && next.classList && next.classList.contains('input-guard-error')) {
+                const toRemove = next;
+                next = next.nextElementSibling;
+                toRemove.remove();
+            }
+        };
+        const showAcademicInlineError = function (input, message) {
+            if (!input) return;
+            removeAcademicInlineError(input);
+            input.classList.add('is-invalid');
+            const err = document.createElement('div');
+            err.className = 'field-error-msg text-danger small mt-1 fw-bold input-guard-error';
+            err.setAttribute('role', 'alert');
+            err.textContent = message;
+            input.insertAdjacentElement('afterend', err);
+        };
+        const academicFieldConfig = function (target) {
+            if (!target) return null;
+            if (target.matches('[data-academic-degree]')) {
+                return { max: 50, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 50 characters allowed.' };
+            }
+            if (target.matches('[data-academic-grade]')) {
+                return { max: 20, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 20 characters allowed.' };
+            }
+            if (target.matches('[data-academic-field-of-study]')) {
+                return { max: 50, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 50 characters allowed.' };
+            }
+            if (target.matches('[data-academic-institute]')) {
+                return { max: 150, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 150 characters allowed.' };
+            }
+            return null;
+        };
+
+        moreAcademicRecordsContainerEl.addEventListener('beforeinput', function (e) {
+            const target = e.target;
+            const cfg = academicFieldConfig(target);
+            if (!cfg) return;
+            if (e.inputType && e.inputType.startsWith('delete')) return;
+            const inserted = typeof e.data === 'string' ? e.data : '';
+            if (!inserted) return;
+            if (!Array.from(inserted).every((ch) => cfg.allowed.test(ch))) {
+                e.preventDefault();
+                showAcademicInlineError(target, cfg.invalid);
+                return;
+            }
+            const current = String(target.value ?? '');
+            const start = typeof target.selectionStart === 'number' ? target.selectionStart : current.length;
+            const end = typeof target.selectionEnd === 'number' ? target.selectionEnd : current.length;
+            const nextLength = current.length - (end - start) + inserted.length;
+            if (nextLength > cfg.max) {
+                e.preventDefault();
+                showAcademicInlineError(target, cfg.maxMsg);
+            }
+        }, true);
+
+        moreAcademicRecordsContainerEl.addEventListener('input', function (e) {
+            const target = e.target;
+            const cfg = academicFieldConfig(target);
+            if (!cfg) return;
+            const original = String(target.value ?? '');
+            let cleaned = original.replace(cfg.clean, '');
+            if (cleaned.length > cfg.max) {
+                cleaned = cleaned.slice(0, cfg.max);
+                target.value = cleaned;
+                showAcademicInlineError(target, cfg.maxMsg);
+                return;
+            }
+            if (cleaned !== original) {
+                target.value = cleaned;
+                showAcademicInlineError(target, cfg.invalid);
+                return;
+            }
+            if (target.classList.contains('is-invalid')) {
+                removeAcademicInlineError(target);
+            }
+        }, true);
+
+        moreAcademicRecordsContainerEl.addEventListener('change', function (e) {
+            const target = e.target;
+            if (!target) return;
+            if (target.matches('[data-academic-start-date], [data-academic-end-date]')) {
+                const row = target.closest('[data-academic-row]');
+                if (!row) return;
+                const start = row.querySelector('[data-academic-start-date]')?.value || '';
+                const end = row.querySelector('[data-academic-end-date]')?.value || '';
+                if (start && end) {
+                    const startDate = new Date(`${start}T00:00:00`);
+                    const endDate = new Date(`${end}T00:00:00`);
+                    if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate < startDate) {
+                        showAcademicInlineError(row.querySelector('[data-academic-end-date]'), 'End date must be on or after start date.');
+                    }
+                }
+            }
+        });
+    }
+
     // --- EMPLOYMENT Record Specifics ---
 
     window.addEmploymentRecord = function(data = null) {
@@ -3443,6 +4771,122 @@
 
     const addEmploymentBtn = document.getElementById('moreEmploymentAddRecordBtn');
     if (addEmploymentBtn) addEmploymentBtn.onclick = () => addEmploymentRecord();
+
+    const moreEmploymentRecordsContainerEl = document.getElementById('moreEmploymentRecordsContainer');
+    if (moreEmploymentRecordsContainerEl) {
+        const removeEmploymentInlineError = function (input) {
+            if (!input) return;
+            input.classList.remove('is-invalid');
+            let next = input.nextElementSibling;
+            while (next && next.classList && next.classList.contains('input-guard-error')) {
+                const toRemove = next;
+                next = next.nextElementSibling;
+                toRemove.remove();
+            }
+        };
+        const showEmploymentInlineError = function (input, message) {
+            if (!input) return;
+            removeEmploymentInlineError(input);
+            input.classList.add('is-invalid');
+            const err = document.createElement('div');
+            err.className = 'field-error-msg text-danger small mt-1 fw-bold input-guard-error';
+            err.setAttribute('role', 'alert');
+            err.textContent = message;
+            input.insertAdjacentElement('afterend', err);
+        };
+        const employmentFieldConfig = function (target) {
+            if (!target) return null;
+            if (target.matches('[data-employment-organization]')) {
+                return { max: 100, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 100 characters allowed.' };
+            }
+            if (target.matches('[data-employment-designation]')) {
+                return { max: 50, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 50 characters allowed.' };
+            }
+            if (target.matches('[data-employment-salary]')) {
+                return { max: 20, allowed: /[0-9]/, clean: /[^0-9]/g, invalid: 'Use digits only.', maxMsg: 'Maximum 20 digits allowed.' };
+            }
+            if (target.matches('[data-employment-reason]')) {
+                return { max: 200, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 200 characters allowed.' };
+            }
+            return null;
+        };
+
+        moreEmploymentRecordsContainerEl.addEventListener('beforeinput', function (e) {
+            const target = e.target;
+            const cfg = employmentFieldConfig(target);
+            if (!cfg) return;
+            if (e.inputType && e.inputType.startsWith('delete')) return;
+            const inserted = typeof e.data === 'string' ? e.data : '';
+            if (!inserted) return;
+            if (!Array.from(inserted).every((ch) => cfg.allowed.test(ch))) {
+                e.preventDefault();
+                showEmploymentInlineError(target, cfg.invalid);
+                return;
+            }
+            const current = String(target.value ?? '');
+            const start = typeof target.selectionStart === 'number' ? target.selectionStart : current.length;
+            const end = typeof target.selectionEnd === 'number' ? target.selectionEnd : current.length;
+            const nextLength = current.length - (end - start) + inserted.length;
+            if (nextLength > cfg.max) {
+                e.preventDefault();
+                showEmploymentInlineError(target, cfg.maxMsg);
+            }
+        }, true);
+
+        moreEmploymentRecordsContainerEl.addEventListener('input', function (e) {
+            const target = e.target;
+            const cfg = employmentFieldConfig(target);
+            if (!cfg) return;
+            const original = String(target.value ?? '');
+            let cleaned = original.replace(cfg.clean, '');
+            if (cleaned.length > cfg.max) {
+                cleaned = cleaned.slice(0, cfg.max);
+                target.value = cleaned;
+                showEmploymentInlineError(target, cfg.maxMsg);
+                return;
+            }
+            if (cleaned !== original) {
+                target.value = cleaned;
+                showEmploymentInlineError(target, cfg.invalid);
+                return;
+            }
+            if (target.matches('[data-employment-salary]') && cleaned && Number(cleaned) < 0) {
+                showEmploymentInlineError(target, 'Salary cannot be negative.');
+                return;
+            }
+            if (target.classList.contains('is-invalid')) {
+                removeEmploymentInlineError(target);
+            }
+        }, true);
+
+        moreEmploymentRecordsContainerEl.addEventListener('change', function (e) {
+            const target = e.target;
+            if (!target) return;
+            if (target.matches('[data-employment-from-date], [data-employment-to-date]')) {
+                const row = target.closest('[data-employment-row]');
+                if (!row) return;
+                const from = row.querySelector('[data-employment-from-date]')?.value || '';
+                const to = row.querySelector('[data-employment-to-date]')?.value || '';
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (from) {
+                    const fromDate = new Date(`${from}T00:00:00`);
+                    if (!Number.isNaN(fromDate.getTime()) && fromDate > today) {
+                        showEmploymentInlineError(row.querySelector('[data-employment-from-date]'), 'From date cannot be in the future.');
+                        return;
+                    }
+                }
+                if (from && to) {
+                    const fromDate = new Date(`${from}T00:00:00`);
+                    const toDate = new Date(`${to}T00:00:00`);
+                    if (!Number.isNaN(fromDate.getTime()) && !Number.isNaN(toDate.getTime()) && toDate < fromDate) {
+                        showEmploymentInlineError(row.querySelector('[data-employment-to-date]'), 'To date must be on or after from date.');
+                        return;
+                    }
+                }
+            }
+        });
+    }
 
     // --- Error Clearing on Input ---
     const mainForm = document.getElementById('employeeForm');
