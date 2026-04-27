@@ -55,7 +55,7 @@
                             <label class="form-label opacity-75 small">Name</label>
                             <input type="text" class="form-control border"
                                 style="background:rgba(255,255,255,.07);border-color:#ffffff1a !important;"
-                                id="attachmentName" placeholder="Enter attachment name">
+                                id="attachmentName" placeholder="Enter attachment name" maxlength="255">
                         </div>
 
                         <div class="col-md-6">
@@ -74,7 +74,7 @@
                         <div class="col-12">
                             <label class="form-label opacity-75 small">Description</label>
                             <textarea class="form-control text-white border" id="attachmentDesc" rows="3" placeholder="Enter description"
-                                style="background:rgba(255,255,255,.07) !important;border-color:#ffffff1a !important;"></textarea>
+                                style="background:rgba(255,255,255,.07) !important;border-color:#ffffff1a !important;" maxlength="1000"></textarea>
                         </div>
 
                         <div class="col-12">
@@ -308,6 +308,32 @@
             return data;
         })
         .then(data => {
+            const getFriendlyAttachmentErrorMessage = (key, rawMessage) => {
+                const message = String(rawMessage || '').trim();
+                if (!message) return 'Attachment upload failed. Please try again.';
+
+                const lower = message.toLowerCase();
+                const keyText = String(key || '').toLowerCase();
+
+                if (keyText.includes('files') || lower.includes('failed to upload')) {
+                    if (lower.includes('failed to upload')) {
+                        return 'One of the selected files could not be uploaded. Please reselect the file and try again.';
+                    }
+                    if (lower.includes('must not exceed') || lower.includes('max')) {
+                        return 'Each attachment file must be 10 MB or smaller.';
+                    }
+                    if (lower.includes('mimes') || lower.includes('type') || lower.includes('jpg') || lower.includes('pdf') || lower.includes('doc')) {
+                        return 'Invalid file type. Allowed: JPG, JPEG, PNG, PDF, DOC, DOCX.';
+                    }
+                    return 'Please upload at least one valid attachment file.';
+                }
+
+                if (keyText.includes('name')) return 'Attachment name is required (max 255 characters).';
+                if (keyText.includes('type')) return 'Attachment type must be 100 characters or less.';
+                if (keyText.includes('description')) return 'Attachment description must be 1000 characters or less.';
+                return message;
+            };
+
             if (data.success) {
                 const attachment = {
                     localId: 'existing-' + data.attachment_id,
@@ -330,7 +356,7 @@
             } else {
                 if (data.errors) {
                     for (const key in data.errors) {
-                        const errorText = data.errors[key][0];
+                        const errorText = getFriendlyAttachmentErrorMessage(key, data.errors[key][0]);
                         let targetElement;
                         
                         if (key.includes('name')) {
