@@ -47,7 +47,9 @@
                                                         <input type="text" name="msr_letter_no" class="form-control police-verification-field"
                                                             id="policeVerificationMsrNumberInput"
                                                             value="{{ $pv->msr_letter_no ?? '' }}"
-                                                            maxlength="255"
+                                                            maxlength="20"
+                                                            inputmode="numeric"
+                                                            pattern="[0-9]+"
                                                             placeholder="Enter MSR number">
                                                     </div>
                                                     <div class="col-md-6">
@@ -112,8 +114,8 @@
  
                                 <div class="card border-0 bg-light">
                                     <div class="card-body p-3">
-                                        <div class="fw-bold text-uppercase small mb-3">Remarks</div>
-                                        <label class="form-label">Remarks <span class="text-danger police-mandatory-star d-none">*</span></label>
+                                        <div class="fw-bold text-uppercase small mb-3">Remarks <span class="text-danger police-mandatory-star d-none">*</span></div>
+                                        <!-- <label class="form-label">Remarks </label> -->
                                         <textarea name="police_remarks" class="form-control police-verification-field" id="policeVerificationRemarksInput" rows="3"
                                             maxlength="2000"
                                             placeholder="Enter remarks">{{ $pv->remarks ?? '' }}</textarea>

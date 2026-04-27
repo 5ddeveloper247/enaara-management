@@ -344,8 +344,15 @@ class EmployeeStoreRequest extends FormRequest
                 Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== 'In Process'),
                 'nullable',
                 'string',
-                'max:255',
-                Rule::when(fn () => filled($this->input('msr_letter_no')), ['regex:' . $this->alphanumericCodeRegex()]),
+                'max:20',
+                Rule::when(fn () => filled($this->input('msr_letter_no')), ['regex:/^[0-9]+$/']),
+            ],
+            'msr_date'               => [
+                'bail',
+                Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== 'In Process'),
+                'nullable',
+                'date',
+                'before_or_equal:today',
             ],
             'addressee'              => [
                 'bail',
@@ -373,6 +380,14 @@ class EmployeeStoreRequest extends FormRequest
                 'max:100',
                 Rule::when(fn () => filled($this->input('verification_letter_no')), ['regex:' . $this->alphanumericCodeRegex()]),
             ],
+            'verification_letter_date' => [
+                'bail',
+                Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== 'In Process'),
+                'nullable',
+                'date',
+                'after_or_equal:msr_date',
+                'before_or_equal:today',
+            ],
             'next_verification_date' => [
                 'bail',
                 Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== 'In Process'),
@@ -380,7 +395,7 @@ class EmployeeStoreRequest extends FormRequest
                 'date',
                 Rule::when(
                     fn () => ($this->input('verification_status') ?? '') !== 'In Process',
-                    ['after_or_equal:today']
+                    ['after:verification_letter_date', 'after_or_equal:today']
                 ),
             ],
             'police_remarks'         => [
@@ -585,18 +600,24 @@ class EmployeeStoreRequest extends FormRequest
             'probation_end_date.after_or_equal' => 'Probation end date must be on or after probation start date.',
             'verification_status.required' => 'Verification Status is required.',
             'msr_letter_no.required'       => 'MSR letter number and date is required when status is Cleared or Not Cleared.',
+            'msr_date.required'            => 'MSR date is required when status is Cleared or Not Cleared.',
+            'msr_date.before_or_equal'     => 'MSR date cannot be in the future.',
             'addressee.required'           => 'Addressee is required when status is Cleared or Not Cleared.',
             'addressee.min'                => 'Addressee must be at least 2 characters.',
             'verifying_authority.required' => 'Verifying authority is required when status is Cleared or Not Cleared.',
             'verifying_authority.min'      => 'Verifying authority must be at least 2 characters.',
             'verification_letter_no.required' => 'Verification letter number and date is required when status is Cleared or Not Cleared.',
+            'verification_letter_date.required' => 'Verification letter date is required when status is Cleared or Not Cleared.',
+            'verification_letter_date.after_or_equal' => 'Verification letter date must be on or after MSR date.',
+            'verification_letter_date.before_or_equal' => 'Verification letter date cannot be in the future.',
             'next_verification_date.required' => 'Next verification date is required when status is Cleared or Not Cleared.',
+            'next_verification_date.after' => 'Next verification date must be after verification letter date.',
             'next_verification_date.after_or_equal' => 'Next verification date must be today or a future date.',
             'police_remarks.required'      => 'Remarks are required when status is Cleared or Not Cleared.',
             'police_remarks.min'           => 'Remarks must be at least 2 characters when status is Cleared or Not Cleared.',
 
             // Ex-Forces
-            'msr_letter_no.regex'          => 'MSR letter number may only contain letters, numbers, slashes, hyphens, and underscores.',
+            'msr_letter_no.regex'          => 'MSR number must contain digits only.',
             'addressee.regex'              => 'Addressee may only contain letters and standard punctuation.',
             'verifying_authority.regex'    => 'Verifying authority may only contain letters and standard punctuation.',
             'verification_letter_no.regex' => 'Verification letter number may only contain letters, numbers, slashes, hyphens, and underscores.',

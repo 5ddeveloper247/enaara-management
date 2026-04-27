@@ -213,6 +213,7 @@
             'nok_contact',
             'account_no',
             'ntn',
+            'msr_letter_no',
         ]);
 
         const cnicFields = new Set(['cnic', 'father_cnic', 'spouse_cnic', 'nok_cnic']);
@@ -231,7 +232,7 @@
         const alphaTextAllowedPattern = /^[A-Za-z\s.\-&,\/()']*$/;
         const alphaNumericTextFields = new Set(['grade', 'intern_duration', 'branch', 'medical_category', 'pma_lc_ots', 'addressee']);
         const alphaNumericTextAllowedPattern = /^[A-Za-z0-9\s.\-&,\/()#']*$/;
-        const alphanumericCodeFields = new Set(['biometric_id', 'service_no', 'msr_letter_no', 'verification_letter_no']);
+        const alphanumericCodeFields = new Set(['biometric_id', 'service_no', 'verification_letter_no']);
         const alphanumericCodeAllowedPattern = /^[A-Za-z0-9\/\-_]*$/;
         const rankFields = new Set(['rank']);
         const rankAllowedPattern = /^[A-Za-z0-9\s.\-\/]*$/;
@@ -733,6 +734,71 @@
                 showInputGuardError(target, target.validationMessage || 'Invalid value.');
             }
         }, true);
+
+        function validatePoliceVerificationDateLogic() {
+            const statusInput = document.querySelector('input[name="verification_status"]:checked');
+            const status = statusInput ? statusInput.value : '';
+            const isMandatory = status === 'Cleared' || status === 'Not Cleared';
+            const msrDateInput = document.getElementById('policeVerificationMsrDateInput');
+            const letterDateInput = document.getElementById('policeVerificationLetterDateInput');
+            const nextDateInput = document.getElementById('policeVerificationNextVerificationDateInput');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const parseDate = function (value) {
+                if (!value) return null;
+                const dt = new Date(`${value}T00:00:00`);
+                return Number.isNaN(dt.getTime()) ? null : dt;
+            };
+
+            if (msrDateInput) {
+                const msrDate = parseDate(msrDateInput.value);
+                if (msrDate && msrDate > today) {
+                    showInputGuardError(msrDateInput, 'MSR date cannot be in the future.');
+                } else {
+                    removeInputGuardError(msrDateInput);
+                }
+            }
+
+            if (letterDateInput) {
+                const msrDate = parseDate(msrDateInput ? msrDateInput.value : '');
+                const letterDate = parseDate(letterDateInput.value);
+                if (letterDate && letterDate > today) {
+                    showInputGuardError(letterDateInput, 'Verification letter date cannot be in the future.');
+                } else if (letterDate && msrDate && letterDate < msrDate) {
+                    showInputGuardError(letterDateInput, 'Verification letter date must be on or after MSR date.');
+                } else {
+                    removeInputGuardError(letterDateInput);
+                }
+            }
+
+            if (nextDateInput) {
+                const letterDate = parseDate(letterDateInput ? letterDateInput.value : '');
+                const nextDate = parseDate(nextDateInput.value);
+                if (nextDate && nextDate < today) {
+                    showInputGuardError(nextDateInput, 'Next verification date must be today or a future date.');
+                } else if (isMandatory && nextDate && letterDate && nextDate <= letterDate) {
+                    showInputGuardError(nextDateInput, 'Next verification date must be after verification letter date.');
+                } else {
+                    removeInputGuardError(nextDateInput);
+                }
+            }
+        }
+
+        document.addEventListener('change', function (e) {
+            const target = e.target;
+            if (!target) return;
+            if (!target.closest('#employeeForm')) return;
+            if (
+                target.name === 'verification_status'
+                || target.name === 'msr_date'
+                || target.name === 'verification_letter_date'
+                || target.name === 'next_verification_date'
+            ) {
+                validatePoliceVerificationDateLogic();
+            }
+        }, true);
+
+        validatePoliceVerificationDateLogic();
     }
 
     applyInputGuards();

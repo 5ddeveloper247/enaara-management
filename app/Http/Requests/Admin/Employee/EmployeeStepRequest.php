@@ -458,13 +458,14 @@ class EmployeeStepRequest extends FormRequest
                 'msr_letter_no' => [
                     'nullable',
                     'string',
-                    'max:255',
-                    'regex:/^[A-Za-z0-9\/\-_]+$/',
+                    'max:20',
+                    'regex:/^[0-9]+$/',
                     Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
                 ],
                 'msr_date' => [
                     'nullable',
                     'date',
+                    'before_or_equal:today',
                     Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
                 ],
                 'addressee' => [
@@ -491,11 +492,15 @@ class EmployeeStepRequest extends FormRequest
                 'verification_letter_date' => [
                     'nullable',
                     'date',
+                    'after_or_equal:msr_date',
+                    'before_or_equal:today',
                     Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
                 ],
                 'next_verification_date' => [
                     'nullable',
                     'date',
+                    'after:verification_letter_date',
+                    'after_or_equal:today',
                     Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== $inProcess),
                 ],
                 'police_remarks' => [
@@ -1032,13 +1037,18 @@ class EmployeeStepRequest extends FormRequest
             // Police Verification
             'verification_status.required' => 'Verification status is required.',
             'msr_letter_no.required' => 'MSR letter number and date is required when status is Cleared or Not Cleared.',
-            'msr_letter_no.regex' => 'MSR letter number may only contain letters, numbers, slash, hyphen, and underscore.',
+            'msr_letter_no.regex' => 'MSR number must contain digits only.',
+            'msr_date.before_or_equal' => 'MSR date cannot be in the future.',
             'addressee.required' => 'Addressee is required when status is Cleared or Not Cleared.',
             'addressee.min' => 'Addressee must be at least 2 characters.',
             'verifying_authority.required' => 'Verifying authority is required when status is Cleared or Not Cleared.',
             'verifying_authority.min' => 'Verifying authority must be at least 2 characters.',
             'verification_letter_no.required' => 'Verification letter number and date is required when status is Cleared or Not Cleared.',
+            'verification_letter_date.required' => 'Verification letter date is required when status is Cleared or Not Cleared.',
+            'verification_letter_date.after_or_equal' => 'Verification letter date must be on or after MSR date.',
+            'verification_letter_date.before_or_equal' => 'Verification letter date cannot be in the future.',
             'next_verification_date.required' => 'Next verification date is required when status is Cleared or Not Cleared.',
+            'next_verification_date.after' => 'Next verification date must be after verification letter date.',
             'police_remarks.required' => 'Remarks are required when status is Cleared or Not Cleared.',
             'police_remarks.min' => 'Remarks must be at least 2 characters when status is Cleared or Not Cleared.',
             'addressee.regex' => 'Addressee may contain letters, numbers, spaces, dots, hyphens, commas, slashes, parentheses, and apostrophes only.',

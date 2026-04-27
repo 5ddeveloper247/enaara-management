@@ -623,8 +623,8 @@
                                                         <div class="col-md-3">
                                                             <label class="form-label small fw-semibold">
                                                                 <i
-                                                                    class="bi bi-sunrise text-secondary me-1"></i>Working
-                                                                Start <span class="text-danger">*</span>
+                                                                    class="bi bi-sunrise text-secondary me-1"></i>
+                                                                Start Time<span class="text-danger">*</span>
                                                             </label>
                                                             <input type="time" name="working_start_time"
                                                                 class="form-control"
@@ -633,8 +633,8 @@
                                                         </div>
                                                         <div class="col-md-3">
                                                             <label class="form-label small fw-semibold">
-                                                                <i class="bi bi-sunset text-secondary me-1"></i>Working
-                                                                End <span class="text-danger">*</span>
+                                                                <i class="bi bi-sunset text-secondary me-1"></i>
+                                                                End Time<span class="text-danger">*</span>
                                                             </label>
                                                             <input type="time" name="working_end_time"
                                                                 class="form-control"
