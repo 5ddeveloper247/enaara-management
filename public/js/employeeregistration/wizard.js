@@ -1374,7 +1374,7 @@
         });
     });
 
-    document.getElementById('nextBtn').addEventListener('click', function () {
+    document.getElementById('nextBtn').addEventListener('click', async function () {
         if (currentStep === 6) {
             const isLastMoreStep = typeof window.isLastMoreStep === 'function' ? window.isLastMoreStep() : true;
             if (!isLastMoreStep) {
@@ -1390,13 +1390,19 @@
                     });
                     return;
                 }
-                
-                // For dynamic rows (2,3,4), just move next (they have independent save buttons)
-                if (typeof window.nextMoreSubStep === 'function') {
-                    window.nextMoreSubStep();
-                    syncStepUi();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    return;
+
+                // For dynamic rows (2,3,4), auto-save unsaved cards before moving next.
+                if ([2, 3, 4].includes(moreStep)) {
+                    const autoSaved = await autoSaveMoreDynamicRows(moreStep);
+                    if (!autoSaved) {
+                        return;
+                    }
+                    if (typeof window.nextMoreSubStep === 'function') {
+                        window.nextMoreSubStep();
+                        syncStepUi();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        return;
+                    }
                 }
             }
         }
@@ -1474,6 +1480,52 @@
             nextBtn.disabled = false;
             nextBtn.textContent = originalText;
         }
+    }
+
+    function rowHasAnyData(rowElement) {
+        if (!rowElement) return false;
+        const fields = rowElement.querySelectorAll('input, select, textarea');
+        for (const input of fields) {
+            const name = input.getAttribute('name');
+            if (!name || name === 'family_nok_selector') continue;
+            if (input.type === 'checkbox' || input.type === 'radio') {
+                if (input.checked) return true;
+                continue;
+            }
+            if (String(input.value ?? '').trim() !== '') return true;
+        }
+        return false;
+    }
+
+    async function autoSaveMoreDynamicRows(moreStep) {
+        const stepTypeMap = { 2: 'family', 3: 'academic', 4: 'employment' };
+        const containerIdMap = {
+            family: 'moreFamilyMembersContainer',
+            academic: 'moreAcademicRecordsContainer',
+            employment: 'moreEmploymentRecordsContainer',
+        };
+        const type = stepTypeMap[moreStep];
+        if (!type) return true;
+        const container = document.getElementById(containerIdMap[type]);
+        if (!container) return true;
+
+        const rows = Array.from(container.querySelectorAll(`[data-${type}-row]`));
+        let savedCount = 0;
+        for (const row of rows) {
+            const isPreview = row.classList.contains('preview-mode');
+            if (isPreview) continue;
+            if (!rowHasAnyData(row)) continue;
+            const ok = await saveSubsectionRow(type, row, { silentSuccess: true });
+            if (!ok) {
+                return false;
+            }
+            savedCount += 1;
+        }
+
+        if (savedCount > 0) {
+            showToast(`${savedCount} ${type} record${savedCount > 1 ? 's' : ''} saved`);
+        }
+        return true;
     }
 
     document.getElementById('prevBtn').addEventListener('click', function () {
@@ -2975,15 +3027,19 @@
         });
     }
 
-    async function saveSubsectionRow(type, rowElement) {
+    async function saveSubsectionRow(type, rowElement, options = {}) {
+        const silentSuccess = !!options.silentSuccess;
         const isPreview = rowElement.classList.contains('preview-mode');
         if (isPreview) {
             setSubsectionRowMode(rowElement, type, false);
-            return;
+            return false;
         }
 
         const employeeId = document.getElementById('saved_employee_id')?.value;
-        if (!employeeId) return showError('Save general information first.');
+        if (!employeeId) {
+            showError('Save general information first.');
+            return false;
+        }
 
         const saveBtn = rowElement.querySelector(`[data-${type}-save]`);
         const originalHtml = saveBtn.innerHTML;
@@ -3022,23 +3078,29 @@
             if (response.status === 422) {
                 showFieldErrors(res.errors, rowElement);
                 saveBtn.innerHTML = originalHtml;
+                return false;
             } else if (res.success) {
                 // Remove any remaining visual errors on successful save
                 rowElement.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
                 rowElement.querySelectorAll('.field-error-msg').forEach(err => err.remove());
                 
                 if (res.id) rowElement.setAttribute('data-db-id', res.id);
-                showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} record saved successfully`);
+                if (!silentSuccess) {
+                    showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} record saved successfully`);
+                }
                 updateSubsectionPreview(rowElement, type);
                 setSubsectionRowMode(rowElement, type, true);
                 rowElement.classList.add('saved-row');
+                return true;
             } else {
                 showError(res.message);
                 saveBtn.innerHTML = originalHtml;
+                return false;
             }
         } catch (e) { 
             showError('Network error'); 
             saveBtn.innerHTML = originalHtml;
+            return false;
         } finally {
             saveBtn.disabled = false;
         }
@@ -3106,7 +3168,7 @@
                 const indexSpan = row.querySelector('[data-family-index]');
                 if (indexSpan) indexSpan.textContent = 'Member ' + String(idx + 1);
                 const removeBtn = row.querySelector('[data-family-remove]');
-                if (removeBtn) removeBtn.disabled = rows.length === 1;
+                if (removeBtn) removeBtn.disabled = false;
             });
             const countLabel = document.getElementById(countId);
             if (countLabel) {
