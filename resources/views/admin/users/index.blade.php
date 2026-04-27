@@ -15,6 +15,10 @@
         .dt-buttons { margin-top: 2px; }
         .offcanvas select option { background: #012445; color: #fff; }
         #userCanvas input::placeholder, #userCanvas select { color: rgba(255,255,255,0.7) !important; }
+        .dept-chip-wrap { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .35rem; max-width: 260px; }
+        .dept-chip { background: #eef3ff; color: #1e3a8a; border: 1px solid #dbe6ff; border-radius: 999px; padding: .22rem .6rem; font-size: .75rem; line-height: 1.2; white-space: nowrap; }
+        .dept-more-btn { border-radius: 999px; padding: .22rem .62rem; font-size: .75rem; line-height: 1.2; background: #1f3f92; color: #fff; border: 0; font-weight: 600; }
+        .dept-more-btn:hover, .dept-more-btn:focus { background: #173479; color: #fff; }
     </style>
 @endpush
 
@@ -175,11 +179,23 @@
                 .map(function (d) { return d.trim(); })
                 .filter(function (d) { return d.length > 0; });
 
-            if (departments.length <= 1) {
-                return '<span class="badge px-3 rounded-1 bg-primary">' + esc(departments[0] || data) + '</span>';
+            if (!departments.length) return '<span class="text-muted">-</span>';
+
+            var previewLimit = 2;
+            var preview = departments.slice(0, previewLimit);
+            var remaining = departments.length - preview.length;
+            var chips = preview.map(function (dept) {
+                return '<span class="dept-chip" title="' + escAttr(dept) + '">' + esc(dept) + '</span>';
+            }).join('');
+
+            if (remaining <= 0) {
+                return '<div class="dept-chip-wrap">' + chips + '</div>';
             }
 
-            return '<button type="button" class="badge bg-info text-white rounded-1 border-0 px-3 view-assigned-depts-btn" data-departments="' + escAttr(departments.join(',')) + '">Multiple (' + departments.length + ')</button>';
+            return '<div class="dept-chip-wrap">' +
+                chips +
+                '<button type="button" class="dept-more-btn view-assigned-depts-btn" data-departments="' + escAttr(departments.join(',')) + '" title="View all departments">+' + remaining + ' more</button>' +
+                '</div>';
         }
 
         function renderRole(data) {
