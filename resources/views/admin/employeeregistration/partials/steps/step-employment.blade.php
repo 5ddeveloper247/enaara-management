@@ -67,6 +67,7 @@
                                                                 class="form-control"
                                                                 id="employmentDetailsInternDurationInput"
                                                                 value="{{ $employee->intern_duration ?? '' }}"
+                                                                maxlength="10"
                                                                 placeholder="e.g. 3 months, 6 months">
                                                         </div>
                                                     </div>
@@ -293,13 +294,16 @@
                                                         <label class="form-label">Date of Joining <span
                                                                 class="text-danger">*</span></label>
                                                         <input type="date" name="join_date" class="form-control"
+                                                            id="employmentJoinDateInput"
                                                             value="{{ isset($employee->join_date) ? $employee->join_date->format('Y-m-d') : '' }}"
                                                             placeholder="yyyy-mm-dd">
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Designation</label>
                                                         <input type="text" name="designation" class="form-control"
+                                                            id="designation"
                                                             value="{{ $employee->designation ?? '' }}"
+                                                            maxlength="100"
                                                             placeholder="Designation">
                                                     </div>
                                                 </div>
@@ -316,18 +320,23 @@
                                                     <div class="col-md-6">
                                                         <label class="form-label">Grade</label>
                                                         <input type="text" name="grade" class="form-control"
-                                                            value="{{ $employee->grade ?? '' }}" placeholder="Grade">
+                                                            id="grade"
+                                                            value="{{ $employee->grade ?? '' }}" maxlength="10" placeholder="Grade">
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Branch</label>
                                                         <input type="text" name="branch" class="form-control"
+                                                            id="branch"
                                                             value="{{ $employee->branch ?? '' }}"
+                                                            maxlength="50"
                                                             placeholder="Branch">
                                                     </div>
                                                     <div class="col-12">
                                                         <label class="form-label">Location</label>
                                                         <input type="text" name="location" class="form-control"
+                                                            id="location"
                                                             value="{{ $employee->location ?? '' }}"
+                                                            maxlength="255"
                                                             placeholder="Location">
                                                     </div>
                                                 </div>
@@ -373,6 +382,7 @@
                                                         <input type="text" name="biometric_id" id="biometric_id"
                                                             class="form-control"
                                                             value="{{ $employee->biometric_id ?? '' }}"
+                                                            maxlength="20"
                                                             placeholder="Enter service or biometric ID">
                                                     </div>
 
@@ -638,7 +648,7 @@
                                                                 Grace <span class="text-muted fw-normal">(min)</span>
                                                             </label>
                                                             <input type="number" name="opening_grace_period"
-                                                                min="0" class="form-control"
+                                                                min="0" max="600" class="form-control"
                                                                 id="employmentCustomCheckInGraceInput"
                                                                 placeholder="Optional"
                                                                 value="{{ $employee->opening_grace_period ?? '' }}">
@@ -650,7 +660,7 @@
                                                                 Grace <span class="text-muted fw-normal">(min)</span>
                                                             </label>
                                                             <input type="number" name="closing_grace_period"
-                                                                min="0" class="form-control"
+                                                                min="0" max="600" class="form-control"
                                                                 id="employmentCustomCheckOutGraceInput"
                                                                 placeholder="Optional"
                                                                 value="{{ $employee->closing_grace_period ?? '' }}">

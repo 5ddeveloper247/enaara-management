@@ -247,7 +247,7 @@ class EmployeeUpdateRequest extends FormRequest
             'city_of_birth' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
             'religion' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'sect' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
-            'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widow'])],
+            'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widowed'])],
             'spouse_name' => ['required_if:marital_status,Married', 'nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()],
             'spouse_cnic' => [
                 'required_if:marital_status,Married', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'
@@ -312,7 +312,7 @@ class EmployeeUpdateRequest extends FormRequest
             'employee_status' => ['required', Rule::in(['Active', 'Suspend', 'Terminated'])],
             'employment_category' => ['required', Rule::in(['intern', 'consultant', 'employee', 'contractual'])],
             'intern_type' => ['nullable', Rule::in(['paid', 'unpaid']), 'required_if:employment_category,intern'],
-            'intern_duration' => ['nullable', 'string', 'max:100', 'required_if:employment_category,intern'],
+            'intern_duration' => ['nullable', 'string', 'max:10', 'required_if:employment_category,intern'],
             'contractual_type' => [
                 'nullable',
                 Rule::in(['time_bound', 'open', 'open_ended', 'project_based']),

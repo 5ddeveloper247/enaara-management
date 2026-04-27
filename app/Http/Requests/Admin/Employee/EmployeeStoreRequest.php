@@ -272,7 +272,7 @@ class EmployeeStoreRequest extends FormRequest
             'employee_status'        => ['required', Rule::in(['Active', 'Suspend', 'Terminated'])],
             'employment_category'    => ['required', Rule::in(['intern', 'consultant', 'employee', 'contractual'])],
             'intern_type'            => ['nullable', Rule::in(['paid', 'unpaid']), 'required_if:employment_category,intern'],
-            'intern_duration'        => ['nullable', 'string', 'max:100', 'required_if:employment_category,intern'],
+            'intern_duration'        => ['nullable', 'string', 'max:10', 'required_if:employment_category,intern'],
             'contractual_type'       => [
                 'nullable',
                 Rule::in(['time_bound', 'open', 'open_ended', 'project_based']),

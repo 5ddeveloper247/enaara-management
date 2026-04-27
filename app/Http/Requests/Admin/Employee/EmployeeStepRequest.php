@@ -315,9 +315,9 @@ class EmployeeStepRequest extends FormRequest
                 'dob' => ['required', 'date', 'before:today'],
                 'domicile_district' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
                 'domicile_province' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()],
-                'city_of_birth' => ['nullable', 'string', 'max:100', 'regex:' . $this->localeAlphanumericLabelRegex()],
-                'religion' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
-                'sect' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeAlphaLabelRegex()],
+                'city_of_birth' => ['nullable', 'string', 'max:50', 'regex:' . $this->localeAlphanumericLabelRegex()],
+                'religion' => ['required', 'string', 'min:2', 'max:50', 'regex:' . $this->alphaTextRegex()],
+                'sect' => ['required', 'string', 'min:2', 'max:50', 'regex:' . $this->localeAlphaLabelRegex()],
                 'marital_status' => ['required', Rule::in(['Single', 'Married', 'Separated', 'Divorced', 'Widow'])],
                 'spouse_name' => [
                     'required_if:marital_status,Married', 'nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->localePersonNameRegex()
@@ -352,8 +352,8 @@ class EmployeeStepRequest extends FormRequest
                 'employee_type' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
                 'designation' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
                 'grade' => ['nullable', 'string', 'max:10', 'regex:' . $this->alphaNumericTextRegex()],
-                'branch' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphaTextRegex()],
-                'location' => ['nullable', 'string', 'max:255'],
+                'branch' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
+                'location' => ['nullable', 'string', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
                 'site' => ['nullable', 'string', 'max:255'],
                 'join_date' => ['required', 'date', 'before_or_equal:today'],
                 'floor_access' => ['nullable', 'boolean'],
@@ -377,7 +377,7 @@ class EmployeeStepRequest extends FormRequest
                 'intern_duration' => [
                     'nullable',
                     'string',
-                    'max:100',
+                    'max:10',
                     'required_if:employment_category,intern',
                 ],
                 'employment_type' => [
@@ -948,7 +948,7 @@ class EmployeeStepRequest extends FormRequest
             'domicile_province.regex' => 'Province must be valid text (letters from any language, spaces, and standard punctuation).',
 
             'city_of_birth.min' => 'Town / City of birth must be at least 2 characters.',
-            'city_of_birth.max' => 'Town / City of birth must not exceed 100 characters.',
+            'city_of_birth.max' => 'Town / City of birth must not exceed 50 characters.',
             
             'blood_group.regex' => 'The blood group format is invalid. It must be a standard format (e.g., A+, O-, AB+).',
             'city_of_birth.regex' => 'Town / City of birth must include letters and may use numbers, spaces, and standard punctuation (no angle brackets).',
@@ -977,7 +977,8 @@ class EmployeeStepRequest extends FormRequest
             'designation.regex' => 'Designation may only contain letters, spaces, and punctuation (like dot or hyphen).',
             'grade.max' => 'The grade field must not exceed 10 characters.',
             'grade.regex' => 'Grade may only contain letters, numbers, spaces, and hyphens.',
-            'branch.regex' => 'Branch may only contain letters, spaces, and standard punctuation.',
+            'branch.regex' => 'Branch may only contain letters, numbers, spaces, and standard punctuation.',
+            'location.regex' => 'Location must include letters and may use numbers, spaces, and standard punctuation (no angle brackets).',
             'vendor.regex' => 'Vendor may only contain letters, spaces, and standard punctuation.',
 
             'join_date.required' => 'Date of joining is required.',

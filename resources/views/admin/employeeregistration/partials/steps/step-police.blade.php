@@ -47,6 +47,7 @@
                                                         <input type="text" name="msr_letter_no" class="form-control police-verification-field"
                                                             id="policeVerificationMsrNumberInput"
                                                             value="{{ $pv->msr_letter_no ?? '' }}"
+                                                            maxlength="255"
                                                             placeholder="Enter MSR number">
                                                     </div>
                                                     <div class="col-md-6">
@@ -61,6 +62,7 @@
                                                         <input type="text" name="verification_letter_no" class="form-control police-verification-field"
                                                             id="policeVerificationLetterNumberInput"
                                                             value="{{ $pv->verification_letter_no ?? '' }}"
+                                                            maxlength="100"
                                                             placeholder="Enter verification letter number">
                                                     </div>
                                                     <div class="col-md-6">
@@ -84,6 +86,7 @@
                                                         <label class="form-label">Addressee <span class="text-danger police-mandatory-star d-none">*</span></label>
                                                         <input type="text" name="addressee" class="form-control police-verification-field" id="policeVerificationAddresseeInput"
                                                             value="{{ $pv->addressee ?? '' }}"
+                                                            maxlength="100"
                                                             placeholder="Enter addressee">
                                                     </div>
                                                     <div class="col-6">
@@ -91,6 +94,7 @@
                                                         <input type="text" name="verifying_authority" class="form-control police-verification-field"
                                                             id="policeVerificationVerifyingAuthorityInput"
                                                             value="{{ $pv->verifying_authority ?? '' }}"
+                                                            maxlength="255"
                                                             placeholder="Enter verifying authority">
                                                     </div>
                                                     <div class="col-6">
@@ -111,6 +115,7 @@
                                         <div class="fw-bold text-uppercase small mb-3">Remarks</div>
                                         <label class="form-label">Remarks <span class="text-danger police-mandatory-star d-none">*</span></label>
                                         <textarea name="police_remarks" class="form-control police-verification-field" id="policeVerificationRemarksInput" rows="3"
+                                            maxlength="2000"
                                             placeholder="Enter remarks">{{ $pv->remarks ?? '' }}</textarea>
                                     </div>
                                 </div>

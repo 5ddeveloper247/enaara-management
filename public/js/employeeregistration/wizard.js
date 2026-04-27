@@ -110,6 +110,633 @@
 
     initContactMasks();
 
+    function fieldKeyFromName(name) {
+        if (!name) return '';
+        const raw = String(name).trim().toLowerCase();
+        if (!raw) return '';
+        // Keep full snake_case field names (e.g. verifying_authority),
+        // but normalize array-style names like family[0][nok_cnic] -> nok_cnic.
+        const bracketMatches = raw.match(/[a-z_]+/g);
+        if (bracketMatches && bracketMatches.length > 1) {
+            return bracketMatches[bracketMatches.length - 1];
+        }
+        return raw.replace(/\[\]$/, '');
+    }
+
+    function applyInputGuards() {
+        function removeInputGuardError(input) {
+            if (!input) return;
+            input.classList.remove('is-invalid');
+            let next = input.nextElementSibling;
+            while (next && next.classList && next.classList.contains('input-guard-error')) {
+                const toRemove = next;
+                next = next.nextElementSibling;
+                toRemove.remove();
+            }
+        }
+
+        function showInputGuardError(input, message) {
+            if (!input) return;
+            removeInputGuardError(input);
+            input.classList.add('is-invalid');
+            const err = document.createElement('div');
+            err.className = 'field-error-msg text-danger small mt-1 fw-bold input-guard-error';
+            err.setAttribute('role', 'alert');
+            err.textContent = message;
+            input.insertAdjacentElement('afterend', err);
+        }
+
+        const maxLengthByField = {
+            full_name: 50,
+            father_name: 50,
+            email: 50,
+            phone: 15,
+            cnic: 15,
+            father_cnic: 15,
+            ntn: 13,
+            nationality: 100,
+            domicile_district: 100,
+            domicile_province: 100,
+            city_of_birth: 50,
+            religion: 50,
+            sect: 50,
+            spouse_name: 50,
+            spouse_cnic: 15,
+            spouse_nationality: 100,
+            employee_type: 100,
+            intern_duration: 10,
+            designation: 50,
+            grade: 10,
+            branch: 50,
+            location: 100,
+            site: 100,
+            biometric_id: 20,
+            service_no: 50,
+            rank: 50,
+            medical_category: 50,
+            reason_of_retirement: 255,
+            corps_regiment: 100,
+            ex_army_unit: 100,
+            trade: 50,
+            pma_lc_ots: 50,
+            msr_letter_no: 20,
+            addressee: 100,
+            verifying_authority: 50,
+            verification_letter_no: 100,
+            police_remarks: 2000,
+            account_title: 255,
+            account_no: 16,
+            bank_name: 255,
+            branch_code: 50,
+            branch_address: 500,
+            iban: 30,
+            residence_phone: 15,
+            emergency_contact: 15,
+            cell_no: 15,
+            contact_email: 255,
+            present_address: 1000,
+            permanent_address: 1000,
+            nok_name: 100,
+            nok_relation: 100,
+            nok_contact: 15,
+            nok_cnic: 15,
+            relation: 100,
+            occupation: 100,
+            name: 100,
+        };
+
+        const digitsOnlyFields = new Set([
+            'phone',
+            'residence_phone',
+            'emergency_contact',
+            'cell_no',
+            'nok_contact',
+            'account_no',
+            'ntn',
+        ]);
+
+        const cnicFields = new Set(['cnic', 'father_cnic', 'spouse_cnic', 'nok_cnic']);
+
+        const alphaNumericUpperFields = new Set(['iban']);
+
+        const personNameFields = new Set(['full_name', 'father_name', 'spouse_name', 'nok_name', 'name']);
+        const personNameAllowedPattern = /^[A-Za-z\s.'-]*$/;
+        const cityBirthFields = new Set(['city_of_birth']);
+        const cityBirthAllowedPattern = /^[A-Za-z0-9\s.'\-&,\/#()]*$/;
+        const locationFields = new Set(['location']);
+        const locationAllowedPattern = /^[A-Za-z0-9\s.'\-&,\/#()]*$/;
+        const sectFields = new Set(['sect']);
+        const sectAllowedPattern = /^[\p{L}\p{M}\s'.,\-&\/()]*$/u;
+        const alphaTextFields = new Set(['employee_type', 'designation', 'trade', 'corps_regiment', 'ex_army_unit', 'verifying_authority']);
+        const alphaTextAllowedPattern = /^[A-Za-z\s.\-&,\/()']*$/;
+        const alphaNumericTextFields = new Set(['grade', 'intern_duration', 'branch', 'medical_category', 'pma_lc_ots', 'addressee']);
+        const alphaNumericTextAllowedPattern = /^[A-Za-z0-9\s.\-&,\/()#']*$/;
+        const alphanumericCodeFields = new Set(['biometric_id', 'service_no', 'msr_letter_no', 'verification_letter_no']);
+        const alphanumericCodeAllowedPattern = /^[A-Za-z0-9\/\-_]*$/;
+        const rankFields = new Set(['rank']);
+        const rankAllowedPattern = /^[A-Za-z0-9\s.\-\/]*$/;
+        const boundedIntegerMaxByField = {
+            opening_grace_period: 600,
+            closing_grace_period: 600,
+        };
+
+        function nextLengthWithInsert(input, insertedText) {
+            const current = String(input.value ?? '');
+            const start = typeof input.selectionStart === 'number' ? input.selectionStart : current.length;
+            const end = typeof input.selectionEnd === 'number' ? input.selectionEnd : current.length;
+            const replaced = end - start;
+            return current.length - replaced + String(insertedText || '').length;
+        }
+
+        function resolveMaxLength(input, fieldKey) {
+            if (fieldKey && maxLengthByField[fieldKey]) {
+                return Number(maxLengthByField[fieldKey]);
+            }
+            const attr = input ? input.getAttribute('maxlength') : null;
+            if (!attr) return null;
+            const parsed = Number(attr);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+        }
+
+        function hasTextSelection(input) {
+            return typeof input.selectionStart === 'number'
+                && typeof input.selectionEnd === 'number'
+                && input.selectionEnd > input.selectionStart;
+        }
+
+        function shouldTreatAsTextInsertion(e) {
+            if (!e || typeof e.key !== 'string') return false;
+            if (e.ctrlKey || e.metaKey || e.altKey) return false;
+            return e.key.length === 1;
+        }
+
+        function syncNativeMaxlengthAttributes() {
+            document.querySelectorAll('#employeeForm input[name], #employeeForm textarea[name]').forEach((el) => {
+                const key = fieldKeyFromName(el.name);
+                const maxLen = maxLengthByField[key];
+                if (maxLen) {
+                    el.setAttribute('maxlength', String(maxLen));
+                }
+            });
+        }
+
+        function clampInitialValuesToMaxlength() {
+            document.querySelectorAll('#employeeForm input[name], #employeeForm textarea[name]').forEach((el) => {
+                const key = fieldKeyFromName(el.name);
+                const maxLen = resolveMaxLength(el, key);
+                if (!maxLen) return;
+                const str = String(el.value ?? '');
+                if (str.length > maxLen) {
+                    el.value = str.slice(0, maxLen);
+                    el.dataset.maxLimitBlocked = '1';
+                    showInputGuardError(el, `Maximum ${maxLen} characters allowed.`);
+                }
+            });
+        }
+
+        function runMaxlengthSync() {
+            syncNativeMaxlengthAttributes();
+            clampInitialValuesToMaxlength();
+        }
+
+        runMaxlengthSync();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runMaxlengthSync);
+        }
+
+        document.addEventListener('beforeinput', function (e) {
+            const target = e.target;
+            if (!target || !target.name) return;
+            if (!target.closest('#employeeForm')) return;
+            if (e.inputType && e.inputType.startsWith('delete')) return;
+
+            const key = fieldKeyFromName(target.name);
+            const maxLen = resolveMaxLength(target, key);
+            const inserted = typeof e.data === 'string' ? e.data : '';
+
+            if (maxLen && inserted && nextLengthWithInsert(target, inserted) > maxLen) {
+                e.preventDefault();
+                target.dataset.maxLimitBlocked = '1';
+                showInputGuardError(target, `Maximum ${maxLen} characters allowed.`);
+                return;
+            }
+
+            if (Object.prototype.hasOwnProperty.call(boundedIntegerMaxByField, key) && inserted) {
+                if (!/^\d+$/.test(inserted)) {
+                    e.preventDefault();
+                    showInputGuardError(target, 'Only numeric digits are allowed in this field.');
+                    return;
+                }
+
+                const current = String(target.value ?? '');
+                const start = typeof target.selectionStart === 'number' ? target.selectionStart : current.length;
+                const end = typeof target.selectionEnd === 'number' ? target.selectionEnd : current.length;
+                const next = current.slice(0, start) + inserted + current.slice(end);
+                const nextNum = Number(next);
+                const maxAllowed = boundedIntegerMaxByField[key];
+                if (Number.isFinite(nextNum) && nextNum > maxAllowed) {
+                    e.preventDefault();
+                    showInputGuardError(target, `Maximum value is ${maxAllowed}.`);
+                    return;
+                }
+            }
+
+            if (digitsOnlyFields.has(key) && inserted && !/^\d+$/.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only numeric digits are allowed in this field.');
+                return;
+            }
+
+            if (cnicFields.has(key) && inserted && !/^[0-9-]+$/.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only digits and hyphen (-) are allowed for CNIC.');
+                return;
+            }
+
+            if (cityBirthFields.has(key) && inserted && !cityBirthAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only letters, numbers, spaces and basic punctuation are allowed.');
+                return;
+            }
+
+            if (locationFields.has(key) && inserted && !locationAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only letters, numbers, spaces and basic punctuation are allowed.');
+                return;
+            }
+
+            if (sectFields.has(key) && inserted && !sectAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Sect must be letters and standard punctuation only (no digits).');
+                return;
+            }
+
+            if (alphaTextFields.has(key) && inserted && !alphaTextAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, /\d/.test(inserted)
+                    ? 'Digits are not allowed in this field.'
+                    : 'Only letters, spaces and standard punctuation are allowed in this field.');
+                return;
+            }
+
+            if (alphaNumericTextFields.has(key) && inserted && !alphaNumericTextAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only letters, numbers, spaces and standard punctuation are allowed in this field.');
+                return;
+            }
+
+            if (alphanumericCodeFields.has(key) && inserted && !alphanumericCodeAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only letters, numbers, slash (/), hyphen (-), and underscore (_) are allowed.');
+                return;
+            }
+
+            if (rankFields.has(key) && inserted && !rankAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Rank may contain letters, numbers, spaces, dots, hyphens, and slashes only.');
+                return;
+            }
+
+            if (!personNameFields.has(key)) return;
+            if (!inserted) return;
+
+            if (!personNameAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, /\d/.test(inserted)
+                    ? 'Digits are not allowed in this field.'
+                    : 'Only alphabetic characters are allowed in this field.');
+            }
+        }, true);
+
+        // Fallback guard: some browsers/inputs may not surface max-length errors reliably via beforeinput.
+        document.addEventListener('keydown', function (e) {
+            const target = e.target;
+            if (!target || !target.name) return;
+            if (!target.closest('#employeeForm')) return;
+            if (!shouldTreatAsTextInsertion(e)) return;
+
+            const key = fieldKeyFromName(target.name);
+            const maxLen = resolveMaxLength(target, key);
+            const inserted = e.key;
+
+            if (digitsOnlyFields.has(key) && inserted && !/^\d$/.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only numeric digits are allowed in this field.');
+                return;
+            }
+
+            if (cnicFields.has(key) && inserted && !/^[0-9-]$/.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only digits and hyphen (-) are allowed for CNIC.');
+                return;
+            }
+
+            if (cityBirthFields.has(key) && inserted && !cityBirthAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only letters, numbers, spaces and basic punctuation are allowed.');
+                return;
+            }
+
+            if (locationFields.has(key) && inserted && !locationAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only letters, numbers, spaces and basic punctuation are allowed.');
+                return;
+            }
+
+            if (sectFields.has(key) && inserted && !sectAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Sect must be letters and standard punctuation only (no digits).');
+                return;
+            }
+
+            if (alphaTextFields.has(key) && inserted && !alphaTextAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, /\d/.test(inserted)
+                    ? 'Digits are not allowed in this field.'
+                    : 'Only letters, spaces and standard punctuation are allowed in this field.');
+                return;
+            }
+
+            if (alphaNumericTextFields.has(key) && inserted && !alphaNumericTextAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only letters, numbers, spaces and standard punctuation are allowed in this field.');
+                return;
+            }
+
+            if (alphanumericCodeFields.has(key) && inserted && !alphanumericCodeAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Only letters, numbers, slash (/), hyphen (-), and underscore (_) are allowed.');
+                return;
+            }
+
+            if (rankFields.has(key) && inserted && !rankAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, 'Rank may contain letters, numbers, spaces, dots, hyphens, and slashes only.');
+                return;
+            }
+
+            if (personNameFields.has(key) && inserted && !personNameAllowedPattern.test(inserted)) {
+                e.preventDefault();
+                showInputGuardError(target, /\d/.test(inserted)
+                    ? 'Digits are not allowed in this field.'
+                    : 'Only alphabetic characters are allowed in this field.');
+                return;
+            }
+
+            if (!maxLen) return;
+
+            const currentLength = String(target.value ?? '').length;
+            if (currentLength >= maxLen && !hasTextSelection(target)) {
+                e.preventDefault();
+                target.dataset.maxLimitBlocked = '1';
+                showInputGuardError(target, `Maximum ${maxLen} characters allowed.`);
+            }
+        }, true);
+
+        document.addEventListener('paste', function (e) {
+            const target = e.target;
+            if (!target || !target.name) return;
+            if (!target.closest('#employeeForm')) return;
+
+            const key = fieldKeyFromName(target.name);
+            const maxLen = resolveMaxLength(target, key);
+            let pastedText = e.clipboardData ? (e.clipboardData.getData('text') || '') : '';
+            if (!pastedText) return;
+
+            if (digitsOnlyFields.has(key)) pastedText = pastedText.replace(/\D/g, '');
+            if (cnicFields.has(key)) pastedText = pastedText.replace(/[^0-9-]/g, '');
+            if (cityBirthFields.has(key)) pastedText = pastedText.replace(/[^A-Za-z0-9\s.'\-&,\/#()]/g, '');
+            if (locationFields.has(key)) pastedText = pastedText.replace(/[^A-Za-z0-9\s.'\-&,\/#()]/g, '');
+            if (sectFields.has(key)) pastedText = pastedText.replace(/[^\p{L}\p{M}\s'.,\-&\/()]/gu, '');
+            if (alphaTextFields.has(key)) pastedText = pastedText.replace(/[^A-Za-z\s.\-&,\/()']/g, '');
+            if (alphaNumericTextFields.has(key)) pastedText = pastedText.replace(/[^A-Za-z0-9\s.\-&,\/()#']/g, '');
+            if (alphanumericCodeFields.has(key)) pastedText = pastedText.replace(/[^A-Za-z0-9\/\-_]/g, '');
+            if (rankFields.has(key)) pastedText = pastedText.replace(/[^A-Za-z0-9\s.\-\/]/g, '');
+            if (personNameFields.has(key)) pastedText = pastedText.replace(/[^A-Za-z\s.'-]/g, '');
+
+            if (!maxLen) return;
+            if (nextLengthWithInsert(target, pastedText) <= maxLen) return;
+
+            e.preventDefault();
+            target.dataset.maxLimitBlocked = '1';
+            const current = String(target.value ?? '');
+            const start = typeof target.selectionStart === 'number' ? target.selectionStart : current.length;
+            const end = typeof target.selectionEnd === 'number' ? target.selectionEnd : current.length;
+            const allowed = Math.max(0, maxLen - (current.length - (end - start)));
+            const safeInsert = pastedText.slice(0, allowed);
+            target.value = current.slice(0, start) + safeInsert + current.slice(end);
+            showInputGuardError(target, `Maximum ${maxLen} characters allowed.`);
+        }, true);
+
+        document.addEventListener('input', function (e) {
+            const target = e.target;
+            if (!target || !target.name) return;
+            if (!target.closest('#employeeForm')) return;
+
+            const key = fieldKeyFromName(target.name);
+            const maxLen = resolveMaxLength(target, key);
+            const originalValue = String(target.value ?? '');
+            let value = originalValue;
+            let errorMessage = '';
+
+            if (digitsOnlyFields.has(key)) {
+                value = value.replace(/\D/g, '');
+            }
+
+            if (cnicFields.has(key)) {
+                value = value.replace(/[^0-9-]/g, '');
+            }
+
+            if (alphaNumericUpperFields.has(key)) {
+                value = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            }
+
+            if (key === 'email' || key === 'contact_email') {
+                value = value.replace(/\s/g, '').toLowerCase();
+            }
+
+            if (personNameFields.has(key)) {
+                const hadDigit = /\d/.test(value);
+                const cleaned = value.replace(/[^A-Za-z\s.'-]/g, '');
+                if (cleaned !== value && !errorMessage) {
+                    errorMessage = hadDigit
+                        ? 'Digits are not allowed in this field.'
+                        : 'Only alphabetic characters are allowed in this field.';
+                }
+                value = cleaned;
+            }
+
+            if (cityBirthFields.has(key)) {
+                const cleaned = value.replace(/[^A-Za-z0-9\s.'\-&,\/#()]/g, '');
+                if (cleaned !== value && !errorMessage) {
+                    errorMessage = 'Only letters, numbers, spaces and basic punctuation are allowed.';
+                }
+                value = cleaned;
+                if (value && !/[A-Za-z]/.test(value) && !errorMessage) {
+                    errorMessage = 'Town / City of Birth must contain at least one letter.';
+                }
+            }
+
+            if (locationFields.has(key)) {
+                const cleaned = value.replace(/[^A-Za-z0-9\s.'\-&,\/#()]/g, '');
+                if (cleaned !== value && !errorMessage) {
+                    errorMessage = 'Only letters, numbers, spaces and basic punctuation are allowed.';
+                }
+                value = cleaned;
+                if (value && !/[A-Za-z]/.test(value) && !errorMessage) {
+                    errorMessage = 'Location must contain at least one letter.';
+                }
+            }
+
+            if (sectFields.has(key)) {
+                const cleaned = value.replace(/[^\p{L}\p{M}\s'.,\-&\/()]/gu, '');
+                if (cleaned !== value && !errorMessage) {
+                    errorMessage = 'Sect must be letters and standard punctuation only (no digits).';
+                }
+                value = cleaned;
+                if (value && !/[\p{L}\p{M}]/u.test(value) && !errorMessage) {
+                    errorMessage = 'Sect must contain at least one letter.';
+                }
+            }
+
+            if (alphaTextFields.has(key)) {
+                const hadDigit = /\d/.test(value);
+                const cleaned = value.replace(/[^A-Za-z\s.\-&,\/()']/g, '');
+                if (cleaned !== value && !errorMessage) {
+                    errorMessage = hadDigit
+                        ? 'Digits are not allowed in this field.'
+                        : 'Only letters, spaces and standard punctuation are allowed in this field.';
+                }
+                value = cleaned;
+            }
+
+            if (alphaNumericTextFields.has(key)) {
+                const cleaned = value.replace(/[^A-Za-z0-9\s.\-&,\/()#']/g, '');
+                if (cleaned !== value && !errorMessage) {
+                    errorMessage = 'Only letters, numbers, spaces and standard punctuation are allowed in this field.';
+                }
+                value = cleaned;
+            }
+
+            if (alphanumericCodeFields.has(key)) {
+                const cleaned = value.replace(/[^A-Za-z0-9\/\-_]/g, '');
+                if (cleaned !== value && !errorMessage) {
+                    errorMessage = 'Only letters, numbers, slash (/), hyphen (-), and underscore (_) are allowed.';
+                }
+                value = cleaned;
+            }
+
+            if (rankFields.has(key)) {
+                const cleaned = value.replace(/[^A-Za-z0-9\s.\-\/]/g, '');
+                if (cleaned !== value && !errorMessage) {
+                    errorMessage = 'Rank may contain letters, numbers, spaces, dots, hyphens, and slashes only.';
+                }
+                value = cleaned;
+            }
+
+            if (Object.prototype.hasOwnProperty.call(boundedIntegerMaxByField, key)) {
+                const cleaned = value.replace(/\D/g, '');
+                if (cleaned !== value && !errorMessage) {
+                    errorMessage = 'Only numeric digits are allowed in this field.';
+                }
+                value = cleaned;
+                const maxAllowed = boundedIntegerMaxByField[key];
+                if (value) {
+                    const numericValue = Number(value);
+                    if (Number.isFinite(numericValue) && numericValue > maxAllowed) {
+                        value = String(maxAllowed);
+                        if (!errorMessage) {
+                            errorMessage = `Maximum value is ${maxAllowed}.`;
+                        }
+                    }
+                }
+            }
+
+            // Generic number min/max validation for all numeric inputs in the form.
+            if (!errorMessage && target.type === 'number' && value !== '') {
+                const numericValue = Number(value);
+                const minAttr = target.getAttribute('min');
+                const maxAttr = target.getAttribute('max');
+                const min = minAttr !== null && minAttr !== '' ? Number(minAttr) : null;
+                const max = maxAttr !== null && maxAttr !== '' ? Number(maxAttr) : null;
+
+                if (Number.isFinite(min) && Number.isFinite(numericValue) && numericValue < min) {
+                    errorMessage = `Minimum value is ${min}.`;
+                } else if (Number.isFinite(max) && Number.isFinite(numericValue) && numericValue > max) {
+                    errorMessage = `Maximum value is ${max}.`;
+                }
+            }
+
+            if (maxLen && value.length > maxLen) {
+                value = value.slice(0, maxLen);
+                if (!errorMessage) {
+                    errorMessage = `Maximum ${maxLen} characters allowed.`;
+                }
+            }
+
+            // Browser-native maxlength can silently block extra input without firing our preventDefault path.
+            // Show a consistent inline message as soon as the field reaches its allowed limit.
+            if (!errorMessage && maxLen && value.length === maxLen && target.dataset.maxLimitBlocked === '1') {
+                errorMessage = `Maximum ${maxLen} characters allowed.`;
+            }
+
+            if (value !== target.value) {
+                target.value = value;
+            }
+
+            if (errorMessage) {
+                showInputGuardError(target, errorMessage);
+            } else {
+                const valStr = String(target.value ?? '');
+                const unchanged = valStr === originalValue;
+                const siblingGuard = target.nextElementSibling
+                    && target.nextElementSibling.classList
+                    && target.nextElementSibling.classList.contains('input-guard-error');
+                const keepMaxLimitHint = maxLen && valStr.length >= maxLen && target.dataset.maxLimitBlocked === '1';
+                const keepPendingGuard = unchanged && siblingGuard && target.classList.contains('is-invalid');
+                if (!keepMaxLimitHint && !keepPendingGuard) {
+                    delete target.dataset.maxLimitBlocked;
+                    removeInputGuardError(target);
+                }
+            }
+        }, true);
+
+        // If browser blocks extra characters via native maxlength without firing input mutation,
+        // keep the same inline error style as General tab.
+        document.addEventListener('keyup', function (e) {
+            const target = e.target;
+            if (!target || !target.name) return;
+            if (!target.closest('#employeeForm')) return;
+            const key = fieldKeyFromName(target.name);
+            const maxLen = resolveMaxLength(target, key);
+            if (!maxLen) return;
+
+            if (target.dataset.maxLimitBlocked === '1' && String(target.value ?? '').length >= maxLen) {
+                showInputGuardError(target, `Maximum ${maxLen} characters allowed.`);
+            }
+        }, true);
+
+        // Surface browser constraint failures (required/type/min/max/pattern) as inline errors instantly.
+        document.addEventListener('invalid', function (e) {
+            const target = e.target;
+            if (!target || !target.name) return;
+            if (!target.closest('#employeeForm')) return;
+            e.preventDefault();
+            showInputGuardError(target, target.validationMessage || 'Invalid value.');
+        }, true);
+
+        document.addEventListener('change', function (e) {
+            const target = e.target;
+            if (!target || !target.name) return;
+            if (!target.closest('#employeeForm')) return;
+            if (typeof target.checkValidity === 'function' && !target.checkValidity()) {
+                showInputGuardError(target, target.validationMessage || 'Invalid value.');
+            }
+        }, true);
+    }
+
+    applyInputGuards();
+
     const initialSbu = sbuSelect ? sbuSelect.value : null;
     const initialRole = roleSelect ? roleSelect.value : null;
 
@@ -240,9 +867,13 @@
     // Error and State Handling
     function clearFieldStatus(el) {
         if (!el) return;
+        const container = el.closest('.col-12, .col-md-6, .col-md-4, .col-md-3, .col-xl-3, .col, .form-group, .mb-3');
+        if (container && container.querySelector('.input-guard-error')) {
+            return;
+        }
+
         el.classList.remove('is-invalid');
         // Find the closest parent that might contain error messages
-        const container = el.closest('.col-12, .col-md-6, .col-md-4, .col-md-3, .col-xl-3, .col, .form-group, .mb-3');
         if (container) {
             container.querySelectorAll('.field-error-msg').forEach(err => err.remove());
         } else {
@@ -299,7 +930,7 @@
         'working_end_time':             'employmentCustomWorkingEndInput',
         'opening_grace_period':         'employmentCustomCheckInGraceInput',
         'closing_grace_period':         'employmentCustomCheckOutGraceInput',
-        'join_date':                    'join_date',
+        'join_date':                    'employmentJoinDateInput',
         'designation':                  'designation',
         'grade':                        'grade',
         'branch':                       'branch',
@@ -2676,10 +3307,14 @@
         const clearLocalError = function(e) {
             const target = e.target;
             if (target && target.classList.contains('is-invalid')) {
-                target.classList.remove('is-invalid');
-                
-                // Clear sibling/nearby error message
                 const container = target.closest('[class^="col-"], [class*=" col-"], .col, .form-group, .mb-3');
+                if (container && container.querySelector('.input-guard-error')) {
+                    return;
+                }
+
+                target.classList.remove('is-invalid');
+
+                // Clear sibling/nearby error message
                 if (container) {
                     const err = container.querySelector('.field-error-msg');
                     if (err) err.remove();

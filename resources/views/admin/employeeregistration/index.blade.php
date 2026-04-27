@@ -65,6 +65,6 @@
     <!-- Cropper.js Script -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     
-    <script src="{{ asset('js/employeeregistration/wizard.js') }}"></script>
+    <script src="{{ asset('js/employeeregistration/wizard.js') }}?v={{ filemtime(public_path('js/employeeregistration/wizard.js')) }}"></script>
 @endpush
 
