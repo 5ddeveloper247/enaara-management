@@ -67,9 +67,9 @@
             </div>
 
             <div id="editSbuScheduleModeSection" class="mb-3 d-none">
-                <label class="form-label fw-semibold small text-white">Selection Mode</label>
+                <label class="form-label fw-semibold small text-white">Selection Mode <span class="text-danger">*</span></label>
                 <div class="btn-group w-100" role="group" aria-label="Selection Mode">
-                    <input type="radio" class="btn-check" name="schedule_mode" id="editSbuScheduleModeStandard" value="standard" checked>
+                    <input type="radio" class="btn-check" name="schedule_mode" id="editSbuScheduleModeStandard" value="standard">
                     <label class="btn btn-outline-light" for="editSbuScheduleModeStandard">Standard</label>
                     <input type="radio" class="btn-check" name="schedule_mode" id="editSbuScheduleModeCustom" value="custom">
                     <label class="btn btn-outline-light" for="editSbuScheduleModeCustom">Custom</label>
@@ -91,23 +91,19 @@
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label for="editSbuWorkingStartTime" class="form-label fw-semibold small text-white">Working Start Time</label>
-                        <input type="time" class="form-control" id="editSbuWorkingStartTime" name="working_start_time">
-                    </div>
-                    <div class="col-6">
-                        <label for="editSbuWorkingEndTime" class="form-label fw-semibold small text-white">Working End Time</label>
-                        <input type="time" class="form-control" id="editSbuWorkingEndTime" name="working_end_time">
+                    <div class="col-12">
+                        <label for="editSbuGracePeriod" class="form-label fw-semibold small text-white">Grace Period (min)</label>
+                        <input type="number" min="0" max="600" class="form-control" id="editSbuGracePeriod" name="opening_grace_period">
                     </div>
                 </div>
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label for="editSbuOpeningGracePeriod" class="form-label fw-semibold small text-white">Opening Grace Period (min)</label>
-                        <input type="number" min="0" max="600" class="form-control" id="editSbuOpeningGracePeriod" name="opening_grace_period">
+                        <label for="editSbuWorkingStartTime" class="form-label fw-semibold small text-white">Check-in</label>
+                        <input type="time" class="form-control" id="editSbuWorkingStartTime" name="working_start_time">
                     </div>
                     <div class="col-6">
-                        <label for="editSbuClosingGracePeriod" class="form-label fw-semibold small text-white">Closing Grace Period (min)</label>
-                        <input type="number" min="0" max="600" class="form-control" id="editSbuClosingGracePeriod" name="closing_grace_period">
+                        <label for="editSbuWorkingEndTime" class="form-label fw-semibold small text-white">Check-out</label>
+                        <input type="time" class="form-control" id="editSbuWorkingEndTime" name="working_end_time">
                     </div>
                 </div>
             </div>

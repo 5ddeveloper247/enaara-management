@@ -10,10 +10,21 @@ class SbuStoreRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
+        $openingGracePeriod = $this->input('opening_grace_period');
+        $closingGracePeriod = $this->input('closing_grace_period');
+        if (($openingGracePeriod === null || $openingGracePeriod === '') && ($closingGracePeriod !== null && $closingGracePeriod !== '')) {
+            $openingGracePeriod = $closingGracePeriod;
+        }
+        if ($openingGracePeriod !== null && $openingGracePeriod !== '') {
+            $closingGracePeriod = $openingGracePeriod;
+        }
+
         $this->merge([
             'name' => $this->filled('name') ? preg_replace('/\s+/', ' ', trim((string) $this->input('name'))) : $this->input('name'),
             'city' => $this->filled('city') ? preg_replace('/\s+/', ' ', trim((string) $this->input('city'))) : $this->input('city'),
             'address' => $this->filled('address') ? trim((string) $this->input('address')) : $this->input('address'),
+            'opening_grace_period' => $openingGracePeriod,
+            'closing_grace_period' => $closingGracePeriod,
         ]);
     }
 
@@ -77,6 +88,12 @@ class SbuStoreRequest extends FormRequest
             'opening_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
             'closing_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
 
+            'schedule_mode' => [
+                Rule::requiredIf(fn () => $this->filled('organization_id')),
+                'nullable',
+                Rule::in(['standard', 'custom']),
+            ],
+
             'is_active' => ['required', 'boolean'],
         ];
     }
@@ -105,6 +122,9 @@ class SbuStoreRequest extends FormRequest
             'closing_grace_period.integer' => 'Closing grace period must be a valid number.',
             'closing_grace_period.min' => 'Closing grace period cannot be negative.',
             'closing_grace_period.max' => 'Closing grace period cannot exceed 600 minutes.',
+
+            'schedule_mode.required' => 'Select Standard or Custom for selection mode.',
+            'schedule_mode.in' => 'Selection mode must be Standard or Custom.',
 
             'is_active.required' => 'Status is required.',
         ];

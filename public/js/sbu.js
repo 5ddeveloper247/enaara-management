@@ -77,10 +77,33 @@
         syncUpdateSbuButtonState();
     }
 
+    function syncAddSbuScheduleRadiosRequired() {
+        const orgVal = ($('#organization_id').val() || '').trim();
+        const radios = document.querySelectorAll('#addSbuForm input[name="schedule_mode"]');
+        radios.forEach(function (r) {
+            r.required = false;
+        });
+        if (orgVal && radios.length) {
+            radios[0].required = true;
+        }
+    }
+
+    function syncEditSbuScheduleRadiosRequired() {
+        const orgVal = ($('#edit_organization_id').val() || '').trim();
+        const radios = document.querySelectorAll('#editSbuForm input[name="schedule_mode"]');
+        radios.forEach(function (r) {
+            r.required = false;
+        });
+        if (orgVal && radios.length) {
+            radios[0].required = true;
+        }
+    }
+
     function syncSaveSbuButtonState() {
         const form = document.getElementById('addSbuForm');
         const btn = document.getElementById('saveSbuBtn');
         if (!form || !btn) return;
+        syncAddSbuScheduleRadiosRequired();
         const isValid = form.checkValidity();
         const hasClientErrors = $(form).find('.validation-error-dynamic[data-client-length="1"]').length > 0;
         btn.disabled = !isValid || hasClientErrors;
@@ -90,6 +113,7 @@
         const form = document.getElementById('editSbuForm');
         const btn = document.getElementById('updateSbuBtn');
         if (!form || !btn) return;
+        syncEditSbuScheduleRadiosRequired();
         const isValid = form.checkValidity();
         const hasClientErrors = $(form).find('.validation-error-dynamic[data-client-length="1"]').length > 0;
         btn.disabled = !isValid || hasClientErrors;
@@ -138,6 +162,7 @@
 
     function clearFormMessages(formSelector) {
         $(formSelector + ' .is-invalid').removeClass('is-invalid');
+        $(formSelector + ' .btn-group.is-invalid').removeClass('is-invalid border border-danger rounded-2');
         $(formSelector + ' .invalid-feedback').remove();
         $(formSelector + ' .form-alert-box').remove();
         $(formSelector + ' .validation-error-dynamic').remove();
@@ -164,7 +189,7 @@
 
         clearFormMessages('#addSbuForm');
         $('#is_active').val('1');
-        $('#sbuScheduleModeStandard').prop('checked', true);
+        $('#sbuScheduleModeStandard, #sbuScheduleModeCustom').prop('checked', false);
         toggleAddSbuScheduleMode();
         syncSbuLimitedFieldsState();
     }
@@ -180,7 +205,7 @@
         $('#edit_is_active').val('1');
         $('#editSbuForm').attr('data-update-url', '');
         $('#deleteSbuBtn').attr('data-delete-url', '');
-        $('#editSbuScheduleModeStandard').prop('checked', true);
+        $('#editSbuScheduleModeStandard, #editSbuScheduleModeCustom').prop('checked', false);
         toggleEditSbuScheduleMode();
         syncEditSbuLimitedFieldsState();
     }
@@ -203,16 +228,16 @@
                 workingDays: [],
                 workingStartTime: '',
                 workingEndTime: '',
-                openingGracePeriod: '',
-                closingGracePeriod: ''
+                gracePeriod: ''
             };
         }
+        const openingGracePeriod = option.dataset.openingGracePeriod || '';
+        const closingGracePeriod = option.dataset.closingGracePeriod || '';
         return {
             workingDays: (option.dataset.workingDays || '').split(',').filter(Boolean),
             workingStartTime: option.dataset.workingStartTime || '',
             workingEndTime: option.dataset.workingEndTime || '',
-            openingGracePeriod: option.dataset.openingGracePeriod || '',
-            closingGracePeriod: option.dataset.closingGracePeriod || ''
+            gracePeriod: openingGracePeriod || closingGracePeriod
         };
     }
 
@@ -224,8 +249,7 @@
         });
         $('#sbuWorkingStartTime').val(schedule.workingStartTime);
         $('#sbuWorkingEndTime').val(schedule.workingEndTime);
-        $('#sbuOpeningGracePeriod').val(schedule.openingGracePeriod);
-        $('#sbuClosingGracePeriod').val(schedule.closingGracePeriod);
+        $('#sbuGracePeriod').val(schedule.gracePeriod);
     }
 
     function toggleAddSbuScheduleMode() {
@@ -252,11 +276,10 @@
         });
         $('#editSbuWorkingStartTime').val(schedule.workingStartTime);
         $('#editSbuWorkingEndTime').val(schedule.workingEndTime);
-        $('#editSbuOpeningGracePeriod').val(schedule.openingGracePeriod);
-        $('#editSbuClosingGracePeriod').val(schedule.closingGracePeriod);
+        $('#editSbuGracePeriod').val(schedule.gracePeriod);
     }
 
-    function schedulesMatchParentForEdit(currentWorkingDays, currentStartTime, currentEndTime, currentOpeningGracePeriod, currentClosingGracePeriod) {
+    function schedulesMatchParentForEdit(currentWorkingDays, currentStartTime, currentEndTime, currentGracePeriod) {
         const option = getEditSelectedOrganizationOption();
         const schedule = getScheduleFromOption(option);
         const current = [...currentWorkingDays].sort().join(',');
@@ -264,8 +287,7 @@
         return current === parent
             && (currentStartTime || '') === schedule.workingStartTime
             && (currentEndTime || '') === schedule.workingEndTime
-            && (currentOpeningGracePeriod || '') === schedule.openingGracePeriod
-            && (currentClosingGracePeriod || '') === schedule.closingGracePeriod;
+            && (currentGracePeriod || '') === schedule.gracePeriod;
     }
 
     function toggleEditSbuScheduleMode() {
@@ -301,6 +323,18 @@
                     const wrapper = checkboxes.first().closest('.mb-3');
                     if (!wrapper.find('[data-error-for="working_days"]').length) {
                         wrapper.append('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="working_days">' + message + '</div>');
+                    }
+                }
+                return;
+            }
+
+            if (normalizedField === 'schedule_mode') {
+                const section = $(formSelector + ' [id$="SbuScheduleModeSection"]');
+                const group = section.find('.btn-group[aria-label="Selection Mode"]');
+                if (group.length) {
+                    group.addClass('is-invalid border border-danger rounded-2');
+                    if (!section.find('[data-error-for="schedule_mode"]').length) {
+                        group.after('<div class="invalid-feedback d-block validation-error-dynamic text-white" data-error-for="schedule_mode">' + message + '</div>');
                     }
                 }
                 return;
@@ -438,15 +472,13 @@
                     const editEndTime = (data.working_end_time ?? '').toString().slice(0, 5);
                     $('#editSbuWorkingStartTime').val(editStartTime);
                     $('#editSbuWorkingEndTime').val(editEndTime);
-                    const editOpeningGracePeriod = (data.opening_grace_period ?? '').toString();
-                    const editClosingGracePeriod = (data.closing_grace_period ?? '').toString();
-                    $('#editSbuOpeningGracePeriod').val(editOpeningGracePeriod);
-                    $('#editSbuClosingGracePeriod').val(editClosingGracePeriod);
+                    const editGracePeriod = (data.opening_grace_period ?? data.closing_grace_period ?? '').toString();
+                    $('#editSbuGracePeriod').val(editGracePeriod);
                     $('#edit_is_active').val(
                         data.is_active === 1 || data.is_active === '1' || data.is_active === true ? '1' : '0'
                     );
                     if ((data.organization_id ?? '') !== '') {
-                        if (schedulesMatchParentForEdit(editWorkingDays, editStartTime, editEndTime, editOpeningGracePeriod, editClosingGracePeriod)) {
+                        if (schedulesMatchParentForEdit(editWorkingDays, editStartTime, editEndTime, editGracePeriod)) {
                             $('#editSbuScheduleModeStandard').prop('checked', true);
                         } else {
                             $('#editSbuScheduleModeCustom').prop('checked', true);
@@ -691,13 +723,15 @@
         });
 
         $('#organization_id').on('change', function() {
-            if (this.value) {
-                $('#sbuScheduleModeStandard').prop('checked', true);
+            if (!this.value) {
+                $('#sbuScheduleModeStandard, #sbuScheduleModeCustom').prop('checked', false);
             }
             toggleAddSbuScheduleMode();
             syncSaveSbuButtonState();
         });
         $('#sbuScheduleModeStandard, #sbuScheduleModeCustom').on('change', function() {
+            $('#addSbuForm .btn-group[aria-label="Selection Mode"]').removeClass('is-invalid border border-danger rounded-2');
+            $('#addSbuForm [data-error-for="schedule_mode"]').remove();
             toggleAddSbuScheduleMode();
             syncSaveSbuButtonState();
         });
@@ -708,15 +742,15 @@
         });
 
         $('#edit_organization_id').on('change', function() {
-            if (this.value) {
-                $('#editSbuScheduleModeStandard').prop('checked', true);
-            } else {
-                $('#editSbuScheduleModeCustom').prop('checked', true);
+            if (!this.value) {
+                $('#editSbuScheduleModeStandard, #editSbuScheduleModeCustom').prop('checked', false);
             }
             toggleEditSbuScheduleMode();
             syncUpdateSbuButtonState();
         });
         $('#editSbuScheduleModeStandard, #editSbuScheduleModeCustom').on('change', function() {
+            $('#editSbuForm .btn-group[aria-label="Selection Mode"]').removeClass('is-invalid border border-danger rounded-2');
+            $('#editSbuForm [data-error-for="schedule_mode"]').remove();
             toggleEditSbuScheduleMode();
             syncUpdateSbuButtonState();
         });

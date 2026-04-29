@@ -107,10 +107,22 @@
                             <i class="bi bi-clock-history me-2"></i>Shift Management
                         </button>
                     </li>
-                    <li class="nav-item" role="presentation">
+                    <li class="nav-item me-2" role="presentation">
                         <button class="nav-link" id="roster-tab" data-bs-toggle="pill" data-bs-target="#roster"
                             type="button" role="tab">
                             <i class="bi bi-calendar-week me-2"></i>Roster / Assignment
+                        </button>
+                    </li>
+                    <li class="nav-item me-2 roster-personnel-tab-item d-none" role="presentation">
+                        <button class="nav-link active" id="rosterInternalTab" type="button" role="tab"
+                            aria-selected="true">
+                            Internal Employees
+                        </button>
+                    </li>
+                    <li class="nav-item me-2 roster-personnel-tab-item d-none" role="presentation">
+                        <button class="nav-link" id="rosterThirdPartyTab" type="button" role="tab"
+                            aria-selected="false">
+                            Third-Party Personnel
                         </button>
                     </li>
                 </ul>
@@ -163,11 +175,13 @@
             $('#shift-management-tab').on('shown.bs.tab', function() {
                 $('#addShiftBtn').show();
                 $('#bulkAssignBtn').hide();
+                $('.roster-personnel-tab-item').addClass('d-none');
             });
 
             $('#roster-tab').on('shown.bs.tab', function() {
                 $('#addShiftBtn').hide();
                 $('#bulkAssignBtn').show();
+                $('.roster-personnel-tab-item').removeClass('d-none');
                 // Initialize calendar when roster tab is shown
                 setTimeout(function() {
                     if (typeof initRosterCalendar === 'function') {

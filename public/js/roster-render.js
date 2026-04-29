@@ -2,6 +2,7 @@
     var rosterViewDate = new Date();
     var rosterWeekIndex = 1;
     var rosterData = null;
+    var rosterPersonnelFilter = 'internal';
 
     function stripTime(d) {
         return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -98,12 +99,14 @@
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
         var lateBlock = s.lateCheckIn ? '<span class="shift-status-late"><i class="bi bi-exclamation-circle-fill"></i> Late check-in</span>' : '';
         var floor = (s.floor && String(s.floor).trim()) ? s.floor : '—';
+        var checkIn = (s.checkIn && String(s.checkIn).trim()) ? s.checkIn : '—';
+        var checkOut = (s.checkOut && String(s.checkOut).trim()) ? s.checkOut : '—';
         return '<div class="shift-pill' + typeClass + lateClass + '">' +
             '<div class="shift-pill-top">' +
             '<span class="shift-time">' + s.timeStart + ' – ' + s.timeEnd + '</span>' +
             '</div>' +
             '<div class="shift-pill-meta">' +
-            '<span class="shift-check">Check-in ' + s.checkIn + ' • Check-out ' + s.checkOut + '</span>' +
+            '<span class="shift-check"><i class="bi bi-box-arrow-in-right shift-check-icon me-1"></i>' + checkIn + ' <span class="mx-1">•</span><i class="bi bi-box-arrow-right shift-check-icon ms-1 me-1"></i>' + checkOut + '</span>' +
             '<span class="shift-floor">' + floor + '</span>' + lateBlock +
             '</div></div>';
     }
@@ -224,6 +227,7 @@
         var dayCount = days.length;
         var colspan = 2 + dayCount;
 
+        var anyDepartmentRendered = false;
         if (depts.length === 0) {
             var emptyTr = document.createElement('tr');
             emptyTr.innerHTML = '<td colspan="' + colspan + '" class="text-center py-5 text-muted">' +
@@ -231,6 +235,15 @@
             tbody.appendChild(emptyTr);
         } else {
             depts.forEach(function(dept) {
+                var deptEmployees = employees.filter(function(e) {
+                    if (Number(e.departmentId) !== Number(dept.id)) return false;
+                    if (rosterPersonnelFilter === 'third_party') return String(e.sourceType || '') === 'outsourced';
+                    return String(e.sourceType || '') !== 'outsourced';
+                });
+                if (deptEmployees.length === 0) {
+                    return;
+                }
+                anyDepartmentRendered = true;
                 var deptTr = document.createElement('tr');
                 deptTr.className = 'roster-dept-row';
                 deptTr.setAttribute('data-dept-id', String(dept.id));
@@ -240,12 +253,17 @@
                     '<td colspan="' + colspan + '" class="fw-semibold">' + dept.name + '</td>';
                 tbody.appendChild(deptTr);
 
-                employees.filter(function(e) { return Number(e.departmentId) === Number(dept.id); }).forEach(function(emp) {
+                deptEmployees.forEach(function(emp) {
                     var empRef = emp.id ?? emp.employeeId ?? emp.employee_id ?? '';
+                    var isThirdPartyPersonnel = String(emp.sourceType || '') === 'outsourced';
+                    var employeeNameHtml = escapeHtml(emp.name);
+                    if (isThirdPartyPersonnel) {
+                        employeeNameHtml += ' <span class="badge text-bg-info ms-1">Third-Party Personnel</span>';
+                    }
                     var tr = document.createElement('tr');
                     tr.className = 'roster-emp-row';
                     tr.setAttribute('data-dept-id', String(dept.id));
-                    tr.innerHTML = '<td></td><td class="text-muted">' + escapeHtml(emp.name) + '</td>';
+                    tr.innerHTML = '<td></td><td class="text-muted">' + employeeNameHtml + '</td>';
                     days.forEach(function(d) {
                         var iso = dateToISO(d);
                         var k = empRef + '-' + iso;
@@ -270,6 +288,15 @@
                     tbody.appendChild(tr);
                 });
             });
+            if (!anyDepartmentRendered) {
+                var emptyByTabTr = document.createElement('tr');
+                var emptyLabel = rosterPersonnelFilter === 'third_party'
+                    ? 'No third-party personnel found for this period.'
+                    : 'No internal employees found for this period.';
+                emptyByTabTr.innerHTML = '<td colspan="' + colspan + '" class="text-center py-5 text-muted">' +
+                    '<i class="bi bi-info-circle me-2"></i>' + emptyLabel + '</td>';
+                tbody.appendChild(emptyByTabTr);
+            }
         }
 
         document.querySelectorAll('.roster-dept-toggle').forEach(function(btn) {
@@ -342,6 +369,10 @@
         var floorEl = document.getElementById('rosterFloor');
         var lateCheckInEl = document.getElementById('rosterLateCheckIn');
         var employeeTypeEl = document.getElementById('rosterShiftEmployeeType');
+        var auditCard = document.getElementById('rosterShiftAuditCard');
+        var createdByEl = document.getElementById('rosterShiftCreatedBy');
+        var updatedByEl = document.getElementById('rosterShiftUpdatedBy');
+        var assignedByEl = document.getElementById('rosterShiftAssignedBy');
 
         if (!canvas) return;
         var employeeRef = String(employeeId || '');
@@ -374,6 +405,14 @@
             if (floorEl) floorEl.value = shift.floor || '';
             if (lateCheckInEl) lateCheckInEl.checked = !!shift.lateCheckIn;
             if (notesEl) notesEl.value = shift.notes || '';
+
+            if (auditCard) {
+                var hasAnyAudit = !!(shift.createdByName || shift.updatedByName || shift.assignedByName);
+                auditCard.style.display = hasAnyAudit ? 'block' : 'none';
+            }
+            if (createdByEl) createdByEl.textContent = shift.createdByName || '—';
+            if (updatedByEl) updatedByEl.textContent = shift.updatedByName || '—';
+            if (assignedByEl) assignedByEl.textContent = shift.assignedByName || '—';
         } else {
             if (rosterIdEl) rosterIdEl.value = '';
             if (iconEl) iconEl.innerHTML = '<i class="bi bi-plus-circle me-2"></i>';
@@ -388,6 +427,10 @@
             if (floorEl) floorEl.value = '';
             if (lateCheckInEl) lateCheckInEl.checked = false;
             if (notesEl) notesEl.value = '';
+            if (auditCard) auditCard.style.display = 'none';
+            if (createdByEl) createdByEl.textContent = '—';
+            if (updatedByEl) updatedByEl.textContent = '—';
+            if (assignedByEl) assignedByEl.textContent = '—';
         }
         var offcanvas = bootstrap.Offcanvas.getOrCreateInstance(canvas);
         offcanvas.show();
@@ -609,7 +652,39 @@
             window._rosterToolbarBound = true;
         }
         bindRosterCanvasAndCells();
+        bindRosterPersonnelTabs();
         loadRosterGrid();
+    }
+
+    function bindRosterPersonnelTabs() {
+        if (window._rosterPersonnelTabsBound) return;
+        window._rosterPersonnelTabsBound = true;
+        var internalTab = document.getElementById('rosterInternalTab');
+        var thirdPartyTab = document.getElementById('rosterThirdPartyTab');
+        if (internalTab) {
+            internalTab.addEventListener('click', function() {
+                rosterPersonnelFilter = 'internal';
+                internalTab.classList.add('active');
+                internalTab.setAttribute('aria-selected', 'true');
+                if (thirdPartyTab) {
+                    thirdPartyTab.classList.remove('active');
+                    thirdPartyTab.setAttribute('aria-selected', 'false');
+                }
+                renderRosterTableFromData();
+            });
+        }
+        if (thirdPartyTab) {
+            thirdPartyTab.addEventListener('click', function() {
+                rosterPersonnelFilter = 'third_party';
+                thirdPartyTab.classList.add('active');
+                thirdPartyTab.setAttribute('aria-selected', 'true');
+                if (internalTab) {
+                    internalTab.classList.remove('active');
+                    internalTab.setAttribute('aria-selected', 'false');
+                }
+                renderRosterTableFromData();
+            });
+        }
     }
 
     window.loadRosterGrid = loadRosterGrid;

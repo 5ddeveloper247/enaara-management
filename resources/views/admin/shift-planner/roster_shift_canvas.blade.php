@@ -21,7 +21,6 @@
                 <small class="opacity-75 text-white d-block mb-1">Date</small>
                 <div class="fw-semibold" id="rosterShiftDateLabel">—</div>
             </div>
-
             <div class="mb-3">
                 <label for="rosterShiftPlannerId" class="form-label fw-semibold small text-white">Shift <span class="text-danger">*</span></label>
                 <select class="form-select" id="rosterShiftPlannerId" name="shift_planner_id" required>
@@ -35,6 +34,24 @@
                     @empty
                     @endforelse
                 </select>
+            </div>
+
+            <div class="mb-3 p-3 rounded-3 border" id="rosterShiftAuditCard" style="border-color: rgba(255,255,255,0.2) !important; display: none;">
+                <small class="opacity-75 text-white d-block mb-2">Audit</small>
+                <div class="small">
+                    <div class="mb-1">
+                        <span class="opacity-75">Created by:</span>
+                        <span class="fw-semibold ms-1" id="rosterShiftCreatedBy">—</span>
+                    </div>
+                    <div class="mb-1">
+                        <span class="opacity-75">Updated by:</span>
+                        <span class="fw-semibold ms-1" id="rosterShiftUpdatedBy">—</span>
+                    </div>
+                    <div>
+                        <span class="opacity-75">Assigned by:</span>
+                        <span class="fw-semibold ms-1" id="rosterShiftAssignedBy">—</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Hidden Time fields (auto-populated from shift selection) -->

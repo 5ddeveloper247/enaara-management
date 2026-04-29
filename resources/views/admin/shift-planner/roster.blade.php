@@ -30,7 +30,6 @@
                         <span class="roster-legend-item roster-legend-night"><i class="bi bi-moon-stars-fill me-1"></i>Night</span>
                     </div>
                 </div>
-
                 <div class="roster-table-wrap rounded-3 overflow-hidden border">
                     <div class="table-responsive">
                         <table id="employeeTable" class="table table-hover roster-table align-middle mb-0">

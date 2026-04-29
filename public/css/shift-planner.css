@@ -321,6 +321,10 @@
     text-overflow: ellipsis;
 }
 
+.shift-check-icon {
+    font-size: 12px;
+}
+
 .shift-pill.shift-morning {
     background: linear-gradient(135deg, #e0f2fe, #bae6fd);
     color: #0c4a6e;
