@@ -25,7 +25,7 @@
             id="addEmployeeActionBtn"
             data-internal-href="{{ route('admin.register.index') }}"
             data-outsourced-target="#outsourcedEmployeeCanvas">
-            <i class="bi bi-person-plus me-1"></i>Add New Employee
+            <i class="bi bi-person-plus me-1"></i>Add Employee
         </a>
         <div class="btn-group">
             <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"

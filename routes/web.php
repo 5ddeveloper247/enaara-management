@@ -194,6 +194,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     });
 
     Route::get('/employees/data', [EmployeeController::class, 'tableData'])->name('admin.employee.data');
+    Route::get('/employees/universities', [EmployeeController::class, 'universities'])->name('admin.employee.universities');
     Route::get('/employees/stats', [EmployeeController::class, 'stats'])->name('admin.employee.stats');
     Route::get('/outsourced-employees/data', [OutsourcedEmployeeController::class, 'tableData'])->name('admin.outsourced_employee.data');
     Route::get('/outsourced-employees/{id}', [OutsourcedEmployeeController::class, 'show'])->name('admin.outsourced_employee.show');
@@ -205,6 +206,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/employees/save-subsection', [EmployeeController::class, 'saveSubsection'])->name('admin.employee.save_subsection');
     Route::post('/employees/delete-family', [EmployeeController::class, 'deleteFamily'])->name('admin.employee.delete_family');
     Route::post('/employees/delete-academic', [EmployeeController::class, 'deleteAcademic'])->name('admin.employee.delete_academic');
+    Route::post('/employees/delete-certificate', [EmployeeController::class, 'deleteCertificate'])->name('admin.employee.delete_certificate');
     Route::post('/employees/delete-employment', [EmployeeController::class, 'deleteEmployment'])->name('admin.employee.delete_employment');
     Route::post('/employees/delete-bank-detail', [EmployeeController::class, 'deleteBankDetail'])->name('admin.employee.delete_bank_detail');
     Route::post('/employees/delete-photo', [EmployeeController::class, 'deletePhoto'])->name('admin.employee.delete_photo');

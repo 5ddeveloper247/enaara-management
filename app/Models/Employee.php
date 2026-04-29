@@ -66,6 +66,7 @@ class Employee extends Model
         return $this->hasMany(EmployeeFamilyMember::class)->orderByDesc('id');
     }
     public function academics()         { return $this->hasMany(EmployeeAcademic::class); }
+    public function certificates()      { return $this->hasMany(EmployeeCertificate::class)->orderByDesc('id'); }
     public function exEmployments()     { return $this->hasMany(EmployeeExEmployment::class); }
     public function medical()           { return $this->hasOne(EmployeeMedical::class); }
     public function references()        { return $this->hasMany(EmployeeReference::class); }

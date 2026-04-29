@@ -477,11 +477,13 @@ class EmployeeStoreRequest extends FormRequest
             'employments.*.reason_for_leaving' => ['nullable', 'string', 'max:500'],
 
             // Health
-            'last_fitness_test'      => ['nullable', 'string', 'max:1000'],
-            'has_disability'         => ['nullable', Rule::in(['yes', 'no'])],
-            'blood_group'            => ['nullable', 'string', 'max:10'],
-            'disability_type'        => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
-            'disability_description' => ['nullable', 'string', 'max:1000'],
+            'last_fitness_test'        => ['nullable', 'string', 'max:1000'],
+            'last_fitness_test_date'   => ['nullable', 'date', 'before_or_equal:today'],
+            'last_fitness_test_result' => ['nullable', Rule::in(['Positive', 'Negative'])],
+            'has_disability'           => ['nullable', Rule::in(['yes', 'no'])],
+            'blood_group'              => ['nullable', 'string', 'max:10'],
+            'disability_type'          => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
+            'disability_description'   => ['nullable', 'string', 'max:1000'],
 
             // References
             'ref1_name'         => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],

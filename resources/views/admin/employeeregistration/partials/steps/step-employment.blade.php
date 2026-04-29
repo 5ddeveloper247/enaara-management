@@ -97,13 +97,15 @@
                                                     <div class="row g-3 {{ ($employee->employment_category ?? '') == 'employee' ? '' : 'd-none' }} mt-1"
                                                         id="employmentDetailsEngagementFields">
                                                         <div class="col-md-6">
-                                                            <label class="form-label">Probation Start Date <span
+                                                            <label class="form-label">Date of Joining <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="date" name="probation_start_date"
-                                                                class="form-control"
-                                                                id="employmentProbationStartDateInput"
-                                                                value="{{ isset($employee->probation_start_date) && $employee->probation_start_date ? (is_string($employee->probation_start_date) ? date('Y-m-d', strtotime($employee->probation_start_date)) : $employee->probation_start_date->format('Y-m-d')) : '' }}"
+                                                            <input type="date" name="join_date" class="form-control"
+                                                                id="employmentJoinDateInput"
+                                                                value="{{ isset($employee->join_date) && $employee->join_date ? (is_string($employee->join_date) ? date('Y-m-d', strtotime($employee->join_date)) : $employee->join_date->format('Y-m-d')) : (isset($employee->probation_start_date) && $employee->probation_start_date ? (is_string($employee->probation_start_date) ? date('Y-m-d', strtotime($employee->probation_start_date)) : $employee->probation_start_date->format('Y-m-d')) : '') }}"
                                                                 placeholder="yyyy-mm-dd">
+                                                            <input type="hidden" name="probation_start_date"
+                                                                id="employmentProbationStartDateInput"
+                                                                value="{{ isset($employee->probation_start_date) && $employee->probation_start_date ? (is_string($employee->probation_start_date) ? date('Y-m-d', strtotime($employee->probation_start_date)) : $employee->probation_start_date->format('Y-m-d')) : '' }}">
                                                         </div>
                                                         <div class="col-md-6">
                                                             <label class="form-label">Probation End Date <span
@@ -291,14 +293,6 @@
                                                             SBU yet.</small>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <label class="form-label">Date of Joining <span
-                                                                class="text-danger">*</span></label>
-                                                        <input type="date" name="join_date" class="form-control"
-                                                            id="employmentJoinDateInput"
-                                                            value="{{ isset($employee->join_date) ? $employee->join_date->format('Y-m-d') : '' }}"
-                                                            placeholder="yyyy-mm-dd">
-                                                    </div>
-                                                    <div class="col-md-6">
                                                         <label class="form-label">Designation</label>
                                                         <input type="text" name="designation" class="form-control"
                                                             id="designation"
@@ -319,9 +313,12 @@
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
                                                         <label class="form-label">Grade</label>
-                                                        <input type="text" name="grade" class="form-control"
-                                                            id="grade"
-                                                            value="{{ $employee->grade ?? '' }}" maxlength="10" placeholder="Grade">
+                                                        <input type="hidden" name="grade" id="grade"
+                                                            value="{{ $employee->grade ?? '' }}">
+                                                        <input type="text" class="form-control"
+                                                            id="gradeDisplay"
+                                                            value="{{ $employee->grade ?? '' }}" maxlength="10"
+                                                            placeholder="Grade" readonly disabled>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Branch</label>

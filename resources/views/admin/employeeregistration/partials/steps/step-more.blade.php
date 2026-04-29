@@ -13,13 +13,15 @@
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
                                                 data-more-step="3"><span class="more-step-index">3</span><span>Academic</span></button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
-                                                data-more-step="4"><span class="more-step-index">4</span><span>Employment</span></button>
+                                                data-more-step="4"><span class="more-step-index">4</span><span>Certificates</span></button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
-                                                data-more-step="5"><span class="more-step-index">5</span><span>Medical</span></button>
+                                                data-more-step="5"><span class="more-step-index">5</span><span>Employment</span></button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
-                                                data-more-step="6"><span class="more-step-index">6</span><span>Reference</span></button>
+                                                data-more-step="6"><span class="more-step-index">6</span><span>Medical</span></button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
-                                                data-more-step="7"><span class="more-step-index">7</span><span>Attachments</span></button>
+                                                data-more-step="7"><span class="more-step-index">7</span><span>Reference</span></button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary more-sub-tab"
+                                                data-more-step="8"><span class="more-step-index">8</span><span>Attachments</span></button>
                                         </div>
 
                                         <div class="more-sub-pane flex-grow-1 min-width-0 active" id="moreStepPane1">
@@ -285,9 +287,19 @@
                                                 </div>
                                                 <div class="row g-2">
                                                     <div class="col-12 col-md-6 col-xl-3">
-                                                        <label class="form-label">Degree / Certificate <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control academic-field-input" name="academics[][degree]"
-                                                            data-academic-degree placeholder="Enter degree or certificate" required maxlength="50">
+                                                        <label class="form-label">Degree <span class="text-danger">*</span></label>
+                                                        <select class="form-select academic-field-input" name="academics[][degree]"
+                                                            data-academic-degree required>
+                                                            <option value="" selected disabled>Select degree</option>
+                                                            <option value="Under Matric">Under Matric</option>
+                                                            <option value="Matric">Matric</option>
+                                                            <option value="Intermediate / Diploma">Intermediate / Diploma</option>
+                                                            <option value="Associate Degree Program">Associate Degree Program</option>
+                                                            <option value="Bachelor (2 Years)">Bachelor (2 Years)</option>
+                                                            <option value="Bachelor (4 Years / BS)">Bachelor (4 Years / BS)</option>
+                                                            <option value="Master (2 Years / MS / MPhil)">Master (2 Years / MS / MPhil)</option>
+                                                            <option value="Doctorate (PhD)">Doctorate (PhD)</option>
+                                                        </select>
                                                         <div class="academic-field-preview" data-academic-preview-degree>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-3">
@@ -295,6 +307,40 @@
                                                         <input type="text" class="form-control academic-field-input" name="academics[][grade_cgpa]"
                                                             data-academic-grade placeholder="Enter grade, division, or CGPA" required maxlength="20">
                                                         <div class="academic-field-preview" data-academic-preview-grade-cgpa>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-6 col-xl-3 d-none" data-academic-board-wrap>
+                                                        <label class="form-label">Board <span class="text-danger">*</span></label>
+                                                        <select class="form-select academic-field-input" data-academic-board>
+                                                            <option value="" selected disabled>Select board</option>
+                                                            <option value="BISE Lahore">BISE Lahore</option>
+                                                            <option value="BISE Rawalpindi">BISE Rawalpindi</option>
+                                                            <option value="BISE Faisalabad">BISE Faisalabad</option>
+                                                            <option value="BISE Gujranwala">BISE Gujranwala</option>
+                                                            <option value="BISE Multan">BISE Multan</option>
+                                                            <option value="BISE Sargodha">BISE Sargodha</option>
+                                                            <option value="BISE Bahawalpur">BISE Bahawalpur</option>
+                                                            <option value="BISE DG Khan">BISE DG Khan</option>
+                                                            <option value="BISE Sahiwal">BISE Sahiwal</option>
+                                                            <option value="BISE Karachi">BISE Karachi</option>
+                                                            <option value="BISE Hyderabad">BISE Hyderabad</option>
+                                                            <option value="BISE Sukkur">BISE Sukkur</option>
+                                                            <option value="BISE Larkana">BISE Larkana</option>
+                                                            <option value="BISE Mirpurkhas">BISE Mirpurkhas</option>
+                                                            <option value="Aga Khan Board (AKU-EB)">Aga Khan Board (AKU-EB)</option>
+                                                            <option value="BISE Peshawar">BISE Peshawar</option>
+                                                            <option value="BISE Abbottabad">BISE Abbottabad</option>
+                                                            <option value="BISE Kohat">BISE Kohat</option>
+                                                            <option value="BISE Mardan">BISE Mardan</option>
+                                                            <option value="BISE Bannu">BISE Bannu</option>
+                                                            <option value="BISE Malakand">BISE Malakand</option>
+                                                            <option value="BISE DI Khan">BISE DI Khan</option>
+                                                            <option value="BISE Swat">BISE Swat</option>
+                                                            <option value="BISE Quetta">BISE Quetta</option>
+                                                            <option value="BISE Mirpur">BISE Mirpur</option>
+                                                            <option value="BISE Gilgit-Baltistan">BISE Gilgit-Baltistan</option>
+                                                            <option value="FBISE Islamabad">FBISE Islamabad</option>
+                                                        </select>
+                                                        <div class="academic-field-preview" data-academic-preview-board>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-2">
                                                         <label class="form-label">Start Date <span class="text-danger">*</span></label>
@@ -317,14 +363,106 @@
                                                     <div class="col-12">
                                                         <label class="form-label">University / Board / Institute</label>
                                                         <input type="text" class="form-control academic-field-input" name="academics[][institute]"
-                                                            data-academic-institute placeholder="Enter university, board, or institute">
+                                                            data-academic-institute list="academicUniversityList"
+                                                            placeholder="Enter university, board, or institute">
                                                         <div class="academic-field-preview" data-academic-preview-institute>-</div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </template>
 
+                                        <datalist id="academicUniversityList">
+                                            <option value="Quaid-i-Azam University"></option>
+                                            <option value="National University of Sciences and Technology (NUST)"></option>
+                                            <option value="University of the Punjab"></option>
+                                            <option value="Lahore University of Management Sciences (LUMS)"></option>
+                                            <option value="University of Karachi"></option>
+                                            <option value="COMSATS University Islamabad"></option>
+                                            <option value="University of Engineering and Technology (UET) Lahore"></option>
+                                            <option value="University of Peshawar"></option>
+                                            <option value="Bahauddin Zakariya University"></option>
+                                            <option value="Government College University Lahore"></option>
+                                        </datalist>
+
                                         <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane4">
+                                            <div>
+                                                <div class="fw-bold text-uppercase small mb-3">Certificates</div>
+                                                <div class="academic-records-wrap bg-white">
+                                                    <div class="academic-records-toolbar">
+                                                        <div class="small text-secondary">Add each certificate as a separate row.</div>
+                                                        <span class="academic-records-count" id="moreCertificateRecordCount">0 Records</span>
+                                                    </div>
+                                                    <div id="moreCertificateRecordsContainer"></div>
+                                                    <script>
+                                                        document.addEventListener('DOMContentLoaded', function() {
+                                                            @if(isset($employee) && $employee?->certificates?->count() > 0)
+                                                                @foreach(($employee?->certificates ?? []) as $record)
+                                                                    if (typeof window.addCertificateRecord === 'function') {
+                                                                        window.addCertificateRecord({
+                                                                            id: @json($record->id),
+                                                                            certificate_name: @json($record?->certificate_name),
+                                                                            start_date: @json($record?->start_date ? $record?->start_date?->format('Y-m-d') : ''),
+                                                                            end_date: @json($record?->end_date ? $record?->end_date?->format('Y-m-d') : ''),
+                                                                            institute: @json($record?->institute)
+                                                                        });
+                                                                    }
+                                                                @endforeach
+                                                            @endif
+                                                        });
+                                                    </script>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <button type="button" class="btn btn-sm text-white bg-main border-0"
+                                                        id="moreCertificateAddRecordBtn">
+                                                        <i class="bi bi-plus-lg me-1"></i>Add Certificate
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <template id="moreCertificateRecordTemplate">
+                                            <div class="certificate-record-row mb-2 bg-light" data-certificate-row>
+                                                <div class="academic-record-header">
+                                                    <span class="academic-record-index" data-certificate-index>Record 1</span>
+                                                    <div class="academic-record-actions">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-certificate-save title="Save record">
+                                                            <i class="bi bi-floppy"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" data-certificate-remove>
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-2">
+                                                    <div class="col-12 col-md-6 col-xl-4">
+                                                        <label class="form-label">Certificate Name <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control certificate-field-input" name="certificates[][certificate_name]"
+                                                            data-certificate-name placeholder="Enter certificate name" maxlength="150" required>
+                                                        <div class="certificate-field-preview" data-certificate-preview-certificate-name>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-6 col-xl-2">
+                                                        <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                                                        <input type="date" class="form-control certificate-field-input" name="certificates[][start_date]"
+                                                            data-certificate-start-date placeholder="yyyy-mm-dd" required>
+                                                        <div class="certificate-field-preview" data-certificate-preview-start-date>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-6 col-xl-2">
+                                                        <label class="form-label">End Date <span class="text-danger">*</span></label>
+                                                        <input type="date" class="form-control certificate-field-input" name="certificates[][end_date]"
+                                                            data-certificate-end-date placeholder="yyyy-mm-dd" required>
+                                                        <div class="certificate-field-preview" data-certificate-preview-end-date>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-6 col-xl-4">
+                                                        <label class="form-label">Institute <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control certificate-field-input" name="certificates[][institute]"
+                                                            data-certificate-institute placeholder="Enter institute" maxlength="255" required>
+                                                        <div class="certificate-field-preview" data-certificate-preview-institute>-</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane5">
                                             <div>
                                                 <div class="fw-bold text-uppercase small mb-3">Employment</div>
                                                 <div class="employment-records-wrap bg-white">
@@ -416,12 +554,26 @@
                                             </div>
                                         </template>
 
-                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane5">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane6">
                                             <div>
                                                 <div class="fw-bold text-uppercase small mb-3">Medical</div>
                                                 <div class="card border-0 bg-light">
                                                     <div class="card-body p-3">
                                                         <div class="row g-3">
+                                                            <div class="col-12 col-md-6">
+                                                                <label class="form-label">Last Medical Fitness Test <span class="text-muted fw-normal">(Date)</span></label>
+                                                                <input type="date" name="last_fitness_test_date" class="form-control" id="moreMedicalLastFitnessTestDateInput"
+                                                                    max="{{ date('Y-m-d') }}"
+                                                                    value="{{ $employee?->medical?->last_fitness_test_date ? $employee->medical->last_fitness_test_date->format('Y-m-d') : '' }}">
+                                                            </div>
+                                                            <div class="col-12 col-md-6">
+                                                                <label class="form-label">Result</label>
+                                                                <select name="last_fitness_test_result" class="form-select" id="moreMedicalLastFitnessTestResultInput">
+                                                                    <option value="" {{ empty($employee?->medical?->last_fitness_test_result) ? 'selected' : '' }} disabled>Select</option>
+                                                                    <option value="Positive" {{ ($employee?->medical?->last_fitness_test_result ?? '') === 'Positive' ? 'selected' : '' }}>Positive</option>
+                                                                    <option value="Negative" {{ ($employee?->medical?->last_fitness_test_result ?? '') === 'Negative' ? 'selected' : '' }}>Negative</option>
+                                                                </select>
+                                                            </div>
                                                             <div class="col-12">
                                                                 <label class="form-label">Last Medical Fitness Test - Date & Results</label>
                                                                 <textarea name="last_fitness_test" class="form-control" id="moreMedicalLastFitnessTestInput" rows="2" maxlength="500"
@@ -449,6 +601,7 @@
                                                                     <option value="Visual" {{ ($employee?->medical?->disability_type ?? '') == 'Visual' ? 'selected' : '' }}>Visual</option>
                                                                     <option value="Hearing" {{ ($employee?->medical?->disability_type ?? '') == 'Hearing' ? 'selected' : '' }}>Hearing</option>
                                                                     <option value="Speech" {{ ($employee?->medical?->disability_type ?? '') == 'Speech' ? 'selected' : '' }}>Speech</option>
+                                                                    <option value="Chronic Disease" {{ ($employee?->medical?->disability_type ?? '') == 'Chronic Disease' ? 'selected' : '' }}>Chronic Disease</option>
                                                                     <option value="Other" {{ ($employee?->medical?->disability_type ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
                                                                 </select>
                                                             </div>
@@ -467,7 +620,7 @@
                                                                     <option value="O-" {{ ($employee?->medical?->blood_group ?? '') == 'O-' ? 'selected' : '' }}>O-</option>
                                                                 </select>
                                                             </div>
-                                                            <div class="col-12" id="moreMedicalDisabilityDescriptionContainer" style="{{ ($employee?->medical?->disability_type ?? '') == 'Other' ? '' : 'display:none;' }}">
+                                                            <div class="col-12" id="moreMedicalDisabilityDescriptionContainer" style="{{ in_array($employee?->medical?->disability_type ?? '', ['Other', 'Chronic Disease'], true) ? '' : 'display:none;' }}">
                                                                 <label class="form-label">Specify Disability Details <span class="text-danger">*</span></label>
                                                                 <textarea name="disability_description" class="form-control" id="moreMedicalDisabilityDescriptionInput" rows="2" maxlength="1000"
                                                                     placeholder="Enter disease or disability description">{{ $employee?->medical?->disability_description ?? '' }}</textarea>
@@ -478,7 +631,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane6">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane7">
                                             <div>
                                                 <div class="fw-bold text-uppercase small mb-3">Reference</div>
                                                  <div class="row g-3">
@@ -582,7 +735,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane7">
+                                        <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane8">
                                             <div class="d-flex justify-content-between align-items-center mb-3">
                                                 <div class="fw-bold text-uppercase small">Attachments</div>
                                                 <button type="button" class="btn btn-sm bg-main text-white border-0 rounded-2 px-3" data-bs-toggle="modal" data-bs-target="#attachmentModal">

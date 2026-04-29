@@ -61,6 +61,10 @@
     const floorChips = document.getElementById('employmentFloorChips');
     const floorPh = document.getElementById('employmentFloorPh');
     const floorHint = document.getElementById('employmentFloorHint');
+    const gradeInput = document.getElementById('grade');
+    const gradeDisplayInput = document.getElementById('gradeDisplay');
+    const joinDateInput = document.getElementById('employmentJoinDateInput');
+    const probationStartMirrorInput = document.getElementById('employmentProbationStartDateInput');
     const probationEndInput = document.getElementById('employmentProbationEndDateInput');
 
     const orgsData = window.orgsData || [];
@@ -156,6 +160,102 @@
     window.formatContactMaskInput = formatContactMaskInput;
 
     initContactMasks();
+
+    function hydrateUniversityLov() {
+        const listEl = document.getElementById('academicUniversityList');
+        if (!listEl) return;
+
+        const existing = Array.from(listEl.querySelectorAll('option'))
+            .map(function (opt) { return String(opt.value || '').trim(); })
+            .filter(Boolean);
+        const uniqueNames = new Set(existing);
+
+        const appendOptions = function (names) {
+            names.forEach(function (name) {
+                const clean = String(name || '').trim();
+                if (!clean || uniqueNames.has(clean)) return;
+                uniqueNames.add(clean);
+                listEl.insertAdjacentHTML('beforeend', '<option value="' + clean.replace(/"/g, '&quot;') + '"></option>');
+            });
+        };
+
+        const replaceOptions = function (names) {
+            listEl.innerHTML = '';
+            uniqueNames.clear();
+            names.forEach(function (name) {
+                const clean = String(name || '').trim();
+                if (!clean || uniqueNames.has(clean)) return;
+                uniqueNames.add(clean);
+                listEl.insertAdjacentHTML('beforeend', '<option value="' + clean.replace(/"/g, '&quot;') + '"></option>');
+            });
+        };
+
+        appendOptions([
+            'Allama Iqbal Open University',
+            'Aga Khan University',
+            'Air University',
+            'Bahria University',
+            'Bahauddin Zakariya University, Multan',
+            'COMSATS University Islamabad',
+            'Capital University of Science and Technology',
+            'FAST - National University of Computer and Emerging Sciences (NUCES)',
+            'Government College University Lahore',
+            'Government College University Faisalabad',
+            'Ghulam Ishaq Khan Institute of Science and Technology',
+            'Institute of Business Administration (IBA)',
+            'International Islamic University Islamabad',
+            'Islamia University of Bahawalpur',
+            'Karachi Institute of Economics and Technology',
+            'Lahore University of Management Sciences (LUMS)',
+            'Lahore College for Women University',
+            'Mehran University of Engineering and Technology',
+            'National University of Modern Languages',
+            'National University of Sciences and Technology (NUST)',
+            'NED University of Engineering and Technology',
+            'Pakistan Institute of Engineering and Applied Sciences (PIEAS)',
+            'Quaid-i-Azam University',
+            'Riphah International University',
+            'Shaheed Zulfikar Ali Bhutto Institute of Science and Technology',
+            'University of Agriculture Faisalabad',
+            'University of Central Punjab',
+            'University of Engineering and Technology Lahore',
+            'University of Engineering and Technology Taxila',
+            'University of Engineering and Technology Peshawar',
+            'University of Gujrat',
+            'University of Karachi',
+            'University of Lahore',
+            'University of Malakand',
+            'University of Management and Technology',
+            'University of Peshawar',
+            'University of Sargodha',
+            'University of Sindh',
+            'University of the Punjab',
+            'Virtual University of Pakistan'
+        ]);
+
+        if (!window.universitiesDirectoryUrl) {
+            return;
+        }
+
+        fetch(window.universitiesDirectoryUrl, {
+            headers: {
+                Accept: 'application/json'
+            }
+        })
+            .then(function (response) {
+                return response.ok ? response.json() : { success: false, data: [] };
+            })
+            .then(function (payload) {
+                if (!payload || !payload.success || !Array.isArray(payload.data)) {
+                    return;
+                }
+                replaceOptions(payload.data);
+            })
+            .catch(function () {
+            });
+    }
+
+    hydrateUniversityLov();
 
     const fieldKeyById = {
         employmentDetailsInternDurationInput: 'intern_duration',
@@ -1536,6 +1636,70 @@
         });
     }
 
+    function confirmExEmploymentToggle(inputEl, nextCheckedValue, message) {
+        const applyCheckedState = function () {
+            inputEl.checked = nextCheckedValue;
+            inputEl.dataset.skipExEmploymentConfirm = '1';
+            inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+        };
+
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+            window.Swal.fire({
+                title: 'Please Confirm',
+                text: message,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1a237e',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'No'
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    applyCheckedState();
+                }
+            });
+            return;
+        }
+
+        if (window.confirm(message)) {
+            applyCheckedState();
+        }
+    }
+
+    function bindExEmploymentConfirmations() {
+        const optionConfig = {
+            giExArmyRetiredCheckbox: {
+                onEnable: 'Do you want to mark this employee as Ex-Army Retired?',
+                onDisable: 'Do you want to unmark Ex-Army Retired for this employee?'
+            },
+            giFatherDeceasedCheckbox: {
+                onEnable: 'Do you want to mark Father Deceased?',
+                onDisable: 'Do you want to unmark Father Deceased?'
+            }
+        };
+
+        if (document.body.dataset.exEmploymentConfirmBound === '1') return;
+        document.body.dataset.exEmploymentConfirmBound = '1';
+
+        document.addEventListener('change', function (event) {
+            const el = event.target;
+            if (!el || !el.id || !optionConfig[el.id]) return;
+
+            if (el.dataset.skipExEmploymentConfirm === '1') {
+                el.dataset.skipExEmploymentConfirm = '';
+                return;
+            }
+
+            const nextCheckedValue = !!el.checked;
+            const message = nextCheckedValue ? optionConfig[el.id].onEnable : optionConfig[el.id].onDisable;
+
+            event.stopImmediatePropagation();
+            el.checked = !nextCheckedValue;
+            confirmExEmploymentToggle(el, nextCheckedValue, message);
+        }, true);
+    }
+
+
     document.addEventListener('change', function(e) {
         if (e.target.id === 'giExArmyRetiredCheckbox' || e.target.id === 'giFatherDeceasedCheckbox' || e.target.id === 'giMaritalStatusSelect') {
             syncConditionalVisibility();
@@ -1544,6 +1708,7 @@
             togglePoliceVerificationFields();
         }
     });
+    bindExEmploymentConfirmations();
 
     // SweetAlert2 Helpers
     const showSuccess = (message, title = 'Success') => {
@@ -1877,11 +2042,12 @@
             if (typeof window.ensureFamilyNokBeforeStepSave === 'function') {
                 window.ensureFamilyNokBeforeStepSave();
             }
-            const subsystems = ['family', 'academic', 'employment'];
+            const subsystems = ['family', 'academic', 'certificate', 'employment'];
             subsystems.forEach(sub => {
                 const containerId = {
                     'family': 'moreFamilyMembersContainer',
                     'academic': 'moreAcademicRecordsContainer',
+                    'certificate': 'moreCertificateRecordsContainer',
                     'employment': 'moreEmploymentRecordsContainer'
                 }[sub];
                 const container = document.getElementById(containerId);
@@ -1889,13 +2055,13 @@
                     const rows = container.querySelectorAll(`[data-${sub}-row]`);
                     rows.forEach((row, index) => {
                         const dbId = row.getAttribute('data-db-id');
-                        if (dbId) formData.append(`${sub === 'employment' ? 'employments' : sub}[${index}][id]`, dbId);
+                        if (dbId) formData.append(`${sub === 'employment' ? 'employments' : (sub === 'certificate' ? 'certificates' : sub)}[${index}][id]`, dbId);
                         
                         row.querySelectorAll('input, select, textarea').forEach(input => {
                             const name = input.getAttribute('name');
                             if (name) {
                                 const cleanKey = name.match(/\[([^\]]*)\]$/)?.[1] || name;
-                                if (cleanKey) formData.append(`${sub === 'employment' ? 'employments' : sub}[${index}][${cleanKey}]`, input.value);
+                                if (cleanKey) formData.append(`${sub === 'employment' ? 'employments' : (sub === 'certificate' ? 'certificates' : sub)}[${index}][${cleanKey}]`, input.value);
                             }
                         });
                     });
@@ -1941,7 +2107,7 @@
                 if (step === 6 && typeof window.setMoreSubStep === 'function' && data.errors) {
                     const refKeys = Object.keys(data.errors).filter((k) => k.startsWith('ref'));
                     if (refKeys.length) {
-                        window.setMoreSubStep(6);
+                        window.setMoreSubStep(7);
                     }
                 }
                 Swal.fire({
@@ -2028,7 +2194,7 @@
             if (!isLastMoreStep) {
                 // If it's a "static" more subsection, save it first
                 const moreStep = currentMoreStep;
-                if ([1, 5, 6].includes(moreStep)) {
+                if ([1, 6, 7].includes(moreStep)) {
                     saveMoreSubSection(moreStep, () => {
                         if (typeof window.nextMoreSubStep === 'function') {
                             window.nextMoreSubStep();
@@ -2040,7 +2206,7 @@
                 }
 
                 // For dynamic rows (2,3,4), auto-save unsaved cards before moving next.
-                if ([2, 3, 4].includes(moreStep)) {
+                if ([2, 3, 4, 5].includes(moreStep)) {
                     const autoSaved = await autoSaveMoreDynamicRows(moreStep);
                     if (!autoSaved) {
                         return;
@@ -2123,14 +2289,18 @@
     }
 
     function validateMoreMedicalSubsection() {
-        const pane = document.getElementById('moreStepPane5');
+        const pane = document.getElementById('moreStepPane6');
         if (!pane) return true;
 
         const hasDisability = String(document.querySelector('input[name="has_disability"]:checked')?.value ?? '').trim().toLowerCase();
         const bloodGroup = String(document.getElementById('moreMedicalBloodGroupInput')?.value ?? '').trim();
         const disabilityType = String(document.getElementById('moreMedicalDisabilityTypeInput')?.value ?? '').trim();
         const disabilityDescription = String(document.getElementById('moreMedicalDisabilityDescriptionInput')?.value ?? '').trim();
+        const fitnessDate = String(document.getElementById('moreMedicalLastFitnessTestDateInput')?.value ?? '').trim();
+        const fitnessResult = String(document.getElementById('moreMedicalLastFitnessTestResultInput')?.value ?? '').trim();
         const lastFitnessTest = String(document.getElementById('moreMedicalLastFitnessTestInput')?.value ?? '').trim();
+        const todayMedical = new Date();
+        todayMedical.setHours(0, 0, 0, 0);
 
         const errors = {};
         const bloodGroupRegex = /^(A|B|AB|O)[+-]$/;
@@ -2139,7 +2309,21 @@
             errors.has_disability = ['Select disability status (Yes or No).'];
         }
         if (lastFitnessTest.length > 500) {
-            errors.last_fitness_test = ['Last fitness test must not exceed 500 characters.'];
+            errors.last_fitness_test = ['Last fitness test notes must not exceed 500 characters.'];
+        }
+        if (fitnessDate) {
+            if (!isValidDate(fitnessDate)) {
+                errors.last_fitness_test_date = ['Enter a valid fitness test date.'];
+            } else if (dateValue(fitnessDate) > todayMedical) {
+                errors.last_fitness_test_date = ['Fitness test date cannot be in the future.'];
+            }
+        }
+        if (fitnessResult && !['Positive', 'Negative'].includes(fitnessResult)) {
+            errors.last_fitness_test_result = ['Select Positive or Negative.'];
+        }
+        if ((fitnessDate && !fitnessResult) || (!fitnessDate && fitnessResult)) {
+            if (!fitnessDate) errors.last_fitness_test_date = ['Select the fitness test date when a result is chosen.'];
+            if (!fitnessResult) errors.last_fitness_test_result = ['Select the fitness test result when a date is entered.'];
         }
         if (bloodGroup && !bloodGroupRegex.test(bloodGroup)) {
             errors.blood_group = ['Blood group must be like A+, O-, or AB+.'];
@@ -2151,9 +2335,9 @@
                 errors.disability_type = ['Disability type must not exceed 100 characters.'];
             }
         }
-        if (disabilityType === 'Other') {
+        if (disabilityType === 'Other' || disabilityType === 'Chronic Disease') {
             if (!disabilityDescription) {
-                errors.disability_description = ['Disability details are required when type is Other.'];
+                errors.disability_description = ['Specify disability details for the selected type.'];
             } else if (disabilityDescription.length > 1000) {
                 errors.disability_description = ['Disability details must not exceed 1000 characters.'];
             }
@@ -2169,7 +2353,7 @@
     }
 
     async function saveMoreSubSection(step, onSuccess) {
-        const typeMap = { 1: 'contact', 5: 'medical', 6: 'references' };
+        const typeMap = { 1: 'contact', 6: 'medical', 7: 'references' };
         const subsection = typeMap[step];
         if (!subsection) {
             if (onSuccess) onSuccess();
@@ -2291,7 +2475,7 @@
                 if (subsection === 'references' && typeof window.setMoreSubStep === 'function' && res.errors) {
                     const refKeys = Object.keys(res.errors).filter((k) => k.startsWith('ref'));
                     if (refKeys.length) {
-                        window.setMoreSubStep(6);
+                        window.setMoreSubStep(7);
                     }
                 }
                 Swal.fire({
@@ -2373,18 +2557,35 @@
         }
 
         if (subsection === 'medical') {
+            const fitnessDate = get('last_fitness_test_date');
+            const fitnessResult = get('last_fitness_test_result');
             const lastFitness = get('last_fitness_test');
             const hasDisability = get('has_disability');
             const bloodGroup = get('blood_group');
             const disabilityType = get('disability_type');
             const disabilityDescription = get('disability_description');
+            const todaySub = new Date();
+            todaySub.setHours(0, 0, 0, 0);
 
-            if (lastFitness.length > 500) addErr('last_fitness_test', 'Last fitness test must not exceed 500 characters.');
+            if (lastFitness.length > 500) addErr('last_fitness_test', 'Last fitness test notes must not exceed 500 characters.');
+            if (fitnessDate) {
+                if (!isValidDate(fitnessDate)) addErr('last_fitness_test_date', 'Enter a valid fitness test date.');
+                else if (dateValue(fitnessDate) > todaySub) addErr('last_fitness_test_date', 'Fitness test date cannot be in the future.');
+            }
+            if (fitnessResult && !['Positive', 'Negative'].includes(fitnessResult)) {
+                addErr('last_fitness_test_result', 'Select Positive or Negative.');
+            }
+            if ((fitnessDate && !fitnessResult) || (!fitnessDate && fitnessResult)) {
+                if (!fitnessDate) addErr('last_fitness_test_date', 'Select the fitness test date when a result is chosen.');
+                if (!fitnessResult) addErr('last_fitness_test_result', 'Select the fitness test result when a date is entered.');
+            }
             if (!['yes', 'no'].includes(hasDisability)) addErr('has_disability', 'Please select disability status.');
             if (bloodGroup && !/^(A|B|AB|O)[+-]$/.test(bloodGroup)) addErr('blood_group', 'Blood group format is invalid.');
             if (hasDisability === 'yes' && !disabilityType) addErr('disability_type', 'Disability type is required when disability is Yes.');
             if (disabilityType && disabilityType.length > 100) addErr('disability_type', 'Disability type must not exceed 100 characters.');
-            if (disabilityType === 'Other' && !disabilityDescription) addErr('disability_description', 'Please specify disability details.');
+            if ((disabilityType === 'Other' || disabilityType === 'Chronic Disease') && !disabilityDescription) {
+                addErr('disability_description', 'Please specify disability details.');
+            }
             if (disabilityDescription.length > 1000) addErr('disability_description', 'Disability description must not exceed 1000 characters.');
         }
 
@@ -2432,10 +2633,11 @@
     }
 
     async function autoSaveMoreDynamicRows(moreStep) {
-        const stepTypeMap = { 2: 'family', 3: 'academic', 4: 'employment' };
+        const stepTypeMap = { 2: 'family', 3: 'academic', 4: 'certificate', 5: 'employment' };
         const containerIdMap = {
             family: 'moreFamilyMembersContainer',
             academic: 'moreAcademicRecordsContainer',
+            certificate: 'moreCertificateRecordsContainer',
             employment: 'moreEmploymentRecordsContainer',
         };
         const type = stepTypeMap[moreStep];
@@ -3140,6 +3342,36 @@
         return `${year}-${month}-${day}`;
     }
 
+    function syncProbationStartFromJoinDate() {
+        if (!joinDateInput || !probationStartMirrorInput) return;
+        probationStartMirrorInput.value = joinDateInput.value || '';
+    }
+
+    function syncProbationEndMinDate() {
+        if (!joinDateInput || !probationEndInput) return;
+        if (!joinDateInput.value) {
+            probationEndInput.removeAttribute('min');
+            return;
+        }
+
+        const startDate = new Date(joinDateInput.value + 'T00:00:00');
+        if (Number.isNaN(startDate.getTime())) {
+            probationEndInput.removeAttribute('min');
+            return;
+        }
+
+        startDate.setDate(startDate.getDate() + 1);
+        const minEndDate = formatDateForInput(startDate);
+        probationEndInput.min = minEndDate;
+
+        if (probationEndInput.value) {
+            const selectedEndDate = new Date(probationEndInput.value + 'T00:00:00');
+            if (Number.isNaN(selectedEndDate.getTime()) || probationEndInput.value < minEndDate) {
+                probationEndInput.value = '';
+            }
+        }
+    }
+
     function syncProbationContractStartDate(forceFill = false) {
         if (!probationEndInput || !probationEndInput.value) return;
 
@@ -3234,6 +3466,21 @@
             }
             roleSelect.add(opt);
         });
+        syncGradeWithRole(roleSelect.value || '');
+    }
+
+    function syncGradeWithRole(roleId) {
+        if (!gradeInput && !gradeDisplayInput) return;
+        const role = rolesData.find(r => String(r.id) === String(roleId));
+        const roleLevel = role && role.level !== null && role.level !== undefined && role.level !== ''
+            ? String(role.level)
+            : '';
+        if (gradeInput) {
+            gradeInput.value = roleLevel;
+        }
+        if (gradeDisplayInput) {
+            gradeDisplayInput.value = roleLevel;
+        }
     }
 
     if (orgSelect) {
@@ -3272,6 +3519,14 @@
             syncProbationContractStartDate(true);
         });
     }
+    if (joinDateInput) {
+        joinDateInput.addEventListener('change', function () {
+            syncProbationStartFromJoinDate();
+            syncProbationEndMinDate();
+        });
+    }
+    syncProbationStartFromJoinDate();
+    syncProbationEndMinDate();
     syncProbationContractStartDate(false);
 
     // --- Department Required based on Role Level ---
@@ -3298,9 +3553,15 @@
     if (roleSelect) {
         roleSelect.addEventListener('change', function () {
             updateDeptRequired(this.value);
+            syncGradeWithRole(this.value);
         });
         // Run on page load for edit mode
-        if (roleSelect.value) updateDeptRequired(roleSelect.value);
+        if (roleSelect.value) {
+            updateDeptRequired(roleSelect.value);
+            syncGradeWithRole(roleSelect.value);
+        } else {
+            syncGradeWithRole('');
+        }
     }
 
     // Custom Multi-Select logic for Departments
@@ -4021,7 +4282,7 @@
 
     // --- STEP 6: MORE INFORMATION LOGIC ---
     let currentMoreStep = 1;
-    const totalMoreSteps = 7;
+    const totalMoreSteps = 8;
 
     window.setMoreSubStep = function(step) {
         currentMoreStep = step;
@@ -4058,7 +4319,7 @@
         });
     });
 
-    // --- Subsection Management Helpers (Family, Academic, Employment) ---
+    // --- Subsection Management Helpers (Family, Academic, Certificates, Employment) ---
 
     function setSubsectionRowMode(row, type, isPreview) {
         if (!row) return;
@@ -4276,6 +4537,32 @@
                 if (institute.length > 150) addErr('institute', 'Institute must not exceed 150 characters.');
                 else if (countWords(institute) > 20) addErr('institute', 'University can be at most 20 words.');
             }
+            if ((degree === 'Matric' || degree === 'Intermediate / Diploma' || degree === 'Intermediate') && !institute) {
+                addErr('institute', 'Board is required for selected degree.');
+            }
+        }
+
+        if (type === 'certificate') {
+            const certificateName = v('certificate_name');
+            const start = v('start_date');
+            const end = v('end_date');
+            const institute = v('institute');
+            const alphaNumericTextRegex = /^[A-Za-z0-9]+[\sA-Za-z0-9.\-&,\/()#']*$/;
+
+            if (!certificateName) addErr('certificate_name', 'Certificate name is required.');
+            else if (certificateName.length > 150) addErr('certificate_name', 'Certificate name must not exceed 150 characters.');
+            else if (countWords(certificateName) > 20) addErr('certificate_name', 'Certificate name can be at most 20 words.');
+            else if (!alphaNumericTextRegex.test(certificateName)) addErr('certificate_name', 'Certificate name may only contain letters, numbers, spaces, and standard punctuation.');
+
+            if (!start || !isValidDate(start)) addErr('start_date', 'Start date is required.');
+            if (!end || !isValidDate(end)) addErr('end_date', 'End date is required.');
+            if (isValidDate(start) && isValidDate(end) && dateValue(end) < dateValue(start)) {
+                addErr('end_date', 'End date must be on or after start date.');
+            }
+
+            if (!institute) addErr('institute', 'Institute is required.');
+            else if (institute.length > 255) addErr('institute', 'Institute must not exceed 255 characters.');
+            else if (countWords(institute) > 20) addErr('institute', 'Institute can be at most 20 words.');
         }
 
         if (type === 'employment') {
@@ -4317,6 +4604,7 @@
                 const endpointMap = {
                     'family': 'family',
                     'academic': 'academic',
+                    'certificate': 'certificate',
                     'employment': 'employment'
                 };
                 const endpoint = `/admin/employees/delete-${endpointMap[type]}`;
@@ -4335,7 +4623,7 @@
                 if (res.success) {
                     rowElement.remove();
                     updateRowIndices(type);
-                    showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} member deleted successfully`);
+                    showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} record deleted successfully`);
                 } else {
                     showError(res.message);
                 }
@@ -4350,12 +4638,14 @@
         const containerId = {
             'family': 'moreFamilyMembersContainer',
             'academic': 'moreAcademicRecordsContainer',
+            'certificate': 'moreCertificateRecordsContainer',
             'employment': 'moreEmploymentRecordsContainer'
         }[type];
         
         const countId = {
             'family': 'moreFamilyMemberCount',
             'academic': 'moreAcademicRecordCount',
+            'certificate': 'moreCertificateRecordCount',
             'employment': 'moreEmploymentRecordCount'
         }[type];
 
@@ -4712,15 +5002,48 @@
 
         const clone = template.content.cloneNode(true);
         const row = clone.querySelector('[data-academic-row]');
+        const degreeEl = row.querySelector('[data-academic-degree]');
+        const boardEl = row.querySelector('[data-academic-board]');
+        const boardWrap = row.querySelector('[data-academic-board-wrap]');
+        const instituteEl = row.querySelector('[data-academic-institute]');
+        const boardPreviewEl = row.querySelector('[data-academic-preview-board]');
+        const boardEligibleDegrees = new Set(['Matric', 'Intermediate / Diploma', 'Intermediate']);
 
         if (data) {
             row.setAttribute('data-db-id', data.id || '');
-            if (data.degree) row.querySelector('[data-academic-degree]').value = data.degree;
+            if (data.degree && degreeEl) {
+                const hasMatchingOption = Array.from(degreeEl.options || []).some(function (opt) {
+                    return String(opt.value) === String(data.degree);
+                });
+                if (!hasMatchingOption) {
+                    const legacyOption = new Option(String(data.degree), String(data.degree), true, true);
+                    degreeEl.add(legacyOption);
+                }
+                degreeEl.value = data.degree;
+            }
             if (data.grade_cgpa) row.querySelector('[data-academic-grade]').value = data.grade_cgpa;
             if (data.start_date) row.querySelector('[data-academic-start-date]').value = data.start_date;
             if (data.end_date) row.querySelector('[data-academic-end-date]').value = data.end_date;
             if (data.fieldOfStudy || data.field_of_study) row.querySelector('[data-academic-field-of-study]').value = data.fieldOfStudy || data.field_of_study;
             if (data.institute) row.querySelector('[data-academic-institute]').value = data.institute;
+        }
+
+        if (boardWrap && boardEl && instituteEl && degreeEl) {
+            const degreeValue = String(degreeEl.value || '').trim();
+            const shouldShowBoard = boardEligibleDegrees.has(degreeValue);
+            boardWrap.classList.toggle('d-none', !shouldShowBoard);
+            boardEl.required = shouldShowBoard;
+            if (shouldShowBoard && instituteEl.value) {
+                const hasBoardOption = Array.from(boardEl.options || []).some(function (opt) {
+                    return String(opt.value) === String(instituteEl.value);
+                });
+                if (hasBoardOption) {
+                    boardEl.value = instituteEl.value;
+                }
+            }
+            if (boardPreviewEl) {
+                boardPreviewEl.textContent = boardEl.value || '-';
+            }
         }
 
         row.querySelector('[data-academic-save]').onclick = () => saveSubsectionRow('academic', row);
@@ -4739,6 +5062,46 @@
 
     const moreAcademicRecordsContainerEl = document.getElementById('moreAcademicRecordsContainer');
     if (moreAcademicRecordsContainerEl) {
+        const boardEligibleDegrees = new Set(['Matric', 'Intermediate / Diploma', 'Intermediate']);
+        const syncAcademicBoardField = function (row, keepBoardValue) {
+            if (!row) return;
+            const degreeEl = row.querySelector('[data-academic-degree]');
+            const boardWrap = row.querySelector('[data-academic-board-wrap]');
+            const boardEl = row.querySelector('[data-academic-board]');
+            const instituteEl = row.querySelector('[data-academic-institute]');
+            const boardPreviewEl = row.querySelector('[data-academic-preview-board]');
+            if (!degreeEl || !boardWrap || !boardEl || !instituteEl) return;
+
+            const degreeValue = String(degreeEl.value || '').trim();
+            const shouldShowBoard = boardEligibleDegrees.has(degreeValue);
+            boardWrap.classList.toggle('d-none', !shouldShowBoard);
+
+            if (!shouldShowBoard) {
+                boardEl.required = false;
+                boardEl.value = '';
+                if (boardPreviewEl) boardPreviewEl.textContent = '-';
+                return;
+            }
+
+            boardEl.required = true;
+            if (!keepBoardValue && instituteEl.value) {
+                const matchingOption = Array.from(boardEl.options || []).some(function (opt) {
+                    return String(opt.value) === String(instituteEl.value);
+                });
+                if (matchingOption) {
+                    boardEl.value = instituteEl.value;
+                }
+            }
+            if (boardEl.value) {
+                instituteEl.value = boardEl.value;
+            } else {
+                instituteEl.value = '';
+            }
+            if (boardPreviewEl) {
+                boardPreviewEl.textContent = boardEl.value || '-';
+            }
+        };
+
         const removeAcademicInlineError = function (input) {
             if (!input) return;
             input.classList.remove('is-invalid');
@@ -4855,6 +5218,19 @@
         moreAcademicRecordsContainerEl.addEventListener('change', function (e) {
             const target = e.target;
             if (!target) return;
+            if (target.matches('[data-academic-degree]')) {
+                const row = target.closest('[data-academic-row]');
+                syncAcademicBoardField(row, false);
+            }
+            if (target.matches('[data-academic-board]')) {
+                const row = target.closest('[data-academic-row]');
+                if (row) {
+                    const instituteEl = row.querySelector('[data-academic-institute]');
+                    const boardPreviewEl = row.querySelector('[data-academic-preview-board]');
+                    if (instituteEl) instituteEl.value = target.value || '';
+                    if (boardPreviewEl) boardPreviewEl.textContent = target.value || '-';
+                }
+            }
             if (target.matches('[data-academic-start-date], [data-academic-end-date]')) {
                 const row = target.closest('[data-academic-row]');
                 if (!row) return;
@@ -4870,6 +5246,38 @@
             }
         });
     }
+
+    // --- CERTIFICATE Record Specifics ---
+
+    window.addCertificateRecord = function(data = null) {
+        const container = document.getElementById('moreCertificateRecordsContainer');
+        const template = document.getElementById('moreCertificateRecordTemplate');
+        if (!container || !template) return;
+
+        const clone = template.content.cloneNode(true);
+        const row = clone.querySelector('[data-certificate-row]');
+
+        if (data) {
+            row.setAttribute('data-db-id', data.id || '');
+            if (data.certificate_name) row.querySelector('[data-certificate-name]').value = data.certificate_name;
+            if (data.start_date) row.querySelector('[data-certificate-start-date]').value = data.start_date;
+            if (data.end_date) row.querySelector('[data-certificate-end-date]').value = data.end_date;
+            if (data.institute) row.querySelector('[data-certificate-institute]').value = data.institute;
+        }
+
+        row.querySelector('[data-certificate-save]').onclick = () => saveSubsectionRow('certificate', row);
+        row.querySelector('[data-certificate-remove]').onclick = () => removeSubsectionRow('certificate', row);
+
+        container.appendChild(clone);
+        if (data && data.id) {
+            updateSubsectionPreview(row, 'certificate');
+            setSubsectionRowMode(row, 'certificate', true);
+        }
+        updateRowIndices('certificate');
+    };
+
+    const addCertificateBtn = document.getElementById('moreCertificateAddRecordBtn');
+    if (addCertificateBtn) addCertificateBtn.onclick = () => addCertificateRecord();
 
     // --- EMPLOYMENT Record Specifics ---
 
@@ -5133,10 +5541,11 @@ if (typeof window.setExistingAttachments === 'function' && window.editData && Ar
 
 // --- Medical disability toggling (Robust version) ---
 document.addEventListener('change', function(e) {
-    if (e.target && e.target.name === 'has_disability') {
+        if (e.target && e.target.name === 'has_disability') {
         const typeContainer = document.getElementById('moreMedicalDisabilityTypeContainer');
         const descContainer = document.getElementById('moreMedicalDisabilityDescriptionContainer');
         const isYes = e.target.value === 'yes';
+        const needsSpecify = (v) => v === 'Other' || v === 'Chronic Disease';
         
         if (typeContainer) {
             typeContainer.style.display = isYes ? 'block' : 'none';
@@ -5146,7 +5555,7 @@ document.addEventListener('change', function(e) {
                 descContainer.style.display = 'none';
             } else {
                 const typeInput = document.getElementById('moreMedicalDisabilityTypeInput');
-                descContainer.style.display = (typeInput && typeInput.value === 'Other') ? 'block' : 'none';
+                descContainer.style.display = (typeInput && needsSpecify(typeInput.value)) ? 'block' : 'none';
             }
         }
 
@@ -5160,10 +5569,11 @@ document.addEventListener('change', function(e) {
 
     if (e.target && e.target.id === 'moreMedicalDisabilityTypeInput') {
         const descContainer = document.getElementById('moreMedicalDisabilityDescriptionContainer');
+        const needsSpecify = e.target.value === 'Other' || e.target.value === 'Chronic Disease';
         if (descContainer) {
-            descContainer.style.display = e.target.value === 'Other' ? 'block' : 'none';
+            descContainer.style.display = needsSpecify ? 'block' : 'none';
         }
-        if (e.target.value !== 'Other') {
+        if (!needsSpecify) {
             const textarea = document.getElementById('moreMedicalDisabilityDescriptionInput');
             if (textarea) textarea.value = '';
         }

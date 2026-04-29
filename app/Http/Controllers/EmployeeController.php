@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Admin\Employee\EmployeeStoreRequest;
 use App\Http\Requests\Admin\Employee\EmployeeUpdateRequest;
 use App\Services\EmployeeService;
+use App\Services\UniversityDirectoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,10 +18,12 @@ use App\Models\Employee;
 class EmployeeController extends Controller
 {
     private EmployeeService $employeeService;
+    private UniversityDirectoryService $universityDirectoryService;
 
-    public function __construct(EmployeeService $employeeService)
+    public function __construct(EmployeeService $employeeService, UniversityDirectoryService $universityDirectoryService)
     {
         $this->employeeService = $employeeService;
+        $this->universityDirectoryService = $universityDirectoryService;
     }
 
     public function index()
@@ -75,6 +78,35 @@ class EmployeeController extends Controller
         } catch (\Exception $e) {
             Log::error('Employee table data failed', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'data' => []], 500);
+        }
+    }
+
+    public function universities(): JsonResponse
+    {
+        if (! validatePermissions('admin/employees')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.',
+                'data' => [],
+            ], 403);
+        }
+
+        try {
+            $universities = $this->universityDirectoryService->pakistanUniversities();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Universities fetched successfully.',
+                'data' => $universities,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Universities directory fetch failed', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to fetch universities right now.',
+                'data' => [],
+            ], 500);
         }
     }
 
@@ -239,6 +271,11 @@ class EmployeeController extends Controller
                     $message = 'Academic record added successfully.';
                     $responseData = ['id' => $record?->id];
                     break;
+                case 'certificate_row':
+                    $record = $this->employeeService->saveCertificate((int)$employeeId, $data);
+                    $message = 'Certificate record added successfully.';
+                    $responseData = ['id' => $record?->id];
+                    break;
                 case 'employment_row':
                     $record = $this->employeeService->saveExEmployment((int)$employeeId, $data);
                     $message = 'Employment history record added successfully.';
@@ -330,6 +367,11 @@ class EmployeeController extends Controller
     public function deleteEmployment(Request $request)
     {
         return $this->processDeletion($request, 'employment_row');
+    }
+
+    public function deleteCertificate(Request $request)
+    {
+        return $this->processDeletion($request, 'certificate_row');
     }
 
     public function deleteBankDetail(Request $request)

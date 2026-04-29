@@ -528,6 +528,11 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
     const moreMedicalDisabilityTypeInput = document.getElementById('moreMedicalDisabilityTypeInput');
     const moreMedicalDisabilityDescriptionInput = document.getElementById('moreMedicalDisabilityDescriptionInput');
     
+    function needsMedicalDisabilitySpecify() {
+        const v = moreMedicalDisabilityTypeInput ? String(moreMedicalDisabilityTypeInput.value || '').trim() : '';
+        return v === 'Other' || v === 'Chronic Disease';
+    }
+
     function syncMedicalDisabilityFields() {
         const hasDisability = moreMedicalHasDisabilityYes ? moreMedicalHasDisabilityYes.checked : false;
         if (moreMedicalDisabilityTypeInput) {
@@ -538,9 +543,10 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
             }
         }
         if (moreMedicalDisabilityDescriptionInput) {
-            moreMedicalDisabilityDescriptionInput.disabled = !hasDisability;
-            moreMedicalDisabilityDescriptionInput.required = hasDisability;
-            if (!hasDisability) {
+            const descNeeded = hasDisability && needsMedicalDisabilitySpecify();
+            moreMedicalDisabilityDescriptionInput.disabled = !hasDisability || !descNeeded;
+            moreMedicalDisabilityDescriptionInput.required = descNeeded;
+            if (!hasDisability || !descNeeded) {
                 moreMedicalDisabilityDescriptionInput.value = '';
             }
         }
@@ -551,6 +557,9 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
     }
     if (moreMedicalHasDisabilityNo) {
         moreMedicalHasDisabilityNo.addEventListener('change', syncMedicalDisabilityFields);
+    }
+    if (moreMedicalDisabilityTypeInput) {
+        moreMedicalDisabilityTypeInput.addEventListener('change', syncMedicalDisabilityFields);
     }
     syncMedicalDisabilityFields();
     

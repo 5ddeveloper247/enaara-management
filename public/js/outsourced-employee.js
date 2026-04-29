@@ -639,7 +639,7 @@
             if (filterBtn) filterBtn.classList.remove('d-none');
             if (listingTabs) listingTabs.classList.remove('d-none');
             if (addBtn) {
-                addBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i>Add New Employee';
+                addBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i>Add Employee';
                 addBtn.setAttribute('href', addBtn.dataset.internalHref || window.registerUrl || '#');
             }
             if (window.employeeFilters) {

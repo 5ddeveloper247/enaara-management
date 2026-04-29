@@ -47,6 +47,16 @@
         return str;
     }
 
+    function formatCnic(value) {
+        var raw = normalizeValue(value, '');
+        if (!raw) return '';
+        var digits = raw.replace(/\D/g, '');
+        if (digits.length >= 13) {
+            return digits.slice(0, 5) + '-' + digits.slice(5, 12) + '-' + digits.slice(12);
+        }
+        return raw;
+    }
+
     function currentMode() {
         if (typeof window.getEmployeeDirectoryMode === 'function') {
             return window.getEmployeeDirectoryMode() === 'outsourced' ? 'outsourced' : 'internal';
@@ -106,6 +116,9 @@
         }
         if (mode === 'outsourced' && col.key === 'attendance_access') {
             return row.attendance_access ? 'Granted' : 'Not Granted';
+        }
+        if (col.key === 'cnic' || col.key === 'cnic_number') {
+            return formatCnic(row[col.key]);
         }
         return normalizeValue(row[col.key], '');
     }

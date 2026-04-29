@@ -2,7 +2,7 @@
 <div class="offcanvas offcanvas-end bg-main text-white" tabindex="-1" id="addEmployeeCanvas" aria-labelledby="addEmployeeCanvasLabel" style="width: 600px;">
     <div class="offcanvas-header border-bottom" style="border-color: #ffffff42 !important">
         <h5 class="offcanvas-title" id="addEmployeeCanvasLabel">
-            <i class="bi bi-person-plus me-2"></i>Add New Employee
+            <i class="bi bi-person-plus me-2"></i>Add Employee
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>

@@ -10,6 +10,7 @@ use App\Models\EmployeeContact;
 use App\Models\EmployeeBankDetail;
 use App\Models\EmployeeFamilyMember;
 use App\Models\EmployeeAcademic;
+use App\Models\EmployeeCertificate;
 use App\Models\EmployeeExEmployment;
 use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
@@ -388,6 +389,7 @@ class EmployeeService
             $this->saveBankDetails($employee->id, $data['banks'] ?? []);
             $this->saveFamilyMembers($employee->id, $data['family'] ?? []);
             $this->saveAcademics($employee->id, $data['academics'] ?? []);
+            $this->saveCertificates($employee->id, $data['certificates'] ?? []);
             $this->saveExEmployments($employee->id, $data['employments'] ?? []);
             $this->saveMedical($employee->id, $data);
             $this->saveReferences($employee->id, $data);
@@ -865,6 +867,22 @@ class EmployeeService
         }
     }
 
+    private function saveCertificates(int $id, array $rows): void
+    {
+        foreach ($rows as $row) {
+            if (empty($row['certificate_name'])) {
+                continue;
+            }
+            EmployeeCertificate::create([
+                'employee_id'       => $id,
+                'certificate_name'  => $row['certificate_name'],
+                'start_date'        => ! empty($row['start_date']) ? $row['start_date'] : null,
+                'end_date'          => ! empty($row['end_date']) ? $row['end_date'] : null,
+                'institute'         => $row['institute'] ?? null,
+            ]);
+        }
+    }
+
     private function saveExEmployments(int $id, array $rows): void
     {
         foreach ($rows as $row) {
@@ -884,6 +902,8 @@ class EmployeeService
     public function saveMedical(int $id, array $d): void
     {
         $hasAnyMedicalValue = ! empty($d['last_fitness_test'])
+            || ! empty($d['last_fitness_test_date'])
+            || ! empty($d['last_fitness_test_result'])
             || array_key_exists('has_disability', $d)
             || ! empty($d['blood_group'])
             || ! empty($d['disability_type'])
@@ -896,11 +916,13 @@ class EmployeeService
         EmployeeMedical::updateOrCreate(
             ['employee_id' => $id],
             [
-                'last_fitness_test'      => $d['last_fitness_test'] ?? null,
-                'has_disability'         => $d['has_disability'] ?? null,
-                'blood_group'            => $d['blood_group'] ?? null,
-                'disability_type'        => $d['disability_type'] ?? null,
-                'disability_description' => $d['disability_description'] ?? null,
+                'last_fitness_test'         => $d['last_fitness_test'] ?? null,
+                'last_fitness_test_date'    => ! empty($d['last_fitness_test_date']) ? $d['last_fitness_test_date'] : null,
+                'last_fitness_test_result'  => $d['last_fitness_test_result'] ?? null,
+                'has_disability'            => $d['has_disability'] ?? null,
+                'blood_group'               => $d['blood_group'] ?? null,
+                'disability_type'           => $d['disability_type'] ?? null,
+                'disability_description'    => $d['disability_description'] ?? null,
             ]
         );
     }
@@ -1022,6 +1044,24 @@ class EmployeeService
         );
     }
 
+    public function saveCertificate(int $id, array $row)
+    {
+        if (empty($row['certificate_name'])) {
+            return null;
+        }
+        $certificateId = $row['certificate_id'] ?? null;
+
+        return EmployeeCertificate::updateOrCreate(
+            ['id' => $certificateId, 'employee_id' => $id],
+            [
+                'certificate_name' => $row['certificate_name'],
+                'start_date'       => ! empty($row['start_date']) ? $row['start_date'] : null,
+                'end_date'         => ! empty($row['end_date']) ? $row['end_date'] : null,
+                'institute'        => $row['institute'] ?? null,
+            ]
+        );
+    }
+
     public function deleteSubsectionRow(string $type, int $id): bool
     {
         switch ($type) {
@@ -1035,6 +1075,8 @@ class EmployeeService
                 return $deleted;
             case 'academic_row':
                 return EmployeeAcademic::where('id', $id)->delete() > 0;
+            case 'certificate_row':
+                return EmployeeCertificate::where('id', $id)->delete() > 0;
             case 'employment_row':
                 return EmployeeExEmployment::where('id', $id)->delete() > 0;
             default:
@@ -1411,6 +1453,7 @@ class EmployeeService
             'bankDetails',
             'familyMembers',
             'academics',
+            'certificates',
             'exEmployments',
             'medical',
             'references',
@@ -1586,6 +1629,13 @@ class EmployeeService
                 'field_of_study' => $a->field_of_study,
                 'institute'      => $a->institute,
             ])->values()->all(),
+            'certificates' => $employee->certificates->map(fn($c) => [
+                'id'               => $c->id,
+                'certificate_name' => $c->certificate_name,
+                'start_date'       => $c->start_date?->format('Y-m-d'),
+                'end_date'         => $c->end_date?->format('Y-m-d'),
+                'institute'        => $c->institute,
+            ])->values()->all(),
             'employments' => $employee->exEmployments->map(fn($e) => [
                 'id'                 => $e->id,
                 'organization'       => $e->organization,
@@ -1596,7 +1646,11 @@ class EmployeeService
                 'reason_for_leaving' => $e->reason_for_leaving,
             ])->values()->all(),
             'medical' => $medical ? [
-                'last_fitness_test'      => $medical->last_fitness_test,
+                'last_fitness_test'        => $medical->last_fitness_test,
+                'last_fitness_test_date' => $medical->last_fitness_test_date instanceof \Carbon\Carbon
+                    ? $medical->last_fitness_test_date->format('Y-m-d')
+                    : null,
+                'last_fitness_test_result' => $medical->last_fitness_test_result,
                 'has_disability'         => $medical->has_disability,
                 'blood_group'            => $medical->blood_group,
                 'disability_type'        => $medical->disability_type,
@@ -1658,7 +1712,7 @@ class EmployeeService
                 'next_verification_date', 'police_remarks', 'service_no', 'rank', 'medical_category',
                 'date_of_commissioning', 'date_of_retirement', 'reason_of_retirement', 'corps_regiment',
                 'ex_army_unit', 'trade', 'pma_lc_ots', 'residence_phone', 'emergency_contact', 'cell_no',
-                'present_address', 'permanent_address', 'last_fitness_test', 'has_disability', 'blood_group',
+                'present_address', 'permanent_address', 'last_fitness_test', 'last_fitness_test_date', 'last_fitness_test_result', 'has_disability', 'blood_group',
                 'disability_type', 'disability_description', 'ref1_name', 'ref1_designation', 'ref1_organization',
                 'ref1_contact', 'ref1_relationship', 'ref2_name', 'ref2_designation', 'ref2_organization',
                 'ref2_contact', 'ref2_relationship', 'employment_category', 'intern_type', 'intern_duration',
@@ -1798,6 +1852,11 @@ class EmployeeService
                 if (isset($data['academics'])) {
                     $employee->academics()->delete();
                     $this->saveAcademics($employee->id, $data['academics']);
+                }
+
+                if (isset($data['certificates'])) {
+                    $employee->certificates()->delete();
+                    $this->saveCertificates($employee->id, $data['certificates']);
                 }
                 
                 if (isset($data['employments'])) {

@@ -323,6 +323,33 @@
             display: flex;
         }
 
+        .certificate-record-row .form-label {
+            font-size: .73rem;
+            font-weight: 600;
+            margin-bottom: .2rem;
+            color: #475569;
+        }
+
+        .certificate-field-preview {
+            display: none;
+            min-height: 38px;
+            border: 1px solid #dbe3ed;
+            border-radius: .375rem;
+            background: #f8fafc;
+            padding: .45rem .65rem;
+            font-size: .86rem;
+            color: #1f2937;
+            align-items: center;
+        }
+
+        .certificate-record-row.preview-mode .certificate-field-input {
+            display: none;
+        }
+
+        .certificate-record-row.preview-mode .certificate-field-preview {
+            display: flex;
+        }
+
         .emp-dept-input-box {
             background: #fff;
             border: 1px solid #ced4da;

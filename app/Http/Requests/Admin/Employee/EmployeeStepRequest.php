@@ -590,6 +590,13 @@ class EmployeeStepRequest extends FormRequest
                 'academics.*.end_date'     => ['required_with:academics.*', 'date'],
                 'academics.*.institute'    => ['required_with:academics.*', 'string', 'max:255'],
 
+                // Certificates
+                'certificates'                      => ['nullable', 'array'],
+                'certificates.*.certificate_name'   => ['required_with:certificates.*', 'string', 'max:150'],
+                'certificates.*.start_date'         => ['required_with:certificates.*', 'date'],
+                'certificates.*.end_date'           => ['required_with:certificates.*', 'date'],
+                'certificates.*.institute'          => ['required_with:certificates.*', 'string', 'max:255'],
+
                 // Employment History
                 'employments'              => ['nullable', 'array'],
                 'employments.*.organization' => ['required_with:employments.*', 'string', 'min:2', 'max:255'],
@@ -598,11 +605,13 @@ class EmployeeStepRequest extends FormRequest
                 'employments.*.to_date'      => ['required_with:employments.*', 'date'],
 
                 // Medical
-                'last_fitness_test'      => ['nullable', 'string', 'max:1000'],
-                'has_disability'         => ['nullable', Rule::in(['yes', 'no'])],
-                'blood_group'            => ['nullable', 'string', 'regex:/^(A|B|AB|O)[+-]$/'],
-                'disability_type'        => ['nullable', 'string', 'max:100'],
-                'disability_description' => ['nullable', 'string', 'max:1000'],
+                'last_fitness_test'          => ['nullable', 'string', 'max:1000'],
+                'last_fitness_test_date'     => ['nullable', 'date', 'before_or_equal:today'],
+                'last_fitness_test_result'   => ['nullable', Rule::in(['Positive', 'Negative'])],
+                'has_disability'             => ['nullable', Rule::in(['yes', 'no'])],
+                'blood_group'                => ['nullable', 'string', 'regex:/^(A|B|AB|O)[+-]$/'],
+                'disability_type'            => ['nullable', 'string', 'max:100'],
+                'disability_description'     => ['nullable', 'string', 'max:1000'],
 
                 // References
                 'ref1_name'         => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
@@ -706,13 +715,43 @@ class EmployeeStepRequest extends FormRequest
                     'reason_for_leaving' => ['nullable', 'string', 'max:200'],
                 ]);
 
+            case 'certificate_row':
+                return array_merge($rules, [
+                    'certificate_id'   => [
+                        'nullable',
+                        'integer',
+                        Rule::exists('employee_certificates', 'id')->where('employee_id', (int) $this->input('employee_id')),
+                    ],
+                    'certificate_name' => ['required', 'string', 'max:150', $this->maxWordsRule(20, 'Certificate name')],
+                    'start_date'       => ['required', 'date'],
+                    'end_date'         => ['required', 'date', 'after_or_equal:start_date'],
+                    'institute'        => ['required', 'string', 'max:255', $this->maxWordsRule(20, 'Institute')],
+                ]);
+
             case 'medical':
                 return array_merge($rules, [
-                    'last_fitness_test'      => ['nullable', 'string', 'max:500'],
-                    'has_disability'         => ['required', Rule::in(['yes', 'no'])],
-                    'blood_group'            => ['nullable', 'string', 'max:10', 'regex:' . $this->bloodGroupRegex()],
-                    'disability_type'        => ['required_if:has_disability,yes', 'nullable', 'string', 'max:100'],
-                    'disability_description' => ['required_if:disability_type,Other', 'nullable', 'string', 'max:1000'],
+                    'last_fitness_test'        => ['nullable', 'string', 'max:500'],
+                    'last_fitness_test_date'   => ['nullable', 'date', 'before_or_equal:today'],
+                    'last_fitness_test_result' => ['nullable', Rule::in(['Positive', 'Negative'])],
+                    'has_disability'           => ['required', Rule::in(['yes', 'no'])],
+                    'blood_group'              => ['nullable', 'string', 'max:10', 'regex:' . $this->bloodGroupRegex()],
+                    'disability_type'          => [
+                        'required_if:has_disability,yes',
+                        'nullable',
+                        'string',
+                        'max:100',
+                        Rule::in(['Physical', 'Visual', 'Hearing', 'Speech', 'Chronic Disease', 'Other']),
+                    ],
+                    'disability_description'   => [
+                        'nullable',
+                        'string',
+                        'max:1000',
+                        Rule::requiredIf(function () {
+                            $t = (string) $this->input('disability_type');
+
+                            return in_array($t, ['Other', 'Chronic Disease'], true);
+                        }),
+                    ],
                 ]);
 
             case 'bank_row':
