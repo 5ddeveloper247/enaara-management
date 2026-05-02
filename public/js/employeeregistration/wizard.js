@@ -3102,7 +3102,6 @@
         }
         select.options[0].text = text;
         select.disabled = !!disabled;
-        select.removeAttribute('data-current-value');
     }
 
     async function loadLocationData(select, url, currentValue = null) {
@@ -3132,10 +3131,21 @@
             select.options[0].text = originalText;
             select.disabled = false;
 
-            const valToSelect = currentValue || select.getAttribute('data-current-value');
+            const rawVal = currentValue != null && String(currentValue).length
+                ? currentValue
+                : select.getAttribute('data-current-value');
+            const valToSelect = rawVal != null ? String(rawVal).trim() : '';
             if (valToSelect) {
                 select.value = valToSelect;
-                if (select.value === valToSelect) {
+                if (select.value !== valToSelect) {
+                    const opt = Array.prototype.find.call(select.options, function(o) {
+                        return o.value && String(o.value).trim() === valToSelect;
+                    });
+                    if (opt) {
+                        select.value = opt.value;
+                    }
+                }
+                if (select.value && String(select.value).trim() === valToSelect) {
                     select.dispatchEvent(new Event('change'));
                 }
             }
@@ -3168,9 +3178,15 @@
         }
 
         if (nationalitySelect) {
-            nationalitySelect.addEventListener('change', function() {
+            nationalitySelect.addEventListener('change', function(e) {
                 const countryName = this.value;
                 if (provinceSelect) {
+                    if (e.isTrusted) {
+                        provinceSelect.removeAttribute('data-current-value');
+                        if (districtSelect) {
+                            districtSelect.removeAttribute('data-current-value');
+                        }
+                    }
                     resetLocationSelect(provinceSelect, 'Select province', true);
                     if (districtSelect) {
                         resetLocationSelect(districtSelect, 'Select district', true);
@@ -3187,11 +3203,14 @@
         }
 
         if (provinceSelect) {
-            provinceSelect.addEventListener('change', function() {
+            provinceSelect.addEventListener('change', function(e) {
                 const provinceName = this.value;
                 const countryName = nationalitySelect ? nationalitySelect.value : null;
 
                 if (districtSelect) {
+                    if (e.isTrusted) {
+                        districtSelect.removeAttribute('data-current-value');
+                    }
                     resetLocationSelect(districtSelect, 'Select district', true);
                     if (provinceName && countryName) {
                         districtSelect.disabled = false;
