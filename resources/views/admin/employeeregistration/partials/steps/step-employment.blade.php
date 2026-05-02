@@ -382,6 +382,29 @@
                                                             maxlength="20"
                                                             placeholder="Enter service or biometric ID">
                                                     </div>
+                                                    <div class="col-12 {{ $selectedEmployeeStatus !== 'Terminated' ? 'd-none' : '' }}"
+                                                        id="employmentTerminationFieldsRow">
+                                                        <div class="row g-3">
+                                                            <div class="col-md-6">
+                                                                <label class="form-label" for="employmentTerminationReasonInput">Reason
+                                                                    for termination <span
+                                                                        class="text-danger">*</span></label>
+                                                                <textarea name="termination_reason"
+                                                                    id="employmentTerminationReasonInput"
+                                                                    class="form-control" rows="3" maxlength="2000"
+                                                                    placeholder="Enter reason">{{ $employee->termination_reason ?? '' }}</textarea>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label class="form-label"
+                                                                    for="employmentTerminationDateInput">Date of
+                                                                    termination <span class="text-danger">*</span></label>
+                                                                <input type="date" name="termination_date"
+                                                                    id="employmentTerminationDateInput"
+                                                                    class="form-control"
+                                                                    value="{{ isset($employee->termination_date) && $employee->termination_date ? (is_string($employee->termination_date) ? date('Y-m-d', strtotime($employee->termination_date)) : $employee->termination_date->format('Y-m-d')) : '' }}">
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
                                                     <div class="col-12">
                                                         <label class="form-label">Assigned Floors</label>

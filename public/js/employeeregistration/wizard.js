@@ -275,6 +275,7 @@
         bankDetailsBranchNameInput: 'bank_name',
         bankDetailsBranchCodeInput: 'branch_code',
         bankDetailsBranchAddressInput: 'branch_address',
+        employmentTerminationReasonInput: 'termination_reason',
     };
 
     function fieldKeyFromName(name) {
@@ -395,6 +396,7 @@
             disability_type: 100,
             disability_description: 1000,
             last_fitness_test: 500,
+            termination_reason: 2000,
         };
 
         const digitsOnlyFields = new Set([
@@ -1360,6 +1362,7 @@
         bindEmploymentExplicitMaxGuard('#biometric_id', 20);
         bindEmploymentAlphaTextGuard('#designation', 'Designation');
         bindEmploymentBoundedIntegerGuard('#employmentCustomGracePeriodInput', 600, 3);
+        bindEmploymentExplicitMaxGuard('#employmentTerminationReasonInput', 2000);
         bindPoliceExplicitMaxGuard('#policeVerificationMsrNumberInput', 20);
         bindPoliceExplicitMaxGuard('#policeVerificationLetterNumberInput', 50);
         bindPoliceExplicitMaxGuard('#policeVerificationAddresseeInput', 100);
@@ -1801,6 +1804,8 @@
         'contract_start_date':          'employmentDetailsContractStartDateInput',
         'contract_end_date':            'employmentDetailsContractEndDateInput',
         'employee_status':              'employmentStatusInput',
+        'termination_reason':           'employmentTerminationReasonInput',
+        'termination_date':             'employmentTerminationDateInput',
         'probation_start_date':         'employmentProbationStartDateInput',
         'probation_end_date':           'employmentProbationEndDateInput',
         'probation_contract_start_date': 'employmentProbationContractStartDateInput',
@@ -3222,6 +3227,19 @@
                 }
             });
         }
+    }
+
+    function toggleEmploymentTerminationFields() {
+        const sel = document.getElementById('employmentStatusInput');
+        const row = document.getElementById('employmentTerminationFieldsRow');
+        if (!sel || !row) return;
+        row.classList.toggle('d-none', sel.value !== 'Terminated');
+    }
+
+    const employmentStatusInputEl = document.getElementById('employmentStatusInput');
+    if (employmentStatusInputEl) {
+        employmentStatusInputEl.addEventListener('change', toggleEmploymentTerminationFields);
+        toggleEmploymentTerminationFields();
     }
 
     // Initialize UI

@@ -35,6 +35,8 @@ class EmployeeEmploymentInformationService
             'employment_type',
             'site',
             'employee_status',
+            'termination_reason',
+            'termination_date',
             'probation_start_date',
             'probation_end_date',
         ];
@@ -102,6 +104,12 @@ class EmployeeEmploymentInformationService
         $roleId = isset($payload['role_id']) ? (int) $payload['role_id'] : (int) ($data['role_id'] ?? 0);
         $role = $roleId > 0 ? Role::query()->find($roleId) : null;
         $merged = array_merge($payload, $this->standardScheduleAttributesForPersist($data, $role, $orgLevel));
+
+        $status = $merged['employee_status'] ?? $data['employee_status'] ?? null;
+        if ($status !== 'Terminated') {
+            $merged['termination_reason'] = null;
+            $merged['termination_date'] = null;
+        }
 
         return $merged;
     }

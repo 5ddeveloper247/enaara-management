@@ -145,6 +145,10 @@ class EmployeeStoreRequest extends FormRequest
             }
         }
 
+        if ($this->filled('termination_reason')) {
+            $this->merge(['termination_reason' => trim((string) $this->input('termination_reason'))]);
+        }
+
         $openingGracePeriod = null;
         $closingGracePeriod = null;
         if (array_key_exists('grace_period', $this->all())) {
@@ -299,6 +303,22 @@ class EmployeeStoreRequest extends FormRequest
             ],
             'biometric_id'           => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9\-_]+$/'],
             'employee_status'        => ['required', Rule::in(['Active', 'Suspend', 'Terminated'])],
+            'termination_reason'     => [
+                'nullable',
+                'string',
+                'max:2000',
+                Rule::requiredIf(fn () => ($this->input('employee_status') ?? '') === 'Terminated'),
+                Rule::when(
+                    fn () => ($this->input('employee_status') ?? '') === 'Terminated',
+                    ['min:5', 'regex:/^[^<>]+$/u']
+                ),
+            ],
+            'termination_date'       => [
+                'nullable',
+                'date',
+                'before_or_equal:today',
+                Rule::requiredIf(fn () => ($this->input('employee_status') ?? '') === 'Terminated'),
+            ],
             'employment_category'    => ['required', Rule::in(['intern', 'consultant', 'employee', 'contractual'])],
             'intern_type'            => ['nullable', Rule::in(['paid', 'unpaid']), 'required_if:employment_category,intern'],
             'intern_duration'        => ['nullable', 'string', 'max:10', 'required_if:employment_category,intern'],
@@ -627,6 +647,13 @@ class EmployeeStoreRequest extends FormRequest
             'employment_category.in'       => 'The selected resource type is invalid.',
             'employee_status.required'     => 'Employee status is required.',
             'employee_status.in'           => 'The selected employee status is invalid.',
+            'termination_reason.required' => 'Reason for termination is required when status is Terminated.',
+            'termination_reason.min' => 'Reason for termination must be at least 5 characters.',
+            'termination_reason.max' => 'Reason for termination must not exceed 2000 characters.',
+            'termination_reason.regex' => 'Reason for termination must not contain angle brackets.',
+            'termination_date.required' => 'Date of termination is required when status is Terminated.',
+            'termination_date.date' => 'Date of termination must be a valid date.',
+            'termination_date.before_or_equal' => 'Date of termination cannot be in the future.',
             'assigned_floor_ids.array'     => 'Assigned floors must be provided as a list.',
             'assigned_floor_ids.*.exists'  => 'One or more selected floors are invalid for this SBU.',
             'contractual_type.required'    => 'Contract type is required when Contractual is selected.',
