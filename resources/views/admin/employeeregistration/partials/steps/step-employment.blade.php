@@ -355,7 +355,7 @@
                                         @endphp
                                         <div class="card border-0 bg-light mt-3">
                                             <div class="card-body p-3">
-                                                <div class="fw-bold text-uppercase small mb-3">Status and Probation
+                                                <div class="fw-bold text-uppercase small mb-3">Employment Status & Access
                                                 </div>
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
