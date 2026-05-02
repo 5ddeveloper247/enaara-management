@@ -134,6 +134,43 @@ class DashboardService
         })->values()->all();
     }
 
+    public function getWhoIsOutToday(): array
+    {
+        $today = now()->toDateString();
+        $requests = EmployeLeaveRequest::with([
+                'fromEmployee:id,full_name',
+                'leaveType:id,name',
+            ])
+            ->where('status', 3) // Approved
+            ->whereIn('action_type', [0, 2]) // Leave or Duty Off
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->get();
+
+        return $requests->map(function ($r) {
+            $name     = optional($r->fromEmployee)->full_name ?? 'Unknown';
+            $words    = explode(' ', trim($name));
+            $initials = strtoupper(
+                substr($words[0] ?? '', 0, 1) . substr($words[1] ?? '', 0, 1)
+            );
+            
+            // Format name as "First Name Last Initial."
+            $shortName = $words[0] ?? '';
+            if (isset($words[1])) {
+                $shortName .= ' ' . substr($words[1], 0, 1) . '.';
+            }
+
+            return [
+                'id'           => $r->id,
+                'name'         => $name,
+                'short_name'   => $shortName,
+                'initials'     => $initials,
+                'leave_type'   => optional($r->leaveType)->name ?? 'Leave',
+                'status_dot'   => 'on-leave', 
+            ];
+        })->values()->all();
+    }
+
     public function getAttendanceChartData(int $days): array
     {
         $totalEmployees = Employee::where('is_active', true)->whereNull('deleted_at')->count();

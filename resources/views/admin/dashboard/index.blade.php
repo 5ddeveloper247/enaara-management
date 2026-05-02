@@ -101,6 +101,7 @@
         attendanceChart:    '{{ route('admin.dashboard.attendance-chart') }}',
         pendingApprovals:   '{{ route('admin.dashboard.pending-approvals') }}',
         upcomingHolidays:   '{{ route('admin.dashboard.upcoming-holidays') }}',
+        whoIsOutToday:      '{{ route('admin.dashboard.who-is-out') }}',
         leaveRequestStatus: '/admin/leave-request/{id}/status',
     };
     window._csrfToken = '{{ csrf_token() }}';

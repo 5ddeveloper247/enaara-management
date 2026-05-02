@@ -64,6 +64,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/dashboard/attendance-chart', [DashboardController::class, 'attendanceChart'])->name('admin.dashboard.attendance-chart');
     Route::get('/dashboard/pending-approvals', [DashboardController::class, 'pendingApprovals'])->name('admin.dashboard.pending-approvals');
     Route::get('/dashboard/upcoming-holidays', [DashboardController::class, 'upcomingHolidays'])->name('admin.dashboard.upcoming-holidays');
+    Route::get('/dashboard/who-is-out', [DashboardController::class, 'whoIsOutToday'])->name('admin.dashboard.who-is-out');
 
     // Organization Management Routes
     Route::get('/organization', [OrganizationController::class, 'index'])->name('admin.organization.index');

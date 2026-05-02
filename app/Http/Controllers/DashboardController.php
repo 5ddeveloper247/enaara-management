@@ -50,4 +50,14 @@ class DashboardController extends Controller
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function whoIsOutToday(): JsonResponse
+    {
+        try {
+            $data = $this->dashboardService->getWhoIsOutToday();
+            return response()->json(['success' => true, 'data' => $data, 'count' => count($data)]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
 }

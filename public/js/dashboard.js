@@ -1050,7 +1050,77 @@
 
         // Initialize geofence map
         setTimeout(() => DashboardGeofence.initialize(), 500);
+
+        // Initialize who is out today
+        DashboardWhoIsOut.load();
     }
+
+    // ============================================
+    // WHO IS OUT TODAY
+    // ============================================
+    const DashboardWhoIsOut = {
+        load() {
+            const url = (window._dashRoutes && window._dashRoutes.whoIsOutToday) ?
+                window._dashRoutes.whoIsOutToday :
+                '/admin/dashboard/who-is-out';
+
+            const loading = document.getElementById('whoIsOutLoading');
+            const countBadge = document.getElementById('whoIsOutCount');
+
+            if (loading) loading.classList.remove('d-none');
+
+            fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function (res) {
+                    return res.json();
+                })
+                .then(function (json) {
+                    if (loading) loading.classList.add('d-none');
+                    if (!json.success) return;
+                    DashboardWhoIsOut.render(json.data);
+                    if (countBadge) countBadge.textContent = json.count || 0;
+                })
+                .catch(function (err) {
+                    console.error('Who is out load failed:', err);
+                    if (loading) loading.innerHTML = '<span class="text-danger small">Failed to load.</span>';
+                });
+        },
+
+        render(items) {
+            const container = document.getElementById('whoIsOutContainer');
+            const template = document.getElementById('whoIsOutTemplate');
+            if (!container || !template) return;
+
+            // Clear existing items
+            container.querySelectorAll('.avatar-gallery-item').forEach(el => el.remove());
+
+            if (!items || items.length === 0) {
+                container.insertAdjacentHTML('beforeend', '<div class="text-center py-4 text-muted w-100">No one is out today.</div>');
+                return;
+            }
+
+            items.forEach(function (item) {
+                const clone = template.content.cloneNode(true);
+                const wrapper = clone.querySelector('.avatar-gallery-item');
+                
+                wrapper.setAttribute('title', item.name + ' - ' + item.leave_type);
+                wrapper.querySelector('.initials').textContent = item.initials;
+                wrapper.querySelector('.avatar-gallery-name').textContent = item.short_name;
+                wrapper.querySelector('.avatar-gallery-role').textContent = item.leave_type;
+                
+                if (item.status_dot) {
+                    const dot = wrapper.querySelector('.avatar-status-dot');
+                    dot.className = 'avatar-status-dot ' + item.status_dot;
+                }
+
+                container.appendChild(clone);
+            });
+        }
+    };
 
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
