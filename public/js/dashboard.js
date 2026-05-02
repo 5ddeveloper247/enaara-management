@@ -1099,7 +1099,13 @@
             container.querySelectorAll('.avatar-gallery-item').forEach(el => el.remove());
 
             if (!items || items.length === 0) {
-                container.insertAdjacentHTML('beforeend', '<div class="text-center py-4 text-muted w-100">No one is out today.</div>');
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="text-center py-5 w-100">
+                        <i class="bi bi-calendar-check text-muted mb-2 d-block" style="font-size: 2rem;"></i>
+                        <h6 class="text-muted fw-semibold mb-1">All Present!</h6>
+                        <p class="text-muted small mb-0">No employees are on leave today.</p>
+                    </div>
+                `);
                 return;
             }
 
