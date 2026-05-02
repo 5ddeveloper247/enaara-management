@@ -56,6 +56,8 @@
             exEmployments: @json($employee?->exEmployments ?? []),
             attachments: @json($editData['attachments'] ?? [])
         };
+        window.isEditMode = @json(isset($employee));
+        window.employeeId = @json($employee->id ?? null);
         window.previewEmployeeCodeUrl = @json(route('admin.employee.preview_code'));
         window.universitiesDirectoryUrl = @json(route('admin.employee.universities'));
         window.employeeAttachmentsFetchUrl = @json(isset($employee) && $employee?->id ? url('/admin/employees/' . $employee->id . '/attachments') : null);

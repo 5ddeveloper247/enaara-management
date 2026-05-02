@@ -514,8 +514,8 @@
             color: #fff !important;
         }
 
-        #avatarPreviewContainer:hover .avatar-upload-overlay,
-        #avatarPreviewContainer:hover .remove-photo-btn {
+        #employeeForm:not(.form-readonly) #avatarPreviewContainer:hover .avatar-upload-overlay,
+        #employeeForm:not(.form-readonly) #avatarPreviewContainer:hover .remove-photo-btn {
             opacity: 1;
             pointer-events: auto;
         }
@@ -560,5 +560,89 @@
             line-height: 1.45;
             padding-top: 0.45rem;
             padding-bottom: 0.45rem;
+        }
+
+        .form-readonly .emp-dept-input-box {
+             cursor: not-allowed !important;
+             background-color: #f1f5f9 !important;
+        }
+
+        .form-readonly .emp-dept-chip-x {
+             display: none !important;
+        }
+
+        /* UNBLOCKABLE READONLY STYLES */
+        #employeeForm.form-readonly,
+        #employeeForm.form-readonly .wizard-pane,
+        #employeeForm.form-readonly .wizard-pane *,
+        #employeeForm.form-readonly .card,
+        #employeeForm.form-readonly .card * {
+            cursor: not-allowed !important;
+        }
+
+        /* EXCEPT FOR NAV */
+        #employeeForm.form-readonly #prevBtn,
+        #employeeForm.form-readonly #nextBtn,
+        #employeeForm.form-readonly #editBtn,
+        #employeeForm.form-readonly .profile-tab,
+        #employeeForm.form-readonly .more-sub-tab,
+        #employeeForm.form-readonly #prevBtn *,
+        #employeeForm.form-readonly #nextBtn *,
+        #employeeForm.form-readonly #editBtn *,
+        #employeeForm.form-readonly .profile-tab *,
+        #employeeForm.form-readonly .more-sub-tab * {
+            cursor: pointer !important;
+            pointer-events: auto !important;
+        }
+
+        /* DISABLE INPUTS AND SELECTS IN READONLY */
+        #employeeForm.form-readonly input,
+        #employeeForm.form-readonly select,
+        #employeeForm.form-readonly textarea,
+        #employeeForm.form-readonly button:not(#prevBtn):not(#nextBtn):not(#editBtn) {
+            pointer-events: none !important;
+        }
+
+        /* Restore interaction for navigation and edit controls */
+        .form-readonly #prevBtn,
+        .form-readonly #nextBtn,
+        .form-readonly #editBtn,
+        .form-readonly .profile-tab,
+        .form-readonly .more-sub-tab {
+            cursor: pointer !important;
+            pointer-events: auto !important;
+        }
+
+        .form-readonly .avatar-upload-overlay,
+        .form-readonly .remove-photo-btn {
+             display: none !important;
+             opacity: 0 !important;
+             pointer-events: none !important;
+        }
+
+        /* Avatar Hover Effects in Edit Mode */
+        #avatarPreviewContainer .remove-photo-btn {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease-in-out;
+            transform: scale(0.8);
+        }
+
+        #avatarPreviewContainer:hover .remove-photo-btn {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+
+        /* Also hide overlay by default and show on hover */
+        .avatar-upload-overlay {
+            opacity: 0 !important;
+            visibility: hidden;
+            transition: all 0.2s ease-in-out;
+        }
+
+        #avatarPreviewWrap:hover .avatar-upload-overlay {
+            opacity: 1 !important;
+            visibility: visible;
         }
     </style>

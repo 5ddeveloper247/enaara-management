@@ -19,6 +19,15 @@
     function goToStep(step) {
         const s = Math.max(1, Math.min(totalSteps, step));
         currentStep = s;
+        
+        // Reset Edit button when moving steps if in edit mode
+        const editBtn = document.getElementById('editBtn');
+        if (window.isEditMode && editBtn && editBtn.innerText.trim() === 'Save') {
+            editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
+            editBtn.classList.remove('btn-success');
+            editBtn.classList.add('bg-main', 'text-white');
+        }
+
         syncStepUi();
     }
 
@@ -39,6 +48,31 @@
             return 3;
         }
         return Math.max(1, step - 1);
+    }
+
+    function isStepUnsaved() {
+        const editBtn = document.getElementById('editBtn');
+        return window.isEditMode && editBtn && (editBtn.innerText.trim() === 'Save' || editBtn.innerText.trim() === 'Saving...');
+    }
+
+    function showUnsavedWarning() {
+        Swal.fire({
+            icon: 'warning',
+            title: '<span style="color: #856404; font-size: 15px; font-weight: 600;">Unsaved changes</span>',
+            html: '<span style="color: #856404; font-size: 13px;">Click Save before continuing.</span>',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: '#fff3cd',
+            iconColor: '#ffc107',
+            didOpen: (toast) => {
+                toast.style.border = '1px solid #ffeeba';
+                toast.style.borderRadius = '12px';
+                toast.style.padding = '10px 15px';
+            }
+        });
     }
 
     // Core selects and global data
@@ -1965,7 +1999,25 @@
 
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
+        const editBtn = document.getElementById('editBtn');
+        const form = document.getElementById('employeeForm');
+
         if (prevBtn) prevBtn.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
+        
+        if (window.isEditMode && editBtn) {
+            editBtn.classList.remove('d-none');
+            const btnText = editBtn.innerText.trim();
+            // Ensure inputs are disabled if not in active Edit mode (Save or Saving state)
+            if (btnText !== 'Save' && btnText !== 'Saving...') {
+                setStepDisabled(currentStep, true);
+                if (form) form.classList.add('form-readonly');
+            } else {
+                // If we are in Save or Saving mode, ensure inputs are ENABLED
+                setStepDisabled(currentStep, false);
+                if (form) form.classList.remove('form-readonly');
+            }
+        }
+
         if (nextBtn) {
             const isLastStep = currentStep === totalSteps;
             const isLastMoreStep = typeof window.isLastMoreStep === 'function' ? window.isLastMoreStep() : true;
@@ -1977,6 +2029,160 @@
             }
         }
     }
+
+    function toggleInputs(container, disabled) {
+        if (!container) return;
+        const elements = container.querySelectorAll('input, select, textarea, button');
+        elements.forEach(el => {
+            if (['editBtn', 'nextBtn', 'prevBtn', 'saved_employee_id', 'employee_id'].includes(el.id)) return;
+            if (el.classList.contains('more-sub-tab')) return;
+
+            el.disabled = disabled;
+            
+            if (el.classList.contains('btn-check')) {
+                const label = document.querySelector(`label[for="${el.id}"]`);
+                if (label) {
+                    label.style.opacity = disabled ? '0.6' : '1';
+                    label.style.pointerEvents = disabled ? 'none' : 'auto';
+                }
+            }
+        });
+        
+        const addButtons = container.querySelectorAll('.btn-sm[id^="more"][id$="Btn"], .btn-sm[id^="add"], #bankDetailsAddBtn, .avatar-upload-overlay, #removePhotoBtn');
+        addButtons.forEach(btn => {
+            btn.disabled = disabled;
+            
+            // Don't set opacity for profile photo elements here, CSS handles it
+            if (!btn.classList.contains('avatar-upload-overlay') && btn.id !== 'removePhotoBtn') {
+                btn.style.opacity = disabled ? '0.6' : '1';
+            }
+            
+            btn.style.pointerEvents = disabled ? 'none' : 'auto';
+        });
+
+        // Handle custom multi-select components (Departments, Floors)
+        const customSelects = container.querySelectorAll('.emp-dept-input-box, .emp-dept-chip-x');
+        customSelects.forEach(el => {
+            el.style.pointerEvents = disabled ? 'none' : 'auto';
+            if (el.classList.contains('emp-dept-input-box')) {
+                el.style.backgroundColor = disabled ? '#f8fafc' : '#fff';
+            }
+        });
+
+        const rowActions = container.querySelectorAll('[data-family-remove], [data-family-save], [data-academic-remove], [data-academic-save], [data-certificate-remove], [data-certificate-save], [data-employment-remove], [data-employment-save], .edit-bank-btn, .delete-bank-btn');
+        rowActions.forEach(btn => {
+            btn.disabled = disabled;
+            btn.style.opacity = disabled ? '0.6' : '1';
+            btn.style.pointerEvents = disabled ? 'none' : 'auto';
+        });
+    }
+
+    function setStepDisabled(step, disabled) {
+        const pane = document.getElementById('stepPane' + step);
+        if (pane) toggleInputs(pane, disabled);
+    }
+
+    // Edit Button Logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const editBtn = document.getElementById('editBtn');
+        if (editBtn) {
+            editBtn.addEventListener('click', async function() {
+                const isSaving = editBtn.innerText.trim() === 'Save';
+                if (isSaving) {
+                    const originalHtml = editBtn.innerHTML;
+                    editBtn.disabled = true;
+                    editBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span>Saving...</span>';
+
+                    try {
+                        const current = currentStep;
+                        if (current === 6) {
+                            const moreStep = typeof currentMoreStep !== 'undefined' ? currentMoreStep : 1;
+                            if ([1, 6, 7].includes(moreStep)) {
+                                await saveMoreSubSection(moreStep, () => {
+                                    setStepDisabled(6, true);
+                                    editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
+                                    editBtn.classList.remove('btn-success');
+                                    editBtn.classList.add('bg-main', 'text-white');
+                                });
+                            } else if ([2, 3, 4, 5].includes(moreStep)) {
+                                const autoSaved = await autoSaveMoreDynamicRows(moreStep);
+                                if (autoSaved) {
+                                    setStepDisabled(6, true);
+                                    editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
+                                    editBtn.classList.remove('btn-success');
+                                    editBtn.classList.add('bg-main', 'text-white');
+                                }
+                            } else {
+                                setStepDisabled(6, true);
+                                editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
+                                editBtn.classList.remove('btn-success');
+                                editBtn.classList.add('bg-main', 'text-white');
+                            }
+                        } else {
+                            await processStepSave(current, () => {
+                                setStepDisabled(current, true);
+                                editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
+                                editBtn.classList.remove('btn-success');
+                                editBtn.classList.add('bg-main', 'text-white');
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Save failed:', err);
+                    } finally {
+                        editBtn.disabled = false;
+                        if (editBtn.innerText.trim() === 'Saving...') {
+                            editBtn.innerHTML = originalHtml;
+                        }
+                    }
+                } else {
+                    // Enable editing
+                    setStepDisabled(currentStep, false);
+                    editBtn.innerHTML = '<i class="bi bi-save"></i><span>Save</span>';
+                    editBtn.classList.remove('bg-main', 'text-white');
+                    editBtn.classList.add('btn-success');
+                    const form = document.getElementById('employeeForm');
+                    if (form) form.classList.remove('form-readonly');
+                }
+            });
+        }
+
+        // Global Toast Notification for Read-Only Mode
+        window.addEventListener('click', function (e) {
+            const form = document.getElementById('employeeForm');
+            const editBtn = document.getElementById('editBtn');
+            
+            if (window.isEditMode && form && form.classList.contains('form-readonly') && editBtn && editBtn.innerText.trim() === 'Edit') {
+                // Allow clicks on navigation and edit controls
+                const isNav = e.target.closest('#prevBtn') || 
+                              e.target.closest('#nextBtn') || 
+                              e.target.closest('#editBtn') || 
+                              e.target.closest('.profile-tab') || 
+                              e.target.closest('.more-sub-tab') ||
+                              e.target.closest('.swal2-container'); // Allow clicking on toasts/alerts
+                
+                if (isNav) return;
+
+                // If click is inside the form, show toast
+                if (form.contains(e.target)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'info',
+                        title: 'Please click the edit button to make changes',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                        background: '#fff',
+                        color: '#012445',
+                        iconColor: '#0d6efd'
+                    });
+                }
+            }
+        }, true);
+    });
 
     const employmentCodeInput = document.getElementById('employmentEmployeeNumberInput');
     const orgSelectForCode = document.getElementById('employmentOrganizationSelect');
@@ -2119,15 +2325,29 @@
                         window.setMoreSubStep(7);
                     }
                 }
+                let errorMsg = 'Please check the highlighted fields.';
+                if (data.errors) {
+                    const firstError = Object.values(data.errors)[0];
+                    if (Array.isArray(firstError) && firstError.length > 0) {
+                        errorMsg = firstError[0];
+                    }
+                }
+
                 Swal.fire({
                     toast: true,
                     position: 'top-end',
                     icon: 'error',
-                    title: 'Validation Failed',
-                    text: 'Please check the highlighted fields.',
+                    title: '<span style="color: #721c24; font-size: 15px; font-weight: 600;">Action Required</span>',
+                                        html: `<span style="color: #721c24; font-size: 13px;">${errorMsg}</span>`,
                     showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true
+                    timer: 5000,
+                    timerProgressBar: true,
+                    background: '#f8d7da',
+                    iconColor: '#dc3545',
+                    didOpen: (toast) => {
+                        toast.style.border = '1px solid #f5c6cb';
+                        toast.style.borderRadius = '12px';
+                    }
                 });
             } else if (!response.ok) {
                 throw new Error(data.message || 'Server error occurred');
@@ -2186,6 +2406,10 @@
     // Event Listeners
     document.querySelectorAll('.profile-tab').forEach((tab) => {
         tab.addEventListener('click', function () {
+            if (isStepUnsaved()) {
+                showUnsavedWarning();
+                return;
+            }
             const step = Number(this.getAttribute('data-step'));
             if (step === 4 && !isExArmedForceChecked()) {
                 return;
@@ -2198,10 +2422,24 @@
     });
 
     document.getElementById('nextBtn').addEventListener('click', async function () {
+        if (isStepUnsaved()) {
+            showUnsavedWarning();
+            return;
+        }
+        const editBtn = document.getElementById('editBtn');
+        const inViewMode = window.isEditMode && editBtn && editBtn.innerText.trim() === 'Edit';
+
         if (currentStep === 6) {
             const isLastMoreStep = typeof window.isLastMoreStep === 'function' ? window.isLastMoreStep() : true;
             if (!isLastMoreStep) {
-                // If it's a "static" more subsection, save it first
+                if (inViewMode) {
+                    if (typeof window.nextMoreSubStep === 'function') {
+                        window.nextMoreSubStep();
+                        syncStepUi();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                    return;
+                }
                 const moreStep = currentMoreStep;
                 if ([1, 6, 7].includes(moreStep)) {
                     saveMoreSubSection(moreStep, () => {
@@ -2231,12 +2469,24 @@
         }
 
         if (currentStep < totalSteps) {
+            if (inViewMode) {
+                currentStep = getNextStepAfter(currentStep);
+                syncStepUi();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
             processStepSave(currentStep, () => {
                 currentStep = getNextStepAfter(currentStep);
                 syncStepUi();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         } else {
+            if (inViewMode) {
+                showSuccess('Employee registration completed successfully!', 'Success').then(() => {
+                    window.location.href = '/admin/employees';
+                });
+                return;
+            }
             // Final submission
             processStepSave(currentStep); 
         }
@@ -2502,15 +2752,29 @@
                         window.setMoreSubStep(7);
                     }
                 }
+                let errorMsg = 'Please check the highlighted fields.';
+                if (data.errors) {
+                    const firstError = Object.values(data.errors)[0];
+                    if (Array.isArray(firstError) && firstError.length > 0) {
+                        errorMsg = firstError[0];
+                    }
+                }
+
                 Swal.fire({
                     toast: true,
                     position: 'top-end',
                     icon: 'error',
-                    title: 'Validation Failed',
-                    text: 'Please check the highlighted fields.',
+                    title: '<span style="color: #721c24; font-size: 15px; font-weight: 600;">Action Required</span>',
+                                        html: `<span style="color: #721c24; font-size: 13px;">${errorMsg}</span>`,
                     showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true
+                    timer: 5000,
+                    timerProgressBar: true,
+                    background: '#f8d7da',
+                    iconColor: '#dc3545',
+                    didOpen: (toast) => {
+                        toast.style.border = '1px solid #f5c6cb';
+                        toast.style.borderRadius = '12px';
+                    }
                 });
             } else if (res.success) {
                 showToast(`${subsection.charAt(0).toUpperCase() + subsection.slice(1)} information saved successfully`);
@@ -2695,6 +2959,10 @@
     }
 
     document.getElementById('prevBtn').addEventListener('click', function () {
+        if (isStepUnsaved()) {
+            showUnsavedWarning();
+            return;
+        }
         if (currentStep === 6) {
             const isFirstMoreStep = typeof window.isFirstMoreStep === 'function' ? window.isFirstMoreStep() : true;
             if (!isFirstMoreStep) {
@@ -3159,7 +3427,12 @@
             });
 
             select.options[0].text = originalText;
-            select.disabled = false;
+            
+            const editBtn = document.getElementById('editBtn');
+            const inViewMode = window.isEditMode && editBtn && editBtn.innerText.trim() === 'Edit';
+            if (!inViewMode) {
+                select.disabled = false;
+            }
 
             const rawVal = currentValue != null && String(currentValue).length
                 ? currentValue
@@ -3182,7 +3455,11 @@
         } catch (error) {
             console.error('Failed to load location data:', error);
             select.options[0].text = 'Unable to load';
-            select.disabled = false;
+            const editBtn = document.getElementById('editBtn');
+            const inViewMode = window.isEditMode && editBtn && editBtn.innerText.trim() === 'Edit';
+            if (!inViewMode) {
+                select.disabled = false;
+            }
         }
     }
 
@@ -4273,6 +4550,10 @@
             });
             const d = await resp.json();
             if (d.success) {
+                const currentEditId = document.getElementById('bank_detail_id')?.value;
+                if (currentEditId && currentEditId == id) {
+                    resetBankForm();
+                }
                 savedBanks = savedBanks.filter(b => b.id != id);
                 renderBankList();
                 showToast('Bank account deleted');
@@ -4329,14 +4610,14 @@
                     list.appendChild(err);
                  }
                  
-                 showError('At least one bank account is required.', 'Validation Error');
+                showError('At least one bank account is required.', 'Action Required');
                  return;
             }
             
             const hasSalaryAccount = savedBanks.some(b => b.is_salary_account);
             if (!hasSalaryAccount) {
                 e.stopImmediatePropagation();
-                showError('One bank account must be marked as the Salary Account (Primary).', 'Validation Error');
+                showError('One bank account must be marked as the Salary Account (Primary).', 'Action Required');
                 return;
             }
         }
@@ -4377,6 +4658,10 @@
 
     document.querySelectorAll('.more-sub-tab').forEach(tab => {
         tab.addEventListener('click', function() {
+            if (isStepUnsaved()) {
+                showUnsavedWarning();
+                return;
+            }
             window.setMoreSubStep(parseInt(this.getAttribute('data-more-step')));
         });
     });
@@ -5652,4 +5937,5 @@ document.addEventListener('change', function(e) {
         }
     }
 });
+
 
