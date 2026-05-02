@@ -395,6 +395,7 @@
             ref2_organization: 255,
             disability_type: 100,
             disability_description: 1000,
+            chronic_disease_description: 1000,
             last_fitness_test: 500,
             termination_reason: 2000,
         };
@@ -1403,6 +1404,7 @@
         bindPoliceExplicitMaxGuard('#moreContactPermanentAddressInput', 1000);
         bindPoliceExplicitMaxGuard('#moreMedicalLastFitnessTestInput', 500);
         bindPoliceExplicitMaxGuard('#moreMedicalDisabilityDescriptionInput', 1000);
+        bindPoliceExplicitMaxGuard('#moreMedicalChronicDiseaseDescriptionInput', 1000);
         bindPoliceExplicitMaxGuard('#moreReferenceOneNameInput', 50);
         bindPoliceExplicitMaxGuard('#moreReferenceOneDesignationInput', 50);
         bindPoliceExplicitMaxGuard('#moreReferenceOneOrganizationInput', 100);
@@ -1414,6 +1416,7 @@
         [
             '#moreMedicalLastFitnessTestInput',
             '#moreMedicalDisabilityDescriptionInput',
+            '#moreMedicalChronicDiseaseDescriptionInput',
             '#moreReferenceOneNameInput',
             '#moreReferenceOneDesignationInput',
             '#moreReferenceOneOrganizationInput',
@@ -2341,14 +2344,29 @@
                 errors.disability_type = ['Disability type must not exceed 100 characters.'];
             }
         }
-        if (disabilityType === 'Other' || disabilityType === 'Chronic Disease') {
+        if (disabilityType === 'Other') {
             if (!disabilityDescription) {
-                errors.disability_description = ['Specify disability details for the selected type.'];
+                errors.disability_description = ['Specify disability details for Other.'];
             } else if (disabilityDescription.length > 1000) {
                 errors.disability_description = ['Disability details must not exceed 1000 characters.'];
             }
         } else if (disabilityDescription.length > 1000) {
             errors.disability_description = ['Disability details must not exceed 1000 characters.'];
+        }
+
+        const hasChronicDisease = String(document.querySelector('input[name="has_chronic_disease"]:checked')?.value ?? '').trim().toLowerCase();
+        const chronicDescription = String(document.getElementById('moreMedicalChronicDiseaseDescriptionInput')?.value ?? '').trim();
+        if (!['yes', 'no'].includes(hasChronicDisease)) {
+            errors.has_chronic_disease = ['Select chronic disease status (Yes or No).'];
+        }
+        if (hasChronicDisease === 'yes') {
+            if (!chronicDescription) {
+                errors.chronic_disease_description = ['Specify the chronic disease.'];
+            } else if (chronicDescription.length > 1000) {
+                errors.chronic_disease_description = ['Chronic disease description must not exceed 1000 characters.'];
+            }
+        } else if (chronicDescription.length > 1000) {
+            errors.chronic_disease_description = ['Chronic disease description must not exceed 1000 characters.'];
         }
 
         if (Object.keys(errors).length > 0) {
@@ -2589,10 +2607,16 @@
             if (bloodGroup && !/^(A|B|AB|O)[+-]$/.test(bloodGroup)) addErr('blood_group', 'Blood group format is invalid.');
             if (hasDisability === 'yes' && !disabilityType) addErr('disability_type', 'Disability type is required when disability is Yes.');
             if (disabilityType && disabilityType.length > 100) addErr('disability_type', 'Disability type must not exceed 100 characters.');
-            if ((disabilityType === 'Other' || disabilityType === 'Chronic Disease') && !disabilityDescription) {
+            if (disabilityType === 'Other' && !disabilityDescription) {
                 addErr('disability_description', 'Please specify disability details.');
             }
             if (disabilityDescription.length > 1000) addErr('disability_description', 'Disability description must not exceed 1000 characters.');
+
+            const hasChronic = get('has_chronic_disease');
+            const chronicDescription = get('chronic_disease_description');
+            if (!['yes', 'no'].includes(hasChronic)) addErr('has_chronic_disease', 'Please select chronic disease status.');
+            if (hasChronic === 'yes' && !chronicDescription) addErr('chronic_disease_description', 'Please specify the chronic disease.');
+            if (chronicDescription.length > 1000) addErr('chronic_disease_description', 'Chronic disease description must not exceed 1000 characters.');
         }
 
         if (subsection === 'references') {
@@ -5577,14 +5601,13 @@ if (typeof window.setExistingAttachments === 'function' && window.editData && Ar
     window.setExistingAttachments(window.editData.attachments);
 }
 
-// --- Medical disability toggling (Robust version) ---
 document.addEventListener('change', function(e) {
-        if (e.target && e.target.name === 'has_disability') {
+    if (e.target && e.target.name === 'has_disability') {
         const typeContainer = document.getElementById('moreMedicalDisabilityTypeContainer');
         const descContainer = document.getElementById('moreMedicalDisabilityDescriptionContainer');
         const isYes = e.target.value === 'yes';
-        const needsSpecify = (v) => v === 'Other' || v === 'Chronic Disease';
-        
+        const needsSpecify = (v) => v === 'Other';
+
         if (typeContainer) {
             typeContainer.style.display = isYes ? 'block' : 'none';
         }
@@ -5605,9 +5628,21 @@ document.addEventListener('change', function(e) {
         }
     }
 
+    if (e.target && e.target.name === 'has_chronic_disease') {
+        const descContainer = document.getElementById('moreMedicalChronicDiseaseDescriptionContainer');
+        const isYes = e.target.value === 'yes';
+        if (descContainer) {
+            descContainer.style.display = isYes ? 'block' : 'none';
+        }
+        if (!isYes) {
+            const textarea = document.getElementById('moreMedicalChronicDiseaseDescriptionInput');
+            if (textarea) textarea.value = '';
+        }
+    }
+
     if (e.target && e.target.id === 'moreMedicalDisabilityTypeInput') {
         const descContainer = document.getElementById('moreMedicalDisabilityDescriptionContainer');
-        const needsSpecify = e.target.value === 'Other' || e.target.value === 'Chronic Disease';
+        const needsSpecify = e.target.value === 'Other';
         if (descContainer) {
             descContainer.style.display = needsSpecify ? 'block' : 'none';
         }

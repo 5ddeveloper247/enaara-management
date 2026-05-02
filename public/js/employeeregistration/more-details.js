@@ -530,7 +530,26 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
     
     function needsMedicalDisabilitySpecify() {
         const v = moreMedicalDisabilityTypeInput ? String(moreMedicalDisabilityTypeInput.value || '').trim() : '';
-        return v === 'Other' || v === 'Chronic Disease';
+        return v === 'Other';
+    }
+
+    const moreMedicalHasChronicDiseaseYes = document.getElementById('moreMedicalHasChronicDiseaseYes');
+    const moreMedicalHasChronicDiseaseNo = document.getElementById('moreMedicalHasChronicDiseaseNo');
+    const moreMedicalChronicDiseaseDescriptionInput = document.getElementById('moreMedicalChronicDiseaseDescriptionInput');
+
+    function syncMedicalChronicDiseaseFields() {
+        const hasChronic = moreMedicalHasChronicDiseaseYes ? moreMedicalHasChronicDiseaseYes.checked : false;
+        const descContainer = document.getElementById('moreMedicalChronicDiseaseDescriptionContainer');
+        if (descContainer) {
+            descContainer.style.display = hasChronic ? 'block' : 'none';
+        }
+        if (moreMedicalChronicDiseaseDescriptionInput) {
+            moreMedicalChronicDiseaseDescriptionInput.disabled = !hasChronic;
+            moreMedicalChronicDiseaseDescriptionInput.required = hasChronic;
+            if (!hasChronic) {
+                moreMedicalChronicDiseaseDescriptionInput.value = '';
+            }
+        }
     }
 
     function syncMedicalDisabilityFields() {
@@ -562,6 +581,14 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
         moreMedicalDisabilityTypeInput.addEventListener('change', syncMedicalDisabilityFields);
     }
     syncMedicalDisabilityFields();
+
+    if (moreMedicalHasChronicDiseaseYes) {
+        moreMedicalHasChronicDiseaseYes.addEventListener('change', syncMedicalChronicDiseaseFields);
+    }
+    if (moreMedicalHasChronicDiseaseNo) {
+        moreMedicalHasChronicDiseaseNo.addEventListener('change', syncMedicalChronicDiseaseFields);
+    }
+    syncMedicalChronicDiseaseFields();
     
     let currentMoreStep = 1;
     const totalMoreSteps = 6;

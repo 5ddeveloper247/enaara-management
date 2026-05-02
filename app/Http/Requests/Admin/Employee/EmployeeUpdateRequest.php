@@ -570,6 +570,8 @@ class EmployeeUpdateRequest extends FormRequest
             'blood_group'              => ['nullable', 'string', 'max:10'],
             'disability_type'          => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'disability_description'   => ['nullable', 'string', 'max:1000'],
+            'has_chronic_disease'      => ['nullable', Rule::in(['yes', 'no'])],
+            'chronic_disease_description' => ['nullable', 'string', 'max:1000'],
 
             // References
             'ref1_name' => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],

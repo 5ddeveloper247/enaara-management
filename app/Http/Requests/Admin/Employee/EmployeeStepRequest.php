@@ -659,6 +659,8 @@ class EmployeeStepRequest extends FormRequest
                 'blood_group'                => ['nullable', 'string', 'regex:/^(A|B|AB|O)[+-]$/'],
                 'disability_type'            => ['nullable', 'string', 'max:100'],
                 'disability_description'     => ['nullable', 'string', 'max:1000'],
+                'has_chronic_disease'        => ['nullable', Rule::in(['yes', 'no'])],
+                'chronic_disease_description' => ['nullable', 'string', 'max:1000'],
 
                 // References
                 'ref1_name'         => ['nullable', 'string', 'min:3', 'max:100', 'regex:' . $this->nameRegex()],
@@ -787,16 +789,23 @@ class EmployeeStepRequest extends FormRequest
                         'nullable',
                         'string',
                         'max:100',
-                        Rule::in(['Physical', 'Visual', 'Hearing', 'Speech', 'Chronic Disease', 'Other']),
+                        Rule::in(['Physical', 'Visual', 'Hearing', 'Speech', 'Other']),
                     ],
                     'disability_description'   => [
                         'nullable',
                         'string',
                         'max:1000',
                         Rule::requiredIf(function () {
-                            $t = (string) $this->input('disability_type');
-
-                            return in_array($t, ['Other', 'Chronic Disease'], true);
+                            return (string) $this->input('disability_type') === 'Other';
+                        }),
+                    ],
+                    'has_chronic_disease'      => ['required', Rule::in(['yes', 'no'])],
+                    'chronic_disease_description' => [
+                        'nullable',
+                        'string',
+                        'max:1000',
+                        Rule::requiredIf(function () {
+                            return (string) $this->input('has_chronic_disease') === 'yes';
                         }),
                     ],
                 ]);

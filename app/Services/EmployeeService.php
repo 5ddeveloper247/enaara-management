@@ -907,9 +907,11 @@ class EmployeeService
             || ! empty($d['last_fitness_test_date'])
             || ! empty($d['last_fitness_test_result'])
             || array_key_exists('has_disability', $d)
+            || array_key_exists('has_chronic_disease', $d)
             || ! empty($d['blood_group'])
             || ! empty($d['disability_type'])
-            || ! empty($d['disability_description']);
+            || ! empty($d['disability_description'])
+            || ! empty($d['chronic_disease_description']);
 
         if (! $hasAnyMedicalValue) {
             return;
@@ -925,6 +927,8 @@ class EmployeeService
                 'blood_group'               => $d['blood_group'] ?? null,
                 'disability_type'           => $d['disability_type'] ?? null,
                 'disability_description'    => $d['disability_description'] ?? null,
+                'has_chronic_disease'       => $d['has_chronic_disease'] ?? null,
+                'chronic_disease_description' => $d['chronic_disease_description'] ?? null,
             ]
         );
     }
@@ -1659,6 +1663,8 @@ class EmployeeService
                 'blood_group'            => $medical->blood_group,
                 'disability_type'        => $medical->disability_type,
                 'disability_description' => $medical->disability_description,
+                'has_chronic_disease'    => $medical->has_chronic_disease,
+                'chronic_disease_description' => $medical->chronic_disease_description,
             ] : null,
             'references' => $employee->references->map(fn($r) => [
                 'ref_number'   => $r->ref_number,
@@ -1717,7 +1723,7 @@ class EmployeeService
                 'date_of_commissioning', 'date_of_retirement', 'reason_of_retirement', 'corps_regiment',
                 'ex_army_unit', 'trade', 'pma_lc_ots', 'residence_phone', 'emergency_contact', 'cell_no',
                 'present_address', 'permanent_address', 'last_fitness_test', 'last_fitness_test_date', 'last_fitness_test_result', 'has_disability', 'blood_group',
-                'disability_type', 'disability_description', 'ref1_name', 'ref1_designation', 'ref1_organization',
+                'disability_type', 'disability_description', 'has_chronic_disease', 'chronic_disease_description', 'ref1_name', 'ref1_designation', 'ref1_organization',
                 'ref1_contact', 'ref1_relationship', 'ref2_name', 'ref2_designation', 'ref2_organization',
                 'ref2_contact', 'ref2_relationship', 'employment_category', 'intern_type', 'intern_duration',
                 'contractual_type', 'contract_start_date', 'contract_end_date', 'probation_start_date', 'probation_end_date', 'employee_status', 'termination_reason', 'termination_date', 'engagement_mode', 'hybrid_days',

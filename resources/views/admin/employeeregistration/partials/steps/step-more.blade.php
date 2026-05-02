@@ -559,6 +559,9 @@
                                                 <div class="fw-bold text-uppercase small mb-3">Medical</div>
                                                 <div class="card border-0 bg-light">
                                                     <div class="card-body p-3">
+                                                        @php
+                                                            $hasChronicValMedical = strtolower((string) ($employee?->medical?->has_chronic_disease ?? ''));
+                                                        @endphp
                                                         <div class="row g-3">
                                                             <div class="col-12 col-md-6">
                                                                 <label class="form-label">Last Medical Fitness Test <span class="text-muted fw-normal">(Date)</span></label>
@@ -601,7 +604,6 @@
                                                                     <option value="Visual" {{ ($employee?->medical?->disability_type ?? '') == 'Visual' ? 'selected' : '' }}>Visual</option>
                                                                     <option value="Hearing" {{ ($employee?->medical?->disability_type ?? '') == 'Hearing' ? 'selected' : '' }}>Hearing</option>
                                                                     <option value="Speech" {{ ($employee?->medical?->disability_type ?? '') == 'Speech' ? 'selected' : '' }}>Speech</option>
-                                                                    <option value="Chronic Disease" {{ ($employee?->medical?->disability_type ?? '') == 'Chronic Disease' ? 'selected' : '' }}>Chronic Disease</option>
                                                                     <option value="Other" {{ ($employee?->medical?->disability_type ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
                                                                 </select>
                                                             </div>
@@ -620,10 +622,30 @@
                                                                     <option value="O-" {{ ($employee?->medical?->blood_group ?? '') == 'O-' ? 'selected' : '' }}>O-</option>
                                                                 </select>
                                                             </div>
-                                                            <div class="col-12" id="moreMedicalDisabilityDescriptionContainer" style="{{ in_array($employee?->medical?->disability_type ?? '', ['Other', 'Chronic Disease'], true) ? '' : 'display:none;' }}">
-                                                                <label class="form-label">Specify Disability Details <span class="text-danger">*</span></label>
+                                                            <div class="col-12" id="moreMedicalDisabilityDescriptionContainer" style="{{ ($employee?->medical?->disability_type ?? '') === 'Other' ? '' : 'display:none;' }}">
+                                                                <label class="form-label">Specify disability details <span class="text-danger">*</span></label>
                                                                 <textarea name="disability_description" class="form-control" id="moreMedicalDisabilityDescriptionInput" rows="2" maxlength="1000"
-                                                                    placeholder="Enter disease or disability description">{{ $employee?->medical?->disability_description ?? '' }}</textarea>
+                                                                    placeholder="Enter disability details">{{ $employee?->medical?->disability_description ?? '' }}</textarea>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label">Do you have any chronic disease? <span class="text-danger">*</span></label>
+                                                                <div class="d-flex gap-2">
+                                                                    <input class="btn-check" type="radio" name="has_chronic_disease"
+                                                                        id="moreMedicalHasChronicDiseaseYes" value="yes" {{ $hasChronicValMedical === 'yes' ? 'checked' : '' }}>
+                                                                    <label class="btn btn-outline-secondary option-chip m-0 flex-grow-1"
+                                                                        for="moreMedicalHasChronicDiseaseYes">Yes</label>
+                                                                    <input class="btn-check" type="radio" name="has_chronic_disease"
+                                                                        id="moreMedicalHasChronicDiseaseNo" value="no" {{ $hasChronicValMedical === 'no' ? 'checked' : '' }}>
+                                                                    <label class="btn btn-outline-secondary option-chip m-0 flex-grow-1"
+                                                                        for="moreMedicalHasChronicDiseaseNo">No</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-12 mt-2" id="moreMedicalChronicDiseaseDescriptionContainer"
+                                                                style="{{ $hasChronicValMedical === 'yes' ? '' : 'display:none;' }}">
+                                                                <label class="form-label">Specify chronic disease <span class="text-danger">*</span></label>
+                                                                <textarea name="chronic_disease_description" class="form-control" id="moreMedicalChronicDiseaseDescriptionInput"
+                                                                    rows="2" maxlength="1000"
+                                                                    placeholder="Describe the chronic condition">{{ $employee?->medical?->chronic_disease_description ?? '' }}</textarea>
                                                             </div>
                                                         </div>
                                                     </div>

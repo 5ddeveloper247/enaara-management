@@ -16,6 +16,8 @@ class EmployeeMedical extends Model
         'blood_group',
         'disability_type',
         'disability_description',
+        'has_chronic_disease',
+        'chronic_disease_description',
     ];
 
     protected $casts = [

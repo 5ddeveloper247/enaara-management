@@ -551,4 +551,14 @@
             line-height: 1.15 !important;
             font-weight: 600 !important;
         }
+
+        .employment-termination-reason-input {
+            resize: none;
+            min-height: 4.25rem;
+            max-height: 7rem;
+            overflow-y: auto;
+            line-height: 1.45;
+            padding-top: 0.45rem;
+            padding-bottom: 0.45rem;
+        }
     </style>
