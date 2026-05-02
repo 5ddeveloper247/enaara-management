@@ -411,3 +411,162 @@ body.shift-planner-roster-mode .admin-main {
     }
 }
 
+/* ============================================
+   ROSTER SHIFT OFFCANVAS (Edit / Add shift)
+   ============================================ */
+.roster-shift-offcanvas .roster-shift-offcanvas-header {
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.roster-shift-header-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 0.5rem;
+    font-size: 1.05rem;
+}
+
+.roster-shift-section-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.roster-shift-summary-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.75rem;
+    padding: 1rem 1.1rem;
+}
+
+.roster-shift-avatar {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.65rem;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: #fff;
+}
+
+.roster-shift-summary-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #fff;
+}
+
+.roster-shift-summary-meta {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.roster-shift-date-pill {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.65rem;
+    padding: 0.5rem 0.75rem;
+    min-width: 6.5rem;
+}
+
+.roster-shift-date-value {
+    font-size: 0.95rem;
+    color: #fff;
+    line-height: 1.2;
+}
+
+.roster-shift-audit-card {
+    background: rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+}
+
+.roster-shift-audit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.roster-shift-audit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+
+.roster-shift-audit-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.45rem;
+    background: rgba(255, 255, 255, 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.roster-shift-audit-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.roster-shift-audit-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.roster-shift-audit-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    word-break: break-word;
+}
+
+.roster-shift-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+}
+
+.roster-shift-field-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    margin-bottom: 0.35rem;
+}
+
+.roster-shift-offcanvas .roster-shift-input {
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    font-size: 0.9rem;
+}
+
+.roster-shift-offcanvas .roster-shift-input:focus {
+    border-color: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.12);
+}
+
+.roster-shift-notes {
+    resize: none;
+    min-height: 4.5rem;
+}
+
+.roster-shift-footer {
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    background: rgba(0, 0, 0, 0.08);
+}
+

@@ -383,7 +383,17 @@
         if (employeeTypeEl) employeeTypeEl.value = employeeType;
         document.getElementById('rosterShiftDay').value = rosterDate;
         document.getElementById('rosterShiftEmployeeName').textContent = employeeName;
-        document.getElementById('rosterShiftDepartmentName').textContent = deptName || '';
+        var deptNameStr = deptName || '';
+        document.getElementById('rosterShiftDepartmentName').textContent = deptNameStr;
+        var deptWrap = document.getElementById('rosterShiftDepartmentWrap');
+        if (deptWrap) {
+            deptWrap.style.display = String(deptNameStr).trim() ? 'block' : 'none';
+        }
+        var initialBox = document.getElementById('rosterShiftEmployeeInitial');
+        if (initialBox) {
+            var nm = String(employeeName || '').trim();
+            initialBox.textContent = nm ? nm.charAt(0).toUpperCase() : '?';
+        }
         var dateObj = parseISODate(rosterDate);
         if (!isNaN(dateObj.getTime())) {
             document.getElementById('rosterShiftDateLabel').textContent = formatRosterDateLabel(dateObj);
@@ -552,6 +562,9 @@
             .then(function(res) {
                 if (delBtn) delBtn.disabled = false;
                 if (res.ok && res.body.success) {
+                    if (typeof showSuccess === 'function' && res.body.message) {
+                        showSuccess(res.body.message);
+                    }
                     var canvas = document.getElementById('rosterShiftCanvas');
                     if (canvas) {
                         var o = bootstrap.Offcanvas.getInstance(canvas);
@@ -618,7 +631,23 @@
         var deleteBtn = document.getElementById('rosterShiftDeleteBtn');
         if (deleteBtn && !deleteBtn._rosterBound) {
             deleteBtn._rosterBound = true;
-            deleteBtn.addEventListener('click', function() { deleteRosterAssignment(); });
+            deleteBtn.addEventListener('click', function() {
+                Swal.fire({
+                    title: 'Remove shift?',
+                    text: 'Are you sure?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, remove',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        deleteRosterAssignment();
+                    }
+                });
+            });
         }
         var plannerSelect = document.getElementById('rosterShiftPlannerId');
         if (plannerSelect && !plannerSelect._rosterBound) {
