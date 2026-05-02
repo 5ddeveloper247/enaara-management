@@ -356,8 +356,8 @@
         <!-- Action Buttons -->
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
-            <button type="button" class="btn btn-light text-dark border-0" id="editEmployeeBtn">
-                <i class="bi bi-pencil me-1"></i>Edit Employee
+            <button type="button" class="btn btn-light text-dark border-0" id="viewEmployeeBtn">
+                <i class="bi bi-eye me-1"></i>View Employee
             </button>
         </div>
     </div>

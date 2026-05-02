@@ -603,7 +603,7 @@
         $('#detailEmail').text(normalizeValue(d.email));
         $('#detailCellNumber').text(normalizeValue(d.cell));
         $('#detailSummary').text(normalizeValue(d.summary));
-        $('#editEmployeeBtn').attr('data-employee-id', d.dbId);
+        $('#viewEmployeeBtn').attr('data-employee-id', d.dbId);
 
         var verification = normalizeValue(d.employeeStatus);
         var verificationCls = verification === 'Active' ?
@@ -768,7 +768,7 @@
             }
         });
 
-        $('#editEmployeeBtn').on('click', function () {
+        $('#viewEmployeeBtn').on('click', function () {
             var dbId = $(this).attr('data-employee-id');
             if (dbId) {
                 window.location.href = (window.employeeEditUrlBase || '/admin/employee') + '/' + dbId + '/edit';
