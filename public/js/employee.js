@@ -768,10 +768,11 @@
             }
         });
 
-        $('#viewEmployeeBtn').on('click', function () {
-            var dbId = $(this).attr('data-employee-id');
+        $(document).on('click', '#viewEmployeeBtn', function () {
+            var dbId = $(this).attr('data-employee-id') || $(this).data('employee-id');
             if (dbId) {
-                window.location.href = (window.employeeEditUrlBase || '/admin/employee') + '/' + dbId + '/edit';
+                var baseUrl = window.employeeEditUrlBase || '/admin/employees';
+                window.location.href = baseUrl.replace(/\/+$/, '') + '/' + dbId + '/edit';
             }
         });
 

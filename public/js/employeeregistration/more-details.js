@@ -202,6 +202,42 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
         if (Number.isNaN(parsedDate.getTime())) return value;
         return parsedDate.toLocaleDateString();
     }
+
+    function syncAcademicBoardFields(row) {
+        if (!row) return;
+        const degreeSelect = row.querySelector('[data-academic-degree]');
+        const boardWrap = row.querySelector('[data-academic-board-wrap]');
+        const boardSelect = row.querySelector('[data-academic-board]');
+        const instituteInput = row.querySelector('[data-academic-institute]');
+        
+        const instituteWrap = row.querySelector('[data-academic-institute-wrap]') || 
+                             (instituteInput ? instituteInput.closest('.col-12') : null);
+        
+        if (!degreeSelect) return;
+        
+        const degree = degreeSelect.value;
+        const isSchoolLevel = ['Under Matric', 'Matric', 'Intermediate / Diploma'].includes(degree);
+        
+        if (boardWrap) {
+            boardWrap.style.display = isSchoolLevel ? 'block' : 'none';
+            if (boardSelect) {
+                boardSelect.required = isSchoolLevel;
+                if (isSchoolLevel && !boardSelect.value && instituteInput && instituteInput.value) {
+                    const options = Array.from(boardSelect.options).map(o => o.value);
+                    if (options.includes(instituteInput.value)) {
+                        boardSelect.value = instituteInput.value;
+                    }
+                }
+            }
+        }
+        
+        if (instituteWrap) {
+            instituteWrap.style.display = isSchoolLevel ? 'none' : 'block';
+            if (instituteInput) {
+                instituteInput.required = !isSchoolLevel;
+            }
+        }
+    }
     
     function getAcademicRecordValues(row) {
         if (!row) return {};
@@ -293,6 +329,9 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
         if (endDateInput) endDateInput.value = values && values.end_date ? values.end_date : '';
         if (fieldOfStudyInput) fieldOfStudyInput.value = values && values.fieldOfStudy ? values.fieldOfStudy : '';
         if (instituteInput) instituteInput.value = values && values.institute ? values.institute : '';
+        
+        syncAcademicBoardFields(row);
+        
         setAcademicRecordPreviewData(row);
         setAcademicRecordMode(row, false);
         return row;
@@ -313,6 +352,25 @@ const moreFamilyMembersContainer = document.getElementById('moreFamilyMembersCon
     }
     
     if (moreAcademicRecordsContainer) {
+        moreAcademicRecordsContainer.addEventListener('change', function(e) {
+            const degreeSelect = e.target.closest('[data-academic-degree]');
+            if (degreeSelect) {
+                const row = degreeSelect.closest('[data-academic-row]');
+                syncAcademicBoardFields(row);
+                return;
+            }
+            
+            const boardSelect = e.target.closest('[data-academic-board]');
+            if (boardSelect) {
+                const row = boardSelect.closest('[data-academic-row]');
+                const instituteInput = row.querySelector('[data-academic-institute]');
+                if (instituteInput) {
+                    instituteInput.value = boardSelect.value;
+                }
+                return;
+            }
+        });
+
         moreAcademicRecordsContainer.addEventListener('click', function(e) {
             const saveBtn = e.target.closest('[data-academic-save]');
             if (saveBtn) {
