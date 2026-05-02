@@ -56,13 +56,29 @@ class DepartmentService
 
     public function create(array $data): Department
     {
+        $data = $this->withSyncedGracePeriod($data);
+
         return Department::create($data);
     }
 
     public function update(Department $department, array $data): Department
     {
+        $data = $this->withSyncedGracePeriod($data);
         $department->update($data);
+
         return $department->fresh(['organization', 'sbu', 'parent']);
+    }
+
+    private function withSyncedGracePeriod(array $data): array
+    {
+        $gracePeriod = $data['opening_grace_period'] ?? null;
+        if ($gracePeriod === null && array_key_exists('closing_grace_period', $data)) {
+            $gracePeriod = $data['closing_grace_period'];
+        }
+        $data['opening_grace_period'] = $gracePeriod;
+        $data['closing_grace_period'] = $gracePeriod;
+
+        return $data;
     }
 
     public function destroy(Department $department): bool

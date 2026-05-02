@@ -20,7 +20,7 @@
                 <select class="form-select" id="organization_id" name="organization_id" required>
                     <option value="" hidden selected>Select Organization</option>
                     @foreach ($organizations as $org)
-                        <option value="{{ $org->id }}" data-working-days="{{ implode(',', $org->working_days ?? []) }}" data-working-start-time="{{ $org->working_start_time ? substr((string) $org->working_start_time, 0, 5) : '' }}" data-working-end-time="{{ $org->working_end_time ? substr((string) $org->working_end_time, 0, 5) : '' }}" data-opening-grace-period="{{ $org->opening_grace_period ?? '' }}" data-closing-grace-period="{{ $org->closing_grace_period ?? '' }}">{{ $org->name }}</option>
+                    <option value="{{ $org->id }}" data-working-days="{{ implode(',', $org->working_days ?? []) }}" data-working-start-time="{{ $org->working_start_time ? substr((string) $org->working_start_time, 0, 5) : '' }}" data-working-end-time="{{ $org->working_end_time ? substr((string) $org->working_end_time, 0, 5) : '' }}" data-opening-grace-period="{{ $org->opening_grace_period ?? '' }}" data-closing-grace-period="{{ $org->closing_grace_period ?? '' }}">{{ $org->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -81,27 +81,26 @@
                     <div class="d-flex flex-wrap gap-3">
                         @php($days = ['monday' => 'Mon', 'tuesday' => 'Tue', 'wednesday' => 'Wed', 'thursday' => 'Thu', 'friday' => 'Fri', 'saturday' => 'Sat', 'sunday' => 'Sun'])
                         @foreach($days as $dayValue => $dayLabel)
-                            <div class="form-check">
-                                <input class="form-check-input sbu-working-day" type="checkbox" id="sbuWorkingDay_{{ $dayValue }}" name="working_days[]" value="{{ $dayValue }}">
-                                <label class="form-check-label small text-white" for="sbuWorkingDay_{{ $dayValue }}">{{ $dayLabel }}</label>
-                            </div>
+                        <div class="form-check">
+                            <input class="form-check-input sbu-working-day" type="checkbox" id="sbuWorkingDay_{{ $dayValue }}" name="working_days[]" value="{{ $dayValue }}">
+                            <label class="form-check-label small text-white" for="sbuWorkingDay_{{ $dayValue }}">{{ $dayLabel }}</label>
+                        </div>
                         @endforeach
                     </div>
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-12">
+                    <div class="col-4">
                         <label for="sbuGracePeriod" class="form-label fw-semibold small text-white">Grace Period (min)</label>
-                        <input type="number" min="0" max="600" class="form-control" id="sbuGracePeriod" name="opening_grace_period">
+                        <input type="number" min="0" max="600" class="form-control" id="sbuGracePeriod" name="grace_period">
                     </div>
-                </div>
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label for="sbuWorkingStartTime" class="form-label fw-semibold small text-white">Check-in</label>
+
+                    <div class="col-4">
+                        <label for="sbuWorkingStartTime" class="form-label fw-semibold small text-white">Working Start Time</label>
                         <input type="time" class="form-control" id="sbuWorkingStartTime" name="working_start_time">
                     </div>
-                    <div class="col-6">
-                        <label for="sbuWorkingEndTime" class="form-label fw-semibold small text-white">Check-out</label>
+                    <div class="col-4">
+                        <label for="sbuWorkingEndTime" class="form-label fw-semibold small text-white">Working End Time</label>
                         <input type="time" class="form-control" id="sbuWorkingEndTime" name="working_end_time">
                     </div>
                 </div>

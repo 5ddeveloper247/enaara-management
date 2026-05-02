@@ -33,6 +33,10 @@ class OrganizationService
         DB::beginTransaction();
 
         try {
+            $gracePeriod = $data['opening_grace_period'] ?? null;
+            if ($gracePeriod === null && array_key_exists('closing_grace_period', $data)) {
+                $gracePeriod = $data['closing_grace_period'];
+            }
             $organizationData = [
                 'parent_id'   => $data['parent_id'] ?? null,
                 'name'        => $data['name'],
@@ -44,8 +48,8 @@ class OrganizationService
                 'working_days' => $data['working_days'] ?? null,
                 'working_start_time' => $data['working_start_time'] ?? null,
                 'working_end_time' => $data['working_end_time'] ?? null,
-                'opening_grace_period' => $data['opening_grace_period'] ?? null,
-                'closing_grace_period' => $data['closing_grace_period'] ?? null,
+                'opening_grace_period' => $gracePeriod,
+                'closing_grace_period' => $gracePeriod,
                 'is_active'   => $data['is_active'] ?? true,
                 'created_at'  => now(),
                 'updated_at'  => now(),
@@ -74,6 +78,11 @@ class OrganizationService
     {
         $organization = Organization::findOrFail($id);
 
+        $gracePeriod = $data['opening_grace_period'] ?? null;
+        if ($gracePeriod === null && array_key_exists('closing_grace_period', $data)) {
+            $gracePeriod = $data['closing_grace_period'];
+        }
+
         $organization->update([
             'parent_id'   => $data['parent_id'] ?? null,
             'name'        => $data['name'],
@@ -85,8 +94,8 @@ class OrganizationService
             'working_days' => $data['working_days'] ?? null,
             'working_start_time' => $data['working_start_time'] ?? null,
             'working_end_time' => $data['working_end_time'] ?? null,
-            'opening_grace_period' => $data['opening_grace_period'] ?? null,
-            'closing_grace_period' => $data['closing_grace_period'] ?? null,
+            'opening_grace_period' => $gracePeriod,
+            'closing_grace_period' => $gracePeriod,
             'is_active'   => $data['is_active'],
         ]);
 

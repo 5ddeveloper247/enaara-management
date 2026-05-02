@@ -98,23 +98,17 @@
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-6">
+                    <div class="col-4">
+                        <label for="orgGracePeriod" class="form-label fw-semibold small text-white">Grace Period (min)</label>
+                        <input type="number" min="0" max="600" class="form-control" id="orgGracePeriod" name="grace_period" value="{{ old('grace_period', old('opening_grace_period', old('closing_grace_period'))) }}">
+                    </div>
+                    <div class="col-4">
                         <label for="orgWorkingStartTime" class="form-label fw-semibold small text-white">Working Start Time</label>
                         <input type="time" class="form-control" id="orgWorkingStartTime" name="working_start_time" value="{{ old('working_start_time') }}">
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <label for="orgWorkingEndTime" class="form-label fw-semibold small text-white">Working End Time</label>
                         <input type="time" class="form-control" id="orgWorkingEndTime" name="working_end_time" value="{{ old('working_end_time') }}">
-                    </div>
-                </div>
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label for="orgOpeningGracePeriod" class="form-label fw-semibold small text-white">Opening Grace Period (min)</label>
-                        <input type="number" min="0" max="600" class="form-control" id="orgOpeningGracePeriod" name="opening_grace_period" value="{{ old('opening_grace_period') }}">
-                    </div>
-                    <div class="col-6">
-                        <label for="orgClosingGracePeriod" class="form-label fw-semibold small text-white">Closing Grace Period (min)</label>
-                        <input type="number" min="0" max="600" class="form-control" id="orgClosingGracePeriod" name="closing_grace_period" value="{{ old('closing_grace_period') }}">
                     </div>
                 </div>
                 </div>
@@ -153,8 +147,7 @@
         const workingDayCheckboxes = addOrgForm.querySelectorAll('input[name="working_days[]"]');
         const workingStartTime = document.getElementById('orgWorkingStartTime');
         const workingEndTime = document.getElementById('orgWorkingEndTime');
-        const openingGracePeriod = document.getElementById('orgOpeningGracePeriod');
-        const closingGracePeriod = document.getElementById('orgClosingGracePeriod');
+        const orgGracePeriod = document.getElementById('orgGracePeriod');
 
         const ORG_LIMITED_FIELDS = [
             { fieldName: 'name', inputId: 'orgName', lenId: 'orgNameLen', metaId: 'orgNameMeta', max: 50 },
@@ -231,6 +224,21 @@
                 return;
             }
 
+            if (normalizedField === 'grace_period' || normalizedField === 'opening_grace_period' || normalizedField === 'closing_grace_period') {
+                const graceEl = form.querySelector('[name="grace_period"]');
+                if (graceEl) {
+                    graceEl.classList.add('is-invalid');
+                    if (!form.querySelector('[data-error-for="grace_period"]:not([data-client-length])')) {
+                        const feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback d-block validation-error-dynamic';
+                        feedback.dataset.errorFor = 'grace_period';
+                        feedback.textContent = message;
+                        graceEl.insertAdjacentElement('afterend', feedback);
+                    }
+                }
+                return;
+            }
+
             const fieldElement = form.querySelector(`[name="${normalizedField}"]`) || form.querySelector(`[name="${normalizedField}[]"]`);
             if (!fieldElement) return;
             fieldElement.classList.add('is-invalid');
@@ -270,8 +278,9 @@
             });
             workingStartTime.value = option.dataset.workingStartTime || '';
             workingEndTime.value = option.dataset.workingEndTime || '';
-            openingGracePeriod.value = option.dataset.openingGracePeriod || '';
-            closingGracePeriod.value = option.dataset.closingGracePeriod || '';
+            if (orgGracePeriod) {
+                orgGracePeriod.value = (option.dataset.openingGracePeriod || option.dataset.closingGracePeriod || '');
+            }
         }
 
         function toggleScheduleMode() {

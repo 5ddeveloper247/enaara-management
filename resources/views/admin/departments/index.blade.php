@@ -184,16 +184,17 @@
                         workingDays: [],
                         workingStartTime: '',
                         workingEndTime: '',
-                        openingGracePeriod: '',
-                        closingGracePeriod: ''
+                        gracePeriod: ''
                     };
                 }
+                var g = sbuData.opening_grace_period != null && sbuData.opening_grace_period !== ''
+                    ? sbuData.opening_grace_period
+                    : sbuData.closing_grace_period;
                 return {
                     workingDays: Array.isArray(sbuData.working_days) ? sbuData.working_days : [],
                     workingStartTime: (sbuData.working_start_time || '').toString().slice(0, 5),
                     workingEndTime: (sbuData.working_end_time || '').toString().slice(0, 5),
-                    openingGracePeriod: (sbuData.opening_grace_period || '').toString(),
-                    closingGracePeriod: (sbuData.closing_grace_period || '').toString()
+                    gracePeriod: (g != null ? g : '').toString()
                 };
             }
 
@@ -205,11 +206,10 @@
                 });
                 $('#editWorkingStartTime').val(schedule.workingStartTime);
                 $('#editWorkingEndTime').val(schedule.workingEndTime);
-                $('#editOpeningGracePeriod').val(schedule.openingGracePeriod);
-                $('#editClosingGracePeriod').val(schedule.closingGracePeriod);
+                $('#editGracePeriod').val(schedule.gracePeriod);
             }
 
-            function schedulesMatchSbu(workingDays, startTime, endTime, openingGracePeriod, closingGracePeriod) {
+            function schedulesMatchSbu(workingDays, startTime, endTime, gracePeriod) {
                 var sbuData = getSelectedSbuData();
                 var schedule = getScheduleFromSbu(sbuData);
                 var current = (workingDays || []).slice().sort().join(',');
@@ -217,8 +217,7 @@
                 return current === sbu
                     && (startTime || '') === (schedule.workingStartTime || '')
                     && (endTime || '') === (schedule.workingEndTime || '')
-                    && (openingGracePeriod || '') === (schedule.openingGracePeriod || '')
-                    && (closingGracePeriod || '') === (schedule.closingGracePeriod || '');
+                    && (gracePeriod || '') === (schedule.gracePeriod || '');
             }
 
             function toggleDepartmentScheduleMode() {
@@ -239,6 +238,7 @@
 
             $('#editOrganizationId').on('change', function() {
                 updateSbuDropdown($(this).val());
+                toggleDepartmentScheduleMode();
             });
 
             $('#editSbuId').on('change', function() {
@@ -278,9 +278,7 @@
                     sbuSelect.prop('disabled', true);
                 }
                 
-                // When Organization changes, reset Parent Department dropdown
                 updateParentDepartmentDropdown('');
-                toggleDepartmentScheduleMode();
             }
 
             function updateParentDepartmentDropdown(sbuId, selectedParentId = null) {
@@ -339,8 +337,7 @@
                         $('.dept-working-day').prop('checked', false);
                         $('#editWorkingStartTime').val('');
                         $('#editWorkingEndTime').val('');
-                        $('#editOpeningGracePeriod').val('');
-                        $('#editClosingGracePeriod').val('');
+                        $('#editGracePeriod').val('');
                         $('#deptScheduleModeStandard').prop('checked', true);
                         $('#editDepartmentIsActive').prop('checked', true);
                         
@@ -382,10 +379,11 @@
                         var deptEndTime = (response.department.working_end_time || '').toString().slice(0, 5);
                         $('#editWorkingStartTime').val(deptStartTime);
                         $('#editWorkingEndTime').val(deptEndTime);
-                        var deptOpeningGracePeriod = (response.department.opening_grace_period || '').toString();
-                        var deptClosingGracePeriod = (response.department.closing_grace_period || '').toString();
-                        $('#editOpeningGracePeriod').val(deptOpeningGracePeriod);
-                        $('#editClosingGracePeriod').val(deptClosingGracePeriod);
+                        var deptGracePeriod = (response.department.opening_grace_period != null && response.department.opening_grace_period !== ''
+                            ? response.department.opening_grace_period
+                            : response.department.closing_grace_period);
+                        deptGracePeriod = (deptGracePeriod != null ? deptGracePeriod : '').toString();
+                        $('#editGracePeriod').val(deptGracePeriod);
                         $('#editDepartmentIsActive').prop('checked', response.department.is_active);
                         
                         var orgSelect = $('#editOrganizationId');
@@ -401,7 +399,7 @@
                         updateSbuDropdown(response.department.organization_id, response.department.sbu_id);
                         updateParentDepartmentDropdown(response.department.sbu_id, response.department.parent_department_id);
                         if (response.department.sbu_id) {
-                            if (schedulesMatchSbu(deptWorkingDays, deptStartTime, deptEndTime, deptOpeningGracePeriod, deptClosingGracePeriod)) {
+                            if (schedulesMatchSbu(deptWorkingDays, deptStartTime, deptEndTime, deptGracePeriod)) {
                                 $('#deptScheduleModeStandard').prop('checked', true);
                             } else {
                                 $('#deptScheduleModeCustom').prop('checked', true);
@@ -436,8 +434,7 @@
                     working_days: $('.dept-working-day:checked').map(function() { return this.value; }).get(),
                     working_start_time: $('#editWorkingStartTime').val() || null,
                     working_end_time: $('#editWorkingEndTime').val() || null,
-                    opening_grace_period: $('#editOpeningGracePeriod').val() || null,
-                    closing_grace_period: $('#editClosingGracePeriod').val() || null,
+                    grace_period: $('#editGracePeriod').val() === '' ? null : $('#editGracePeriod').val(),
                     is_active: $('#editDepartmentIsActive').is(':checked') ? 1 : 0
                 };
                 
@@ -488,8 +485,9 @@
                                     'description': 'editDepartmentDescription',
                                     'working_start_time': 'editWorkingStartTime',
                                     'working_end_time': 'editWorkingEndTime',
-                                    'opening_grace_period': 'editOpeningGracePeriod',
-                                    'closing_grace_period': 'editClosingGracePeriod',
+                                    'grace_period': 'editGracePeriod',
+                                    'opening_grace_period': 'editGracePeriod',
+                                    'closing_grace_period': 'editGracePeriod',
                                     'is_active': 'editDepartmentIsActive'
                                 };
                                 if (field === 'working_days' || field.indexOf('working_days.') === 0) {

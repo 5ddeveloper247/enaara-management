@@ -1,4 +1,4 @@
-<div class="offcanvas offcanvas-end bg-main text-white" tabindex="-1" id="departmentEditCanvas" aria-labelledby="departmentEditCanvasLabel" style="width: 500px;">
+<div class="offcanvas offcanvas-end bg-main text-white" tabindex="-1" id="departmentEditCanvas" aria-labelledby="departmentEditCanvasLabel" style="width: 600px;">
     <div class="offcanvas-header border-bottom" style="border-color: #ffffff42 !important">
         <h5 class="offcanvas-title" id="departmentEditCanvasLabel">
             <i class="bi bi-pencil me-2" id="canvasEditIcon"></i>
@@ -48,7 +48,7 @@
                 </select>
                 <div class="invalid-feedback" id="editParentDepartmentIdError"></div>
             </div>
-
+    
             <div class="mb-3">
                 <label for="editDepartmentDescription" class="form-label text-white">Description <span class="text-white-50 fw-normal">(max 255)</span></label>
                 <textarea name="description" id="editDepartmentDescription" class="form-control" rows="3" placeholder="Enter department description" maxlength="255"></textarea>
@@ -57,7 +57,7 @@
             </div>
 
             <div class="mb-3 d-none" id="deptScheduleModeSection">
-                <label class="form-label text-white">Selection Mode</label>
+                <label class="form-label text-white">Selection Mode <span class="text-danger">*</span></label>
                 <div class="btn-group w-100" role="group" aria-label="Department Selection Mode">
                     <input type="radio" class="btn-check" name="schedule_mode" id="deptScheduleModeStandard" value="standard" checked>
                     <label class="btn btn-outline-light" for="deptScheduleModeStandard">Standard</label>
@@ -82,27 +82,20 @@
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-6">
+                    <div class="col-4">
+                        <label for="editGracePeriod" class="form-label text-white">Grace Period (min)</label>
+                        <input type="number" name="grace_period" id="editGracePeriod" class="form-control" min="0" max="600">
+                        <div class="invalid-feedback" id="editGracePeriodError"></div>
+                    </div>
+                    <div class="col-4">
                         <label for="editWorkingStartTime" class="form-label text-white">Working Start Time</label>
                         <input type="time" name="working_start_time" id="editWorkingStartTime" class="form-control">
                         <div class="invalid-feedback" id="editWorkingStartTimeError"></div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <label for="editWorkingEndTime" class="form-label text-white">Working End Time</label>
                         <input type="time" name="working_end_time" id="editWorkingEndTime" class="form-control">
                         <div class="invalid-feedback" id="editWorkingEndTimeError"></div>
-                    </div>
-                </div>
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label for="editOpeningGracePeriod" class="form-label text-white">Opening Grace Period (min)</label>
-                        <input type="number" name="opening_grace_period" id="editOpeningGracePeriod" class="form-control" min="0" max="600">
-                        <div class="invalid-feedback" id="editOpeningGracePeriodError"></div>
-                    </div>
-                    <div class="col-6">
-                        <label for="editClosingGracePeriod" class="form-label text-white">Closing Grace Period (min)</label>
-                        <input type="number" name="closing_grace_period" id="editClosingGracePeriod" class="form-control" min="0" max="600">
-                        <div class="invalid-feedback" id="editClosingGracePeriodError"></div>
                     </div>
                 </div>
             </div>

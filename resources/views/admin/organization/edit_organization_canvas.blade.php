@@ -99,23 +99,17 @@
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-6">
+                    <div class="col-4">
+                        <label for="editOrgGracePeriod" class="form-label fw-semibold small text-white">Grace Period (min)</label>
+                        <input type="number" min="0" max="600" class="form-control" id="editOrgGracePeriod" name="grace_period">
+                    </div>
+                    <div class="col-4">
                         <label for="editOrgWorkingStartTime" class="form-label fw-semibold small text-white">Working Start Time</label>
                         <input type="time" class="form-control" id="editOrgWorkingStartTime" name="working_start_time">
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <label for="editOrgWorkingEndTime" class="form-label fw-semibold small text-white">Working End Time</label>
                         <input type="time" class="form-control" id="editOrgWorkingEndTime" name="working_end_time">
-                    </div>
-                </div>
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label for="editOrgOpeningGracePeriod" class="form-label fw-semibold small text-white">Opening Grace Period (min)</label>
-                        <input type="number" min="0" max="600" class="form-control" id="editOrgOpeningGracePeriod" name="opening_grace_period">
-                    </div>
-                    <div class="col-6">
-                        <label for="editOrgClosingGracePeriod" class="form-label fw-semibold small text-white">Closing Grace Period (min)</label>
-                        <input type="number" min="0" max="600" class="form-control" id="editOrgClosingGracePeriod" name="closing_grace_period">
                     </div>
                 </div>
                 </div>
@@ -132,13 +126,11 @@
     </div>
 
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
-        <div class="d-flex justify-content-end align-items-center gap-2">
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
-                <button type="submit" form="editOrganizationForm" class="btn btn-light text-dark border-0" id="updateOrganizationBtn">
-                    <i class="bi bi-check-lg me-1"></i>Update Organization
-                </button>
-            </div>
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
+            <button type="submit" form="editOrganizationForm" class="btn btn-light text-dark border-0" id="updateOrganizationBtn">
+                <i class="bi bi-check-lg me-1"></i>Update Organization
+            </button>
         </div>
     </div>
 </div>
@@ -156,8 +148,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const editWorkingDayCheckboxes = document.querySelectorAll('.edit-working-day');
     const editWorkingStartTime = document.getElementById('editOrgWorkingStartTime');
     const editWorkingEndTime = document.getElementById('editOrgWorkingEndTime');
-    const editOpeningGracePeriod = document.getElementById('editOrgOpeningGracePeriod');
-    const editClosingGracePeriod = document.getElementById('editOrgClosingGracePeriod');
+    const editOrgGracePeriod = document.getElementById('editOrgGracePeriod');
 
     const EDIT_ORG_LIMITED_FIELDS = [
         { fieldName: 'name', inputId: 'editOrgName', lenId: 'editOrgNameLen', metaId: 'editOrgNameMeta', max: 50 },
@@ -234,6 +225,21 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        if (normalizedField === 'grace_period' || normalizedField === 'opening_grace_period' || normalizedField === 'closing_grace_period') {
+            const graceEl = form.querySelector('[name="grace_period"]');
+            if (graceEl) {
+                graceEl.classList.add('is-invalid');
+                if (!form.querySelector('[data-error-for="grace_period"]:not([data-client-length])')) {
+                    const feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback d-block validation-error-dynamic';
+                    feedback.dataset.errorFor = 'grace_period';
+                    feedback.textContent = message;
+                    graceEl.insertAdjacentElement('afterend', feedback);
+                }
+            }
+            return;
+        }
+
         const fieldElement = form.querySelector(`[name="${normalizedField}"]`) || form.querySelector(`[name="${normalizedField}[]"]`);
         if (!fieldElement) return;
         fieldElement.classList.add('is-invalid');
@@ -274,16 +280,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 workingDays: [],
                 workingStartTime: '',
                 workingEndTime: '',
-                openingGracePeriod: '',
-                closingGracePeriod: ''
+                gracePeriod: ''
             };
         }
         return {
             workingDays: (option.dataset.workingDays || '').split(',').filter(Boolean),
             workingStartTime: option.dataset.workingStartTime || '',
             workingEndTime: option.dataset.workingEndTime || '',
-            openingGracePeriod: option.dataset.openingGracePeriod || '',
-            closingGracePeriod: option.dataset.closingGracePeriod || ''
+            gracePeriod: (option.dataset.openingGracePeriod || option.dataset.closingGracePeriod || '')
         };
     }
 
@@ -294,19 +298,19 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         editWorkingStartTime.value = schedule.workingStartTime;
         editWorkingEndTime.value = schedule.workingEndTime;
-        editOpeningGracePeriod.value = schedule.openingGracePeriod;
-        editClosingGracePeriod.value = schedule.closingGracePeriod;
+        if (editOrgGracePeriod) {
+            editOrgGracePeriod.value = schedule.gracePeriod;
+        }
     }
 
-    function schedulesMatchParent(currentWorkingDays, currentStartTime, currentEndTime, currentOpeningGracePeriod, currentClosingGracePeriod) {
+    function schedulesMatchParent(currentWorkingDays, currentStartTime, currentEndTime, currentGracePeriod) {
         const parentSchedule = getParentSchedule();
         const normalizedCurrentDays = [...currentWorkingDays].sort().join(',');
         const normalizedParentDays = [...parentSchedule.workingDays].sort().join(',');
         return normalizedCurrentDays === normalizedParentDays
             && (currentStartTime || '') === parentSchedule.workingStartTime
             && (currentEndTime || '') === parentSchedule.workingEndTime
-            && (currentOpeningGracePeriod || '') === parentSchedule.openingGracePeriod
-            && (currentClosingGracePeriod || '') === parentSchedule.closingGracePeriod;
+            && (currentGracePeriod || '') === (parentSchedule.gracePeriod || '');
     }
 
     function toggleEditScheduleMode() {
@@ -359,8 +363,8 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('editOrgAddress').value = org.address ?? '';
             document.getElementById('editOrgWorkingStartTime').value = (org.working_start_time ?? '').toString().slice(0, 5);
             document.getElementById('editOrgWorkingEndTime').value = (org.working_end_time ?? '').toString().slice(0, 5);
-            document.getElementById('editOrgOpeningGracePeriod').value = org.opening_grace_period ?? '';
-            document.getElementById('editOrgClosingGracePeriod').value = org.closing_grace_period ?? '';
+            const loadedGrace = (org.opening_grace_period ?? org.closing_grace_period ?? '').toString();
+            document.getElementById('editOrgGracePeriod').value = loadedGrace;
             document.getElementById('editOrgStatus').value = org.is_active ? '1' : '0';
             document.getElementById('editParentId').value = org.parent_id ?? '';
             const workingDays = Array.isArray(org.working_days) ? org.working_days : [];
@@ -369,10 +373,9 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             const currentStartTime = (org.working_start_time ?? '').toString().slice(0, 5);
             const currentEndTime = (org.working_end_time ?? '').toString().slice(0, 5);
-            const currentOpeningGracePeriod = (org.opening_grace_period ?? '').toString();
-            const currentClosingGracePeriod = (org.closing_grace_period ?? '').toString();
+            const currentGracePeriod = loadedGrace;
             if (org.parent_id) {
-                if (schedulesMatchParent(workingDays, currentStartTime, currentEndTime, currentOpeningGracePeriod, currentClosingGracePeriod)) {
+                if (schedulesMatchParent(workingDays, currentStartTime, currentEndTime, currentGracePeriod)) {
                     editScheduleModeStandard.checked = true;
                 } else {
                     editScheduleModeCustom.checked = true;
@@ -476,8 +479,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('editParentId').value = '';
             document.getElementById('editOrgWorkingStartTime').value = '';
             document.getElementById('editOrgWorkingEndTime').value = '';
-            document.getElementById('editOrgOpeningGracePeriod').value = '';
-            document.getElementById('editOrgClosingGracePeriod').value = '';
+            document.getElementById('editOrgGracePeriod').value = '';
             document.querySelectorAll('.edit-working-day').forEach((checkbox) => {
                 checkbox.checked = false;
             });

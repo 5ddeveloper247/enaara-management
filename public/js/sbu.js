@@ -340,6 +340,17 @@
                 return;
             }
 
+            if (normalizedField === 'grace_period' || normalizedField === 'opening_grace_period' || normalizedField === 'closing_grace_period') {
+                const graceInput = $(formSelector + ' [name="grace_period"]');
+                if (graceInput.length) {
+                    graceInput.first().addClass('is-invalid');
+                    if ($(formSelector + ' [data-error-for="grace_period"]').length === 0) {
+                        graceInput.first().after('<div class="invalid-feedback d-block validation-error-dynamic" data-error-for="grace_period">' + message + '</div>');
+                    }
+                }
+                return;
+            }
+
             const input = $(formSelector + ' [name="' + normalizedField + '"], ' + formSelector + ' [name="' + normalizedField + '[]"]');
             if (input.length) {
                 input.first().addClass('is-invalid');

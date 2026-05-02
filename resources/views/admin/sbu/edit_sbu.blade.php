@@ -91,18 +91,17 @@
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-12">
+                    <div class="col-4">
                         <label for="editSbuGracePeriod" class="form-label fw-semibold small text-white">Grace Period (min)</label>
-                        <input type="number" min="0" max="600" class="form-control" id="editSbuGracePeriod" name="opening_grace_period">
+                        <input type="number" min="0" max="600" class="form-control" id="editSbuGracePeriod" name="grace_period">
                     </div>
-                </div>
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label for="editSbuWorkingStartTime" class="form-label fw-semibold small text-white">Check-in</label>
+
+                    <div class="col-4">
+                        <label for="editSbuWorkingStartTime" class="form-label fw-semibold small text-white">Working Start Time</label>
                         <input type="time" class="form-control" id="editSbuWorkingStartTime" name="working_start_time">
                     </div>
-                    <div class="col-6">
-                        <label for="editSbuWorkingEndTime" class="form-label fw-semibold small text-white">Check-out</label>
+                    <div class="col-4">
+                        <label for="editSbuWorkingEndTime" class="form-label fw-semibold small text-white">Working End Time</label>
                         <input type="time" class="form-control" id="editSbuWorkingEndTime" name="working_end_time">
                     </div>
                 </div>
@@ -121,13 +120,11 @@
     </div>
 
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
-        <div class="d-flex justify-content-end align-items-center gap-2">
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
-                <button type="button" class="btn btn-light text-dark border-0" id="updateSbuBtn">
-                    <i class="bi bi-check-lg me-1"></i>Update SBU
-                </button>
-            </div>
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
+            <button type="button" class="btn btn-light text-dark border-0" id="updateSbuBtn">
+                <i class="bi bi-check-lg me-1"></i>Update SBU
+            </button>
         </div>
     </div>
 </div>
