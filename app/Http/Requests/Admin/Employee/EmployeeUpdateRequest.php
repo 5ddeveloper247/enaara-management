@@ -166,6 +166,31 @@ class EmployeeUpdateRequest extends FormRequest
                 $this->merge([$refRel => null]);
             }
         }
+
+        if ($this->has('grace_period') || $this->has('opening_grace_period') || $this->has('closing_grace_period')) {
+            $openingGracePeriod = null;
+            $closingGracePeriod = null;
+            if (array_key_exists('grace_period', $this->all())) {
+                $g = $this->input('grace_period');
+                if ($g !== null && $g !== '') {
+                    $openingGracePeriod = $g;
+                    $closingGracePeriod = $g;
+                }
+            } else {
+                $openingGracePeriod = $this->input('opening_grace_period');
+                $closingGracePeriod = $this->input('closing_grace_period');
+                if (($openingGracePeriod === null || $openingGracePeriod === '') && ($closingGracePeriod !== null && $closingGracePeriod !== '')) {
+                    $openingGracePeriod = $closingGracePeriod;
+                }
+                if ($openingGracePeriod !== null && $openingGracePeriod !== '') {
+                    $closingGracePeriod = $openingGracePeriod;
+                }
+            }
+            $this->merge([
+                'opening_grace_period' => $openingGracePeriod,
+                'closing_grace_period' => $closingGracePeriod,
+            ]);
+        }
     }
 
     protected function nameRegex(): string
@@ -379,6 +404,7 @@ class EmployeeUpdateRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard'
                     && $this->input('standard_schedule_mode') === 'custom'),
             ],
+            'grace_period' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:600'],
             'opening_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
             'closing_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
             'sync_with_biometric' => ['nullable', 'boolean'],

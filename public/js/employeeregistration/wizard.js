@@ -429,6 +429,7 @@
         const rankFields = new Set(['rank']);
         const rankAllowedPattern = /^[A-Za-z0-9\s.\-\/]*$/;
         const boundedIntegerMaxByField = {
+            grace_period: 600,
             opening_grace_period: 600,
             closing_grace_period: 600,
         };
@@ -1358,8 +1359,7 @@
         bindEmploymentExplicitMaxGuard('#location', 100);
         bindEmploymentExplicitMaxGuard('#biometric_id', 20);
         bindEmploymentAlphaTextGuard('#designation', 'Designation');
-        bindEmploymentBoundedIntegerGuard('#employmentCustomCheckInGraceInput', 600, 3);
-        bindEmploymentBoundedIntegerGuard('#employmentCustomCheckOutGraceInput', 600, 3);
+        bindEmploymentBoundedIntegerGuard('#employmentCustomGracePeriodInput', 600, 3);
         bindPoliceExplicitMaxGuard('#policeVerificationMsrNumberInput', 20);
         bindPoliceExplicitMaxGuard('#policeVerificationLetterNumberInput', 50);
         bindPoliceExplicitMaxGuard('#policeVerificationAddresseeInput', 100);
@@ -1807,8 +1807,9 @@
         'assigned_floor_ids':           'employmentAssignedFloorsSelect',
         'working_start_time':           'employmentCustomWorkingStartInput',
         'working_end_time':             'employmentCustomWorkingEndInput',
-        'opening_grace_period':         'employmentCustomCheckInGraceInput',
-        'closing_grace_period':         'employmentCustomCheckOutGraceInput',
+        'grace_period':                 'employmentCustomGracePeriodInput',
+        'opening_grace_period':         'employmentCustomGracePeriodInput',
+        'closing_grace_period':         'employmentCustomGracePeriodInput',
         'join_date':                    'employmentJoinDateInput',
         'designation':                  'designation',
         'grade':                        'grade',
@@ -3005,28 +3006,28 @@
         const orgName     = document.getElementById('employmentWorkArrangementOrgName');
         const wkDays      = document.getElementById('employmentDefaultWorkingDays');
         const wkTime      = document.getElementById('employmentDefaultWorkingTime');
-        const checkIn     = document.getElementById('employmentDefaultCheckInGrace');
-        const checkOut    = document.getElementById('employmentDefaultCheckOutGrace');
+        const graceEl     = document.getElementById('employmentDefaultGracePeriod');
 
         if (!src) {
             if (orgInitial) orgInitial.textContent = '-';
             if (orgName)    orgName.textContent    = '-';
             if (wkDays)     wkDays.textContent     = '- - -';
             if (wkTime)     wkTime.textContent     = '- - -';
-            if (checkIn)    checkIn.textContent    = '-';
-            if (checkOut)   checkOut.textContent   = '-';
+            if (graceEl)    graceEl.textContent    = '-';
             return;
         }
 
         const d = src.data;
+        const graceMin = d.opening_grace_period != null && d.opening_grace_period !== ''
+            ? d.opening_grace_period
+            : d.closing_grace_period;
         if (orgInitial) orgInitial.textContent = src.initial;
         if (orgName)    orgName.textContent    = src.label;
         if (wkDays)     wkDays.textContent     = formatDaysList(d.working_days);
         if (wkTime)     wkTime.textContent     = (d.working_start_time && d.working_end_time)
                                                     ? `${formatTime(d.working_start_time)} – ${formatTime(d.working_end_time)}`
                                                     : '- - -';
-        if (checkIn)    checkIn.textContent    = d.opening_grace_period != null ? `${d.opening_grace_period} min` : '-';
-        if (checkOut)   checkOut.textContent   = d.closing_grace_period != null ? `${d.closing_grace_period} min` : '-';
+        if (graceEl)    graceEl.textContent    = graceMin != null && graceMin !== '' ? `${graceMin} min` : '-';
     }
 
     function toggleWorkArrangementFields() {

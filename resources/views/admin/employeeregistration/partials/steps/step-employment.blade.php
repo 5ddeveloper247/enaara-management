@@ -555,15 +555,10 @@
                                                                     <div class="fw-semibold small"
                                                                         id="employmentDefaultWorkingTime">- - -</div>
                                                                 </div>
-                                                                <div class="col-6">
-                                                                    <div class="small text-muted">Check-in grace</div>
+                                                                <div class="col-12">
+                                                                    <div class="small text-muted">Grace period</div>
                                                                     <div class="fw-semibold small"
-                                                                        id="employmentDefaultCheckInGrace">-</div>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <div class="small text-muted">Check-out grace</div>
-                                                                    <div class="fw-semibold small"
-                                                                        id="employmentDefaultCheckOutGrace">-</div>
+                                                                        id="employmentDefaultGracePeriod">-</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -617,7 +612,16 @@
 
                                                 <div class="col-12">
                                                     <div class="row g-3">
-                                                        <div class="col-md-3">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-semibold"
+                                                                for="employmentCustomGracePeriodInput">Grace Period <span class="text-muted fw-normal">(min)</span></label>
+                                                            <input type="number" name="grace_period"
+                                                                min="0" max="600" class="form-control"
+                                                                id="employmentCustomGracePeriodInput"
+                                                                placeholder="Optional"
+                                                                value="{{ $employee->opening_grace_period ?? $employee->closing_grace_period ?? '' }}">
+                                                        </div>
+                                                        <div class="col-md-4">
                                                             <label class="form-label small fw-semibold">
                                                                 <i
                                                                     class="bi bi-sunrise text-secondary me-1"></i>
@@ -628,7 +632,7 @@
                                                                 id="employmentCustomWorkingStartInput"
                                                                 value="{{ isset($employee->working_start_time) ? substr($employee->working_start_time, 0, 5) : '' }}">
                                                         </div>
-                                                        <div class="col-md-3">
+                                                        <div class="col-md-4">
                                                             <label class="form-label small fw-semibold">
                                                                 <i class="bi bi-sunset text-secondary me-1"></i>
                                                                 End Time<span class="text-danger">*</span>
@@ -637,30 +641,6 @@
                                                                 class="form-control"
                                                                 id="employmentCustomWorkingEndInput"
                                                                 value="{{ isset($employee->working_end_time) ? substr($employee->working_end_time, 0, 5) : '' }}">
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <label class="form-label small fw-semibold">
-                                                                <i
-                                                                    class="bi bi-box-arrow-in-right text-secondary me-1"></i>Check-in
-                                                                Grace <span class="text-muted fw-normal">(min)</span>
-                                                            </label>
-                                                            <input type="number" name="opening_grace_period"
-                                                                min="0" max="600" class="form-control"
-                                                                id="employmentCustomCheckInGraceInput"
-                                                                placeholder="Optional"
-                                                                value="{{ $employee->opening_grace_period ?? '' }}">
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <label class="form-label small fw-semibold">
-                                                                <i
-                                                                    class="bi bi-box-arrow-right text-secondary me-1"></i>Check-out
-                                                                Grace <span class="text-muted fw-normal">(min)</span>
-                                                            </label>
-                                                            <input type="number" name="closing_grace_period"
-                                                                min="0" max="600" class="form-control"
-                                                                id="employmentCustomCheckOutGraceInput"
-                                                                placeholder="Optional"
-                                                                value="{{ $employee->closing_grace_period ?? '' }}">
                                                         </div>
                                                     </div>
                                                 </div>

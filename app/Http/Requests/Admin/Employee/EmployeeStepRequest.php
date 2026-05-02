@@ -208,6 +208,32 @@ class EmployeeStepRequest extends FormRequest
                 'is_salary_account' => $this->boolean('is_salary_account'),
             ]);
         }
+
+        $stepGrace = ($this->input('step') !== null && $this->input('step') !== '') ? (int) $this->input('step') : 0;
+        if ($stepGrace === 2 || $stepGrace === 0) {
+            $openingGracePeriod = null;
+            $closingGracePeriod = null;
+            if (array_key_exists('grace_period', $this->all())) {
+                $g = $this->input('grace_period');
+                if ($g !== null && $g !== '') {
+                    $openingGracePeriod = $g;
+                    $closingGracePeriod = $g;
+                }
+            } else {
+                $openingGracePeriod = $this->input('opening_grace_period');
+                $closingGracePeriod = $this->input('closing_grace_period');
+                if (($openingGracePeriod === null || $openingGracePeriod === '') && ($closingGracePeriod !== null && $closingGracePeriod !== '')) {
+                    $openingGracePeriod = $closingGracePeriod;
+                }
+                if ($openingGracePeriod !== null && $openingGracePeriod !== '') {
+                    $closingGracePeriod = $openingGracePeriod;
+                }
+            }
+            $this->merge([
+                'opening_grace_period' => $openingGracePeriod,
+                'closing_grace_period' => $closingGracePeriod,
+            ]);
+        }
     }
 
     protected function nameRegex(): string
@@ -456,6 +482,7 @@ class EmployeeStepRequest extends FormRequest
                     'after:working_start_time',
                     Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard' && $this->input('standard_schedule_mode') === 'custom'),
                 ],
+                'grace_period' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:600'],
                 'opening_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
                 'closing_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
                 'sync_with_biometric' => ['nullable', 'boolean'],
@@ -1082,12 +1109,15 @@ class EmployeeStepRequest extends FormRequest
             'working_end_time.required' => 'Working end time is required for a custom standard schedule.',
             'working_end_time.date_format' => 'Working end time must be in HH:MM format.',
             'working_end_time.after' => 'Working end time must be after the start time.',
-            'opening_grace_period.integer' => 'Opening grace period must be a whole number of minutes.',
-            'opening_grace_period.min' => 'Opening grace period cannot be negative.',
-            'opening_grace_period.max' => 'Opening grace period must not exceed 600 minutes.',
-            'closing_grace_period.integer' => 'Closing grace period must be a whole number of minutes.',
-            'closing_grace_period.min' => 'Closing grace period cannot be negative.',
-            'closing_grace_period.max' => 'Closing grace period must not exceed 600 minutes.',
+            'grace_period.integer' => 'Grace period must be a valid number.',
+            'grace_period.min' => 'Grace period cannot be negative.',
+            'grace_period.max' => 'Grace period cannot exceed 600 minutes.',
+            'opening_grace_period.integer' => 'Grace period must be a valid number.',
+            'opening_grace_period.min' => 'Grace period cannot be negative.',
+            'opening_grace_period.max' => 'Grace period cannot exceed 600 minutes.',
+            'closing_grace_period.integer' => 'Grace period must be a valid number.',
+            'closing_grace_period.min' => 'Grace period cannot be negative.',
+            'closing_grace_period.max' => 'Grace period cannot exceed 600 minutes.',
 
             // Police Verification
             'verification_status.required' => 'Verification status is required.',

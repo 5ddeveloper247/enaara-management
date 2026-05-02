@@ -120,14 +120,15 @@ class EmployeeEmploymentInformationService
 
         if ($schedMode === 'custom') {
             $days = $this->normalizeWorkingDaysInput($data['working_days'] ?? null);
+            $grace = $this->syncedGracePeriodFromPayload($data);
 
             return [
                 'standard_schedule_mode' => 'custom',
                 'working_days' => $days,
                 'working_start_time' => $this->normalizeTimeForStore($data['working_start_time'] ?? null),
                 'working_end_time' => $this->normalizeTimeForStore($data['working_end_time'] ?? null),
-                'opening_grace_period' => $this->normalizeGraceInput($data['opening_grace_period'] ?? null),
-                'closing_grace_period' => $this->normalizeGraceInput($data['closing_grace_period'] ?? null),
+                'opening_grace_period' => $grace,
+                'closing_grace_period' => $grace,
             ];
         }
 
@@ -234,5 +235,18 @@ class EmployeeEmploymentInformationService
         }
 
         return (int) $v;
+    }
+
+    protected function syncedGracePeriodFromPayload(array $data): ?int
+    {
+        if (array_key_exists('grace_period', $data)) {
+            return $this->normalizeGraceInput($data['grace_period'] ?? null);
+        }
+        $open = $this->normalizeGraceInput($data['opening_grace_period'] ?? null);
+        if ($open !== null) {
+            return $open;
+        }
+
+        return $this->normalizeGraceInput($data['closing_grace_period'] ?? null);
     }
 }
