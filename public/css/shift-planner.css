@@ -2,6 +2,16 @@
  * Shift Planner Module Styles
  */
 
+body.shift-planner-roster-mode .admin-sidebar {
+    display: none !important;
+}
+
+body.shift-planner-roster-mode .admin-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+}
+
 /* ============================================
    SHIFT CARDS
    ============================================ */

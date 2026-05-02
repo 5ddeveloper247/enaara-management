@@ -159,21 +159,33 @@
 
     <script>
         $(document).ready(function() {
-            // Tab switching logic
+            function setShiftPlannerRosterLayout(isRoster) {
+                document.body.classList.toggle('shift-planner-roster-mode', !!isRoster);
+            }
+
             $('#shift-management-tab').on('shown.bs.tab', function() {
                 $('#addShiftBtn').show();
                 $('#bulkAssignBtn').hide();
+                setShiftPlannerRosterLayout(false);
             });
 
             $('#roster-tab').on('shown.bs.tab', function() {
                 $('#addShiftBtn').hide();
                 $('#bulkAssignBtn').show();
+                setShiftPlannerRosterLayout(true);
                 setTimeout(function() {
                     if (typeof initRosterCalendar === 'function') {
                         initRosterCalendar();
                     }
                 }, 100);
             });
+
+            if (window.location.hash === '#roster') {
+                var rosterTabEl = document.getElementById('roster-tab');
+                if (rosterTabEl && typeof bootstrap !== 'undefined') {
+                    bootstrap.Tab.getOrCreateInstance(rosterTabEl).show();
+                }
+            }
 
             // Add Shift Button
             $('#addShiftBtn').on('click', function() {
