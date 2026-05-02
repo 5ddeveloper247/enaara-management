@@ -2,24 +2,86 @@
     'use strict';
 
     var INTERNAL_COLUMNS = [
-        { header: 'Employee No', key: 'employee_code' },
+        { header: 'Employee Number', key: 'employee_code' },
         { header: 'Full Name', key: 'full_name' },
+        { header: 'Father Name', key: 'father_name' },
         { header: 'Organization', key: 'organization' },
         { header: 'SBU', key: 'sbu' },
         { header: 'Department', key: 'department' },
-        { header: 'Category', key: 'employment_category' },
         { header: 'CNIC', key: 'cnic' },
+        { header: 'CNIC Expiry', key: 'cnic_expiry' },
+        { header: 'Father CNIC', key: 'father_cnic' },
+        { header: 'NTN', key: 'ntn' },
         { header: 'Nationality', key: 'nationality' },
         { header: 'Gender', key: 'gender' },
+        { header: 'Date of Birth', key: 'dob' },
+        { header: 'Religion', key: 'religion' },
+        { header: 'Sect', key: 'sect' },
+        { header: 'Marital Status', key: 'marital_status' },
+        { header: 'Spouse Name', key: 'spouse_name' },
+        { header: 'Spouse CNIC', key: 'spouse_cnic' },
+        { header: 'Spouse Nationality', key: 'spouse_nationality' },
+        { header: 'Domicile District', key: 'domicile_district' },
+        { header: 'Domicile Province', key: 'domicile_province' },
+        { header: 'City of Birth', key: 'city_of_birth' },
+        { header: 'Father Deceased', key: 'is_father_deceased' },
         { header: 'Date of Joining', key: 'join_date' },
         { header: 'Designation', key: 'designation' },
-        { header: 'Verification Status', key: 'verification_status' },
+        { header: 'Grade', key: 'grade' },
+        { header: 'Branch', key: 'branch' },
+        { header: 'Location', key: 'location' },
+        { header: 'Employee Status', key: 'employee_status' },
+        { header: 'Termination Reason', key: 'termination_reason' },
+        { header: 'Termination Date', key: 'termination_date' },
+        { header: 'Category', key: 'employment_category' },
+        { header: 'Intern Type', key: 'intern_type' },
+        { header: 'Intern Duration', key: 'intern_duration' },
+        { header: 'Contractual Type', key: 'contractual_type' },
+        { header: 'Contract Start Date', key: 'contract_start_date' },
+        { header: 'Contract End Date', key: 'contract_end_date' },
+        { header: 'Probation Start Date', key: 'probation_start_date' },
+        { header: 'Probation End Date', key: 'probation_end_date' },
+        { header: 'Engagement Mode', key: 'engagement_mode' },
+        { header: 'Hybrid Days', key: 'hybrid_days' },
+        { header: 'TAS ID', key: 'biometric_id' },
+        { header: 'Floor Access', key: 'floor_access' },
+        { header: 'Police Verification', key: 'verification_status' },
+        { header: 'MSR Letter No', key: 'msr_letter_no' },
+        { header: 'MSR Date', key: 'msr_date' },
+        { header: 'Armed Rank', key: 'armed_rank' },
+        { header: 'Armed Joining Date', key: 'armed_joining_date' },
+        { header: 'Armed Retirement Date', key: 'armed_retirement_date' },
+        { header: 'Bank Name', key: 'bank_name' },
+        { header: 'Account Title', key: 'account_title' },
+        { header: 'Account No', key: 'account_no' },
+        { header: 'IBAN', key: 'iban' },
+        { header: 'Branch Code', key: 'branch_code' },
+        { header: 'Branch Address', key: 'branch_address' },
+        { header: 'Account Category', key: 'account_category' },
+        { header: 'Account Type', key: 'account_type' },
         { header: 'Email', key: 'email' },
         { header: 'Cell Number', key: 'cell_no' },
+        { header: 'Residence Phone', key: 'residence_phone' },
+        { header: 'Emergency Contact', key: 'emergency_contact' },
+        { header: 'Present Address', key: 'present_address' },
+        { header: 'Permanent Address', key: 'permanent_address' },
+        { header: 'Family Members', key: 'family_count' },
+        { header: 'NOK Name', key: 'nok_name' },
+        { header: 'NOK Relation', key: 'nok_relation' },
+        { header: 'NOK CNIC', key: 'nok_cnic' },
+        { header: 'latest Qualification', key: 'latest_degree' },
+        { header: 'Institute', key: 'latest_institute' },
+        { header: 'Has Certificates', key: 'has_certificates' },
+        { header: 'Previous Organization', key: 'last_organization' },
+        { header: 'Previous Monthly Salary', key: 'last_salary' },
+        { header: 'Disability', key: 'has_disability' },
+        { header: 'Disability Type', key: 'disability_type' },
+        { header: 'Chronic Disease', key: 'has_chronic_disease' },
+        { header: 'Reference Name', key: 'ref_name' },
+        { header: 'Reference Contact', key: 'ref_contact' },
+        { header: 'Total Attachments', key: 'attachments_count' },
         { header: 'Employment Type', key: 'employment_type' },
-        { header: 'Employee Type', key: 'employee_type' },
-        { header: 'TAS ID', key: 'biometric_id' },
-        { header: 'Floor Access', key: 'floor_access' }
+        { header: 'Employee Type', key: 'employee_type' }
     ];
 
     var OUTSOURCED_COLUMNS = [
@@ -112,19 +174,24 @@
             if (floorNames.length) {
                 return floorNames.join(', ');
             }
-            return row.floor_access ? 'Yes' : 'No';
+            return normalizeValue(row.floor_access, 'No');
+        }
+        if (col.key === 'combined_grace_period') {
+            var open = normalizeValue(row.opening_grace_period, '0');
+            var close = normalizeValue(row.closing_grace_period, '0');
+            return 'In: ' + open + 'm, Out: ' + close + 'm';
         }
         if (mode === 'outsourced' && col.key === 'attendance_access') {
             return row.attendance_access ? 'Granted' : 'Not Granted';
         }
-        if (col.key === 'cnic' || col.key === 'cnic_number') {
+        if (['cnic', 'cnic_number', 'nok_cnic', 'father_cnic', 'spouse_cnic'].indexOf(col.key) !== -1) {
             return formatCnic(row[col.key]);
         }
         return normalizeValue(row[col.key], '');
     }
 
     function buildSheetData(mode, rows, columns) {
-        var header = columns.map(function (col) { return col.header; });
+        var header = columns.map(function (col) { return col.header.toUpperCase(); });
         var body = rows.map(function (row) {
             return columns.map(function (col) { return formatCellValue(mode, row, col); });
         });
@@ -132,12 +199,12 @@
     }
 
     function computeColumnWidths(data, columns) {
-        var widths = columns.map(function (col) { return { wch: Math.max(14, col.header.length + 2) }; });
+        var widths = columns.map(function (col) { return { wch: Math.max(18, col.header.length + 6) }; });
         data.forEach(function (row) {
             row.forEach(function (cell, idx) {
                 var len = String(cell === null || cell === undefined ? '' : cell).length;
-                if (len + 2 > widths[idx].wch) {
-                    widths[idx].wch = Math.min(48, len + 2);
+                if (len + 6 > widths[idx].wch) {
+                    widths[idx].wch = Math.min(80, len + 6);
                 }
             });
         });

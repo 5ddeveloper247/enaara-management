@@ -1182,43 +1182,23 @@ class EmployeeService
     public function getTableData(array $filters = []): array
     {
         $query = Employee::query()
-            ->select([
-                'id',
-                'full_name',
-                'employee_code',
-                'employment_category',
-                'cnic',
-                'nationality',
-                'gender',
-                'join_date',
-                'designation',
-                'employee_status',
-                'employment_type',
-                'biometric_id',
-                'sync_with_biometric',
-                'site',
-                'floor_access',
-                'is_active',
-                'email',
-                'organization_id',
-                'sbu_id',
-                'department_id',
-                'department_ids',
-                'role_id',
-            ])
             ->with([
                 'department:id,name',
                 'organization:id,name',
                 'sbu:id,name',
                 'role:id,name',
                 'assignedFloors:id,name',
-                'mediaFiles' => static function ($q): void {
-                    $q->select(['id', 'module_id', 'file_type', 'file_path', 'file_name'])
-                        ->where('module_name', 'employee')
-                        ->where('file_type', 'photo');
-                },
-                'policeVerification:id,employee_id,verification_status',
-                'contact:id,employee_id,email,cell_no',
+                'mediaFiles',
+                'policeVerification',
+                'armedForce',
+                'bankDetails',
+                'contact',
+                'familyMembers',
+                'academics',
+                'certificates',
+                'exEmployments',
+                'medical',
+                'references',
             ])
             ->orderByDesc('id');
 
@@ -1342,37 +1322,141 @@ class EmployeeService
 
             $photo    = $emp->mediaFiles->where('file_type', 'photo')->first();
             $photoUrl = $photo ? Storage::url($photo->file_path) : null;
+            $attachmentsCount = $emp->mediaFiles->where('file_type', 'attachment')->count();
 
             $departmentLabel = $deptNames !== [] ? implode(', ', $deptNames) : ($emp->department?->name ?? '-');
             $sbuLabel = $emp->sbu?->name ?? ($deptSbuNames[0] ?? '-');
 
+            // Salary Bank Details
+            $salaryBank = $emp->bankDetails->where('is_salary_account', true)->first() ?? $emp->bankDetails->first();
+
+            // Latest Academic Record
+            $latestAcademic = $emp->academics->sortByDesc('id')->first();
+
+            // Latest Ex-Employment
+            $latestExEmployment = $emp->exEmployments->sortByDesc('id')->first();
+
+            // First Reference
+            $firstRef = $emp->references->first();
+
             return [
                 'id'                  => $emp->id,
                 'employee_code'       => $emp->employee_code ?? '-',
-                'employment_category' => $emp->employment_category ?? '-',
                 'photo_url'           => $photoUrl,
                 'full_name'           => $emp->full_name ?? '-',
+                'father_name'         => $emp->father_name ?? '-',
                 'initials'            => $initials,
                 'cnic'                => $emp->cnic ?? '-',
+                'cnic_expiry'         => $emp->cnic_expiry?->format('d M Y') ?? '-',
+                'father_cnic'         => $emp->father_cnic ?? '-',
                 'nationality'         => $emp->nationality ?? '-',
                 'gender'              => $emp->gender ?? '-',
+                'dob'                 => $emp->dob?->format('d M Y') ?? '-',
+                'ntn'                 => $emp->ntn ?? '-',
+                'religion'            => $emp->religion ?? '-',
+                'sect'                => $emp->sect ?? '-',
+                'marital_status'      => $emp->marital_status ?? '-',
+                'spouse_name'         => $emp->spouse_name ?? '-',
+                'spouse_cnic'         => $emp->spouse_cnic ?? '-',
+                'spouse_nationality'  => $emp->spouse_nationality ?? '-',
+                'domicile_district'   => $emp->domicile_district ?? '-',
+                'domicile_province'   => $emp->domicile_province ?? '-',
+                'city_of_birth'       => $emp->city_of_birth ?? '-',
+                'is_father_deceased'  => $emp->is_father_deceased ? 'Yes' : 'No',
+
+                // Employment Info
                 'organization'        => $emp->organization?->name ?? '-',
                 'sbu'                 => $sbuLabel,
                 'department'          => $departmentLabel,
                 'role'                => $emp->role?->name ?? '-',
                 'join_date'           => $emp->join_date?->format('d M Y') ?? '-',
                 'designation'         => $emp->designation ?? '-',
-                'verification_status' => $emp->policeVerification?->verification_status ?? '-',
+                'grade'               => $emp->grade ?? '-',
+                'branch'              => $emp->branch ?? '-',
+                'location'            => $emp->location ?? '-',
+                'site'                => $emp->site ?? '-',
                 'employee_status'     => $emp->employee_status ?? '-',
-                'email'               => $emp->contact?->email ?? $emp->email ?? '-',
-                'cell_no'             => $emp->contact?->cell_no ?? '-',
+                'termination_reason'  => $emp->termination_reason ?? '-',
+                'termination_date'    => $emp->termination_date?->format('d M Y') ?? '-',
+                'employment_category' => $emp->employment_category ?? '-',
+                'intern_type'         => $emp->intern_type ?? '-',
+                'intern_duration'     => $emp->intern_duration ?? '-',
+                'contractual_type'    => $emp->contractual_type ?? '-',
                 'employment_type'     => $emp->employment_type ?? '-',
-                'employee_type'       => $employeeType,
-                'assigned_floor_names' => $emp->assignedFloors->pluck('name')->filter()->values()->all(),
+                'contract_start_date' => $emp->contract_start_date?->format('d M Y') ?? '-',
+                'contract_end_date'   => $emp->contract_end_date?->format('d M Y') ?? '-',
+                'probation_start_date' => $emp->probation_start_date?->format('d M Y') ?? '-',
+                'probation_end_date'  => $emp->probation_end_date?->format('d M Y') ?? '-',
+                'engagement_mode'     => $emp->engagement_mode ?? '-',
+                'hybrid_days'         => is_array($emp->hybrid_days) ? implode(', ', $emp->hybrid_days) : '-',
+                'standard_schedule_mode' => $emp->standard_schedule_mode ?? '-',
+                'working_days'        => is_array($emp->working_days) ? implode(', ', $emp->working_days) : '-',
+                'working_start_time'  => $emp->working_start_time ?? '-',
+                'working_end_time'    => $emp->working_end_time ?? '-',
+                'opening_grace_period' => $emp->opening_grace_period ?? '-',
+                'closing_grace_period' => $emp->closing_grace_period ?? '-',
                 'biometric_id'        => $biometricId,
                 'sync_status'         => $syncStatus,
-                'site'                => $emp->site ?? '-',
-                'floor_access'        => (bool) $emp->floor_access,
+                'floor_access'        => $emp->floor_access ? 'Yes' : 'No',
+                'assigned_floor_names' => $emp->assignedFloors->pluck('name')->filter()->values()->all(),
+                'employee_type'       => $employeeType,
+
+                // Police Verification
+                'verification_status' => $emp->policeVerification?->verification_status ?? '-',
+                'msr_letter_no'       => $emp->policeVerification?->msr_letter_no ?? '-',
+                'msr_date'            => $emp->policeVerification?->msr_date ? \Carbon\Carbon::parse($emp->policeVerification->msr_date)->format('d M Y') : '-',
+
+                // Armed Forces
+                'armed_rank'          => $emp->armedForce?->rank ?? '-',
+                'armed_joining_date'  => $emp->armedForce?->date_of_commissioning ? \Carbon\Carbon::parse($emp->armedForce->date_of_commissioning)->format('d M Y') : '-',
+                'armed_retirement_date' => $emp->armedForce?->date_of_retirement ? \Carbon\Carbon::parse($emp->armedForce->date_of_retirement)->format('d M Y') : '-',
+
+                // Bank Details
+                'bank_name'           => $salaryBank?->bank_name ?? '-',
+                'account_title'       => $salaryBank?->account_title ?? '-',
+                'account_no'          => $salaryBank?->account_no ?? '-',
+                'iban'                => $salaryBank?->iban ?? '-',
+                'branch_code'         => $salaryBank?->branch_code ?? '-',
+                'branch_address'      => $salaryBank?->branch_address ?? '-',
+                'account_category'    => $salaryBank?->account_category ?? '-',
+                'account_type'        => $salaryBank?->account_type ?? '-',
+
+                // Contact Information
+                'email'               => $emp->contact?->email ?? $emp->email ?? '-',
+                'cell_no'             => $emp->contact?->cell_no ?? '-',
+                'residence_phone'     => $emp->contact?->residence_phone ?? '-',
+                'emergency_contact'   => $emp->contact?->emergency_contact ?? '-',
+                'present_address'     => $emp->contact?->present_address ?? '-',
+                'permanent_address'   => $emp->contact?->permanent_address ?? '-',
+
+                // Family
+                'family_count'        => $emp->familyMembers->count(),
+                'nok_name'            => $emp->nok_name ?? '-',
+                'nok_relation'        => $emp->nok_relation ?? '-',
+                'nok_cnic'            => $emp->nok_cnic ?? '-',
+
+                // Academic
+                'latest_degree'       => $latestAcademic?->degree ?? '-',
+                'latest_institute'    => $latestAcademic?->institute ?? '-',
+
+                // Certificate
+                'has_certificates'    => $emp->certificates->count() > 0 ? 'Yes' : 'No',
+
+                // Ex-Employment
+                'last_organization'   => $latestExEmployment?->organization ?? '-',
+                'last_salary'         => $latestExEmployment?->salary ?? '-',
+
+                // Medical
+                'has_disability'      => $emp->medical?->has_disability ? 'Yes' : 'No',
+                'disability_type'     => $emp->medical?->disability_type ?? '-',
+                'has_chronic_disease' => $emp->medical?->has_chronic_disease ? 'Yes' : 'No',
+
+                // Reference
+                'ref_name'            => $firstRef?->name ?? '-',
+                'ref_contact'         => $firstRef?->contact_no ?? '-',
+
+                // Attachments
+                'attachments_count'   => $attachmentsCount,
                 'is_active'           => (bool) $emp->is_active,
             ];
         })->values()->all();
