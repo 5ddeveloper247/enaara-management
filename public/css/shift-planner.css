@@ -67,6 +67,18 @@
     font-size: 0.9rem;
 }
 
+.roster-toolbar .roster-personnel-btn {
+    font-size: 0.8125rem;
+    padding: 0.25rem 0.55rem;
+    white-space: nowrap;
+}
+
+.roster-toolbar .roster-personnel-btn.active {
+    background-color: var(--main-color) !important;
+    color: #fff !important;
+    border-color: var(--main-color) !important;
+}
+
 .roster-legend {
     font-size: 0.8rem;
 }
