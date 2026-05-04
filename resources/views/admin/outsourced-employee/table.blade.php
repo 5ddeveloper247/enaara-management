@@ -10,7 +10,7 @@
                     <th>Contractor Company</th>
                     <th>Supervisor Name</th>
                     <th>Supervisor Contact</th>
-                    <th>Department</th>
+                    <th>Service Type</th>
                     <th>Job Role / Trade</th>
                     <th>Placement (Floor)</th>
                     <th>Date of Deployment</th>
