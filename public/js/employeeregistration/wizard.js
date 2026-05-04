@@ -2193,6 +2193,7 @@
     function updateEmployeeCodePreview() {
         if (!employmentCodeInput) return;
         if (!window.previewEmployeeCodeUrl) return;
+        if (window.isEditMode) return;
 
         const organizationId = orgSelectForCode?.value || '';
         const roleId = roleSelectForCode?.value || '';
