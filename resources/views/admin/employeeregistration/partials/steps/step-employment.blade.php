@@ -288,9 +288,9 @@
                                                             <div class="emp-dept-opt-list" id="employmentDeptList">
                                                             </div>
                                                         </div>
-                                                        <small class="text-muted d-block mt-1"
+                                                        <!-- <small class="text-muted d-block mt-1"
                                                             id="employmentDeptHint">No departments are set up for this
-                                                            SBU yet.</small>
+                                                            SBU yet.</small> -->
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Designation</label>
@@ -433,8 +433,8 @@
                                                             <div class="emp-dept-opt-list" id="employmentFloorList">
                                                             </div>
                                                         </div>
-                                                        <small class="text-muted d-block mt-1">Assign Floor
-                                                            Access</small>
+                                                        <!-- <small class="text-muted d-block mt-1">Assign Floor
+                                                            Access</small> -->
                                                     </div>
                                                 </div>
                                             </div>
