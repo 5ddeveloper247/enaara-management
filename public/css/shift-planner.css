@@ -12,6 +12,27 @@ body.shift-planner-roster-mode .admin-main {
     flex: 1 1 100% !important;
 }
 
+body.shift-planner-roster-mode .roster-back-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    color: var(--dark-color);
+    transition: all 0.2s ease;
+}
+
+body.shift-planner-roster-mode .roster-back-btn:hover {
+    background-color: var(--main-color);
+    border-color: var(--main-color);
+    color: #fff;
+    transform: translateX(-2px);
+}
+
 /* ============================================
    SHIFT CARDS
    ============================================ */

@@ -84,7 +84,12 @@
         <div class="card border-0 rounded-4 mb-4">
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Shift Planner</h5>
+                    <div class="d-flex align-items-center">
+                        <a href="javascript:void(0)" id="rosterBackBtn" class="btn btn-outline-secondary btn-sm me-3 roster-back-btn" style="display: none;">
+                            <i class="bi bi-arrow-left"></i>
+                        </a>
+                        <h5 class="mb-0">Shift Planner</h5>
+                    </div>
                     <div>
                         <button type="button" class="btn btn-outline-secondary me-2" id="copyScheduleBtn"
                             style="display: none;">
@@ -162,6 +167,13 @@
             function setShiftPlannerRosterLayout(isRoster) {
                 document.body.classList.toggle('shift-planner-roster-mode', !!isRoster);
             }
+
+            $('#rosterBackBtn').on('click', function() {
+                const tabEl = document.getElementById('shift-management-tab');
+                if (tabEl) {
+                    bootstrap.Tab.getOrCreateInstance(tabEl).show();
+                }
+            });
 
             $('#shift-management-tab').on('shown.bs.tab', function() {
                 $('#addShiftBtn').show();
