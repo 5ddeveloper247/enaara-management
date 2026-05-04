@@ -2103,7 +2103,7 @@
                                     editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
                                     editBtn.classList.remove('btn-success');
                                     editBtn.classList.add('bg-main', 'text-white');
-                                });
+                                }, { skipButtonState: true });
                             } else if ([2, 3, 4, 5].includes(moreStep)) {
                                 const autoSaved = await autoSaveMoreDynamicRows(moreStep);
                                 if (autoSaved) {
@@ -2124,7 +2124,7 @@
                                 editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
                                 editBtn.classList.remove('btn-success');
                                 editBtn.classList.add('bg-main', 'text-white');
-                            });
+                            }, { skipButtonState: true });
                         }
                     } catch (err) {
                         console.error('Save failed:', err);
@@ -2235,7 +2235,7 @@
     if (sbuSelectForCode) sbuSelectForCode.addEventListener('change', scheduleEmployeeCodePreview);
     updateEmployeeCodePreview();
 
-    async function processStepSave(step, onSuccess) {
+    async function processStepSave(step, onSuccess, options = {}) {
         const form = document.getElementById('employeeForm');
         if (!form) return;
 
@@ -2300,11 +2300,14 @@
 
         const nextBtn = document.getElementById('nextBtn');
         const prevBtn = document.getElementById('prevBtn');
-        const originalText = nextBtn.textContent;
+        const originalText = nextBtn ? nextBtn.textContent : '';
+        const skipButtonState = !!options.skipButtonState;
 
-        nextBtn.disabled = true;
-        nextBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-        if (prevBtn) prevBtn.disabled = true;
+        if (!skipButtonState && nextBtn) {
+            nextBtn.disabled = true;
+            nextBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        }
+        if (!skipButtonState && prevBtn) prevBtn.disabled = true;
 
         try {
             const response = await fetch('/admin/employees/save-step', {
@@ -2397,9 +2400,11 @@
             console.error('Save step error:', error);
             showError(error.message || 'Unable to connect to server.');
         } finally {
-            nextBtn.disabled = false;
-            nextBtn.textContent = originalText;
-            if (prevBtn) prevBtn.disabled = false;
+            if (!skipButtonState && nextBtn) {
+                nextBtn.disabled = false;
+                nextBtn.textContent = originalText;
+            }
+            if (!skipButtonState && prevBtn) prevBtn.disabled = false;
             syncStepUi();
         }
     }
@@ -2627,7 +2632,7 @@
         return true;
     }
 
-    async function saveMoreSubSection(step, onSuccess) {
+    async function saveMoreSubSection(step, onSuccess, options = {}) {
         const typeMap = { 1: 'contact', 6: 'medical', 7: 'references' };
         const subsection = typeMap[step];
         if (!subsection) {
@@ -2646,9 +2651,13 @@
         if (!employeeId) return showError('Save general information first.');
 
         const nextBtn = document.getElementById('nextBtn');
-        const originalText = nextBtn.textContent;
-        nextBtn.disabled = true;
-        nextBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>Saving...';
+        const originalText = nextBtn ? nextBtn.textContent : '';
+        const skipButtonState = !!options.skipButtonState;
+
+        if (!skipButtonState && nextBtn) {
+            nextBtn.disabled = true;
+            nextBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>Saving...';
+        }
 
         if (subsection === 'contact') {
             const contactPane = document.getElementById('moreStepPane1');
@@ -2715,8 +2724,10 @@
 
             if (Object.keys(errors).length > 0) {
                 showFieldErrors(errors, contactPane || document);
-                nextBtn.disabled = false;
-                nextBtn.textContent = originalText;
+                if (!skipButtonState && nextBtn) {
+                    nextBtn.disabled = false;
+                    nextBtn.textContent = originalText;
+                }
                 return;
             }
         }
@@ -2729,8 +2740,10 @@
         const subsectionErrors = validateMoreSubsectionData(subsection, formData);
         if (Object.keys(subsectionErrors).length > 0) {
             showFieldErrors(subsectionErrors);
-            nextBtn.disabled = false;
-            nextBtn.textContent = originalText;
+            if (!skipButtonState && nextBtn) {
+                nextBtn.disabled = false;
+                nextBtn.textContent = originalText;
+            }
             return;
         }
 
@@ -2785,8 +2798,10 @@
             }
         } catch (e) { showError('Network error'); }
         finally {
-            nextBtn.disabled = false;
-            nextBtn.textContent = originalText;
+            if (!skipButtonState && nextBtn) {
+                nextBtn.disabled = false;
+                nextBtn.textContent = originalText;
+            }
         }
     }
 
