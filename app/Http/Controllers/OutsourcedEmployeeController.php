@@ -27,7 +27,7 @@ class OutsourcedEmployeeController extends Controller
                 'data' => $this->outsourcedEmployeeService->getTableData([
                     'filter_organization' => $request->query('filter_organization'),
                     'filter_sbu' => $request->query('filter_sbu'),
-                    'filter_department' => $request->query('filter_department'),
+                    'filter_service_type' => $request->query('filter_service_type'),
                     'filter_name' => $request->query('filter_name'),
                     'filter_cnic' => $request->query('filter_cnic'),
                 ]),
@@ -62,8 +62,7 @@ class OutsourcedEmployeeController extends Controller
                     'organization' => $row->organization?->name ?? '-',
                     'sbu_id' => $row->sbu_id,
                     'sbu' => $row->sbu?->name ?? '-',
-                    'department_id' => $row->department_id,
-                    'department' => $row->department?->name ?? '-',
+                    'service_type' => $row->service_type,
                     'job_role_trade' => $row->job_role_trade,
                     'placement_floor' => $row->assignedFloors->pluck('name')->implode(', '),
                     'assigned_floor_ids' => $row->assignedFloors->pluck('id')->map(fn($id) => (int) $id)->values()->toArray(),

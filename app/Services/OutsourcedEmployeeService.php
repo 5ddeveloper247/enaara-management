@@ -13,11 +13,11 @@ class OutsourcedEmployeeService
     public function getTableData(array $filters = []): array
     {
         $query = OutsourcedEmployee::query()
-            ->with(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors:id,name']);
+            ->with(['organization:id,name', 'sbu:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors:id,name']);
 
         $organization = trim((string) ($filters['filter_organization'] ?? ''));
         $sbu = trim((string) ($filters['filter_sbu'] ?? ''));
-        $department = trim((string) ($filters['filter_department'] ?? ''));
+        $serviceType = trim((string) ($filters['filter_service_type'] ?? ''));
         $name = trim((string) ($filters['filter_name'] ?? ''));
         $cnic = preg_replace('/\D/', '', (string) ($filters['filter_cnic'] ?? ''));
 
@@ -33,10 +33,8 @@ class OutsourcedEmployeeService
             });
         }
 
-        if ($department !== '') {
-            $query->whereHas('department', function ($q) use ($department) {
-                $q->where('name', 'like', '%' . $department . '%');
-            });
+        if ($serviceType !== '') {
+            $query->where('service_type', 'like', '%' . $serviceType . '%');
         }
 
         if ($name !== '') {
@@ -65,8 +63,7 @@ class OutsourcedEmployeeService
                     'organization' => $row->organization?->name ?? '-',
                     'sbu_id' => $row->sbu_id,
                     'sbu' => $row->sbu?->name ?? '-',
-                    'department_id' => $row->department_id,
-                    'department' => $row->department?->name ?? '-',
+                    'service_type' => $row->service_type ?? '-',
                     'job_role_trade' => $row->job_role_trade,
                     'placement_floor' => $row->assignedFloors->pluck('name')->implode(', '),
                     'date_of_deployment' => optional($row->date_of_deployment)->format('Y-m-d'),
@@ -93,7 +90,7 @@ class OutsourcedEmployeeService
                 $path = $photo->store("employees/outsourced/{$row->id}/profile", 'public');
                 $row->update(['photo_path' => $path]);
             }
-            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors']);
+            return $row->fresh(['organization:id,name', 'sbu:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors']);
         });
     }
 
@@ -114,7 +111,7 @@ class OutsourcedEmployeeService
                 $data['photo_path'] = $photo->store("employees/outsourced/{$row->id}/profile", 'public');
             }
             $row->update($data);
-            return $row->fresh(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors']);
+            return $row->fresh(['organization:id,name', 'sbu:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors']);
         });
     }
 
@@ -141,7 +138,7 @@ class OutsourcedEmployeeService
 
     public function findForEdit(int $id): OutsourcedEmployee
     {
-        $employee = OutsourcedEmployee::query()->with(['organization:id,name', 'sbu:id,name', 'department:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors:id,name'])->findOrFail($id);
+        $employee = OutsourcedEmployee::query()->with(['organization:id,name', 'sbu:id,name', 'contractorCompany:id,third_party_name', 'assignedFloors:id,name'])->findOrFail($id);
         $employee->assigned_floor_ids = $employee->assignedFloors->pluck('id')->toArray();
         return $employee;
     }

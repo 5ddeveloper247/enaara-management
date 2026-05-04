@@ -73,15 +73,7 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
                     return $query->where('organization_id', (int) $this->input('organization_id'));
                 }),
             ],
-            'department_id' => [
-                'required',
-                'integer',
-                Rule::exists('departments', 'id')->where(function ($query) {
-                    return $query
-                        ->where('organization_id', (int) $this->input('organization_id'))
-                        ->where('sbu_id', (int) $this->input('sbu_id'));
-                }),
-            ],
+            'service_type' => ['required', 'string', 'max:150'],
             'job_role_trade' => ['required', 'string', 'min:2', 'max:150', 'regex:/^(?!.*[<>])(?=.*\p{L})[\p{L}\p{M}\p{N}\p{Zs}\.\-\'",&()\/#]+$/u'],
             'assigned_floor_ids' => ['required', 'array', 'min:1'],
             'assigned_floor_ids.*' => [
@@ -186,8 +178,9 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
             'sbu_id.required' => 'Please select SBU.',
             'sbu_id.exists' => 'Selected SBU is invalid for the chosen organization.',
 
-            'department_id.required' => 'Please select department.',
-            'department_id.exists' => 'Selected department is invalid for the chosen organization and SBU.',
+            'service_type.required' => 'Please select contractor company to auto-fill service type.',
+            'service_type.string' => 'Service type must be a valid string.',
+            'service_type.max' => 'Service type cannot exceed 150 characters.',
 
             'job_role_trade.required' => 'Please enter job role / trade.',
             'job_role_trade.min' => 'Job role / trade must be at least 2 characters.',

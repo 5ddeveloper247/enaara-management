@@ -91,8 +91,8 @@
                 </div>
                 <div class="col-6">
                     <div class="p-3 rounded-3 border" style="border-color:#ffffff1a !important;">
-                        <small class="opacity-75 text-white d-block mb-2">Department</small>
-                        <div class="fw-semibold small" id="oeDetailDepartment">-</div>
+                        <small class="opacity-75 text-white d-block mb-2">Service Type</small>
+                        <div class="fw-semibold small" id="oeDetailServiceType">-</div>
                     </div>
                 </div>
                 <div class="col-6">

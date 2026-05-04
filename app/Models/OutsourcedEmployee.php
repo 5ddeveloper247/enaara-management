@@ -20,7 +20,7 @@ class OutsourcedEmployee extends Model
         'supervisor_contact_number',
         'organization_id',
         'sbu_id',
-        'department_id',
+        'service_type',
         'job_role_trade',
         'placement_floor',
         'date_of_deployment',
@@ -32,11 +32,6 @@ class OutsourcedEmployee extends Model
         'date_of_deployment' => 'date',
         'attendance_access' => 'boolean',
     ];
-
-    public function department(): BelongsTo
-    {
-        return $this->belongsTo(Department::class, 'department_id');
-    }
 
     public function sbu(): BelongsTo
     {

@@ -98,7 +98,7 @@ class EmployeeService
             ->get();
 
         $outsourcedVendors = ThirdParty::query()
-            ->select(['id', 'third_party_name'])
+            ->select(['id', 'third_party_name', 'service_type'])
             ->where('is_active', true)
             ->with([
                 'organizations:id',

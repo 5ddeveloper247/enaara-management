@@ -156,7 +156,8 @@
             if (!value) return;
             const label = item && item[labelKey] !== undefined && item[labelKey] !== null ? String(item[labelKey]) : '';
             const isSelected = value === selected ? ' selected' : '';
-            html += `<option value="${escHtml(value)}"${isSelected}>${escHtml(label)}</option>`;
+            const serviceType = item && item.service_type ? item.service_type : '';
+            html += `<option value="${escHtml(value)}"${isSelected} data-service-type="${escHtml(serviceType)}">${escHtml(label)}</option>`;
         });
         selectEl.innerHTML = html;
     }
@@ -185,15 +186,11 @@
     }
 
     function populateDepartmentOptions(orgId, sbuId, selectedDepartmentId) {
-        const departmentSelect = document.getElementById('oeDepartmentId');
-        const org = getOrganizationById(orgId);
-        const sbu = getSbuById(org, sbuId);
-        if (!sbu || !String(sbuId || '').trim()) {
-            fillSelectOptions(departmentSelect, [], 'Select SBU first', 'id', 'name', selectedDepartmentId);
-            return;
+        // Removed as per requirement: replace Department with auto-selected Service Type
+        const serviceTypeInput = document.getElementById('oeServiceType');
+        if (serviceTypeInput && !selectedDepartmentId) {
+            serviceTypeInput.value = '';
         }
-        const departments = Array.isArray(sbu.departments) ? sbu.departments : [];
-        fillSelectOptions(departmentSelect, departments, 'Select department', 'id', 'name', selectedDepartmentId);
     }
 
     function populateVendorOptions(orgId, sbuId, selectedVendorId) {
@@ -219,6 +216,15 @@
         });
 
         fillSelectOptions(vendorSelect, vendors, 'Select contractor company', 'id', 'third_party_name', selectedVendorId);
+
+        // Auto-fill service type if a vendor is selected (e.g. during edit)
+        if (selectedVendorId) {
+            const vendor = vendors.find(v => String(v.id) === String(selectedVendorId));
+            const serviceTypeInput = document.getElementById('oeServiceType');
+            if (vendor && serviceTypeInput) {
+                serviceTypeInput.value = vendor.service_type || '';
+            }
+        }
     }
 
     let availableFloors = [];
@@ -349,7 +355,7 @@
                     const f = window.employeeFilters || {};
                     d.filter_organization = f.organization || '';
                     d.filter_sbu = f.sbu || '';
-                    d.filter_department = f.department || '';
+                    d.filter_service_type = f.department || '';
                     d.filter_name = f.name || '';
                     d.filter_cnic = f.cnic || '';
                 },
@@ -402,7 +408,7 @@
                 { data: 'contractor_company_name' },
                 { data: 'supervisor_name' },
                 { data: 'supervisor_contact_number' },
-                { data: 'department' },
+                { data: 'service_type' },
                 { data: 'job_role_trade' },
                 { data: 'placement_floor' },
                 { data: 'date_of_deployment' },
@@ -484,6 +490,8 @@
         if (title) title.textContent = 'Add Outsourced Employee';
         populateSbuOptions('', '');
         populateDepartmentOptions('', '', '');
+        const serviceTypeInput = document.getElementById('oeServiceType');
+        if (serviceTypeInput) serviceTypeInput.value = '';
         populateVendorOptions('', '', '');
         populateOutsourcedFloors('', '');
         clearOutsourcedValidation(form);
@@ -511,7 +519,7 @@
             document.getElementById('oeSupervisorContact').value = d.supervisor_contact_number || '';
             document.getElementById('oeOrganizationId').value = d.organization_id || '';
             populateSbuOptions(d.organization_id || '', d.sbu_id || '');
-            populateDepartmentOptions(d.organization_id || '', d.sbu_id || '', d.department_id || '');
+            document.getElementById('oeServiceType').value = d.service_type || '';
             populateVendorOptions(d.organization_id || '', d.sbu_id || '', d.contractor_company_id || '');
             document.getElementById('oeJobRole').value = d.job_role_trade || '';
             populateOutsourcedFloors(d.organization_id || '', d.sbu_id || '', d.assigned_floor_ids || []);
@@ -564,13 +572,13 @@
             setDetailValue('oeDetailSupervisorContact', d.supervisor_contact_number);
             setDetailValue('oeDetailOrganization', d.organization);
             setDetailValue('oeDetailSbu', d.sbu);
-            setDetailValue('oeDetailDepartment', d.department);
+            setDetailValue('oeDetailServiceType', d.service_type);
             setDetailValue('oeDetailJobRole', d.job_role_trade);
             setDetailValue('oeDetailPlacementFloor', d.placement_floor);
             setDetailValue('oeDetailDeploymentDate', d.date_of_deployment);
             setDetailValue('oeDetailBiometricId', d.biometric_id);
             setDetailValue('oeDetailAttendanceAccess', d.attendance_access ? 'Granted' : 'Not Granted');
-            setDetailValue('oeDetailInfo', `${d.department || '-'} - ${d.biometric_id || '-'}`);
+            setDetailValue('oeDetailInfo', `${d.service_type || '-'} - ${d.biometric_id || '-'}`);
 
             const detailPhoto = document.getElementById('oeDetailPhoto');
             const detailPlaceholder = document.getElementById('oeDetailPhotoPlaceholder');
@@ -970,11 +978,22 @@
         if (sbuSelect) {
             sbuSelect.addEventListener('change', function () {
                 const orgId = organizationSelect ? organizationSelect.value : '';
-                populateDepartmentOptions(orgId, sbuSelect.value || '', '');
                 populateVendorOptions(orgId, sbuSelect.value || '', '');
                 populateOutsourcedFloors(orgId, sbuSelect.value || '');
             });
         }
+
+        // Use jQuery for the change listener to be more reliable
+        $(document).on('change', '#oeCompanyName', function() {
+            const serviceTypeInput = document.getElementById('oeServiceType');
+            if (!serviceTypeInput) return;
+
+            // Get service type directly from the selected option's data attribute
+            const selectedOption = this.options[this.selectedIndex];
+            const serviceType = selectedOption ? selectedOption.getAttribute('data-service-type') : '';
+            
+            serviceTypeInput.value = serviceType || '';
+        });
 
         populateSbuOptions('', '');
         populateDepartmentOptions('', '', '');

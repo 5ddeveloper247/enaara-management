@@ -65,10 +65,8 @@
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Department <span class="text-danger">*</span></label>
-                    <select class="form-select" name="department_id" id="oeDepartmentId">
-                        <option value="">Select SBU first</option>
-                    </select>
+                    <label class="form-label">Service Type <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="service_type" id="oeServiceType" placeholder="Service Type" readonly>
                 </div>
                 <div class="col-12">
                     <label class="form-label">Assigned Floors <span class="text-danger">*</span></label>
@@ -159,6 +157,7 @@
         return [
             'id' => $vendor->id,
             'third_party_name' => $vendor->third_party_name,
+            'service_type' => $vendor->service_type,
             'organization_ids' => $vendor->organizations->pluck('id')->map(fn ($id) => (int) $id)->values(),
             'sbu_ids' => $vendor->sbus->pluck('id')->map(fn ($id) => (int) $id)->values(),
         ];

@@ -75,7 +75,7 @@
                 <!-- Department Filter -->
                 <li>
                     <div class="mb-3">
-                        <label class="form-label small text-muted mb-1">Department</label>
+                        <label class="form-label small text-muted mb-1">Department / Service Type</label>
                         <select class="form-select form-select-sm" id="filterDepartment">
                             <option value="">All Departments</option>
                             @isset($departments)
