@@ -99,7 +99,7 @@
                 <!-- Reason -->
                 <div class="mb-3">
                     <label for="leaveReason" class="form-label fw-semibold small text-white">Reason <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="leaveReason" name="reason" rows="3" placeholder="Enter reason for leave" required></textarea>
+                    <textarea class="form-control" id="leaveReason" name="reason" rows="3" maxlength="600" placeholder="Enter reason for leave" required></textarea>
                 </div>
 
                 <!-- Medical Certificate (for Sick Leave) -->

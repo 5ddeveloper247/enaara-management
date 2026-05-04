@@ -121,7 +121,19 @@
     var canvasEl = document.getElementById('addLeaveRequestCanvas');
 
     if (startDateInput && endDateInput && calculatedDaysEl) {
+      const today = new Date().toISOString().split('T')[0];
+      startDateInput.min = today;
+      endDateInput.min = today;
+
       var onDateChange = function () {
+        if (startDateInput.value) {
+          endDateInput.min = startDateInput.value;
+          if (endDateInput.value && endDateInput.value < startDateInput.value) {
+            endDateInput.value = startDateInput.value;
+          }
+        } else {
+          endDateInput.min = today;
+        }
         calculateDays(startDateInput, endDateInput, calculatedDaysEl);
       };
       startDateInput.addEventListener('change', onDateChange);

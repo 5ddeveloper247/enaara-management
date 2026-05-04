@@ -39,9 +39,9 @@ class LeaveRequestStore extends FormRequest
                         $qq->whereNull('department_id')->orWhere('department_id', $departmentId);
                     })),
             ],
-            'start_date' => 'required|date',
+            'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'required|string|max:1000',
+            'reason' => 'required|string|max:600',
             // ✅ Medical report validation
             'medical_report' => [
                 'nullable',
