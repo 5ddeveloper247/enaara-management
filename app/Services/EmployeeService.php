@@ -736,22 +736,22 @@ class EmployeeService
                 $query->where('id', '!=', $ignoreBankDetailId);
             }
             if ($query->exists()) {
-                    throw ValidationException::withMessages([
-                        'account_no' => ['Account number already exists.'],
-                    ]);
+                throw ValidationException::withMessages([
+                    'account_no' => ['This account number is already registered with another employee.'],
+                ]);
             }
         }
 
-            if ($iban !== '') {
+        if ($iban !== '') {
             $query = EmployeeBankDetail::query()
                 ->where('iban', $iban);
             if ($ignoreBankDetailId) {
                 $query->where('id', '!=', $ignoreBankDetailId);
             }
             if ($query->exists()) {
-                    throw ValidationException::withMessages([
-                        'iban' => ['IBAN already exists.'],
-                    ]);
+                throw ValidationException::withMessages([
+                    'iban' => ['This IBAN is already registered with another employee.'],
+                ]);
             }
         }
     }
