@@ -28,6 +28,7 @@
         { header: 'Date of Joining', key: 'join_date' },
         { header: 'Designation', key: 'designation' },
         { header: 'Grade', key: 'grade' },
+        { header: 'Role', key: 'role' },
         { header: 'Branch', key: 'branch' },
         { header: 'Location', key: 'location' },
         { header: 'Employee Status', key: 'employee_status' },
