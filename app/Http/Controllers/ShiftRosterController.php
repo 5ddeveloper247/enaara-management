@@ -73,7 +73,7 @@ class ShiftRosterController extends Controller
             ->shiftBasedWorkArrangement()
             ->orderBy('full_name')
             ->get();
-        $outsourcedEmployees = OutsourcedEmployee::with('department')
+        $outsourcedEmployees = OutsourcedEmployee::with('contractorCompany')
             ->whereNull('deleted_at')
             ->orderBy('full_name')
             ->get();

@@ -203,31 +203,42 @@ class ShiftRosterService
             ->shiftBasedWorkArrangement()
             ->orderBy('department_id')
             ->get();
-        $outsourcedEmployees = OutsourcedEmployee::with('department')
+        $outsourcedEmployees = OutsourcedEmployee::with('contractorCompany')
             ->whereNull('deleted_at')
-            ->orderBy('department_id')
             ->orderBy('full_name')
             ->get();
 
         $shiftEmployeeIds = $employees->pluck('id')->all();
         $outsourcedIds = $outsourcedEmployees->pluck('id')->all();
 
-        // Build Department List
+        // Build Department/Group List
         $departments = [];
-        $deptIds = $employees->pluck('department_id')
-            ->merge($outsourcedEmployees->pluck('department_id'))
-            ->unique();
+        
+        // 1. Add internal departments
+        $deptIds = $employees->pluck('department_id')->unique();
         foreach ($deptIds as $did) {
-            $deptId = (int) ($did ?? 0);
             $emp = $employees->firstWhere('department_id', $did);
-            if (! $emp) {
-                $emp = $outsourcedEmployees->firstWhere('department_id', $did);
+            if ($emp && $emp->department) {
+                $departments[] = [
+                    'id' => (int) $did,
+                    'name' => $emp->department->name
+                ];
             }
-            $departments[] = [
-                'id' => $deptId,
-                'name' => $emp->department->name ?? 'Unassigned'
-            ];
         }
+
+        // 2. Add Contractor Companies as "virtual departments"
+        // We use an offset (e.g. 1000000) to avoid ID collisions with internal departments
+        $vendorIds = $outsourcedEmployees->pluck('contractor_company_id')->unique();
+        foreach ($vendorIds as $vid) {
+            $emp = $outsourcedEmployees->firstWhere('contractor_company_id', $vid);
+            if ($emp && $emp->contractorCompany) {
+                $departments[] = [
+                    'id' => 1000000 + (int) $vid,
+                    'name' => $emp->contractorCompany->third_party_name
+                ];
+            }
+        }
+        
         usort($departments, fn($a, $b) => strcmp($a['name'], $b['name']));
 
         // Build Employee Payload
@@ -239,14 +250,16 @@ class ShiftRosterService
             'departmentId' => (int) $e->department_id,
             'departmentName' => $e->department->name ?? 'Unassigned'
         ])->values();
+
         $outsourcedPayload = $outsourcedEmployees->map(fn($e) => [
             'id' => 'outsourced:' . $e->id,
             'sourceType' => 'outsourced',
             'sourceId' => $e->id,
             'name' => $e->full_name,
-            'departmentId' => (int) ($e->department_id ?? 0),
-            'departmentName' => $e->department->name ?? 'Unassigned'
+            'departmentId' => 1000000 + (int) $e->contractor_company_id,
+            'departmentName' => $e->contractorCompany->third_party_name ?? 'Unassigned'
         ])->values();
+        
         $empPayload = $empPayload->concat($outsourcedPayload)->values()->all();
 
         $entriesQuery = ShiftRosterEntry::with([

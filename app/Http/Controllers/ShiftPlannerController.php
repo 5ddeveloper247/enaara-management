@@ -31,7 +31,7 @@ class ShiftPlannerController extends Controller
             ->orderBy('full_name')
             ->get();
 
-        $outsourcedEmployees = OutsourcedEmployee::with('department')
+        $outsourcedEmployees = OutsourcedEmployee::with('contractorCompany')
             ->whereNull('deleted_at')
             ->orderBy('full_name')
             ->get();
@@ -40,7 +40,7 @@ class ShiftPlannerController extends Controller
             ->orderBy('name')
             ->get();
 
-        $rosters = ShiftRosterEntry::with(['employee.department', 'outsourcedEmployee.department', 'shift'])
+        $rosters = ShiftRosterEntry::with(['employee.department', 'outsourcedEmployee.contractorCompany', 'shift'])
             ->where(function ($query) {
                 $query->whereHas('employee', fn ($q) => $q->where('engagement_mode', 'shifts'))
                     ->orWhereHas('outsourcedEmployee');
