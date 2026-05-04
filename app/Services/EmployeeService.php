@@ -737,7 +737,7 @@ class EmployeeService
             }
             if ($query->exists()) {
                 throw ValidationException::withMessages([
-                    'account_no' => ['This account number is already registered with another employee.'],
+                    'account_no' => ['This account number is already registered.'],
                 ]);
             }
         }
@@ -750,7 +750,7 @@ class EmployeeService
             }
             if ($query->exists()) {
                 throw ValidationException::withMessages([
-                    'iban' => ['This IBAN is already registered with another employee.'],
+                    'iban' => ['This IBAN is already registered.'],
                 ]);
             }
         }
