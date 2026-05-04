@@ -2754,8 +2754,8 @@
                     }
                 }
                 let errorMsg = 'Please check the highlighted fields.';
-                if (data.errors) {
-                    const firstError = Object.values(data.errors)[0];
+                if (res.errors) {
+                    const firstError = Object.values(res.errors)[0];
                     if (Array.isArray(firstError) && firstError.length > 0) {
                         errorMsg = firstError[0];
                     }

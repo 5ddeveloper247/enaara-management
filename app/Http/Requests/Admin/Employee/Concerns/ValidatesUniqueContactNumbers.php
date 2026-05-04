@@ -9,7 +9,7 @@ trait ValidatesUniqueContactNumbers
     protected function assertUniqueContactNumbers($validator): void
     {
         $employeeId = $this->resolveEmployeeIdForContactUniqueness();
-        $fields = ['residence_phone', 'emergency_contact', 'cell_no'];
+        $fields = ['cell_no'];
         $normalized = [];
 
         foreach ($fields as $field) {
@@ -26,18 +26,14 @@ trait ValidatesUniqueContactNumbers
 
         foreach ($normalized as $field => $value) {
             $query = DB::table('employee_contacts')
-                ->where(function ($q) use ($value) {
-                    $q->where('residence_phone', $value)
-                        ->orWhere('emergency_contact', $value)
-                        ->orWhere('cell_no', $value);
-                });
+                ->where('cell_no', $value);
 
             if ($employeeId > 0) {
                 $query->where('employee_id', '!=', $employeeId);
             }
 
             if ($query->exists()) {
-                $validator->errors()->add($field, 'This number is already used by another employee.');
+                $validator->errors()->add($field, 'This cell number is already used by another employee.');
             }
         }
     }
