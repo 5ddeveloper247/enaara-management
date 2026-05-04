@@ -37,6 +37,9 @@ class EmployeeEmploymentInformationService
             'employee_status',
             'termination_reason',
             'termination_date',
+            'suspension_reason',
+            'suspension_start_date',
+            'suspension_end_date',
             'probation_start_date',
             'probation_end_date',
         ];
@@ -109,6 +112,12 @@ class EmployeeEmploymentInformationService
         if ($status !== 'Terminated') {
             $merged['termination_reason'] = null;
             $merged['termination_date'] = null;
+        }
+
+        if ($status !== 'Suspend') {
+            $merged['suspension_reason'] = null;
+            $merged['suspension_start_date'] = null;
+            $merged['suspension_end_date'] = null;
         }
 
         return $merged;

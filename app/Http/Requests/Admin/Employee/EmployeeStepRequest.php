@@ -192,6 +192,10 @@ class EmployeeStepRequest extends FormRequest
             $this->merge(['termination_reason' => trim((string) $this->input('termination_reason'))]);
         }
 
+        if ($this->filled('suspension_reason')) {
+            $this->merge(['suspension_reason' => trim((string) $this->input('suspension_reason'))]);
+        }
+
         if ((string) $this->input('subsection') === 'family_row') {
             if ($this->filled('nok_cnic')) {
                 $this->merge(['nok_cnic' => str_replace('-', '', (string) $this->input('nok_cnic'))]);
@@ -412,7 +416,7 @@ class EmployeeStepRequest extends FormRequest
                 'termination_reason' => [
                     'nullable',
                     'string',
-                    'max:2000',
+                    'max:500',
                     Rule::requiredIf(fn () => ($this->input('employee_status') ?? '') === 'Terminated'),
                     Rule::when(
                         fn () => ($this->input('employee_status') ?? '') === 'Terminated',
@@ -424,6 +428,23 @@ class EmployeeStepRequest extends FormRequest
                     'date',
                     'before_or_equal:today',
                     Rule::requiredIf(fn () => ($this->input('employee_status') ?? '') === 'Terminated'),
+                ],
+                'suspension_reason' => [
+                    'nullable',
+                    'string',
+                    'max:500',
+                    Rule::requiredIf(fn () => ($this->input('employee_status') ?? '') === 'Suspend'),
+                ],
+                'suspension_start_date' => [
+                    'nullable',
+                    'date',
+                    Rule::requiredIf(fn () => ($this->input('employee_status') ?? '') === 'Suspend'),
+                ],
+                'suspension_end_date' => [
+                    'nullable',
+                    'date',
+                    'after_or_equal:suspension_start_date',
+                    Rule::requiredIf(fn () => ($this->input('employee_status') ?? '') === 'Suspend'),
                 ],
                 'intern_type' => [
                     'nullable',
@@ -1109,11 +1130,19 @@ class EmployeeStepRequest extends FormRequest
             'employee_status.in' => 'The selected employee status is invalid.',
             'termination_reason.required' => 'Reason for termination is required when status is Terminated.',
             'termination_reason.min' => 'Reason for termination must be at least 5 characters.',
-            'termination_reason.max' => 'Reason for termination must not exceed 2000 characters.',
+            'termination_reason.max' => 'Reason for termination must not exceed 500 characters.',
             'termination_reason.regex' => 'Reason for termination must not contain angle brackets.',
             'termination_date.required' => 'Date of termination is required when status is Terminated.',
             'termination_date.date' => 'Date of termination must be a valid date.',
             'termination_date.before_or_equal' => 'Date of termination cannot be in the future.',
+
+            'suspension_reason.required' => 'Reason for suspension is required when status is Suspend.',
+            'suspension_reason.max' => 'Reason for suspension must not exceed 500 characters.',
+            'suspension_start_date.required' => 'Suspension start date is required when status is Suspend.',
+            'suspension_start_date.date' => 'Suspension start date must be a valid date.',
+            'suspension_end_date.required' => 'Suspension end date is required when status is Suspend.',
+            'suspension_end_date.date' => 'Suspension end date must be a valid date.',
+            'suspension_end_date.after_or_equal' => 'Suspension end date must be on or after the start date.',
             'assigned_floor_ids.array' => 'Assigned floors must be provided as a list.',
             'assigned_floor_ids.*.exists' => 'One or more selected floors are invalid for this SBU.',
             'intern_type.required' => 'Intern type is required when resource type is Intern.',

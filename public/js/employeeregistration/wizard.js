@@ -3548,9 +3548,16 @@
 
     function toggleEmploymentTerminationFields() {
         const sel = document.getElementById('employmentStatusInput');
-        const row = document.getElementById('employmentTerminationFieldsRow');
-        if (!sel || !row) return;
-        row.classList.toggle('d-none', sel.value !== 'Terminated');
+        const terminationRow = document.getElementById('employmentTerminationFieldsRow');
+        const suspensionRow = document.getElementById('employmentSuspensionFieldsRow');
+        if (!sel) return;
+        
+        if (terminationRow) {
+            terminationRow.classList.toggle('d-none', sel.value !== 'Terminated');
+        }
+        if (suspensionRow) {
+            suspensionRow.classList.toggle('d-none', sel.value !== 'Suspend');
+        }
     }
 
     const employmentStatusInputEl = document.getElementById('employmentStatusInput');

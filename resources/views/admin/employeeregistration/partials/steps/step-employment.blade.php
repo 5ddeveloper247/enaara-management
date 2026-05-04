@@ -390,7 +390,7 @@
                                                                 <textarea name="termination_reason"
                                                                     id="employmentTerminationReasonInput"
                                                                     class="form-control rounded-3 employment-termination-reason-input"
-                                                                    rows="2" maxlength="2000"
+                                                                    rows="2" maxlength="500"
                                                                     placeholder="Brief reason (e.g. resignation, redundancy)">{{ $employee->termination_reason ?? '' }}</textarea>
                                                             </div>
                                                             <div class="col-md-6 d-flex flex-column">
@@ -400,6 +400,36 @@
                                                                     id="employmentTerminationDateInput"
                                                                     class="form-control rounded-3"
                                                                     value="{{ isset($employee->termination_date) && $employee->termination_date ? (is_string($employee->termination_date) ? date('Y-m-d', strtotime($employee->termination_date)) : $employee->termination_date->format('Y-m-d')) : '' }}">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-12 {{ $selectedEmployeeStatus !== 'Suspend' ? 'd-none' : '' }}"
+                                                        id="employmentSuspensionFieldsRow">
+                                                        <div class="row g-3">
+                                                            <div class="col-md-12 d-flex flex-column">
+                                                                <label class="form-label mb-2" for="employmentSuspensionReasonInput">Reason for suspension <span class="text-danger">*</span></label>
+                                                                <textarea name="suspension_reason"
+                                                                    id="employmentSuspensionReasonInput"
+                                                                    class="form-control rounded-3"
+                                                                    rows="2" maxlength="500"
+                                                                    placeholder="Brief reason for suspension">{{ $employee->suspension_reason ?? '' }}</textarea>
+                                                            </div>
+                                                            <div class="col-md-6 d-flex flex-column">
+                                                                <label class="form-label mb-2"
+                                                                    for="employmentSuspensionStartDateInput">Start Date <span class="text-danger">*</span></label>
+                                                                <input type="date" name="suspension_start_date"
+                                                                    id="employmentSuspensionStartDateInput"
+                                                                    class="form-control rounded-3"
+                                                                    value="{{ isset($employee->suspension_start_date) && $employee->suspension_start_date ? (is_string($employee->suspension_start_date) ? date('Y-m-d', strtotime($employee->suspension_start_date)) : $employee->suspension_start_date->format('Y-m-d')) : '' }}">
+                                                            </div>
+                                                            <div class="col-md-6 d-flex flex-column">
+                                                                <label class="form-label mb-2"
+                                                                    for="employmentSuspensionEndDateInput">End Date <span class="text-danger">*</span></label>
+                                                                <input type="date" name="suspension_end_date"
+                                                                    id="employmentSuspensionEndDateInput"
+                                                                    class="form-control rounded-3"
+                                                                    value="{{ isset($employee->suspension_end_date) && $employee->suspension_end_date ? (is_string($employee->suspension_end_date) ? date('Y-m-d', strtotime($employee->suspension_end_date)) : $employee->suspension_end_date->format('Y-m-d')) : '' }}">
                                                             </div>
                                                         </div>
                                                     </div>
