@@ -94,6 +94,19 @@
         return m ? m.getAttribute('content') : '';
     }
 
+    function formatTimeAMPM(timeString) {
+        if (!timeString) return '';
+        var parts = timeString.split(':');
+        if (parts.length < 2) return timeString;
+        var hours = parseInt(parts[0], 10);
+        var minutes = parts[1];
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        hours = hours < 10 ? '0' + hours : hours;
+        return hours + ':' + minutes + ' ' + ampm;
+    }
+
     function pillHtml(s) {
         var typeClass = s.shiftType && s.shiftType !== 'general' ? ' shift-' + s.shiftType : '';
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
@@ -102,7 +115,7 @@
         var floorBlock = (s.floor && String(s.floor).trim()) ? '<span class="shift-floor">' + s.floor + '</span>' : '';
         return '<div class="shift-pill' + typeClass + lateClass + deletedClass + '">' +
             '<div class="shift-pill-top">' +
-            '<span class="shift-time">' + s.timeStart + ' – ' + s.timeEnd + '</span>' +
+            '<span class="shift-time">' + formatTimeAMPM(s.timeStart) + ' – ' + formatTimeAMPM(s.timeEnd) + '</span>' +
             '</div>' +
             '<div class="shift-pill-meta">' +
             // '<span class="shift-check"><i class="bi bi-box-arrow-in-right shift-check-icon me-1"></i>' + checkIn + ' <span class="mx-1">•</span><i class="bi bi-box-arrow-right shift-check-icon ms-1 me-1"></i>' + checkOut + '</span>' +

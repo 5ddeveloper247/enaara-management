@@ -77,7 +77,7 @@
                             <option value="{{ $shift->id }}"
                                     data-start="{{ optional($shift->start_time)->format('H:i') }}"
                                     data-end="{{ optional($shift->end_time)->format('H:i') }}">
-                                {{ $shift->name }} ({{ optional($shift->start_time)->format('H:i') }} – {{ optional($shift->end_time)->format('H:i') }})
+                                {{ $shift->name }} ({{ optional($shift->start_time)->format('h:i A') }} – {{ optional($shift->end_time)->format('h:i A') }})
                             </option>
                         @empty
                         @endforelse

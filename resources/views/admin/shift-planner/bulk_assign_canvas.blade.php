@@ -84,7 +84,7 @@
                         <option value="">Select Shift</option>
                         @forelse($shifts ?? [] as $shift)
                             <option value="{{ $shift->id }}">
-                                {{ $shift->name }} ({{ $shift->start_time }} - {{ $shift->end_time }})
+                                {{ $shift->name }} ({{ \Carbon\Carbon::parse($shift->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('h:i A') }})
                             </option>
                         @empty
                             <option value="">No shifts available</option>
@@ -102,73 +102,111 @@
                     <i class="bi bi-people me-2"></i>3. Select Employees
                 </h6>
 
-                <!-- Quick Selection -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small text-white">Bulk Actions</label>
-                    <div class="d-flex gap-2 flex-wrap mb-2">
-                        <button type="button" class="btn btn-sm btn-outline-light" id="selectAllBtn">Select All</button>
-                        <button type="button" class="btn btn-sm btn-outline-light" id="selectByDeptBtn">By Department</button>
-                        <button type="button" class="btn btn-sm btn-outline-light" id="selectBySiteBtn">By Site</button>
-                        <button type="button" class="btn btn-sm btn-outline-light" id="clearSelectionBtn">Clear</button>
-                    </div>
+                <!-- Tabs -->
+                <div class="btn-group w-100 shadow-sm mb-3" role="group" aria-label="Employee Tabs">
+                    <input type="radio" class="btn-check employee-tab-radio" name="employee_tab" id="tabInternal" value="internal" checked autocomplete="off">
+                    <label class="btn btn-outline-light py-2" for="tabInternal"><i class="bi bi-person-badge me-1"></i>Internal Employees</label>
 
-                    <div id="deptSelectionWrapper" style="display: none; transition: all 0.3s ease;" class="mb-2 animate__animated animate__fadeIn">
-                        <select class="form-select form-select-sm bg-dark text-white border-secondary" id="deptFilterSelect">
-                            <option value="">-- Select Department --</option>
-                            @php 
-                                // Fallback for departments if not passed correctly
-                                $depts = $departments ?? \App\Models\Department::orderBy('name')->get();
-                            @endphp
-                            @foreach($depts as $dept)
-                                <option value="{{ strtolower($dept->name) }}">{{ $dept->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <input type="radio" class="btn-check employee-tab-radio" name="employee_tab" id="tabExternal" value="external" autocomplete="off">
+                    <label class="btn btn-outline-light py-2" for="tabExternal"><i class="bi bi-person-lines-fill me-1"></i>External Employees</label>
                 </div>
 
-                <!-- Employee List -->
-                <div class="border rounded p-3 bg-dark" style="max-height: 250px; overflow-y: auto; border-color: #ffffff1a !important;">
-                    <div id="employeeList">
-                        @forelse($employees ?? [] as $employee)
-                            <div class="form-check mb-2 employee-item"
-                                 data-department="{{ strtolower($employee->department->name ?? '') }}"
-                                 data-site="{{ strtolower($employee->site ?? '') }}">
-                                <input class="form-check-input"
-                                       type="checkbox"
-                                       value="employee:{{ $employee->id }}"
-                                       id="emp_employee_{{ $employee->id }}"
-                                       name="employee_ids[]">
-                                <label class="form-check-label text-white small" for="emp_employee_{{ $employee->id }}">
-                                    {{ $employee->full_name }}
-                                    @if(!empty($employee->department->name ?? null))
-                                        <span class="opacity-50 ms-2">[{{ $employee->department->name }}]</span>
-                                    @endif
-                                </label>
+                <!-- Tab Content -->
+                <div class="tab-content" id="bulkEmployeeTabsContent">
+                    <!-- Internal Tab -->
+                    <div class="tab-pane fade show active" id="internal-list" role="tabpanel">
+                        <!-- Quick Selection Internal -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-white">Bulk Actions (Internal)</label>
+                            <div class="d-flex gap-2 flex-wrap mb-2">
+                                <button type="button" class="btn btn-sm btn-outline-light" id="selectAllInternalBtn">Select All</button>
+                                <button type="button" class="btn btn-sm btn-outline-light" id="selectByDeptBtn">By Department</button>
+                                <button type="button" class="btn btn-sm btn-outline-light" id="clearInternalBtn">Clear</button>
                             </div>
-                        @empty
-                        @endforelse
-                        @forelse($outsourcedEmployees ?? [] as $employee)
-                            <div class="form-check mb-2 employee-item"
-                                 data-department="{{ strtolower($employee->department->name ?? '') }}"
-                                 data-site="">
-                                <input class="form-check-input"
-                                       type="checkbox"
-                                       value="outsourced:{{ $employee->id }}"
-                                       id="emp_outsourced_{{ $employee->id }}"
-                                       name="employee_ids[]">
-                                <label class="form-check-label text-white small" for="emp_outsourced_{{ $employee->id }}">
-                                    {{ $employee->full_name }}
-                                    <span class="badge bg-info ms-2">Outsourced</span>
-                                    @if(!empty($employee->department->name ?? null))
-                                        <span class="opacity-50 ms-2">[{{ $employee->department->name }}]</span>
-                                    @endif
-                                </label>
+
+                            <div id="deptSelectionWrapper" style="display: none; transition: all 0.3s ease;" class="mb-2 animate__animated animate__fadeIn">
+                                <select class="form-select form-select-sm bg-dark text-white border-secondary" id="deptFilterSelect">
+                                    <option value="">-- Select Department --</option>
+                                    @php 
+                                        $depts = $departments ?? \App\Models\Department::orderBy('name')->get();
+                                    @endphp
+                                    @foreach($depts as $dept)
+                                        <option value="{{ strtolower($dept->name) }}">{{ $dept->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
-                        @empty
-                        @endforelse
-                        @if(($employees ?? collect())->isEmpty() && ($outsourcedEmployees ?? collect())->isEmpty())
-                            <div class="text-white-50 small text-center py-4">No active employees found.</div>
-                        @endif
+                        </div>
+
+                        <div class="border rounded p-3 bg-dark" style="max-height: 250px; overflow-y: auto; border-color: #ffffff1a !important;">
+                            <div id="internalEmployeeList">
+                                @forelse($employees ?? [] as $employee)
+                                    <div class="form-check mb-2 internal-item"
+                                         data-department="{{ strtolower($employee->department->name ?? '') }}">
+                                        <input class="form-check-input employee-checkbox"
+                                               type="checkbox"
+                                               value="employee:{{ $employee->id }}"
+                                               id="emp_employee_{{ $employee->id }}"
+                                               name="employee_ids[]">
+                                        <label class="form-check-label text-white small" for="emp_employee_{{ $employee->id }}">
+                                            {{ $employee->full_name }}
+                                            @if(!empty($employee->department->name ?? null))
+                                                <span class="opacity-50 ms-2">[{{ $employee->department->name }}]</span>
+                                            @endif
+                                        </label>
+                                    </div>
+                                @empty
+                                @endforelse
+                            </div>
+                            <div id="noInternalRecord" class="text-white-50 small text-center py-4" style="display: none;">No records found.</div>
+                        </div>
+                    </div>
+
+                    <!-- External Tab -->
+                    <div class="tab-pane fade" id="external-list" role="tabpanel">
+                        <!-- Quick Selection External -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-white">Bulk Actions (External)</label>
+                            <div class="d-flex gap-2 flex-wrap mb-2">
+                                <button type="button" class="btn btn-sm btn-outline-light" id="selectAllExternalBtn">Select All</button>
+                                <button type="button" class="btn btn-sm btn-outline-light" id="selectByVendorBtn">By Vendor</button>
+                                <button type="button" class="btn btn-sm btn-outline-light" id="clearExternalBtn">Clear</button>
+                            </div>
+
+                            <div id="vendorSelectionWrapper" style="display: none; transition: all 0.3s ease;" class="mb-2 animate__animated animate__fadeIn">
+                                <select class="form-select form-select-sm bg-dark text-white border-secondary" id="vendorFilterSelect">
+                                    <option value="">-- Select Vendor --</option>
+                                    @php 
+                                        $vendors = \App\Models\ThirdParty::orderBy('third_party_name')->get();
+                                    @endphp
+                                    @foreach($vendors as $vendor)
+                                        <option value="{{ strtolower($vendor->third_party_name) }}">{{ $vendor->third_party_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="border rounded p-3 bg-dark" style="max-height: 250px; overflow-y: auto; border-color: #ffffff1a !important;">
+                            <div id="externalEmployeeList">
+                                @forelse($outsourcedEmployees ?? [] as $employee)
+                                    <div class="form-check mb-2 external-item"
+                                         data-vendor="{{ strtolower($employee->contractorCompany->third_party_name ?? '') }}">
+                                        <input class="form-check-input employee-checkbox"
+                                               type="checkbox"
+                                               value="outsourced:{{ $employee->id }}"
+                                               id="emp_outsourced_{{ $employee->id }}"
+                                               name="employee_ids[]">
+                                        <label class="form-check-label text-white small" for="emp_outsourced_{{ $employee->id }}">
+                                            {{ $employee->full_name }}
+                                            @if(!empty($employee->contractorCompany->third_party_name ?? null))
+                                                <span class="opacity-50 ms-2">[{{ $employee->contractorCompany->third_party_name }}]</span>
+                                            @endif
+                                        </label>
+                                    </div>
+                                @empty
+                                @endforelse
+                            </div>
+                            <div id="noExternalRecord" class="text-white-50 small text-center py-4" style="display: none;">No records found.</div>
+                        </div>
                     </div>
                 </div>
 
@@ -336,30 +374,93 @@ $(document).ready(function() {
         window.setBulkDates(mode);
     });
 
-    $('#selectAllBtn').on('click', function() {
-        $('input[name="employee_ids[]"]').prop('checked', true);
-        $selectedCount.text($('input[name="employee_ids[]"]:checked').length);
+    // Employee Tabs logic
+    $('.employee-tab-radio').on('change', function() {
+        if ($('#tabInternal').is(':checked')) {
+            $('#internal-list').addClass('show active');
+            $('#external-list').removeClass('show active');
+        } else {
+            $('#external-list').addClass('show active');
+            $('#internal-list').removeClass('show active');
+        }
     });
 
-    $('#clearSelectionBtn').on('click', function() {
-        $('input[name="employee_ids[]"]').prop('checked', false);
-        $selectedCount.text(0);
+    // Tab specific Select All / Clear
+    $('#selectAllInternalBtn').on('click', function() {
+        $('#internalEmployeeList .internal-item:visible input').prop('checked', true);
+        updateSelectedCount();
     });
 
+    $('#selectAllExternalBtn').on('click', function() {
+        $('#externalEmployeeList .external-item:visible input').prop('checked', true);
+        updateSelectedCount();
+    });
+
+    $('#clearInternalBtn').on('click', function() {
+        $('#internalEmployeeList input').prop('checked', false);
+        $('#deptFilterSelect').val('');
+        $('.internal-item').show();
+        $('#noInternalRecord').hide();
+        updateSelectedCount();
+    });
+
+    $('#clearExternalBtn').on('click', function() {
+        $('#externalEmployeeList input').prop('checked', false);
+        $('#vendorFilterSelect').val('');
+        $('.external-item').show();
+        $('#noExternalRecord').hide();
+        updateSelectedCount();
+    });
+
+    // Filtering Logic
     $('#deptFilterSelect').on('change', function() {
         var dept = $(this).val();
-        if(!dept) return;
-        $('.employee-item').each(function() {
+        if(!dept) {
+            $('.internal-item').show();
+            $('#noInternalRecord').hide();
+            return;
+        }
+        var visibleCount = 0;
+        $('.internal-item').each(function() {
             var $item = $(this);
             var isMatch = (String($item.data('department')).toLowerCase().trim() === dept.toLowerCase().trim());
-            $item.find('input').prop('checked', isMatch);
-            if(isMatch) $('#employeeList').prepend($item);
+            $item.toggle(isMatch);
+            if(isMatch) {
+                $item.find('input').prop('checked', true);
+                visibleCount++;
+            }
         });
-        $selectedCount.text($('input[name="employee_ids[]"]:checked').length);
+        $('#noInternalRecord').toggle(visibleCount === 0);
+        updateSelectedCount();
     });
 
-    $(document).on('change', 'input[name="employee_ids[]"]', function() {
+    $('#vendorFilterSelect').on('change', function() {
+        var vendor = $(this).val();
+        if(!vendor) {
+            $('.external-item').show();
+            $('#noExternalRecord').hide();
+            return;
+        }
+        var visibleCount = 0;
+        $('.external-item').each(function() {
+            var $item = $(this);
+            var isMatch = (String($item.data('vendor')).toLowerCase().trim() === vendor.toLowerCase().trim());
+            $item.toggle(isMatch);
+            if(isMatch) {
+                $item.find('input').prop('checked', true);
+                visibleCount++;
+            }
+        });
+        $('#noExternalRecord').toggle(visibleCount === 0);
+        updateSelectedCount();
+    });
+
+    function updateSelectedCount() {
         $selectedCount.text($('input[name="employee_ids[]"]:checked').length);
+    }
+
+    $(document).on('change', 'input[name="employee_ids[]"]', function() {
+        updateSelectedCount();
     });
 
     $('#applyBulkAssignBtn').on('click', function() {
@@ -419,6 +520,7 @@ $(document).ready(function() {
     });
 
     $('#selectByDeptBtn').on('click', function() { $('#deptSelectionWrapper').slideToggle(); });
+    $('#selectByVendorBtn').on('click', function() { $('#vendorSelectionWrapper').slideToggle(); });
 
     // Initial Trigger
     toggleAssignMode();
