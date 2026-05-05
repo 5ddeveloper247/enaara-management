@@ -31,6 +31,7 @@ class ShiftRosterEntry extends Model
         'created_by',
         'updated_by',
         'assigned_by',
+        'deleted_by',
     ];
 
     protected $casts = [
@@ -72,6 +73,11 @@ class ShiftRosterEntry extends Model
     public function assignedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function deletedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
     }
 
 }

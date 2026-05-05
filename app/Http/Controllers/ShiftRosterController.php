@@ -38,9 +38,10 @@ class ShiftRosterController extends Controller
         $year = (int) $request->query('year', date('Y'));
         $month = (int) $request->query('month', date('n'));
         $week = (int) $request->query('week', 1);
+        $filter = $request->query('filter', 'internal');
 
         try {
-            $data = $this->shiftRosterService->getGridData($year, $month, $week);
+            $data = $this->shiftRosterService->getGridData($year, $month, $week, $filter);
 
             return response()->json([
                 'success' => true,

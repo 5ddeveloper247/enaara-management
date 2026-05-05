@@ -121,6 +121,11 @@ class ShiftRosterService
     public function destroy($id)
     {
         $entry = ShiftRosterEntry::findOrFail($id);
+        $userId = Auth::id();
+        if ($userId) {
+            $entry->deleted_by = $userId;
+            $entry->save();
+        }
         return $entry->delete();
     }
 
@@ -188,7 +193,7 @@ class ShiftRosterService
     /**
      * Get data for the roster grid.
      */
-    public function getGridData(int $year, int $month, int $weekIndex): array
+    public function getGridData(int $year, int $month, int $weekIndex, ?string $filter = 'internal'): array
     {
         // Calendar week range: always Monday -> Sunday
         // Week 1 starts from the Monday of the week that contains the first day of the month.
@@ -267,8 +272,14 @@ class ShiftRosterService
                 'createdBy:id,name',
                 'updatedBy:id,name',
                 'assignedBy:id,name',
+                'deletedBy:id,name',
             ])
             ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()]);
+
+        if ($filter === 'deleted') {
+            $entriesQuery->onlyTrashed();
+        }
+
         if ($shiftEmployeeIds !== [] || $outsourcedIds !== []) {
             $entriesQuery->where(function ($q) use ($shiftEmployeeIds, $outsourcedIds) {
                 if ($shiftEmployeeIds !== []) {
@@ -311,9 +322,11 @@ class ShiftRosterService
                 'timeEnd' => $this->formatShiftTime($entry->end_time ?? $entry->shift->end_time),
                 'status' => $entry->status,
                 'isCompensatory' => $entry->is_compensatory_earned,
+                'deletedAt' => $entry->deleted_at ? $entry->deleted_at->toDateTimeString() : null,
                 'createdByName' => $entry->createdBy?->name,
                 'updatedByName' => $entry->updatedBy?->name,
                 'assignedByName' => $entry->assignedBy?->name,
+                'deletedByName' => $entry->deletedBy?->name,
             ];
         })->all();
 

@@ -54,6 +54,13 @@
                             <span class="roster-shift-audit-value" id="rosterShiftAssignedBy">—</span>
                         </div>
                     </li>
+                    <li class="roster-shift-audit-item" id="rosterShiftDeletedWrap" style="display: none;">
+                        <span class="roster-shift-audit-icon text-danger"><i class="bi bi-trash"></i></span>
+                        <div class="roster-shift-audit-body">
+                            <span class="roster-shift-audit-label">Deleted by</span>
+                            <span class="roster-shift-audit-value text-danger" id="rosterShiftDeletedBy">—</span>
+                        </div>
+                    </li>
                 </ul>
             </section>
 

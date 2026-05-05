@@ -97,17 +97,16 @@
     function pillHtml(s) {
         var typeClass = s.shiftType && s.shiftType !== 'general' ? ' shift-' + s.shiftType : '';
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
+        var deletedClass = s.deletedAt ? ' shift-cancelled' : '';
         var lateBlock = s.lateCheckIn ? '<span class="shift-status-late"><i class="bi bi-exclamation-circle-fill"></i> Late check-in</span>' : '';
-        var floor = (s.floor && String(s.floor).trim()) ? s.floor : '—';
-        var checkIn = (s.checkIn && String(s.checkIn).trim()) ? s.checkIn : '—';
-        var checkOut = (s.checkOut && String(s.checkOut).trim()) ? s.checkOut : '—';
-        return '<div class="shift-pill' + typeClass + lateClass + '">' +
+        var floorBlock = (s.floor && String(s.floor).trim()) ? '<span class="shift-floor">' + s.floor + '</span>' : '';
+        return '<div class="shift-pill' + typeClass + lateClass + deletedClass + '">' +
             '<div class="shift-pill-top">' +
             '<span class="shift-time">' + s.timeStart + ' – ' + s.timeEnd + '</span>' +
             '</div>' +
             '<div class="shift-pill-meta">' +
-            '<span class="shift-check"><i class="bi bi-box-arrow-in-right shift-check-icon me-1"></i>' + checkIn + ' <span class="mx-1">•</span><i class="bi bi-box-arrow-right shift-check-icon ms-1 me-1"></i>' + checkOut + '</span>' +
-            '<span class="shift-floor">' + floor + '</span>' + lateBlock +
+            // '<span class="shift-check"><i class="bi bi-box-arrow-in-right shift-check-icon me-1"></i>' + checkIn + ' <span class="mx-1">•</span><i class="bi bi-box-arrow-right shift-check-icon ms-1 me-1"></i>' + checkOut + '</span>' +
+            floorBlock + lateBlock +
             '</div></div>';
     }
 
@@ -237,6 +236,12 @@
             depts.forEach(function(dept) {
                 var deptEmployees = employees.filter(function(e) {
                     if (Number(e.departmentId) !== Number(dept.id)) return false;
+                    if (rosterPersonnelFilter === 'deleted') {
+                        // In deleted tab, show employee if they have at least one deleted shift in the current data
+                        return shifts.some(function(s) {
+                            return String(s.employeeId) === String(e.id) && s.deletedAt;
+                        });
+                    }
                     if (rosterPersonnelFilter === 'third_party') return String(e.sourceType || '') === 'outsourced';
                     return String(e.sourceType || '') !== 'outsourced';
                 });
@@ -290,9 +295,12 @@
             });
             if (!anyDepartmentRendered) {
                 var emptyByTabTr = document.createElement('tr');
-                var emptyLabel = rosterPersonnelFilter === 'third_party'
-                    ? 'No third-party personnel found for this period.'
-                    : 'No internal employees found for this period.';
+                var emptyLabel = 'No internal employees found for this period.';
+                if (rosterPersonnelFilter === 'third_party') {
+                    emptyLabel = 'No third-party personnel found for this period.';
+                } else if (rosterPersonnelFilter === 'deleted') {
+                    emptyLabel = 'No deleted shifts found for this period.';
+                }
                 emptyByTabTr.innerHTML = '<td colspan="' + colspan + '" class="text-center py-5 text-muted">' +
                     '<i class="bi bi-info-circle me-2"></i>' + emptyLabel + '</td>';
                 tbody.appendChild(emptyByTabTr);
@@ -326,7 +334,7 @@
         }
         var year = rosterViewDate.getFullYear();
         var month = rosterViewDate.getMonth() + 1;
-        var url = gridUrl + '?year=' + year + '&month=' + month + '&week=' + rosterWeekIndex;
+        var url = gridUrl + '?year=' + year + '&month=' + month + '&week=' + rosterWeekIndex + '&filter=' + rosterPersonnelFilter;
 
         fetch(url, {
             method: 'GET',
@@ -373,6 +381,8 @@
         var createdByEl = document.getElementById('rosterShiftCreatedBy');
         var updatedByEl = document.getElementById('rosterShiftUpdatedBy');
         var assignedByEl = document.getElementById('rosterShiftAssignedBy');
+        var deletedWrap = document.getElementById('rosterShiftDeletedWrap');
+        var deletedByEl = document.getElementById('rosterShiftDeletedBy');
 
         if (!canvas) return;
         var employeeRef = String(employeeId || '');
@@ -416,13 +426,19 @@
             if (lateCheckInEl) lateCheckInEl.checked = !!shift.lateCheckIn;
             if (notesEl) notesEl.value = shift.notes || '';
 
-            if (auditCard) {
-                var hasAnyAudit = !!(shift.createdByName || shift.updatedByName || shift.assignedByName);
-                auditCard.style.display = hasAnyAudit ? 'block' : 'none';
-            }
             if (createdByEl) createdByEl.textContent = shift.createdByName || '—';
             if (updatedByEl) updatedByEl.textContent = shift.updatedByName || '—';
             if (assignedByEl) assignedByEl.textContent = shift.assignedByName || '—';
+
+            if (deletedWrap) {
+                deletedWrap.style.display = shift.deletedByName ? 'flex' : 'none';
+            }
+            if (deletedByEl) deletedByEl.textContent = shift.deletedByName || '—';
+
+            if (auditCard) {
+                var hasAnyAudit = !!(shift.createdByName || shift.updatedByName || shift.assignedByName || shift.deletedByName);
+                auditCard.style.display = hasAnyAudit ? 'block' : 'none';
+            }
         } else {
             if (rosterIdEl) rosterIdEl.value = '';
             if (iconEl) iconEl.innerHTML = '<i class="bi bi-plus-circle me-2"></i>';
@@ -441,7 +457,25 @@
             if (createdByEl) createdByEl.textContent = '—';
             if (updatedByEl) updatedByEl.textContent = '—';
             if (assignedByEl) assignedByEl.textContent = '—';
+            if (deletedWrap) deletedWrap.style.display = 'none';
+            if (deletedByEl) deletedByEl.textContent = '—';
         }
+
+        var saveBtn = document.getElementById('rosterShiftSaveBtn');
+        if (shift && shift.deletedAt) {
+            if (titleEl) titleEl.textContent = 'View Deleted Shift';
+            if (saveBtn) saveBtn.style.display = 'none';
+            if (deleteWrap) deleteWrap.style.display = 'none';
+            if (shiftSelect) shiftSelect.disabled = true;
+            if (notesEl) notesEl.disabled = true;
+            if (floorEl) floorEl.disabled = true;
+        } else {
+            if (saveBtn) saveBtn.style.display = 'inline-block';
+            if (shiftSelect) shiftSelect.disabled = false;
+            if (notesEl) notesEl.disabled = false;
+            if (floorEl) floorEl.disabled = false;
+        }
+
         var offcanvas = bootstrap.Offcanvas.getOrCreateInstance(canvas);
         offcanvas.show();
     }
@@ -690,28 +724,40 @@
         window._rosterPersonnelTabsBound = true;
         var internalTab = document.getElementById('rosterInternalTab');
         var thirdPartyTab = document.getElementById('rosterThirdPartyTab');
+        var deletedTab = document.getElementById('rosterDeletedTab');
+
+        function setActiveTab(activeTabId) {
+            [internalTab, thirdPartyTab, deletedTab].forEach(function(tab) {
+                if (!tab) return;
+                if (tab.id === activeTabId) {
+                    tab.classList.add('active');
+                    tab.setAttribute('aria-selected', 'true');
+                } else {
+                    tab.classList.remove('active');
+                    tab.setAttribute('aria-selected', 'false');
+                }
+            });
+        }
+
         if (internalTab) {
             internalTab.addEventListener('click', function() {
                 rosterPersonnelFilter = 'internal';
-                internalTab.classList.add('active');
-                internalTab.setAttribute('aria-selected', 'true');
-                if (thirdPartyTab) {
-                    thirdPartyTab.classList.remove('active');
-                    thirdPartyTab.setAttribute('aria-selected', 'false');
-                }
-                renderRosterTableFromData();
+                setActiveTab('rosterInternalTab');
+                loadRosterGrid();
             });
         }
         if (thirdPartyTab) {
             thirdPartyTab.addEventListener('click', function() {
                 rosterPersonnelFilter = 'third_party';
-                thirdPartyTab.classList.add('active');
-                thirdPartyTab.setAttribute('aria-selected', 'true');
-                if (internalTab) {
-                    internalTab.classList.remove('active');
-                    internalTab.setAttribute('aria-selected', 'false');
-                }
-                renderRosterTableFromData();
+                setActiveTab('rosterThirdPartyTab');
+                loadRosterGrid();
+            });
+        }
+        if (deletedTab) {
+            deletedTab.addEventListener('click', function() {
+                rosterPersonnelFilter = 'deleted';
+                setActiveTab('rosterDeletedTab');
+                loadRosterGrid();
             });
         }
     }

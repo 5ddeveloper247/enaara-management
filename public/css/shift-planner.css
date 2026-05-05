@@ -199,9 +199,11 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 }
 
 .roster-col-day {
-    min-width: 52px;
-    width: 52px;
+    min-width: 48px;
+    width: 48px;
     text-align: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
 
 
@@ -309,23 +311,26 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 }
 
 .shift-cell {
-    min-width: 52px;
-    width: 52px;
+    min-width: 48px;
+    width: 48px;
     vertical-align: top !important;
-    padding: 4px !important;
+    padding: 3px 0 !important;
+    text-align: center !important;
 }
 
 .shift-pill {
-    border-radius: 8px;
-    padding: 5px 8px;
-    font-size: 10px;
-    margin-bottom: 4px;
-    display: flex;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 9px;
+    margin-bottom: 3px;
+    display: inline-flex;
     flex-direction: column;
     gap: 2px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(0, 0, 0, 0.06);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    width: max-content;
+    margin: 0 auto 3px auto;
 }
 
 .shift-pill:last-child {
@@ -392,6 +397,20 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     display: flex;
     align-items: center;
     gap: 4px;
+}
+
+.shift-pill.shift-cancelled {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border-color: #fecaca !important;
+    opacity: 0.85;
+    position: relative;
+    overflow: hidden;
+}
+
+.shift-pill.shift-cancelled .shift-time,
+.shift-pill.shift-cancelled .shift-pill-meta {
+    text-decoration: line-through !important;
 }
 
 .shift-icon {
