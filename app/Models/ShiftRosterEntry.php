@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\LogsActivity;
 use App\Models\User;
 
 class ShiftRosterEntry extends Model
 {
-    use LogsActivity;
+    use LogsActivity, SoftDeletes;
 
     protected $table = 'shift_roster_entries';
 
