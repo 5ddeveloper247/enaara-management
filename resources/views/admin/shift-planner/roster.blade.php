@@ -41,7 +41,7 @@
                             <thead>
                                 <tr class="roster-thead-row" id="rosterTheadRow">
                                     <th class="roster-col-toggle"> </th>
-                                    <th class="roster-col-employee">Department / Employee</th>
+                                    <th class="roster-col-employee">Employee</th>
                                 </tr>
                             </thead>
                             <tbody id="rosterTableBody">
