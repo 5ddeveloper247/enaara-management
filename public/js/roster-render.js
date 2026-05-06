@@ -286,20 +286,42 @@
                         var iso = dateToISO(d);
                         var k = empRef + '-' + iso;
                         var s = shiftsByEmpDay[k];
+                        var today = stripTime(new Date());
+                        var cellDate = stripTime(d);
+                        var isPast = cellDate < today;
+
                         var td = document.createElement('td');
+                        
+                        /* Old Logic
                         td.className = 'roster-day-cell shift-cell';
+                        */
+                        // New Logic: Only add 'roster-day-cell' if it has a shift OR it's not in the past
+                        td.className = 'shift-cell';
+                        if (s || !isPast) {
+                            td.classList.add('roster-day-cell');
+                        }
+
                         td.setAttribute('data-employee-id', String(empRef));
                         td.setAttribute('data-roster-date', iso);
                         td.setAttribute('data-day', String(d.getDate()));
+                        
                         if (d.getMonth() !== rosterViewDate.getMonth() || d.getFullYear() !== rosterViewDate.getFullYear()) {
                             td.style.opacity = '0.55';
                         }
+                        
                         if (s) {
                             td.setAttribute('data-shift', JSON.stringify(s));
                             td.innerHTML = pillHtml(s);
                         } else {
+                            /* Old Logic
                             td.classList.add('roster-day-cell-empty');
                             td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100" style="min-height:2rem"><i class="bi bi-plus-lg"></i></span>';
+                            */
+                            // New Logic: Only show '+' icon if it's not in the past
+                            if (!isPast) {
+                                td.classList.add('roster-day-cell-empty');
+                                td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100" style="min-height:2rem"><i class="bi bi-plus-lg"></i></span>';
+                            }
                         }
                         tr.appendChild(td);
                     });
