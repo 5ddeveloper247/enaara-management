@@ -452,7 +452,7 @@
             if (titleEl) titleEl.textContent = 'Edit Shift';
             if (saveBtnText) saveBtnText.textContent = 'Update';
             if (deleteWrap) deleteWrap.style.display = 'block';
-            if (shiftSelect) shiftSelect.value = String(shift.shiftPlannerId || '');
+            if (shiftSelect) shiftSelect.value = String(shift.shiftPlannerId || shift.shift_planner_id || '');
             if (startTimeEl) startTimeEl.value = shift.timeStart || '';
             if (endTimeEl) endTimeEl.value = shift.timeEnd || '';
             if (checkInEl) checkInEl.value = shift.checkIn || '';
