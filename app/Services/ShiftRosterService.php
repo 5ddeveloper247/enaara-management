@@ -296,6 +296,9 @@ class ShiftRosterService
 
         $shiftsOut = $entries->map(function($entry) {
             $shiftName = strtolower($entry->shift->name ?? '');
+            $startTime = $entry->start_time ?? $entry->shift->start_time;
+            $startHour = $startTime ? (int) \Carbon\Carbon::parse($startTime)->format('H') : null;
+
             $shiftType = 'general';
             if (str_contains($shiftName, 'morning')) {
                 $shiftType = 'morning';
@@ -303,6 +306,15 @@ class ShiftRosterService
                 $shiftType = 'evening';
             } elseif (str_contains($shiftName, 'night')) {
                 $shiftType = 'night';
+            } elseif ($startHour !== null) {
+                // Fallback to time-based detection if name doesn't contain keywords
+                if ($startHour >= 4 && $startHour < 12) {
+                    $shiftType = 'morning';
+                } elseif ($startHour >= 12 && $startHour < 18) {
+                    $shiftType = 'evening';
+                } elseif ($startHour >= 18 || $startHour < 4) {
+                    $shiftType = 'night';
+                }
             }
 
             return [
