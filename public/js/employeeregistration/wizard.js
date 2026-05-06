@@ -4221,7 +4221,7 @@
         if (branchAddressInput) branchAddressInput.value = branchAddress;
 
         const errors = {};
-        const titleRegex = /^[A-Za-z]+(?:[A-Za-z\s.\-'_]*[A-Za-z])?$/;
+        const titleRegex = /^[A-Za-z0-9]+(?:[A-Za-z0-9\s.\-'_]*[A-Za-z0-9])?$/;
         const digitsOnlyRegex = /^[0-9]+$/;
         const bankNameRegex = /^(?!.*[<>])(?=.*[A-Za-z])[A-Za-z0-9\s.'\-&,\/#()]{2,255}$/;
         const branchCodeRegex = /^[A-Za-z0-9\-]+$/;
@@ -4239,7 +4239,7 @@
         } else if (accountTitle.length > 50) {
             errors.account_title = ['Account title must not exceed 50 characters.'];
         } else if (!titleRegex.test(accountTitle)) {
-            errors.account_title = ['Account title may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.'];
+            errors.account_title = ['Account title may only contain letters, numbers, spaces, apostrophes, dots, hyphens, and underscores.'];
         }
 
         if (!accountNo) {
@@ -4322,19 +4322,13 @@
 
         const title = document.getElementById('bankDetailsAccountTitleInput').value.trim();
         const no = document.getElementById('bankDetailsAccountNumberInput').value.trim();
-        if (title !== '' && no !== '') {
-            banks.push({
-                id: editingId || null,
-                account_category: document.querySelector('input[name="account_category"]:checked')?.value || 'Personal',
-                account_title: title,
-                account_no: no,
-                iban: document.getElementById('bankDetailsIbanInput').value,
-                bank_name: document.getElementById('bankDetailsBranchNameInput').value,
-                branch_code: document.getElementById('bankDetailsBranchCodeInput').value,
-                branch_address: document.getElementById('bankDetailsBranchAddressInput').value,
-                account_type: document.querySelector('input[name="account_type"]:checked')?.value || 'Saving',
-                is_salary_account: document.querySelector('input[name="is_salary_account"]:checked')?.value === '1'
-            });
+        if (title !== '' || no !== '') {
+            const validatedDraft = validateBankFormBeforeSave();
+            if (!validatedDraft) {
+                return null;
+            }
+            validatedDraft.id = editingId || null;
+            banks.push(validatedDraft);
         }
         return banks;
     }
@@ -4345,6 +4339,9 @@
     window.processStepSave = function(step, onSuccess) {
         if (step === 5) {
             const banks = collectStep5Data();
+            if (banks === null) {
+                return; // Draft validation failed
+            }
             if (banks.length === 0) {
                 Swal.fire({
                     icon: 'warning',
@@ -4362,7 +4359,17 @@
             banks.forEach((bank, index) => {
                 for (const [key, value] of Object.entries(bank)) {
                     if (value !== null && value !== undefined) {
-                        formData.append(`banks[${index}][${key}]`, value);
+                        // Convert booleans to "1"/"0" — FormData sends "true"/"false" strings
+                        // which Laravel's boolean validator rejects
+                        let sendValue = value;
+                        if (key === 'is_salary_account') {
+                            sendValue = value ? '1' : '0';
+                        }
+                        // Map 'id' as 'bank_detail_id' so backend uniqueness check ignores the record
+                        if (key === 'id') {
+                            formData.append(`banks[${index}][bank_detail_id]`, sendValue);
+                        }
+                        formData.append(`banks[${index}][${key}]`, sendValue);
                     }
                 }
             });
@@ -4429,6 +4436,9 @@
     }
 
     window.saveBankDetail = async function() {
+        const saveBtn = document.querySelector('button[onclick="saveBankDetail()"]');
+        if (saveBtn && saveBtn.disabled) return;
+
         const employeeId = document.getElementById('saved_employee_id')?.value;
         if (!employeeId) {
             showError('Please save the "General Information" step first.');
@@ -4456,7 +4466,6 @@
             is_salary_account: validatedBank.is_salary_account
         };
 
-        const saveBtn = document.querySelector('button[onclick="saveBankDetail()"]');
         const originalText = saveBtn.innerHTML;
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
@@ -4491,7 +4500,7 @@
                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Saved', showConfirmButton: false, timer: 2000 });
                 
                 const rec = {
-                    id: data.id || bankId,
+                    id: data.id ? parseInt(data.id) : (bankId ? parseInt(bankId) : null),
                     account_category: payload.account_category,
                     account_title: payload.account_title,
                     account_no: payload.account_no,
@@ -4534,7 +4543,7 @@
         if (!bank) return;
 
         resetBankForm();
-        document.getElementById('bank_detail_id').value = bank.id;
+        document.getElementById('bank_detail_id').value = bank.id || '';
         document.getElementById('bankDetailsAccountTitleInput').value = bank.account_title || '';
         document.getElementById('bankDetailsAccountNumberInput').value = bank.account_no || '';
         document.getElementById('bankDetailsIbanInput').value = bank.iban || '';
@@ -5899,7 +5908,7 @@
 
         mainForm.addEventListener('focusout', function (e) {
             const target = e.target;
-            if (!target || !target.closest('#stepPane6')) return;
+            if (!target || !target.closest('#stepPane6')) return;   
             clearLocalError({ target: target });
         }, true);
     }

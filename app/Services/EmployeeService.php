@@ -651,6 +651,7 @@ class EmployeeService
 
     public function saveBankDetails(int $id, array $rows): void
     {
+        $incomingIds = [];
         foreach ($rows as $row) {
             if (! is_array($row)) {
                 continue;
@@ -658,13 +659,17 @@ class EmployeeService
             if (empty($row['account_title']) && empty($row['account_no'])) {
                 continue;
             }
+
+            $bankDetailId = isset($row['bank_detail_id']) ? (int) $row['bank_detail_id'] : (isset($row['id']) ? (int) $row['id'] : null);
+
             $this->assertBankIdentifiersUniqueForEmployee(
                 $id,
                 isset($row['account_no']) ? (string) $row['account_no'] : null,
                 isset($row['iban']) ? (string) $row['iban'] : null,
-                null
+                $bankDetailId
             );
-            EmployeeBankDetail::create([
+
+            $payload = [
                 'employee_id'        => $id,
                 'account_category'   => $row['account_category'] ?? null,
                 'account_title'      => $row['account_title'] ?? null,
@@ -675,8 +680,32 @@ class EmployeeService
                 'iban'               => ! empty($row['iban']) ? $row['iban'] : null,
                 'account_type'       => $row['account_type'] ?? null,
                 'is_salary_account'  => ! empty($row['is_salary_account']),
-            ]);
+            ];
+
+            if ($bankDetailId) {
+                $bank = EmployeeBankDetail::query()
+                    ->where('employee_id', $id)
+                    ->where('id', $bankDetailId)
+                    ->first();
+                
+                if ($bank) {
+                    $bank->update($payload);
+                    $incomingIds[] = $bank->id;
+                } else {
+                    $newBank = EmployeeBankDetail::create($payload);
+                    $incomingIds[] = $newBank->id;
+                }
+            } else {
+                $newBank = EmployeeBankDetail::create($payload);
+                $incomingIds[] = $newBank->id;
+            }
         }
+
+        // Delete bank records that were not included in the sync
+        EmployeeBankDetail::query()
+            ->where('employee_id', $id)
+            ->whereNotIn('id', $incomingIds)
+            ->delete();
     }
 
     public function saveBankDetailRow(int $employeeId, array $row, ?int $bankDetailId = null): EmployeeBankDetail
@@ -1929,7 +1958,6 @@ class EmployeeService
             }
 
             if ($step === 5 || $step === 0) {
-                $employee->bankDetails()->delete();
                 $this->saveBankDetails($employee->id, $data['banks'] ?? []);
             }
 

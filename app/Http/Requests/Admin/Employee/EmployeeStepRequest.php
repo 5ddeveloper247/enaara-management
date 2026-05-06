@@ -611,16 +611,17 @@ class EmployeeStepRequest extends FormRequest
         }
         elseif ($step === 5) {
             $stepRules = [
-                'banks' => ['required', 'array', 'min:1'],
-                'banks.*.account_category'  => ['required', 'string', Rule::in(['Personal', 'Company'])],
-                'banks.*.account_title'     => ['required', 'string', 'min:3', 'max:255', 'regex:' . $this->nameRegex()],
-                'banks.*.account_no'        => ['required', 'string', 'min:8', 'max:16', 'regex:/^[0-9]+$/'],
-                'banks.*.bank_name'         => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
-                'banks.*.branch_code'       => ['required', 'string', 'min:1', 'max:10', 'regex:/^[A-Za-z0-9\-]+$/'],
-                'banks.*.branch_address'    => ['required', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
-                'banks.*.iban'              => ['required', 'string', 'min:24', 'max:34', 'regex:/^[A-Z0-9]+$/'],
-                'banks.*.account_type'      => ['required', Rule::in(['Saving', 'Current'])],
-                'banks.*.is_salary_account' => ['required', 'boolean'],
+                'banks'                        => ['required', 'array', 'min:1'],
+                'banks.*.bank_detail_id'       => ['nullable', 'integer'],
+                'banks.*.account_category'     => ['required', 'string', Rule::in(['Personal', 'Company'])],
+                'banks.*.account_title'        => ['required', 'string', 'min:3', 'max:255', 'regex:/^[A-Za-z0-9]+(?:[A-Za-z0-9\s\.\-\'_]*[A-Za-z0-9])?$/'],
+                'banks.*.account_no'           => ['required', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
+                'banks.*.bank_name'            => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
+                'banks.*.branch_code'          => ['required', 'string', 'min:1', 'max:10', 'regex:/^[A-Za-z0-9\-]+$/'],
+                'banks.*.branch_address'       => ['required', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
+                'banks.*.iban'                 => ['required', 'string', 'min:15', 'max:34', 'regex:/^[A-Z0-9]+$/'],
+                'banks.*.account_type'         => ['required', Rule::in(['Saving', 'Current'])],
+                'banks.*.is_salary_account'    => ['required', 'boolean'],
             ];
         }
         elseif ($step === 6) {
@@ -839,12 +840,12 @@ class EmployeeStepRequest extends FormRequest
                         Rule::exists('employee_bank_details', 'id')->where('employee_id', (int) $this->input('employee_id')),
                     ],
                     'account_category'   => ['required', 'string', Rule::in(['Personal', 'Company'])],
-                    'account_title'      => ['required', 'string', 'min:3', 'max:255', 'regex:' . $this->nameRegex()],
+                    'account_title'      => ['required', 'string', 'min:3', 'max:255', 'regex:/^[A-Za-z0-9]+(?:[A-Za-z0-9\s\.\-\'_]*[A-Za-z0-9])?$/'],
                     'account_no'         => ['required', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
                     'bank_name'          => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
                     'branch_code'        => ['required', 'string', 'min:1', 'max:10', 'regex:/^[A-Za-z0-9\-]+$/'],
                     'branch_address'     => ['required', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
-                    'iban'               => ['required', 'string', 'max:34', 'regex:/^[A-Z0-9]+$/'],
+                    'iban'               => ['required', 'string', 'min:15', 'max:34', 'regex:/^[A-Z0-9]+$/'],
                     'account_type'       => ['required', Rule::in(['Saving', 'Current'])],
                     'is_salary_account'  => ['required', 'boolean'],
                 ]);

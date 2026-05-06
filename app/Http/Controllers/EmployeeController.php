@@ -300,7 +300,7 @@ class EmployeeController extends Controller
                         $record = $this->employeeService->saveBankDetailRow(
                             (int) $employeeId,
                             $row,
-                            ! empty($validated['bank_detail_id']) ? (int) $validated['bank_detail_id'] : null
+                            (isset($validated['bank_detail_id']) && $validated['bank_detail_id'] !== null && $validated['bank_detail_id'] !== '') ? (int) $validated['bank_detail_id'] : null
                         );
                     } catch (ValidationException $e) {
                         return response()->json([
