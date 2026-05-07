@@ -66,12 +66,27 @@
             </div>
         </form>
 
-        <form method="POST" action="{{ route('logout') }}" class="mt-3 text-center">
+        <form method="POST" action="{{ route('logout') }}" class="mt-4 text-center">
             @csrf
-            <button type="submit" class="btn btn-link text-muted btn-sm">Sign out</button>
+            <button type="submit" class="btn btn-link text-white-50 btn-sm text-decoration-none signout-link">
+                <i class="bi bi-box-arrow-left me-1"></i>Sign out
+            </button>
         </form>
     </div>
 @endsection
+
+@push('styles')
+<style>
+    .signout-link:hover {
+        color: #ffffff !important;
+        text-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
+    .input-group:focus-within {
+        box-shadow: 0 0 10px rgba(255,255,255,0.2);
+        border-radius: 5px;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>
