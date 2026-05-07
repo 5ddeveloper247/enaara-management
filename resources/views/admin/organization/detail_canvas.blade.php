@@ -77,6 +77,45 @@
 
         <hr class="my-4" style="border-color: #ffffffab !important">
 
+        <!-- Working Schedule -->
+        <div class="mb-4">
+            <h6 class="mb-3 fw-semibold small">
+                <i class="bi bi-clock me-2"></i>Working Schedule
+            </h6>
+
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Working Days</small>
+                        <div class="fw-semibold small" id="detailOrgWorkingDays">—</div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Start Time</small>
+                        <div class="fw-semibold small" id="detailOrgStartTime">—</div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">End Time</small>
+                        <div class="fw-semibold small" id="detailOrgEndTime">—</div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Grace Period (min)</small>
+                        <div class="fw-semibold small" id="detailOrgGracePeriod">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4" style="border-color: #ffffffab !important">
+
         <!-- Status -->
         <div class="mb-4">
             <h6 class="mb-3 fw-semibold small">
@@ -109,6 +148,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const address = btn.dataset.orgAddress || '—';
         const description = btn.dataset.orgDescription || '—';
         const parent = btn.dataset.orgParent || '—';
+        const workingDays = btn.dataset.orgWorkingDays || '—';
+        const startTime = btn.dataset.orgWorkingStartTime || '—';
+        const endTime = btn.dataset.orgWorkingEndTime || '—';
+        const gracePeriod = btn.dataset.orgGracePeriod || '—';
         const isActive = btn.dataset.orgActive === '1';
 
         const initials = name !== '—'
@@ -123,6 +166,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('detailOrgAddress').textContent = address;
         document.getElementById('detailOrgDescription').textContent = description;
         document.getElementById('detailOrgParent').textContent = parent;
+        document.getElementById('detailOrgWorkingDays').textContent = workingDays;
+        document.getElementById('detailOrgStartTime').textContent = startTime;
+        document.getElementById('detailOrgEndTime').textContent = endTime;
+        document.getElementById('detailOrgGracePeriod').textContent = gracePeriod;
 
         document.getElementById('detailOrgStatus').innerHTML = isActive
             ? '<span class="badge bg-success px-3 py-2 rounded-1">Active</span>'

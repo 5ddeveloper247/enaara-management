@@ -68,7 +68,11 @@
                                 data-org-description="{{ e($org->description ?? '') }}"
                                 data-org-tax-no="{{ e($org->tax_no ?? '') }}"
                                 data-org-active="{{ $org->is_active ? '1' : '0' }}"
-                                data-org-parent="{{ $org->parent ? e($org->parent->name) : '' }}">
+                                data-org-parent="{{ $org->parent ? e($org->parent->name) : '' }}"
+                                data-org-working-days="{{ implode(', ', array_map('ucfirst', $org->working_days ?? [])) }}"
+                                data-org-working-start-time="{{ $org->working_start_time ? substr((string) $org->working_start_time, 0, 5) : '' }}"
+                                data-org-working-end-time="{{ $org->working_end_time ? substr((string) $org->working_end_time, 0, 5) : '' }}"
+                                data-org-grace-period="{{ $org->opening_grace_period ?? '' }}">
                                 <i class="bi bi-eye"></i>
                             </button>
 
