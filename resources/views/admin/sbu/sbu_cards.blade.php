@@ -60,7 +60,11 @@
                                     data-sbu-address="{{ e($sbu->address ?? '') }}" data-sbu-latitude="{{ $sbu->latitude }}"
                                     data-sbu-longitude="{{ $sbu->longitude }}"
                                     data-sbu-active="{{ $sbu->is_active ? '1' : '0' }}"
-                                    data-organization-name="{{ $sbu->organization ? e($sbu->organization->name) : '' }}">
+                                    data-organization-name="{{ $sbu->organization ? e($sbu->organization->name) : '' }}"
+                                    data-sbu-working-days="{{ implode(', ', array_map('ucfirst', $sbu->working_days ?? [])) }}"
+                                    data-sbu-working-start-time="{{ $sbu->working_start_time ? substr((string) $sbu->working_start_time, 0, 5) : '' }}"
+                                    data-sbu-working-end-time="{{ $sbu->working_end_time ? substr((string) $sbu->working_end_time, 0, 5) : '' }}"
+                                    data-sbu-grace-period="{{ $sbu->opening_grace_period ?? '' }}">
                                     <i class="bi bi-eye"></i>
                                 </button>
 
