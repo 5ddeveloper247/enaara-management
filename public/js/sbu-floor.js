@@ -144,7 +144,10 @@
     function populateDetailCanvasFromPayload(data) {
         const name = data.name || '—';
 
-        $('#detailFloorLogoPlaceholder').text((name.substring(0, 1) || 'F').toUpperCase());
+        const initials = name !== '—'
+            ? name.split(' ').map(word => word.charAt(0)).join('').substring(0, 2).toUpperCase()
+            : 'F';
+        $('#detailFloorLogoPlaceholder').text(initials);
         $('#detailFloorName').text(name);
         $('#detailFloorType').text(ucfirst(data.floor_type || ''));
         $('#detailFloorOrganizationName').text(data.organization_name || '—');
