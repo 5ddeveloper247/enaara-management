@@ -342,6 +342,7 @@ class EmployeeStepRequest extends FormRequest
                     'max:15',
                     Rule::unique('employees', 'cnic')->ignore($employeeId),
                 ],
+                'cnic_issue_date' => ['required', 'date', 'before_or_equal:today', 'after:dob'],
                 'cnic_expiry' => ['required', 'date', 'after:today'],
                 'father_cnic' => [
                     'bail',
@@ -1076,6 +1077,12 @@ class EmployeeStepRequest extends FormRequest
             'dob.required' => 'Date of birth is required.',
             'dob.date' => 'Date of birth must be a valid date.',
             'dob.before' => 'Date of birth must be before today.',
+
+            'cnic_expiry.after' => 'CNIC expiry date must be a future date.',
+            'cnic_issue_date.required' => 'CNIC issue date is required.',
+            'cnic_issue_date.date'     => 'CNIC issue date must be a valid date.',
+            'cnic_issue_date.before_or_equal' => 'CNIC issue date cannot be in the future.',
+            'cnic_issue_date.after'    => 'CNIC issue date must be after the date of birth.',
 
             'domicile_district.min' => 'Domicile district must be at least 2 characters.',
             'domicile_district.max' => 'Domicile district must not exceed 100 characters.',

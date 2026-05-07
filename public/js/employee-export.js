@@ -9,6 +9,7 @@
         { header: 'SBU', key: 'sbu' },
         { header: 'Department', key: 'department' },
         { header: 'CNIC', key: 'cnic' },
+        { header: 'CNIC ISSUE DATE', key: 'cnic_issue_date'},
         { header: 'CNIC Expiry', key: 'cnic_expiry' },
         { header: 'Father CNIC', key: 'father_cnic' },
         { header: 'NTN', key: 'ntn' },

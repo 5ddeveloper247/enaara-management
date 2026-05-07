@@ -98,6 +98,14 @@
                                          placeholder="00000-0000000-0">
                                  </div>
                                  <div class="col">
+                                     <label class="form-label">CNIC Issue Date <span
+                                             class="text-danger">*</span></label>
+                                     <input type="date" name="cnic_issue_date" class="form-control"
+                                         max="{{ date('Y-m-d') }}"
+                                         value="{{ isset($employee->cnic_issue_date) && $employee->cnic_issue_date ? (is_string($employee->cnic_issue_date) ? date('Y-m-d', strtotime($employee->cnic_issue_date)) : $employee->cnic_issue_date->format('Y-m-d')) : '' }}"
+                                         placeholder="yyyy-mm-dd">
+                                 </div>
+                                 <div class="col">
                                      <label class="form-label">CNIC Expiry Date <span
                                              class="text-danger">*</span></label>
                                      <input type="date" name="cnic_expiry" class="form-control"
@@ -133,6 +141,7 @@
                                      <label class="form-label">Date of Birth <span
                                              class="text-danger">*</span></label>
                                      <input type="date" name="dob" class="form-control"
+                                         max="{{ date('Y-m-d') }}"
                                          value="{{ isset($employee->dob) && $employee->dob ? (is_string($employee->dob) ? date('Y-m-d', strtotime($employee->dob)) : $employee->dob->format('Y-m-d')) : '' }}"
                                          placeholder="yyyy-mm-dd">
                                  </div>

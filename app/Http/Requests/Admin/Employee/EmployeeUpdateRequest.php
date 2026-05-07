@@ -270,6 +270,7 @@ class EmployeeUpdateRequest extends FormRequest
             'email' => ['nullable', 'email:rfc,dns', 'max:50', Rule::unique('employees', 'email')->ignore($id)],
             'phone' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
             'cnic' => ['bail', 'required', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15', Rule::unique('employees', 'cnic')->ignore($id)],
+            'cnic_issue_date' => ['required', 'date', 'before_or_equal:today', 'after:dob'],
             'cnic_expiry' => ['required', 'date', 'after:today'],
             'father_cnic' => ['bail', 'nullable', 'string', 'regex:' . $this->cnicRegex(), 'min:13', 'max:15'],
             'ntn' => ['nullable', 'string', 'regex:/^(?:[0-9]{7}|[0-9]{13})$/'],
@@ -629,6 +630,10 @@ class EmployeeUpdateRequest extends FormRequest
             'cnic_expiry.required' => 'CNIC expiry date is required.',
             'cnic_expiry.date' => 'CNIC expiry date must be a valid date.',
             'cnic_expiry.after' => 'CNIC expiry date must be a future date.',
+            'cnic_issue_date.required' => 'CNIC issue date is required.',
+            'cnic_issue_date.date'     => 'CNIC issue date must be a valid date.',
+            'cnic_issue_date.before_or_equal' => 'CNIC issue date cannot be in the future.',
+            'cnic_issue_date.after'    => 'CNIC issue date must be after the date of birth.',
 
             'father_cnic.regex' => 'Father CNIC must be numerical like 3443XXXXXXX with sample 13 digit CNIC.',
             'father_cnic.min' => 'Father CNIC must be at least 13 digits.',

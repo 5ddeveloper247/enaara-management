@@ -325,6 +325,7 @@ class EmployeeService
                 'email'               => $data['email'] ?? $data['contact_email'] ?? null,
                 'phone'               => $data['phone'] ?? null,
                 'cnic'                => $data['cnic'] ?? null,
+                'cnic_issue_date'     => !empty($data['cnic_issue_date']) ? $data['cnic_issue_date'] : null,
                 'cnic_expiry'         => !empty($data['cnic_expiry']) ? $data['cnic_expiry'] : null,
                 'father_cnic'         => $data['father_cnic'] ?? null,
                 'ntn'                 => $data['ntn'] ?? null,
@@ -1376,6 +1377,7 @@ class EmployeeService
                 'father_name'         => $emp->father_name ?? '-',
                 'initials'            => $initials,
                 'cnic'                => $emp->cnic ?? '-',
+                'cnic_issue_date'     => $emp->cnic_issue_date?->format('d M Y') ?? '-',
                 'cnic_expiry'         => $emp->cnic_expiry?->format('d M Y') ?? '-',
                 'father_cnic'         => $emp->father_cnic ?? '-',
                 'nationality'         => $emp->nationality ?? '-',
@@ -1827,7 +1829,7 @@ class EmployeeService
 
             $otherStepColumnNames = [
                 'full_name', 'father_name', 'employee_type', 'employment_type', 'designation', 'grade',
-                'branch', 'location', 'phone', 'cnic', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
+                'branch', 'location', 'phone', 'cnic', 'cnic_issue_date', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
                 'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth', 'religion',
                 'sect', 'marital_status', 'spouse_name', 'nok_name', 'nok_cnic', 'nok_relation', 'nok_dob',
                 'nok_contact', 'site', 'join_date', 'floor_access', 'biometric_id', 'sync_with_biometric',

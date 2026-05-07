@@ -10,6 +10,7 @@ class EmployeeGeneralInformationService
             'full_name',
             'father_name',
             'cnic',
+            'cnic_issue_date',
             'cnic_expiry',
             'father_cnic',
             'ntn',
