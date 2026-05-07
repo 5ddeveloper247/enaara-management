@@ -383,6 +383,17 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 editScheduleModeCustom.checked = true;
             }
+            // Hide the current organization from parent options to prevent self-parenting
+            Array.from(editParentId.options).forEach(option => {
+                if (option.value === org.id.toString()) {
+                    option.style.display = 'none';
+                    option.disabled = true;
+                } else {
+                    option.style.display = 'block';
+                    option.disabled = false;
+                }
+            });
+
             toggleEditScheduleMode();
             syncEditOrgLimitedFieldsState();
         })
@@ -484,6 +495,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 checkbox.checked = false;
             });
             editScheduleModeStandard.checked = true;
+            // Reset parent dropdown options visibility
+            Array.from(editParentId.options).forEach(option => {
+                option.style.display = 'block';
+                option.disabled = false;
+            });
             toggleEditScheduleMode();
             syncEditOrgLimitedFieldsState();
         });
