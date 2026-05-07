@@ -721,7 +721,7 @@ class EmployeeStepRequest extends FormRequest
         switch ($subsection) {
             case 'photo':
                 return array_merge($rules, [
-                    'profile_photo' => ['required', 'file', 'max:2048', 'mimes:jpg,jpeg,png,gif,svg'],
+                    'profile_photo'          => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,gif,svg'],
                 ]);
 
             case 'attachment':
@@ -730,7 +730,7 @@ class EmployeeStepRequest extends FormRequest
                     'attachments.*.type' => ['nullable', 'string', 'max:100'],
                     'attachments.*.description' => ['nullable', 'string', 'max:1000'],
                     'attachments.*.files' => ['required', 'array', 'min:1'],
-                    'attachments.*.files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx'],
+                    'attachments.*.files.*' => ['file', 'max:20480', 'mimes:jpg,jpeg,png,pdf,doc,docx'],
                 ]);
 
             case 'contact':
@@ -845,7 +845,7 @@ class EmployeeStepRequest extends FormRequest
                     'account_no'         => ['required', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
                     'bank_name'          => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
                     'branch_code'        => ['required', 'string', 'min:1', 'max:10', 'regex:/^[A-Za-z0-9\-]+$/'],
-                    'branch_address'     => ['required', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
+                    'branch_address'       => ['required', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
                     'iban'               => ['required', 'string', 'min:15', 'max:34', 'regex:/^[A-Z0-9]+$/'],
                     'account_type'       => ['required', Rule::in(['Saving', 'Current'])],
                     'is_salary_account'  => ['required', 'boolean'],
@@ -1338,7 +1338,7 @@ class EmployeeStepRequest extends FormRequest
 
             // Files
             'profile_photo.mimes' => 'Profile photo must be a JPG, JPEG, PNG, GIF, or SVG file.',
-            'profile_photo.max' => 'Profile photo must not exceed 2 MB.',
+            'profile_photo.max'   => 'Profile photo must be at most 20MB.',
 
             'attachments.*.name.required' => 'Attachment name is required.',
             'attachments.*.name.required_with' => 'Attachment name is required.',
@@ -1351,7 +1351,7 @@ class EmployeeStepRequest extends FormRequest
             'attachments.*.files.array' => 'Uploaded files must be processed as an array.',
             'attachments.*.files.min' => 'Please upload at least one valid file.',
             'attachments.*.files.*.mimes' => 'Attachment file must be of type: jpg, jpeg, png, pdf, doc, or docx.',
-            'attachments.*.files.*.max' => 'Each attachment file must not exceed 10 MB.',
+            'attachments.*.files.*.max' => 'Each attachment file must not exceed 20 MB.',
 
             // Password
             'password.required_if' => 'Password is required when creating a user account.',

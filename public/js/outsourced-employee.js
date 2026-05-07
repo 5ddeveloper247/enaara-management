@@ -90,9 +90,9 @@
         if (!allowedExtensions.includes(extension)) {
             return { ok: false, message: 'Only JPG, JPEG, PNG and WEBP files are allowed.' };
         }
-        const maxSize = 2 * 1024 * 1024;
+        const maxSize = 20 * 1024 * 1024;
         if (file.size > maxSize) {
-            return { ok: false, message: 'Maximum allowed file size is 2MB.' };
+            return { ok: false, message: 'Maximum allowed file size is 20MB.' };
         }
         return { ok: true };
     }

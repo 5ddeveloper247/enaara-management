@@ -188,10 +188,10 @@ class EmployeeService
             ->whereNotNull('name')
             ->where('name', '!=', '')
             ->get()
-            ->groupBy(fn (RoleLevel $rl): string => Str::lower(trim((string) $rl->name)))
-            ->map(fn ($group) => (int) $group->min('level'));
+            ->groupBy(fn(RoleLevel $rl): string => Str::lower(trim((string) $rl->name)))
+            ->map(fn($group) => (int) $group->min('level'));
 
-        $orgsData = $organizations->map(fn ($o) => [
+        $orgsData = $organizations->map(fn($o) => [
             'id' => $o->id,
             'name'                   => $o->name,
             'working_days'           => $o->working_days,
@@ -199,7 +199,7 @@ class EmployeeService
             'working_end_time'       => $o->working_end_time,
             'opening_grace_period'   => $o->opening_grace_period,
             'closing_grace_period'   => $o->closing_grace_period,
-            'sbus'                   => $o->sbus->map(fn ($s) => [
+            'sbus'                   => $o->sbus->map(fn($s) => [
                 'id'                   => $s->id,
                 'name'                 => $s->name,
                 'working_days'         => $s->working_days,
@@ -207,7 +207,7 @@ class EmployeeService
                 'working_end_time'     => $s->working_end_time,
                 'opening_grace_period' => $s->opening_grace_period,
                 'closing_grace_period' => $s->closing_grace_period,
-                'departments'          => $s->departments->map(fn ($d) => [
+                'departments'          => $s->departments->map(fn($d) => [
                     'id'                   => $d->id,
                     'name'                 => $d->name,
                     'working_days'         => $d->working_days,
@@ -216,7 +216,7 @@ class EmployeeService
                     'opening_grace_period' => $d->opening_grace_period,
                     'closing_grace_period' => $d->closing_grace_period,
                 ])->values()->all(),
-                'floors'               => $s->floors->map(fn ($f) => [
+                'floors'               => $s->floors->map(fn($f) => [
                     'id' => $f->id,
                     'name' => $f->name,
                 ])->values()->all(),
@@ -520,7 +520,7 @@ class EmployeeService
         if ($pos === false) {
             $exists = Employee::query()
                 ->where('employee_code', $code)
-                ->when($exceptEmployeeId !== null, fn ($q) => $q->where('id', '!=', $exceptEmployeeId))
+                ->when($exceptEmployeeId !== null, fn($q) => $q->where('id', '!=', $exceptEmployeeId))
                 ->exists();
             if (!$exists) {
                 return $code;
@@ -535,9 +535,9 @@ class EmployeeService
         $guard = 0;
         while (
             Employee::query()
-                ->where('employee_code', $candidate)
-                ->when($exceptEmployeeId !== null, fn ($q) => $q->where('id', '!=', $exceptEmployeeId))
-                ->exists()
+            ->where('employee_code', $candidate)
+            ->when($exceptEmployeeId !== null, fn($q) => $q->where('id', '!=', $exceptEmployeeId))
+            ->exists()
         ) {
             $guard++;
             if ($guard > 10000) {
@@ -688,7 +688,7 @@ class EmployeeService
                     ->where('employee_id', $id)
                     ->where('id', $bankDetailId)
                     ->first();
-                
+
                 if ($bank) {
                     $bank->update($payload);
                     $incomingIds[] = $bank->id;
@@ -759,7 +759,7 @@ class EmployeeService
         $accountNo = preg_replace('/\s+/', '', (string) ($accountNo ?? ''));
         $iban = strtoupper(preg_replace('/\s+/', '', (string) ($iban ?? '')));
 
-            if ($accountNo !== '') {
+        if ($accountNo !== '') {
             $query = EmployeeBankDetail::query()
                 ->where('account_no', $accountNo);
             if ($ignoreBankDetailId) {
@@ -1015,7 +1015,7 @@ class EmployeeService
         if ($isNok) {
             EmployeeFamilyMember::query()
                 ->where('employee_id', $id)
-                ->when($memberId, fn ($q) => $q->where('id', '!=', (int) $memberId))
+                ->when($memberId, fn($q) => $q->where('id', '!=', (int) $memberId))
                 ->update([
                     'is_next_of_kin'       => false,
                     'nok_cnic'             => null,
@@ -1124,14 +1124,159 @@ class EmployeeService
     {
         foreach ($files as $file) {
             $path = $file->store("employees/{$id}", 'public');
+
+            // Compress image if it's a photo
+            $fullPath = Storage::disk('public')->path($path);
+            $mimeType = $file->getMimeType();
+
+            if (in_array($mimeType, ['image/jpeg', 'image/jpg', 'image/png'])) {
+                $this->compressImage($fullPath, $mimeType);
+            }
+
             MediaFile::create([
                 'module_name' => 'employee',
                 'module_id'   => $id,
                 'file_type'   => 'photo',
                 'file_path'   => $path,
                 'file_name'   => $file->getClientOriginalName(),
-                'mime_type'   => $file->getMimeType(),
+                'mime_type'   => $mimeType,
                 'uploaded_by' => Auth::id(),
+            ]);
+        }
+    }
+
+    private function compressImage(string $path, string $mimeType, int $maxSizeMB = 2): void
+    {
+        try {
+            $maxSizeBytes = $maxSizeMB * 1024 * 1024;
+
+            // Skip if already smaller than target
+            if (filesize($path) <= $maxSizeBytes) {
+                return;
+            }
+
+            // Create image resource
+            switch ($mimeType) {
+                case 'image/jpeg':
+                case 'image/jpg':
+                    $image = @imagecreatefromjpeg($path);
+                    break;
+
+                case 'image/png':
+                    $image = @imagecreatefrompng($path);
+                    break;
+
+                default:
+                    return;
+            }
+
+            if (!$image) {
+                return;
+            }
+
+            // Get original dimensions
+            $width  = imagesx($image);
+            $height = imagesy($image);
+
+            /*
+        |--------------------------------------------------------------------------
+        | Resize Large Images
+        |--------------------------------------------------------------------------
+        */
+
+            $maxWidth = 1600;
+
+            if ($width > $maxWidth) {
+
+                $newWidth  = $maxWidth;
+                $newHeight = intval(($height / $width) * $newWidth);
+
+                $resized = imagecreatetruecolor($newWidth, $newHeight);
+
+                // Preserve PNG transparency
+                if ($mimeType === 'image/png') {
+                    imagealphablending($resized, false);
+                    imagesavealpha($resized, true);
+
+                    $transparent = imagecolorallocatealpha(
+                        $resized,
+                        255,
+                        255,
+                        255,
+                        127
+                    );
+
+                    imagefilledrectangle(
+                        $resized,
+                        0,
+                        0,
+                        $newWidth,
+                        $newHeight,
+                        $transparent
+                    );
+                }
+
+                imagecopyresampled(
+                    $resized,
+                    $image,
+                    0,
+                    0,
+                    0,
+                    0,
+                    $newWidth,
+                    $newHeight,
+                    $width,
+                    $height
+                );
+
+                imagedestroy($image);
+                $image = $resized;
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | Compress Until <= 2MB
+        |--------------------------------------------------------------------------
+        */
+
+            if ($mimeType === 'image/jpeg' || $mimeType === 'image/jpg') {
+
+                $quality = 85;
+
+                do {
+                    imagejpeg($image, $path, $quality);
+
+                    clearstatcache(true, $path);
+
+                    if (filesize($path) <= $maxSizeBytes) {
+                        break;
+                    }
+
+                    $quality -= 5;
+                } while ($quality >= 30);
+            } elseif ($mimeType === 'image/png') {
+
+                $compression = 6;
+
+                do {
+                    imagepng($image, $path, $compression);
+
+                    clearstatcache(true, $path);
+
+                    if (filesize($path) <= $maxSizeBytes) {
+                        break;
+                    }
+
+                    $compression++;
+                } while ($compression <= 9);
+            }
+
+            imagedestroy($image);
+        } catch (\Throwable $e) {
+
+            Log::warning('Image compression failed', [
+                'path'  => $path,
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -1146,6 +1291,15 @@ class EmployeeService
 
             foreach ($files as $file) {
                 $path = $file->store("employees/{$id}/attachments", 'public');
+
+                // Compress image if it's a photo
+                $fullPath = Storage::disk('public')->path($path);
+                $mimeType = $file->getMimeType();
+
+                if (in_array($mimeType, ['image/jpeg', 'image/jpg', 'image/png'])) {
+                    $this->compressImage($fullPath, $mimeType);
+                }
+
                 MediaFile::create([
                     'module_name'     => 'employee',
                     'module_id'       => $id,
@@ -1155,7 +1309,7 @@ class EmployeeService
                     'description'     => $description ?: null,
                     'file_path'       => $path,
                     'file_name'       => $file->getClientOriginalName(),
-                    'mime_type'       => $file->getMimeType(),
+                    'mime_type'       => $mimeType,
                     'uploaded_by'     => Auth::id(),
                 ]);
             }
@@ -1168,6 +1322,15 @@ class EmployeeService
         $files = $attachmentData['files'] ?? [];
         foreach ($files as $file) {
             $path = $file->store("employees/{$id}/attachments", 'public');
+
+            // Compress image if it's a photo
+            $fullPath = Storage::disk('public')->path($path);
+            $mimeType = $file->getMimeType();
+
+            if (in_array($mimeType, ['image/jpeg', 'image/jpg', 'image/png'])) {
+                $this->compressImage($fullPath, $mimeType);
+            }
+
             $savedFile = MediaFile::create([
                 'module_name'     => 'employee',
                 'module_id'       => $id,
@@ -1177,7 +1340,7 @@ class EmployeeService
                 'description'     => $attachmentData['description'] ?: null,
                 'file_path'       => $path,
                 'file_name'       => $file->getClientOriginalName(),
-                'mime_type'       => $file->getMimeType(),
+                'mime_type'       => $mimeType,
                 'uploaded_by'     => Auth::id(),
             ]);
             $savedFiles[] = $savedFile;
@@ -1263,7 +1426,7 @@ class EmployeeService
             $departmentIds = Department::query()
                 ->where('name', $departmentName)
                 ->pluck('id')
-                ->map(fn ($id) => (int) $id)
+                ->map(fn($id) => (int) $id)
                 ->values()
                 ->all();
             if ($departmentIds !== []) {
@@ -1310,7 +1473,7 @@ class EmployeeService
             ->get(['id', 'name', 'sbu_id'])
             ->keyBy('id');
 
-        $sbuIdsFromDepts = $deptRows->pluck('sbu_id')->filter()->map(fn ($id) => (int) $id)->values()->all();
+        $sbuIdsFromDepts = $deptRows->pluck('sbu_id')->filter()->map(fn($id) => (int) $id)->values()->all();
         $sbuNameById = $sbuIdsFromDepts === [] ? [] : Sbu::query()
             ->whereIn('id', $sbuIdsFromDepts)
             ->pluck('name', 'id')
@@ -1552,7 +1715,7 @@ class EmployeeService
             })
             ->orderByDesc('id')
             ->get()
-            ->map(fn ($m) => [
+            ->map(fn($m) => [
                 'id' => $m->id,
                 'name' => $m->title ?: $m->file_name,
                 'type' => $m->attachment_type,
@@ -1608,7 +1771,7 @@ class EmployeeService
             ->whereIn('id', $deptIdsForLabels)
             ->orderByDesc('id')
             ->get(['id', 'name', 'sbu_id'])
-            ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name, 'sbu_id' => $row->sbu_id])
+            ->map(fn($row) => ['id' => $row->id, 'name' => $row->name, 'sbu_id' => $row->sbu_id])
             ->values()
             ->all();
 
@@ -1667,7 +1830,7 @@ class EmployeeService
             'probation_start_date' => $employee->probation_start_date instanceof \Carbon\Carbon ? $employee->probation_start_date->format('Y-m-d') : null,
             'probation_end_date'  => $employee->probation_end_date instanceof \Carbon\Carbon ? $employee->probation_end_date->format('Y-m-d') : null,
             'probation_contract_start_date' => $employee->contract_start_date instanceof \Carbon\Carbon ? $employee->contract_start_date->format('Y-m-d') : null,
-            'assigned_floor_ids'  => $employee->assignedFloors->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
+            'assigned_floor_ids'  => $employee->assignedFloors->pluck('id')->map(fn($id) => (int) $id)->values()->all(),
             'biometric_id'        => $employee->biometric_id,
             'employment_category' => $employee->employment_category,
             'intern_type'         => $employee->intern_type,
@@ -1719,7 +1882,7 @@ class EmployeeService
                 'present_address'   => $contact->present_address,
                 'permanent_address' => $contact->permanent_address,
             ] : null,
-            'bank_details' => $bankRows->map(fn ($b) => [
+            'bank_details' => $bankRows->map(fn($b) => [
                 'id'                 => $b->id,
                 'account_category'   => $b->account_category,
                 'account_title'      => $b->account_title,
@@ -1731,7 +1894,7 @@ class EmployeeService
                 'account_type'       => $b->account_type,
                 'is_salary_account'  => (bool) $b->is_salary_account,
             ])->values()->all(),
-            'family' => $employee->familyMembers->map(fn ($m) => [
+            'family' => $employee->familyMembers->map(fn($m) => [
                 'id'                   => $m->id,
                 'name'                 => $m->name,
                 'gender'               => $m->gender,
@@ -1805,8 +1968,7 @@ class EmployeeService
         array $attachments = [],
         array $keptAttachmentIds = [],
         bool $syncAttachments = false
-    ): Employee
-    {
+    ): Employee {
         return DB::transaction(function () use ($id, $data, $files, $attachments, $keptAttachmentIds, $syncAttachments) {
             $employee = Employee::findOrFail($id);
             $role      = Role::find($data['role_id'] ?? $employee->role_id);
@@ -1828,23 +1990,108 @@ class EmployeeService
             }
 
             $otherStepColumnNames = [
-                'full_name', 'father_name', 'employee_type', 'employment_type', 'designation', 'grade',
-                'branch', 'location', 'phone', 'cnic', 'cnic_issue_date', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
-                'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth', 'religion',
-                'sect', 'marital_status', 'spouse_name', 'nok_name', 'nok_cnic', 'nok_relation', 'nok_dob',
-                'nok_contact', 'site', 'join_date', 'floor_access', 'biometric_id', 'sync_with_biometric',
-                'verification_status', 'msr_letter_no', 'addressee', 'verifying_authority', 'verification_letter_no',
-                'next_verification_date', 'police_remarks', 'service_no', 'rank', 'medical_category',
-                'date_of_commissioning', 'date_of_retirement', 'reason_of_retirement', 'corps_regiment',
-                'ex_army_unit', 'trade', 'pma_lc_ots', 'residence_phone', 'emergency_contact', 'cell_no',
-                'present_address', 'permanent_address', 'last_fitness_test', 'last_fitness_test_date', 'last_fitness_test_result', 'has_disability', 'blood_group',
-                'disability_type', 'disability_description', 'has_chronic_disease', 'chronic_disease_description', 'ref1_name', 'ref1_designation', 'ref1_organization',
-                'ref1_contact', 'ref1_relationship', 'ref2_name', 'ref2_designation', 'ref2_organization',
-                'ref2_contact', 'ref2_relationship', 'employment_category', 'intern_type', 'intern_duration',
-                'contractual_type', 'contract_start_date', 'contract_end_date', 'probation_start_date', 'probation_end_date', 'employee_status', 'termination_reason', 'termination_date', 'engagement_mode', 'hybrid_days',
-                'standard_schedule_mode', 'working_days', 'working_start_time', 'working_end_time', 'opening_grace_period', 'closing_grace_period',
-                'spouse_cnic', 'spouse_nationality', 'nok_cnic_expiry_date',
-                'organization_id', 'role_id', 'sbu_id', 'department_id', 'department_ids',
+                'full_name',
+                'father_name',
+                'employee_type',
+                'employment_type',
+                'designation',
+                'grade',
+                'branch',
+                'location',
+                'phone',
+                'cnic',
+                'cnic_issue_date',
+                'cnic_expiry',
+                'father_cnic',
+                'ntn',
+                'gender',
+                'nationality',
+                'dob',
+                'domicile_district',
+                'domicile_province',
+                'city_of_birth',
+                'religion',
+                'sect',
+                'marital_status',
+                'spouse_name',
+                'nok_name',
+                'nok_cnic',
+                'nok_relation',
+                'nok_dob',
+                'nok_contact',
+                'site',
+                'join_date',
+                'floor_access',
+                'biometric_id',
+                'sync_with_biometric',
+                'verification_status',
+                'msr_letter_no',
+                'addressee',
+                'verifying_authority',
+                'verification_letter_no',
+                'next_verification_date',
+                'police_remarks',
+                'service_no',
+                'rank',
+                'medical_category',
+                'date_of_commissioning',
+                'date_of_retirement',
+                'reason_of_retirement',
+                'corps_regiment',
+                'ex_army_unit',
+                'trade',
+                'pma_lc_ots',
+                'residence_phone',
+                'emergency_contact',
+                'cell_no',
+                'present_address',
+                'permanent_address',
+                'last_fitness_test',
+                'last_fitness_test_date',
+                'last_fitness_test_result',
+                'has_disability',
+                'blood_group',
+                'disability_type',
+                'disability_description',
+                'has_chronic_disease',
+                'chronic_disease_description',
+                'ref1_name',
+                'ref1_designation',
+                'ref1_organization',
+                'ref1_contact',
+                'ref1_relationship',
+                'ref2_name',
+                'ref2_designation',
+                'ref2_organization',
+                'ref2_contact',
+                'ref2_relationship',
+                'employment_category',
+                'intern_type',
+                'intern_duration',
+                'contractual_type',
+                'contract_start_date',
+                'contract_end_date',
+                'probation_start_date',
+                'probation_end_date',
+                'employee_status',
+                'termination_reason',
+                'termination_date',
+                'engagement_mode',
+                'hybrid_days',
+                'standard_schedule_mode',
+                'working_days',
+                'working_start_time',
+                'working_end_time',
+                'opening_grace_period',
+                'closing_grace_period',
+                'spouse_cnic',
+                'spouse_nationality',
+                'nok_cnic_expiry_date',
+                'organization_id',
+                'role_id',
+                'sbu_id',
+                'department_id',
+                'department_ids',
                 'is_ex_armed_force',
                 'is_father_deceased',
             ];
@@ -1982,7 +2229,7 @@ class EmployeeService
                     $employee->certificates()->delete();
                     $this->saveCertificates($employee->id, $data['certificates']);
                 }
-                
+
                 if (isset($data['employments'])) {
                     $employee->exEmployments()->delete();
                     $this->saveExEmployments($employee->id, $data['employments']);
@@ -2019,7 +2266,7 @@ class EmployeeService
     private function syncAssignedFloors(Employee $employee, mixed $rawFloorIds): void
     {
         $floorIds = is_array($rawFloorIds) ? $rawFloorIds : [];
-        $floorIds = array_values(array_unique(array_filter(array_map('intval', $floorIds), fn ($id) => $id > 0)));
+        $floorIds = array_values(array_unique(array_filter(array_map('intval', $floorIds), fn($id) => $id > 0)));
         $employee->assignedFloors()->sync($floorIds);
     }
 

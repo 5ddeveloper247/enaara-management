@@ -545,7 +545,7 @@ class EmployeeStoreRequest extends FormRequest
             'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Colleague', 'Academic', 'Professional', 'Other'])],
 
             // Files & Account
-            'profile_photo'          => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png'],
+            'profile_photo'          => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png'],
             'kept_attachment_ids'    => ['nullable', 'array'],
             'kept_attachment_ids.*'  => ['integer', 'exists:media_files,id'],
             'attachments'            => ['nullable', 'array'],
@@ -553,7 +553,7 @@ class EmployeeStoreRequest extends FormRequest
             'attachments.*.type'     => ['nullable', 'string', 'max:100'],
             'attachments.*.description' => ['nullable', 'string', 'max:1000'],
             'attachments.*.files'    => ['required_with:attachments', 'array', 'min:1'],
-            'attachments.*.files.*'  => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx'],
+            'attachments.*.files.*'  => ['file', 'max:20480', 'mimes:jpg,jpeg,png,pdf,doc,docx'],
             'create_user_account'    => ['nullable', 'boolean'],
             'password'               => ['nullable', 'string', 'min:8', 'required_if:create_user_account,1'],
         ];
@@ -774,7 +774,7 @@ class EmployeeStoreRequest extends FormRequest
             'password.required_if'     => 'Password is required when creating a user account.',
             'password.min'             => 'Password must be at least 8 characters.',
             'profile_photo.mimes'      => 'Profile photo must be JPG or PNG.',
-            'profile_photo.max'        => 'Profile photo must be at most 5MB.',
+            'profile_photo.max'        => 'Profile photo must be at most 20MB.',
         ];
     }
 }

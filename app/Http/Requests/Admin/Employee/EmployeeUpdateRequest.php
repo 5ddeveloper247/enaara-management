@@ -587,7 +587,7 @@ class EmployeeUpdateRequest extends FormRequest
             'ref2_relationship' => ['nullable', Rule::in(['Family', 'Friend', 'Colleague', 'Academic', 'Professional', 'Other'])],
 
             // Files
-            'profile_photo' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,svg'],
+            'profile_photo' => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,svg'],
             'kept_attachment_ids' => ['nullable', 'array'],
             'kept_attachment_ids.*' => ['integer', 'exists:media_files,id'],
             'attachments' => ['nullable', 'array'],
@@ -607,6 +607,7 @@ class EmployeeUpdateRequest extends FormRequest
             'full_name.required' => 'Full name is required.',
             'full_name.string' => 'Name must be a valid text value.',
             'full_name.min' => 'Name must be at least 3 characters.',
+            'profile_photo.max' => 'Profile photo must not exceed 20 MB.',
             'full_name.max' => 'Name must not exceed 50 characters.',
             'full_name.regex' => 'Name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
 

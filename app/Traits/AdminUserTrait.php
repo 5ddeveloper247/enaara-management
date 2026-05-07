@@ -23,7 +23,7 @@ trait AdminUserTrait{
             'last_name'       => ['bail', 'required', 'string', 'max:100', new NoHtmlTags()],
             'email_address'   => ['bail', 'required', 'email', 'max:40', 'unique:tbl_employees', new NoHtmlTags()],
             'user_name'       => ['bail', 'required', 'string', 'max:40', 'unique:tbl_employees', new NoHtmlTags()],
-            'avatar'          => ['bail', 'nullable', 'file', 'mimes:png,jpg,jpeg', 'max:2048', new NoHtmlTags()], // Validate avatar if present
+            'avatar'          => ['bail', 'nullable', 'file', 'mimes:png,jpg,jpeg', 'max:20480', new NoHtmlTags()], // Validate avatar if present
             'role'            => ['bail', 'nullable', 'array', 'exists:tbl_roles,ID,deleted_at,NULL', new NoHtmlTags()] // Validate roles if present
         ]);
         // Check validation fails or not

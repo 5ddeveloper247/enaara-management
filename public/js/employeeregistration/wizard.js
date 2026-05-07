@@ -3058,9 +3058,9 @@
             return;
         }
 
-        const maxSize = 2 * 1024 * 1024; // 2MB
+        const maxSize = 20 * 1024 * 1024; // 20MB
         if (file.size > maxSize) {
-            showError('Maximum allowed file size is 2MB.', 'File Too Large');
+            showError('Maximum allowed file size is 20MB.', 'File Too Large');
             inputFile.value = '';
             return;
         }

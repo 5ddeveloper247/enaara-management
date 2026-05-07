@@ -55,7 +55,7 @@ class OutsourcedEmployeeStoreRequest extends FormRequest
                     ->whereNull('deleted_at'),
             ],
             'mobile_number' => ['required', 'string', 'regex:/^[0-9]{11,15}$/'],
-            'photo' => ['nullable', 'image', 'max:2048', 'mimes:jpg,jpeg,png,webp'],
+            'photo' => ['nullable', 'image', 'max:20480', 'mimes:jpg,jpeg,png,webp'],
 
             'contractor_company_id' => [
                 'required',
