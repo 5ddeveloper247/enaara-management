@@ -56,7 +56,11 @@
                                 data-sbu-name="{{ $dept->sbu ? e($dept->sbu->name) : '' }}"
                                 data-parent-name="{{ $dept->parent ? e($dept->parent->name) : '' }}"
                                 data-description="{{ e($dept->description ?? '') }}"
-                                data-department-status="{{ $dept->is_active ? 'Active' : 'Inactive' }}">
+                                data-department-status="{{ $dept->is_active ? 'Active' : 'Inactive' }}"
+                                data-working-days="{{ implode(', ', array_map('ucfirst', $dept->working_days ?? [])) }}"
+                                data-working-start-time="{{ $dept->working_start_time ? substr((string) $dept->working_start_time, 0, 5) : '' }}"
+                                data-working-end-time="{{ $dept->working_end_time ? substr((string) $dept->working_end_time, 0, 5) : '' }}"
+                                data-grace-period="{{ $dept->opening_grace_period ?? '' }}">
                                 <i class="bi bi-eye"></i>
                             </button>
 

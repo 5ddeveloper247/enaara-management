@@ -104,6 +104,10 @@
                         document.getElementById('canvasDeptParent').textContent = get('data-parent-name');
                         document.getElementById('canvasDeptDescription').textContent = get('data-description');
                         document.getElementById('canvasDeptStatus').textContent = get('data-department-status');
+                        document.getElementById('canvasDeptWorkingDays').textContent = get('data-working-days');
+                        document.getElementById('canvasDeptStartTime').textContent = get('data-working-start-time');
+                        document.getElementById('canvasDeptEndTime').textContent = get('data-working-end-time');
+                        document.getElementById('canvasDeptGracePeriod').textContent = get('data-grace-period');
                     }
                 });
             }

@@ -48,6 +48,45 @@
                 </div>
             </div>
         </div>
+
+        <hr class="my-4" style="border-color: #ffffffab !important">
+
+        <!-- Working Schedule -->
+        <div class="mb-4">
+            <h6 class="mb-3 fw-semibold small">
+                <i class="bi bi-clock me-2"></i>Working Schedule
+            </h6>
+
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Working Days</small>
+                        <div class="fw-semibold small" id="canvasDeptWorkingDays">—</div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Start Time</small>
+                        <div class="fw-semibold small" id="canvasDeptStartTime">—</div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">End Time</small>
+                        <div class="fw-semibold small" id="canvasDeptEndTime">—</div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Grace Period (min)</small>
+                        <div class="fw-semibold small" id="canvasDeptGracePeriod">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
         </div>
