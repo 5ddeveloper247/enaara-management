@@ -53,7 +53,7 @@
                 <div class="card bg-light border-0 shadow-sm mb-3">
                     <div class="card-body p-3">
                         <div class="fw-bold text-dark mb-3 small text-uppercase ls-1">
-                            <span>Bank Details Information</span>
+                            <span>Bank Detail</span>
                         </div>
 
                         <div class="row g-3">
