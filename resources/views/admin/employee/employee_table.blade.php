@@ -316,9 +316,9 @@ const cardHtml = `
                 {{-- Header --}}
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                        <div class="rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0 bg-main text-white overflow-hidden"
                             style="width:42px;height:42px;font-size:1rem;">
-                            ${initials}
+                            ${rowData.photo_url ? `<img src="${attrSafe(rowData.photo_url)}" alt="${attrSafe(fullName)}" style="width:100%;height:100%;object-fit:cover;">` : initials}
                         </div>
                         <div class="overflow-hidden">
                             <h6 class="mb-0 fw-semibold text-truncate"
