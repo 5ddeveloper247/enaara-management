@@ -113,7 +113,11 @@
             val = val.substring(0, 15);
         }
         target.value = val;
-        if (val.length > 0 && val.length < 11) {
+        
+        const key = fieldKeyFromInput(target);
+        const minLen = (key === 'residence_phone') ? 7 : 11;
+        
+        if (val.length > 0 && val.length < minLen) {
             target.classList.add('is-invalid');
         } else {
             target.classList.remove('is-invalid');
@@ -151,9 +155,13 @@
                     const original = String(e.target.value ?? '');
                     formatContactMaskInput(e.target);
                     const sanitized = String(e.target.value ?? '');
+                    
+                    const key = fieldKeyFromInput(e.target);
+                    const minLen = (key === 'residence_phone') ? 7 : 11;
+                    
                     if (sanitized !== original) {
                         showContactMaskError(e.target, 'Only digits are allowed.');
-                    } else if (sanitized.length === 0 || sanitized.length >= 11) {
+                    } else if (sanitized.length === 0 || sanitized.length >= minLen) {
                         removeContactMaskError(e.target);
                     }
                 }
@@ -173,8 +181,12 @@
                 if (e.target.classList && e.target.classList.contains('contact-mask')) {
                     formatContactMaskInput(e.target);
                     const val = String(e.target.value ?? '');
-                    if (val.length > 0 && val.length < 11) {
-                        showContactMaskError(e.target, 'Enter a valid phone number (11 to 15 digits).');
+                    
+                    const key = fieldKeyFromInput(e.target);
+                    const minLen = (key === 'residence_phone') ? 7 : 11;
+                    
+                    if (val.length > 0 && val.length < minLen) {
+                        showContactMaskError(e.target, `Enter a valid phone number (${minLen} to 15 digits).`);
                     } else {
                         removeContactMaskError(e.target);
                     }
@@ -1339,8 +1351,9 @@
                         }
                         return;
                     }
-                    if (value.length < 11) {
-                        showInputGuardError(input, 'Enter 11 to 15 digits.');
+                    const minDigits = (cfg.id === 'moreContactResidencePhoneInput') ? 7 : 11;
+                    if (value.length < minDigits) {
+                        showInputGuardError(input, `Enter ${minDigits} to 15 digits.`);
                         return;
                     }
                     removeInputGuardError(input);
@@ -2510,11 +2523,12 @@
         const permanentAddress = String(document.getElementById('moreContactPermanentAddressInput')?.value ?? '').trim();
 
         const phoneRegex = /^\d{10,15}$/;
+        const residencePhoneRegex = /^\d{7,15}$/;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const errors = {};
 
-        if (residencePhone && !phoneRegex.test(residencePhone)) {
-            errors.residence_phone = ['Residence phone must be 10 to 15 digits.'];
+        if (residencePhone && !residencePhoneRegex.test(residencePhone)) {
+            errors.residence_phone = ['Residence phone must be 7 to 15 digits.'];
         }
         if (emergencyContact && !phoneRegex.test(emergencyContact)) {
             errors.emergency_contact = ['Emergency contact must be 10 to 15 digits.'];
@@ -2684,10 +2698,11 @@
 
             const errors = {};
             const phoneRegex = /^[0-9]{11,15}$/;
+            const residencePhoneRegex = /^[0-9]{7,15}$/;
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-            if (residencePhone && !phoneRegex.test(residencePhone)) {
-                errors.residence_phone = ['Residence phone must contain 11 to 15 digits.'];
+            if (residencePhone && !residencePhoneRegex.test(residencePhone)) {
+                errors.residence_phone = ['Residence phone must contain 7 to 15 digits.'];
             }
             if (emergencyContact && !phoneRegex.test(emergencyContact)) {
                 errors.emergency_contact = ['Emergency contact must contain 11 to 15 digits.'];
@@ -2813,6 +2828,10 @@
         return /^\d{11,15}$/.test(String(value || '').trim());
     }
 
+    function isValidResidencePhone(value) {
+        return /^\d{7,15}$/.test(String(value || '').trim());
+    }
+
     function isValidDate(value) {
         if (!value) return false;
         const d = new Date(`${value}T00:00:00`);
@@ -2842,7 +2861,7 @@
             const presentAddress = get('present_address');
             const permanentAddress = get('permanent_address');
 
-            if (residencePhone && !isValidContact(residencePhone)) addErr('residence_phone', 'Residence phone must be 11 to 15 digits.');
+            if (residencePhone && !isValidResidencePhone(residencePhone)) addErr('residence_phone', 'Residence phone must be 7 to 15 digits.');
             if (emergencyContact && !isValidContact(emergencyContact)) addErr('emergency_contact', 'Emergency contact must be 11 to 15 digits.');
             if (!cellNo) addErr('cell_no', 'Cell number is required.');
             else if (!isValidContact(cellNo)) addErr('cell_no', 'Cell number must be 11 to 15 digits.');

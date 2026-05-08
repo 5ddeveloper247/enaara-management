@@ -294,6 +294,11 @@ class EmployeeStepRequest extends FormRequest
         return '/^[0-9]{11,15}$/';
     }
 
+    protected function residencePhoneRegex(): string
+    {
+        return '/^[0-9]{7,15}$/';
+    }
+
     protected function phoneRegex(): string
     {
         return '/^[0-9]{10,12}$/';
@@ -629,7 +634,7 @@ class EmployeeStepRequest extends FormRequest
         elseif ($step === 6) {
             $stepRules = [
                 // Contact
-                'residence_phone'   => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                'residence_phone'   => ['nullable', 'string', 'regex:' . $this->residencePhoneRegex()],
                 'emergency_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
                 'cell_no'           => ['required', 'string', 'regex:' . $this->contactRegex()],
                 'contact_email'     => [
@@ -745,7 +750,7 @@ class EmployeeStepRequest extends FormRequest
                     ],
                     'present_address'   => ['required', 'string', 'min:10', 'max:1000'],
                     'permanent_address' => ['required', 'string', 'min:10', 'max:1000'],
-                    'residence_phone'   => ['nullable', 'string', 'regex:' . $this->contactRegex()],
+                    'residence_phone'   => ['nullable', 'string', 'regex:' . $this->residencePhoneRegex()],
                     'emergency_contact' => ['nullable', 'string', 'regex:' . $this->contactRegex()],
                 ]);
 
@@ -1229,7 +1234,7 @@ class EmployeeStepRequest extends FormRequest
             'pma_lc_ots.regex' => 'PMA/LC/OTS may only contain letters, numbers, spaces, and standard punctuation.',
 
             // Contact / Bank
-            'residence_phone.regex' => 'Residence phone number must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
+            'residence_phone.regex' => 'Residence phone number must contain only digits and may include a leading + sign. Length must be between 7 and 15 digits.',
             'emergency_contact.regex' => 'Emergency contact number must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
             'cell_no.required' => 'Cell number is required.',
             'cell_no.regex' => 'Cell number must contain only digits and may include a leading + sign. Length must be between 10 and 15 digits.',
