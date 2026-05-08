@@ -57,16 +57,35 @@
                                                                  value="{{ $employee?->contact?->email ?? '' }}"
                                                                  placeholder="Enter email address">
                                                          </div>
-                                                         <div class="col-md-4">
-                                                             <label class="form-label">Present Address <span class="text-danger">*</span></label>
-                                                             <textarea name="present_address" class="form-control" id="moreContactPresentAddressInput" rows="1"
-                                                                 placeholder="Enter present address">{{ $employee?->contact?->present_address ?? '' }}</textarea>
-                                                         </div>
-                                                         <div class="col-md-4">
-                                                             <label class="form-label">Permanent Address <span class="text-danger">*</span></label>
-                                                             <textarea name="permanent_address" class="form-control" id="moreContactPermanentAddressInput" rows="1"
-                                                                 placeholder="Enter permanent address">{{ $employee?->contact?->permanent_address ?? '' }}</textarea>
-                                                         </div>
+                                                         <div class="col-12 col-md-4">
+    <label class="form-label">
+        Present Address <span class="text-danger">*</span>
+    </label>
+
+    <textarea
+        name="present_address"
+        class="form-control"
+        id="moreContactPresentAddressInput"
+        rows="4"
+        placeholder="Enter complete present address"
+        style="resize: vertical;"
+    >{{ $employee?->contact?->present_address ?? '' }}</textarea>
+</div>
+
+<div class="col-12 col-md-4">
+    <label class="form-label">
+        Permanent Address <span class="text-danger">*</span>
+    </label>
+
+    <textarea
+        name="permanent_address"
+        class="form-control"
+        id="moreContactPermanentAddressInput"
+        rows="4"
+        placeholder="Enter complete permanent address"
+        style="resize: vertical;"
+    >{{ $employee?->contact?->permanent_address ?? '' }}</textarea>
+</div>
                                                      </div>
                                                 </div>
                                             </div>
