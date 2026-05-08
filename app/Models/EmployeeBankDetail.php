@@ -13,6 +13,7 @@ class EmployeeBankDetail extends Model
         'account_title',
         'account_no',
         'bank_name',
+        'branch_name',
         'branch_code',
         'branch_address',
         'bank_branch',

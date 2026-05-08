@@ -4178,6 +4178,7 @@
         document.getElementById('bankDetailsAccountTitleInput').value = '';
         document.getElementById('bankDetailsAccountNumberInput').value = '';
         document.getElementById('bankDetailsIbanInput').value = '';
+        document.getElementById('bankDetailsBankNameInput').value = '';
         document.getElementById('bankDetailsBranchNameInput').value = '';
         document.getElementById('bankDetailsBranchCodeInput').value = '';
         document.getElementById('bankDetailsBranchAddressInput').value = '';
@@ -4202,7 +4203,8 @@
         const accountTitleInput = document.getElementById('bankDetailsAccountTitleInput');
         const accountNoInput = document.getElementById('bankDetailsAccountNumberInput');
         const ibanInput = document.getElementById('bankDetailsIbanInput');
-        const bankNameInput = document.getElementById('bankDetailsBranchNameInput');
+        const bankNameInput = document.getElementById('bankDetailsBankNameInput');
+        const branchNameInput = document.getElementById('bankDetailsBranchNameInput');
         const branchCodeInput = document.getElementById('bankDetailsBranchCodeInput');
         const branchAddressInput = document.getElementById('bankDetailsBranchAddressInput');
 
@@ -4210,6 +4212,7 @@
         const accountNo = String(accountNoInput?.value ?? '').replace(/\s+/g, '');
         const iban = String(ibanInput?.value ?? '').replace(/\s+/g, '').toUpperCase();
         const bankName = String(bankNameInput?.value ?? '').trim();
+        const branchName = String(branchNameInput?.value ?? '').trim();
         const branchCode = String(branchCodeInput?.value ?? '').trim();
         const branchAddress = String(branchAddressInput?.value ?? '').trim();
 
@@ -4217,6 +4220,7 @@
         if (ibanInput) ibanInput.value = iban;
         if (accountTitleInput) accountTitleInput.value = accountTitle;
         if (bankNameInput) bankNameInput.value = bankName;
+        if (branchNameInput) branchNameInput.value = branchName;
         if (branchCodeInput) branchCodeInput.value = branchCode;
         if (branchAddressInput) branchAddressInput.value = branchAddress;
 
@@ -4253,11 +4257,13 @@
         }
 
         if (!bankName) {
-            errors.bank_name = ['Bank name is required.'];
-        } else if (bankName.length > 100) {
-            errors.bank_name = ['Bank name must not exceed 100 characters.'];
-        } else if (!bankNameRegex.test(bankName)) {
-            errors.bank_name = ['Enter the real bank name (letters required). Numbers-only or account-style values are not accepted.'];
+            errors.bank_name = ['Bank institution name is required.'];
+        }
+
+        if (!branchName) {
+            errors.branch_name = ['Branch name is required.'];
+        } else if (branchName.length > 100) {
+            errors.branch_name = ['Branch name must not exceed 100 characters.'];
         }
 
         if (!branchCode) {
@@ -4305,6 +4311,7 @@
             account_no: accountNo,
             iban,
             bank_name: bankName,
+            branch_name: branchName,
             branch_code: branchCode,
             branch_address: branchAddress,
             account_type: accountType,
@@ -4460,6 +4467,7 @@
             account_no: validatedBank.account_no,
             iban: validatedBank.iban,
             bank_name: validatedBank.bank_name,
+            branch_name: validatedBank.branch_name,
             branch_code: validatedBank.branch_code,
             branch_address: validatedBank.branch_address,
             account_type: validatedBank.account_type,
@@ -4506,6 +4514,7 @@
                     account_no: payload.account_no,
                     iban: payload.iban,
                     bank_name: payload.bank_name,
+                    branch_name: payload.branch_name,
                     branch_code: payload.branch_code,
                     branch_address: payload.branch_address,
                     account_type: payload.account_type,
@@ -4547,7 +4556,8 @@
         document.getElementById('bankDetailsAccountTitleInput').value = bank.account_title || '';
         document.getElementById('bankDetailsAccountNumberInput').value = bank.account_no || '';
         document.getElementById('bankDetailsIbanInput').value = bank.iban || '';
-        document.getElementById('bankDetailsBranchNameInput').value = bank.bank_name || '';
+        document.getElementById('bankDetailsBankNameInput').value = bank.bank_name || '';
+        document.getElementById('bankDetailsBranchNameInput').value = bank.branch_name || '';
         document.getElementById('bankDetailsBranchCodeInput').value = bank.branch_code || '';
         document.getElementById('bankDetailsBranchAddressInput').value = bank.branch_address || '';
         
@@ -4615,7 +4625,15 @@
             const initial = (bank.bank_name || 'B').charAt(0).toUpperCase();
             clone.querySelector('.bank-initial-icon').innerText = initial;
             clone.querySelector('.bank-title-label').innerText = bank.account_title || 'Account';
-            clone.querySelector('.bank-sub-label').innerText = `Source: ${bank.bank_name || 'N/A'} - (${bank.account_category || '-'})`;
+            clone.querySelector('.bank-institution-label').innerText = bank.bank_name || 'N/A';
+            
+            const branchLabel = clone.querySelector('.bank-branch-label');
+            const branchRow = clone.querySelector('.bank-branch-row');
+            if (bank.branch_name) {
+                if (branchLabel) branchLabel.innerText = bank.branch_name;
+                if (branchRow) branchRow.classList.remove('d-none');
+            }
+            clone.querySelector('.bank-category-label').innerText = `(${bank.account_category || '-'})`;
             clone.querySelector('.bank-no-label').innerText = bank.account_no || 'N/A';
             clone.querySelector('.bank-iban-label').innerText = bank.iban || 'N/A';
             

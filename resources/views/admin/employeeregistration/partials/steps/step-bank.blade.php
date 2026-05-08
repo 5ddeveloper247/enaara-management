@@ -58,6 +58,16 @@
 
                         <div class="row g-3">
                              <div class="col-md-4">
+                                 <label class="form-label opacity-75 small fw-bold">Bank Name <span class="text-danger">*</span></label>
+                                 <select name="bank_name" class="form-select" id="bankDetailsBankNameInput">
+                                     <option value="">Select Bank</option>
+                                     @foreach(getPakistaniBanks() as $bank)
+                                         <option value="{{ $bank }}">{{ $bank }}</option>
+                                     @endforeach
+                                 </select>
+                             </div>
+
+                             <div class="col-md-4">
                                  <label class="form-label opacity-75 small fw-bold">Account Title <span class="text-danger">*</span></label>
                                  <input type="text" name="account_title" class="form-control" id="bankDetailsAccountTitleInput"
                                      maxlength="50"
@@ -92,7 +102,7 @@
                                 <div class="row g-3">
                                      <div class="col-md-6">
                                          <label class="form-label opacity-75 small fw-bold">Branch Name <span class="text-danger">*</span></label>
-                                         <input type="text" name="bank_name" class="form-control"
+                                         <input type="text" name="branch_name" class="form-control"
                                              id="bankDetailsBranchNameInput"
                                              maxlength="100"
                                              placeholder="Enter branch name">
@@ -180,7 +190,9 @@
                                             </div>
                                             <div>
                                                 <h6 class="mb-0 fw-semibold small">{{ $bank['account_title'] ?? 'Account' }}</h6>
-                                                <small class="text-muted small">{{ $bank['bank_name'] ?? 'N/A' }} - ({{ $bank['account_category'] ?? '-' }})</small>
+                                                <small class="text-muted small bank-institution-label">{{ $bank['bank_name'] ?? 'N/A' }}</small>
+                                                <br>
+                                                <small class="text-muted small bank-category-label">({{ $bank['account_category'] ?? '-' }})</small>
                                             </div>
                                         </div>
                                         @if($bank['is_salary_account'])
@@ -196,6 +208,10 @@
                                     <div class="mb-2">
                                         <i class="bi bi-bank me-1 text-main small"></i>
                                         <small class="text-muted small"><strong>IBAN:</strong> {{ Str::limit($bank['iban'] ?? 'N/A', 30) }}</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <i class="bi bi-geo-alt me-1 text-main small"></i>
+                                        <small class="text-muted small"><strong>Branch:</strong> {{ $bank['branch_name'] ?? 'N/A' }}</small>
                                     </div>
                                     @if(!empty($bank['branch_code']))
                                     <div class="mb-2">
@@ -234,7 +250,9 @@
                         <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold bank-initial-icon" style="width: 45px; height: 45px; font-size: 1.1rem;">B</div>
                         <div>
                             <h6 class="mb-0 fw-semibold small bank-title-label">Account Title</h6>
-                            <small class="text-muted small bank-sub-label">Bank Name - (Category)</small>
+                            <small class="text-muted small bank-institution-label">Bank Name</small>
+                            <br>
+                            <small class="text-muted small bank-category-label">(Category)</small>
                         </div>
                     </div>
                     <div class="salary-account-badge d-none">
@@ -251,6 +269,10 @@
                 <div class="mb-2">
                     <i class="bi bi-bank me-1 text-main small"></i>
                     <small class="text-muted small"><strong>IBAN:</strong> <span class="bank-iban-label">N/A</span></small>
+                </div>
+                <div class="mb-2 bank-branch-row d-none">
+                    <i class="bi bi-geo-alt me-1 text-main small"></i>
+                    <small class="text-muted small"><strong>Branch:</strong> <span class="bank-branch-label">N/A</span></small>
                 </div>
                 <div class="mb-2 bank-branch-code-row d-none">
                     <i class="bi bi-hash me-1 text-main small"></i>

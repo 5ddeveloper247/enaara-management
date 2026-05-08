@@ -94,3 +94,44 @@ if (!function_exists('model_changes_for_audit')) {
         return $changes;
     }
 }
+
+if (!function_exists('getPakistaniBanks')) {
+    function getPakistaniBanks()
+    {
+        return [
+            'Easypaisa Bank Limited',
+            'Mashreq Bank Pakistan Limited',
+            'Raqami Islamic Digital Bank Limited',
+            'First Women Bank Limited',
+            'National Bank of Pakistan',
+            'The Bank of Khyber',
+            'The Bank of Punjab',
+            'Sindh Bank Limited',
+            'Zarai Taraqiati Bank Limited',
+            'Punjab Provincial Cooperative Bank Limited',
+            'Habib Bank Limited',
+            'United Bank Limited',
+            'MCB Bank Limited',
+            'Allied Bank limited',
+            'Bank Al-Falah Limited',
+            'Bank Al-Habib Limited',
+            'Habib Metropolitan Bank Limited',
+            'JS Bank Limited',
+            'Samba Bank Limited',
+            'Askari Bank Limited',
+            'Standard Chartered Bank (Pakistan) Limited',
+            'Soneri Bank Limited',
+            'Bank Makramah Limited',
+            'Meezan Bank Limited',
+            'Al-Baraka Bank (Pakistan) Limited',
+            'Bank Islami Pakistan Limited',
+            'MCB Islamic Bank Limited',
+            'Dubai Islamic Bank Pakistan',
+            'Faysal Bank Limited',
+            'Citi Bank N.A.',
+            'Deutsche Bank AG',
+            'Industrial & Commercial Bank of China',
+            'Bank of China Limited',
+        ];
+    }
+}

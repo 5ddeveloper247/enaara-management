@@ -293,7 +293,7 @@ class EmployeeController extends Controller
                     $validated = $request->validated();
                     $row = Arr::only($validated, [
                         'account_category', 'account_title', 'account_no', 'bank_name',
-                        'branch_code', 'branch_address', 'iban', 'account_type', 'is_salary_account',
+                        'branch_name', 'branch_code', 'branch_address', 'iban', 'account_type', 'is_salary_account',
                         'bank_detail_id'
                     ]);
                     try {

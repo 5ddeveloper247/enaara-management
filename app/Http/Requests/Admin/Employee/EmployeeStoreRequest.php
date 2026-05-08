@@ -489,6 +489,7 @@ class EmployeeStoreRequest extends FormRequest
             'banks.*.account_title'  => ['required', 'string', 'min:3', 'max:255', 'regex:' . $this->nameRegex()],
             'banks.*.account_no'     => ['required', 'string', 'min:8', 'max:24', 'regex:/^[0-9]+$/'],
             'banks.*.bank_name'      => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
+            'banks.*.branch_name'    => ['required', 'string', 'min:2', 'max:255', 'regex:' . $this->alphaNumericTextRegex()],
             'banks.*.branch_code'    => ['required', 'string', 'min:1', 'max:10', 'regex:/^[A-Za-z0-9\-]+$/'],
             'banks.*.branch_address' => ['required', 'string', 'min:2', 'max:500', 'regex:' . $this->alphaNumericTextRegex()],
             'banks.*.iban'           => ['required', 'string', 'max:34', 'regex:/^[A-Z0-9]+$/'],
