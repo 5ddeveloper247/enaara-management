@@ -260,7 +260,7 @@
                                                 <div class="fw-bold text-uppercase small mb-3">Academic</div>
                                                 <div class="academic-records-wrap bg-white">
                                                     <div class="academic-records-toolbar">
-                                                        <div class="small text-secondary">Add each academic record as a separate row.</div>
+                                                        <div class="small text-secondary">Add each academic record as a separate row (Start from latest to old).</div>
                                                         <span class="academic-records-count" id="moreAcademicRecordCount">0 Records</span>
                                                     </div>
                                                      <div id="moreAcademicRecordsContainer"></div>
