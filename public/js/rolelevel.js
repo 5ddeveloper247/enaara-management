@@ -41,6 +41,7 @@
         $('#detailRoleLevelName').text(name);
         $('#detailRoleLevelLevelBadge').text('Level ' + get('data-rolelevel-level'));
         $('#detailRoleLevelLevel').text(get('data-rolelevel-level'));
+        $('#detailRoleLevelGrade').text(get('data-rolelevel-grade'));
         $('#detailRoleLevelDescription').text(get('data-rolelevel-description'));
         $('#detailRoleLevelStatus').text(get('data-rolelevel-active') === '1' ? 'Active' : 'Inactive');
     }
@@ -110,12 +111,14 @@
             ? {
                 name: '#rl_name',
                 level: '#rl_level',
+                grade: '#rl_grade',
                 description: '#rl_description',
                 is_active: '#rl_is_active',
             }
             : {
                 name: '#edit_rl_name',
                 level: '#edit_rl_level',
+                grade: '#edit_rl_grade',
                 description: '#edit_rl_description',
                 is_active: '#edit_rl_is_active',
             };
@@ -233,6 +236,7 @@
                     $('#edit_rl_id').val(data.id ?? '');
                     $('#edit_rl_name').val(data.name ?? '');
                     $('#edit_rl_level').val(data.level ?? '');
+                    $('#edit_rl_grade').val(data.grade ?? '');
                     $('#edit_rl_description').val(data.description ?? '');
                     $('#edit_rl_is_active').val(
                         data.is_active === 1 || data.is_active === '1' || data.is_active === true ? '1' : '0'

@@ -29,6 +29,13 @@
             </div>
 
             <div class="mb-3">
+                <label for="edit_rl_grade" class="form-label fw-semibold small text-white">
+                    Grade <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="edit_rl_grade" name="grade" placeholder="Enter grade (e.g. A, B+, 1)" maxlength="50" required>
+            </div>
+
+            <div class="mb-3">
                 <label for="edit_rl_description" class="form-label fw-semibold small text-white">
                     Description
                 </label>

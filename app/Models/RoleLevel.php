@@ -11,6 +11,7 @@ class RoleLevel extends Model
         'name',
         'description',
         'level',
+        'grade',
         'is_active',
     ];
 

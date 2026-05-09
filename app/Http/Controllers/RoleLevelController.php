@@ -109,6 +109,7 @@ class RoleLevelController extends Controller
                     'name' => $roleLevel->name,
                     'description' => $roleLevel->description,
                     'level' => $roleLevel->level,
+                    'grade' => $roleLevel->grade,
                     'is_active' => $roleLevel->is_active,
                 ]
             ]);

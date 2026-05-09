@@ -12,7 +12,7 @@
                                 </div>
                                 <div>
                                     <h6 class="mb-0 fw-semibold small">{{ $roleLevel->name }}</h6>
-                                    <small class="text-muted small">Level {{ $roleLevel->level }}</small>
+                                    <small class="text-muted small">Grade {{ $roleLevel->grade }}</small>
                                 </div>
                             </div>
                             @if($roleLevel->is_active)
@@ -58,6 +58,7 @@
                                 data-rolelevel-name="{{ e($roleLevel->name) }}"
                                 data-rolelevel-description="{{ e($roleLevel->description ?? '') }}"
                                 data-rolelevel-level="{{ $roleLevel->level }}"
+                                data-rolelevel-grade="{{ e($roleLevel->grade ?? '') }}"
                                 data-rolelevel-active="{{ $roleLevel->is_active ? '1' : '0' }}">
                                 <i class="bi bi-eye"></i>
                             </button>

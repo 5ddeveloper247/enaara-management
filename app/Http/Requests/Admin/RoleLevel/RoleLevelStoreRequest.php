@@ -49,6 +49,7 @@ class RoleLevelStoreRequest extends FormRequest
             ],
             'description' => 'nullable|string|max:500',
             'level' => 'required|integer|min:1|digits_between:1,10|max:9999999999',
+            'grade' => 'required|string|max:50',
             'is_active' => 'boolean',
         ];
     }
@@ -64,6 +65,8 @@ class RoleLevelStoreRequest extends FormRequest
             'level.min' => 'Role level priority must be at least 1.',
             'level.digits_between' => 'You can enter maximum 10 digits for role level priority.',
             'level.max' => 'You can enter maximum 10 digits for role level priority.',
+            'grade.required' => 'Grade is required.',
+            'grade.max' => 'Grade must not exceed 50 characters.',
             'description.max' => 'Description must not exceed 500 characters.',
         ];
     }

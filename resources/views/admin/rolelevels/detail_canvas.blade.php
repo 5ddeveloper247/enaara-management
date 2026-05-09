@@ -24,10 +24,16 @@
                 <i class="bi bi-file-text me-2"></i>Basic Information
             </h6>
             <div class="row g-3">
-                <div class="col-12">
+                <div class="col-md-6">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Priority Level</small>
                         <div class="fw-semibold small" id="detailRoleLevelLevel">—</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Grade</small>
+                        <div class="fw-semibold small" id="detailRoleLevelGrade">—</div>
                     </div>
                 </div>
                 <div class="col-12">
