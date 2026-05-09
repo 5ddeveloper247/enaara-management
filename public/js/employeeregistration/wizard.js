@@ -3861,14 +3861,14 @@
     function syncGradeWithRole(roleId) {
         if (!gradeInput && !gradeDisplayInput) return;
         const role = rolesData.find(r => String(r.id) === String(roleId));
-        const roleLevel = role && role.level !== null && role.level !== undefined && role.level !== ''
-            ? String(role.level)
+        const roleGrade = role && role.grade !== null && role.grade !== undefined && role.grade !== ''
+            ? String(role.grade)
             : '';
         if (gradeInput) {
-            gradeInput.value = roleLevel;
+            gradeInput.value = roleGrade;
         }
         if (gradeDisplayInput) {
-            gradeDisplayInput.value = roleLevel;
+            gradeDisplayInput.value = roleGrade;
         }
     }
 

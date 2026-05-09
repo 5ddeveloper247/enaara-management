@@ -179,7 +179,7 @@ class EmployeeService
             ->with([
                 'department:id,sbu_id',
                 'sbus:id',
-                'roleLevel:id,level',
+                'roleLevel:id,level,grade',
             ])
             ->get();
 
@@ -189,7 +189,10 @@ class EmployeeService
             ->where('name', '!=', '')
             ->get()
             ->groupBy(fn(RoleLevel $rl): string => Str::lower(trim((string) $rl->name)))
-            ->map(fn($group) => (int) $group->min('level'));
+            ->map(fn($group) => [
+                'level' => (int) $group->min('level'),
+                'grade' => $group->first()->grade,
+            ]);
 
         $orgsData = $organizations->map(fn($o) => [
             'id' => $o->id,
@@ -232,12 +235,19 @@ class EmployeeService
                 $linked->push($r->department->sbu_id);
             }
 
-            $fromFk = $r->roleLevel?->level;
+            $fromFkLevel = $r->roleLevel?->level;
+            $fromFkGrade = $r->roleLevel?->grade;
+            
             $normName = Str::lower(trim((string) $r->name));
-            $fromName = $normName !== '' ? $levelByNormalizedRoleLevelName->get($normName) : null;
-            $effectiveLevel = $fromFk !== null && $fromFk !== ''
-                ? (int) $fromFk
-                : ($fromName !== null ? (int) $fromName : null);
+            $fromData = $normName !== '' ? $levelByNormalizedRoleLevelName->get($normName) : null;
+            
+            $effectiveLevel = $fromFkLevel !== null && $fromFkLevel !== ''
+                ? (int) $fromFkLevel
+                : ($fromData !== null ? $fromData['level'] : null);
+                
+            $effectiveGrade = $fromFkGrade !== null && $fromFkGrade !== ''
+                ? (string) $fromFkGrade
+                : ($fromData !== null ? $fromData['grade'] : null);
 
             return [
                 'id'                    => $r->id,
@@ -246,6 +256,7 @@ class EmployeeService
                 'sbu_id'                => $r->sbu_id,
                 'department_id'         => $r->department_id,
                 'level'                 => $effectiveLevel,
+                'grade'                 => $effectiveGrade,
                 'linked_sbu_ids'        => $linked->unique()->values()->all(),
                 'is_organization_level' => $r->isOrganizationLevelRole(),
             ];
