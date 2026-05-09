@@ -110,15 +110,8 @@
         if (!isoDate || isoDate === '-' || isoDate === '') return '-';
         const parts = isoDate.split('-');
         if (parts.length !== 3) return isoDate;
-        // Create date object using local time to avoid timezone shifts
-        const date = new Date(parts[0], parts[1] - 1, parts[2]);
-        if (isNaN(date.getTime())) return isoDate;
-        // Use 2-digit day/month to better match typical browser date input displays
-        return date.toLocaleDateString(undefined, { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric' 
-        });
+        // Fixed DD/MM/YYYY format to match user's preferred display and avoid locale ambiguity
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
     function formatContactMaskInput(target) {
