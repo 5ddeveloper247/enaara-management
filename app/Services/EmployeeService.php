@@ -1526,8 +1526,36 @@ class EmployeeService
             // Salary Bank Details
             $salaryBank = $emp->bankDetails->where('is_salary_account', true)->first() ?? $emp->bankDetails->first();
 
-            // Latest Academic Record (first-added = primary/highest qualification)
-            $latestAcademic = $emp->academics->sortBy('id')->first();
+            // Latest Academic Record:
+            // Ranks based on EXACT degree option values from the wizard dropdown
+            // Priority 1 → highest degree rank
+            // Priority 2 → most recent end_date (latest graduation year)
+            // Priority 3 → first-added record (lowest id) as last resort
+            $degreeRank = function (string $degree): int {
+                $map = [
+                    'Doctorate (PhD)'         => 100,
+                    'MS / MPhil'              => 90,
+                    'Master (2 Years)'        => 80,
+                    'Bachelor (4 Years / BS)' => 70,
+                    'Bachelor (2 Years)'      => 60,
+                    'Associate Degree Program'=> 50,
+                    'Intermediate / Diploma'  => 30,
+                    'Matric'                  => 20,
+                    'Under Matric'            => 10,
+                ];
+                return $map[trim($degree)] ?? -1;
+            };
+
+            $rankedAcademic = $emp->academics
+                ->sortByDesc(function ($a) use ($degreeRank) {
+                    $rank = $degreeRank($a->degree ?? '');
+                    // Secondary sort: most recent end_year (higher year = more recent)
+                    $year = $a->end_date ? (int) $a->end_date->format('Y') : 0;
+                    return ($rank * 10000) + $year;
+                })
+                ->first();
+            // If no rank matched at all, fall back to most-recent end_date, then first-added
+            $latestAcademic = $rankedAcademic ?? $emp->academics->sortByDesc('end_date')->sortBy('id')->first();
 
             // Latest Ex-Employment
             $latestExEmployment = $emp->exEmployments->sortByDesc('id')->first();
