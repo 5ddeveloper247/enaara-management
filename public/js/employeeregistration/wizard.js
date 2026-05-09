@@ -106,6 +106,21 @@
     let availableDepartments = [];
     let availableFloors = [];
 
+    function formatPreviewDate(isoDate) {
+        if (!isoDate || isoDate === '-' || isoDate === '') return '-';
+        const parts = isoDate.split('-');
+        if (parts.length !== 3) return isoDate;
+        // Create date object using local time to avoid timezone shifts
+        const date = new Date(parts[0], parts[1] - 1, parts[2]);
+        if (isNaN(date.getTime())) return isoDate;
+        // Use 2-digit day/month to better match typical browser date input displays
+        return date.toLocaleDateString(undefined, { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+        });
+    }
+
     function formatContactMaskInput(target) {
         if (!target || !target.classList || !target.classList.contains('contact-mask')) return;
         let val = target.value.replace(/\D/g, '');
@@ -4769,6 +4784,8 @@
                         let displayValue = input.value || '-';
                         if (input.tagName === 'SELECT' && input.value) {
                             displayValue = input.options[input.selectedIndex].text;
+                        } else if (input.type === 'date' && input.value) {
+                            displayValue = formatPreviewDate(input.value);
                         }
                         
                         // Special case for Relation "Other"
