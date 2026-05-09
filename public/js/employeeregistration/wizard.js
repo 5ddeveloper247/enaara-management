@@ -4934,9 +4934,15 @@
             const institute = v('institute');
             const alphaNumericTextRegex = /^[A-Za-z0-9]+[\sA-Za-z0-9.\-&,\/()#']*$/;
 
-            if (!degree) addErr('degree', 'Degree is required.');
-            else if (degree.length > 50) addErr('degree', 'Degree must not exceed 50 characters.');
-            else if (countWords(degree) > 20) addErr('degree', 'Certificate / Degree can be at most 20 words.');
+            if (!degree) addErr('degree', 'Degree type is required.');
+            else if (degree.length > 50) addErr('degree', 'Degree type must not exceed 50 characters.');
+            else if (countWords(degree) > 20) addErr('degree', 'Degree type can be at most 20 words.');
+
+            const degreeTitle = v('degree_title');
+            if (!degreeTitle) addErr('degree_title', 'Degree title is required.');
+            else if (degreeTitle.length > 100) addErr('degree_title', 'Degree title must not exceed 100 characters.');
+            else if (countWords(degreeTitle) > 20) addErr('degree_title', 'Degree title can be at most 20 words.');
+
             if (!grade) addErr('grade_cgpa', 'Grade / CGPA is required.');
             else if (grade.length > 20) addErr('grade_cgpa', 'Grade / CGPA must not exceed 20 characters.');
             else if (countWords(grade) > 10) addErr('grade_cgpa', 'Grade / CGPA can be at most 10 words.');
@@ -5437,6 +5443,7 @@
                 }
                 degreeEl.value = data.degree;
             }
+            if (data.degree_title) row.querySelector('[data-academic-degree-title]').value = data.degree_title;
             if (data.grade_cgpa) row.querySelector('[data-academic-grade]').value = data.grade_cgpa;
             if (data.start_date) row.querySelector('[data-academic-start-date]').value = data.start_date;
             if (data.end_date) row.querySelector('[data-academic-end-date]').value = data.end_date;
@@ -5542,6 +5549,9 @@
             if (!target) return null;
             if (target.matches('[data-academic-degree]')) {
                 return { max: 50, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 50 characters allowed.' };
+            }
+            if (target.matches('[data-academic-degree-title]')) {
+                return { max: 100, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 100 characters allowed.' };
             }
             if (target.matches('[data-academic-grade]')) {
                 return { max: 20, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 20 characters allowed.' };

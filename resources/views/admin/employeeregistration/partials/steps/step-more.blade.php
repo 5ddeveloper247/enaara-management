@@ -271,6 +271,7 @@
                                                                          window.addAcademicRecord({
                                                                              id: @json($record->id),
                                                                              degree: @json($record?->degree),
+                                                                             degree_title: @json($record?->degree_title),
                                                                              grade_cgpa: @json($record?->grade_cgpa),
                                                                              start_date: @json($record?->start_date ? $record?->start_date?->format('Y-m-d') : ''),
                                                                              end_date: @json($record?->end_date ? $record?->end_date?->format('Y-m-d') : ''),
@@ -306,20 +307,45 @@
                                                 </div>
                                                 <div class="row g-2">
                                                     <div class="col-12 col-md-6 col-xl-3">
-                                                        <label class="form-label">Degree <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Degree Type <span class="text-danger">*</span></label>
                                                         <select class="form-select academic-field-input" name="academics[][degree]"
                                                             data-academic-degree required>
-                                                            <option value="" selected disabled>Select degree</option>
+                                                            <option value="" selected disabled>Select degree type</option>
                                                             <option value="Under Matric">Under Matric</option>
                                                             <option value="Matric">Matric</option>
                                                             <option value="Intermediate / Diploma">Intermediate / Diploma</option>
                                                             <option value="Associate Degree Program">Associate Degree Program</option>
                                                             <option value="Bachelor (2 Years)">Bachelor (2 Years)</option>
                                                             <option value="Bachelor (4 Years / BS)">Bachelor (4 Years / BS)</option>
-                                                            <option value="Master (2 Years / MS / MPhil)">Master (2 Years / MS / MPhil)</option>
+                                                            <option value="Master (2 Years)">Master (2 Years)</option>
+                                                            <option value="MS / MPhil">Master (4 Years MS / MPhil)</option>
                                                             <option value="Doctorate (PhD)">Doctorate (PhD)</option>
                                                         </select>
                                                         <div class="academic-field-preview" data-academic-preview-degree>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-6 col-xl-3">
+                                                        <label class="form-label">Degree Title <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control academic-field-input" name="academics[][degree_title]"
+                                                            data-academic-degree-title placeholder="Enter degree title" required maxlength="100">
+                                                        <div class="academic-field-preview" data-academic-preview-degree-title>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-6 col-xl-3">
+                                                        <label class="form-label">Field of Study</label>
+                                                        <input type="text" class="form-control academic-field-input" name="academics[][field_of_study]"
+                                                            data-academic-field-of-study placeholder="Enter field of study" maxlength="50">
+                                                        <div class="academic-field-preview" data-academic-preview-field-of-study>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-6 col-xl-3">
+                                                        <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                                                        <input type="date" class="form-control academic-field-input" name="academics[][start_date]"
+                                                            data-academic-start-date placeholder="yyyy-mm-dd" required>
+                                                        <div class="academic-field-preview" data-academic-preview-start-date>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-6 col-xl-3">
+                                                        <label class="form-label">End Date <span class="text-danger">*</span></label>
+                                                        <input type="date" class="form-control academic-field-input" name="academics[][end_date]"
+                                                            data-academic-end-date placeholder="yyyy-mm-dd" required>
+                                                        <div class="academic-field-preview" data-academic-preview-end-date>-</div>
                                                     </div>
                                                     <div class="col-12 col-md-6 col-xl-3">
                                                         <label class="form-label">Grade / Div / CGPA <span class="text-danger">*</span></label>
@@ -360,24 +386,6 @@
                                                             <option value="FBISE Islamabad">FBISE Islamabad</option>
                                                         </select>
                                                         <div class="academic-field-preview" data-academic-preview-board>-</div>
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-2">
-                                                        <label class="form-label">Start Date <span class="text-danger">*</span></label>
-                                                        <input type="date" class="form-control academic-field-input" name="academics[][start_date]"
-                                                            data-academic-start-date placeholder="yyyy-mm-dd" required>
-                                                        <div class="academic-field-preview" data-academic-preview-start-date>-</div>
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-2">
-                                                        <label class="form-label">End Date <span class="text-danger">*</span></label>
-                                                        <input type="date" class="form-control academic-field-input" name="academics[][end_date]"
-                                                            data-academic-end-date placeholder="yyyy-mm-dd" required>
-                                                        <div class="academic-field-preview" data-academic-preview-end-date>-</div>
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-2">
-                                                        <label class="form-label">Field of Study</label>
-                                                        <input type="text" class="form-control academic-field-input" name="academics[][field_of_study]"
-                                                            data-academic-field-of-study placeholder="Enter field of study" maxlength="50">
-                                                        <div class="academic-field-preview" data-academic-preview-field-of-study>-</div>
                                                     </div>
                                                     <div class="col-12">
                                                         <label class="form-label">University / Board / Institute</label>

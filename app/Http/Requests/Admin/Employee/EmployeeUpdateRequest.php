@@ -553,7 +553,8 @@ class EmployeeUpdateRequest extends FormRequest
 
             // Academics
             'academics' => ['nullable', 'array'],
-            'academics.*.degree' => ['required_with:academics.*', 'string', $this->maxWordsRule(10, 'Certificate / degree')],
+            'academics.*.degree' => ['required_with:academics.*', 'string', $this->maxWordsRule(10, 'Degree type')],
+            'academics.*.degree_title' => ['required_with:academics.*', 'string', 'max:100', $this->maxWordsRule(20, 'Degree title')],
             'academics.*.grade_cgpa' => ['required_with:academics.*', 'string', $this->maxWordsRule(5, 'Grade / CGPA')],
             'academics.*.start_date' => ['required_with:academics.*', 'date'],
             'academics.*.end_date' => ['required_with:academics.*', 'date'],
@@ -806,7 +807,8 @@ class EmployeeUpdateRequest extends FormRequest
             'family.*.relation.required_with' => 'Family member relation is required.',
 
             // Academics
-            'academics.*.degree.required_with' => 'Degree name is required.',
+            'academics.*.degree.required_with' => 'Degree type is required.',
+            'academics.*.degree_title.required_with' => 'Degree title is required.',
             'academics.*.grade_cgpa.required_with' => 'Grade / CGPA is required.',
             'academics.*.start_date.required_with' => 'Academic start date is required.',
             'academics.*.end_date.required_with' => 'Academic end date is required.',

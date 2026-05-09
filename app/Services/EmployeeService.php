@@ -891,6 +891,7 @@ class EmployeeService
             EmployeeAcademic::create([
                 'employee_id'    => $id,
                 'degree'         => $row['degree'],
+                'degree_title'   => $row['degree_title'] ?? null,
                 'grade_cgpa'     => $row['grade_cgpa'] ?? null,
                 'start_date'     => !empty($row['start_date']) ? $row['start_date'] : null,
                 'end_date'       => !empty($row['end_date']) ? $row['end_date'] : null,
@@ -1054,6 +1055,7 @@ class EmployeeService
             ['id' => $academicId, 'employee_id' => $id],
             [
                 'degree'         => $row['degree'],
+                'degree_title'   => $row['degree_title'] ?? null,
                 'grade_cgpa'     => $row['grade_cgpa'] ?? null,
                 'start_date'     => !empty($row['start_date']) ? $row['start_date'] : null,
                 'end_date'       => !empty($row['end_date']) ? $row['end_date'] : null,

@@ -775,7 +775,8 @@ class EmployeeStepRequest extends FormRequest
 
             case 'academic_row':
                 return array_merge($rules, [
-                    'degree'         => ['required', 'string', 'max:50', $this->maxWordsRule(20, 'Certificate / Degree')],
+                    'degree'         => ['required', 'string', 'max:50', $this->maxWordsRule(20, 'Degree type')],
+                    'degree_title'   => ['required', 'string', 'max:100', $this->maxWordsRule(20, 'Degree title')],
                     'grade_cgpa'     => ['required', 'string', 'max:20', $this->maxWordsRule(10, 'Grade / CGPA')],
                     'start_date'     => ['required', 'date'],
                     'end_date'       => ['required', 'date', 'after_or_equal:start_date'],
@@ -1305,8 +1306,10 @@ class EmployeeStepRequest extends FormRequest
             'family.*.occupation.regex' => 'Family member occupation contains invalid characters.',
 
             // Academics
-            'academics.*.degree.required_with' => 'Degree / certificate is required.',
-            'academics.*.degree.max' => 'Degree / certificate must not exceed 50 characters.',
+            'academics.*.degree.required_with' => 'Degree type is required.',
+            'academics.*.degree.max' => 'Degree type must not exceed 50 characters.',
+            'academics.*.degree_title.required_with' => 'Degree title is required.',
+            'academics.*.degree_title.max' => 'Degree title must not exceed 100 characters.',
             'academics.*.grade_cgpa.required_with' => 'Grade / CGPA is required.',
             'academics.*.grade_cgpa.max' => 'Grade / CGPA must not exceed 20 characters.',
             'academics.*.start_date.required_with' => 'Academic start date is required.',
