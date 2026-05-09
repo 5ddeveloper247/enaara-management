@@ -580,10 +580,10 @@
                                                     <div class="card-body p-3">
                                                         @php
                                                             $hasChronicValMedical = strtolower((string) ($employee?->medical?->has_chronic_disease ?? ''));
-                                                        @endphp
+                                                        @endphp  
                                                         <div class="row g-3">
                                                             <div class="col-12 col-md-6">
-                                                                <label class="form-label">Last Medical Fitness Test <span class="text-muted fw-normal">(Date)</span></label>
+                                                                <label class="form-label">Last Medical Test Date</label>
                                                                 <input type="date" name="last_fitness_test_date" class="form-control" id="moreMedicalLastFitnessTestDateInput"
                                                                     max="{{ date('Y-m-d') }}"
                                                                     value="{{ $employee?->medical?->last_fitness_test_date ? $employee->medical->last_fitness_test_date->format('Y-m-d') : '' }}">
@@ -597,9 +597,9 @@
                                                                 </select>
                                                             </div>
                                                             <div class="col-12">
-                                                                <label class="form-label">Last Medical Fitness Test - Date & Results</label>
+                                                                <label class="form-label">Medical Remarks</label>
                                                                 <textarea name="last_fitness_test" class="form-control" id="moreMedicalLastFitnessTestInput" rows="2" maxlength="500"
-                                                                    placeholder="Enter date and results of last medical fitness test">{{ $employee?->medical?->last_fitness_test ?? '' }}</textarea>
+                                                                    placeholder="Enter Medical Remarks">{{ $employee?->medical?->last_fitness_test ?? '' }}</textarea>
                                                             </div>
                                                             <div class="col-md-4">
                                                                 <label class="form-label">Do you have any disability? <span class="text-danger">*</span></label>
