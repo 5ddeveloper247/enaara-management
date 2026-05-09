@@ -56,7 +56,7 @@
                                                         <label class="form-label">MSR Date <span class="text-danger police-mandatory-star d-none">*</span></label>
                                                         <input type="date" name="msr_date" class="form-control police-verification-field"
                                                             id="policeVerificationMsrDateInput"
-                                                            value="{{ isset($pv->msr_date) ? $pv->msr_date->format('Y-m-d') : '' }}"
+                                                            value="{{ isset($pv->msr_date) && $pv->msr_date ? (is_string($pv->msr_date) ? date('Y-m-d', strtotime($pv->msr_date)) : $pv->msr_date->format('Y-m-d')) : '' }}"
                                                             placeholder="yyyy-mm-dd">
                                                     </div>
                                                     <div class="col-md-6">
@@ -71,7 +71,7 @@
                                                         <label class="form-label">Verification Letter Date <span class="text-danger police-mandatory-star d-none">*</span></label>
                                                         <input type="date" name="verification_letter_date" class="form-control police-verification-field"
                                                             id="policeVerificationLetterDateInput"
-                                                            value="{{ isset($pv->verification_letter_date) ? $pv->verification_letter_date->format('Y-m-d') : '' }}"
+                                                            value="{{ isset($pv->verification_letter_date) && $pv->verification_letter_date ? (is_string($pv->verification_letter_date) ? date('Y-m-d', strtotime($pv->verification_letter_date)) : $pv->verification_letter_date->format('Y-m-d')) : '' }}"
                                                             placeholder="yyyy-mm-dd">
                                                     </div>
                                                 </div>
@@ -103,7 +103,7 @@
                                                         <label class="form-label">Next Verification Date <span class="text-danger police-mandatory-star d-none">*</span></label>
                                                         <input type="date" name="next_verification_date" class="form-control police-verification-field"
                                                             id="policeVerificationNextVerificationDateInput"
-                                                            value="{{ isset($pv->next_verification_date) ? $pv->next_verification_date->format('Y-m-d') : '' }}"
+                                                            value="{{ isset($pv->next_verification_date) && $pv->next_verification_date ? (is_string($pv->next_verification_date) ? date('Y-m-d', strtotime($pv->next_verification_date)) : $pv->next_verification_date->format('Y-m-d')) : '' }}"
                                                             placeholder="yyyy-mm-dd">
                                                     </div>
                                                 </div>

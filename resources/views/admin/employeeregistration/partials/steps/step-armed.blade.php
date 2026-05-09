@@ -45,13 +45,13 @@
                                                             <label class="form-label">Date of Commissioning / Enrollment</label>
                                                             <input type="date" name="date_of_commissioning" class="form-control"
                                                                 id="armedDetailsCommissioningEnrollmentDateInput"
-                                                                value="{{ $af['date_of_commissioning'] ?? '' }}"
+                                                                value="{{ isset($af['date_of_commissioning']) && $af['date_of_commissioning'] ? (is_string($af['date_of_commissioning']) ? date('Y-m-d', strtotime($af['date_of_commissioning'])) : (\Carbon\Carbon::parse($af['date_of_commissioning'])->format('Y-m-d'))) : '' }}"
                                                                 placeholder="yyyy-mm-dd">
                                                         </div>
                                                         <div class="col-12">
                                                             <label class="form-label">Date of Retirement</label>
                                                             <input type="date" name="date_of_retirement" class="form-control" id="armedDetailsRetirementDateInput"
-                                                                value="{{ $af['date_of_retirement'] ?? '' }}"
+                                                                value="{{ isset($af['date_of_retirement']) && $af['date_of_retirement'] ? (is_string($af['date_of_retirement']) ? date('Y-m-d', strtotime($af['date_of_retirement'])) : (\Carbon\Carbon::parse($af['date_of_retirement'])->format('Y-m-d'))) : '' }}"
                                                                 placeholder="yyyy-mm-dd">
                                                         </div>
                                                         <div class="col-12">

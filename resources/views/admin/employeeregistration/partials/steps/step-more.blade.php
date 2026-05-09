@@ -110,12 +110,12 @@
                                                                              id: @json($member->id),
                                                                              name: @json($member?->name),
                                                                              gender: @json($member?->gender),
-                                                                             dateOfBirth: @json($member?->dob ? $member?->dob?->format('Y-m-d') : ''),
+                                                                             dateOfBirth: @json(isset($member->dob) && $member->dob ? (is_string($member->dob) ? date('Y-m-d', strtotime($member->dob)) : $member->dob->format('Y-m-d')) : ''),
                                                                              relation: @json($member?->relation),
                                                                              occupation: @json($member?->occupation),
                                                                              is_next_of_kin: @json((bool) ($member?->is_next_of_kin ?? false)),
                                                                              nok_cnic: @json($member?->nok_cnic),
-                                                                             nok_cnic_expiry_date: @json($member?->nok_cnic_expiry_date ? $member?->nok_cnic_expiry_date?->format('Y-m-d') : ''),
+                                                                             nok_cnic_expiry_date: @json(isset($member->nok_cnic_expiry_date) && $member->nok_cnic_expiry_date ? (is_string($member->nok_cnic_expiry_date) ? date('Y-m-d', strtotime($member->nok_cnic_expiry_date)) : $member->nok_cnic_expiry_date->format('Y-m-d')) : ''),
                                                                              nok_contact: @json($member?->nok_contact),
                                                                          });
                                                                      }
@@ -273,8 +273,8 @@
                                                                              degree: @json($record?->degree),
                                                                              degree_title: @json($record?->degree_title),
                                                                              grade_cgpa: @json($record?->grade_cgpa),
-                                                                             start_date: @json($record?->start_date ? $record?->start_date?->format('Y-m-d') : ''),
-                                                                             end_date: @json($record?->end_date ? $record?->end_date?->format('Y-m-d') : ''),
+                                                                             start_date: @json(isset($record->start_date) && $record->start_date ? (is_string($record->start_date) ? date('Y-m-d', strtotime($record->start_date)) : $record->start_date->format('Y-m-d')) : ''),
+                                                                             end_date: @json(isset($record->end_date) && $record->end_date ? (is_string($record->end_date) ? date('Y-m-d', strtotime($record->end_date)) : $record->end_date->format('Y-m-d')) : ''),
                                                                              fieldOfStudy: @json($record?->field_of_study),
                                                                              institute: @json($record?->institute)
                                                                          });
@@ -428,8 +428,8 @@
                                                                         window.addCertificateRecord({
                                                                             id: @json($record->id),
                                                                             certificate_name: @json($record?->certificate_name),
-                                                                            start_date: @json($record?->start_date ? $record?->start_date?->format('Y-m-d') : ''),
-                                                                            end_date: @json($record?->end_date ? $record?->end_date?->format('Y-m-d') : ''),
+                                                                            start_date: @json(isset($record->start_date) && $record->start_date ? (is_string($record->start_date) ? date('Y-m-d', strtotime($record->start_date)) : $record->start_date->format('Y-m-d')) : ''),
+                                                                            end_date: @json(isset($record->end_date) && $record->end_date ? (is_string($record->end_date) ? date('Y-m-d', strtotime($record->end_date)) : $record->end_date->format('Y-m-d')) : ''),
                                                                             institute: @json($record?->institute)
                                                                         });
                                                                     }
@@ -507,8 +507,8 @@
                                                                              id: @json($record->id),
                                                                              organization: @json($record?->organization),
                                                                              designation: @json($record?->designation),
-                                                                             from_date: @json($record?->from_date ? $record?->from_date?->format('Y-m-d') : ''),
-                                                                             to_date: @json($record?->to_date ? $record?->to_date?->format('Y-m-d') : ''),
+                                                                             from_date: @json(isset($record->from_date) && $record->from_date ? (is_string($record->from_date) ? date('Y-m-d', strtotime($record->from_date)) : $record->from_date->format('Y-m-d')) : ''),
+                                                                             to_date: @json(isset($record->to_date) && $record->to_date ? (is_string($record->to_date) ? date('Y-m-d', strtotime($record->to_date)) : $record->to_date->format('Y-m-d')) : ''),
                                                                              salary: @json($record?->salary),
                                                                              reason_for_leaving: @json($record?->reason_for_leaving)
                                                                          });
@@ -594,7 +594,7 @@
                                                                 <label class="form-label">Last Medical Test Date</label>
                                                                 <input type="date" name="last_fitness_test_date" class="form-control" id="moreMedicalLastFitnessTestDateInput"
                                                                     max="{{ date('Y-m-d') }}"
-                                                                    value="{{ $employee?->medical?->last_fitness_test_date ? $employee->medical->last_fitness_test_date->format('Y-m-d') : '' }}">
+                                                                     value="{{ isset($employee->medical->last_fitness_test_date) && $employee->medical->last_fitness_test_date ? (is_string($employee->medical->last_fitness_test_date) ? date('Y-m-d', strtotime($employee->medical->last_fitness_test_date)) : $employee->medical->last_fitness_test_date->format('Y-m-d')) : '' }}">
                                                             </div>
                                                             <div class="col-12 col-md-6">
                                                                 <label class="form-label">Result</label>
