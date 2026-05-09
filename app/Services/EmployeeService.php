@@ -1526,8 +1526,8 @@ class EmployeeService
             // Salary Bank Details
             $salaryBank = $emp->bankDetails->where('is_salary_account', true)->first() ?? $emp->bankDetails->first();
 
-            // Latest Academic Record
-            $latestAcademic = $emp->academics->sortByDesc('id')->first();
+            // Latest Academic Record (first-added = primary/highest qualification)
+            $latestAcademic = $emp->academics->sortBy('id')->first();
 
             // Latest Ex-Employment
             $latestExEmployment = $emp->exEmployments->sortByDesc('id')->first();
@@ -1582,7 +1582,7 @@ class EmployeeService
                 'employment_type'     => $emp->employment_type ?? '-',
                 'contract_start_date' => $emp->contract_start_date?->format('d M Y') ?? '-',
                 'contract_end_date'   => $emp->contract_end_date?->format('d M Y') ?? '-',
-                'probation_start_date' => $emp->probation_start_date?->format('d M Y') ?? '-',
+                'probation_start_date' => $emp->join_date?->format('d M Y') ?? '-',
                 'probation_end_date'  => $emp->probation_end_date?->format('d M Y') ?? '-',
                 'engagement_mode'     => $emp->engagement_mode ?? '-',
                 'hybrid_days'         => is_array($emp->hybrid_days) ? implode(', ', $emp->hybrid_days) : '-',
@@ -1628,6 +1628,10 @@ class EmployeeService
 
                 // Family
                 'family_count'        => $emp->familyMembers->count(),
+                'parents_count'       => $emp->familyMembers->filter(fn($m) => in_array(strtolower($m->relation ?? ''), ['father', 'mother']))->count(),
+                'kids_count'          => $emp->familyMembers->filter(fn($m) => in_array(strtolower($m->relation ?? ''), ['son', 'daughter']))->count(),
+                'son_count'           => $emp->familyMembers->filter(fn($m) => strtolower($m->relation ?? '') === 'son')->count(),
+                'daughter_count'      => $emp->familyMembers->filter(fn($m) => strtolower($m->relation ?? '') === 'daughter')->count(),
                 'nok_name'            => $emp->nok_name ?? '-',
                 'nok_relation'        => $emp->nok_relation ?? '-',
                 'nok_cnic'            => $emp->nok_cnic ?? '-',
