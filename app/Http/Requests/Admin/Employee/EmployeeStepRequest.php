@@ -841,6 +841,7 @@ class EmployeeStepRequest extends FormRequest
                             return (string) $this->input('has_chronic_disease') === 'yes';
                         }),
                     ],
+                    'medical_file' => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
             case 'bank_row':

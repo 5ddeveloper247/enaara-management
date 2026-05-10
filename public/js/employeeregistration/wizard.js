@@ -2815,6 +2815,26 @@
                 });
             } else if (res.success) {
                 showToast(`${subsection.charAt(0).toUpperCase() + subsection.slice(1)} information saved successfully`);
+
+                // Update medical document UI if a file was uploaded
+                if (subsection === 'medical') {
+                    const fileInput = document.getElementById('moreMedicalFileInput');
+                    if (fileInput && fileInput.files.length > 0 && res.attachment_url) {
+                        const uploadContainer = document.getElementById('moreMedicalUploadContainer');
+                        const viewContainer = document.getElementById('moreMedicalViewContainer');
+                        const viewLink = document.getElementById('moreMedicalDocumentLink');
+                        const filenameEl = document.getElementById('moreMedicalFilename');
+                        if (viewLink) viewLink.href = res.attachment_url;
+                        if (filenameEl) filenameEl.textContent = fileInput.files[0].name;
+                        if (viewContainer) {
+                            viewContainer.classList.remove('d-none');
+                            if (res.attachment_id) viewContainer.setAttribute('data-attachment-id', res.attachment_id);
+                        }
+                        if (uploadContainer) uploadContainer.classList.add('d-none');
+                        fileInput.value = '';
+                    }
+                }
+
                 if (onSuccess) onSuccess();
             } else {
                 showError(res.message);
@@ -3303,10 +3323,10 @@
         toggleContractualInnerFields();
     }
 
-    // ─── Work Arrangement Toggles ────────────────────────────────────────────────
+    // â”€â”€â”€ Work Arrangement Toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     function getScheduleSource() {
-        // Look up live at call time — avoids temporal dead zone with orgSelect/sbuSelect consts below
+        // Look up live at call time â€” avoids temporal dead zone with orgSelect/sbuSelect consts below
         const oSel = document.getElementById('employmentOrganizationSelect');
         const sSel = document.getElementById('employmentSbuSelect');
         const orgs = window.orgsData || [];
@@ -3365,7 +3385,7 @@
         if (orgName)    orgName.textContent    = src.label;
         if (wkDays)     wkDays.textContent     = formatDaysList(d.working_days);
         if (wkTime)     wkTime.textContent     = (d.working_start_time && d.working_end_time)
-                                                    ? `${formatTime(d.working_start_time)} – ${formatTime(d.working_end_time)}`
+                                                    ? `${formatTime(d.working_start_time)} â€“ ${formatTime(d.working_end_time)}`
                                                     : '- - -';
         if (graceEl)    graceEl.textContent    = graceMin != null && graceMin !== '' ? `${graceMin} min` : '-';
     }
@@ -3427,7 +3447,7 @@
     // Init on page load
     toggleWorkArrangementFields();
 
-    // ─── End Work Arrangement Toggles ────────────────────────────────────────────
+    // â”€â”€â”€ End Work Arrangement Toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     // Location Dependent Selects (Nationality -> Province -> District)
     function resetLocationSelect(select, placeholderText, disabled) {
@@ -4393,7 +4413,7 @@
             banks.forEach((bank, index) => {
                 for (const [key, value] of Object.entries(bank)) {
                     if (value !== null && value !== undefined) {
-                        // Convert booleans to "1"/"0" — FormData sends "true"/"false" strings
+                        // Convert booleans to "1"/"0" â€” FormData sends "true"/"false" strings
                         // which Laravel's boolean validator rejects
                         let sendValue = value;
                         if (key === 'is_salary_account') {
@@ -6518,6 +6538,150 @@ document.addEventListener('change', function(e) {
             if (textarea) textarea.value = '';
         }
     }
+
+    // Medical file selection feedback
+    if (e.target && e.target.id === 'moreMedicalFileInput') {
+        const fileInput = e.target;
+        const uploadContainer = document.getElementById('moreMedicalUploadContainer');
+        if (fileInput.files && fileInput.files.length > 0) {
+            const filename = fileInput.files[0].name;
+            const placeholderText = uploadContainer ? uploadContainer.querySelector('.small') : null;
+            const uploadIcon = uploadContainer ? uploadContainer.querySelector('i') : null;
+            if (placeholderText) {
+                placeholderText.textContent = filename;
+                placeholderText.classList.remove('text-secondary');
+                placeholderText.classList.add('text-primary', 'fw-bold');
+            }
+            if (uploadIcon) uploadIcon.className = 'bi bi-check-circle-fill text-success';
+        }
+    }
 });
 
+// â”€â”€â”€ Medical Document: Deletion Workflow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+(function initMedicalDocHandlers() {
+    const removeBtn = document.getElementById('moreMedicalDocumentRemove');
+    if (!removeBtn) return;
+
+    removeBtn.addEventListener('click', async function() {
+        const viewContainer = document.getElementById('moreMedicalViewContainer');
+        const uploadContainer = document.getElementById('moreMedicalUploadContainer');
+        const fileInput = document.getElementById('moreMedicalFileInput');
+        const attachmentId = viewContainer ? viewContainer.getAttribute('data-attachment-id') : null;
+
+        if (!attachmentId) {
+            // No saved attachment, just reset the upload UI
+            if (uploadContainer) uploadContainer.classList.remove('d-none');
+            if (viewContainer) viewContainer.classList.add('d-none');
+            if (fileInput) {
+                fileInput.value = '';
+                const placeholderText = uploadContainer ? uploadContainer.querySelector('.small') : null;
+                const uploadIcon = uploadContainer ? uploadContainer.querySelector('i') : null;
+                if (placeholderText) {
+                    placeholderText.textContent = 'No file chosen';
+                    placeholderText.classList.remove('text-primary', 'fw-bold');
+                    placeholderText.classList.add('text-secondary');
+                }
+                if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+            }
+            if (typeof showToast === 'function') showToast('Selection cleared');
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'This medical document will be permanently deleted.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch('/admin/employees/delete-attachment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ id: attachmentId })
+            });
+            const res = await response.json();
+
+            if (res.success) {
+                if (uploadContainer) uploadContainer.classList.remove('d-none');
+                if (viewContainer) {
+                    viewContainer.classList.add('d-none');
+                    viewContainer.removeAttribute('data-attachment-id');
+                }
+                if (fileInput) fileInput.value = '';
+
+                // Reset upload placeholder text
+                if (uploadContainer) {
+                    const placeholderText = uploadContainer.querySelector('.small');
+                    const uploadIcon = uploadContainer.querySelector('i');
+                    if (placeholderText) {
+                        placeholderText.textContent = 'No file chosen';
+                        placeholderText.classList.remove('text-primary', 'fw-bold');
+                        placeholderText.classList.add('text-secondary');
+                    }
+                    if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+                }
+
+                // Remove from memory
+                if (window.employeeAttachments) window.employeeAttachments = window.employeeAttachments.filter(a => a.id != attachmentId);
+                if (window.editData && window.editData.attachments) window.editData.attachments = window.editData.attachments.filter(a => a.id != attachmentId);
+
+                Swal.fire({ icon: 'success', title: 'Deleted', text: 'Medical document deleted successfully', timer: 1500, showConfirmButton: false });
+            } else {
+                if (typeof showError === 'function') showError(res.message || 'Failed to delete document');
+            }
+        } catch (err) {
+            if (typeof showError === 'function') showError('Network error');
+        }
+    });
+})();
+
+// â”€â”€â”€ Medical Document: Page-Load Restore â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+(function restoreMedicalDocument() {
+    function doRestore(attachments) {
+        const medicalAttachment = (attachments || []).find(a => String(a.subsection) === 'medical');
+        if (!medicalAttachment) return;
+
+        const uploadContainer = document.getElementById('moreMedicalUploadContainer');
+        const viewContainer = document.getElementById('moreMedicalViewContainer');
+        const viewLink = document.getElementById('moreMedicalDocumentLink');
+        const filenameEl = document.getElementById('moreMedicalFilename');
+
+        if (!viewContainer) return;
+
+        if (uploadContainer) uploadContainer.classList.add('d-none');
+        viewContainer.classList.remove('d-none');
+        viewContainer.setAttribute('data-attachment-id', medicalAttachment.id);
+        if (viewLink) viewLink.href = medicalAttachment.url || '#';
+        if (filenameEl) filenameEl.textContent = medicalAttachment.file_name || medicalAttachment.name || 'Medical Report';
+    }
+
+    // Try static edit data first
+    if (window.editData && Array.isArray(window.editData.attachments) && window.editData.attachments.length > 0) {
+        doRestore(window.editData.attachments);
+        return;
+    }
+
+    // Fall back to dynamically fetched attachments
+    if (window.employeeAttachmentsFetchUrl) {
+        fetch(window.employeeAttachmentsFetchUrl, { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(data => {
+                const atts = data.attachments || data || [];
+                window.employeeAttachments = atts;
+                doRestore(atts);
+            })
+            .catch(() => {});
+    }
+})();

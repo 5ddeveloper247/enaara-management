@@ -356,6 +356,23 @@ class EmployeeController extends Controller
                     break;
                 case 'medical':
                     $this->employeeService->saveMedical((int)$employeeId, $data);
+
+                    if ($request->hasFile('medical_file')) {
+                        $file = $request->file('medical_file');
+                        $attachmentData = [
+                            'name' => 'Medical Report / Fitness Certificate',
+                            'type' => 'Medical Document',
+                            'description' => 'Uploaded medical fitness document',
+                            'files' => [$file]
+                        ];
+                        $saved = $this->employeeService->saveSingleAttachment((int)$employeeId, $attachmentData);
+                        if (!empty($saved)) {
+                            $saved[0]->update(['subsection' => 'medical']);
+                            $responseData['attachment_url'] = asset('storage/' . $saved[0]->file_path);
+                            $responseData['attachment_id'] = $saved[0]->id;
+                        }
+                    }
+
                     $message = 'Medical Information saved successfully.';
                     break;
                 case 'references':
