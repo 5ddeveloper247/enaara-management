@@ -1363,6 +1363,7 @@ class EmployeeService
                 'attachment_type' => $attachmentData['type'] ?? null,
                 'title'           => $attachmentData['name'] ?? null,
                 'description'     => $attachmentData['description'] ?? null,
+                'subsection'      => $attachmentData['subsection'] ?? null,
                 'file_path'       => $path,
                 'file_name'       => $file->getClientOriginalName(),
                 'mime_type'       => $mimeType,

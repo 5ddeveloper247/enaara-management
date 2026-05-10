@@ -266,6 +266,21 @@
                 nameSpan.classList.remove('text-white');
             }
         });
+
+        // Hide uploaded types from the dropdown menus
+        const typeSelects = [document.getElementById('attachmentType'), document.getElementById('onPageAttachmentType')];
+        typeSelects.forEach(select => {
+            if (!select) return;
+            Array.from(select.options).forEach(option => {
+                if (!option.value) return; // Skip placeholder
+                if (uploadedTypes.has(option.value)) {
+                    option.style.display = 'none'; // Hide uploaded option
+                    if (select.value === option.value) select.value = ''; // Reset if selected
+                } else {
+                    option.style.display = ''; // Show if not uploaded or deleted
+                }
+            });
+        });
     }
 
     // Hook into renderAttachmentListing to update checklist

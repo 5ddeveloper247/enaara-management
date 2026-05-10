@@ -531,6 +531,9 @@ class EmployeeController extends Controller
             $attachments = $request->input('attachments', []);
             $attachmentData = $attachments[0] ?? [];
             
+            $reqSubsection = $request->input('subsection');
+            $attachmentData['subsection'] = ($reqSubsection === 'attachment') ? null : $reqSubsection;
+            
             if (!$request->hasFile('attachments.0.files')) {
                 return response()->json(['success' => false, 'message' => 'No files were uploaded.'], 422);
             }
