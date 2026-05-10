@@ -135,99 +135,84 @@
 
                                         <template id="moreFamilyMemberTemplate">
                                             <div class="family-member-row mb-2 bg-light" data-family-row>
-                                                <div class="family-member-header">
-                                                    <span class="family-member-index" data-family-index>Member 1</span>
-                                                    <div class="family-member-actions">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-family-save title="Save member">
-                                                            <i class="bi bi-floppy"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" data-family-remove>
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div class="row g-2">
-                                                    <div class="col-12 col-md-6 col-xl-3">
-                                                        <label class="form-label">Name <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control family-field-input" name="family[][name]"
-                                                            data-family-name placeholder="Enter name" required maxlength="50">
-                                                        <div class="family-field-preview" data-family-preview-name>-</div>
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-2">
-                                                        <label class="form-label">Gender <span class="text-danger">*</span></label>
-                                                        <select class="form-select family-field-input" name="family[][gender]" data-family-gender required>
-                                                            <option value="" selected disabled>Select</option>
-                                                            <option value="Male">Male</option>
-                                                            <option value="Female">Female</option>
-                                                        </select>
-                                                        <div class="family-field-preview" data-family-preview-gender>-</div>
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-2">
-                                                        <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                                                        <input type="date" class="form-control family-field-input" name="family[][dob]"
-                                                            data-family-date-of-birth placeholder="yyyy-mm-dd" required>
-                                                        <div class="family-field-preview" data-family-preview-dob>-</div>
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-2">
-                                                        <label class="form-label">Relation <span class="text-danger">*</span></label>
-                                                        <select class="form-select family-field-input" name="family[][relation]" data-family-relation required>
-                                                            <option value="" selected disabled>Select</option>
-                                                            <option value="Father">Father</option>
-                                                            <option value="Mother">Mother</option>
-                                                            <option value="Husband">Husband</option>
-                                                            <option value="Wife">Wife</option>
-                                                            <option value="Son">Son</option>
-                                                            <option value="Daughter">Daughter</option>
-                                                            <option value="Brother">Brother</option>
-                                                            <option value="Sister">Sister</option>
-                                                            <option value="Other">Other</option>
-                                                        </select>
-                                                        <div class="family-field-preview" data-family-preview-relation>-</div>
-                                                    </div>
-                                                    <div class="col-12 d-none" data-family-relation-other-wrapper>
-                                                        <label class="form-label">Specify Relation <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control family-field-input" name="family[][relation_other]"
-                                                            data-family-relation-other placeholder="Specify relation">
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-3">
-                                                        <label class="form-label">Occupation</label>
-                                                        <input type="text" class="form-control family-field-input" name="family[][occupation]"
-                                                            data-family-occupation placeholder="Enter occupation">
-                                                        <div class="family-field-preview" data-family-preview-occupation>-</div>
-                                                    </div>
-                                                    <div class="col-12 d-none" data-family-nok-member-indicator>
-                                                        <div class="small text-success fw-semibold">This member is selected as Next of Kin.</div>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <hr class="text-secondary opacity-25 my-1">
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-4">
-                                                        <input type="hidden" name="family[][is_next_of_kin]" value="0" data-family-is-nok-hidden>
-                                                        <div class="family-nok-edit-controls mt-1">
-                                                            <div class="small text-secondary fw-semibold mb-1" data-family-nok-title>Next of Kin Selection</div>
-                                                            <div class="family-nok-toggle border rounded-3 px-3 py-2 bg-white mb-1" data-family-nok-toggle role="button" tabindex="0" title="Click to select or unselect Next of Kin">
-                                                                <input type="radio" name="family_nok_selector" class="form-check-input family-nok-selector visually-hidden" title="Mark as Next of Kin" aria-label="Mark as Next of Kin">
-                                                                <div class="d-flex align-items-center justify-content-between gap-2">
-                                                                    <div class="fw-semibold text-dark">
-                                                                        <i class="bi bi-person-check me-1 text-primary"></i>Set as Next of Kin
-                                                                    </div>
-                                                                    <span class="badge text-bg-success d-none" data-family-nok-selected-badge>Selected</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="small text-secondary" data-family-nok-helper>Click this box to select or unselect NOK.</div>
-                                                            <div class="small text-warning-emphasis d-none family-nok-locked-note" data-family-nok-locked-note>
-                                                                Next of Kin is already selected in another member. Remove that first to change.
-                                                            </div>
-                                                        </div>
-                                                        <div class="family-nok-preview-toolbar d-flex align-items-center gap-2 mt-1">
-                                                            <span class="btn btn-sm btn-outline-primary d-none family-nok-tag" data-family-nok-badge>
-                                                                <i class="bi bi-person me-1"></i>Next of Kin
+                                                    <div class="family-member-header">
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="family-member-index" data-family-index>Member 1</span>
+                                                            <span class="badge rounded-pill text-bg-success ms-2 d-none" data-family-nok-badge>
+                                                                <i class="bi bi-people-fill me-1"></i>Next of Kin
                                                             </span>
-                                                            <button type="button" class="btn btn-sm btn-outline-danger d-none family-nok-remove" title="Remove Next of Kin">
-                                                                <i class="bi bi-x-circle me-1"></i>Remove NOK
+                                                        </div>
+                                                        <div class="family-member-actions">
+                                                            <button type="button" class="btn btn-sm btn-light border-success family-nok-toggle" data-family-nok-toggle title="Set as Next of Kin">
+                                                                <i class="bi bi-people text-success"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-primary" data-family-save title="Save member">
+                                                                <i class="bi bi-floppy"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" data-family-remove>
+                                                                <i class="bi bi-trash"></i>
                                                             </button>
                                                         </div>
                                                     </div>
+                                                    <div class="row g-2">
+                                                        <div class="col-12 col-md-6 col-xl-3">
+                                                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control family-field-input" name="family[][name]"
+                                                                data-family-name placeholder="Enter name" required maxlength="50">
+                                                            <div class="family-field-preview" data-family-preview-name>-</div>
+                                                        </div>
+                                                        <div class="col-12 col-md-6 col-xl-2">
+                                                            <label class="form-label">Gender <span class="text-danger">*</span></label>
+                                                            <select class="form-select family-field-input" name="family[][gender]" data-family-gender required>
+                                                                <option value="" selected disabled>Select</option>
+                                                                <option value="Male">Male</option>
+                                                                <option value="Female">Female</option>
+                                                            </select>
+                                                            <div class="family-field-preview" data-family-preview-gender>-</div>
+                                                        </div>
+                                                        <div class="col-12 col-md-6 col-xl-2">
+                                                            <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                                            <input type="date" class="form-control family-field-input" name="family[][dob]"
+                                                                data-family-date-of-birth placeholder="yyyy-mm-dd" required>
+                                                            <div class="family-field-preview" data-family-preview-dob>-</div>
+                                                        </div>
+                                                        <div class="col-12 col-md-6 col-xl-2">
+                                                            <label class="form-label">Relation <span class="text-danger">*</span></label>
+                                                            <select class="form-select family-field-input" name="family[][relation]" data-family-relation required>
+                                                                <option value="" selected disabled>Select</option>
+                                                                <option value="Father">Father</option>
+                                                                <option value="Mother">Mother</option>
+                                                                <option value="Husband">Husband</option>
+                                                                <option value="Wife">Wife</option>
+                                                                <option value="Son">Son</option>
+                                                                <option value="Daughter">Daughter</option>
+                                                                <option value="Brother">Brother</option>
+                                                                <option value="Sister">Sister</option>
+                                                                <option value="Other">Other</option>
+                                                            </select>
+                                                            <div class="family-field-preview" data-family-preview-relation>-</div>
+                                                        </div>
+                                                        <div class="col-12 d-none" data-family-relation-other-wrapper>
+                                                            <label class="form-label">Specify Relation <span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control family-field-input" name="family[][relation_other]"
+                                                                data-family-relation-other placeholder="Specify relation">
+                                                        </div>
+                                                        <div class="col-12 col-md-6 col-xl-3">
+                                                            <label class="form-label">Occupation</label>
+                                                            <input type="text" class="form-control family-field-input" name="family[][occupation]"
+                                                                data-family-occupation placeholder="Enter occupation">
+                                                            <div class="family-field-preview" data-family-preview-occupation>-</div>
+                                                        </div>
+                                                        <div class="col-12 d-none" data-family-nok-member-indicator>
+                                                            <div class="small text-success fw-semibold">This member is selected as Next of Kin.</div>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <hr class="text-secondary opacity-25 my-1">
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <input type="hidden" name="family[][is_next_of_kin]" value="0" data-family-is-nok-hidden>
+                                                            <input type="radio" name="family_nok_selector" class="form-check-input family-nok-selector visually-hidden" title="Mark as Next of Kin" aria-label="Mark as Next of Kin">
+                                                        </div>
                                                     <div class="col-12">
                                                         <div class="row g-2 border rounded p-2 mt-1 bg-white d-none" data-family-nok-fields>
                                                             <div class="col-12 small text-secondary">NOK identity and contact (required when this member is Next of Kin)</div>

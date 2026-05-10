@@ -4762,6 +4762,22 @@
             saveBtn.innerHTML = '<i class="bi bi-floppy"></i>';
             saveBtn.setAttribute('title', 'Save record');
         }
+
+        // Hide NOK toggle in preview mode for family members
+        if (type === 'family') {
+            const nokToggle = row.querySelector('[data-family-nok-toggle]');
+            if (nokToggle) {
+                const radio = row.querySelector('.family-nok-selector');
+                const isNok = radio && radio.checked;
+                
+                if (isPreview && !isNok) {
+                    nokToggle.classList.add('d-none');
+                } else {
+                    nokToggle.classList.remove('d-none');
+                }
+                syncFamilyNokFromRadios();
+            }
+        }
     }
 
     function updateSubsectionPreview(row, type) {
@@ -5122,34 +5138,35 @@
             const badge = row.querySelector('[data-family-nok-badge]');
             const selectedBadge = row.querySelector('[data-family-nok-selected-badge]');
             const toggleCard = row.querySelector('[data-family-nok-toggle]');
-            const removeBtn = row.querySelector('.family-nok-remove');
             const memberIndicator = row.querySelector('[data-family-nok-member-indicator]');
             const lockedNote = row.querySelector('[data-family-nok-locked-note]');
-            const helperText = row.querySelector('[data-family-nok-helper]');
-            const titleText = row.querySelector('[data-family-nok-title]');
             const isOn = radio && radio.checked;
             const isLockedForOther = !!selectedRow && selectedRow !== row && !isOn;
 
             if (toggleCard) {
-                toggleCard.classList.toggle('d-none', isLockedForOther);
-            }
-            if (titleText) {
-                titleText.classList.toggle('d-none', isLockedForOther);
-            }
-            if (lockedNote) {
-                lockedNote.classList.toggle('d-none', !isLockedForOther);
-            }
-            if (helperText) {
-                helperText.classList.toggle('d-none', isLockedForOther);
+                const icon = toggleCard.querySelector('i');
+                if (isOn) {
+                    toggleCard.classList.remove('btn-light', 'border-success');
+                    toggleCard.classList.add('btn-success');
+                    if (icon) {
+                        icon.className = 'bi bi-people-fill text-white';
+                    }
+                } else {
+                    toggleCard.classList.remove('btn-success');
+                    toggleCard.classList.add('btn-light', 'border-success');
+                    if (icon) {
+                        icon.className = 'bi bi-people text-success';
+                    }
+                }
+                toggleCard.setAttribute('title', isOn ? 'Remove Next of Kin' : 'Set as Next of Kin');
             }
 
             if (hidden) hidden.value = isOn ? '1' : '0';
             if (block) block.classList.toggle('d-none', !isOn);
             if (badge) badge.classList.toggle('d-none', !isOn);
             if (selectedBadge) selectedBadge.classList.toggle('d-none', !isOn);
-            if (toggleCard) toggleCard.classList.toggle('active', !!isOn);
-            if (removeBtn) removeBtn.classList.toggle('d-none', !isOn);
             if (memberIndicator) memberIndicator.classList.toggle('d-none', !isOn);
+            
             row.querySelectorAll('[data-family-nok-input]').forEach(function (inp) {
                 inp.required = !!isOn;
             });
@@ -5301,41 +5318,42 @@
                 if (row) {
                     const radio = row.querySelector('.family-nok-selector');
                     if (radio) {
-                        radio.checked = !radio.checked;
+                        const currentlyChecked = radio.checked;
+                        if (currentlyChecked) {
+                            // If untoggling, ask for confirmation and clear fields
+                            const result = await showConfirm('Are you sure you want to remove this member as Next of Kin?', 'Remove Next of Kin');
+                            if (!result.isConfirmed) return;
+                            
+                            radio.checked = false;
+                            row.querySelectorAll('[data-family-nok-input]').forEach(function (inp) {
+                                inp.value = '';
+                            });
+                            
+                            if (row.getAttribute('data-db-id')) {
+                                updateSubsectionPreview(row, 'family');
+                                setSubsectionRowMode(row, 'family', false);
+                                await saveSubsectionRow('family', row);
+                            }
+                        } else {
+                            // CHECK IF ANOTHER MEMBER IS ALREADY NOK
+                            const container = document.getElementById('moreFamilyMembersContainer');
+                            const otherSelected = Array.from(container.querySelectorAll('.family-nok-selector'))
+                                .find(r => r.checked && r !== radio);
+                            
+                            if (otherSelected) {
+                                showError('Next of Kin is already selected in another member. Remove that first to change.', 'Selection Locked');
+                                return;
+                            }
+                            
+                            radio.checked = true;
+                        }
                     }
                     syncFamilyNokFromRadios();
                 }
                 return;
             }
         });
-        moreFamilyMembersContainerEl.addEventListener('click', async function (e) {
-            const removeBtn = e.target.closest('.family-nok-remove');
-            if (!removeBtn) {
-                return;
-            }
-            e.preventDefault();
-            const row = removeBtn.closest('[data-family-row]');
-            if (!row) return;
-            const result = await showConfirm('Are you sure you want to remove this member as Next of Kin?', 'Remove Next of Kin');
-            if (!result.isConfirmed) {
-                return;
-            }
 
-            const radio = row.querySelector('.family-nok-selector');
-            if (radio) {
-                radio.checked = false;
-            }
-            row.querySelectorAll('[data-family-nok-input]').forEach(function (inp) {
-                inp.value = '';
-            });
-            syncFamilyNokFromRadios();
-            updateSubsectionPreview(row, 'family');
-
-            if (row.getAttribute('data-db-id')) {
-                setSubsectionRowMode(row, 'family', false);
-                await saveSubsectionRow('family', row);
-            }
-        });
     }
 
     // --- FAMILY Member Specifics ---
