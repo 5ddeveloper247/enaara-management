@@ -410,6 +410,9 @@
         if (onPageContainer) onPageContainer.innerHTML = '';
 
         window.employeeAttachments.forEach(a => {
+            // Only render general attachments (subsection should be null or undefined)
+            if (a.subsection !== null && a.subsection !== undefined) return;
+
             const nameSafe = escAtt(a.name);
             const typeSafe = escAtt(a.type || '');
             const descSafe = escAtt(a.desc || '');
@@ -577,6 +580,7 @@
             name: a.name || a.file_name || 'Attachment',
             type: a.type || '',
             desc: a.description || '',
+            subsection: a.subsection || null,
             files: [],
             existingFiles: [{
                 name: a.file_name || a.name || 'Attachment',
