@@ -15,6 +15,7 @@ use App\Models\EmployeeExEmployment;
 use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
 use App\Models\MediaFile;
+use App\Models\RequiredDocumentType;
 use App\Models\Department;
 use App\Models\Organization;
 use App\Models\Sbu;
@@ -179,7 +180,7 @@ class EmployeeService
             ->with([
                 'department:id,sbu_id',
                 'sbus:id',
-                'roleLevel:id,level',
+                'roleLevel:id,level,grade',
             ])
             ->get();
 
@@ -189,7 +190,10 @@ class EmployeeService
             ->where('name', '!=', '')
             ->get()
             ->groupBy(fn(RoleLevel $rl): string => Str::lower(trim((string) $rl->name)))
-            ->map(fn($group) => (int) $group->min('level'));
+            ->map(fn($group) => [
+                'level' => (int) $group->min('level'),
+                'grade' => $group->first()->grade,
+            ]);
 
         $orgsData = $organizations->map(fn($o) => [
             'id' => $o->id,
@@ -232,12 +236,19 @@ class EmployeeService
                 $linked->push($r->department->sbu_id);
             }
 
-            $fromFk = $r->roleLevel?->level;
+            $fromFkLevel = $r->roleLevel?->level;
+            $fromFkGrade = $r->roleLevel?->grade;
+            
             $normName = Str::lower(trim((string) $r->name));
-            $fromName = $normName !== '' ? $levelByNormalizedRoleLevelName->get($normName) : null;
-            $effectiveLevel = $fromFk !== null && $fromFk !== ''
-                ? (int) $fromFk
-                : ($fromName !== null ? (int) $fromName : null);
+            $fromData = $normName !== '' ? $levelByNormalizedRoleLevelName->get($normName) : null;
+            
+            $effectiveLevel = $fromFkLevel !== null && $fromFkLevel !== ''
+                ? (int) $fromFkLevel
+                : ($fromData !== null ? $fromData['level'] : null);
+                
+            $effectiveGrade = $fromFkGrade !== null && $fromFkGrade !== ''
+                ? (string) $fromFkGrade
+                : ($fromData !== null ? $fromData['grade'] : null);
 
             return [
                 'id'                    => $r->id,
@@ -246,6 +257,7 @@ class EmployeeService
                 'sbu_id'                => $r->sbu_id,
                 'department_id'         => $r->department_id,
                 'level'                 => $effectiveLevel,
+                'grade'                 => $effectiveGrade,
                 'linked_sbu_ids'        => $linked->unique()->values()->all(),
                 'is_organization_level' => $r->isOrganizationLevelRole(),
             ];
@@ -266,7 +278,9 @@ class EmployeeService
             ->values()
             ->all();
 
-        return compact('organizations', 'orgsData', 'rolesData');
+        $requiredDocumentTypes = RequiredDocumentType::where('status', true)->get();
+
+        return compact('organizations', 'orgsData', 'rolesData', 'requiredDocumentTypes');
     }
 
     public function store(array $data, array $files = [], array $attachments = []): Employee
@@ -414,6 +428,14 @@ class EmployeeService
 
             return $employee;
         });
+    }
+
+    public function addRequiredDocumentType(string $name): RequiredDocumentType
+    {
+        return RequiredDocumentType::create([
+            'name' => $name,
+            'status' => true
+        ]);
     }
 
     public function previewNextEmployeeCode(int $organizationId, int $roleId, ?int $sbuId = null): string
@@ -1338,9 +1360,10 @@ class EmployeeService
                 'module_name'     => 'employee',
                 'module_id'       => $id,
                 'file_type'       => 'attachment',
-                'attachment_type' => $attachmentData['type'] ?: null,
-                'title'           => $attachmentData['name'] ?: null,
-                'description'     => $attachmentData['description'] ?: null,
+                'attachment_type' => $attachmentData['type'] ?? null,
+                'title'           => $attachmentData['name'] ?? null,
+                'description'     => $attachmentData['description'] ?? null,
+                'subsection'      => $attachmentData['subsection'] ?? null,
                 'file_path'       => $path,
                 'file_name'       => $file->getClientOriginalName(),
                 'mime_type'       => $mimeType,
@@ -1526,8 +1549,36 @@ class EmployeeService
             // Salary Bank Details
             $salaryBank = $emp->bankDetails->where('is_salary_account', true)->first() ?? $emp->bankDetails->first();
 
-            // Latest Academic Record
-            $latestAcademic = $emp->academics->sortByDesc('id')->first();
+            // Latest Academic Record:
+            // Ranks based on EXACT degree option values from the wizard dropdown
+            // Priority 1 → highest degree rank
+            // Priority 2 → most recent end_date (latest graduation year)
+            // Priority 3 → first-added record (lowest id) as last resort
+            $degreeRank = function (string $degree): int {
+                $map = [
+                    'Doctorate (PhD)'         => 100,
+                    'MS / MPhil'              => 90,
+                    'Master (2 Years)'        => 80,
+                    'Bachelor (4 Years / BS)' => 70,
+                    'Bachelor (2 Years)'      => 60,
+                    'Associate Degree Program'=> 50,
+                    'Intermediate / Diploma'  => 30,
+                    'Matric'                  => 20,
+                    'Under Matric'            => 10,
+                ];
+                return $map[trim($degree)] ?? -1;
+            };
+
+            $rankedAcademic = $emp->academics
+                ->sortByDesc(function ($a) use ($degreeRank) {
+                    $rank = $degreeRank($a->degree ?? '');
+                    // Secondary sort: most recent end_year (higher year = more recent)
+                    $year = $a->end_date ? (int) $a->end_date->format('Y') : 0;
+                    return ($rank * 10000) + $year;
+                })
+                ->first();
+            // If no rank matched at all, fall back to most-recent end_date, then first-added
+            $latestAcademic = $rankedAcademic ?? $emp->academics->sortByDesc('end_date')->sortBy('id')->first();
 
             // Latest Ex-Employment
             $latestExEmployment = $emp->exEmployments->sortByDesc('id')->first();
@@ -1582,7 +1633,7 @@ class EmployeeService
                 'employment_type'     => $emp->employment_type ?? '-',
                 'contract_start_date' => $emp->contract_start_date?->format('d M Y') ?? '-',
                 'contract_end_date'   => $emp->contract_end_date?->format('d M Y') ?? '-',
-                'probation_start_date' => $emp->probation_start_date?->format('d M Y') ?? '-',
+                'probation_start_date' => $emp->join_date?->format('d M Y') ?? '-',
                 'probation_end_date'  => $emp->probation_end_date?->format('d M Y') ?? '-',
                 'engagement_mode'     => $emp->engagement_mode ?? '-',
                 'hybrid_days'         => is_array($emp->hybrid_days) ? implode(', ', $emp->hybrid_days) : '-',
@@ -1628,6 +1679,10 @@ class EmployeeService
 
                 // Family
                 'family_count'        => $emp->familyMembers->count(),
+                'parents_count'       => $emp->familyMembers->filter(fn($m) => in_array(strtolower($m->relation ?? ''), ['father', 'mother']))->count(),
+                'kids_count'          => $emp->familyMembers->filter(fn($m) => in_array(strtolower($m->relation ?? ''), ['son', 'daughter']))->count(),
+                'son_count'           => $emp->familyMembers->filter(fn($m) => strtolower($m->relation ?? '') === 'son')->count(),
+                'daughter_count'      => $emp->familyMembers->filter(fn($m) => strtolower($m->relation ?? '') === 'daughter')->count(),
                 'nok_name'            => $emp->nok_name ?? '-',
                 'nok_relation'        => $emp->nok_relation ?? '-',
                 'nok_cnic'            => $emp->nok_cnic ?? '-',
@@ -1725,7 +1780,9 @@ class EmployeeService
                 'description' => $m->description,
                 'file_name' => $m->file_name,
                 'mime_type' => $m->mime_type,
+                'file_size' => Storage::disk('public')->exists($m->file_path) ? Storage::disk('public')->size($m->file_path) : 0,
                 'url' => Storage::url($m->file_path),
+                'subsection' => $m->subsection,
             ])
             ->values()
             ->all();

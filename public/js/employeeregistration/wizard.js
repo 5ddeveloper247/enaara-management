@@ -2815,6 +2815,26 @@
                 });
             } else if (res.success) {
                 showToast(`${subsection.charAt(0).toUpperCase() + subsection.slice(1)} information saved successfully`);
+
+                // Update medical document UI if a file was uploaded
+                if (subsection === 'medical') {
+                    const fileInput = document.getElementById('moreMedicalFileInput');
+                    if (fileInput && fileInput.files.length > 0 && res.attachment_url) {
+                        const uploadContainer = document.getElementById('moreMedicalUploadContainer');
+                        const viewContainer = document.getElementById('moreMedicalViewContainer');
+                        const viewLink = document.getElementById('moreMedicalDocumentLink');
+                        const filenameEl = document.getElementById('moreMedicalFilename');
+                        if (viewLink) viewLink.href = res.attachment_url;
+                        if (filenameEl) filenameEl.textContent = fileInput.files[0].name;
+                        if (viewContainer) {
+                            viewContainer.classList.remove('d-none');
+                            if (res.attachment_id) viewContainer.setAttribute('data-attachment-id', res.attachment_id);
+                        }
+                        if (uploadContainer) uploadContainer.classList.add('d-none');
+                        fileInput.value = '';
+                    }
+                }
+
                 if (onSuccess) onSuccess();
             } else {
                 showError(res.message);
@@ -3303,10 +3323,10 @@
         toggleContractualInnerFields();
     }
 
-    // ─── Work Arrangement Toggles ────────────────────────────────────────────────
+    // â”€â”€â”€ Work Arrangement Toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     function getScheduleSource() {
-        // Look up live at call time — avoids temporal dead zone with orgSelect/sbuSelect consts below
+        // Look up live at call time â€” avoids temporal dead zone with orgSelect/sbuSelect consts below
         const oSel = document.getElementById('employmentOrganizationSelect');
         const sSel = document.getElementById('employmentSbuSelect');
         const orgs = window.orgsData || [];
@@ -3365,7 +3385,7 @@
         if (orgName)    orgName.textContent    = src.label;
         if (wkDays)     wkDays.textContent     = formatDaysList(d.working_days);
         if (wkTime)     wkTime.textContent     = (d.working_start_time && d.working_end_time)
-                                                    ? `${formatTime(d.working_start_time)} – ${formatTime(d.working_end_time)}`
+                                                    ? `${formatTime(d.working_start_time)} â€“ ${formatTime(d.working_end_time)}`
                                                     : '- - -';
         if (graceEl)    graceEl.textContent    = graceMin != null && graceMin !== '' ? `${graceMin} min` : '-';
     }
@@ -3427,7 +3447,7 @@
     // Init on page load
     toggleWorkArrangementFields();
 
-    // ─── End Work Arrangement Toggles ────────────────────────────────────────────
+    // â”€â”€â”€ End Work Arrangement Toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     // Location Dependent Selects (Nationality -> Province -> District)
     function resetLocationSelect(select, placeholderText, disabled) {
@@ -3861,14 +3881,14 @@
     function syncGradeWithRole(roleId) {
         if (!gradeInput && !gradeDisplayInput) return;
         const role = rolesData.find(r => String(r.id) === String(roleId));
-        const roleLevel = role && role.level !== null && role.level !== undefined && role.level !== ''
-            ? String(role.level)
+        const roleGrade = role && role.grade !== null && role.grade !== undefined && role.grade !== ''
+            ? String(role.grade)
             : '';
         if (gradeInput) {
-            gradeInput.value = roleLevel;
+            gradeInput.value = roleGrade;
         }
         if (gradeDisplayInput) {
-            gradeDisplayInput.value = roleLevel;
+            gradeDisplayInput.value = roleGrade;
         }
     }
 
@@ -4393,7 +4413,7 @@
             banks.forEach((bank, index) => {
                 for (const [key, value] of Object.entries(bank)) {
                     if (value !== null && value !== undefined) {
-                        // Convert booleans to "1"/"0" — FormData sends "true"/"false" strings
+                        // Convert booleans to "1"/"0" â€” FormData sends "true"/"false" strings
                         // which Laravel's boolean validator rejects
                         let sendValue = value;
                         if (key === 'is_salary_account') {
@@ -4762,6 +4782,22 @@
             saveBtn.innerHTML = '<i class="bi bi-floppy"></i>';
             saveBtn.setAttribute('title', 'Save record');
         }
+
+        // Hide NOK toggle in preview mode for family members
+        if (type === 'family') {
+            const nokToggle = row.querySelector('[data-family-nok-toggle]');
+            if (nokToggle) {
+                const radio = row.querySelector('.family-nok-selector');
+                const isNok = radio && radio.checked;
+                
+                if (isPreview && !isNok) {
+                    nokToggle.classList.add('d-none');
+                } else {
+                    nokToggle.classList.remove('d-none');
+                }
+                syncFamilyNokFromRadios();
+            }
+        }
     }
 
     function updateSubsectionPreview(row, type) {
@@ -4793,6 +4829,24 @@
                 }
             }
         });
+
+        // Special preview for academic certificate
+        if (type === 'academic') {
+            const certPreview = row.querySelector('[data-academic-preview-certificate-status]');
+            const viewContainer = row.querySelector('[data-academic-view-container]');
+            const fileInput = row.querySelector('[data-academic-certificate-file]');
+            
+            if (certPreview) {
+                const hasAttachment = viewContainer && !viewContainer.classList.contains('d-none');
+                const hasNewFile = fileInput && fileInput.files.length > 0;
+                
+                if (hasAttachment || hasNewFile) {
+                    certPreview.classList.remove('d-none');
+                } else {
+                    certPreview.classList.add('d-none');
+                }
+            }
+        }
     }
 
     async function saveSubsectionRow(type, rowElement, options = {}) {
@@ -4814,24 +4868,51 @@
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-        // Collect inputs in this row
-        const data = { employee_id: employeeId, subsection: `${type}_row` };
-        if (rowElement.getAttribute('data-db-id')) {
-            data[`${type}_id`] = rowElement.getAttribute('data-db-id');
+        // Collect data using FormData to support file uploads
+        const formData = new FormData();
+        formData.append('employee_id', employeeId);
+        formData.append('subsection', `${type}_row`);
+        
+        const dbId = rowElement.getAttribute('data-db-id');
+        if (dbId) {
+            formData.append(`${type}_id`, dbId);
+            formData.append('id', dbId); // Consistent ID for backend
         }
 
         rowElement.querySelectorAll('input, select, textarea').forEach(input => {
             const name = input.getAttribute('name');
             if (name) {
-                if (name === 'family_nok_selector') {
-                    return;
-                }
+                if (name === 'family_nok_selector') return;
                 const cleanKey = name.match(/\[([^\]]*)\]$/)?.[1] || name;
-                if (cleanKey) data[cleanKey] = input.value;
+                if (cleanKey) {
+                    if (input.type === 'file') {
+                        if (input.files.length > 0) {
+                            formData.append(cleanKey, input.files[0]);
+                        }
+                    } else {
+                        formData.append(cleanKey, input.value);
+                    }
+                }
             }
         });
 
-        const rowErrors = validateMoreRowData(type, data);
+        // Special handling for academic certificate file which might not have a name attribute
+        const academicCertFile = rowElement.querySelector('[data-academic-certificate-file]');
+        if (academicCertFile && academicCertFile.files.length > 0) {
+            formData.append('certificate_file', academicCertFile.files[0]);
+        }
+
+        // For validation, we still need a plain object
+        const validationData = {};
+        formData.forEach((value, key) => {
+            if (!(value instanceof File)) {
+                validationData[key] = value;
+            } else {
+                validationData[key] = '[FILE]'; // Placeholder for validation logic
+            }
+        });
+
+        const rowErrors = validateMoreRowData(type, validationData, rowElement);
         if (Object.keys(rowErrors).length > 0) {
             showFieldErrors(rowErrors, rowElement);
             saveBtn.disabled = false;
@@ -4844,10 +4925,10 @@
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Accept': 'application/json'
+                    // Note: Content-Type header is omitted so browser sets it with boundary
                 },
-                body: JSON.stringify(data)
+                body: formData
             });
 
             const res = await response.json();
@@ -4861,6 +4942,83 @@
                 rowElement.querySelectorAll('.field-error-msg').forEach(err => err.remove());
                 
                 if (res.id) rowElement.setAttribute('data-db-id', res.id);
+                
+                // Update academic document UI if it was just uploaded
+                if (type === 'academic' && res.success) {
+                    const fileInput = rowElement.querySelector('[data-academic-certificate-file]');
+                    if (fileInput && fileInput.files.length > 0) {
+                        if (res.attachment_url) {
+                            const viewWrap = rowElement.querySelector('[data-academic-view-container]');
+                            const viewLink = rowElement.querySelector('[data-academic-document-link]');
+                            const filenameEl = rowElement.querySelector('[data-academic-filename]');
+                            if (viewLink) viewLink.href = res.attachment_url;
+                            if (filenameEl) filenameEl.textContent = fileInput.files[0].name;
+                            if (viewWrap) {
+                                viewWrap.classList.remove('d-none');
+                                // Store the ID for deletion later
+                                if (res.attachment_id) viewWrap.setAttribute('data-attachment-id', res.attachment_id);
+                            }
+                            
+                            // Hide upload box
+                            rowElement.querySelector('[data-academic-upload-container]').classList.add('d-none');
+                        }
+                        fileInput.value = '';
+                    }
+                }
+
+                // Update employment document UI if they were just uploaded
+                if (type === 'employment' && res.success) {
+                    // Handle Experience Letter
+                    const expInput = rowElement.querySelector('[data-employment-exp-file]');
+                    if (expInput && expInput.files.length > 0 && res.exp_letter_url) {
+                        const viewWrap = rowElement.querySelector('[data-employment-exp-view-container]');
+                        const viewLink = rowElement.querySelector('[data-employment-exp-link]');
+                        const filenameEl = rowElement.querySelector('[data-employment-exp-filename]');
+                        if (viewLink) viewLink.href = res.exp_letter_url;
+                        if (filenameEl) filenameEl.textContent = expInput.files[0].name;
+                        if (viewWrap) {
+                            viewWrap.classList.remove('d-none');
+                            if (res.exp_letter_id) viewWrap.setAttribute('data-attachment-id', res.exp_letter_id);
+                        }
+                        rowElement.querySelector('[data-employment-exp-upload-container]').classList.add('d-none');
+                        expInput.value = '';
+                    }
+
+                    // Handle Salary Slip
+                    const salaryInput = rowElement.querySelector('[data-employment-salary-file]');
+                    if (salaryInput && salaryInput.files.length > 0 && res.salary_slip_url) {
+                        const viewWrap = rowElement.querySelector('[data-employment-salary-view-container]');
+                        const viewLink = rowElement.querySelector('[data-employment-salary-link]');
+                        const filenameEl = rowElement.querySelector('[data-employment-salary-filename]');
+                        if (viewLink) viewLink.href = res.salary_slip_url;
+                        if (filenameEl) filenameEl.textContent = salaryInput.files[0].name;
+                        if (viewWrap) {
+                            viewWrap.classList.remove('d-none');
+                            if (res.salary_slip_id) viewWrap.setAttribute('data-attachment-id', res.salary_slip_id);
+                        }
+                        rowElement.querySelector('[data-employment-salary-upload-container]').classList.add('d-none');
+                        salaryInput.value = '';
+                    }
+                }
+
+                // Update certificate document UI if it was just uploaded
+                if (type === 'certificate' && res.success) {
+                    const fileInput = rowElement.querySelector('[data-certificate-file]');
+                    if (fileInput && fileInput.files.length > 0 && res.attachment_url) {
+                        const viewWrap = rowElement.querySelector('[data-certificate-view-container]');
+                        const viewLink = rowElement.querySelector('[data-certificate-document-link]');
+                        const filenameEl = rowElement.querySelector('[data-certificate-filename]');
+                        if (viewLink) viewLink.href = res.attachment_url;
+                        if (filenameEl) filenameEl.textContent = fileInput.files[0].name;
+                        if (viewWrap) {
+                            viewWrap.classList.remove('d-none');
+                            if (res.attachment_id) viewWrap.setAttribute('data-attachment-id', res.attachment_id);
+                        }
+                        rowElement.querySelector('[data-certificate-upload-container]').classList.add('d-none');
+                        fileInput.value = '';
+                    }
+                }
+
                 if (!silentSuccess) {
                     showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} record saved successfully`);
                 }
@@ -4882,7 +5040,7 @@
         }
     }
 
-    function validateMoreRowData(type, data) {
+    function validateMoreRowData(type, data, rowElement) {
         const errors = {};
         const addErr = (key, msg) => {
             if (!errors[key]) errors[key] = [];
@@ -4971,6 +5129,16 @@
             }
             if ((degree === 'Matric' || degree === 'Intermediate / Diploma' || degree === 'Intermediate') && !institute) {
                 addErr('institute', 'Board is required for selected degree.');
+            }
+
+            // Mandatory Document Check
+            const fileInput = rowElement ? rowElement.querySelector('[data-academic-certificate-file]') : null;
+            const viewContainer = rowElement ? rowElement.querySelector('[data-academic-view-container]') : null;
+            const isFileSelected = fileInput && fileInput.files.length > 0;
+            const isExistingFile = viewContainer && !viewContainer.classList.contains('d-none');
+            
+            if (!isFileSelected && !isExistingFile) {
+                addErr('certificate_file', 'Degree certificate document is mandatory.');
             }
         }
 
@@ -5122,34 +5290,35 @@
             const badge = row.querySelector('[data-family-nok-badge]');
             const selectedBadge = row.querySelector('[data-family-nok-selected-badge]');
             const toggleCard = row.querySelector('[data-family-nok-toggle]');
-            const removeBtn = row.querySelector('.family-nok-remove');
             const memberIndicator = row.querySelector('[data-family-nok-member-indicator]');
             const lockedNote = row.querySelector('[data-family-nok-locked-note]');
-            const helperText = row.querySelector('[data-family-nok-helper]');
-            const titleText = row.querySelector('[data-family-nok-title]');
             const isOn = radio && radio.checked;
             const isLockedForOther = !!selectedRow && selectedRow !== row && !isOn;
 
             if (toggleCard) {
-                toggleCard.classList.toggle('d-none', isLockedForOther);
-            }
-            if (titleText) {
-                titleText.classList.toggle('d-none', isLockedForOther);
-            }
-            if (lockedNote) {
-                lockedNote.classList.toggle('d-none', !isLockedForOther);
-            }
-            if (helperText) {
-                helperText.classList.toggle('d-none', isLockedForOther);
+                const icon = toggleCard.querySelector('i');
+                if (isOn) {
+                    toggleCard.classList.remove('btn-light', 'border-success');
+                    toggleCard.classList.add('btn-success');
+                    if (icon) {
+                        icon.className = 'bi bi-people-fill text-white';
+                    }
+                } else {
+                    toggleCard.classList.remove('btn-success');
+                    toggleCard.classList.add('btn-light', 'border-success');
+                    if (icon) {
+                        icon.className = 'bi bi-people text-success';
+                    }
+                }
+                toggleCard.setAttribute('title', isOn ? 'Remove Next of Kin' : 'Set as Next of Kin');
             }
 
             if (hidden) hidden.value = isOn ? '1' : '0';
             if (block) block.classList.toggle('d-none', !isOn);
             if (badge) badge.classList.toggle('d-none', !isOn);
             if (selectedBadge) selectedBadge.classList.toggle('d-none', !isOn);
-            if (toggleCard) toggleCard.classList.toggle('active', !!isOn);
-            if (removeBtn) removeBtn.classList.toggle('d-none', !isOn);
             if (memberIndicator) memberIndicator.classList.toggle('d-none', !isOn);
+            
             row.querySelectorAll('[data-family-nok-input]').forEach(function (inp) {
                 inp.required = !!isOn;
             });
@@ -5301,41 +5470,42 @@
                 if (row) {
                     const radio = row.querySelector('.family-nok-selector');
                     if (radio) {
-                        radio.checked = !radio.checked;
+                        const currentlyChecked = radio.checked;
+                        if (currentlyChecked) {
+                            // If untoggling, ask for confirmation and clear fields
+                            const result = await showConfirm('Are you sure you want to remove this member as Next of Kin?', 'Remove Next of Kin');
+                            if (!result.isConfirmed) return;
+                            
+                            radio.checked = false;
+                            row.querySelectorAll('[data-family-nok-input]').forEach(function (inp) {
+                                inp.value = '';
+                            });
+                            
+                            if (row.getAttribute('data-db-id')) {
+                                updateSubsectionPreview(row, 'family');
+                                setSubsectionRowMode(row, 'family', false);
+                                await saveSubsectionRow('family', row);
+                            }
+                        } else {
+                            // CHECK IF ANOTHER MEMBER IS ALREADY NOK
+                            const container = document.getElementById('moreFamilyMembersContainer');
+                            const otherSelected = Array.from(container.querySelectorAll('.family-nok-selector'))
+                                .find(r => r.checked && r !== radio);
+                            
+                            if (otherSelected) {
+                                showError('Next of Kin is already selected in another member. Remove that first to change.', 'Selection Locked');
+                                return;
+                            }
+                            
+                            radio.checked = true;
+                        }
                     }
                     syncFamilyNokFromRadios();
                 }
                 return;
             }
         });
-        moreFamilyMembersContainerEl.addEventListener('click', async function (e) {
-            const removeBtn = e.target.closest('.family-nok-remove');
-            if (!removeBtn) {
-                return;
-            }
-            e.preventDefault();
-            const row = removeBtn.closest('[data-family-row]');
-            if (!row) return;
-            const result = await showConfirm('Are you sure you want to remove this member as Next of Kin?', 'Remove Next of Kin');
-            if (!result.isConfirmed) {
-                return;
-            }
 
-            const radio = row.querySelector('.family-nok-selector');
-            if (radio) {
-                radio.checked = false;
-            }
-            row.querySelectorAll('[data-family-nok-input]').forEach(function (inp) {
-                inp.value = '';
-            });
-            syncFamilyNokFromRadios();
-            updateSubsectionPreview(row, 'family');
-
-            if (row.getAttribute('data-db-id')) {
-                setSubsectionRowMode(row, 'family', false);
-                await saveSubsectionRow('family', row);
-            }
-        });
     }
 
     // --- FAMILY Member Specifics ---
@@ -5482,8 +5652,133 @@
         row.querySelector('[data-academic-save]').onclick = () => saveSubsectionRow('academic', row);
         row.querySelector('[data-academic-remove]').onclick = () => removeSubsectionRow('academic', row);
 
+        // Delete/Change document logic
+        const deleteBtn = row.querySelector('[data-academic-document-remove]');
+        if (deleteBtn) {
+            deleteBtn.onclick = async () => {
+                const viewWrap = row.querySelector('[data-academic-view-container]');
+                const attachmentId = viewWrap.getAttribute('data-attachment-id');
+                
+                // If it's just a local selection (not yet saved to DB)
+                if (!attachmentId) {
+                    row.querySelector('[data-academic-upload-container]').classList.remove('d-none');
+                    viewWrap.classList.add('d-none');
+                    row.querySelector('[data-academic-certificate-file]').value = '';
+                    // Reset placeholder feedback
+                    const placeholderText = row.querySelector('[data-academic-upload-container] .small');
+                    const uploadIcon = row.querySelector('[data-academic-upload-container] i');
+                    if (placeholderText) {
+                        placeholderText.textContent = 'No file chosen';
+                        placeholderText.classList.remove('text-primary', 'fw-bold');
+                        placeholderText.classList.add('text-secondary');
+                    }
+                    if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+                    
+                    showToast('Selection cleared');
+                    return;
+                }
+
+                // Database deletion with confirmation
+                const result = await Swal.fire({
+                    title: 'Are you sure?',
+                    text: "This document will be permanently deleted.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!'
+                });
+
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch('/admin/employees/delete-attachment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ id: attachmentId })
+                        });
+
+                        const res = await response.json();
+                        if (res.success) {
+                            row.querySelector('[data-academic-upload-container]').classList.remove('d-none');
+                            viewWrap.classList.add('d-none');
+                            viewWrap.removeAttribute('data-attachment-id');
+                            row.querySelector('[data-academic-certificate-file]').value = '';
+                            
+                            // Remove from global arrays to prevent it reappearing on refresh
+                            if (window.employeeAttachments) {
+                                window.employeeAttachments = window.employeeAttachments.filter(a => a.id != attachmentId);
+                            }
+                            if (window.editData && window.editData.attachments) {
+                                window.editData.attachments = window.editData.attachments.filter(a => a.id != attachmentId);
+                            }
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted',
+                                text: 'Document deleted successfully',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            showError(res.message || 'Failed to delete document');
+                        }
+                    } catch (e) {
+                        showError('Network error during deletion');
+                    }
+                }
+            };
+        }
+        // File select feedback
+        const fileInput = row.querySelector('[data-academic-certificate-file]');
+        if (fileInput) {
+            fileInput.onchange = (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    const filename = e.target.files[0].name;
+                    const placeholderText = row.querySelector('[data-academic-upload-container] .small');
+                    const uploadIcon = row.querySelector('[data-academic-upload-container] i');
+                    
+                    if (placeholderText) {
+                        placeholderText.textContent = filename;
+                        placeholderText.classList.remove('text-secondary');
+                        placeholderText.classList.add('text-primary', 'fw-bold');
+                    }
+                    if (uploadIcon) {
+                        uploadIcon.className = 'bi bi-check-circle-fill text-success';
+                    }
+                }
+            };
+        }
+
         container.appendChild(clone);
         if (data && data.id) {
+            // Check for existing attachments (can be multiple sources)
+            const staticAttachments = (window.editData && window.editData.attachments) ? window.editData.attachments : [];
+            const dynamicAttachments = window.employeeAttachments || [];
+            const allAttachments = [...staticAttachments, ...dynamicAttachments];
+            
+            const targetSubsection = 'academic_' + data.id;
+            const attachments = allAttachments.filter(a => String(a.subsection) === targetSubsection);
+            
+            if (attachments.length > 0) {
+                const uploadWrap = row.querySelector('[data-academic-upload-container]');
+                const viewWrap = row.querySelector('[data-academic-view-container]');
+                const viewLink = row.querySelector('[data-academic-document-link]');
+                const filenameEl = row.querySelector('[data-academic-filename]');
+                
+                if (viewWrap && viewLink) {
+                    const mainAttachment = attachments[0]; 
+                    if (uploadWrap) uploadWrap.classList.add('d-none');
+                    viewWrap.classList.remove('d-none');
+                    viewWrap.setAttribute('data-attachment-id', mainAttachment.id);
+                    viewLink.href = mainAttachment.url || '#';
+                    if (filenameEl) filenameEl.textContent = mainAttachment.file_name || mainAttachment.name || 'certificate';
+                }
+            }
+
             updateSubsectionPreview(row, 'academic');
             setSubsectionRowMode(row, 'academic', true);
         }
@@ -5704,8 +5999,115 @@
         row.querySelector('[data-certificate-save]').onclick = () => saveSubsectionRow('certificate', row);
         row.querySelector('[data-certificate-remove]').onclick = () => removeSubsectionRow('certificate', row);
 
+        // Certificate document logic
+        const setupCertificateDocLogic = () => {
+            const fileInput = row.querySelector('[data-certificate-file]');
+            const uploadContainer = row.querySelector('[data-certificate-upload-container]');
+            const viewContainer = row.querySelector('[data-certificate-view-container]');
+            const removeBtn = row.querySelector('[data-certificate-document-remove]');
+            
+            if (fileInput) {
+                fileInput.onchange = (e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        const filename = e.target.files[0].name;
+                        const placeholderText = uploadContainer.querySelector('.small');
+                        const uploadIcon = uploadContainer.querySelector('i');
+                        if (placeholderText) {
+                            placeholderText.textContent = filename;
+                            placeholderText.classList.remove('text-secondary');
+                            placeholderText.classList.add('text-primary', 'fw-bold');
+                        }
+                        if (uploadIcon) uploadIcon.className = 'bi bi-check-circle-fill text-success';
+                    }
+                };
+            }
+
+            if (removeBtn) {
+                removeBtn.onclick = async () => {
+                    const attachmentId = viewContainer.getAttribute('data-attachment-id');
+                    if (!attachmentId) {
+                        uploadContainer.classList.remove('d-none');
+                        viewContainer.classList.add('d-none');
+                        fileInput.value = '';
+                        const placeholderText = uploadContainer.querySelector('.small');
+                        const uploadIcon = uploadContainer.querySelector('i');
+                        if (placeholderText) {
+                            placeholderText.textContent = 'No file chosen';
+                            placeholderText.classList.remove('text-primary', 'fw-bold');
+                            placeholderText.classList.add('text-secondary');
+                        }
+                        if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+                        showToast('Selection cleared');
+                        return;
+                    }
+
+                    const result = await Swal.fire({
+                        title: 'Are you sure?',
+                        text: "This document will be permanently deleted.",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    });
+
+                    if (result.isConfirmed) {
+                        try {
+                            const response = await fetch('/admin/employees/delete-attachment', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ id: attachmentId })
+                            });
+                            const res = await response.json();
+                            if (res.success) {
+                                uploadContainer.classList.remove('d-none');
+                                viewContainer.classList.add('d-none');
+                                viewContainer.removeAttribute('data-attachment-id');
+                                fileInput.value = '';
+                                if (window.employeeAttachments) window.employeeAttachments = window.employeeAttachments.filter(a => a.id != attachmentId);
+                                if (window.editData && window.editData.attachments) window.editData.attachments = window.editData.attachments.filter(a => a.id != attachmentId);
+                                Swal.fire({ icon: 'success', title: 'Deleted', text: 'Document deleted successfully', timer: 1500, showConfirmButton: false });
+                            } else {
+                                showError(res.message || 'Failed to delete document');
+                            }
+                        } catch (e) { showError('Network error'); }
+                    }
+                };
+            }
+        };
+
+        setupCertificateDocLogic();
+
         container.appendChild(clone);
         if (data && data.id) {
+            // Load existing certificate attachment
+            const staticAttachments = (window.editData && window.editData.attachments) ? window.editData.attachments : [];
+            const dynamicAttachments = window.employeeAttachments || [];
+            const allAttachments = [...staticAttachments, ...dynamicAttachments];
+            
+            const targetSubsection = 'certificate_' + data.id;
+            const attachments = allAttachments.filter(a => String(a.subsection) === targetSubsection);
+            
+            if (attachments.length > 0) {
+                const uploadWrap = row.querySelector('[data-certificate-upload-container]');
+                const viewWrap = row.querySelector('[data-certificate-view-container]');
+                const viewLink = row.querySelector('[data-certificate-document-link]');
+                const filenameEl = row.querySelector('[data-certificate-filename]');
+                
+                if (viewWrap && viewLink) {
+                    const mainAttachment = attachments[0]; 
+                    if (uploadWrap) uploadWrap.classList.add('d-none');
+                    viewWrap.classList.remove('d-none');
+                    viewWrap.setAttribute('data-attachment-id', mainAttachment.id);
+                    viewLink.href = mainAttachment.url || '#';
+                    if (filenameEl) filenameEl.textContent = mainAttachment.file_name || mainAttachment.name || 'certificate';
+                }
+            }
+
             updateSubsectionPreview(row, 'certificate');
             setSubsectionRowMode(row, 'certificate', true);
         }
@@ -5738,8 +6140,119 @@
         row.querySelector('[data-employment-save]').onclick = () => saveSubsectionRow('employment', row);
         row.querySelector('[data-employment-remove]').onclick = () => removeSubsectionRow('employment', row);
 
+        // Document logic for Experience Letter and Salary Slip
+        const setupDocLogic = (fileInputAttr, uploadContainerAttr, viewContainerAttr, removeBtnAttr, linkAttr, filenameAttr) => {
+            const fileInput = row.querySelector(`[${fileInputAttr}]`);
+            const uploadContainer = row.querySelector(`[${uploadContainerAttr}]`);
+            const viewContainer = row.querySelector(`[${viewContainerAttr}]`);
+            const removeBtn = row.querySelector(`[${removeBtnAttr}]`);
+            const linkEl = row.querySelector(`[${linkAttr}]`);
+            const filenameEl = row.querySelector(`[${filenameAttr}]`);
+
+            if (fileInput) {
+                fileInput.onchange = (e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        const filename = e.target.files[0].name;
+                        const placeholderText = uploadContainer.querySelector('.small');
+                        const uploadIcon = uploadContainer.querySelector('i');
+                        if (placeholderText) {
+                            placeholderText.textContent = filename;
+                            placeholderText.classList.remove('text-secondary');
+                            placeholderText.classList.add('text-primary', 'fw-bold');
+                        }
+                        if (uploadIcon) uploadIcon.className = 'bi bi-check-circle-fill text-success';
+                    }
+                };
+            }
+
+            if (removeBtn) {
+                removeBtn.onclick = async () => {
+                    const attachmentId = viewContainer.getAttribute('data-attachment-id');
+                    if (!attachmentId) {
+                        uploadContainer.classList.remove('d-none');
+                        viewContainer.classList.add('d-none');
+                        fileInput.value = '';
+                        const placeholderText = uploadContainer.querySelector('.small');
+                        const uploadIcon = uploadContainer.querySelector('i');
+                        if (placeholderText) {
+                            placeholderText.textContent = 'No file chosen';
+                            placeholderText.classList.remove('text-primary', 'fw-bold');
+                            placeholderText.classList.add('text-secondary');
+                        }
+                        if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+                        showToast('Selection cleared');
+                        return;
+                    }
+
+                    const result = await Swal.fire({
+                        title: 'Are you sure?',
+                        text: "This document will be permanently deleted.",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    });
+
+                    if (result.isConfirmed) {
+                        try {
+                            const response = await fetch('/admin/employees/delete-attachment', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ id: attachmentId })
+                            });
+                            const res = await response.json();
+                            if (res.success) {
+                                uploadContainer.classList.remove('d-none');
+                                viewContainer.classList.add('d-none');
+                                viewContainer.removeAttribute('data-attachment-id');
+                                fileInput.value = '';
+                                if (window.employeeAttachments) window.employeeAttachments = window.employeeAttachments.filter(a => a.id != attachmentId);
+                                if (window.editData && window.editData.attachments) window.editData.attachments = window.editData.attachments.filter(a => a.id != attachmentId);
+                                Swal.fire({ icon: 'success', title: 'Deleted', text: 'Document deleted successfully', timer: 1500, showConfirmButton: false });
+                            } else {
+                                showError(res.message || 'Failed to delete document');
+                            }
+                        } catch (e) { showError('Network error'); }
+                    }
+                };
+            }
+        };
+
+        setupDocLogic('data-employment-exp-file', 'data-employment-exp-upload-container', 'data-employment-exp-view-container', 'data-employment-exp-remove', 'data-employment-exp-link', 'data-employment-exp-filename');
+        setupDocLogic('data-employment-salary-file', 'data-employment-salary-upload-container', 'data-employment-salary-view-container', 'data-employment-salary-remove', 'data-employment-salary-link', 'data-employment-salary-filename');
+
         container.appendChild(clone);
         if (data && data.id) {
+            // Load documents
+            const staticAttachments = (window.editData && window.editData.attachments) ? window.editData.attachments : [];
+            const dynamicAttachments = window.employeeAttachments || [];
+            const allAttachments = [...staticAttachments, ...dynamicAttachments];
+
+            const loadDoc = (suffix, uploadContainerAttr, viewContainerAttr, linkAttr, filenameAttr) => {
+                const targetSub = `ex_employment_${data.id}_${suffix}`;
+                const found = allAttachments.filter(a => String(a.subsection) === targetSub);
+                if (found.length > 0) {
+                    const uploadBox = row.querySelector(`[${uploadContainerAttr}]`);
+                    const viewBox = row.querySelector(`[${viewContainerAttr}]`);
+                    const linkEl = row.querySelector(`[${linkAttr}]`);
+                    const nameEl = row.querySelector(`[${filenameAttr}]`);
+                    if (viewBox && linkEl) {
+                        if (uploadBox) uploadBox.classList.add('d-none');
+                        viewBox.classList.remove('d-none');
+                        viewBox.setAttribute('data-attachment-id', found[0].id);
+                        linkEl.href = found[0].url || '#';
+                        if (nameEl) nameEl.textContent = found[0].file_name || found[0].name || 'document';
+                    }
+                }
+            };
+            loadDoc('exp', 'data-employment-exp-upload-container', 'data-employment-exp-view-container', 'data-employment-exp-link', 'data-employment-exp-filename');
+            loadDoc('salary', 'data-employment-salary-upload-container', 'data-employment-salary-view-container', 'data-employment-salary-link', 'data-employment-salary-filename');
+
             updateSubsectionPreview(row, 'employment');
             setSubsectionRowMode(row, 'employment', true);
         }
@@ -6025,6 +6538,150 @@ document.addEventListener('change', function(e) {
             if (textarea) textarea.value = '';
         }
     }
+
+    // Medical file selection feedback
+    if (e.target && e.target.id === 'moreMedicalFileInput') {
+        const fileInput = e.target;
+        const uploadContainer = document.getElementById('moreMedicalUploadContainer');
+        if (fileInput.files && fileInput.files.length > 0) {
+            const filename = fileInput.files[0].name;
+            const placeholderText = uploadContainer ? uploadContainer.querySelector('.small') : null;
+            const uploadIcon = uploadContainer ? uploadContainer.querySelector('i') : null;
+            if (placeholderText) {
+                placeholderText.textContent = filename;
+                placeholderText.classList.remove('text-secondary');
+                placeholderText.classList.add('text-primary', 'fw-bold');
+            }
+            if (uploadIcon) uploadIcon.className = 'bi bi-check-circle-fill text-success';
+        }
+    }
 });
 
+// â”€â”€â”€ Medical Document: Deletion Workflow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+(function initMedicalDocHandlers() {
+    const removeBtn = document.getElementById('moreMedicalDocumentRemove');
+    if (!removeBtn) return;
+
+    removeBtn.addEventListener('click', async function() {
+        const viewContainer = document.getElementById('moreMedicalViewContainer');
+        const uploadContainer = document.getElementById('moreMedicalUploadContainer');
+        const fileInput = document.getElementById('moreMedicalFileInput');
+        const attachmentId = viewContainer ? viewContainer.getAttribute('data-attachment-id') : null;
+
+        if (!attachmentId) {
+            // No saved attachment, just reset the upload UI
+            if (uploadContainer) uploadContainer.classList.remove('d-none');
+            if (viewContainer) viewContainer.classList.add('d-none');
+            if (fileInput) {
+                fileInput.value = '';
+                const placeholderText = uploadContainer ? uploadContainer.querySelector('.small') : null;
+                const uploadIcon = uploadContainer ? uploadContainer.querySelector('i') : null;
+                if (placeholderText) {
+                    placeholderText.textContent = 'No file chosen';
+                    placeholderText.classList.remove('text-primary', 'fw-bold');
+                    placeholderText.classList.add('text-secondary');
+                }
+                if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+            }
+            if (typeof showToast === 'function') showToast('Selection cleared');
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'This medical document will be permanently deleted.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch('/admin/employees/delete-attachment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ id: attachmentId })
+            });
+            const res = await response.json();
+
+            if (res.success) {
+                if (uploadContainer) uploadContainer.classList.remove('d-none');
+                if (viewContainer) {
+                    viewContainer.classList.add('d-none');
+                    viewContainer.removeAttribute('data-attachment-id');
+                }
+                if (fileInput) fileInput.value = '';
+
+                // Reset upload placeholder text
+                if (uploadContainer) {
+                    const placeholderText = uploadContainer.querySelector('.small');
+                    const uploadIcon = uploadContainer.querySelector('i');
+                    if (placeholderText) {
+                        placeholderText.textContent = 'No file chosen';
+                        placeholderText.classList.remove('text-primary', 'fw-bold');
+                        placeholderText.classList.add('text-secondary');
+                    }
+                    if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+                }
+
+                // Remove from memory
+                if (window.employeeAttachments) window.employeeAttachments = window.employeeAttachments.filter(a => a.id != attachmentId);
+                if (window.editData && window.editData.attachments) window.editData.attachments = window.editData.attachments.filter(a => a.id != attachmentId);
+
+                Swal.fire({ icon: 'success', title: 'Deleted', text: 'Medical document deleted successfully', timer: 1500, showConfirmButton: false });
+            } else {
+                if (typeof showError === 'function') showError(res.message || 'Failed to delete document');
+            }
+        } catch (err) {
+            if (typeof showError === 'function') showError('Network error');
+        }
+    });
+})();
+
+// â”€â”€â”€ Medical Document: Page-Load Restore â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+(function restoreMedicalDocument() {
+    function doRestore(attachments) {
+        const medicalAttachment = (attachments || []).find(a => String(a.subsection) === 'medical');
+        if (!medicalAttachment) return;
+
+        const uploadContainer = document.getElementById('moreMedicalUploadContainer');
+        const viewContainer = document.getElementById('moreMedicalViewContainer');
+        const viewLink = document.getElementById('moreMedicalDocumentLink');
+        const filenameEl = document.getElementById('moreMedicalFilename');
+
+        if (!viewContainer) return;
+
+        if (uploadContainer) uploadContainer.classList.add('d-none');
+        viewContainer.classList.remove('d-none');
+        viewContainer.setAttribute('data-attachment-id', medicalAttachment.id);
+        if (viewLink) viewLink.href = medicalAttachment.url || '#';
+        if (filenameEl) filenameEl.textContent = medicalAttachment.file_name || medicalAttachment.name || 'Medical Report';
+    }
+
+    // Try static edit data first
+    if (window.editData && Array.isArray(window.editData.attachments) && window.editData.attachments.length > 0) {
+        doRestore(window.editData.attachments);
+        return;
+    }
+
+    // Fall back to dynamically fetched attachments
+    if (window.employeeAttachmentsFetchUrl) {
+        fetch(window.employeeAttachmentsFetchUrl, { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(data => {
+                const atts = data.attachments || data || [];
+                window.employeeAttachments = atts;
+                doRestore(atts);
+            })
+            .catch(() => {});
+    }
+})();

@@ -61,6 +61,7 @@
         window.previewEmployeeCodeUrl = @json(route('admin.employee.preview_code'));
         window.universitiesDirectoryUrl = @json(route('admin.employee.universities'));
         window.employeeAttachmentsFetchUrl = @json(isset($employee) && $employee?->id ? url('/admin/employees/' . $employee->id . '/attachments') : null);
+        window.saveAttachmentUrl = @json(route('admin.employee.save_attachment'));
         if (typeof window.setExistingAttachments === 'function') {
             window.setExistingAttachments(window.editData.attachments || []);
         }
@@ -69,5 +70,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     
     <script src="{{ asset('js/employeeregistration/wizard.js') }}?v={{ filemtime(public_path('js/employeeregistration/wizard.js')) }}"></script>
+    <script src="{{ asset('js/employeeregistration/attachments-dynamic.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/employeeregistration/family-attachments.js') }}?v={{ time() }}"></script>
 @endpush
 

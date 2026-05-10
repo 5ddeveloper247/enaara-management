@@ -736,7 +736,7 @@ class EmployeeStepRequest extends FormRequest
                     'attachments.*.type' => ['nullable', 'string', 'max:100'],
                     'attachments.*.description' => ['nullable', 'string', 'max:1000'],
                     'attachments.*.files' => ['required', 'array', 'min:1'],
-                    'attachments.*.files.*' => ['file', 'max:20480', 'mimes:jpg,jpeg,png,pdf,doc,docx'],
+                    'attachments.*.files.*' => ['file', 'max:20480', 'mimes:jpg,jpeg,png,pdf,doc,docx,xlsx,zip,xls,txt'],
                 ]);
 
             case 'contact':
@@ -792,6 +792,8 @@ class EmployeeStepRequest extends FormRequest
                     'to_date'            => ['required', 'date', 'after_or_equal:from_date'],
                     'salary'             => ['nullable', 'string', 'max:15'],
                     'reason_for_leaving' => ['nullable', 'string', 'max:200'],
+                    'experience_letter'  => ['required_without:employment_id', 'nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
+                    'salary_slip'        => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
             case 'certificate_row':
@@ -805,6 +807,7 @@ class EmployeeStepRequest extends FormRequest
                     'start_date'       => ['required', 'date'],
                     'end_date'         => ['required', 'date', 'after_or_equal:start_date'],
                     'institute'        => ['required', 'string', 'max:255', $this->maxWordsRule(20, 'Institute')],
+                    'certificate_file' => ['required_without:certificate_id', 'nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
             case 'medical':
@@ -838,6 +841,7 @@ class EmployeeStepRequest extends FormRequest
                             return (string) $this->input('has_chronic_disease') === 'yes';
                         }),
                     ],
+                    'medical_file' => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
             case 'bank_row':
@@ -1360,7 +1364,7 @@ class EmployeeStepRequest extends FormRequest
             'attachments.*.files.required_with' => 'Please upload at least one valid file.',
             'attachments.*.files.array' => 'Uploaded files must be processed as an array.',
             'attachments.*.files.min' => 'Please upload at least one valid file.',
-            'attachments.*.files.*.mimes' => 'Attachment file must be of type: jpg, jpeg, png, pdf, doc, or docx.',
+            'attachments.*.files.*.mimes' => 'Attachment file must be of type: jpg, jpeg, png, pdf, doc, docx, xls, xlsx, or txt.',
             'attachments.*.files.*.max' => 'Each attachment file must not exceed 20 MB.',
 
             // Password

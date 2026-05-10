@@ -187,6 +187,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
         ->name('admin.role.parentRoles');
 
     Route::get('/register', [RegistrationController::class, 'index'])->name('admin.register.index');
+    Route::post('/register/add-document-type', [RegistrationController::class, 'addDocumentType'])->name('admin.register.add_document_type');
 
     Route::get('/employees', [EmployeeController::class, 'index'])->name('admin.employee.index');
     Route::redirect('/employee', '/admin/employees');

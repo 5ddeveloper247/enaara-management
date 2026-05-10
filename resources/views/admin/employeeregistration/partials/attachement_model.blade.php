@@ -84,8 +84,8 @@
                                 style="height:130px;border:2px dashed rgba(255,255,255,.3);border-radius:10px;cursor:pointer;background:rgba(255,255,255,.07);">
                                 <i class="bi bi-cloud-arrow-up fs-1" style="color:rgba(255,255,255,.4);"></i>
                                 <span class="small" style="color:rgba(255,255,255,.5);">Click to upload (multiple allowed)</span>
-                                <span class="small" style="color:rgba(255,255,255,.5); font-size: 0.75rem;">(Allowed: JPG, PNG, PDF, DOC, DOCX up to 10MB)</span>
-                                <input type="file" id="attachmentUpload" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                                <span class="small" style="color:rgba(255,255,255,.5); font-size: 0.75rem;">(Allowed: JPG, PNG, PDF, DOC, DOCX, XLS, XLSX, ZIP, TXT up to 20MB)</span>
+                                <input type="file" id="attachmentUpload" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt"
                                     class="d-none" multiple onchange="previewAttachmentUpload(this)">
                             </label>
                             <div id="attachmentUploadPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
@@ -110,8 +110,22 @@
     window.employeeAttachments = window.employeeAttachments || [];
     let attachmentUploadedFiles = [];
     let isAttachmentSaving = false;
-    const attachmentAllowedExtensions = new Set(['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx']);
-    const attachmentMaxFileSizeBytes = 10 * 1024 * 1024;
+    const attachmentAllowedExtensions = new Set(['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xlsx', 'zip', 'xls', 'txt']);
+    const attachmentMaxFileSizeBytes = 20 * 1024 * 1024;
+    
+    const escAtt = (str) => {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, (m) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        })[m]);
+    };
+
+    const escAttrUrl = (url) => {
+        if (!url) return 'javascript:void(0)';
+        return String(url).replace(/[&<>"']/g, (m) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        })[m]);
+    };
 
     function attachmentShowInlineError(target, message) {
         if (!target) return;
@@ -160,11 +174,11 @@
         } else {
             const invalidType = files.find((f) => !attachmentAllowedExtensions.has(getAttachmentFileExtension(f.name)));
             if (invalidType) {
-                errors.files = 'Attachment file must be of type: jpg, jpeg, png, pdf, doc, or docx.';
+                errors.files = 'Attachment file must be of type: jpg, jpeg, png, pdf, doc, docx, xls, xlsx, zip, or txt.';
             } else {
                 const oversize = files.find((f) => f.size > attachmentMaxFileSizeBytes);
                 if (oversize) {
-                    errors.files = 'Each attachment file must not exceed 10 MB.';
+                    errors.files = 'Each attachment file must not exceed 20 MB.';
                 }
             }
         }
@@ -188,13 +202,6 @@
         return true;
     }
 
-    function escAtt(s) {
-        return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    }
-
-    function escAttrUrl(u) {
-        return String(u ?? '').replace(/"/g, '&quot;');
-    }
 
     function previewAttachmentUpload(input) {
         const preview = document.getElementById('attachmentUploadPreview');
@@ -282,113 +289,74 @@
             formData.append('attachments[0][files][]', f);
         });
         
-        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        fetch('{{ route("admin.employee.save_attachment") }}', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json'
-            },
-            body: formData
-        })
-        .then(async response => {
-            const isJson = response.headers.get('content-type')?.includes('application/json');
-            const data = isJson ? await response.json() : null;
+        // Create temporary attachment for progress display
+        const tempId = 'uploading-' + Date.now();
+        const tempAttachment = {
+            localId: tempId,
+            name: name,
+            type: type,
+            desc: desc,
+            files: files.map(f => ({
+                file: f,
+                name: f.name,
+                size: f.size,
+                progress: 0,
+                type: getAttachmentFileExtension(f.name).toUpperCase()
+            })),
+            existingFiles: []
+        };
 
-            if (!response.ok) {
-                if (data && data.errors) {
-                    return { success: false, errors: data.errors };
-                }
-                if (data && data.message) {
-                    return { success: false, message: data.message };
-                }
-                const errorText = !isJson ? await response.text() : 'Unknown server error';
-                throw new Error(errorText.substring(0, 200));
-            }
-            return data;
-        })
-        .then(data => {
-            const getFriendlyAttachmentErrorMessage = (key, rawMessage) => {
-                const message = String(rawMessage || '').trim();
-                if (!message) return 'Attachment upload failed. Please try again.';
+        window.employeeAttachments.push(tempAttachment);
+        renderAttachmentListing();
 
-                const lower = message.toLowerCase();
-                const keyText = String(key || '').toLowerCase();
+        // Close modal immediately or keep it open?
+        // Usually better to keep it open until success, but let's hide it to show progress on page
+        const modalEl = document.getElementById('attachmentModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
 
-                if (keyText.includes('files') || lower.includes('failed to upload')) {
-                    if (lower.includes('failed to upload')) {
-                        return 'One of the selected files could not be uploaded. Please reselect the file and try again.';
-                    }
-                    if (lower.includes('must not exceed') || lower.includes('max')) {
-                        return 'Each attachment file must be 10 MB or smaller.';
-                    }
-                    if (lower.includes('mimes') || lower.includes('type') || lower.includes('jpg') || lower.includes('pdf') || lower.includes('doc')) {
-                        return 'Invalid file type. Allowed: JPG, JPEG, PNG, PDF, DOC, DOCX.';
-                    }
-                    return 'Please upload at least one valid attachment file.';
-                }
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '{{ route("admin.employee.save_attachment") }}', true);
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
 
-                if (keyText.includes('name')) return 'Attachment name is required (max 255 characters).';
-                if (keyText.includes('type')) return 'Attachment type must be 100 characters or less.';
-                if (keyText.includes('description')) return 'Attachment description must be 1000 characters or less.';
-                return message;
-            };
-
-            if (data.success) {
-                const attachment = {
-                    localId: 'existing-' + data.attachment_id,
-                    existingId: data.attachment_id,
-                    name,
-                    type,
-                    desc,
-                    files: [],
-                    existingFiles: data.files || []
-                };
-
-                window.employeeAttachments.push(attachment);
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                tempAttachment.files.forEach(f => {
+                    f.progress = percent;
+                });
                 renderAttachmentListing();
-                resetAttachmentForm();
-                
-                showToast(data.message || 'Attachment saved successfully', 'success');
-                const modalEl = document.getElementById('attachmentModal');
-                const modalInstance = bootstrap.Modal.getInstance(modalEl);
-                if (modalInstance) modalInstance.hide();
-            } else {
-                if (data.errors) {
-                    for (const key in data.errors) {
-                        const errorText = getFriendlyAttachmentErrorMessage(key, data.errors[key][0]);
-                        let targetElement;
-                        
-                        if (key.includes('name')) {
-                            targetElement = document.getElementById('attachmentName');
-                        } else if (key.includes('type')) {
-                            targetElement = document.getElementById('attachmentType');
-                        } else if (key.includes('description')) {
-                            targetElement = document.getElementById('attachmentDesc');
-                        } else if (key.includes('files')) {
-                            targetElement = document.getElementById('attachmentUpload').closest('.col-12');
-                        }
+            }
+        };
 
-                        if (targetElement) {
-                            const errorSpan = document.createElement('span');
-                            errorSpan.className = 'text-danger small attachment-error-msg d-block mt-1';
-                            errorSpan.textContent = errorText;
-                            
-                            if (key.includes('files')) {
-                                targetElement.appendChild(errorSpan);
-                            } else {
-                                targetElement.parentElement.appendChild(errorSpan);
-                                targetElement.classList.add('is-invalid');
-                            }
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Validation Error',
-                                text: errorText,
-                                confirmButtonColor: '#1a237e'
-                            });
-                        }
-                    }
+        xhr.onload = function() {
+            let data = {};
+            try { data = JSON.parse(xhr.responseText); } catch(e) {}
+
+            if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+                // Success
+                window.employeeAttachments = window.employeeAttachments.filter(a => a.localId !== tempId);
+                if (window.fetchExistingAttachments) window.fetchExistingAttachments();
+                
+                resetAttachmentForm();
+                showToast(data.message || 'Attachment saved successfully', 'success');
+            } else {
+                // Error
+                window.employeeAttachments = window.employeeAttachments.filter(a => a.localId !== tempId);
+                renderAttachmentListing();
+                
+                if (data.errors) {
+                    // Re-open modal if there are validation errors?
+                    // For now just alert
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Please check your inputs and try again.',
+                        confirmButtonColor: '#1a237e'
+                    });
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -398,23 +366,20 @@
                     });
                 }
             }
-        })
-        .catch(error => {
-            console.error('Error saving attachment:', error);
+        };
+
+        xhr.onerror = function() {
+            window.employeeAttachments = window.employeeAttachments.filter(a => a.localId !== tempId);
+            renderAttachmentListing();
             Swal.fire({
                 icon: 'error',
                 title: 'Server Error',
-                text: 'Details: ' + error.message,
+                text: 'Something went wrong on the server.',
                 confirmButtonColor: '#1a237e'
             });
-        })
-        .finally(() => {
-            isAttachmentSaving = false;
-            if (saveBtn) {
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = '<i class="bi bi-floppy me-1"></i>Save Attachment';
-            }
-        });
+        };
+
+        xhr.send(formData);
     }
 
     function resetAttachmentForm() {
@@ -428,8 +393,9 @@
         attachmentClearInlineErrors();
     }
 
-    function renderAttachmentListing() {
-        const modalContainer = document.getElementById('attachmentListing');
+    window.renderAttachmentListing = function() {
+        try {
+            const modalContainer = document.getElementById('attachmentListing');
         const modalEmpty = document.getElementById('attachmentListingEmpty');
         const badge = document.getElementById('attachmentCountBadge');
         
@@ -444,91 +410,106 @@
         if (onPageContainer) onPageContainer.innerHTML = '';
 
         window.employeeAttachments.forEach(a => {
+            // Only render general attachments (subsection should be null or undefined)
+            if (a.subsection !== null && a.subsection !== undefined) return;
+
             const nameSafe = escAtt(a.name);
             const typeSafe = escAtt(a.type || '');
             const descSafe = escAtt(a.desc || '');
             const files = (a.files || []).map(f => ({
                 name: f.name,
-                isImg: (f.type || '').startsWith('image/'),
-                url: URL.createObjectURL(f),
+                size: f.size,
+                type: f.type || getAttachmentFileExtension(f.name).toUpperCase(),
+                url: f.file ? URL.createObjectURL(f.file) : null,
+                progress: f.progress
             })).concat((a.existingFiles || []).map(f => ({
                 name: f.name,
-                isImg: (f.mime_type || '').startsWith('image/'),
+                size: f.size,
+                type: getAttachmentFileExtension(f.name).toUpperCase(),
                 url: f.url || null,
             })));
 
-            const generateFilesHtml = (isDark = true) => {
-                if (!files.length) return '';
-                const btnClass = isDark ? 'btn-outline-light' : 'btn-outline-primary';
-                const badgeClass = isDark ? 'bg-light text-muted' : 'bg-light text-dark border-secondary';
-                
-                return `<div class="mb-2 d-flex flex-column gap-2">
-                    ${files.map(f => {
-                        const preview = f.isImg && f.url
-                            ? `<img src="${escAttrUrl(f.url)}"
-                            style="height:40px;width:40px;object-fit:cover;border-radius:6px;border:1px solid ${isDark ? 'rgba(255,255,255,.25)' : '#dee2e6'};flex-shrink:0;">`
-                            : `<span class="badge ${badgeClass} border px-2 py-1" style="font-size:10px;">
-                               <i class="bi bi-paperclip me-1"></i>${escAtt(f.name)}
-                           </span>`;
-                        const downloadBtn = f.url
-                            ? `<a href="${escAttrUrl(f.url)}" download="${escAtt(f.name)}" class="btn btn-sm ${btnClass} py-0 px-2 align-self-start" style="font-size:11px;">
-                                <i class="bi bi-download me-1"></i>Download
-                            </a>`
-                            : '';
-                        return `<div class="d-flex flex-wrap align-items-center gap-2">${preview}${downloadBtn}</div>`;
-                    }).join('')}
-                   </div>`;
+            const formatSize = (bytes) => {
+                if (!bytes) return '';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
             };
 
-            // Card for Modal (Dark)
-            if (modalContainer) {
-                modalContainer.insertAdjacentHTML('beforeend', `
-                <div class="col-md-6 col-lg-4" id="modal-${escAtt(a.localId)}">
-                       <div class="rounded-3 border p-3 h-100" style="border-color:#ffffff1a !important;background:rgba(255,255,255,.07);">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h6 class="mb-0 fw-semibold small text-white">${nameSafe}</h6>
-                                <small style="color:rgba(255,255,255,.55);">${typeSafe || '—'}</small>
+            const getIconColor = (ext) => {
+                const colors = {
+                    'PDF': '#ff5252',
+                    'DOC': '#2b579a',
+                    'DOCX': '#2b579a',
+                    'XLS': '#217346',
+                    'XLSX': '#217346',
+                    'ZIP': '#ffc107',
+                    'PNG': '#4caf50',
+                    'JPG': '#4caf50',
+                    'JPEG': '#4caf50',
+                    'TXT': '#607d8b'
+                };
+                return colors[ext] || '#9e9e9e';
+            };
+
+            const generateListHtml = (isDark = true) => {
+                if (!files.length) return '';
+                return files.map(f => {
+                    const isUploading = f.progress !== undefined && f.progress < 100;
+                    return `
+                    <div class="d-flex align-items-center p-3 mb-3 rounded-4 bg-white shadow-sm position-relative" style="border: 1px solid rgba(0,0,0,0.05);">
+                        <!-- File Icon -->
+                        <div class="d-flex align-items-center justify-content-center rounded-3 me-3" 
+                             style="width: 54px; height: 54px; background: ${getIconColor(f.type)}; color: #fff; font-size: 0.8rem; font-weight: 800; position: relative; overflow: hidden; flex-shrink: 0;">
+                            <div style="position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 14px 14px 0; border-color: transparent rgba(255,255,255,0.4) transparent transparent;"></div>
+                            ${f.type}
+                        </div>
+                        
+                        <!-- File Info -->
+                        <div class="flex-grow-1 overflow-hidden me-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="mb-0 text-dark fw-bold text-truncate" style="font-size: 0.95rem;">${escAtt(f.name)}</h6>
+                                ${isUploading ? `<span class="text-primary fw-bold" style="font-size: 0.75rem;">${f.progress}%</span>` : ''}
                             </div>
-                            <span class="badge" style="background:rgba(255,255,255,.15);font-size:10px;">${typeSafe || '—'}</span>
-                    </div>
-                     ${a.desc ? `<div class="rounded-3 border p-2 mb-2" style="border-color:#ffffff1a !important;"><small class="opacity-75 d-block mb-1 text-white-50">Description</small><div class="fw-semibold small text-white">${descSafe}</div></div>` : ''}
-                        ${generateFilesHtml(true)}
-                        <div class="pt-3 mt-2 border-top d-flex gap-2 justify-content-end" style="border-color:#ffffff1a !important;">
-                           <button class="btn btn-sm btn-outline-light" onclick="deleteAttachment('${escAtt(a.localId)}')">
-                                <i class="bi bi-trash me-1"></i>Delete
+                            
+                            ${isUploading ? `
+                                <div class="progress mt-1" style="height: 4px; background: #eee; border-radius: 2px;">
+                                    <div class="progress-bar" style="width: ${f.progress}%; background: #4a90e2; border-radius: 2px;"></div>
+                                </div>
+                            ` : `
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-muted" style="font-size: 0.75rem;">${formatSize(f.size) || '—'}</span>
+                                    ${typeSafe ? `<span class="badge bg-light text-muted border-0 fw-normal" style="font-size: 0.65rem;">${typeSafe}</span>` : ''}
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex align-items-center gap-2">
+                            ${!isUploading && f.url ? `
+                                <a href="${escAttrUrl(f.url)}" target="_blank" class="text-success text-decoration-none d-flex align-items-center justify-content-center rounded-circle" 
+                                   style="width: 32px; height: 32px; background: rgba(40, 167, 69, 0.1);" title="View">
+                                    <i class="bi bi-check-lg fs-5"></i>
+                                </a>
+                            ` : ''}
+                            <button onclick="deleteAttachment('${escAtt(a.localId)}')" class="text-danger border-0 p-0 d-flex align-items-center justify-content-center rounded-circle" 
+                                    style="width: 32px; height: 32px; background: rgba(220, 53, 69, 0.1); cursor: pointer;" title="Delete">
+                                <i class="bi bi-x-lg" style="font-size: 0.85rem;"></i>
                             </button>
                         </div>
                     </div>
-                </div>`);
-            }
+                `}).join('');
+            };
 
-            // Card for On-Page (Light)
-            if (onPageContainer) {
-                onPageContainer.insertAdjacentHTML('beforeend', `
-                <div class="col-md-6 col-lg-4" id="page-${escAtt(a.localId)}">
-                       <div class="card border rounded-3 h-100 shadow-sm bg-white">
-                        <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h6 class="mb-0 fw-bold small text-dark">${nameSafe}</h6>
-                                    <small class="text-muted">${typeSafe || '—'}</small>
-                                </div>
-                                <span class="badge bg-light text-dark border" style="font-size:10px;">${typeSafe || '—'}</span>
-                            </div>
-                             ${a.desc ? `<div class="bg-light rounded-3 p-2 mb-2 border-0"><small class="text-muted d-block mb-1" style="font-size:0.7rem;">Description</small><div class="fw-semibold small text-dark" style="font-size:0.8rem;">${descSafe}</div></div>` : ''}
-                            ${generateFilesHtml(false)}
-                            <div class="pt-3 mt-auto border-top d-flex gap-2 justify-content-end">
-                               <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteAttachment('${escAtt(a.localId)}')">
-                                    <i class="bi bi-trash me-1"></i>Delete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>`);
-            }
+            const html = generateListHtml();
+            if (modalContainer) modalContainer.insertAdjacentHTML('beforeend', `<div class="col-12">${html}</div>`);
+            if (onPageContainer) onPageContainer.insertAdjacentHTML('beforeend', `<div class="col-12">${html}</div>`);
         });
-    }
+        } catch (error) {
+            console.error('Error rendering attachment list:', error);
+        }
+    };
 
     function deleteAttachment(localId, dbId = null) {
         if (!dbId && !localId.startsWith('existing-')) {
@@ -599,11 +580,13 @@
             name: a.name || a.file_name || 'Attachment',
             type: a.type || '',
             desc: a.description || '',
+            subsection: a.subsection || null,
             files: [],
             existingFiles: [{
                 name: a.file_name || a.name || 'Attachment',
                 mime_type: a.mime_type || '',
                 url: a.url || '',
+                size: a.file_size || 0,
             }],
         }));
         renderAttachmentListing();
@@ -611,9 +594,12 @@
 
     window.fetchExistingAttachments = function() {
         const employeeId = document.getElementById('saved_employee_id')?.value;
-        const fetchUrl = window.employeeAttachmentsFetchUrl;
-        if (!employeeId || !fetchUrl) {
-            return;
+        let fetchUrl = window.employeeAttachmentsFetchUrl;
+        
+        if (!employeeId) return;
+        
+        if (!fetchUrl) {
+            fetchUrl = `/admin/employees/${employeeId}/attachments`;
         }
 
         fetch(fetchUrl, {

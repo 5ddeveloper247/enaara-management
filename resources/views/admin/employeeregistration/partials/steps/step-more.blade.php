@@ -130,104 +130,139 @@
                                                         <i class="bi bi-plus-lg me-1"></i>Add Member
                                                     </button>
                                                 </div>
+
+                                                <div class="mt-4 pt-3 border-top" id="familyCertificateSection">
+                                                    <div class="fw-bold text-uppercase small mb-3">Family Documents</div>
+                                                    <div class="card border-0 bg-light shadow-sm rounded-3">
+                                                        <div class="card-body p-3">
+                                                            <div class="row align-items-center">
+                                                                <div class="col-md-7">
+                                                                    <div class="d-flex align-items-center gap-3">
+                                                                        <div class="bg-white rounded-circle p-2 shadow-sm d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                                                            <i class="bi bi-file-earmark-check text-success fs-4"></i>
+                                                                        </div>
+                                                                        <div>
+                                                                            <h6 class="mb-0 fw-bold">Family Character Certificate</h6>
+                                                                            <p class="small text-muted mb-0">Upload a single document containing character certificates for the family.</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                                                                    <input type="file" id="familyCertificateInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                                                    
+                                                                    <div id="familyCertificateUploadView" class="d-flex flex-column align-items-md-end">
+                                                                        <button type="button" class="btn btn-sm btn-outline-success px-3" id="familyCertificateUploadBtn">
+                                                                            <i class="bi bi-cloud-arrow-up me-1"></i>Upload Certificate
+                                                                        </button>
+                                                                        <div class="small text-muted mt-1" style="font-size: 0.7rem;">Allowed: JPG, PNG, PDF (Max 20MB)</div>
+                                                                    </div>
+
+                                                                    <div id="familyCertificateFileView" class="d-none">
+                                                                        <div class="d-flex align-items-center justify-content-md-end gap-2">
+                                                                            <a href="#" target="_blank" class="badge bg-white border text-dark px-3 py-2 fw-normal text-decoration-none" id="familyCertificateLink">
+                                                                                <i class="bi bi-file-earmark-pdf me-1"></i>
+                                                                                <span id="familyCertificateName">filename.pdf</span>
+                                                                            </a>
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger" id="familyCertificateDeleteBtn" title="Remove Certificate">
+                                                                                <i class="bi bi-trash"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div id="familyCertificateProgress" class="d-none mt-2">
+                                                                        <div class="progress" style="height: 6px;">
+                                                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
+                                                                        </div>
+                                                                        <div class="small text-muted mt-1 text-end">Uploading...</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
                                         <template id="moreFamilyMemberTemplate">
                                             <div class="family-member-row mb-2 bg-light" data-family-row>
-                                                <div class="family-member-header">
-                                                    <span class="family-member-index" data-family-index>Member 1</span>
-                                                    <div class="family-member-actions">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-family-save title="Save member">
-                                                            <i class="bi bi-floppy"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" data-family-remove>
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div class="row g-2">
-                                                    <div class="col-12 col-md-6 col-xl-3">
-                                                        <label class="form-label">Name <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control family-field-input" name="family[][name]"
-                                                            data-family-name placeholder="Enter name" required maxlength="50">
-                                                        <div class="family-field-preview" data-family-preview-name>-</div>
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-2">
-                                                        <label class="form-label">Gender <span class="text-danger">*</span></label>
-                                                        <select class="form-select family-field-input" name="family[][gender]" data-family-gender required>
-                                                            <option value="" selected disabled>Select</option>
-                                                            <option value="Male">Male</option>
-                                                            <option value="Female">Female</option>
-                                                        </select>
-                                                        <div class="family-field-preview" data-family-preview-gender>-</div>
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-2">
-                                                        <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                                                        <input type="date" class="form-control family-field-input" name="family[][dob]"
-                                                            data-family-date-of-birth placeholder="yyyy-mm-dd" required>
-                                                        <div class="family-field-preview" data-family-preview-dob>-</div>
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-2">
-                                                        <label class="form-label">Relation <span class="text-danger">*</span></label>
-                                                        <select class="form-select family-field-input" name="family[][relation]" data-family-relation required>
-                                                            <option value="" selected disabled>Select</option>
-                                                            <option value="Father">Father</option>
-                                                            <option value="Mother">Mother</option>
-                                                            <option value="Husband">Husband</option>
-                                                            <option value="Wife">Wife</option>
-                                                            <option value="Son">Son</option>
-                                                            <option value="Daughter">Daughter</option>
-                                                            <option value="Brother">Brother</option>
-                                                            <option value="Sister">Sister</option>
-                                                            <option value="Other">Other</option>
-                                                        </select>
-                                                        <div class="family-field-preview" data-family-preview-relation>-</div>
-                                                    </div>
-                                                    <div class="col-12 d-none" data-family-relation-other-wrapper>
-                                                        <label class="form-label">Specify Relation <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control family-field-input" name="family[][relation_other]"
-                                                            data-family-relation-other placeholder="Specify relation">
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-3">
-                                                        <label class="form-label">Occupation</label>
-                                                        <input type="text" class="form-control family-field-input" name="family[][occupation]"
-                                                            data-family-occupation placeholder="Enter occupation">
-                                                        <div class="family-field-preview" data-family-preview-occupation>-</div>
-                                                    </div>
-                                                    <div class="col-12 d-none" data-family-nok-member-indicator>
-                                                        <div class="small text-success fw-semibold">This member is selected as Next of Kin.</div>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <hr class="text-secondary opacity-25 my-1">
-                                                    </div>
-                                                    <div class="col-12 col-md-6 col-xl-4">
-                                                        <input type="hidden" name="family[][is_next_of_kin]" value="0" data-family-is-nok-hidden>
-                                                        <div class="family-nok-edit-controls mt-1">
-                                                            <div class="small text-secondary fw-semibold mb-1" data-family-nok-title>Next of Kin Selection</div>
-                                                            <div class="family-nok-toggle border rounded-3 px-3 py-2 bg-white mb-1" data-family-nok-toggle role="button" tabindex="0" title="Click to select or unselect Next of Kin">
-                                                                <input type="radio" name="family_nok_selector" class="form-check-input family-nok-selector visually-hidden" title="Mark as Next of Kin" aria-label="Mark as Next of Kin">
-                                                                <div class="d-flex align-items-center justify-content-between gap-2">
-                                                                    <div class="fw-semibold text-dark">
-                                                                        <i class="bi bi-person-check me-1 text-primary"></i>Set as Next of Kin
-                                                                    </div>
-                                                                    <span class="badge text-bg-success d-none" data-family-nok-selected-badge>Selected</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="small text-secondary" data-family-nok-helper>Click this box to select or unselect NOK.</div>
-                                                            <div class="small text-warning-emphasis d-none family-nok-locked-note" data-family-nok-locked-note>
-                                                                Next of Kin is already selected in another member. Remove that first to change.
-                                                            </div>
-                                                        </div>
-                                                        <div class="family-nok-preview-toolbar d-flex align-items-center gap-2 mt-1">
-                                                            <span class="btn btn-sm btn-outline-primary d-none family-nok-tag" data-family-nok-badge>
-                                                                <i class="bi bi-person me-1"></i>Next of Kin
+                                                    <div class="family-member-header">
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="family-member-index" data-family-index>Member 1</span>
+                                                            <span class="badge rounded-pill text-bg-success ms-2 d-none" data-family-nok-badge>
+                                                                <i class="bi bi-people-fill me-1"></i>Next of Kin
                                                             </span>
-                                                            <button type="button" class="btn btn-sm btn-outline-danger d-none family-nok-remove" title="Remove Next of Kin">
-                                                                <i class="bi bi-x-circle me-1"></i>Remove NOK
+                                                        </div>
+                                                        <div class="family-member-actions">
+                                                            <button type="button" class="btn btn-sm btn-light border-success family-nok-toggle" data-family-nok-toggle title="Set as Next of Kin">
+                                                                <i class="bi bi-people text-success"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-primary" data-family-save title="Save member">
+                                                                <i class="bi bi-floppy"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" data-family-remove>
+                                                                <i class="bi bi-trash"></i>
                                                             </button>
                                                         </div>
                                                     </div>
+                                                    <div class="row g-2">
+                                                        <div class="col-12 col-md-6 col-xl-3">
+                                                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control family-field-input" name="family[][name]"
+                                                                data-family-name placeholder="Enter name" required maxlength="50">
+                                                            <div class="family-field-preview" data-family-preview-name>-</div>
+                                                        </div>
+                                                        <div class="col-12 col-md-6 col-xl-2">
+                                                            <label class="form-label">Gender <span class="text-danger">*</span></label>
+                                                            <select class="form-select family-field-input" name="family[][gender]" data-family-gender required>
+                                                                <option value="" selected disabled>Select</option>
+                                                                <option value="Male">Male</option>
+                                                                <option value="Female">Female</option>
+                                                            </select>
+                                                            <div class="family-field-preview" data-family-preview-gender>-</div>
+                                                        </div>
+                                                        <div class="col-12 col-md-6 col-xl-2">
+                                                            <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                                            <input type="date" class="form-control family-field-input" name="family[][dob]"
+                                                                data-family-date-of-birth placeholder="yyyy-mm-dd" required>
+                                                            <div class="family-field-preview" data-family-preview-dob>-</div>
+                                                        </div>
+                                                        <div class="col-12 col-md-6 col-xl-2">
+                                                            <label class="form-label">Relation <span class="text-danger">*</span></label>
+                                                            <select class="form-select family-field-input" name="family[][relation]" data-family-relation required>
+                                                                <option value="" selected disabled>Select</option>
+                                                                <option value="Father">Father</option>
+                                                                <option value="Mother">Mother</option>
+                                                                <option value="Husband">Husband</option>
+                                                                <option value="Wife">Wife</option>
+                                                                <option value="Son">Son</option>
+                                                                <option value="Daughter">Daughter</option>
+                                                                <option value="Brother">Brother</option>
+                                                                <option value="Sister">Sister</option>
+                                                                <option value="Other">Other</option>
+                                                            </select>
+                                                            <div class="family-field-preview" data-family-preview-relation>-</div>
+                                                        </div>
+                                                        <div class="col-12 d-none" data-family-relation-other-wrapper>
+                                                            <label class="form-label">Specify Relation <span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control family-field-input" name="family[][relation_other]"
+                                                                data-family-relation-other placeholder="Specify relation">
+                                                        </div>
+                                                        <div class="col-12 col-md-6 col-xl-3">
+                                                            <label class="form-label">Occupation</label>
+                                                            <input type="text" class="form-control family-field-input" name="family[][occupation]"
+                                                                data-family-occupation placeholder="Enter occupation">
+                                                            <div class="family-field-preview" data-family-preview-occupation>-</div>
+                                                        </div>
+                                                        <div class="col-12 d-none" data-family-nok-member-indicator>
+                                                            <div class="small text-success fw-semibold">This member is selected as Next of Kin.</div>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <hr class="text-secondary opacity-25 my-1">
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <input type="hidden" name="family[][is_next_of_kin]" value="0" data-family-is-nok-hidden>
+                                                            <input type="radio" name="family_nok_selector" class="form-check-input family-nok-selector visually-hidden" title="Mark as Next of Kin" aria-label="Mark as Next of Kin">
+                                                        </div>
                                                     <div class="col-12">
                                                         <div class="row g-2 border rounded p-2 mt-1 bg-white d-none" data-family-nok-fields>
                                                             <div class="col-12 small text-secondary">NOK identity and contact (required when this member is Next of Kin)</div>
@@ -394,6 +429,64 @@
                                                             placeholder="Enter university, board, or institute">
                                                         <div class="academic-field-preview" data-academic-preview-institute>-</div>
                                                     </div>
+                                                    <div class="col-12 mt-2 academic-certificate-section">
+                                                        <div class="d-flex align-items-center gap-2 mb-1 px-1">
+                                                            <i class="bi bi-file-earmark-text text-secondary" style="font-size: 0.75rem;"></i>
+                                                            <label class="form-label mb-0 fw-bold text-secondary" style="font-size: 0.75rem;">Degree certificate <span class="text-danger">*</span></label>
+                                                        </div>
+                                                        
+                                                        <div class="academic-files-list d-flex flex-column gap-2 mb-2" data-academic-files-container>
+                                                            <div class="academic-file-view-wrap d-none" data-academic-view-container>
+                                                                <div class="academic-file-item">
+                                                                    <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                        <i class="bi bi-file-earmark-image text-secondary fs-5 flex-shrink-0"></i>
+                                                                        <span class="small text-truncate fw-medium" data-academic-filename style="color: #4b5563;">file.png</span>
+                                                                    </div>
+                                                                    <div class="d-flex align-items-center gap-2">
+                                                                        <div class="academic-uploaded-badge">
+                                                                            <i class="bi bi-check2"></i>
+                                                                            <span>Uploaded</span>
+                                                                        </div>
+                                                                        <a href="#" class="btn btn-link btn-sm p-0 text-primary ms-2" data-academic-document-link target="_blank" title="View">
+                                                                            <i class="bi bi-eye"></i>
+                                                                        </a>
+                                                                        <button type="button" class="btn-icon-delete" data-academic-document-remove title="Delete">
+                                                                            <i class="bi bi-trash3"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                            <div class="academic-upload-placeholder" data-academic-upload-container onclick="this.querySelector('input').click()">
+                                                                <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                    <i class="bi bi-upload"></i>
+                                                                    <span class="small">No file chosen</span>
+                                                                </div>
+                                                                <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                                <input type="file" class="d-none academic-field-input" 
+                                                                    name="certificate_file"
+                                                                    data-academic-certificate-file accept=".jpg,.jpeg,.png,.pdf">
+                                                            </div>
+
+                                                        <div class="academic-uploaded-file-item mt-2 d-none" data-academic-view-container>
+                                                            <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
+                                                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                    <i class="bi bi-file-earmark-check text-success"></i>
+                                                                    <span class="small text-dark text-truncate" data-academic-filename style="max-width: 150px;">certificate.pdf</span>
+                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                </div>
+                                                                <div class="d-flex gap-1">
+                                                                    <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-academic-document-link title="View Document">
+                                                                        <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                    </a>
+                                                                    <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-academic-document-remove title="Remove Document">
+                                                                        <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </template>
@@ -484,6 +577,43 @@
                                                         <input type="text" class="form-control certificate-field-input" name="certificates[][institute]"
                                                             data-certificate-institute placeholder="Enter institute" maxlength="255" required>
                                                         <div class="certificate-field-preview" data-certificate-preview-institute>-</div>
+                                                    </div>
+
+                                                    <!-- Certificate Document Upload -->
+                                                    <div class="col-12 mt-2 academic-certificate-section">
+                                                        <div class="row g-2">
+                                                            <div class="col-12">
+                                                                <label class="form-label small text-secondary fw-bold mb-1">Certificate Copy <span class="text-danger">*</span></label>
+                                                                <div class="academic-upload-placeholder" data-certificate-upload-container onclick="this.querySelector('input').click()">
+                                                                    <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                        <i class="bi bi-upload"></i>
+                                                                        <span class="small">No file chosen</span>
+                                                                    </div>
+                                                                    <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                                    <input type="file" class="d-none certificate-field-input" 
+                                                                        name="certificate_file"
+                                                                        data-certificate-file accept=".jpg,.jpeg,.png,.pdf">
+                                                                </div>
+
+                                                                <div class="academic-uploaded-file-item mt-2 d-none" data-certificate-view-container>
+                                                                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
+                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                            <i class="bi bi-file-earmark-check text-success"></i>
+                                                                            <span class="small text-dark text-truncate" data-certificate-filename style="max-width: 250px;">Certificate.pdf</span>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                        </div>
+                                                                        <div class="d-flex gap-1">
+                                                                            <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-certificate-document-link title="View Document">
+                                                                                <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                            </a>
+                                                                            <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-certificate-document-remove title="Remove Document">
+                                                                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -576,6 +706,77 @@
                                                         <input type="text" class="form-control employment-field-input" name="employments[][reason_for_leaving]"
                                                             data-employment-reason placeholder="Enter reason for leaving" maxlength="200">
                                                         <div class="employment-field-preview" data-employment-preview-reason-for-leaving>-</div>
+                                                    </div>
+
+                                                    <!-- Employment Documents -->
+                                                    <div class="col-12 mt-2 academic-certificate-section">
+                                                        <div class="row g-2">
+                                                            <!-- Experience Letter (Required) -->
+                                                            <div class="col-12 col-md-6">
+                                                                <label class="form-label small text-secondary fw-bold mb-1">Experience Letter <span class="text-danger">*</span></label>
+                                                                <div class="academic-upload-placeholder" data-employment-exp-upload-container onclick="this.querySelector('input').click()">
+                                                                    <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                        <i class="bi bi-upload"></i>
+                                                                        <span class="small">No file chosen</span>
+                                                                    </div>
+                                                                    <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                                    <input type="file" class="d-none employment-field-input" 
+                                                                        name="experience_letter"
+                                                                        data-employment-exp-file accept=".jpg,.jpeg,.png,.pdf">
+                                                                </div>
+
+                                                                <div class="academic-uploaded-file-item mt-2 d-none" data-employment-exp-view-container>
+                                                                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
+                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                            <i class="bi bi-file-earmark-check text-success"></i>
+                                                                            <span class="small text-dark text-truncate" data-employment-exp-filename style="max-width: 150px;">Experience_Letter.pdf</span>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                        </div>
+                                                                        <div class="d-flex gap-1">
+                                                                            <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-employment-exp-link title="View Document">
+                                                                                <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                            </a>
+                                                                            <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-employment-exp-remove title="Remove Document">
+                                                                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Salary Slip (Optional) -->
+                                                            <div class="col-12 col-md-6">
+                                                                <label class="form-label small text-secondary fw-bold mb-1">Salary Slip (Optional)</label>
+                                                                <div class="academic-upload-placeholder" data-employment-salary-upload-container onclick="this.querySelector('input').click()">
+                                                                    <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                        <i class="bi bi-upload"></i>
+                                                                        <span class="small">No file chosen</span>
+                                                                    </div>
+                                                                    <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                                    <input type="file" class="d-none employment-field-input" 
+                                                                        name="salary_slip"
+                                                                        data-employment-salary-file accept=".jpg,.jpeg,.png,.pdf">
+                                                                </div>
+
+                                                                <div class="academic-uploaded-file-item mt-2 d-none" data-employment-salary-view-container>
+                                                                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
+                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                            <i class="bi bi-file-earmark-check text-success"></i>
+                                                                            <span class="small text-dark text-truncate" data-employment-salary-filename style="max-width: 150px;">Salary_Slip.pdf</span>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                        </div>
+                                                                        <div class="d-flex gap-1">
+                                                                            <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-employment-salary-link title="View Document">
+                                                                                <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                            </a>
+                                                                            <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-employment-salary-remove title="Remove Document">
+                                                                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -673,6 +874,43 @@
                                                                 <textarea name="chronic_disease_description" class="form-control" id="moreMedicalChronicDiseaseDescriptionInput"
                                                                     rows="2" maxlength="1000"
                                                                     placeholder="Describe the chronic condition">{{ $employee?->medical?->chronic_disease_description ?? '' }}</textarea>
+                                                            </div>
+
+                                                            <!-- Medical Document Upload -->
+                                                            <div class="col-12 mt-3 academic-certificate-section">
+                                                                <div class="row g-2">
+                                                                    <div class="col-12">
+                                                                        <label class="form-label small text-secondary fw-bold mb-1">Medical Report / Fitness Certificate</label>
+                                                                        <div class="academic-upload-placeholder" id="moreMedicalUploadContainer" onclick="document.getElementById('moreMedicalFileInput').click()">
+                                                                            <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                                <i class="bi bi-upload"></i>
+                                                                                <span class="small">No file chosen</span>
+                                                                            </div>
+                                                                            <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                                            <input type="file" class="d-none" 
+                                                                                name="medical_file"
+                                                                                id="moreMedicalFileInput" accept=".jpg,.jpeg,.png,.pdf">
+                                                                        </div>
+
+                                                                        <div class="academic-uploaded-file-item mt-2 d-none" id="moreMedicalViewContainer">
+                                                                            <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
+                                                                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                                    <i class="bi bi-file-earmark-medical text-success"></i>
+                                                                                    <span class="small text-dark text-truncate" id="moreMedicalFilename" style="max-width: 250px;">Report.pdf</span>
+                                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                                </div>
+                                                                                <div class="d-flex gap-1">
+                                                                                    <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" id="moreMedicalDocumentLink" title="View Document">
+                                                                                        <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                                    </a>
+                                                                                    <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" id="moreMedicalDocumentRemove" title="Remove Document">
+                                                                                        <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -785,24 +1023,7 @@
                                         </div>
 
                                         <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane8">
-                                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                                <div class="fw-bold text-uppercase small">Attachments</div>
-                                                <button type="button" class="btn btn-sm bg-main text-white border-0 rounded-2 px-3" data-bs-toggle="modal" data-bs-target="#attachmentModal">
-                                                    <i class="bi bi-plus-lg me-1"></i> Add Attachment
-                                                </button>
-                                            </div>
-
-                                            <div id="onPageAttachmentListingEmpty" class="card border-0 bg-light text-center py-5">
-                                                <div class="card-body">
-                                                    <i class="bi bi-folder-check display-4 text-secondary mb-3 d-block opacity-25"></i>
-                                                    <p class="text-secondary small">No attachments uploaded yet.</p>
-                                                    <small class="text-muted">Click the "Add Attachment" button to upload documents.</small>
-                                                </div>
-                                            </div>
-
-                                            <div id="onPageAttachmentListing" class="row g-3">
-                                                <!-- Attachments will be rendered here dynamically -->
-                                            </div>
+                                            @include('admin.employeeregistration.partials.steps.step-attachments')
                                         </div>
                                     </div>
                                 </section>
