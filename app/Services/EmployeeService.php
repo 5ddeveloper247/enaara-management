@@ -15,6 +15,7 @@ use App\Models\EmployeeExEmployment;
 use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
 use App\Models\MediaFile;
+use App\Models\RequiredDocumentType;
 use App\Models\Department;
 use App\Models\Organization;
 use App\Models\Sbu;
@@ -277,7 +278,9 @@ class EmployeeService
             ->values()
             ->all();
 
-        return compact('organizations', 'orgsData', 'rolesData');
+        $requiredDocumentTypes = RequiredDocumentType::where('status', true)->get();
+
+        return compact('organizations', 'orgsData', 'rolesData', 'requiredDocumentTypes');
     }
 
     public function store(array $data, array $files = [], array $attachments = []): Employee
@@ -425,6 +428,14 @@ class EmployeeService
 
             return $employee;
         });
+    }
+
+    public function addRequiredDocumentType(string $name): RequiredDocumentType
+    {
+        return RequiredDocumentType::create([
+            'name' => $name,
+            'status' => true
+        ]);
     }
 
     public function previewNextEmployeeCode(int $organizationId, int $roleId, ?int $sbuId = null): string
@@ -1768,6 +1779,7 @@ class EmployeeService
                 'description' => $m->description,
                 'file_name' => $m->file_name,
                 'mime_type' => $m->mime_type,
+                'file_size' => Storage::disk('public')->exists($m->file_path) ? Storage::disk('public')->size($m->file_path) : 0,
                 'url' => Storage::url($m->file_path),
             ])
             ->values()

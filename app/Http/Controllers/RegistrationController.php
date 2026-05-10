@@ -31,4 +31,18 @@ class RegistrationController extends Controller
         $data['editData'] = $editData;
         return view('admin.employeeregistration.index', $data);
     }
+
+    public function addDocumentType(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255'
+        ]);
+
+        $type = $this->employeeService->addRequiredDocumentType($request->name);
+
+        return response()->json([
+            'success' => true,
+            'data' => $type
+        ]);
+    }
 }

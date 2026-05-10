@@ -785,24 +785,7 @@
                                         </div>
 
                                         <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane8">
-                                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                                <div class="fw-bold text-uppercase small">Attachments</div>
-                                                <button type="button" class="btn btn-sm bg-main text-white border-0 rounded-2 px-3" data-bs-toggle="modal" data-bs-target="#attachmentModal">
-                                                    <i class="bi bi-plus-lg me-1"></i> Add Attachment
-                                                </button>
-                                            </div>
-
-                                            <div id="onPageAttachmentListingEmpty" class="card border-0 bg-light text-center py-5">
-                                                <div class="card-body">
-                                                    <i class="bi bi-folder-check display-4 text-secondary mb-3 d-block opacity-25"></i>
-                                                    <p class="text-secondary small">No attachments uploaded yet.</p>
-                                                    <small class="text-muted">Click the "Add Attachment" button to upload documents.</small>
-                                                </div>
-                                            </div>
-
-                                            <div id="onPageAttachmentListing" class="row g-3">
-                                                <!-- Attachments will be rendered here dynamically -->
-                                            </div>
+                                            @include('admin.employeeregistration.partials.steps.step-attachments')
                                         </div>
                                     </div>
                                 </section>
