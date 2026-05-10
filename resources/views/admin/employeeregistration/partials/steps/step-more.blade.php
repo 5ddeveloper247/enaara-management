@@ -578,6 +578,43 @@
                                                             data-certificate-institute placeholder="Enter institute" maxlength="255" required>
                                                         <div class="certificate-field-preview" data-certificate-preview-institute>-</div>
                                                     </div>
+
+                                                    <!-- Certificate Document Upload -->
+                                                    <div class="col-12 mt-2 academic-certificate-section">
+                                                        <div class="row g-2">
+                                                            <div class="col-12">
+                                                                <label class="form-label small text-secondary fw-bold mb-1">Certificate Copy <span class="text-danger">*</span></label>
+                                                                <div class="academic-upload-placeholder" data-certificate-upload-container onclick="this.querySelector('input').click()">
+                                                                    <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                        <i class="bi bi-upload"></i>
+                                                                        <span class="small">No file chosen</span>
+                                                                    </div>
+                                                                    <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                                    <input type="file" class="d-none certificate-field-input" 
+                                                                        name="certificate_file"
+                                                                        data-certificate-file accept=".jpg,.jpeg,.png,.pdf">
+                                                                </div>
+
+                                                                <div class="academic-uploaded-file-item mt-2 d-none" data-certificate-view-container>
+                                                                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
+                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                            <i class="bi bi-file-earmark-check text-success"></i>
+                                                                            <span class="small text-dark text-truncate" data-certificate-filename style="max-width: 250px;">Certificate.pdf</span>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                        </div>
+                                                                        <div class="d-flex gap-1">
+                                                                            <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-certificate-document-link title="View Document">
+                                                                                <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                            </a>
+                                                                            <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-certificate-document-remove title="Remove Document">
+                                                                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </template>

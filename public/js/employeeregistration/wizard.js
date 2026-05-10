@@ -4981,6 +4981,24 @@
                     }
                 }
 
+                // Update certificate document UI if it was just uploaded
+                if (type === 'certificate' && res.success) {
+                    const fileInput = rowElement.querySelector('[data-certificate-file]');
+                    if (fileInput && fileInput.files.length > 0 && res.attachment_url) {
+                        const viewWrap = rowElement.querySelector('[data-certificate-view-container]');
+                        const viewLink = rowElement.querySelector('[data-certificate-document-link]');
+                        const filenameEl = rowElement.querySelector('[data-certificate-filename]');
+                        if (viewLink) viewLink.href = res.attachment_url;
+                        if (filenameEl) filenameEl.textContent = fileInput.files[0].name;
+                        if (viewWrap) {
+                            viewWrap.classList.remove('d-none');
+                            if (res.attachment_id) viewWrap.setAttribute('data-attachment-id', res.attachment_id);
+                        }
+                        rowElement.querySelector('[data-certificate-upload-container]').classList.add('d-none');
+                        fileInput.value = '';
+                    }
+                }
+
                 if (!silentSuccess) {
                     showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} record saved successfully`);
                 }
@@ -5961,8 +5979,115 @@
         row.querySelector('[data-certificate-save]').onclick = () => saveSubsectionRow('certificate', row);
         row.querySelector('[data-certificate-remove]').onclick = () => removeSubsectionRow('certificate', row);
 
+        // Certificate document logic
+        const setupCertificateDocLogic = () => {
+            const fileInput = row.querySelector('[data-certificate-file]');
+            const uploadContainer = row.querySelector('[data-certificate-upload-container]');
+            const viewContainer = row.querySelector('[data-certificate-view-container]');
+            const removeBtn = row.querySelector('[data-certificate-document-remove]');
+            
+            if (fileInput) {
+                fileInput.onchange = (e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        const filename = e.target.files[0].name;
+                        const placeholderText = uploadContainer.querySelector('.small');
+                        const uploadIcon = uploadContainer.querySelector('i');
+                        if (placeholderText) {
+                            placeholderText.textContent = filename;
+                            placeholderText.classList.remove('text-secondary');
+                            placeholderText.classList.add('text-primary', 'fw-bold');
+                        }
+                        if (uploadIcon) uploadIcon.className = 'bi bi-check-circle-fill text-success';
+                    }
+                };
+            }
+
+            if (removeBtn) {
+                removeBtn.onclick = async () => {
+                    const attachmentId = viewContainer.getAttribute('data-attachment-id');
+                    if (!attachmentId) {
+                        uploadContainer.classList.remove('d-none');
+                        viewContainer.classList.add('d-none');
+                        fileInput.value = '';
+                        const placeholderText = uploadContainer.querySelector('.small');
+                        const uploadIcon = uploadContainer.querySelector('i');
+                        if (placeholderText) {
+                            placeholderText.textContent = 'No file chosen';
+                            placeholderText.classList.remove('text-primary', 'fw-bold');
+                            placeholderText.classList.add('text-secondary');
+                        }
+                        if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+                        showToast('Selection cleared');
+                        return;
+                    }
+
+                    const result = await Swal.fire({
+                        title: 'Are you sure?',
+                        text: "This document will be permanently deleted.",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    });
+
+                    if (result.isConfirmed) {
+                        try {
+                            const response = await fetch('/admin/employees/delete-attachment', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ id: attachmentId })
+                            });
+                            const res = await response.json();
+                            if (res.success) {
+                                uploadContainer.classList.remove('d-none');
+                                viewContainer.classList.add('d-none');
+                                viewContainer.removeAttribute('data-attachment-id');
+                                fileInput.value = '';
+                                if (window.employeeAttachments) window.employeeAttachments = window.employeeAttachments.filter(a => a.id != attachmentId);
+                                if (window.editData && window.editData.attachments) window.editData.attachments = window.editData.attachments.filter(a => a.id != attachmentId);
+                                Swal.fire({ icon: 'success', title: 'Deleted', text: 'Document deleted successfully', timer: 1500, showConfirmButton: false });
+                            } else {
+                                showError(res.message || 'Failed to delete document');
+                            }
+                        } catch (e) { showError('Network error'); }
+                    }
+                };
+            }
+        };
+
+        setupCertificateDocLogic();
+
         container.appendChild(clone);
         if (data && data.id) {
+            // Load existing certificate attachment
+            const staticAttachments = (window.editData && window.editData.attachments) ? window.editData.attachments : [];
+            const dynamicAttachments = window.employeeAttachments || [];
+            const allAttachments = [...staticAttachments, ...dynamicAttachments];
+            
+            const targetSubsection = 'certificate_' + data.id;
+            const attachments = allAttachments.filter(a => String(a.subsection) === targetSubsection);
+            
+            if (attachments.length > 0) {
+                const uploadWrap = row.querySelector('[data-certificate-upload-container]');
+                const viewWrap = row.querySelector('[data-certificate-view-container]');
+                const viewLink = row.querySelector('[data-certificate-document-link]');
+                const filenameEl = row.querySelector('[data-certificate-filename]');
+                
+                if (viewWrap && viewLink) {
+                    const mainAttachment = attachments[0]; 
+                    if (uploadWrap) uploadWrap.classList.add('d-none');
+                    viewWrap.classList.remove('d-none');
+                    viewWrap.setAttribute('data-attachment-id', mainAttachment.id);
+                    viewLink.href = mainAttachment.url || '#';
+                    if (filenameEl) filenameEl.textContent = mainAttachment.file_name || mainAttachment.name || 'certificate';
+                }
+            }
+
             updateSubsectionPreview(row, 'certificate');
             setSubsectionRowMode(row, 'certificate', true);
         }

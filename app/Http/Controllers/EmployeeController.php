@@ -292,8 +292,25 @@ class EmployeeController extends Controller
                     break;
                 case 'certificate_row':
                     $record = $this->employeeService->saveCertificate((int)$employeeId, $data);
+                    
+                    if ($record && $request->hasFile('certificate_file')) {
+                        $file = $request->file('certificate_file');
+                        $attachmentData = [
+                            'name' => 'Certificate - ' . $record->certificate_name,
+                            'type' => 'Professional Certificate',
+                            'description' => 'Uploaded document for ' . $record->certificate_name,
+                            'files' => [$file]
+                        ];
+                        $saved = $this->employeeService->saveSingleAttachment((int)$employeeId, $attachmentData);
+                        if (!empty($saved)) {
+                            $saved[0]->update(['subsection' => 'certificate_' . $record->id]);
+                            $responseData['attachment_url'] = asset('storage/' . $saved[0]->file_path);
+                            $responseData['attachment_id'] = $saved[0]->id;
+                        }
+                    }
+
                     $message = 'Certificate record added successfully.';
-                    $responseData = ['id' => $record?->id];
+                    $responseData['id'] = $record?->id;
                     break;
                 case 'employment_row':
                     $record = $this->employeeService->saveExEmployment((int)$employeeId, $data);

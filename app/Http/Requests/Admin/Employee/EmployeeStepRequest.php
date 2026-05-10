@@ -807,6 +807,7 @@ class EmployeeStepRequest extends FormRequest
                     'start_date'       => ['required', 'date'],
                     'end_date'         => ['required', 'date', 'after_or_equal:start_date'],
                     'institute'        => ['required', 'string', 'max:255', $this->maxWordsRule(20, 'Institute')],
+                    'certificate_file' => ['required_without:certificate_id', 'nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
             case 'medical':
