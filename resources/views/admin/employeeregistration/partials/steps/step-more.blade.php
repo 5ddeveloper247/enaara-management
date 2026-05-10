@@ -130,6 +130,56 @@
                                                         <i class="bi bi-plus-lg me-1"></i>Add Member
                                                     </button>
                                                 </div>
+
+                                                <div class="mt-4 pt-3 border-top" id="familyCertificateSection">
+                                                    <div class="fw-bold text-uppercase small mb-3">Family Documents</div>
+                                                    <div class="card border-0 bg-light shadow-sm rounded-3">
+                                                        <div class="card-body p-3">
+                                                            <div class="row align-items-center">
+                                                                <div class="col-md-7">
+                                                                    <div class="d-flex align-items-center gap-3">
+                                                                        <div class="bg-white rounded-circle p-2 shadow-sm d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                                                            <i class="bi bi-file-earmark-check text-success fs-4"></i>
+                                                                        </div>
+                                                                        <div>
+                                                                            <h6 class="mb-0 fw-bold">Family Character Certificate</h6>
+                                                                            <p class="small text-muted mb-0">Upload a single document containing character certificates for the family.</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                                                                    <input type="file" id="familyCertificateInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                                                    
+                                                                    <div id="familyCertificateUploadView" class="d-flex flex-column align-items-md-end">
+                                                                        <button type="button" class="btn btn-sm btn-outline-success px-3" id="familyCertificateUploadBtn">
+                                                                            <i class="bi bi-cloud-arrow-up me-1"></i>Upload Certificate
+                                                                        </button>
+                                                                        <div class="small text-muted mt-1" style="font-size: 0.7rem;">Allowed: JPG, PNG, PDF (Max 20MB)</div>
+                                                                    </div>
+
+                                                                    <div id="familyCertificateFileView" class="d-none">
+                                                                        <div class="d-flex align-items-center justify-content-md-end gap-2">
+                                                                            <a href="#" target="_blank" class="badge bg-white border text-dark px-3 py-2 fw-normal text-decoration-none" id="familyCertificateLink">
+                                                                                <i class="bi bi-file-earmark-pdf me-1"></i>
+                                                                                <span id="familyCertificateName">filename.pdf</span>
+                                                                            </a>
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger" id="familyCertificateDeleteBtn" title="Remove Certificate">
+                                                                                <i class="bi bi-trash"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div id="familyCertificateProgress" class="d-none mt-2">
+                                                                        <div class="progress" style="height: 6px;">
+                                                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
+                                                                        </div>
+                                                                        <div class="small text-muted mt-1 text-end">Uploading...</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 

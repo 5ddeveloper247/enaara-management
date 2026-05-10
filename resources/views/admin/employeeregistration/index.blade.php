@@ -71,5 +71,6 @@
     
     <script src="{{ asset('js/employeeregistration/wizard.js') }}?v={{ filemtime(public_path('js/employeeregistration/wizard.js')) }}"></script>
     <script src="{{ asset('js/employeeregistration/attachments-dynamic.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/employeeregistration/family-attachments.js') }}?v={{ time() }}"></script>
 @endpush
 
