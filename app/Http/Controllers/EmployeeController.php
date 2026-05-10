@@ -297,8 +297,45 @@ class EmployeeController extends Controller
                     break;
                 case 'employment_row':
                     $record = $this->employeeService->saveExEmployment((int)$employeeId, $data);
+                    
+                    if ($record) {
+                        // Handle Experience Letter
+                        if ($request->hasFile('experience_letter')) {
+                            $file = $request->file('experience_letter');
+                            $attachmentData = [
+                                'type' => 'Experience Letter',
+                                'name' => 'Experience Letter',
+                                'description' => 'Ex-Employment Experience Letter',
+                                'files' => [$file]
+                            ];
+                            $saved = $this->employeeService->saveSingleAttachment((int)$employeeId, $attachmentData);
+                            if (!empty($saved)) {
+                                $saved[0]->update(['subsection' => 'ex_employment_' . $record->id . '_exp']);
+                                $responseData['exp_letter_url'] = asset('storage/' . $saved[0]->file_path);
+                                $responseData['exp_letter_id'] = $saved[0]->id;
+                            }
+                        }
+                        
+                        // Handle Salary Slip
+                        if ($request->hasFile('salary_slip')) {
+                            $file = $request->file('salary_slip');
+                            $attachmentData = [
+                                'type' => 'Salary Slip',
+                                'name' => 'Salary Slip',
+                                'description' => 'Ex-Employment Salary Slip',
+                                'files' => [$file]
+                            ];
+                            $saved = $this->employeeService->saveSingleAttachment((int)$employeeId, $attachmentData);
+                            if (!empty($saved)) {
+                                $saved[0]->update(['subsection' => 'ex_employment_' . $record->id . '_salary']);
+                                $responseData['salary_slip_url'] = asset('storage/' . $saved[0]->file_path);
+                                $responseData['salary_slip_id'] = $saved[0]->id;
+                            }
+                        }
+                    }
+
                     $message = 'Employment history record added successfully.';
-                    $responseData = ['id' => $record?->id];
+                    $responseData['id'] = $record?->id;
                     break;
                 case 'medical':
                     $this->employeeService->saveMedical((int)$employeeId, $data);

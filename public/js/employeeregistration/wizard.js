@@ -4946,6 +4946,41 @@
                     }
                 }
 
+                // Update employment document UI if they were just uploaded
+                if (type === 'employment' && res.success) {
+                    // Handle Experience Letter
+                    const expInput = rowElement.querySelector('[data-employment-exp-file]');
+                    if (expInput && expInput.files.length > 0 && res.exp_letter_url) {
+                        const viewWrap = rowElement.querySelector('[data-employment-exp-view-container]');
+                        const viewLink = rowElement.querySelector('[data-employment-exp-link]');
+                        const filenameEl = rowElement.querySelector('[data-employment-exp-filename]');
+                        if (viewLink) viewLink.href = res.exp_letter_url;
+                        if (filenameEl) filenameEl.textContent = expInput.files[0].name;
+                        if (viewWrap) {
+                            viewWrap.classList.remove('d-none');
+                            if (res.exp_letter_id) viewWrap.setAttribute('data-attachment-id', res.exp_letter_id);
+                        }
+                        rowElement.querySelector('[data-employment-exp-upload-container]').classList.add('d-none');
+                        expInput.value = '';
+                    }
+
+                    // Handle Salary Slip
+                    const salaryInput = rowElement.querySelector('[data-employment-salary-file]');
+                    if (salaryInput && salaryInput.files.length > 0 && res.salary_slip_url) {
+                        const viewWrap = rowElement.querySelector('[data-employment-salary-view-container]');
+                        const viewLink = rowElement.querySelector('[data-employment-salary-link]');
+                        const filenameEl = rowElement.querySelector('[data-employment-salary-filename]');
+                        if (viewLink) viewLink.href = res.salary_slip_url;
+                        if (filenameEl) filenameEl.textContent = salaryInput.files[0].name;
+                        if (viewWrap) {
+                            viewWrap.classList.remove('d-none');
+                            if (res.salary_slip_id) viewWrap.setAttribute('data-attachment-id', res.salary_slip_id);
+                        }
+                        rowElement.querySelector('[data-employment-salary-upload-container]').classList.add('d-none');
+                        salaryInput.value = '';
+                    }
+                }
+
                 if (!silentSuccess) {
                     showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} record saved successfully`);
                 }
@@ -5960,8 +5995,119 @@
         row.querySelector('[data-employment-save]').onclick = () => saveSubsectionRow('employment', row);
         row.querySelector('[data-employment-remove]').onclick = () => removeSubsectionRow('employment', row);
 
+        // Document logic for Experience Letter and Salary Slip
+        const setupDocLogic = (fileInputAttr, uploadContainerAttr, viewContainerAttr, removeBtnAttr, linkAttr, filenameAttr) => {
+            const fileInput = row.querySelector(`[${fileInputAttr}]`);
+            const uploadContainer = row.querySelector(`[${uploadContainerAttr}]`);
+            const viewContainer = row.querySelector(`[${viewContainerAttr}]`);
+            const removeBtn = row.querySelector(`[${removeBtnAttr}]`);
+            const linkEl = row.querySelector(`[${linkAttr}]`);
+            const filenameEl = row.querySelector(`[${filenameAttr}]`);
+
+            if (fileInput) {
+                fileInput.onchange = (e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        const filename = e.target.files[0].name;
+                        const placeholderText = uploadContainer.querySelector('.small');
+                        const uploadIcon = uploadContainer.querySelector('i');
+                        if (placeholderText) {
+                            placeholderText.textContent = filename;
+                            placeholderText.classList.remove('text-secondary');
+                            placeholderText.classList.add('text-primary', 'fw-bold');
+                        }
+                        if (uploadIcon) uploadIcon.className = 'bi bi-check-circle-fill text-success';
+                    }
+                };
+            }
+
+            if (removeBtn) {
+                removeBtn.onclick = async () => {
+                    const attachmentId = viewContainer.getAttribute('data-attachment-id');
+                    if (!attachmentId) {
+                        uploadContainer.classList.remove('d-none');
+                        viewContainer.classList.add('d-none');
+                        fileInput.value = '';
+                        const placeholderText = uploadContainer.querySelector('.small');
+                        const uploadIcon = uploadContainer.querySelector('i');
+                        if (placeholderText) {
+                            placeholderText.textContent = 'No file chosen';
+                            placeholderText.classList.remove('text-primary', 'fw-bold');
+                            placeholderText.classList.add('text-secondary');
+                        }
+                        if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+                        showToast('Selection cleared');
+                        return;
+                    }
+
+                    const result = await Swal.fire({
+                        title: 'Are you sure?',
+                        text: "This document will be permanently deleted.",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    });
+
+                    if (result.isConfirmed) {
+                        try {
+                            const response = await fetch('/admin/employees/delete-attachment', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ id: attachmentId })
+                            });
+                            const res = await response.json();
+                            if (res.success) {
+                                uploadContainer.classList.remove('d-none');
+                                viewContainer.classList.add('d-none');
+                                viewContainer.removeAttribute('data-attachment-id');
+                                fileInput.value = '';
+                                if (window.employeeAttachments) window.employeeAttachments = window.employeeAttachments.filter(a => a.id != attachmentId);
+                                if (window.editData && window.editData.attachments) window.editData.attachments = window.editData.attachments.filter(a => a.id != attachmentId);
+                                Swal.fire({ icon: 'success', title: 'Deleted', text: 'Document deleted successfully', timer: 1500, showConfirmButton: false });
+                            } else {
+                                showError(res.message || 'Failed to delete document');
+                            }
+                        } catch (e) { showError('Network error'); }
+                    }
+                };
+            }
+        };
+
+        setupDocLogic('data-employment-exp-file', 'data-employment-exp-upload-container', 'data-employment-exp-view-container', 'data-employment-exp-remove', 'data-employment-exp-link', 'data-employment-exp-filename');
+        setupDocLogic('data-employment-salary-file', 'data-employment-salary-upload-container', 'data-employment-salary-view-container', 'data-employment-salary-remove', 'data-employment-salary-link', 'data-employment-salary-filename');
+
         container.appendChild(clone);
         if (data && data.id) {
+            // Load documents
+            const staticAttachments = (window.editData && window.editData.attachments) ? window.editData.attachments : [];
+            const dynamicAttachments = window.employeeAttachments || [];
+            const allAttachments = [...staticAttachments, ...dynamicAttachments];
+
+            const loadDoc = (suffix, uploadContainerAttr, viewContainerAttr, linkAttr, filenameAttr) => {
+                const targetSub = `ex_employment_${data.id}_${suffix}`;
+                const found = allAttachments.filter(a => String(a.subsection) === targetSub);
+                if (found.length > 0) {
+                    const uploadBox = row.querySelector(`[${uploadContainerAttr}]`);
+                    const viewBox = row.querySelector(`[${viewContainerAttr}]`);
+                    const linkEl = row.querySelector(`[${linkAttr}]`);
+                    const nameEl = row.querySelector(`[${filenameAttr}]`);
+                    if (viewBox && linkEl) {
+                        if (uploadBox) uploadBox.classList.add('d-none');
+                        viewBox.classList.remove('d-none');
+                        viewBox.setAttribute('data-attachment-id', found[0].id);
+                        linkEl.href = found[0].url || '#';
+                        if (nameEl) nameEl.textContent = found[0].file_name || found[0].name || 'document';
+                    }
+                }
+            };
+            loadDoc('exp', 'data-employment-exp-upload-container', 'data-employment-exp-view-container', 'data-employment-exp-link', 'data-employment-exp-filename');
+            loadDoc('salary', 'data-employment-salary-upload-container', 'data-employment-salary-view-container', 'data-employment-salary-link', 'data-employment-salary-filename');
+
             updateSubsectionPreview(row, 'employment');
             setSubsectionRowMode(row, 'employment', true);
         }

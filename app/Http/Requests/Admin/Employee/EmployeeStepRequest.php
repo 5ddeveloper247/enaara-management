@@ -792,6 +792,8 @@ class EmployeeStepRequest extends FormRequest
                     'to_date'            => ['required', 'date', 'after_or_equal:from_date'],
                     'salary'             => ['nullable', 'string', 'max:15'],
                     'reason_for_leaving' => ['nullable', 'string', 'max:200'],
+                    'experience_letter'  => ['required_without:employment_id', 'nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
+                    'salary_slip'        => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
             case 'certificate_row':

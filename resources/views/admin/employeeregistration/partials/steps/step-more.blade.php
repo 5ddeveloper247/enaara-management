@@ -670,6 +670,77 @@
                                                             data-employment-reason placeholder="Enter reason for leaving" maxlength="200">
                                                         <div class="employment-field-preview" data-employment-preview-reason-for-leaving>-</div>
                                                     </div>
+
+                                                    <!-- Employment Documents -->
+                                                    <div class="col-12 mt-2 academic-certificate-section">
+                                                        <div class="row g-2">
+                                                            <!-- Experience Letter (Required) -->
+                                                            <div class="col-12 col-md-6">
+                                                                <label class="form-label small text-secondary fw-bold mb-1">Experience Letter <span class="text-danger">*</span></label>
+                                                                <div class="academic-upload-placeholder" data-employment-exp-upload-container onclick="this.querySelector('input').click()">
+                                                                    <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                        <i class="bi bi-upload"></i>
+                                                                        <span class="small">No file chosen</span>
+                                                                    </div>
+                                                                    <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                                    <input type="file" class="d-none employment-field-input" 
+                                                                        name="experience_letter"
+                                                                        data-employment-exp-file accept=".jpg,.jpeg,.png,.pdf">
+                                                                </div>
+
+                                                                <div class="academic-uploaded-file-item mt-2 d-none" data-employment-exp-view-container>
+                                                                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
+                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                            <i class="bi bi-file-earmark-check text-success"></i>
+                                                                            <span class="small text-dark text-truncate" data-employment-exp-filename style="max-width: 150px;">Experience_Letter.pdf</span>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                        </div>
+                                                                        <div class="d-flex gap-1">
+                                                                            <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-employment-exp-link title="View Document">
+                                                                                <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                            </a>
+                                                                            <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-employment-exp-remove title="Remove Document">
+                                                                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Salary Slip (Optional) -->
+                                                            <div class="col-12 col-md-6">
+                                                                <label class="form-label small text-secondary fw-bold mb-1">Salary Slip (Optional)</label>
+                                                                <div class="academic-upload-placeholder" data-employment-salary-upload-container onclick="this.querySelector('input').click()">
+                                                                    <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                        <i class="bi bi-upload"></i>
+                                                                        <span class="small">No file chosen</span>
+                                                                    </div>
+                                                                    <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                                    <input type="file" class="d-none employment-field-input" 
+                                                                        name="salary_slip"
+                                                                        data-employment-salary-file accept=".jpg,.jpeg,.png,.pdf">
+                                                                </div>
+
+                                                                <div class="academic-uploaded-file-item mt-2 d-none" data-employment-salary-view-container>
+                                                                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
+                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                            <i class="bi bi-file-earmark-check text-success"></i>
+                                                                            <span class="small text-dark text-truncate" data-employment-salary-filename style="max-width: 150px;">Salary_Slip.pdf</span>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                        </div>
+                                                                        <div class="d-flex gap-1">
+                                                                            <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-employment-salary-link title="View Document">
+                                                                                <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                            </a>
+                                                                            <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-employment-salary-remove title="Remove Document">
+                                                                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </template>
