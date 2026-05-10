@@ -645,4 +645,79 @@
             opacity: 1 !important;
             visibility: visible;
         }
+
+        /* Academic Certificate Section Enhancements */
+        .academic-certificate-section {
+            margin-top: 1rem;
+        }
+        
+        .academic-upload-placeholder {
+            border: 1.2px dashed #d1d5db;
+            border-radius: 0.75rem;
+            padding: 0.65rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+        
+        .academic-upload-placeholder:hover {
+            border-color: #6366f1;
+            background: #f8fafc;
+        }
+
+        .academic-file-item {
+            background: #f7f7ee; /* Light yellowish/greenish tint from screenshot */
+            border: 1px solid #e9e9d5;
+            padding: 0.65rem 1rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .academic-file-item:hover {
+            border-color: #d1d1b8;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .academic-uploaded-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #eef7ee;
+            color: #166534;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            border: 1px solid #dcfce7;
+        }
+
+        .btn-icon-delete {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #ef4444;
+            background: transparent;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-icon-delete:hover {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        /* Hide academic upload/delete in preview mode */
+        .preview-mode .academic-certificate-section .academic-upload-placeholder,
+        .preview-mode .academic-certificate-section .btn-icon-delete {
+            display: none !important;
+        }
     </style>

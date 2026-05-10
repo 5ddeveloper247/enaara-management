@@ -268,8 +268,27 @@ class EmployeeController extends Controller
                     break;
                 case 'academic_row':
                     $record = $this->employeeService->saveAcademic((int)$employeeId, $data);
+                    
+                    // Handle academic certificate file if provided
+                    if ($request->hasFile('certificate_file') && $record) {
+                        $file = $request->file('certificate_file');
+                        $attachmentData = [
+                            'name' => 'Academic Certificate - ' . $record->degree,
+                            'type' => 'Academic Certificate',
+                            'description' => 'Uploaded academic document for ' . $record->degree,
+                            'files' => [$file]
+                        ];
+                        $saved = $this->employeeService->saveSingleAttachment((int)$employeeId, $attachmentData);
+                        if (!empty($saved)) {
+                            // Link to subsection
+                            $saved[0]->update(['subsection' => 'academic_' . $record->id]);
+                            $responseData['attachment_url'] = asset('storage/' . $saved[0]->file_path);
+                            $responseData['attachment_id'] = $saved[0]->id;
+                        }
+                    }
+                    
                     $message = 'Academic record added successfully.';
-                    $responseData = ['id' => $record?->id];
+                    $responseData = array_merge($responseData ?? [], ['id' => $record?->id]);
                     break;
                 case 'certificate_row':
                     $record = $this->employeeService->saveCertificate((int)$employeeId, $data);

@@ -1781,6 +1781,7 @@ class EmployeeService
                 'mime_type' => $m->mime_type,
                 'file_size' => Storage::disk('public')->exists($m->file_path) ? Storage::disk('public')->size($m->file_path) : 0,
                 'url' => Storage::url($m->file_path),
+                'subsection' => $m->subsection,
             ])
             ->values()
             ->all();

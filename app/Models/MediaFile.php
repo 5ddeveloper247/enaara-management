@@ -20,6 +20,7 @@ class MediaFile extends Model
         'file_path',
         'file_name',
         'mime_type',
+        'subsection',
         'uploaded_by',
     ];
 }
