@@ -1425,6 +1425,8 @@ class EmployeeService
             ])
             ->orderByDesc('id');
 
+        $requiredDocs = RequiredDocumentType::where('status', true)->get();
+
         $type = $filters['filter_employee_type'] ?? null;
         if (!empty($type)) {
             if ($type === 'Third-party') {
@@ -1546,6 +1548,35 @@ class EmployeeService
             $photo    = $emp->mediaFiles->where('file_type', 'photo')->first();
             $photoUrl = $photo ? Storage::url($photo->file_path) : null;
             $attachmentsCount = $emp->mediaFiles->where('file_type', 'attachment')->count();
+
+            // Family Registration Certificate check
+            $hasFrc = $emp->mediaFiles->where('subsection', 'family_certificate')->count() > 0 
+                || $emp->mediaFiles->where('attachment_type', 'Family Character Certificate')->count() > 0 
+                ? 'Yes' : 'No';
+
+            // Dynamic Required Documents check
+            $dynamicDocStatuses = [];
+            foreach ($requiredDocs as $docType) {
+                $hasDoc = $emp->mediaFiles->where('file_type', 'attachment')
+                    ->where('attachment_type', $docType->name)
+                    ->count() > 0 ? 'Yes' : 'No';
+                $dynamicDocStatuses['req_doc_' . $docType->id] = $hasDoc;
+            }
+
+            // Academic Documents check
+            $hasAcademic = $emp->mediaFiles->where('subsection', 'academic')->count() > 0 ? 'Yes' : 'No';
+
+            // Certificate Documents check
+            $hasCertificate = $emp->mediaFiles->where('subsection', 'certificate')->count() > 0 ? 'Yes' : 'No';
+
+            // Employment Documents check
+            $hasEmployment = $emp->mediaFiles->where('subsection', 'employment')->count() > 0 ? 'Yes' : 'No';
+
+            // Medical Documents check
+            $hasMedical = $emp->mediaFiles->where('subsection', 'medical')->count() > 0 ? 'Yes' : 'No';
+
+            // Profile Photo check
+            $hasPhoto = $photo ? 'Yes' : 'No';
 
             $departmentLabel = $deptNames !== [] ? implode(', ', $deptNames) : ($emp->department?->name ?? '-');
             $sbuLabel = $emp->sbu?->name ?? ($deptSbuNames[0] ?? '-');
@@ -1713,9 +1744,30 @@ class EmployeeService
 
                 // Attachments
                 'attachments_count'   => $attachmentsCount,
+                'family_certificate'  => $hasFrc,
+                'academic_docs'       => $hasAcademic,
+                'certificate_docs'    => $hasCertificate,
+                'employment_docs'     => $hasEmployment,
+                'medical_docs'        => $hasMedical,
+                'profile_photo'       => $hasPhoto,
                 'is_active'           => (bool) $emp->is_active,
             ];
+
+            // Merge dynamic document statuses
+            foreach ($dynamicDocStatuses as $key => $status) {
+                $mapped[$key] = $status;
+            }
+
+            return $mapped;
         })->values()->all();
+
+        return [
+            'data' => $employees,
+            'required_docs' => $requiredDocs->map(fn($doc) => [
+                'id' => $doc->id,
+                'name' => $doc->name
+            ])->all()
+        ];
     }
 
     public function getStats(): array
