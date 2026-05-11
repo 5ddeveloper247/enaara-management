@@ -15,6 +15,7 @@ use App\Models\EmployeeExEmployment;
 use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
 use App\Models\MediaFile;
+use App\Models\RequiredDocumentType;
 use App\Models\Department;
 use App\Models\Organization;
 use App\Models\Sbu;
@@ -32,6 +33,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -277,7 +279,14 @@ class EmployeeService
             ->values()
             ->all();
 
-        $requiredDocumentTypes = RequiredDocumentType::where('status', true)->get();
+        $requiredDocumentTypes = [];
+        try {
+            if (Schema::hasTable('required_document_types')) {
+                $requiredDocumentTypes = RequiredDocumentType::where('status', true)->get();
+            }
+        } catch (\Exception $e) {
+            Log::warning('getFormData dynamic docs failed: ' . $e->getMessage());
+        }
 
         return compact('organizations', 'orgsData', 'rolesData', 'requiredDocumentTypes');
     }
