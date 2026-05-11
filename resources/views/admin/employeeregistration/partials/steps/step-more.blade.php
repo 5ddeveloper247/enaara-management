@@ -142,7 +142,7 @@
                                                                             <i class="bi bi-file-earmark-check text-success fs-4"></i>
                                                                         </div>
                                                                         <div>
-                                                                            <h6 class="mb-0 fw-bold">Family Character Certificate</h6>
+                                                                            <h6 class="mb-0 fw-bold">Family Registeration Certificate (FRC)</h6>
                                                                             <p class="small text-muted mb-0">Upload a single document containing character certificates for the family.</p>
                                                                         </div>
                                                                     </div>
@@ -253,19 +253,13 @@
                                                                 data-family-occupation placeholder="Enter occupation">
                                                             <div class="family-field-preview" data-family-preview-occupation>-</div>
                                                         </div>
-                                                        <div class="col-12 d-none" data-family-nok-member-indicator>
-                                                            <div class="small text-success fw-semibold">This member is selected as Next of Kin.</div>
-                                                        </div>
-                                                        <div class="col-12">
-                                                            <hr class="text-secondary opacity-25 my-1">
-                                                        </div>
+                                                      
                                                         <div class="col-12">
                                                             <input type="hidden" name="family[][is_next_of_kin]" value="0" data-family-is-nok-hidden>
                                                             <input type="radio" name="family_nok_selector" class="form-check-input family-nok-selector visually-hidden" title="Mark as Next of Kin" aria-label="Mark as Next of Kin">
                                                         </div>
                                                     <div class="col-12">
-                                                        <div class="row g-2 border rounded p-2 mt-1 bg-white d-none" data-family-nok-fields>
-                                                            <div class="col-12 small text-secondary">NOK identity and contact (required when this member is Next of Kin)</div>
+                                                       <div class="row g-2 d-none" data-family-nok-fields>
                                                             <div class="col-12 col-md-6 col-xl-4">
                                                                 <label class="form-label">NOK CNIC <span class="text-danger">*</span></label>
                                                                 <input type="text" class="form-control family-field-input cnic-mask" name="family[][nok_cnic]"
