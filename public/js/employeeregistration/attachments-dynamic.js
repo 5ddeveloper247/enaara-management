@@ -45,9 +45,6 @@
                     const html = `
                         <div class="doc-item d-flex align-items-center justify-content-between p-3 rounded-3 mb-2" data-doc-type="${data.data.name}">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="form-check m-0 p-0 d-flex align-items-center">
-                                    <input class="form-check-input m-0 doc-checkbox" type="checkbox" disabled style="width: 18px; height: 18px;">
-                                </div>
                                 <span class="text-white-50 small fw-semibold doc-name">${data.data.name}</span>
                             </div>
                             <span class="badge status-badge rounded-pill px-3 py-1" style="background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); font-size: 0.65rem;">Pending</span>

@@ -47,6 +47,7 @@
         border-radius: 8px;
         background: transparent;
         transition: background 0.2s;
+        pointer-events: none; /* Prevent manual interaction */
     }
     .attachment-dark-theme .doc-item:hover {
         background: rgba(255,255,255,0.03);
@@ -172,7 +173,7 @@
                                 <div class="doc-item d-flex align-items-center justify-content-between p-3 rounded-3 mb-2" data-doc-type="{{ $type->name }}">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="form-check m-0 p-0 d-flex align-items-center">
-                                            <input class="form-check-input m-0 doc-checkbox" type="checkbox" disabled style="width: 18px; height: 18px;">
+                                            <input class="form-check-input m-0 doc-checkbox" type="checkbox" disabled style="width: 18px; height: 18px; pointer-events: none;">
                                         </div>
                                         <span class="text-white-50 small fw-semibold doc-name">{{ $type->name }}</span>
                                     </div>
