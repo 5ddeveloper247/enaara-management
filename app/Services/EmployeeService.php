@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -1425,7 +1426,14 @@ class EmployeeService
             ])
             ->orderByDesc('id');
 
-        $requiredDocs = RequiredDocumentType::where('status', true)->get();
+        $requiredDocs = [];
+        try {
+            if (Schema::hasTable('required_document_types')) {
+                $requiredDocs = RequiredDocumentType::where('status', true)->get();
+            }
+        } catch (\Exception $e) {
+            Log::warning('Could not fetch required_document_types: ' . $e->getMessage());
+        }
 
         $type = $filters['filter_employee_type'] ?? null;
         if (!empty($type)) {
@@ -1763,7 +1771,7 @@ class EmployeeService
 
         return [
             'data' => $employees,
-            'required_docs' => $requiredDocs->map(fn($doc) => [
+            'required_docs' => collect($requiredDocs)->map(fn($doc) => [
                 'id' => $doc->id,
                 'name' => $doc->name
             ])->all()
