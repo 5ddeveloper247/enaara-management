@@ -107,8 +107,25 @@
     }
 
     function handleOnPageUpload(files) {
-        console.log('handleOnPageUpload called with', files.length, 'files');
         try {
+            const allowedExts = new Set(['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf']);
+            const invalidFile = Array.from(files).find(f => {
+                const ext = (f.name.split('.').pop() || '').toLowerCase();
+                return !allowedExts.has(ext);
+            });
+
+            if (invalidFile) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid File Type',
+                        text: 'Attachment file must be of type: png, jpg, jpeg, webp, svg, or pdf.',
+                        confirmButtonColor: '#1a237e'
+                    });
+                }
+                return;
+            }
+
             const employeeId = document.getElementById('saved_employee_id')?.value;
             const nameInput = document.getElementById('onPageAttachmentName');
             const typeSelect = document.getElementById('onPageAttachmentType');
@@ -150,6 +167,11 @@
             }
             
             if (typeSelect) typeSelect.classList.remove('is-invalid');
+
+            const uploadIcon = document.getElementById('onPageUploadIcon');
+            const uploadSpinner = document.getElementById('onPageUploadSpinner');
+            if (uploadIcon) uploadIcon.classList.add('d-none');
+            if (uploadSpinner) uploadSpinner.classList.remove('d-none');
 
             const formData = new FormData();
             formData.append('employee_id', employeeId);
@@ -207,11 +229,13 @@
             let data = {};
             try { data = JSON.parse(xhr.responseText); } catch(e) {}
 
+            if (uploadIcon) uploadIcon.classList.remove("d-none");
+            if (uploadSpinner) uploadSpinner.classList.add("d-none");
+
             if (xhr.status >= 200 && xhr.status < 300 && data.success) {
                 // Remove temp and fetch real
                 window.employeeAttachments = window.employeeAttachments.filter(a => a.localId !== tempId);
                 if (window.fetchExistingAttachments) window.fetchExistingAttachments();
-                
                 onPageAttachmentName.value = '';
                 onPageAttachmentType.value = '';
                 if (window.Swal) Swal.fire({ icon: 'success', title: 'Uploaded', text: 'Document uploaded successfully', timer: 1500, showConfirmButton: false });
@@ -223,6 +247,9 @@
         };
 
         xhr.onerror = function() {
+            if (uploadIcon) uploadIcon.classList.remove('d-none');
+            if (uploadSpinner) uploadSpinner.classList.add('d-none');
+            
             window.employeeAttachments = window.employeeAttachments.filter(a => a.localId !== tempId);
             if (window.renderAttachmentListing) window.renderAttachmentListing();
             if (window.Swal) Swal.fire({ icon: 'error', title: 'Error', text: 'Server error during upload' });

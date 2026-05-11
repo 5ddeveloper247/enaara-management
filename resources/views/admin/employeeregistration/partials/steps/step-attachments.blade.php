@@ -108,20 +108,25 @@
 
                 <!-- Dropzone -->
                 <div class="upload-dropzone p-5 text-center rounded-4 mb-4" id="onPageDropzone">
-                    <input type="file" id="onPageAttachmentUpload" class="d-none" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt">
-                    <div class="d-inline-flex align-items-center justify-content-center mb-3 rounded-circle" style="width: 60px; height: 60px; border: 1px solid rgba(255,193,7,0.5);">
+                    <input type="file" id="onPageAttachmentUpload" class="d-none" multiple accept=".png,.jpg,.jpeg,.webp,.svg,.pdf">
+                    <div id="onPageUploadSpinner" class="d-none mb-3">
+                        <div class="spinner-border text-warning" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="text-white mt-2">Uploading...</div>
+                    </div>
+                    <div id="onPageUploadIcon" class="d-inline-flex align-items-center justify-content-center mb-3 rounded-circle" style="width: 60px; height: 60px; border: 1px solid rgba(255,193,7,0.5);">
                         <i class="bi bi-cloud-arrow-up text-warning fs-3"></i>
                     </div>
                     <h5 class="fw-bold mb-2 text-white">Drop files here or click to browse</h5>
-                    <p class="text-muted small mb-4" style="color: rgba(255,255,255,0.5)!important;">Supported formats: JPG, PNG, PDF, DOC, DOCX, XLS, XLSX, ZIP, TXT &mdash; up to 20MB each</p>
+                    <p class="text-muted small mb-4" style="color: rgba(255,255,255,0.5)!important;">Supported formats: PNG, JPG, JPEG, WEBP, SVG, PDF &mdash; up to 20MB each</p>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">JPG</span>
                         <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">PNG</span>
+                        <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">JPG</span>
+                        <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">JPEG</span>
+                        <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">WEBP</span>
+                        <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">SVG</span>
                         <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">PDF</span>
-                        <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">DOC</span>
-                        <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">DOCX</span>
-                        <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">XLSX</span>
-                        <span class="badge rounded-pill fw-normal px-3 py-2" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); letter-spacing: 1px;">ZIP</span>
                     </div>
                 </div>
 
