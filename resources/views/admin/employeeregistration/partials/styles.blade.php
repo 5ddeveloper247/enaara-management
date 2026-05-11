@@ -647,7 +647,8 @@
         }
 
         /* Academic Certificate Section Enhancements */
-        .academic-certificate-section {
+        .academic-transcript-section,
+        .academic-degree-section {
             margin-top: 1rem;
         }
         
@@ -716,8 +717,12 @@
         }
 
         /* Hide academic upload/delete in preview mode */
-        .preview-mode .academic-certificate-section .academic-upload-placeholder,
-        .preview-mode .academic-certificate-section .btn-icon-delete {
+        .academic-record-row.preview-mode .academic-upload-placeholder,
+        .academic-record-row.preview-mode .btn-icon-delete {
             display: none !important;
+        }
+
+        .academic-record-row.preview-mode .academic-upload-placeholder {
+            cursor: default !important;
         }
     </style>

@@ -782,6 +782,8 @@ class EmployeeStepRequest extends FormRequest
                     'end_date'       => ['required', 'date', 'after_or_equal:start_date'],
                     'field_of_study' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
                     'institute'      => ['nullable', 'string', 'max:150', $this->maxWordsRule(20, 'University')],
+                    'transcript_file'=> ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
+                    'degree_file'    => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
             case 'employment_row':
