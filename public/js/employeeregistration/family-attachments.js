@@ -11,7 +11,7 @@
     const familyCertificateProgress = document.getElementById('familyCertificateProgress');
     const progressBar = familyCertificateProgress ? familyCertificateProgress.querySelector('.progress-bar') : null;
 
-    const ATTACHMENT_TYPE = 'Family Character Certificate';
+    const ATTACHMENT_TYPE = 'Family Registration Certificate';
     let currentAttachmentId = null;
 
     if (familyCertificateUploadBtn && familyCertificateInput) {
@@ -45,7 +45,7 @@
         formData.append('employee_id', employeeId);
         formData.append('step', 6);
         formData.append('subsection', 'family_certificate');
-        formData.append('attachments[0][name]', 'Family Character Certificate');
+        formData.append('attachments[0][name]', 'Family Registration Certificate');
         formData.append('attachments[0][type]', ATTACHMENT_TYPE);
         formData.append('attachments[0][description]', '');
         formData.append('attachments[0][files][]', file);
@@ -98,7 +98,7 @@
 
             const result = await (window.Swal ? Swal.fire({
                 title: 'Are you sure?',
-                text: "This will permanently remove the family character certificate.",
+                text: "This will permanently remove the family registration certificate.",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',

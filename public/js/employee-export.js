@@ -78,15 +78,21 @@
         /* 74 */ { header: 'Latest Qualification',   key: 'latest_degree' },
         /* 75 */ { header: 'Institute',              key: 'latest_institute' },
         /* 76 */ { header: 'Has Certificates',       key: 'has_certificates' },
-        /* 77 */ { header: 'Previous Organization',  key: 'last_organization' },
-        /* 78 */ { header: 'Previous Monthly Salary',key: 'last_salary' },
-        /* 79 */ { header: 'Disability',             key: 'has_disability' },
-        /* 80 */ { header: 'Disability Type',        key: 'disability_type' },
-        /* 81 */ { header: 'Chronic Disease',        key: 'has_chronic_disease' },
-        /* 82 */ { header: 'Reference Name',         key: 'ref_name' },
-        /* 83 */ { header: 'Reference Contact',      key: 'ref_contact' },
-        /* 84 */ { header: 'Employment Type',        key: 'employment_type' },
-        /* 85 */ { header: 'Employee Type',          key: 'employee_type' }
+        /* 77 */ { header: 'Family Registration Certificate', key: 'has_family_certificate' },
+        /* 78 */ { header: 'Academic Transcript',    key: 'has_academic_transcript' },
+        /* 79 */ { header: 'Academic Degree',        key: 'has_academic_degree' },
+        /* 80 */ { header: 'Experience Letter',      key: 'has_experience_letter' },
+        /* 81 */ { header: 'Salary Slip',            key: 'has_salary_slip' },
+        /* 82 */ { header: 'Medical Report/Certificate', key: 'has_medical_report' },
+        /* 83 */ { header: 'Previous Organization',  key: 'last_organization' },
+        /* 84 */ { header: 'Previous Monthly Salary',key: 'last_salary' },
+        /* 85 */ { header: 'Disability',             key: 'has_disability' },
+        /* 86 */ { header: 'Disability Type',        key: 'disability_type' },
+        /* 87 */ { header: 'Chronic Disease',        key: 'has_chronic_disease' },
+        /* 88 */ { header: 'Reference Name',         key: 'ref_name' },
+        /* 89 */ { header: 'Reference Contact',      key: 'ref_contact' },
+        /* 90 */ { header: 'Employment Type',        key: 'employment_type' },
+        /* 91 */ { header: 'Employee Type',          key: 'employee_type' }
     ];
 
     var OUTSOURCED_COLUMNS = [

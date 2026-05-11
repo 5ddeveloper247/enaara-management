@@ -1719,6 +1719,12 @@ class EmployeeService
                 'ref_contact'         => $firstRef?->contact_no ?? '-',
 
                 'profile_photo'       => $photo ? 'Yes' : 'No',
+                'has_family_certificate'   => $emp->mediaFiles->where('attachment_type', 'Family Registration Certificate')->count() > 0 ? 'Yes' : 'No',
+                'has_academic_transcript'  => $emp->mediaFiles->where('attachment_type', 'Academic Transcript')->count() > 0 ? 'Yes' : 'No',
+                'has_academic_degree'      => $emp->mediaFiles->where('attachment_type', 'Academic Degree')->count() > 0 ? 'Yes' : 'No',
+                'has_experience_letter'    => $emp->mediaFiles->where('attachment_type', 'Experience Letter')->count() > 0 ? 'Yes' : 'No',
+                'has_salary_slip'          => $emp->mediaFiles->where('attachment_type', 'Salary Slip')->count() > 0 ? 'Yes' : 'No',
+                'has_medical_report'       => $emp->mediaFiles->where('attachment_type', 'Medical Document')->count() > 0 ? 'Yes' : 'No',
                 'is_active'           => (bool) $emp->is_active,
             ];
 
