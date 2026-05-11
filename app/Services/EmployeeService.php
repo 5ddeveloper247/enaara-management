@@ -1717,14 +1717,27 @@ class EmployeeService
                 // Reference
                 'ref_name'            => $firstRef?->name ?? '-',
                 'ref_contact'         => $firstRef?->contact_no ?? '-',
-
                 'profile_photo'       => $photo ? 'Yes' : 'No',
-                'has_family_certificate'   => $emp->mediaFiles->where('attachment_type', 'Family Registration Certificate')->count() > 0 ? 'Yes' : 'No',
-                'has_academic_transcript'  => $emp->mediaFiles->where('attachment_type', 'Academic Transcript')->count() > 0 ? 'Yes' : 'No',
-                'has_academic_degree'      => $emp->mediaFiles->where('attachment_type', 'Academic Degree')->count() > 0 ? 'Yes' : 'No',
-                'has_experience_letter'    => $emp->mediaFiles->where('attachment_type', 'Experience Letter')->count() > 0 ? 'Yes' : 'No',
-                'has_salary_slip'          => $emp->mediaFiles->where('attachment_type', 'Salary Slip')->count() > 0 ? 'Yes' : 'No',
-                'has_medical_report'       => $emp->mediaFiles->where('attachment_type', 'Medical Document')->count() > 0 ? 'Yes' : 'No',
+
+                // Document attachment status flags
+                'has_cnic_front'              => $emp->mediaFiles->where('attachment_type', 'Employee CNIC (Front)')->count() > 0 ? 'Yes' : 'No',
+                'has_cnic_back'               => $emp->mediaFiles->where('attachment_type', 'Employee CNIC (Back)')->count() > 0 ? 'Yes' : 'No',
+                'has_father_cnic'             => $emp->mediaFiles->where('attachment_type', "Father's CNIC")->count() > 0 ? 'Yes' : 'No',
+                'has_nok_cnic'                => $emp->mediaFiles->where('attachment_type', 'NOK CNIC')->count() > 0 ? 'Yes' : 'No',
+                'has_cv_resume'               => $emp->mediaFiles->where('attachment_type', 'CV / Resume')->count() > 0 ? 'Yes' : 'No',
+                'has_offer_letter'            => $emp->mediaFiles->where('attachment_type', 'Offer / Appointment Letter')->count() > 0 ? 'Yes' : 'No',
+                'has_police_verification'     => $emp->mediaFiles->where('attachment_type', 'Police Verification Letter')->count() > 0 ? 'Yes' : 'No',
+                'has_probation_report'        => $emp->mediaFiles->where('attachment_type', 'Probation Evaluation Report')->count() > 0 ? 'Yes' : 'No',
+                'has_consultancy_agreement'   => $emp->mediaFiles->where('attachment_type', 'Consultancy Agreement / Contract')->count() > 0 ? 'Yes' : 'No',
+                'has_guardian_consent'        => $emp->mediaFiles->where('attachment_type', 'Parent/Guardian Consent Form')->count() > 0 ? 'Yes' : 'No',
+                'has_discharge_order'         => $emp->mediaFiles->where('attachment_type', 'Discharge / Retirement Order')->count() > 0 ? 'Yes' : 'No',
+                'has_family_certificate'      => $emp->mediaFiles->where('attachment_type', 'Family Registration Certificate')->count() > 0 ? 'Yes' : 'No',
+                'has_academic_transcript'     => $emp->mediaFiles->where('attachment_type', 'Academic Transcript')->count() > 0 ? 'Yes' : 'No',
+                'has_academic_degree'         => $emp->mediaFiles->where('attachment_type', 'Academic Degree')->count() > 0 ? 'Yes' : 'No',
+                'has_professional_cert'       => $emp->mediaFiles->where('attachment_type', 'Professional Certificate')->count() > 0 ? 'Yes' : 'No',
+                'has_experience_letter'       => $emp->mediaFiles->where('attachment_type', 'Experience Letter')->count() > 0 ? 'Yes' : 'No',
+                'has_salary_slip'             => $emp->mediaFiles->where('attachment_type', 'Salary Slip')->count() > 0 ? 'Yes' : 'No',
+                'has_medical_report'          => $emp->mediaFiles->where('attachment_type', 'Medical Document')->count() > 0 ? 'Yes' : 'No',
                 'is_active'           => (bool) $emp->is_active,
             ];
 

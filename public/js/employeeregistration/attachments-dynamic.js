@@ -263,7 +263,14 @@
     function updateChecklistStatus() {
         if (!requiredDocumentsList) return;
         const attachments = window.employeeAttachments || [];
-        const uploadedTypes = new Set(attachments.map(a => a.type));
+        // Only consider top-level attachments (subsection null/undefined).
+        // Subsection attachments (e.g. experience letter tied to an employment record)
+        // must NOT influence the general checklist "Done" status.
+        const uploadedTypes = new Set(
+            attachments
+                .filter(a => a.subsection === null || a.subsection === undefined)
+                .map(a => a.type)
+        );
 
         const items = requiredDocumentsList.querySelectorAll('.doc-item');
         items.forEach(item => {
