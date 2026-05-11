@@ -951,6 +951,8 @@ class EmployeeService
                 'to_date'            => !empty($row['to_date']) ? $row['to_date'] : null,
                 'salary'             => $row['salary'] ?? null,
                 'reason_for_leaving' => $row['reason_for_leaving'] ?? null,
+                'hr_contact'         => $row['hr_contact'] ?? null,
+                'hr_email'           => $row['hr_email'] ?? null,
             ]);
         }
     }
@@ -1101,6 +1103,8 @@ class EmployeeService
                 'to_date'            => !empty($row['to_date']) ? $row['to_date'] : null,
                 'salary'             => $row['salary'] ?? null,
                 'reason_for_leaving' => $row['reason_for_leaving'] ?? null,
+                'hr_contact'         => $row['hr_contact'] ?? null,
+                'hr_email'           => $row['hr_email'] ?? null,
             ]
         );
     }

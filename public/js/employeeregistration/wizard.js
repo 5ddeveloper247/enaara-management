@@ -5214,6 +5214,14 @@
             if (salary && salary.length > 20) addErr('salary', 'Salary must not exceed 20 digits.');
             else if (salary && !/^\d+$/.test(salary)) addErr('salary', 'Salary must contain digits only.');
             if (reason && reason.length > 200) addErr('reason_for_leaving', 'Reason for leaving must not exceed 200 characters.');
+
+            const hrContact = v('hr_contact');
+            const hrEmail = v('hr_email');
+            if (hrContact && hrContact.length > 15) addErr('hr_contact', 'HR contact must not exceed 15 characters.');
+            if (hrEmail) {
+                if (hrEmail.length > 100) addErr('hr_email', 'HR email must not exceed 100 characters.');
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hrEmail)) addErr('hr_email', 'HR email must be a valid email address.');
+            }
         }
 
         return errors;
@@ -6173,6 +6181,8 @@
             if (data.to_date) row.querySelector('[data-employment-to-date]').value = data.to_date;
             if (data.salary) row.querySelector('[data-employment-salary]').value = data.salary;
             if (data.reason_for_leaving) row.querySelector('[data-employment-reason]').value = data.reason_for_leaving;
+            if (data.hr_contact) row.querySelector('[data-employment-hr-contact]').value = data.hr_contact;
+            if (data.hr_email) row.querySelector('[data-employment-hr-email]').value = data.hr_email;
         }
 
         row.querySelector('[data-employment-save]').onclick = () => saveSubsectionRow('employment', row);
@@ -6335,6 +6345,12 @@
             }
             if (target.matches('[data-employment-reason]')) {
                 return { max: 200, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 200 characters allowed.' };
+            }
+            if (target.matches('[data-employment-hr-contact]')) {
+                return { max: 15, allowed: /[0-9+\-()\s]/, clean: /[^0-9+\-()\s]/g, invalid: 'Use digits, +, -, and parentheses only.', maxMsg: 'Maximum 15 characters allowed.' };
+            }
+            if (target.matches('[data-employment-hr-email]')) {
+                return { max: 100, allowed: /[A-Za-z0-9@._\-]/, clean: /[^A-Za-z0-9@._\-]/g, invalid: 'Use valid email characters only.', maxMsg: 'Maximum 100 characters allowed.' };
             }
             return null;
         };

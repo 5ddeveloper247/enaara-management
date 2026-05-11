@@ -659,7 +659,9 @@
                                                                              from_date: @json(isset($record->from_date) && $record->from_date ? (is_string($record->from_date) ? date('Y-m-d', strtotime($record->from_date)) : $record->from_date->format('Y-m-d')) : ''),
                                                                              to_date: @json(isset($record->to_date) && $record->to_date ? (is_string($record->to_date) ? date('Y-m-d', strtotime($record->to_date)) : $record->to_date->format('Y-m-d')) : ''),
                                                                              salary: @json($record?->salary),
-                                                                             reason_for_leaving: @json($record?->reason_for_leaving)
+                                                                             reason_for_leaving: @json($record?->reason_for_leaving),
+                                                                              hr_contact: @json($record?->hr_contact),
+                                                                              hr_email: @json($record?->hr_email)
                                                                          });
                                                                      }
                                                                  @endforeach
@@ -720,11 +722,23 @@
                                                             data-employment-salary placeholder="Enter salary" maxlength="20" step="1">
                                                         <div class="employment-field-preview" data-employment-preview-salary>-</div>
                                                     </div>
-                                                    <div class="col-12">
+                                                    <div class="col-12 col-md-6">
                                                         <label class="form-label">Reason for Leaving</label>
                                                         <input type="text" class="form-control employment-field-input" name="employments[][reason_for_leaving]"
                                                             data-employment-reason placeholder="Enter reason for leaving" maxlength="200">
                                                         <div class="employment-field-preview" data-employment-preview-reason-for-leaving>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-3">
+                                                        <label class="form-label">HR Contact Number</label>
+                                                        <input type="text" class="form-control employment-field-input" name="employments[][hr_contact]"
+                                                            data-employment-hr-contact placeholder="Enter HR contact" maxlength="15">
+                                                        <div class="employment-field-preview" data-employment-preview-hr-contact>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-3">
+                                                        <label class="form-label">HR Email</label>
+                                                        <input type="email" class="form-control employment-field-input" name="employments[][hr_email]"
+                                                            data-employment-hr-email placeholder="Enter HR email" maxlength="100">
+                                                        <div class="employment-field-preview" data-employment-preview-hr-email>-</div>
                                                     </div>
 
                                                     <!-- Employment Documents -->
@@ -798,8 +812,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </template>
+                                            </div></template>
 
                                         <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane6">
                                             <div>
