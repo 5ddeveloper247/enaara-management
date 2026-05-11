@@ -269,21 +269,39 @@ class EmployeeController extends Controller
                 case 'academic_row':
                     $record = $this->employeeService->saveAcademic((int)$employeeId, $data);
                     
-                    // Handle academic certificate file if provided
-                    if ($request->hasFile('certificate_file') && $record) {
-                        $file = $request->file('certificate_file');
+                    // Handle academic transcript file if provided
+                    if ($request->hasFile('transcript_file') && $record) {
+                        $file = $request->file('transcript_file');
                         $attachmentData = [
-                            'name' => 'Academic Certificate - ' . $record->degree,
-                            'type' => 'Academic Certificate',
-                            'description' => 'Uploaded academic document for ' . $record->degree,
+                            'name' => 'Academic Transcript - ' . $record->degree,
+                            'type' => 'Academic Transcript',
+                            'description' => 'Uploaded academic transcript for ' . $record->degree,
                             'files' => [$file]
                         ];
                         $saved = $this->employeeService->saveSingleAttachment((int)$employeeId, $attachmentData);
                         if (!empty($saved)) {
                             // Link to subsection
-                            $saved[0]->update(['subsection' => 'academic_' . $record->id]);
-                            $responseData['attachment_url'] = asset('storage/' . $saved[0]->file_path);
-                            $responseData['attachment_id'] = $saved[0]->id;
+                            $saved[0]->update(['subsection' => 'academic_' . $record->id . '_transcript']);
+                            $responseData['transcript_url'] = asset('storage/' . $saved[0]->file_path);
+                            $responseData['transcript_id'] = $saved[0]->id;
+                        }
+                    }
+
+                    // Handle academic degree file if provided
+                    if ($request->hasFile('degree_file') && $record) {
+                        $file = $request->file('degree_file');
+                        $attachmentData = [
+                            'name' => 'Academic Degree - ' . $record->degree,
+                            'type' => 'Academic Degree',
+                            'description' => 'Uploaded academic degree for ' . $record->degree,
+                            'files' => [$file]
+                        ];
+                        $saved = $this->employeeService->saveSingleAttachment((int)$employeeId, $attachmentData);
+                        if (!empty($saved)) {
+                            // Link to subsection
+                            $saved[0]->update(['subsection' => 'academic_' . $record->id . '_degree']);
+                            $responseData['degree_url'] = asset('storage/' . $saved[0]->file_path);
+                            $responseData['degree_id'] = $saved[0]->id;
                         }
                     }
                     

@@ -782,6 +782,8 @@ class EmployeeStepRequest extends FormRequest
                     'end_date'       => ['required', 'date', 'after_or_equal:start_date'],
                     'field_of_study' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
                     'institute'      => ['nullable', 'string', 'max:150', $this->maxWordsRule(20, 'University')],
+                    'transcript_file'=> ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
+                    'degree_file'    => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
             case 'employment_row':
@@ -792,6 +794,8 @@ class EmployeeStepRequest extends FormRequest
                     'to_date'            => ['required', 'date', 'after_or_equal:from_date'],
                     'salary'             => ['nullable', 'string', 'max:15'],
                     'reason_for_leaving' => ['nullable', 'string', 'max:200'],
+                    'hr_contact'         => ['nullable', 'string', 'max:15'],
+                    'hr_email'           => ['nullable', 'email', 'max:100'],
                     'experience_letter'  => ['required_without:employment_id', 'nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                     'salary_slip'        => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);

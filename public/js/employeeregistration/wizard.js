@@ -4830,21 +4830,26 @@
             }
         });
 
-        // Special preview for academic certificate
+        // Special preview for academic certificates
         if (type === 'academic') {
-            const certPreview = row.querySelector('[data-academic-preview-certificate-status]');
-            const viewContainer = row.querySelector('[data-academic-view-container]');
-            const fileInput = row.querySelector('[data-academic-certificate-file]');
-            
-            if (certPreview) {
-                const hasAttachment = viewContainer && !viewContainer.classList.contains('d-none');
-                const hasNewFile = fileInput && fileInput.files.length > 0;
-                
-                if (hasAttachment || hasNewFile) {
-                    certPreview.classList.remove('d-none');
-                } else {
-                    certPreview.classList.add('d-none');
-                }
+            const transcriptView = row.querySelector('[data-academic-transcript-view-container]');
+            const transcriptFile = row.querySelector('[data-academic-transcript-file]');
+            const transcriptPreview = row.querySelector('[data-academic-transcript-preview-status]');
+
+            const degreeView = row.querySelector('[data-academic-degree-view-container]');
+            const degreeFile = row.querySelector('[data-academic-degree-file]');
+            const degreePreview = row.querySelector('[data-academic-degree-preview-status]');
+
+            if (transcriptPreview) {
+                const hasTranscript = (transcriptView && !transcriptView.classList.contains('d-none')) || 
+                                     (transcriptFile && transcriptFile.files.length > 0);
+                transcriptPreview.classList.toggle('d-none', hasTranscript);
+            }
+
+            if (degreePreview) {
+                const hasDegree = (degreeView && !degreeView.classList.contains('d-none')) || 
+                                 (degreeFile && degreeFile.files.length > 0);
+                degreePreview.classList.toggle('d-none', hasDegree);
             }
         }
     }
@@ -4896,10 +4901,14 @@
             }
         });
 
-        // Special handling for academic certificate file which might not have a name attribute
-        const academicCertFile = rowElement.querySelector('[data-academic-certificate-file]');
-        if (academicCertFile && academicCertFile.files.length > 0) {
-            formData.append('certificate_file', academicCertFile.files[0]);
+        // Special handling for academic transcript and degree files
+        const academicTranscriptFile = rowElement.querySelector('[data-academic-transcript-file]');
+        if (academicTranscriptFile && academicTranscriptFile.files.length > 0) {
+            formData.append('transcript_file', academicTranscriptFile.files[0]);
+        }
+        const academicDegreeFile = rowElement.querySelector('[data-academic-degree-file]');
+        if (academicDegreeFile && academicDegreeFile.files.length > 0) {
+            formData.append('degree_file', academicDegreeFile.files[0]);
         }
 
         // For validation, we still need a plain object
@@ -4945,24 +4954,38 @@
                 
                 // Update academic document UI if it was just uploaded
                 if (type === 'academic' && res.success) {
-                    const fileInput = rowElement.querySelector('[data-academic-certificate-file]');
-                    if (fileInput && fileInput.files.length > 0) {
-                        if (res.attachment_url) {
-                            const viewWrap = rowElement.querySelector('[data-academic-view-container]');
-                            const viewLink = rowElement.querySelector('[data-academic-document-link]');
-                            const filenameEl = rowElement.querySelector('[data-academic-filename]');
-                            if (viewLink) viewLink.href = res.attachment_url;
-                            if (filenameEl) filenameEl.textContent = fileInput.files[0].name;
+                    const transcriptInput = rowElement.querySelector('[data-academic-transcript-file]');
+                    if (transcriptInput && transcriptInput.files.length > 0) {
+                        if (res.transcript_url) {
+                            const viewWrap = rowElement.querySelector('[data-academic-transcript-view-container]');
+                            const viewLink = rowElement.querySelector('[data-academic-transcript-document-link]');
+                            const filenameEl = rowElement.querySelector('[data-academic-transcript-filename]');
+                            if (viewLink) viewLink.href = res.transcript_url;
+                            if (filenameEl) filenameEl.textContent = transcriptInput.files[0].name;
                             if (viewWrap) {
                                 viewWrap.classList.remove('d-none');
-                                // Store the ID for deletion later
-                                if (res.attachment_id) viewWrap.setAttribute('data-attachment-id', res.attachment_id);
+                                if (res.transcript_id) viewWrap.setAttribute('data-attachment-id', res.transcript_id);
                             }
-                            
-                            // Hide upload box
-                            rowElement.querySelector('[data-academic-upload-container]').classList.add('d-none');
+                            rowElement.querySelector('[data-academic-transcript-upload-container]').classList.add('d-none');
                         }
-                        fileInput.value = '';
+                        transcriptInput.value = '';
+                    }
+
+                    const degreeInput = rowElement.querySelector('[data-academic-degree-file]');
+                    if (degreeInput && degreeInput.files.length > 0) {
+                        if (res.degree_url) {
+                            const viewWrap = rowElement.querySelector('[data-academic-degree-view-container]');
+                            const viewLink = rowElement.querySelector('[data-academic-degree-document-link]');
+                            const filenameEl = rowElement.querySelector('[data-academic-degree-filename]');
+                            if (viewLink) viewLink.href = res.degree_url;
+                            if (filenameEl) filenameEl.textContent = degreeInput.files[0].name;
+                            if (viewWrap) {
+                                viewWrap.classList.remove('d-none');
+                                if (res.degree_id) viewWrap.setAttribute('data-attachment-id', res.degree_id);
+                            }
+                            rowElement.querySelector('[data-academic-degree-upload-container]').classList.add('d-none');
+                        }
+                        degreeInput.value = '';
                     }
                 }
 
@@ -5131,14 +5154,19 @@
                 addErr('institute', 'Board is required for selected degree.');
             }
 
-            // Mandatory Document Check
-            const fileInput = rowElement ? rowElement.querySelector('[data-academic-certificate-file]') : null;
-            const viewContainer = rowElement ? rowElement.querySelector('[data-academic-view-container]') : null;
-            const isFileSelected = fileInput && fileInput.files.length > 0;
-            const isExistingFile = viewContainer && !viewContainer.classList.contains('d-none');
+            // Mandatory Document Check (either transcript or degree)
+            const transcriptInput = rowElement ? rowElement.querySelector('[data-academic-transcript-file]') : null;
+            const transcriptView = rowElement ? rowElement.querySelector('[data-academic-transcript-view-container]') : null;
+            const isTranscriptSelected = transcriptInput && transcriptInput.files.length > 0;
+            const isTranscriptExisting = transcriptView && !transcriptView.classList.contains('d-none');
+
+            const degreeInput = rowElement ? rowElement.querySelector('[data-academic-degree-file]') : null;
+            const degreeView = rowElement ? rowElement.querySelector('[data-academic-degree-view-container]') : null;
+            const isDegreeSelected = degreeInput && degreeInput.files.length > 0;
+            const isDegreeExisting = degreeView && !degreeView.classList.contains('d-none');
             
-            if (!isFileSelected && !isExistingFile) {
-                addErr('certificate_file', 'Degree certificate document is mandatory.');
+            if (!isTranscriptSelected && !isTranscriptExisting && !isDegreeSelected && !isDegreeExisting) {
+                addErr('degree_file', 'Either Transcript or Degree certificate is mandatory.');
             }
         }
 
@@ -5186,6 +5214,14 @@
             if (salary && salary.length > 20) addErr('salary', 'Salary must not exceed 20 digits.');
             else if (salary && !/^\d+$/.test(salary)) addErr('salary', 'Salary must contain digits only.');
             if (reason && reason.length > 200) addErr('reason_for_leaving', 'Reason for leaving must not exceed 200 characters.');
+
+            const hrContact = v('hr_contact');
+            const hrEmail = v('hr_email');
+            if (hrContact && hrContact.length > 15) addErr('hr_contact', 'HR contact must not exceed 15 characters.');
+            if (hrEmail) {
+                if (hrEmail.length > 100) addErr('hr_email', 'HR email must not exceed 100 characters.');
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hrEmail)) addErr('hr_email', 'HR email must be a valid email address.');
+            }
         }
 
         return errors;
@@ -5653,105 +5689,101 @@
         row.querySelector('[data-academic-remove]').onclick = () => removeSubsectionRow('academic', row);
 
         // Delete/Change document logic
-        const deleteBtn = row.querySelector('[data-academic-document-remove]');
-        if (deleteBtn) {
-            deleteBtn.onclick = async () => {
-                const viewWrap = row.querySelector('[data-academic-view-container]');
-                const attachmentId = viewWrap.getAttribute('data-attachment-id');
-                
-                // If it's just a local selection (not yet saved to DB)
-                if (!attachmentId) {
-                    row.querySelector('[data-academic-upload-container]').classList.remove('d-none');
-                    viewWrap.classList.add('d-none');
-                    row.querySelector('[data-academic-certificate-file]').value = '';
-                    // Reset placeholder feedback
-                    const placeholderText = row.querySelector('[data-academic-upload-container] .small');
-                    const uploadIcon = row.querySelector('[data-academic-upload-container] i');
-                    if (placeholderText) {
-                        placeholderText.textContent = 'No file chosen';
-                        placeholderText.classList.remove('text-primary', 'fw-bold');
-                        placeholderText.classList.add('text-secondary');
-                    }
-                    if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+        const setupDeleteLogic = (type) => {
+            const deleteBtn = row.querySelector(`[data-academic-${type}-document-remove]`);
+            if (deleteBtn) {
+                deleteBtn.onclick = async () => {
+                    const viewWrap = row.querySelector(`[data-academic-${type}-view-container]`);
+                    const attachmentId = viewWrap.getAttribute('data-attachment-id');
                     
-                    showToast('Selection cleared');
-                    return;
-                }
-
-                // Database deletion with confirmation
-                const result = await Swal.fire({
-                    title: 'Are you sure?',
-                    text: "This document will be permanently deleted.",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Yes, delete it!'
-                });
-
-                if (result.isConfirmed) {
-                    try {
-                        const response = await fetch('/admin/employees/delete-attachment', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({ id: attachmentId })
-                        });
-
-                        const res = await response.json();
-                        if (res.success) {
-                            row.querySelector('[data-academic-upload-container]').classList.remove('d-none');
-                            viewWrap.classList.add('d-none');
-                            viewWrap.removeAttribute('data-attachment-id');
-                            row.querySelector('[data-academic-certificate-file]').value = '';
-                            
-                            // Remove from global arrays to prevent it reappearing on refresh
-                            if (window.employeeAttachments) {
-                                window.employeeAttachments = window.employeeAttachments.filter(a => a.id != attachmentId);
-                            }
-                            if (window.editData && window.editData.attachments) {
-                                window.editData.attachments = window.editData.attachments.filter(a => a.id != attachmentId);
-                            }
-
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Deleted',
-                                text: 'Document deleted successfully',
-                                timer: 1500,
-                                showConfirmButton: false
-                            });
-                        } else {
-                            showError(res.message || 'Failed to delete document');
+                    if (!attachmentId) {
+                        row.querySelector(`[data-academic-${type}-upload-container]`).classList.remove('d-none');
+                        viewWrap.classList.add('d-none');
+                        row.querySelector(`[data-academic-${type}-file]`).value = '';
+                        const placeholderText = row.querySelector(`[data-academic-${type}-upload-container] .small`);
+                        const uploadIcon = row.querySelector(`[data-academic-${type}-upload-container] i`);
+                        if (placeholderText) {
+                            placeholderText.textContent = 'No file chosen';
+                            placeholderText.classList.remove('text-primary', 'fw-bold');
+                            placeholderText.classList.add('text-secondary');
                         }
-                    } catch (e) {
-                        showError('Network error during deletion');
+                        if (uploadIcon) uploadIcon.className = 'bi bi-upload';
+                        showToast('Selection cleared');
+                        return;
                     }
-                }
-            };
-        }
-        // File select feedback
-        const fileInput = row.querySelector('[data-academic-certificate-file]');
-        if (fileInput) {
-            fileInput.onchange = (e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                    const filename = e.target.files[0].name;
-                    const placeholderText = row.querySelector('[data-academic-upload-container] .small');
-                    const uploadIcon = row.querySelector('[data-academic-upload-container] i');
-                    
-                    if (placeholderText) {
-                        placeholderText.textContent = filename;
-                        placeholderText.classList.remove('text-secondary');
-                        placeholderText.classList.add('text-primary', 'fw-bold');
+
+                    const result = await Swal.fire({
+                        title: 'Are you sure?',
+                        text: "This document will be permanently deleted.",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    });
+
+                    if (result.isConfirmed) {
+                        try {
+                            const response = await fetch('/admin/employees/delete-attachment', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ id: attachmentId })
+                            });
+
+                            const res = await response.json();
+                            if (res.success) {
+                                row.querySelector(`[data-academic-${type}-upload-container]`).classList.remove('d-none');
+                                viewWrap.classList.add('d-none');
+                                viewWrap.removeAttribute('data-attachment-id');
+                                row.querySelector(`[data-academic-${type}-file]`).value = '';
+                                
+                                if (window.employeeAttachments) {
+                                    window.employeeAttachments = window.employeeAttachments.filter(a => a.id != attachmentId);
+                                }
+                                if (window.editData && window.editData.attachments) {
+                                    window.editData.attachments = window.editData.attachments.filter(a => a.id != attachmentId);
+                                }
+
+                                Swal.fire({
+                                    icon: 'success', title: 'Deleted', text: 'Document deleted successfully', timer: 1500, showConfirmButton: false
+                                });
+                            } else {
+                                showError(res.message || 'Failed to delete document');
+                            }
+                        } catch (e) {
+                            showError('Network error during deletion');
+                        }
                     }
-                    if (uploadIcon) {
-                        uploadIcon.className = 'bi bi-check-circle-fill text-success';
+                };
+            }
+
+            const fileInput = row.querySelector(`[data-academic-${type}-file]`);
+            if (fileInput) {
+                fileInput.onchange = (e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        const filename = e.target.files[0].name;
+                        const placeholderText = row.querySelector(`[data-academic-${type}-upload-container] .small`);
+                        const uploadIcon = row.querySelector(`[data-academic-${type}-upload-container] i`);
+                        
+                        if (placeholderText) {
+                            placeholderText.textContent = filename;
+                            placeholderText.classList.remove('text-secondary');
+                            placeholderText.classList.add('text-primary', 'fw-bold');
+                        }
+                        if (uploadIcon) {
+                            uploadIcon.className = 'bi bi-check-circle-fill text-success';
+                        }
                     }
-                }
-            };
-        }
+                };
+            }
+        };
+
+        setupDeleteLogic('transcript');
+        setupDeleteLogic('degree');
 
         container.appendChild(clone);
         if (data && data.id) {
@@ -5760,23 +5792,37 @@
             const dynamicAttachments = window.employeeAttachments || [];
             const allAttachments = [...staticAttachments, ...dynamicAttachments];
             
-            const targetSubsection = 'academic_' + data.id;
-            const attachments = allAttachments.filter(a => String(a.subsection) === targetSubsection);
+            const transcriptSubsection = 'academic_' + data.id + '_transcript';
+            const degreeSubsection = 'academic_' + data.id + '_degree';
             
-            if (attachments.length > 0) {
-                const uploadWrap = row.querySelector('[data-academic-upload-container]');
-                const viewWrap = row.querySelector('[data-academic-view-container]');
-                const viewLink = row.querySelector('[data-academic-document-link]');
-                const filenameEl = row.querySelector('[data-academic-filename]');
-                
-                if (viewWrap && viewLink) {
-                    const mainAttachment = attachments[0]; 
-                    if (uploadWrap) uploadWrap.classList.add('d-none');
-                    viewWrap.classList.remove('d-none');
-                    viewWrap.setAttribute('data-attachment-id', mainAttachment.id);
-                    viewLink.href = mainAttachment.url || '#';
-                    if (filenameEl) filenameEl.textContent = mainAttachment.file_name || mainAttachment.name || 'certificate';
+            const loadAttachment = (type, subsectionMatch) => {
+                const attachments = allAttachments.filter(a => String(a.subsection) === subsectionMatch);
+                if (attachments.length > 0) {
+                    const uploadWrap = row.querySelector(`[data-academic-${type}-upload-container]`);
+                    const viewWrap = row.querySelector(`[data-academic-${type}-view-container]`);
+                    const viewLink = row.querySelector(`[data-academic-${type}-document-link]`);
+                    const filenameEl = row.querySelector(`[data-academic-${type}-filename]`);
+                    
+                    if (viewWrap && viewLink) {
+                        const mainAttachment = attachments[0]; 
+                        if (uploadWrap) uploadWrap.classList.add('d-none');
+                        viewWrap.classList.remove('d-none');
+                        viewWrap.setAttribute('data-attachment-id', mainAttachment.id);
+                        viewLink.href = mainAttachment.url || '#';
+                        if (filenameEl) filenameEl.textContent = mainAttachment.file_name || mainAttachment.name || type;
+                    }
                 }
+            };
+
+            loadAttachment('transcript', transcriptSubsection);
+            loadAttachment('degree', degreeSubsection);
+
+            // Backwards compatibility for old records that had just 'academic_{id}'
+            const oldSubsection = 'academic_' + data.id;
+            const oldAttachments = allAttachments.filter(a => String(a.subsection) === oldSubsection);
+            if (oldAttachments.length > 0) {
+                // Load them into degree by default to not break UI
+                loadAttachment('degree', oldSubsection);
             }
 
             updateSubsectionPreview(row, 'academic');
@@ -6135,6 +6181,8 @@
             if (data.to_date) row.querySelector('[data-employment-to-date]').value = data.to_date;
             if (data.salary) row.querySelector('[data-employment-salary]').value = data.salary;
             if (data.reason_for_leaving) row.querySelector('[data-employment-reason]').value = data.reason_for_leaving;
+            if (data.hr_contact) row.querySelector('[data-employment-hr-contact]').value = data.hr_contact;
+            if (data.hr_email) row.querySelector('[data-employment-hr-email]').value = data.hr_email;
         }
 
         row.querySelector('[data-employment-save]').onclick = () => saveSubsectionRow('employment', row);
@@ -6297,6 +6345,12 @@
             }
             if (target.matches('[data-employment-reason]')) {
                 return { max: 200, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 200 characters allowed.' };
+            }
+            if (target.matches('[data-employment-hr-contact]')) {
+                return { max: 15, allowed: /[0-9+\-()\s]/, clean: /[^0-9+\-()\s]/g, invalid: 'Use digits, +, -, and parentheses only.', maxMsg: 'Maximum 15 characters allowed.' };
+            }
+            if (target.matches('[data-employment-hr-email]')) {
+                return { max: 100, allowed: /[A-Za-z0-9@._\-]/, clean: /[^A-Za-z0-9@._\-]/g, invalid: 'Use valid email characters only.', maxMsg: 'Maximum 100 characters allowed.' };
             }
             return null;
         };

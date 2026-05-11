@@ -84,8 +84,8 @@
                                 style="height:130px;border:2px dashed rgba(255,255,255,.3);border-radius:10px;cursor:pointer;background:rgba(255,255,255,.07);">
                                 <i class="bi bi-cloud-arrow-up fs-1" style="color:rgba(255,255,255,.4);"></i>
                                 <span class="small" style="color:rgba(255,255,255,.5);">Click to upload (multiple allowed)</span>
-                                <span class="small" style="color:rgba(255,255,255,.5); font-size: 0.75rem;">(Allowed: JPG, PNG, PDF, DOC, DOCX, XLS, XLSX, ZIP, TXT up to 20MB)</span>
-                                <input type="file" id="attachmentUpload" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt"
+                                <span class="small" style="color:rgba(255,255,255,.5); font-size: 0.75rem;">(Allowed: PNG, JPG, JPEG, WEBP, SVG, PDF up to 20MB)</span>
+                                <input type="file" id="attachmentUpload" accept=".png,.jpg,.jpeg,.webp,.svg,.pdf"
                                     class="d-none" multiple onchange="previewAttachmentUpload(this)">
                             </label>
                             <div id="attachmentUploadPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
@@ -110,7 +110,7 @@
     window.employeeAttachments = window.employeeAttachments || [];
     let attachmentUploadedFiles = [];
     let isAttachmentSaving = false;
-    const attachmentAllowedExtensions = new Set(['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xlsx', 'zip', 'xls', 'txt']);
+    const attachmentAllowedExtensions = new Set(['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf']);
     const attachmentMaxFileSizeBytes = 20 * 1024 * 1024;
     
     const escAtt = (str) => {
@@ -174,7 +174,7 @@
         } else {
             const invalidType = files.find((f) => !attachmentAllowedExtensions.has(getAttachmentFileExtension(f.name)));
             if (invalidType) {
-                errors.files = 'Attachment file must be of type: jpg, jpeg, png, pdf, doc, docx, xls, xlsx, zip, or txt.';
+                errors.files = 'Attachment file must be of type: png, jpg, jpeg, webp, svg, or pdf.';
             } else {
                 const oversize = files.find((f) => f.size > attachmentMaxFileSizeBytes);
                 if (oversize) {
@@ -448,6 +448,8 @@
                     'PNG': '#4caf50',
                     'JPG': '#4caf50',
                     'JPEG': '#4caf50',
+                    'WEBP': '#4caf50',
+                    'SVG': '#ff9800',
                     'TXT': '#607d8b'
                 };
                 return colors[ext] || '#9e9e9e';

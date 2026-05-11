@@ -45,9 +45,6 @@
                     const html = `
                         <div class="doc-item d-flex align-items-center justify-content-between p-3 rounded-3 mb-2" data-doc-type="${data.data.name}">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="form-check m-0 p-0 d-flex align-items-center">
-                                    <input class="form-check-input m-0 doc-checkbox" type="checkbox" disabled style="width: 18px; height: 18px;">
-                                </div>
                                 <span class="text-white-50 small fw-semibold doc-name">${data.data.name}</span>
                             </div>
                             <span class="badge status-badge rounded-pill px-3 py-1" style="background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); font-size: 0.65rem;">Pending</span>
@@ -107,8 +104,25 @@
     }
 
     function handleOnPageUpload(files) {
-        console.log('handleOnPageUpload called with', files.length, 'files');
         try {
+            const allowedExts = new Set(['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf']);
+            const invalidFile = Array.from(files).find(f => {
+                const ext = (f.name.split('.').pop() || '').toLowerCase();
+                return !allowedExts.has(ext);
+            });
+
+            if (invalidFile) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid File Type',
+                        text: 'Attachment file must be of type: png, jpg, jpeg, webp, svg, or pdf.',
+                        confirmButtonColor: '#1a237e'
+                    });
+                }
+                return;
+            }
+
             const employeeId = document.getElementById('saved_employee_id')?.value;
             const nameInput = document.getElementById('onPageAttachmentName');
             const typeSelect = document.getElementById('onPageAttachmentType');
@@ -150,6 +164,11 @@
             }
             
             if (typeSelect) typeSelect.classList.remove('is-invalid');
+
+            const uploadIcon = document.getElementById('onPageUploadIcon');
+            const uploadSpinner = document.getElementById('onPageUploadSpinner');
+            if (uploadIcon) uploadIcon.classList.add('d-none');
+            if (uploadSpinner) uploadSpinner.classList.remove('d-none');
 
             const formData = new FormData();
             formData.append('employee_id', employeeId);
@@ -207,11 +226,13 @@
             let data = {};
             try { data = JSON.parse(xhr.responseText); } catch(e) {}
 
+            if (uploadIcon) uploadIcon.classList.remove("d-none");
+            if (uploadSpinner) uploadSpinner.classList.add("d-none");
+
             if (xhr.status >= 200 && xhr.status < 300 && data.success) {
                 // Remove temp and fetch real
                 window.employeeAttachments = window.employeeAttachments.filter(a => a.localId !== tempId);
                 if (window.fetchExistingAttachments) window.fetchExistingAttachments();
-                
                 onPageAttachmentName.value = '';
                 onPageAttachmentType.value = '';
                 if (window.Swal) Swal.fire({ icon: 'success', title: 'Uploaded', text: 'Document uploaded successfully', timer: 1500, showConfirmButton: false });
@@ -223,6 +244,9 @@
         };
 
         xhr.onerror = function() {
+            if (uploadIcon) uploadIcon.classList.remove('d-none');
+            if (uploadSpinner) uploadSpinner.classList.add('d-none');
+            
             window.employeeAttachments = window.employeeAttachments.filter(a => a.localId !== tempId);
             if (window.renderAttachmentListing) window.renderAttachmentListing();
             if (window.Swal) Swal.fire({ icon: 'error', title: 'Error', text: 'Server error during upload' });

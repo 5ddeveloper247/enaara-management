@@ -142,7 +142,7 @@
                                                                             <i class="bi bi-file-earmark-check text-success fs-4"></i>
                                                                         </div>
                                                                         <div>
-                                                                            <h6 class="mb-0 fw-bold">Family Character Certificate</h6>
+                                                                            <h6 class="mb-0 fw-bold">Family Registeration Certificate (FRC)</h6>
                                                                             <p class="small text-muted mb-0">Upload a single document containing character certificates for the family.</p>
                                                                         </div>
                                                                     </div>
@@ -253,19 +253,13 @@
                                                                 data-family-occupation placeholder="Enter occupation">
                                                             <div class="family-field-preview" data-family-preview-occupation>-</div>
                                                         </div>
-                                                        <div class="col-12 d-none" data-family-nok-member-indicator>
-                                                            <div class="small text-success fw-semibold">This member is selected as Next of Kin.</div>
-                                                        </div>
-                                                        <div class="col-12">
-                                                            <hr class="text-secondary opacity-25 my-1">
-                                                        </div>
+                                                      
                                                         <div class="col-12">
                                                             <input type="hidden" name="family[][is_next_of_kin]" value="0" data-family-is-nok-hidden>
                                                             <input type="radio" name="family_nok_selector" class="form-check-input family-nok-selector visually-hidden" title="Mark as Next of Kin" aria-label="Mark as Next of Kin">
                                                         </div>
                                                     <div class="col-12">
-                                                        <div class="row g-2 border rounded p-2 mt-1 bg-white d-none" data-family-nok-fields>
-                                                            <div class="col-12 small text-secondary">NOK identity and contact (required when this member is Next of Kin)</div>
+                                                       <div class="row g-2 d-none" data-family-nok-fields>
                                                             <div class="col-12 col-md-6 col-xl-4">
                                                                 <label class="form-label">NOK CNIC <span class="text-danger">*</span></label>
                                                                 <input type="text" class="form-control family-field-input cnic-mask" name="family[][nok_cnic]"
@@ -429,62 +423,87 @@
                                                             placeholder="Enter university, board, or institute">
                                                         <div class="academic-field-preview" data-academic-preview-institute>-</div>
                                                     </div>
-                                                    <div class="col-12 mt-2 academic-certificate-section">
+                                                    <!-- Transcript Upload -->
+                                                    <div class="col-12 col-md-6 mt-2 academic-transcript-section">
                                                         <div class="d-flex align-items-center gap-2 mb-1 px-1">
                                                             <i class="bi bi-file-earmark-text text-secondary" style="font-size: 0.75rem;"></i>
-                                                            <label class="form-label mb-0 fw-bold text-secondary" style="font-size: 0.75rem;">Degree certificate <span class="text-danger">*</span></label>
+                                                            <label class="form-label mb-0 fw-bold text-secondary" style="font-size: 0.75rem;">Transcript <span class="text-danger">*</span></label>
                                                         </div>
                                                         
-                                                        <div class="academic-files-list d-flex flex-column gap-2 mb-2" data-academic-files-container>
-                                                            <div class="academic-file-view-wrap d-none" data-academic-view-container>
-                                                                <div class="academic-file-item">
+                                                        <div class="academic-files-list d-flex flex-column gap-2 mb-2">
+                                                            <div class="academic-uploaded-file-item d-none" data-academic-transcript-view-container>
+                                                                <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
                                                                     <div class="d-flex align-items-center gap-2 overflow-hidden">
-                                                                        <i class="bi bi-file-earmark-image text-secondary fs-5 flex-shrink-0"></i>
-                                                                        <span class="small text-truncate fw-medium" data-academic-filename style="color: #4b5563;">file.png</span>
+                                                                        <i class="bi bi-file-earmark-check text-success"></i>
+                                                                        <span class="small text-dark text-truncate" data-academic-transcript-filename style="max-width: 150px;">transcript.pdf</span>
+                                                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
                                                                     </div>
-                                                                    <div class="d-flex align-items-center gap-2">
-                                                                        <div class="academic-uploaded-badge">
-                                                                            <i class="bi bi-check2"></i>
-                                                                            <span>Uploaded</span>
-                                                                        </div>
-                                                                        <a href="#" class="btn btn-link btn-sm p-0 text-primary ms-2" data-academic-document-link target="_blank" title="View">
-                                                                            <i class="bi bi-eye"></i>
+                                                                    <div class="d-flex gap-1">
+                                                                        <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-academic-transcript-document-link title="View Document">
+                                                                            <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
                                                                         </a>
-                                                                        <button type="button" class="btn-icon-delete" data-academic-document-remove title="Delete">
-                                                                            <i class="bi bi-trash3"></i>
+                                                                        <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-academic-transcript-document-remove title="Remove Document">
+                                                                            <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
                                                                         </button>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
 
-                                                            <div class="academic-upload-placeholder" data-academic-upload-container onclick="this.querySelector('input').click()">
-                                                                <div class="d-flex align-items-center gap-2 text-secondary">
-                                                                    <i class="bi bi-upload"></i>
-                                                                    <span class="small">No file chosen</span>
-                                                                </div>
-                                                                <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
-                                                                <input type="file" class="d-none academic-field-input" 
-                                                                    name="certificate_file"
-                                                                    data-academic-certificate-file accept=".jpg,.jpeg,.png,.pdf">
+                                                        <div class="academic-upload-placeholder" data-academic-transcript-upload-container onclick="this.querySelector('input').click()">
+                                                            <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                <i class="bi bi-upload"></i>
+                                                                <span class="small">No file chosen</span>
                                                             </div>
+                                                            <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                            <input type="file" class="d-none academic-field-input" 
+                                                                name="transcript_file"
+                                                                data-academic-transcript-file accept=".jpg,.jpeg,.png,.pdf">
+                                                        </div>
+                                                        <div class="academic-field-preview small text-muted fst-italic px-1 d-none" data-academic-transcript-preview-status>
+                                                            Not provided
+                                                        </div>
+                                                    </div>
 
-                                                        <div class="academic-uploaded-file-item mt-2 d-none" data-academic-view-container>
-                                                            <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
-                                                                <div class="d-flex align-items-center gap-2 overflow-hidden">
-                                                                    <i class="bi bi-file-earmark-check text-success"></i>
-                                                                    <span class="small text-dark text-truncate" data-academic-filename style="max-width: 150px;">certificate.pdf</span>
-                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
-                                                                </div>
-                                                                <div class="d-flex gap-1">
-                                                                    <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-academic-document-link title="View Document">
-                                                                        <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
-                                                                    </a>
-                                                                    <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-academic-document-remove title="Remove Document">
-                                                                        <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
-                                                                    </button>
+                                                    <!-- Degree Upload -->
+                                                    <div class="col-12 col-md-6 mt-2 academic-degree-section">
+                                                        <div class="d-flex align-items-center gap-2 mb-1 px-1">
+                                                            <i class="bi bi-file-earmark-text text-secondary" style="font-size: 0.75rem;"></i>
+                                                            <label class="form-label mb-0 fw-bold text-secondary" style="font-size: 0.75rem;">Degree Certificate <span class="text-danger">*</span></label>
+                                                        </div>
+                                                        
+                                                        <div class="academic-files-list d-flex flex-column gap-2 mb-2">
+                                                            <div class="academic-uploaded-file-item d-none" data-academic-degree-view-container>
+                                                                <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
+                                                                    <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                                        <i class="bi bi-file-earmark-check text-success"></i>
+                                                                        <span class="small text-dark text-truncate" data-academic-degree-filename style="max-width: 150px;">degree.pdf</span>
+                                                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                    </div>
+                                                                    <div class="d-flex gap-1">
+                                                                        <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-academic-degree-document-link title="View Document">
+                                                                            <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                        </a>
+                                                                        <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-academic-degree-document-remove title="Remove Document">
+                                                                            <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             </div>
+                                                        </div>
+
+                                                        <div class="academic-upload-placeholder" data-academic-degree-upload-container onclick="this.querySelector('input').click()">
+                                                            <div class="d-flex align-items-center gap-2 text-secondary">
+                                                                <i class="bi bi-upload"></i>
+                                                                <span class="small">No file chosen</span>
+                                                            </div>
+                                                            <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
+                                                            <input type="file" class="d-none academic-field-input" 
+                                                                name="degree_file"
+                                                                data-academic-degree-file accept=".jpg,.jpeg,.png,.pdf">
+                                                        </div>
+                                                        <div class="academic-field-preview small text-muted fst-italic px-1 d-none" data-academic-degree-preview-status>
+                                                            Not provided
                                                         </div>
                                                     </div>
                                                 </div>
@@ -640,7 +659,9 @@
                                                                              from_date: @json(isset($record->from_date) && $record->from_date ? (is_string($record->from_date) ? date('Y-m-d', strtotime($record->from_date)) : $record->from_date->format('Y-m-d')) : ''),
                                                                              to_date: @json(isset($record->to_date) && $record->to_date ? (is_string($record->to_date) ? date('Y-m-d', strtotime($record->to_date)) : $record->to_date->format('Y-m-d')) : ''),
                                                                              salary: @json($record?->salary),
-                                                                             reason_for_leaving: @json($record?->reason_for_leaving)
+                                                                             reason_for_leaving: @json($record?->reason_for_leaving),
+                                                                              hr_contact: @json($record?->hr_contact),
+                                                                              hr_email: @json($record?->hr_email)
                                                                          });
                                                                      }
                                                                  @endforeach
@@ -701,11 +722,23 @@
                                                             data-employment-salary placeholder="Enter salary" maxlength="20" step="1">
                                                         <div class="employment-field-preview" data-employment-preview-salary>-</div>
                                                     </div>
-                                                    <div class="col-12">
+                                                    <div class="col-12 col-md-6">
                                                         <label class="form-label">Reason for Leaving</label>
                                                         <input type="text" class="form-control employment-field-input" name="employments[][reason_for_leaving]"
                                                             data-employment-reason placeholder="Enter reason for leaving" maxlength="200">
                                                         <div class="employment-field-preview" data-employment-preview-reason-for-leaving>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-3">
+                                                        <label class="form-label">HR Contact Number</label>
+                                                        <input type="text" class="form-control employment-field-input" name="employments[][hr_contact]"
+                                                            data-employment-hr-contact placeholder="Enter HR contact" maxlength="15">
+                                                        <div class="employment-field-preview" data-employment-preview-hr-contact>-</div>
+                                                    </div>
+                                                    <div class="col-12 col-md-3">
+                                                        <label class="form-label">HR Email</label>
+                                                        <input type="email" class="form-control employment-field-input" name="employments[][hr_email]"
+                                                            data-employment-hr-email placeholder="Enter HR email" maxlength="100">
+                                                        <div class="employment-field-preview" data-employment-preview-hr-email>-</div>
                                                     </div>
 
                                                     <!-- Employment Documents -->
@@ -779,8 +812,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </template>
+                                            </div></template>
 
                                         <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane6">
                                             <div>
