@@ -1508,7 +1508,7 @@ class EmployeeService
             ->pluck('name', 'id')
             ->toArray();
 
-        return $employees->map(function (Employee $emp) use ($deptRows, $sbuNameById, $requiredDocs) {
+        return $employees->map(function (Employee $emp) use ($deptRows, $sbuNameById) {
             $rawDeptIds = $emp->department_ids;
             if (! is_array($rawDeptIds)) {
                 $rawDeptIds = $rawDeptIds !== null && $rawDeptIds !== '' ? [$rawDeptIds] : [];
@@ -1544,27 +1544,6 @@ class EmployeeService
 
             $photo    = $emp->mediaFiles->where('file_type', 'photo')->first();
             $photoUrl = $photo ? Storage::url($photo->file_path) : null;
-            $attachmentsCount = $emp->mediaFiles->where('file_type', 'attachment')->count();
-
-            // Family Registration Certificate check
-            $hasFrc = $emp->mediaFiles->where('subsection', 'family_certificate')->count() > 0 
-                || $emp->mediaFiles->where('attachment_type', 'Family Character Certificate')->count() > 0 
-                ? 'Yes' : 'No';
-
-            // Academic Documents check
-            $hasAcademic = $emp->mediaFiles->where('subsection', 'academic')->count() > 0 ? 'Yes' : 'No';
-
-            // Certificate Documents check
-            $hasCertificate = $emp->mediaFiles->where('subsection', 'certificate')->count() > 0 ? 'Yes' : 'No';
-
-            // Employment Documents check
-            $hasEmployment = $emp->mediaFiles->where('subsection', 'employment')->count() > 0 ? 'Yes' : 'No';
-
-            // Medical Documents check
-            $hasMedical = $emp->mediaFiles->where('subsection', 'medical')->count() > 0 ? 'Yes' : 'No';
-
-            // Profile Photo check
-            $hasPhoto = $photo ? 'Yes' : 'No';
 
             $departmentLabel = $deptNames !== [] ? implode(', ', $deptNames) : ($emp->department?->name ?? '-');
             $sbuLabel = $emp->sbu?->name ?? ($deptSbuNames[0] ?? '-');
@@ -1730,14 +1709,7 @@ class EmployeeService
                 'ref_name'            => $firstRef?->name ?? '-',
                 'ref_contact'         => $firstRef?->contact_no ?? '-',
 
-                // Attachments
-                'attachments_count'   => $attachmentsCount,
-                'family_certificate'  => $hasFrc,
-                'academic_docs'       => $hasAcademic,
-                'certificate_docs'    => $hasCertificate,
-                'employment_docs'     => $hasEmployment,
-                'medical_docs'        => $hasMedical,
-                'profile_photo'       => $hasPhoto,
+                'profile_photo'       => $photo ? 'Yes' : 'No',
                 'is_active'           => (bool) $emp->is_active,
             ];
 

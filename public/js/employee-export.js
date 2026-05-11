@@ -85,15 +85,8 @@
         /* 81 */ { header: 'Chronic Disease',        key: 'has_chronic_disease' },
         /* 82 */ { header: 'Reference Name',         key: 'ref_name' },
         /* 83 */ { header: 'Reference Contact',      key: 'ref_contact' },
-        /* 84 */ { header: 'Total Attachments',      key: 'attachments_count' },
-        /* 85 */ { header: 'Family Registration Certificate', key: 'family_certificate' },
-        /* 86 */ { header: 'Academic Documents', key: 'academic_docs' },
-        /* 87 */ { header: 'Certificate Documents', key: 'certificate_docs' },
-        /* 88 */ { header: 'Employment Documents', key: 'employment_docs' },
-        /* 89 */ { header: 'Medical Documents', key: 'medical_docs' },
-        /* 90 */ { header: 'Profile Photo', key: 'profile_photo' },
-        /* 91 */ { header: 'Employment Type',        key: 'employment_type' },
-        /* 92 */ { header: 'Employee Type',          key: 'employee_type' }
+        /* 84 */ { header: 'Employment Type',        key: 'employment_type' },
+        /* 85 */ { header: 'Employee Type',          key: 'employee_type' }
     ];
 
     var OUTSOURCED_COLUMNS = [
@@ -110,13 +103,7 @@
         { header: 'Placement (Floor)', key: 'placement_floor' },
         { header: 'Date of Deployment', key: 'date_of_deployment' },
         { header: 'Biometric ID', key: 'biometric_id' },
-        { header: 'Attendance Access', key: 'attendance_access' },
-        { header: 'Family Registration Certificate', key: 'family_certificate' },
-        { header: 'Academic Documents', key: 'academic_docs' },
-        { header: 'Certificate Documents', key: 'certificate_docs' },
-        { header: 'Employment Documents', key: 'employment_docs' },
-        { header: 'Medical Documents', key: 'medical_docs' },
-        { header: 'Profile Photo', key: 'profile_photo' }
+        { header: 'Attendance Access', key: 'attendance_access' }
     ];
 
     function normalizeValue(value, fallback) {
