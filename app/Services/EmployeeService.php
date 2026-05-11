@@ -1511,7 +1511,7 @@ class EmployeeService
             ->pluck('name', 'id')
             ->toArray();
 
-        return $employees->map(function (Employee $emp) use ($deptRows, $sbuNameById) {
+        return $employees->map(function (Employee $emp) use ($deptRows, $sbuNameById, $requiredDocs) {
             $rawDeptIds = $emp->department_ids;
             if (! is_array($rawDeptIds)) {
                 $rawDeptIds = $rawDeptIds !== null && $rawDeptIds !== '' ? [$rawDeptIds] : [];
