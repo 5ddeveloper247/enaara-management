@@ -15,7 +15,6 @@ use App\Models\EmployeeExEmployment;
 use App\Models\EmployeeMedical;
 use App\Models\EmployeeReference;
 use App\Models\MediaFile;
-use App\Models\RequiredDocumentType;
 use App\Models\Department;
 use App\Models\Organization;
 use App\Models\Sbu;
@@ -33,7 +32,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -1426,15 +1424,6 @@ class EmployeeService
             ])
             ->orderByDesc('id');
 
-        $requiredDocs = [];
-        try {
-            if (Schema::hasTable('required_document_types')) {
-                $requiredDocs = RequiredDocumentType::where('status', true)->get();
-            }
-        } catch (\Exception $e) {
-            Log::warning('Could not fetch required_document_types: ' . $e->getMessage());
-        }
-
         $type = $filters['filter_employee_type'] ?? null;
         if (!empty($type)) {
             if ($type === 'Third-party') {
@@ -1561,15 +1550,6 @@ class EmployeeService
             $hasFrc = $emp->mediaFiles->where('subsection', 'family_certificate')->count() > 0 
                 || $emp->mediaFiles->where('attachment_type', 'Family Character Certificate')->count() > 0 
                 ? 'Yes' : 'No';
-
-            // Dynamic Required Documents check
-            $dynamicDocStatuses = [];
-            foreach ($requiredDocs as $docType) {
-                $hasDoc = $emp->mediaFiles->where('file_type', 'attachment')
-                    ->where('attachment_type', $docType->name)
-                    ->count() > 0 ? 'Yes' : 'No';
-                $dynamicDocStatuses['req_doc_' . $docType->id] = $hasDoc;
-            }
 
             // Academic Documents check
             $hasAcademic = $emp->mediaFiles->where('subsection', 'academic')->count() > 0 ? 'Yes' : 'No';
@@ -1761,21 +1741,8 @@ class EmployeeService
                 'is_active'           => (bool) $emp->is_active,
             ];
 
-            // Merge dynamic document statuses
-            foreach ($dynamicDocStatuses as $key => $status) {
-                $mapped[$key] = $status;
-            }
-
             return $mapped;
         })->values()->all();
-
-        return [
-            'data' => $employees,
-            'required_docs' => collect($requiredDocs)->map(fn($doc) => [
-                'id' => $doc->id,
-                'name' => $doc->name
-            ])->all()
-        ];
     }
 
     public function getStats(): array

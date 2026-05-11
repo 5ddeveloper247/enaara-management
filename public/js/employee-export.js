@@ -312,29 +312,13 @@
                 }
 
                 var rows = res.data;
-                var dynamicDocs = res.required_docs || [];
-                
-                // Use a copy of columns to avoid persistent pollution
-                var currentCols = config.columns.slice();
-                
-                // Dynamically add columns for each required document type
-                dynamicDocs.forEach(function (doc) {
-                    currentCols.push({
-                        header: doc.name,
-                        key: 'req_doc_' + doc.id
-                    });
-                });
-
-                // Update config with the expanded column list
-                var activeConfig = Object.assign({}, config, { columns: currentCols });
-
                 var count = rows.length;
-                askConfirmation(activeConfig.confirmText(count), function () {
+                askConfirmation(config.confirmText(count), function () {
                     try {
-                        exportToExcel(mode, rows, activeConfig);
-                        showSuccess(activeConfig.successText(count));
+                        exportToExcel(mode, rows, config);
+                        showSuccess(config.successText(count));
                     } catch (error) {
-                        showError(error && error.message ? error.message : activeConfig.failText);
+                        showError(error && error.message ? error.message : config.failText);
                     }
                 });
             }).fail(function () {
