@@ -229,7 +229,8 @@
 
         .academic-record-row.preview-mode .form-label,
         .certificate-record-row.preview-mode .form-label,
-        .employment-record-row.preview-mode .form-label {
+        .employment-record-row.preview-mode .form-label,
+        .medical-record-row.preview-mode .form-label {
             display: none !important;
         }
 
@@ -249,13 +250,17 @@
 
         .academic-record-row.preview-mode .academic-field-input,
         .certificate-record-row.preview-mode .certificate-field-input,
-        .employment-record-row.preview-mode .employment-field-input {
+        .employment-record-row.preview-mode .employment-field-input,
+        .medical-record-row.preview-mode .form-control,
+        .medical-record-row.preview-mode .form-select,
+        .medical-record-row.preview-mode .btn-check + label {
             display: none;
         }
 
         .academic-record-row.preview-mode .academic-field-preview,
         .certificate-record-row.preview-mode .certificate-field-preview,
-        .employment-record-row.preview-mode .employment-field-preview {
+        .employment-record-row.preview-mode .employment-field-preview,
+        .medical-record-row.preview-mode .academic-field-preview {
             display: flex;
         }
 
@@ -780,13 +785,15 @@
         /* In preview mode, academic-field-preview elements show */
         .academic-record-row.preview-mode .academic-not-provided,
         .certificate-record-row.preview-mode .academic-not-provided,
-        .employment-record-row.preview-mode .academic-not-provided {
+        .employment-record-row.preview-mode .academic-not-provided,
+        .medical-record-row.preview-mode .academic-not-provided {
             display: flex !important;
         }
         /* But hide those with d-none (meaning file is present) */
         .academic-record-row.preview-mode .academic-not-provided.d-none,
         .certificate-record-row.preview-mode .academic-not-provided.d-none,
-        .employment-record-row.preview-mode .academic-not-provided.d-none {
+        .employment-record-row.preview-mode .academic-not-provided.d-none,
+        .medical-record-row.preview-mode .academic-not-provided.d-none {
             display: none !important;
         }
 
@@ -799,7 +806,10 @@
         .certificate-record-row.preview-mode .academic-doc-view-btn,
         .employment-record-row.preview-mode .academic-upload-placeholder,
         .employment-record-row.preview-mode .academic-doc-delete-btn,
-        .employment-record-row.preview-mode .academic-doc-view-btn {
+        .employment-record-row.preview-mode .academic-doc-view-btn,
+        .medical-record-row.preview-mode .academic-upload-placeholder,
+        .medical-record-row.preview-mode .academic-doc-delete-btn,
+        .medical-record-row.preview-mode .academic-doc-view-btn {
             display: none !important;
         }
 

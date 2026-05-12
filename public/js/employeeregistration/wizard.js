@@ -2647,6 +2647,14 @@
             errors.chronic_disease_description = ['Chronic disease description must not exceed 1000 characters.'];
         }
 
+        // Medical report is optional
+        const medicalInput = document.getElementById('moreMedicalFileInput');
+        const medicalView = document.getElementById('moreMedicalViewContainer');
+        const isMedicalSelected = medicalInput && medicalInput.files.length > 0;
+        const isMedicalExisting = medicalView && !medicalView.classList.contains('d-none');
+        
+        // Removed mandatory check for medical_file
+
         if (Object.keys(errors).length > 0) {
             showFieldErrors(errors, pane);
             return false;
@@ -2824,7 +2832,12 @@
                         const viewContainer = document.getElementById('moreMedicalViewContainer');
                         const viewLink = document.getElementById('moreMedicalDocumentLink');
                         const filenameEl = document.getElementById('moreMedicalFilename');
-                        if (viewLink) viewLink.href = res.attachment_url;
+                        if (viewLink) {
+                            viewLink.href = res.attachment_url;
+                            viewLink.style.pointerEvents = '';
+                            viewLink.style.opacity = '';
+                            viewLink.title = 'View';
+                        }
                         if (filenameEl) filenameEl.textContent = fileInput.files[0].name;
                         if (viewContainer) {
                             viewContainer.classList.remove('d-none');
@@ -4888,6 +4901,19 @@
                 salaryPreview.classList.toggle('d-none', hasSalary);
             }
         }
+
+        // Special preview for medical document
+        if (type === 'medical') {
+            const medicalView = document.getElementById('moreMedicalViewContainer');
+            const medicalFile = document.getElementById('moreMedicalFileInput');
+            const medicalPreview = document.getElementById('moreMedicalPreviewStatus');
+
+            if (medicalPreview) {
+                const hasMedical = (medicalView && !medicalView.classList.contains('d-none')) || 
+                                  (medicalFile && medicalFile.files.length > 0);
+                medicalPreview.classList.toggle('d-none', hasMedical);
+            }
+        }
     }
 
     async function saveSubsectionRow(type, rowElement, options = {}) {
@@ -6702,16 +6728,26 @@ document.addEventListener('change', function(e) {
     if (e.target && e.target.id === 'moreMedicalFileInput') {
         const fileInput = e.target;
         const uploadContainer = document.getElementById('moreMedicalUploadContainer');
+        const viewContainer = document.getElementById('moreMedicalViewContainer');
+        const filenameEl = document.getElementById('moreMedicalFilename');
+        const viewLink = document.getElementById('moreMedicalDocumentLink');
+
         if (fileInput.files && fileInput.files.length > 0) {
             const filename = fileInput.files[0].name;
-            const placeholderText = uploadContainer ? uploadContainer.querySelector('.small') : null;
-            const uploadIcon = uploadContainer ? uploadContainer.querySelector('i') : null;
-            if (placeholderText) {
-                placeholderText.textContent = filename;
-                placeholderText.classList.remove('text-secondary');
-                placeholderText.classList.add('text-primary', 'fw-bold');
+            if (filenameEl) filenameEl.textContent = filename;
+            if (uploadContainer) uploadContainer.classList.add('d-none');
+            if (viewContainer) {
+                viewContainer.classList.remove('d-none');
+                viewContainer.removeAttribute('data-attachment-id');
             }
-            if (uploadIcon) uploadIcon.className = 'bi bi-check-circle-fill text-success';
+            
+            // Disable view link since file is not yet uploaded to server
+            if (viewLink) {
+                viewLink.removeAttribute('href');
+                viewLink.style.pointerEvents = 'none';
+                viewLink.style.opacity = '0.45';
+                viewLink.title = 'Save information to view';
+            }
         }
     }
 });
@@ -6732,17 +6768,7 @@ document.addEventListener('change', function(e) {
             // No saved attachment, just reset the upload UI
             if (uploadContainer) uploadContainer.classList.remove('d-none');
             if (viewContainer) viewContainer.classList.add('d-none');
-            if (fileInput) {
-                fileInput.value = '';
-                const placeholderText = uploadContainer ? uploadContainer.querySelector('.small') : null;
-                const uploadIcon = uploadContainer ? uploadContainer.querySelector('i') : null;
-                if (placeholderText) {
-                    placeholderText.textContent = 'No file chosen';
-                    placeholderText.classList.remove('text-primary', 'fw-bold');
-                    placeholderText.classList.add('text-secondary');
-                }
-                if (uploadIcon) uploadIcon.className = 'bi bi-upload';
-            }
+            if (fileInput) fileInput.value = '';
             if (typeof showToast === 'function') showToast('Selection cleared');
             return;
         }
@@ -6822,7 +6848,11 @@ document.addEventListener('change', function(e) {
         if (uploadContainer) uploadContainer.classList.add('d-none');
         viewContainer.classList.remove('d-none');
         viewContainer.setAttribute('data-attachment-id', medicalAttachment.id);
-        if (viewLink) viewLink.href = medicalAttachment.url || '#';
+        if (viewLink) {
+            viewLink.href = medicalAttachment.url || '#';
+            viewLink.style.pointerEvents = '';
+            viewLink.style.opacity = '';
+        }
         if (filenameEl) filenameEl.textContent = medicalAttachment.file_name || medicalAttachment.name || 'Medical Report';
     }
 

@@ -880,7 +880,7 @@
                                         <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane6">
                                             <div>
                                                 <div class="fw-bold text-uppercase small mb-3">Medical</div>
-                                                <div class="card border-0 bg-light">
+                                                <div class="card border-0 bg-light medical-record-row">
                                                     <div class="card-body p-3">
                                                         @php
                                                             $hasChronicValMedical = strtolower((string) ($employee?->medical?->has_chronic_disease ?? ''));
@@ -975,33 +975,49 @@
                                                             <div class="col-12 mt-3 academic-certificate-section">
                                                                 <div class="row g-2">
                                                                     <div class="col-12">
-                                                                        <label class="form-label small text-secondary fw-bold mb-1">Medical Report / Fitness Certificate</label>
-                                                                        <div class="academic-upload-placeholder" id="moreMedicalUploadContainer" onclick="document.getElementById('moreMedicalFileInput').click()">
-                                                                            <div class="d-flex align-items-center gap-2 text-secondary">
-                                                                                <i class="bi bi-upload"></i>
-                                                                                <span class="small">No file chosen</span>
+                                                                        <div class="academic-doc-card">
+                                                                            <div class="academic-doc-header">
+                                                                                <i class="bi bi-file-earmark-medical"></i>
+                                                                                <span>Medical Report / Fitness Certificate (Optional)</span>
                                                                             </div>
-                                                                            <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
-                                                                            <input type="file" class="d-none" 
-                                                                                name="medical_file"
-                                                                                id="moreMedicalFileInput" accept=".jpg,.jpeg,.png,.pdf">
-                                                                        </div>
 
-                                                                        <div class="academic-uploaded-file-item mt-2 d-none" id="moreMedicalViewContainer">
-                                                                            <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
-                                                                                <div class="d-flex align-items-center gap-2 overflow-hidden">
-                                                                                    <i class="bi bi-file-earmark-medical text-success"></i>
-                                                                                    <span class="small text-dark text-truncate" id="moreMedicalFilename" style="max-width: 250px;">Report.pdf</span>
-                                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                            {{-- Upload zone --}}
+                                                                            <div class="academic-upload-placeholder" id="moreMedicalUploadContainer" onclick="document.getElementById('moreMedicalFileInput').click()">
+                                                                                <div class="d-flex align-items-center gap-2">
+                                                                                    <div class="academic-upload-icon-wrap">
+                                                                                        <i class="bi bi-cloud-arrow-up"></i>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <div class="academic-upload-label">Click to upload</div>
+                                                                                        <div class="academic-upload-types">JPG &bull; PNG &bull; PDF &bull; Max 20 MB</div>
+                                                                                    </div>
                                                                                 </div>
-                                                                                <div class="d-flex gap-1">
-                                                                                    <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" id="moreMedicalDocumentLink" title="View Document">
-                                                                                        <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                                <input type="file" class="d-none" 
+                                                                                    name="medical_file"
+                                                                                    id="moreMedicalFileInput" accept=".jpg,.jpeg,.png,.pdf">
+                                                                            </div>
+
+                                                                            {{-- File badge --}}
+                                                                            <div class="academic-file-badge d-none" id="moreMedicalViewContainer">
+                                                                                <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1">
+                                                                                    <i class="bi bi-file-earmark-check text-success flex-shrink-0" style="font-size: 1rem;"></i>
+                                                                                    <span class="small fw-semibold text-dark text-truncate" id="moreMedicalFilename" style="max-width: 250px;">Report.pdf</span>
+                                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle flex-shrink-0" style="font-size: 0.6rem;">Uploaded</span>
+                                                                                </div>
+                                                                                <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                                                    <a href="#" target="_blank" class="btn btn-sm btn-outline-primary academic-doc-view-btn" id="moreMedicalDocumentLink" title="View">
+                                                                                        <i class="bi bi-eye"></i>
                                                                                     </a>
-                                                                                    <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" id="moreMedicalDocumentRemove" title="Remove Document">
-                                                                                        <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                                    <button type="button" class="btn btn-sm btn-outline-danger academic-doc-delete-btn" id="moreMedicalDocumentRemove" title="Remove">
+                                                                                        <i class="bi bi-trash"></i>
                                                                                     </button>
                                                                                 </div>
+                                                                            </div>
+
+                                                                            {{-- Not-provided --}}
+                                                                            <div class="academic-field-preview academic-not-provided d-none" id="moreMedicalPreviewStatus">
+                                                                                <i class="bi bi-dash-circle me-1 text-muted" style="font-size: 0.75rem;"></i>
+                                                                                <span>Not provided</span>
                                                                             </div>
                                                                         </div>
                                                                     </div>
