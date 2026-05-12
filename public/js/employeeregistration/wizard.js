@@ -4923,7 +4923,14 @@
 
         const rowErrors = validateMoreRowData(type, validationData, rowElement);
         if (Object.keys(rowErrors).length > 0) {
-            showFieldErrors(rowErrors, rowElement);
+            // Handle _doc_required as a toast since there is no direct input field element
+            if (rowErrors._doc_required) {
+                showError(rowErrors._doc_required[0], 'Document Required');
+                delete rowErrors._doc_required;
+            }
+            if (Object.keys(rowErrors).length > 0) {
+                showFieldErrors(rowErrors, rowElement);
+            }
             saveBtn.disabled = false;
             saveBtn.innerHTML = originalHtml;
             return false;
@@ -4960,7 +4967,12 @@
                             const viewWrap = rowElement.querySelector('[data-academic-transcript-view-container]');
                             const viewLink = rowElement.querySelector('[data-academic-transcript-document-link]');
                             const filenameEl = rowElement.querySelector('[data-academic-transcript-filename]');
-                            if (viewLink) viewLink.href = res.transcript_url;
+                            if (viewLink) {
+                                viewLink.href = res.transcript_url;
+                                viewLink.style.pointerEvents = '';
+                                viewLink.style.opacity = '';
+                                viewLink.title = 'View';
+                            }
                             if (filenameEl) filenameEl.textContent = transcriptInput.files[0].name;
                             if (viewWrap) {
                                 viewWrap.classList.remove('d-none');
@@ -4977,7 +4989,12 @@
                             const viewWrap = rowElement.querySelector('[data-academic-degree-view-container]');
                             const viewLink = rowElement.querySelector('[data-academic-degree-document-link]');
                             const filenameEl = rowElement.querySelector('[data-academic-degree-filename]');
-                            if (viewLink) viewLink.href = res.degree_url;
+                            if (viewLink) {
+                                viewLink.href = res.degree_url;
+                                viewLink.style.pointerEvents = '';
+                                viewLink.style.opacity = '';
+                                viewLink.title = 'View';
+                            }
                             if (filenameEl) filenameEl.textContent = degreeInput.files[0].name;
                             if (viewWrap) {
                                 viewWrap.classList.remove('d-none');
@@ -5166,7 +5183,7 @@
             const isDegreeExisting = degreeView && !degreeView.classList.contains('d-none');
             
             if (!isTranscriptSelected && !isTranscriptExisting && !isDegreeSelected && !isDegreeExisting) {
-                addErr('degree_file', 'Either Transcript or Degree certificate is mandatory.');
+                addErr('_doc_required', 'Please upload at least one document: Transcript or Degree Certificate.');
             }
         }
 
@@ -5697,17 +5714,10 @@
                     const attachmentId = viewWrap.getAttribute('data-attachment-id');
                     
                     if (!attachmentId) {
+                        // Unsaved file selection — just reset to the upload zone
                         row.querySelector(`[data-academic-${type}-upload-container]`).classList.remove('d-none');
                         viewWrap.classList.add('d-none');
                         row.querySelector(`[data-academic-${type}-file]`).value = '';
-                        const placeholderText = row.querySelector(`[data-academic-${type}-upload-container] .small`);
-                        const uploadIcon = row.querySelector(`[data-academic-${type}-upload-container] i`);
-                        if (placeholderText) {
-                            placeholderText.textContent = 'No file chosen';
-                            placeholderText.classList.remove('text-primary', 'fw-bold');
-                            placeholderText.classList.add('text-secondary');
-                        }
-                        if (uploadIcon) uploadIcon.className = 'bi bi-upload';
                         showToast('Selection cleared');
                         return;
                     }
@@ -5765,17 +5775,34 @@
             if (fileInput) {
                 fileInput.onchange = (e) => {
                     if (e.target.files && e.target.files.length > 0) {
-                        const filename = e.target.files[0].name;
-                        const placeholderText = row.querySelector(`[data-academic-${type}-upload-container] .small`);
-                        const uploadIcon = row.querySelector(`[data-academic-${type}-upload-container] i`);
-                        
-                        if (placeholderText) {
-                            placeholderText.textContent = filename;
-                            placeholderText.classList.remove('text-secondary');
-                            placeholderText.classList.add('text-primary', 'fw-bold');
+                        const file = e.target.files[0];
+
+                        // Client-side file size validation (20 MB max)
+                        if (file.size > 20 * 1024 * 1024) {
+                            showToast('File size must not exceed 20 MB. Please choose a smaller file.', 'warning');
+                            e.target.value = '';
+                            return;
                         }
-                        if (uploadIcon) {
-                            uploadIcon.className = 'bi bi-check-circle-fill text-success';
+
+                        const uploadContainer = row.querySelector(`[data-academic-${type}-upload-container]`);
+                        const viewContainer = row.querySelector(`[data-academic-${type}-view-container]`);
+                        const filenameEl = row.querySelector(`[data-academic-${type}-filename]`);
+                        const viewLink = row.querySelector(`[data-academic-${type}-document-link]`);
+
+                        // Hide upload zone, show file badge
+                        if (uploadContainer) uploadContainer.classList.add('d-none');
+                        if (viewContainer) {
+                            viewContainer.classList.remove('d-none');
+                            // Clear any saved attachment ID — this is a new (unsaved) selection
+                            viewContainer.removeAttribute('data-attachment-id');
+                        }
+                        if (filenameEl) filenameEl.textContent = file.name;
+                        // Disable view link since file is not yet uploaded to server
+                        if (viewLink) {
+                            viewLink.removeAttribute('href');
+                            viewLink.style.pointerEvents = 'none';
+                            viewLink.style.opacity = '0.45';
+                            viewLink.title = 'Save record to view';
                         }
                     }
                 };

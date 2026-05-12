@@ -305,6 +305,7 @@
                                                                              start_date: @json(isset($record->start_date) && $record->start_date ? (is_string($record->start_date) ? date('Y-m-d', strtotime($record->start_date)) : $record->start_date->format('Y-m-d')) : ''),
                                                                              end_date: @json(isset($record->end_date) && $record->end_date ? (is_string($record->end_date) ? date('Y-m-d', strtotime($record->end_date)) : $record->end_date->format('Y-m-d')) : ''),
                                                                              fieldOfStudy: @json($record?->field_of_study),
+                                                                             field_of_study: @json($record?->field_of_study),
                                                                              institute: @json($record?->institute)
                                                                          });
                                                                  @endforeach
@@ -425,85 +426,101 @@
                                                     </div>
                                                     <!-- Transcript Upload -->
                                                     <div class="col-12 col-md-6 mt-2 academic-transcript-section">
-                                                        <div class="d-flex align-items-center gap-2 mb-1 px-1">
-                                                            <i class="bi bi-file-earmark-text text-secondary" style="font-size: 0.75rem;"></i>
-                                                            <label class="form-label mb-0 fw-bold text-secondary" style="font-size: 0.75rem;">Transcript <span class="text-danger">*</span></label>
-                                                        </div>
-                                                        
-                                                        <div class="academic-files-list d-flex flex-column gap-2 mb-2">
-                                                            <div class="academic-uploaded-file-item d-none" data-academic-transcript-view-container>
-                                                                <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
-                                                                    <div class="d-flex align-items-center gap-2 overflow-hidden">
-                                                                        <i class="bi bi-file-earmark-check text-success"></i>
-                                                                        <span class="small text-dark text-truncate" data-academic-transcript-filename style="max-width: 150px;">transcript.pdf</span>
-                                                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                        <div class="academic-doc-card">
+                                                            <div class="academic-doc-header">
+                                                                <i class="bi bi-file-earmark-text"></i>
+                                                                <span>Transcript</span>
+                                                                <span class="text-danger ms-1">*</span>
+                                                            </div>
+
+                                                            {{-- Upload zone (shown when no file selected/saved) --}}
+                                                            <div class="academic-upload-placeholder" data-academic-transcript-upload-container onclick="this.querySelector('[data-academic-transcript-file]').click()">
+                                                                <div class="d-flex align-items-center gap-2">
+                                                                    <div class="academic-upload-icon-wrap">
+                                                                        <i class="bi bi-cloud-arrow-up"></i>
                                                                     </div>
-                                                                    <div class="d-flex gap-1">
-                                                                        <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-academic-transcript-document-link title="View Document">
-                                                                            <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
-                                                                        </a>
-                                                                        <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-academic-transcript-document-remove title="Remove Document">
-                                                                            <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
-                                                                        </button>
+                                                                    <div>
+                                                                        <div class="academic-upload-label">Click to upload</div>
+                                                                        <div class="academic-upload-types">JPG &bull; PNG &bull; PDF &bull; Max 20 MB</div>
                                                                     </div>
                                                                 </div>
+                                                                <input type="file" class="d-none academic-field-input"
+                                                                    name="transcript_file"
+                                                                    data-academic-transcript-file accept=".jpg,.jpeg,.png,.pdf">
                                                             </div>
-                                                        </div>
 
-                                                        <div class="academic-upload-placeholder" data-academic-transcript-upload-container onclick="this.querySelector('input').click()">
-                                                            <div class="d-flex align-items-center gap-2 text-secondary">
-                                                                <i class="bi bi-upload"></i>
-                                                                <span class="small">No file chosen</span>
+                                                            {{-- File badge (shown when file selected or saved) --}}
+                                                            <div class="academic-file-badge d-none" data-academic-transcript-view-container>
+                                                                <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1">
+                                                                    <i class="bi bi-file-earmark-check text-success flex-shrink-0" style="font-size: 1rem;"></i>
+                                                                    <span class="small fw-semibold text-dark text-truncate" data-academic-transcript-filename style="max-width: 160px;">transcript.pdf</span>
+                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle flex-shrink-0" style="font-size: 0.6rem;">Uploaded</span>
+                                                                </div>
+                                                                <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                                    <a href="#" target="_blank" class="btn btn-sm btn-outline-primary academic-doc-view-btn" data-academic-transcript-document-link title="View">
+                                                                        <i class="bi bi-eye"></i>
+                                                                    </a>
+                                                                    <button type="button" class="btn btn-sm btn-outline-danger academic-doc-delete-btn" data-academic-transcript-document-remove title="Remove">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                            <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
-                                                            <input type="file" class="d-none academic-field-input" 
-                                                                name="transcript_file"
-                                                                data-academic-transcript-file accept=".jpg,.jpeg,.png,.pdf">
-                                                        </div>
-                                                        <div class="academic-field-preview small text-muted fst-italic px-1 d-none" data-academic-transcript-preview-status>
-                                                            Not provided
+
+                                                            {{-- Not-provided (shown in preview mode only when no file) --}}
+                                                            <div class="academic-field-preview academic-not-provided d-none" data-academic-transcript-preview-status>
+                                                                <i class="bi bi-dash-circle me-1 text-muted" style="font-size: 0.75rem;"></i>
+                                                                <span>Not provided</span>
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    <!-- Degree Upload -->
+                                                    <!-- Degree Certificate Upload -->
                                                     <div class="col-12 col-md-6 mt-2 academic-degree-section">
-                                                        <div class="d-flex align-items-center gap-2 mb-1 px-1">
-                                                            <i class="bi bi-file-earmark-text text-secondary" style="font-size: 0.75rem;"></i>
-                                                            <label class="form-label mb-0 fw-bold text-secondary" style="font-size: 0.75rem;">Degree Certificate <span class="text-danger">*</span></label>
-                                                        </div>
-                                                        
-                                                        <div class="academic-files-list d-flex flex-column gap-2 mb-2">
-                                                            <div class="academic-uploaded-file-item d-none" data-academic-degree-view-container>
-                                                                <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
-                                                                    <div class="d-flex align-items-center gap-2 overflow-hidden">
-                                                                        <i class="bi bi-file-earmark-check text-success"></i>
-                                                                        <span class="small text-dark text-truncate" data-academic-degree-filename style="max-width: 150px;">degree.pdf</span>
-                                                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                        <div class="academic-doc-card">
+                                                            <div class="academic-doc-header">
+                                                                <i class="bi bi-file-earmark-diploma"></i>
+                                                                <span>Degree Certificate</span>
+                                                                <span class="text-danger ms-1">*</span>
+                                                            </div>
+
+                                                            {{-- Upload zone --}}
+                                                            <div class="academic-upload-placeholder" data-academic-degree-upload-container onclick="this.querySelector('[data-academic-degree-file]').click()">
+                                                                <div class="d-flex align-items-center gap-2">
+                                                                    <div class="academic-upload-icon-wrap">
+                                                                        <i class="bi bi-cloud-arrow-up"></i>
                                                                     </div>
-                                                                    <div class="d-flex gap-1">
-                                                                        <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-academic-degree-document-link title="View Document">
-                                                                            <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
-                                                                        </a>
-                                                                        <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-academic-degree-document-remove title="Remove Document">
-                                                                            <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
-                                                                        </button>
+                                                                    <div>
+                                                                        <div class="academic-upload-label">Click to upload</div>
+                                                                        <div class="academic-upload-types">JPG &bull; PNG &bull; PDF &bull; Max 20 MB</div>
                                                                     </div>
                                                                 </div>
+                                                                <input type="file" class="d-none academic-field-input"
+                                                                    name="degree_file"
+                                                                    data-academic-degree-file accept=".jpg,.jpeg,.png,.pdf">
                                                             </div>
-                                                        </div>
 
-                                                        <div class="academic-upload-placeholder" data-academic-degree-upload-container onclick="this.querySelector('input').click()">
-                                                            <div class="d-flex align-items-center gap-2 text-secondary">
-                                                                <i class="bi bi-upload"></i>
-                                                                <span class="small">No file chosen</span>
+                                                            {{-- File badge --}}
+                                                            <div class="academic-file-badge d-none" data-academic-degree-view-container>
+                                                                <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1">
+                                                                    <i class="bi bi-file-earmark-check text-success flex-shrink-0" style="font-size: 1rem;"></i>
+                                                                    <span class="small fw-semibold text-dark text-truncate" data-academic-degree-filename style="max-width: 160px;">degree.pdf</span>
+                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle flex-shrink-0" style="font-size: 0.6rem;">Uploaded</span>
+                                                                </div>
+                                                                <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                                    <a href="#" target="_blank" class="btn btn-sm btn-outline-primary academic-doc-view-btn" data-academic-degree-document-link title="View">
+                                                                        <i class="bi bi-eye"></i>
+                                                                    </a>
+                                                                    <button type="button" class="btn btn-sm btn-outline-danger academic-doc-delete-btn" data-academic-degree-document-remove title="Remove">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                            <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
-                                                            <input type="file" class="d-none academic-field-input" 
-                                                                name="degree_file"
-                                                                data-academic-degree-file accept=".jpg,.jpeg,.png,.pdf">
-                                                        </div>
-                                                        <div class="academic-field-preview small text-muted fst-italic px-1 d-none" data-academic-degree-preview-status>
-                                                            Not provided
+
+                                                            {{-- Not-provided --}}
+                                                            <div class="academic-field-preview academic-not-provided d-none" data-academic-degree-preview-status>
+                                                                <i class="bi bi-dash-circle me-1 text-muted" style="font-size: 0.75rem;"></i>
+                                                                <span>Not provided</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>

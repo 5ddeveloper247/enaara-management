@@ -649,53 +649,134 @@
         /* Academic Certificate Section Enhancements */
         .academic-transcript-section,
         .academic-degree-section {
-            margin-top: 1rem;
+            margin-top: 0.75rem;
         }
-        
-        .academic-upload-placeholder {
-            border: 1.2px dashed #d1d5db;
-            border-radius: 0.75rem;
-            padding: 0.65rem 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            transition: all 0.2s ease;
+
+        /* Doc card wrapper */
+        .academic-doc-card {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 0.85rem;
             background: #fff;
-        }
-        
-        .academic-upload-placeholder:hover {
-            border-color: #6366f1;
-            background: #f8fafc;
+            overflow: hidden;
         }
 
-        .academic-file-item {
-            background: #f7f7ee; /* Light yellowish/greenish tint from screenshot */
-            border: 1px solid #e9e9d5;
-            padding: 0.65rem 1rem;
-            border-radius: 0.75rem;
+        /* Doc card header */
+        .academic-doc-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            transition: all 0.2s ease;
+            gap: 0.4rem;
+            padding: 0.45rem 0.75rem;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #334155;
         }
 
-        .academic-file-item:hover {
-            border-color: #d1d1b8;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        .academic-doc-header i {
+            font-size: 0.85rem;
+            color: #64748b;
         }
 
-        .academic-uploaded-badge {
-            display: inline-flex;
+        .academic-doc-hint {
+            font-size: 0.68rem;
+            font-weight: 500;
+            color: #94a3b8;
+            letter-spacing: 0.3px;
+        }
+
+        /* Upload zone */
+        .academic-upload-placeholder {
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 0;
+            padding: 0.45rem 0.85rem;
+            min-height: 48px;
+            display: flex;
             align-items: center;
-            gap: 4px;
-            background: #eef7ee;
-            color: #166534;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 0.65rem;
+            justify-content: flex-start;
+            cursor: pointer;
+            transition: background 0.18s ease, border-color 0.18s ease;
+            background: #fff;
+            gap: 0.6rem;
+        }
+
+        /* Remove outer border-radius for first upload child inside card */
+        .academic-doc-card .academic-upload-placeholder {
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .academic-upload-placeholder:hover {
+            background: #f1f5f9;
+            border-color: #6366f1;
+        }
+
+        .academic-upload-icon-wrap {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #eff6ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .academic-upload-icon-wrap i {
+            font-size: 1.1rem;
+            color: #3b82f6;
+        }
+
+        .academic-upload-label {
+            font-size: 0.8rem;
             font-weight: 600;
-            border: 1px solid #dcfce7;
+            color: #374151;
+        }
+
+        .academic-upload-types {
+            font-size: 0.6rem;
+            color: #94a3b8;
+            letter-spacing: 0.2px;
+            margin-top: 0px;
+        }
+
+        /* File badge row (shown when file selected or saved) */
+        .academic-file-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.85rem;
+            min-height: 48px;
+            background: #fafafa;
+        }
+
+        /* Not-provided preview text */
+        .academic-not-provided {
+            display: none;
+            align-items: center;
+            padding: 0.45rem 0.85rem;
+            min-height: 48px;
+            font-size: 0.78rem;
+            color: #94a3b8;
+            font-style: italic;
+            background: #fafafa;
+        }
+
+        /* In preview mode, academic-field-preview elements show */
+        .academic-record-row.preview-mode .academic-not-provided {
+            display: flex !important;
+        }
+        /* But hide those with d-none (meaning file is present) */
+        .academic-record-row.preview-mode .academic-not-provided.d-none {
+            display: none !important;
+        }
+
+        /* Hide upload zone, view and delete controls in preview mode */
+        .academic-record-row.preview-mode .academic-upload-placeholder,
+        .academic-record-row.preview-mode .academic-doc-delete-btn,
+        .academic-record-row.preview-mode .academic-doc-view-btn {
+            display: none !important;
         }
 
         .btn-icon-delete {
@@ -714,15 +795,5 @@
         .btn-icon-delete:hover {
             background: #fee2e2;
             color: #b91c1c;
-        }
-
-        /* Hide academic upload/delete in preview mode */
-        .academic-record-row.preview-mode .academic-upload-placeholder,
-        .academic-record-row.preview-mode .btn-icon-delete {
-            display: none !important;
-        }
-
-        .academic-record-row.preview-mode .academic-upload-placeholder {
-            cursor: default !important;
         }
     </style>
