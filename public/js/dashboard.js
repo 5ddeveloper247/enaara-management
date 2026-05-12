@@ -1100,10 +1100,12 @@
 
             if (!items || items.length === 0) {
                 container.insertAdjacentHTML('beforeend', `
-                    <div class="text-center py-5 w-100">
-                        <i class="bi bi-calendar-check text-muted mb-2 d-block" style="font-size: 2rem;"></i>
-                        <h6 class="text-muted fw-semibold mb-1">All Present!</h6>
-                        <p class="text-muted small mb-0">No employees are on leave today.</p>
+                    <div class="empty-state w-100" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <div class="empty-state-title">All Present!</div>
+                        <p class="empty-state-text">No employees are on leave today.</p>
                     </div>
                 `);
                 return;
