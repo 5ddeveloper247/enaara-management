@@ -1,8 +1,8 @@
 @extends('layouts.auth')
 
 @section('title', 'Login')
-@section('page-title', 'Enaara HRMS')
-@section('page-subtitle', 'Please sign in to your account')
+@section('page-title', 'EFM-HCM')
+@section('page-subtitle', 'From Workforce to Workplace - Connected')
 
 @section('content')
 
