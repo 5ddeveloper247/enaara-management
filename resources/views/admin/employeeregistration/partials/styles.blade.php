@@ -152,17 +152,6 @@
             transition: all .2s ease;
         }
 
-        .family-nok-toggle:hover {
-            border-color: #93c5fd !important;
-            background: #f8fbff !important;
-        }
-
-        .family-nok-toggle.active {
-            border-color: #198754 !important;
-            background: #f0fdf4 !important;
-            box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.12) inset;
-        }
-
         .family-nok-locked-note {
             margin-top: .25rem;
         }

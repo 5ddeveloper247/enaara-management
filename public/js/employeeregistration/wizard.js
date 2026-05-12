@@ -5447,18 +5447,14 @@
 
             if (toggleCard) {
                 const icon = toggleCard.querySelector('i');
+                // Keep btn-outline-primary to ensure it only turns solid blue on hover
+                toggleCard.classList.add('btn-outline-primary');
+                toggleCard.classList.remove('btn-primary');
+                
                 if (isOn) {
-                    toggleCard.classList.remove('btn-light', 'border-success');
-                    toggleCard.classList.add('btn-success');
-                    if (icon) {
-                        icon.className = 'bi bi-people-fill text-white';
-                    }
+                    if (icon) icon.className = 'bi bi-people-fill';
                 } else {
-                    toggleCard.classList.remove('btn-success');
-                    toggleCard.classList.add('btn-light', 'border-success');
-                    if (icon) {
-                        icon.className = 'bi bi-people text-success';
-                    }
+                    if (icon) icon.className = 'bi bi-people';
                 }
                 toggleCard.setAttribute('title', isOn ? 'Remove Next of Kin' : 'Set as Next of Kin');
             }

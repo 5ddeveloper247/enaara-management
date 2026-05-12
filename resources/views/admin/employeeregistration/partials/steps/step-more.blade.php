@@ -193,8 +193,8 @@
                                                             </span>
                                                         </div>
                                                         <div class="family-member-actions">
-                                                            <button type="button" class="btn btn-sm btn-light border-success family-nok-toggle" data-family-nok-toggle title="Set as Next of Kin">
-                                                                <i class="bi bi-people text-success"></i>
+                                                            <button type="button" class="btn btn-sm btn-outline-primary family-nok-toggle" data-family-nok-toggle title="Set as Next of Kin">
+                                                                <i class="bi bi-people"></i>
                                                             </button>
                                                             <button type="button" class="btn btn-sm btn-outline-primary" data-family-save title="Save member">
                                                                 <i class="bi bi-floppy"></i>
