@@ -216,12 +216,7 @@
             color: #475569;
         }
 
-        .academic-record-row.preview-mode .form-label,
-        .certificate-record-row.preview-mode .form-label,
-        .employment-record-row.preview-mode .form-label,
-        .medical-record-row.preview-mode .form-label {
-            display: none !important;
-        }
+
 
         .academic-field-preview,
         .certificate-field-preview,
