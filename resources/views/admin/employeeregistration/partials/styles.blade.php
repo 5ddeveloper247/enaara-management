@@ -219,7 +219,8 @@
         }
 
         .academic-record-row .form-label,
-        .certificate-record-row .form-label {
+        .certificate-record-row .form-label,
+        .employment-record-row .form-label {
             font-size: .73rem;
             font-weight: 600;
             margin-bottom: .2rem;
@@ -227,12 +228,14 @@
         }
 
         .academic-record-row.preview-mode .form-label,
-        .certificate-record-row.preview-mode .form-label {
+        .certificate-record-row.preview-mode .form-label,
+        .employment-record-row.preview-mode .form-label {
             display: none !important;
         }
 
         .academic-field-preview,
-        .certificate-field-preview {
+        .certificate-field-preview,
+        .employment-field-preview {
             display: none;
             min-height: 38px;
             border: 1px solid #dbe3ed;
@@ -245,12 +248,14 @@
         }
 
         .academic-record-row.preview-mode .academic-field-input,
-        .certificate-record-row.preview-mode .certificate-field-input {
+        .certificate-record-row.preview-mode .certificate-field-input,
+        .employment-record-row.preview-mode .employment-field-input {
             display: none;
         }
 
         .academic-record-row.preview-mode .academic-field-preview,
-        .certificate-record-row.preview-mode .certificate-field-preview {
+        .certificate-record-row.preview-mode .certificate-field-preview,
+        .employment-record-row.preview-mode .employment-field-preview {
             display: flex;
         }
 
@@ -774,12 +779,14 @@
 
         /* In preview mode, academic-field-preview elements show */
         .academic-record-row.preview-mode .academic-not-provided,
-        .certificate-record-row.preview-mode .academic-not-provided {
+        .certificate-record-row.preview-mode .academic-not-provided,
+        .employment-record-row.preview-mode .academic-not-provided {
             display: flex !important;
         }
         /* But hide those with d-none (meaning file is present) */
         .academic-record-row.preview-mode .academic-not-provided.d-none,
-        .certificate-record-row.preview-mode .academic-not-provided.d-none {
+        .certificate-record-row.preview-mode .academic-not-provided.d-none,
+        .employment-record-row.preview-mode .academic-not-provided.d-none {
             display: none !important;
         }
 
@@ -789,7 +796,10 @@
         .academic-record-row.preview-mode .academic-doc-view-btn,
         .certificate-record-row.preview-mode .academic-upload-placeholder,
         .certificate-record-row.preview-mode .academic-doc-delete-btn,
-        .certificate-record-row.preview-mode .academic-doc-view-btn {
+        .certificate-record-row.preview-mode .academic-doc-view-btn,
+        .employment-record-row.preview-mode .academic-upload-placeholder,
+        .employment-record-row.preview-mode .academic-doc-delete-btn,
+        .employment-record-row.preview-mode .academic-doc-view-btn {
             display: none !important;
         }
 

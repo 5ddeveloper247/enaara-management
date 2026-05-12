@@ -4865,6 +4865,29 @@
                 certPreview.classList.toggle('d-none', hasCert);
             }
         }
+
+        // Special preview for employment documents
+        if (type === 'employment') {
+            const expView = row.querySelector('[data-employment-exp-view-container]');
+            const expFile = row.querySelector('[data-employment-exp-file]');
+            const expPreview = row.querySelector('[data-employment-exp-preview-status]');
+
+            const salaryView = row.querySelector('[data-employment-salary-view-container]');
+            const salaryFile = row.querySelector('[data-employment-salary-file]');
+            const salaryPreview = row.querySelector('[data-employment-salary-preview-status]');
+
+            if (expPreview) {
+                const hasExp = (expView && !expView.classList.contains('d-none')) || 
+                              (expFile && expFile.files.length > 0);
+                expPreview.classList.toggle('d-none', hasExp);
+            }
+
+            if (salaryPreview) {
+                const hasSalary = (salaryView && !salaryView.classList.contains('d-none')) || 
+                                 (salaryFile && salaryFile.files.length > 0);
+                salaryPreview.classList.toggle('d-none', hasSalary);
+            }
+        }
     }
 
     async function saveSubsectionRow(type, rowElement, options = {}) {
@@ -5027,7 +5050,12 @@
                         const viewWrap = rowElement.querySelector('[data-employment-exp-view-container]');
                         const viewLink = rowElement.querySelector('[data-employment-exp-link]');
                         const filenameEl = rowElement.querySelector('[data-employment-exp-filename]');
-                        if (viewLink) viewLink.href = res.exp_letter_url;
+                        if (viewLink) {
+                            viewLink.href = res.exp_letter_url;
+                            viewLink.style.pointerEvents = '';
+                            viewLink.style.opacity = '';
+                            viewLink.title = 'View';
+                        }
                         if (filenameEl) filenameEl.textContent = expInput.files[0].name;
                         if (viewWrap) {
                             viewWrap.classList.remove('d-none');
@@ -5043,7 +5071,12 @@
                         const viewWrap = rowElement.querySelector('[data-employment-salary-view-container]');
                         const viewLink = rowElement.querySelector('[data-employment-salary-link]');
                         const filenameEl = rowElement.querySelector('[data-employment-salary-filename]');
-                        if (viewLink) viewLink.href = res.salary_slip_url;
+                        if (viewLink) {
+                            viewLink.href = res.salary_slip_url;
+                            viewLink.style.pointerEvents = '';
+                            viewLink.style.opacity = '';
+                            viewLink.title = 'View';
+                        }
                         if (filenameEl) filenameEl.textContent = salaryInput.files[0].name;
                         if (viewWrap) {
                             viewWrap.classList.remove('d-none');
@@ -5201,7 +5234,7 @@
             const isDegreeExisting = degreeView && !degreeView.classList.contains('d-none');
             
             if (!isTranscriptSelected && !isTranscriptExisting && !isDegreeSelected && !isDegreeExisting) {
-                addErr('_doc_required', 'Please upload at least one document: Transcript or Degree Certificate.');
+                addErr('_doc_required', 'Transcript or Degree is required.');
             }
         }
 
@@ -5234,7 +5267,7 @@
             const isCertExisting = certView && !certView.classList.contains('d-none');
             
             if (!isCertSelected && !isCertExisting) {
-                addErr('_doc_required', 'Please upload a copy of the professional certificate.');
+                addErr('_doc_required', 'Certificate copy is required.');
             }
         }
 
@@ -5267,8 +5300,18 @@
                 if (hrEmail.length > 100) addErr('hr_email', 'HR email must not exceed 100 characters.');
                 else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hrEmail)) addErr('hr_email', 'HR email must be a valid email address.');
             }
-        }
 
+            // Mandatory Experience Letter Check
+            const expInput = rowElement ? rowElement.querySelector('[data-employment-exp-file]') : null;
+            const expView = rowElement ? rowElement.querySelector('[data-employment-exp-view-container]') : null;
+            const isExpSelected = expInput && expInput.files.length > 0;
+            const isExpExisting = expView && !expView.classList.contains('d-none');
+            
+            if (!isExpSelected && !isExpExisting) {
+                addErr('_doc_required', 'Experience letter is required.');
+            }
+        }
+        
         return errors;
     }
 
@@ -6265,14 +6308,20 @@
                 fileInput.onchange = (e) => {
                     if (e.target.files && e.target.files.length > 0) {
                         const filename = e.target.files[0].name;
-                        const placeholderText = uploadContainer.querySelector('.small');
-                        const uploadIcon = uploadContainer.querySelector('i');
-                        if (placeholderText) {
-                            placeholderText.textContent = filename;
-                            placeholderText.classList.remove('text-secondary');
-                            placeholderText.classList.add('text-primary', 'fw-bold');
+                        if (filenameEl) filenameEl.textContent = filename;
+                        if (uploadContainer) uploadContainer.classList.add('d-none');
+                        if (viewContainer) {
+                            viewContainer.classList.remove('d-none');
+                            viewContainer.removeAttribute('data-attachment-id');
                         }
-                        if (uploadIcon) uploadIcon.className = 'bi bi-check-circle-fill text-success';
+                        
+                        // Disable view link since file is not yet uploaded to server
+                        if (linkEl) {
+                            linkEl.removeAttribute('href');
+                            linkEl.style.pointerEvents = 'none';
+                            linkEl.style.opacity = '0.45';
+                            linkEl.title = 'Save record to view';
+                        }
                     }
                 };
             }
@@ -6284,14 +6333,6 @@
                         uploadContainer.classList.remove('d-none');
                         viewContainer.classList.add('d-none');
                         fileInput.value = '';
-                        const placeholderText = uploadContainer.querySelector('.small');
-                        const uploadIcon = uploadContainer.querySelector('i');
-                        if (placeholderText) {
-                            placeholderText.textContent = 'No file chosen';
-                            placeholderText.classList.remove('text-primary', 'fw-bold');
-                            placeholderText.classList.add('text-secondary');
-                        }
-                        if (uploadIcon) uploadIcon.className = 'bi bi-upload';
                         showToast('Selection cleared');
                         return;
                     }

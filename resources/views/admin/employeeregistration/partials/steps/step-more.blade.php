@@ -776,66 +776,99 @@
                                                         <div class="row g-2">
                                                             <!-- Experience Letter (Required) -->
                                                             <div class="col-12 col-md-6">
-                                                                <label class="form-label small text-secondary fw-bold mb-1">Experience Letter <span class="text-danger">*</span></label>
-                                                                <div class="academic-upload-placeholder" data-employment-exp-upload-container onclick="this.querySelector('input').click()">
-                                                                    <div class="d-flex align-items-center gap-2 text-secondary">
-                                                                        <i class="bi bi-upload"></i>
-                                                                        <span class="small">No file chosen</span>
+                                                                <div class="academic-doc-card">
+                                                                    <div class="academic-doc-header">
+                                                                        <i class="bi bi-file-earmark-person"></i>
+                                                                        <span>Experience Letter</span>
+                                                                        <span class="text-danger ms-1">*</span>
                                                                     </div>
-                                                                    <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
-                                                                    <input type="file" class="d-none employment-field-input" 
-                                                                        name="experience_letter"
-                                                                        data-employment-exp-file accept=".jpg,.jpeg,.png,.pdf">
-                                                                </div>
 
-                                                                <div class="academic-uploaded-file-item mt-2 d-none" data-employment-exp-view-container>
-                                                                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
-                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
-                                                                            <i class="bi bi-file-earmark-check text-success"></i>
-                                                                            <span class="small text-dark text-truncate" data-employment-exp-filename style="max-width: 150px;">Experience_Letter.pdf</span>
-                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                    {{-- Upload zone --}}
+                                                                    <div class="academic-upload-placeholder" data-employment-exp-upload-container onclick="this.querySelector('input').click()">
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                            <div class="academic-upload-icon-wrap">
+                                                                                <i class="bi bi-cloud-arrow-up"></i>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div class="academic-upload-label">Click to upload</div>
+                                                                                <div class="academic-upload-types">JPG &bull; PNG &bull; PDF &bull; Max 20 MB</div>
+                                                                            </div>
                                                                         </div>
-                                                                        <div class="d-flex gap-1">
-                                                                            <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-employment-exp-link title="View Document">
-                                                                                <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                        <input type="file" class="d-none employment-field-input" 
+                                                                            name="experience_letter"
+                                                                            data-employment-exp-file accept=".jpg,.jpeg,.png,.pdf">
+                                                                    </div>
+
+                                                                    {{-- File badge --}}
+                                                                    <div class="academic-file-badge d-none" data-employment-exp-view-container>
+                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1">
+                                                                            <i class="bi bi-file-earmark-check text-success flex-shrink-0" style="font-size: 1rem;"></i>
+                                                                            <span class="small fw-semibold text-dark text-truncate" data-employment-exp-filename style="max-width: 150px;">Experience_Letter.pdf</span>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle flex-shrink-0" style="font-size: 0.6rem;">Uploaded</span>
+                                                                        </div>
+                                                                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                                            <a href="#" target="_blank" class="btn btn-sm btn-outline-primary academic-doc-view-btn" data-employment-exp-link title="View">
+                                                                                <i class="bi bi-eye"></i>
                                                                             </a>
-                                                                            <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-employment-exp-remove title="Remove Document">
-                                                                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger academic-doc-delete-btn" data-employment-exp-remove title="Remove">
+                                                                                <i class="bi bi-trash"></i>
                                                                             </button>
                                                                         </div>
+                                                                    </div>
+
+                                                                    {{-- Not-provided --}}
+                                                                    <div class="academic-field-preview academic-not-provided d-none" data-employment-exp-preview-status>
+                                                                        <i class="bi bi-dash-circle me-1 text-muted" style="font-size: 0.75rem;"></i>
+                                                                        <span>Not provided</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
 
                                                             <!-- Salary Slip (Optional) -->
                                                             <div class="col-12 col-md-6">
-                                                                <label class="form-label small text-secondary fw-bold mb-1">Salary Slip (Optional)</label>
-                                                                <div class="academic-upload-placeholder" data-employment-salary-upload-container onclick="this.querySelector('input').click()">
-                                                                    <div class="d-flex align-items-center gap-2 text-secondary">
-                                                                        <i class="bi bi-upload"></i>
-                                                                        <span class="small">No file chosen</span>
+                                                                <div class="academic-doc-card">
+                                                                    <div class="academic-doc-header">
+                                                                        <i class="bi bi-cash-stack"></i>
+                                                                        <span>Salary Slip (Optional)</span>
                                                                     </div>
-                                                                    <div class="text-secondary small" style="font-size: 0.65rem; letter-spacing: 0.5px;">JPG • PNG • PDF • 20MB</div>
-                                                                    <input type="file" class="d-none employment-field-input" 
-                                                                        name="salary_slip"
-                                                                        data-employment-salary-file accept=".jpg,.jpeg,.png,.pdf">
-                                                                </div>
 
-                                                                <div class="academic-uploaded-file-item mt-2 d-none" data-employment-salary-view-container>
-                                                                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border" style="background-color: #f7f7ee !important;">
-                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
-                                                                            <i class="bi bi-file-earmark-check text-success"></i>
-                                                                            <span class="small text-dark text-truncate" data-employment-salary-filename style="max-width: 150px;">Salary_Slip.pdf</span>
-                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.6rem;">Uploaded</span>
+                                                                    {{-- Upload zone --}}
+                                                                    <div class="academic-upload-placeholder" data-employment-salary-upload-container onclick="this.querySelector('input').click()">
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                            <div class="academic-upload-icon-wrap">
+                                                                                <i class="bi bi-cloud-arrow-up"></i>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div class="academic-upload-label">Click to upload</div>
+                                                                                <div class="academic-upload-types">JPG &bull; PNG &bull; PDF &bull; Max 20 MB</div>
+                                                                            </div>
                                                                         </div>
-                                                                        <div class="d-flex gap-1">
-                                                                            <a href="#" target="_blank" class="btn btn-sm btn-white shadow-sm py-0 px-2" data-employment-salary-link title="View Document">
-                                                                                <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                                                        <input type="file" class="d-none employment-field-input" 
+                                                                            name="salary_slip"
+                                                                            data-employment-salary-file accept=".jpg,.jpeg,.png,.pdf">
+                                                                    </div>
+
+                                                                    {{-- File badge --}}
+                                                                    <div class="academic-file-badge d-none" data-employment-salary-view-container>
+                                                                        <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1">
+                                                                            <i class="bi bi-file-earmark-check text-success flex-shrink-0" style="font-size: 1rem;"></i>
+                                                                            <span class="small fw-semibold text-dark text-truncate" data-employment-salary-filename style="max-width: 150px;">Salary_Slip.pdf</span>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle flex-shrink-0" style="font-size: 0.6rem;">Uploaded</span>
+                                                                        </div>
+                                                                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                                            <a href="#" target="_blank" class="btn btn-sm btn-outline-primary academic-doc-view-btn" data-employment-salary-link title="View">
+                                                                                <i class="bi bi-eye"></i>
                                                                             </a>
-                                                                            <button type="button" class="btn btn-sm btn-white shadow-sm py-0 px-2 btn-icon-delete" data-employment-salary-remove title="Remove Document">
-                                                                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger academic-doc-delete-btn" data-employment-salary-remove title="Remove">
+                                                                                <i class="bi bi-trash"></i>
                                                                             </button>
                                                                         </div>
+                                                                    </div>
+
+                                                                    {{-- Not-provided --}}
+                                                                    <div class="academic-field-preview academic-not-provided d-none" data-employment-salary-preview-status>
+                                                                        <i class="bi bi-dash-circle me-1 text-muted" style="font-size: 0.75rem;"></i>
+                                                                        <span>Not provided</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
