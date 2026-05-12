@@ -343,7 +343,8 @@
                                                             <option value="" selected disabled>Select degree type</option>
                                                             <option value="Under Matric">Under Matric</option>
                                                             <option value="Matric">Matric</option>
-                                                            <option value="Intermediate / Diploma">Intermediate / Diploma</option>
+                                                            <option value="Intermediate">Intermediate</option>
+                                                            <option value="Diploma">Diploma</option>
                                                             <option value="Associate Degree Program">Associate Degree Program</option>
                                                             <option value="Bachelor (2 Years)">Bachelor (2 Years)</option>
                                                             <option value="Bachelor (4 Years / BS)">Bachelor (4 Years / BS)</option>

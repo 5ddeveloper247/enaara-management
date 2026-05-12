@@ -5956,7 +5956,7 @@
 
     const moreAcademicRecordsContainerEl = document.getElementById('moreAcademicRecordsContainer');
     if (moreAcademicRecordsContainerEl) {
-        const boardEligibleDegrees = new Set(['Matric', 'Intermediate / Diploma', 'Intermediate']);
+        const boardEligibleDegrees = new Set(['Matric', 'Intermediate']);
         const syncAcademicBoardField = function (row, keepBoardValue) {
             if (!row) return;
             const degreeEl = row.querySelector('[data-academic-degree]');
