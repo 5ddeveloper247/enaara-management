@@ -134,7 +134,7 @@
                  <div class="col-12 col-xl-6">
                      <div class="card border-0 bg-light h-100">
                          <div class="card-body p-3">
-                             <div class="fw-bold text-uppercase small mb-3">Birth and Domicile
+                             <div class="fw-bold text-uppercase small mb-3">Demographic Information
                              </div>
                              <div class="row g-3">
                                  <div class="col-md-6">
@@ -201,7 +201,7 @@
                  <div class="col-12 col-xl-6">
                      <div class="card border-0 bg-light h-100">
                          <div class="card-body p-3">
-                             <div class="fw-bold text-uppercase small mb-3">Religion and Marital
+                             <div class="fw-bold text-uppercase small mb-3">Family & Religious Information
                              </div>
                              <div class="row g-3">
                                  <div class="col-md-6">
