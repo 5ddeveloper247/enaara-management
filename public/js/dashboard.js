@@ -172,7 +172,8 @@
                         y: {
                             stacked: true,
                             ticks: {
-                                color: '#000000'
+                                color: '#000000',
+                                autoSkip: false
                             },
                             grid: {
                                 display: false

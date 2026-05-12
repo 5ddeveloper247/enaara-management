@@ -179,9 +179,21 @@ class DashboardService
         $absent  = [];
         $onLeave = [];
 
-        for ($i = $days - 1; $i >= 0; $i--) {
-            $date   = now()->subDays($i)->toDateString();
-            $label  = now()->subDays($i)->format('D');
+        if ($days === 14) {
+            $startDate = now()->subWeek()->startOfWeek(Carbon::MONDAY);
+        } else {
+            $startDate = now()->startOfWeek(Carbon::MONDAY);
+        }
+
+        for ($i = 0; $i < $days; $i++) {
+            $currentDate = $startDate->copy()->addDays($i);
+            $date   = $currentDate->toDateString();
+            
+            if ($days === 14) {
+                $label = $currentDate->format('D d');
+            } else {
+                $label = $currentDate->format('D');
+            }
 
             $onLeaveCount = EmployeLeaveRequest::where('status', 3)
                 ->whereIn('action_type', [0, 2])
