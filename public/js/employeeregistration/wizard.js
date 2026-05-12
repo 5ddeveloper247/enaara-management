@@ -4852,6 +4852,19 @@
                 degreePreview.classList.toggle('d-none', hasDegree);
             }
         }
+
+        // Special preview for professional certificates
+        if (type === 'certificate') {
+            const certView = row.querySelector('[data-certificate-view-container]');
+            const certFile = row.querySelector('[data-certificate-file]');
+            const certPreview = row.querySelector('[data-certificate-preview-status]');
+
+            if (certPreview) {
+                const hasCert = (certView && !certView.classList.contains('d-none')) || 
+                               (certFile && certFile.files.length > 0);
+                certPreview.classList.toggle('d-none', hasCert);
+            }
+        }
     }
 
     async function saveSubsectionRow(type, rowElement, options = {}) {
@@ -5048,7 +5061,12 @@
                         const viewWrap = rowElement.querySelector('[data-certificate-view-container]');
                         const viewLink = rowElement.querySelector('[data-certificate-document-link]');
                         const filenameEl = rowElement.querySelector('[data-certificate-filename]');
-                        if (viewLink) viewLink.href = res.attachment_url;
+                        if (viewLink) {
+                            viewLink.href = res.attachment_url;
+                            viewLink.style.pointerEvents = '';
+                            viewLink.style.opacity = '';
+                            viewLink.title = 'View';
+                        }
                         if (filenameEl) filenameEl.textContent = fileInput.files[0].name;
                         if (viewWrap) {
                             viewWrap.classList.remove('d-none');
@@ -5208,6 +5226,16 @@
             if (!institute) addErr('institute', 'Institute is required.');
             else if (institute.length > 255) addErr('institute', 'Institute must not exceed 255 characters.');
             else if (countWords(institute) > 20) addErr('institute', 'Institute can be at most 20 words.');
+
+            // Mandatory Certificate Document Check
+            const certInput = rowElement ? rowElement.querySelector('[data-certificate-file]') : null;
+            const certView = rowElement ? rowElement.querySelector('[data-certificate-view-container]') : null;
+            const isCertSelected = certInput && certInput.files.length > 0;
+            const isCertExisting = certView && !certView.classList.contains('d-none');
+            
+            if (!isCertSelected && !isCertExisting) {
+                addErr('_doc_required', 'Please upload a copy of the professional certificate.');
+            }
         }
 
         if (type === 'employment') {
@@ -6083,14 +6111,23 @@
                 fileInput.onchange = (e) => {
                     if (e.target.files && e.target.files.length > 0) {
                         const filename = e.target.files[0].name;
-                        const placeholderText = uploadContainer.querySelector('.small');
-                        const uploadIcon = uploadContainer.querySelector('i');
-                        if (placeholderText) {
-                            placeholderText.textContent = filename;
-                            placeholderText.classList.remove('text-secondary');
-                            placeholderText.classList.add('text-primary', 'fw-bold');
+                        const filenameEl = row.querySelector('[data-certificate-filename]');
+                        const viewLink = row.querySelector('[data-certificate-document-link]');
+                        
+                        if (filenameEl) filenameEl.textContent = filename;
+                        if (uploadContainer) uploadContainer.classList.add('d-none');
+                        if (viewContainer) {
+                            viewContainer.classList.remove('d-none');
+                            viewContainer.removeAttribute('data-attachment-id');
                         }
-                        if (uploadIcon) uploadIcon.className = 'bi bi-check-circle-fill text-success';
+                        
+                        // Disable view link since file is not yet uploaded to server
+                        if (viewLink) {
+                            viewLink.removeAttribute('href');
+                            viewLink.style.pointerEvents = 'none';
+                            viewLink.style.opacity = '0.45';
+                            viewLink.title = 'Save record to view';
+                        }
                     }
                 };
             }

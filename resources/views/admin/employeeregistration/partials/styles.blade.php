@@ -218,14 +218,21 @@
             gap: .35rem;
         }
 
-        .academic-record-row .form-label {
+        .academic-record-row .form-label,
+        .certificate-record-row .form-label {
             font-size: .73rem;
             font-weight: 600;
             margin-bottom: .2rem;
             color: #475569;
         }
 
-        .academic-field-preview {
+        .academic-record-row.preview-mode .form-label,
+        .certificate-record-row.preview-mode .form-label {
+            display: none !important;
+        }
+
+        .academic-field-preview,
+        .certificate-field-preview {
             display: none;
             min-height: 38px;
             border: 1px solid #dbe3ed;
@@ -237,11 +244,13 @@
             align-items: center;
         }
 
-        .academic-record-row.preview-mode .academic-field-input {
+        .academic-record-row.preview-mode .academic-field-input,
+        .certificate-record-row.preview-mode .certificate-field-input {
             display: none;
         }
 
-        .academic-record-row.preview-mode .academic-field-preview {
+        .academic-record-row.preview-mode .academic-field-preview,
+        .certificate-record-row.preview-mode .certificate-field-preview {
             display: flex;
         }
 
@@ -764,18 +773,23 @@
         }
 
         /* In preview mode, academic-field-preview elements show */
-        .academic-record-row.preview-mode .academic-not-provided {
+        .academic-record-row.preview-mode .academic-not-provided,
+        .certificate-record-row.preview-mode .academic-not-provided {
             display: flex !important;
         }
         /* But hide those with d-none (meaning file is present) */
-        .academic-record-row.preview-mode .academic-not-provided.d-none {
+        .academic-record-row.preview-mode .academic-not-provided.d-none,
+        .certificate-record-row.preview-mode .academic-not-provided.d-none {
             display: none !important;
         }
 
         /* Hide upload zone, view and delete controls in preview mode */
         .academic-record-row.preview-mode .academic-upload-placeholder,
         .academic-record-row.preview-mode .academic-doc-delete-btn,
-        .academic-record-row.preview-mode .academic-doc-view-btn {
+        .academic-record-row.preview-mode .academic-doc-view-btn,
+        .certificate-record-row.preview-mode .academic-upload-placeholder,
+        .certificate-record-row.preview-mode .academic-doc-delete-btn,
+        .certificate-record-row.preview-mode .academic-doc-view-btn {
             display: none !important;
         }
 
