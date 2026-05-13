@@ -649,6 +649,11 @@
             visibility: visible;
         }
 
+        #avatarPreviewWrap,
+        #avatarPreviewImage {
+            cursor: pointer;
+        }
+
         /* Academic Certificate Section Enhancements */
         .academic-transcript-section,
         .academic-degree-section {

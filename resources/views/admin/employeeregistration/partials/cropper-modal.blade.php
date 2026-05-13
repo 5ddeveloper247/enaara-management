@@ -12,6 +12,15 @@
                 </div>
             </div>
             <div class="modal-footer bg-white border-top">
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary rounded-2 px-3" id="cropperUploadNewBtn">
+                        <i class="bi bi-cloud-arrow-up me-1"></i>Upload New
+                    </button>
+                    <button type="button" class="btn btn-outline-success rounded-2 px-3" id="cropperDownloadBtn">
+                        <i class="bi bi-download me-1"></i>Download
+                    </button>
+                </div>
+                <div class="flex-grow-1"></div>
                 <button type="button" class="btn btn-outline-secondary rounded-2 px-4" data-bs-dismiss="modal" onclick="cancelCrop()">Cancel</button>
                 <button type="button" class="btn bg-main text-white rounded-2 px-4" id="cropBtn">Crop & Save</button>
             </div>

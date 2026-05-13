@@ -3105,6 +3105,71 @@
     });
 
     // Profile Photo Cropper
+    window.initializeCropperModal = function(imageSrc, fileName = 'profile-photo.jpg') {
+        const cropperImage = document.getElementById('cropperImage');
+        if (!cropperImage) return;
+
+        window.originalFileName = fileName;
+        cropperImage.src = imageSrc;
+
+        const modalEl = document.getElementById('cropperModal');
+        if (modalEl) {
+            let modal = bootstrap.Modal.getInstance(modalEl);
+            if (!modal) modal = new bootstrap.Modal(modalEl);
+            modal.show();
+
+            const onShown = function() {
+                if (window.cropper) window.cropper.destroy();
+                window.cropper = new Cropper(cropperImage, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 0.8,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                });
+                modalEl.removeEventListener('shown.bs.modal', onShown);
+            };
+
+            // If modal is already shown, trigger cropper initialization immediately
+            if (modalEl.classList.contains('show')) {
+                onShown();
+            } else {
+                modalEl.addEventListener('shown.bs.modal', onShown);
+            }
+        }
+    };
+
+    // 'Upload New' button inside Cropper Modal
+    const cropperUploadNewBtn = document.getElementById('cropperUploadNewBtn');
+    if (cropperUploadNewBtn) {
+        cropperUploadNewBtn.addEventListener('click', function() {
+            const photoInput = document.getElementById('profilePhotoInput');
+            if (photoInput) photoInput.click();
+        });
+    }
+
+    // 'Download' button inside Cropper Modal
+    const cropperDownloadBtn = document.getElementById('cropperDownloadBtn');
+    if (cropperDownloadBtn) {
+        cropperDownloadBtn.addEventListener('click', function() {
+            const cropperImage = document.getElementById('cropperImage');
+            if (cropperImage && cropperImage.src) {
+                const link = document.createElement('a');
+                link.href = cropperImage.src;
+                link.download = window.originalFileName || 'profile-photo.jpg';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+    }
+
     window.openCropper = function(inputFile) {
         if (!inputFile.files || !inputFile.files[0]) return;
 
@@ -3125,42 +3190,41 @@
             return;
         }
 
-        window.originalFileName = file.name;
         const reader = new FileReader();
-
         reader.onload = function(e) {
-            const cropperImage = document.getElementById('cropperImage');
-            if (cropperImage) {
-                cropperImage.src = e.target.result;
-
-                const modalEl = document.getElementById('cropperModal');
-                if (modalEl) {
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-
-                    const onShown = function() {
-                        if (window.cropper) window.cropper.destroy();
-                        window.cropper = new Cropper(cropperImage, {
-                            aspectRatio: 1,
-                            viewMode: 1,
-                            dragMode: 'move',
-                            autoCropArea: 0.8,
-                            restore: false,
-                            guides: true,
-                            center: true,
-                            highlight: false,
-                            cropBoxMovable: true,
-                            cropBoxResizable: true,
-                            toggleDragModeOnDblclick: false,
-                        });
-                        modalEl.removeEventListener('shown.bs.modal', onShown);
-                    };
-                    modalEl.addEventListener('shown.bs.modal', onShown);
-                }
-            }
+            window.initializeCropperModal(e.target.result, file.name);
         };
         reader.readAsDataURL(file);
     };
+
+    window.openCropperForExisting = function() {
+        const avatarImage = document.getElementById('avatarPreviewImage');
+        if (avatarImage && avatarImage.src && !avatarImage.classList.contains('d-none')) {
+            // Check if it's not a placeholder
+            if (avatarImage.src.includes('blob:') || avatarImage.src.includes('storage/')) {
+                window.initializeCropperModal(avatarImage.src, 'existing-photo.jpg');
+            }
+        }
+    };
+
+    // Trigger cropper for existing photo or file upload when clicking the avatar preview
+    document.addEventListener('click', function(e) {
+        const avatarImage = document.getElementById('avatarPreviewImage');
+        const avatarWrap = document.getElementById('avatarPreviewWrap');
+        const photoInput = document.getElementById('profilePhotoInput');
+        
+        if (avatarWrap && avatarWrap.contains(e.target)) {
+            // 1. If clicking the remove button, do nothing (handled by its own logic)
+            if (e.target.closest('#removePhotoBtn')) return;
+
+            // 2. Logic: If image exists -> Re-crop. If not -> Upload new.
+            if (avatarImage && !avatarImage.classList.contains('d-none')) {
+                window.openCropperForExisting();
+            } else {
+                if (photoInput) photoInput.click();
+            }
+        }
+    });
 
     window.cancelCrop = function() {
         if (window.cropper) {
