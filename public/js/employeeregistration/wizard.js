@@ -2103,6 +2103,16 @@
         if (pane) toggleInputs(pane, disabled);
     }
 
+    function resetFormEditViewMode() {
+        const editBtn = document.getElementById('editBtn');
+        if (editBtn) {
+            editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
+            editBtn.classList.remove('btn-success');
+            editBtn.classList.add('bg-main', 'text-white');
+        }
+        syncStepUi();
+    }
+
     // Edit Button Logic
     document.addEventListener('DOMContentLoaded', () => {
         const editBtn = document.getElementById('editBtn');
@@ -2120,31 +2130,19 @@
                             const moreStep = typeof currentMoreStep !== 'undefined' ? currentMoreStep : 1;
                             if ([1, 6, 7].includes(moreStep)) {
                                 await saveMoreSubSection(moreStep, () => {
-                                    setStepDisabled(6, true);
-                                    editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
-                                    editBtn.classList.remove('btn-success');
-                                    editBtn.classList.add('bg-main', 'text-white');
+                                    resetFormEditViewMode();
                                 }, { skipButtonState: true });
                             } else if ([2, 3, 4, 5].includes(moreStep)) {
                                 const autoSaved = await autoSaveMoreDynamicRows(moreStep);
                                 if (autoSaved) {
-                                    setStepDisabled(6, true);
-                                    editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
-                                    editBtn.classList.remove('btn-success');
-                                    editBtn.classList.add('bg-main', 'text-white');
+                                    resetFormEditViewMode();
                                 }
                             } else {
-                                setStepDisabled(6, true);
-                                editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
-                                editBtn.classList.remove('btn-success');
-                                editBtn.classList.add('bg-main', 'text-white');
+                                resetFormEditViewMode();
                             }
                         } else {
                             await processStepSave(current, () => {
-                                setStepDisabled(current, true);
-                                editBtn.innerHTML = '<i class="bi bi-pencil-square"></i><span>Edit</span>';
-                                editBtn.classList.remove('btn-success');
-                                editBtn.classList.add('bg-main', 'text-white');
+                                resetFormEditViewMode();
                             }, { skipButtonState: true });
                         }
                     } catch (err) {
