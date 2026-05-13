@@ -143,7 +143,7 @@
                                                                         </div>
                                                                         <div>
                                                                             <h6 class="mb-0 fw-bold">Family Registeration Certificate (FRC)</h6>
-                                                                            <p class="small text-muted mb-0">Upload a single document containing character certificates for the family.</p>
+                                                                            <p class="small text-muted mb-0">Upload a single document containing the FRC showing the complete family details/tree along with photographs.</p>
                                                                         </div>
                                                                     </div>
                                                                 </div>
