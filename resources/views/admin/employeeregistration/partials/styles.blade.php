@@ -802,6 +802,12 @@
             display: none !important;
         }
 
+        #employeeForm:not(.form-readonly) .academic-record-row.preview-mode .academic-file-badge .academic-doc-view-btn {
+            display: inline-flex !important;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+
         .btn-icon-delete {
             width: 28px;
             height: 28px;
