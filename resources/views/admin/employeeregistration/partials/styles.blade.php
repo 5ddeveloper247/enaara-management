@@ -802,7 +802,9 @@
             display: none !important;
         }
 
-        #employeeForm:not(.form-readonly) .academic-record-row.preview-mode .academic-file-badge .academic-doc-view-btn {
+        #employeeForm:not(.form-readonly) .academic-record-row.preview-mode .academic-file-badge .academic-doc-view-btn,
+        #employeeForm:not(.form-readonly) .certificate-record-row.preview-mode .academic-file-badge .academic-doc-view-btn,
+        #employeeForm:not(.form-readonly) .employment-record-row.preview-mode .academic-file-badge .academic-doc-view-btn {
             display: inline-flex !important;
             pointer-events: auto !important;
             cursor: pointer !important;
