@@ -662,23 +662,23 @@ class EmployeeStepRequest extends FormRequest
                 'academics'                => ['nullable', 'array'],
                 'academics.*.degree'       => ['required_with:academics.*', 'string', 'max:50'],
                 'academics.*.grade_cgpa'   => ['required_with:academics.*', 'string', 'max:20'],
-                'academics.*.start_date'   => ['required_with:academics.*', 'date'],
-                'academics.*.end_date'     => ['required_with:academics.*', 'date'],
+                'academics.*.start_date'   => ['required_with:academics.*', 'date', 'before_or_equal:today'],
+                'academics.*.end_date'     => ['required_with:academics.*', 'date', 'after_or_equal:academics.*.start_date'],
                 'academics.*.institute'    => ['required_with:academics.*', 'string', 'max:255'],
 
                 // Certificates
                 'certificates'                      => ['nullable', 'array'],
                 'certificates.*.certificate_name'   => ['required_with:certificates.*', 'string', 'max:150'],
-                'certificates.*.start_date'         => ['required_with:certificates.*', 'date'],
-                'certificates.*.end_date'           => ['required_with:certificates.*', 'date'],
+                'certificates.*.start_date'         => ['required_with:certificates.*', 'date', 'before_or_equal:today'],
+                'certificates.*.end_date'           => ['required_with:certificates.*', 'date', 'after_or_equal:certificates.*.start_date'],
                 'certificates.*.institute'          => ['required_with:certificates.*', 'string', 'max:255'],
 
                 // Employment History
                 'employments'              => ['nullable', 'array'],
                 'employments.*.organization' => ['required_with:employments.*', 'string', 'min:2', 'max:255'],
                 'employments.*.designation'  => ['required_with:employments.*', 'string', 'min:2', 'max:255'],
-                'employments.*.from_date'    => ['required_with:employments.*', 'date'],
-                'employments.*.to_date'      => ['required_with:employments.*', 'date'],
+                'employments.*.from_date'    => ['required_with:employments.*', 'date', 'before_or_equal:today'],
+                'employments.*.to_date'      => ['required_with:employments.*', 'date', 'after_or_equal:employments.*.from_date'],
 
                 // Medical
                 'last_fitness_test'          => ['nullable', 'string', 'max:1000'],
@@ -778,7 +778,7 @@ class EmployeeStepRequest extends FormRequest
                     'degree'         => ['required', 'string', 'max:50', $this->maxWordsRule(20, 'Degree type')],
                     'degree_title'   => ['required', 'string', 'max:100', $this->maxWordsRule(20, 'Degree title')],
                     'grade_cgpa'     => ['required', 'string', 'max:20', $this->maxWordsRule(10, 'Grade / CGPA')],
-                    'start_date'     => ['required', 'date'],
+                    'start_date'     => ['required', 'date', 'before_or_equal:today'],
                     'end_date'       => ['required', 'date', 'after_or_equal:start_date'],
                     'field_of_study' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
                     'institute'      => ['nullable', 'string', 'max:150', $this->maxWordsRule(20, 'University')],
@@ -808,7 +808,7 @@ class EmployeeStepRequest extends FormRequest
                         Rule::exists('employee_certificates', 'id')->where('employee_id', (int) $this->input('employee_id')),
                     ],
                     'certificate_name' => ['required', 'string', 'max:150', $this->maxWordsRule(20, 'Certificate name')],
-                    'start_date'       => ['required', 'date'],
+                    'start_date'       => ['required', 'date', 'before_or_equal:today'],
                     'end_date'         => ['required', 'date', 'after_or_equal:start_date'],
                     'institute'        => ['required', 'string', 'max:255', $this->maxWordsRule(20, 'Institute')],
                     'certificate_file' => ['required_without:certificate_id', 'nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
@@ -1321,9 +1321,12 @@ class EmployeeStepRequest extends FormRequest
             'academics.*.grade_cgpa.required_with' => 'Grade / CGPA is required.',
             'academics.*.grade_cgpa.max' => 'Grade / CGPA must not exceed 20 characters.',
             'academics.*.start_date.required_with' => 'Academic start date is required.',
-            'academics.*.end_date.required_with' => 'Academic end date is required.',
             'academics.*.start_date.date' => 'Academic start date must be a valid date.',
+            'academics.*.start_date.before_or_equal' => 'Academic start date cannot be in the future.',
+            'academics.*.end_date.required_with' => 'Academic end date is required.',
             'academics.*.end_date.date' => 'Academic end date must be a valid date.',
+            'academics.*.end_date.after_or_equal' => 'Academic end date must be on or after the start date.',
+
             'academics.*.field_of_study.max' => 'Field of study must not exceed 50 characters.',
             'academics.*.field_of_study.regex' => 'Field of study contains invalid characters.',
             'academics.*.institute.max' => 'Institute name must not exceed 255 characters.',
@@ -1334,9 +1337,12 @@ class EmployeeStepRequest extends FormRequest
             'employments.*.designation.required_with' => 'Previous employment designation is required.',
             'employments.*.designation.max' => 'Employment history row #:position: designation must not exceed 255 characters.',
             'employments.*.from_date.required_with' => 'Previous employment from date is required.',
-            'employments.*.to_date.required_with' => 'Previous employment to date is required.',
             'employments.*.from_date.date' => 'Previous employment from date must be a valid date.',
+            'employments.*.from_date.before_or_equal' => 'Previous employment from date cannot be in the future.',
+            'employments.*.to_date.required_with' => 'Previous employment to date is required.',
             'employments.*.to_date.date' => 'Previous employment to date must be a valid date.',
+            'employments.*.to_date.after_or_equal' => 'Previous employment to date must be on or after from date.',
+
             'employments.*.salary.numeric' => 'Salary must be a valid number.',
             'employments.*.salary.min' => 'Salary cannot be negative.',
             'employments.*.salary.max' => 'Salary is too large.',
@@ -1376,6 +1382,20 @@ class EmployeeStepRequest extends FormRequest
             'password.min' => 'Password must be at least 8 characters.',
             'password.max' => 'Password must not exceed 64 characters.',
             'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, and one number.',
+
+            // Subsection rows
+            'start_date.required' => 'Start date is required.',
+            'start_date.date'     => 'Start date must be a valid date.',
+            'start_date.before_or_equal' => 'Start date cannot be in the future.',
+            'end_date.required'   => 'End date is required.',
+            'end_date.date'       => 'End date must be a valid date.',
+            'end_date.after_or_equal' => 'End date must be on or after start date.',
+            'from_date.required'  => 'From date is required.',
+            'from_date.date'      => 'From date must be a valid date.',
+            'from_date.before_or_equal' => 'From date cannot be in the future.',
+            'to_date.required'    => 'To date is required.',
+            'to_date.date'        => 'To date must be a valid date.',
+            'to_date.after_or_equal' => 'To date must be on or after from date.',
         ];
     }
 

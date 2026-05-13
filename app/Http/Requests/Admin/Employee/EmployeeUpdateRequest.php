@@ -556,8 +556,8 @@ class EmployeeUpdateRequest extends FormRequest
             'academics.*.degree' => ['required_with:academics.*', 'string', $this->maxWordsRule(10, 'Degree type')],
             'academics.*.degree_title' => ['required_with:academics.*', 'string', 'max:100', $this->maxWordsRule(20, 'Degree title')],
             'academics.*.grade_cgpa' => ['required_with:academics.*', 'string', $this->maxWordsRule(5, 'Grade / CGPA')],
-            'academics.*.start_date' => ['required_with:academics.*', 'date'],
-            'academics.*.end_date' => ['required_with:academics.*', 'date'],
+            'academics.*.start_date' => ['required_with:academics.*', 'date', 'before_or_equal:today'],
+            'academics.*.end_date' => ['required_with:academics.*', 'date', 'after_or_equal:academics.*.start_date'],
             'academics.*.field_of_study' => ['nullable', 'string', 'max:80'],
             'academics.*.institute' => ['nullable', 'string', $this->maxWordsRule(10, 'University / board / institute')],
 
@@ -565,8 +565,8 @@ class EmployeeUpdateRequest extends FormRequest
             'employments' => ['nullable', 'array'],
             'employments.*.organization' => ['required_with:employments.*', 'string', 'max:255'],
             'employments.*.designation' => ['required_with:employments.*', 'string', 'max:255'],
-            'employments.*.from_date' => ['required_with:employments.*', 'date'],
-            'employments.*.to_date' => ['required_with:employments.*', 'date'],
+            'employments.*.from_date' => ['required_with:employments.*', 'date', 'before_or_equal:today'],
+            'employments.*.to_date' => ['required_with:employments.*', 'date', 'after_or_equal:employments.*.from_date'],
             'employments.*.salary' => ['nullable', 'string', 'max:100'],
             'employments.*.reason_for_leaving' => ['nullable', 'string', 'max:500'],
 
@@ -811,14 +811,20 @@ class EmployeeUpdateRequest extends FormRequest
             'academics.*.degree_title.required_with' => 'Degree title is required.',
             'academics.*.grade_cgpa.required_with' => 'Grade / CGPA is required.',
             'academics.*.start_date.required_with' => 'Academic start date is required.',
+            'academics.*.start_date.before_or_equal' => 'Academic start date cannot be in the future.',
             'academics.*.end_date.required_with' => 'Academic end date is required.',
+            'academics.*.end_date.after_or_equal' => 'Academic end date must be on or after the start date.',
+
             'academics.*.field_of_study.max' => 'Field of study can be at most 80 characters.',
 
             // Employment History
             'employments.*.organization.required_with' => 'Organization name is required.',
             'employments.*.designation.required_with' => 'Designation is required.',
             'employments.*.from_date.required_with' => 'From date is required.',
+            'employments.*.from_date.before_or_equal' => 'From date cannot be in the future.',
             'employments.*.to_date.required_with' => 'To date is required.',
+            'employments.*.to_date.after_or_equal' => 'To date must be on or after from date.',
+
 
             // Health
             'disability_type.regex' => 'Disability type must contain valid text only.',

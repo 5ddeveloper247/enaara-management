@@ -6095,19 +6095,26 @@
             if (target.matches('[data-academic-start-date], [data-academic-end-date]')) {
                 const row = target.closest('[data-academic-row]');
                 if (!row) return;
-                const start = row.querySelector('[data-academic-start-date]')?.value || '';
+                const startInput = row.querySelector('[data-academic-start-date]');
                 const endInput = row.querySelector('[data-academic-end-date]');
+                const start = startInput?.value || '';
                 const end = endInput?.value || '';
-                if (!start || !end || !endInput) {
-                    if (target.classList.contains('is-invalid')) {
-                        removeAcademicInlineError(target);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (startInput && start) {
+                    const startDate = new Date(`${start}T00:00:00`);
+                    if (!Number.isNaN(startDate.getTime()) && startDate <= today) {
+                        removeAcademicInlineError(startInput);
                     }
-                    return;
                 }
-                const startDate = new Date(`${start}T00:00:00`);
-                const endDate = new Date(`${end}T00:00:00`);
-                if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate >= startDate) {
-                    removeAcademicInlineError(endInput);
+
+                if (endInput && start && end) {
+                    const startDate = new Date(`${start}T00:00:00`);
+                    const endDate = new Date(`${end}T00:00:00`);
+                    if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate >= startDate) {
+                        removeAcademicInlineError(endInput);
+                    }
                 }
             }
         }, true);
@@ -6131,13 +6138,27 @@
             if (target.matches('[data-academic-start-date], [data-academic-end-date]')) {
                 const row = target.closest('[data-academic-row]');
                 if (!row) return;
-                const start = row.querySelector('[data-academic-start-date]')?.value || '';
-                const end = row.querySelector('[data-academic-end-date]')?.value || '';
+                const startInput = row.querySelector('[data-academic-start-date]');
+                const endInput = row.querySelector('[data-academic-end-date]');
+                const start = startInput?.value || '';
+                const end = endInput?.value || '';
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (start) {
+                    const startDate = new Date(`${start}T00:00:00`);
+                    if (!Number.isNaN(startDate.getTime()) && startDate > today) {
+                        showAcademicInlineError(startInput, 'Start date cannot be in the future.');
+                        return;
+                    }
+                }
+
                 if (start && end) {
                     const startDate = new Date(`${start}T00:00:00`);
                     const endDate = new Date(`${end}T00:00:00`);
                     if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate < startDate) {
-                        showAcademicInlineError(row.querySelector('[data-academic-end-date]'), 'End date must be on or after start date.');
+                        showAcademicInlineError(endInput, 'End date must be on or after start date.');
+                        return;
                     }
                 }
             }
@@ -6291,6 +6312,155 @@
 
     const addCertificateBtn = document.getElementById('moreCertificateAddRecordBtn');
     if (addCertificateBtn) addCertificateBtn.onclick = () => addCertificateRecord();
+
+    const moreCertificateRecordsContainerEl = document.getElementById('moreCertificateRecordsContainer');
+    if (moreCertificateRecordsContainerEl) {
+        const removeCertificateInlineError = function (input) {
+            if (!input) return;
+            input.classList.remove('is-invalid');
+            let next = input.nextElementSibling;
+            while (next && next.classList && next.classList.contains('input-guard-error')) {
+                const toRemove = next;
+                next = next.nextElementSibling;
+                toRemove.remove();
+            }
+        };
+        const showCertificateInlineError = function (input, message) {
+            if (!input) return;
+            removeCertificateInlineError(input);
+            input.classList.add('is-invalid');
+            const err = document.createElement('div');
+            err.className = 'field-error-msg text-danger small mt-1 fw-bold input-guard-error';
+            err.setAttribute('role', 'alert');
+            err.textContent = message;
+            input.insertAdjacentElement('afterend', err);
+        };
+        const certificateFieldConfig = function (target) {
+            if (!target) return null;
+            if (target.matches('[data-certificate-name]')) {
+                return { max: 150, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 150 characters allowed.' };
+            }
+            if (target.matches('[data-certificate-institute]')) {
+                return { max: 255, allowed: /[A-Za-z0-9\s.\-&,\/()#']/, clean: /[^A-Za-z0-9\s.\-&,\/()#']/g, invalid: 'Use letters, numbers, spaces, and basic punctuation only.', maxMsg: 'Maximum 255 characters allowed.' };
+            }
+            return null;
+        };
+
+        moreCertificateRecordsContainerEl.addEventListener('beforeinput', function (e) {
+            const target = e.target;
+            const cfg = certificateFieldConfig(target);
+            if (!cfg) return;
+            if (e.inputType && e.inputType.startsWith('delete')) return;
+            const inserted = typeof e.data === 'string' ? e.data : '';
+            if (!inserted) return;
+            if (!Array.from(inserted).every((ch) => cfg.allowed.test(ch))) {
+                e.preventDefault();
+                showCertificateInlineError(target, cfg.invalid);
+                return;
+            }
+            const current = String(target.value ?? '');
+            const start = typeof target.selectionStart === 'number' ? target.selectionStart : current.length;
+            const end = typeof target.selectionEnd === 'number' ? target.selectionEnd : current.length;
+            const nextLength = current.length - (end - start) + inserted.length;
+            if (nextLength > cfg.max) {
+                e.preventDefault();
+                showCertificateInlineError(target, cfg.maxMsg);
+            }
+        }, true);
+
+        moreCertificateRecordsContainerEl.addEventListener('input', function (e) {
+            const target = e.target;
+            const cfg = certificateFieldConfig(target);
+            if (!cfg) return;
+            const original = String(target.value ?? '');
+            let cleaned = original.replace(cfg.clean, '');
+            if (cleaned.length > cfg.max) {
+                cleaned = cleaned.slice(0, cfg.max);
+                target.value = cleaned;
+                showCertificateInlineError(target, cfg.maxMsg);
+                return;
+            }
+            if (cleaned !== original) {
+                target.value = cleaned;
+                showCertificateInlineError(target, cfg.invalid);
+                return;
+            }
+            if (target.classList.contains('is-invalid')) {
+                removeCertificateInlineError(target);
+            }
+        }, true);
+
+        moreCertificateRecordsContainerEl.addEventListener('focusout', function (e) {
+            const target = e.target;
+            if (!target) return;
+            const cfg = certificateFieldConfig(target);
+            if (cfg) {
+                const value = String(target.value ?? '');
+                const cleaned = value.replace(cfg.clean, '');
+                if (value === cleaned && value.length <= cfg.max) {
+                    removeCertificateInlineError(target);
+                }
+            }
+
+            if (target.matches('[data-certificate-start-date], [data-certificate-end-date]')) {
+                const row = target.closest('[data-certificate-row]');
+                if (!row) return;
+                const startInput = row.querySelector('[data-certificate-start-date]');
+                const endInput = row.querySelector('[data-certificate-end-date]');
+                const start = startInput?.value || '';
+                const end = endInput?.value || '';
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (startInput && start) {
+                    const startDate = new Date(`${start}T00:00:00`);
+                    if (!Number.isNaN(startDate.getTime()) && startDate <= today) {
+                        removeCertificateInlineError(startInput);
+                    }
+                }
+
+                if (endInput && start && end) {
+                    const startDate = new Date(`${start}T00:00:00`);
+                    const endDate = new Date(`${end}T00:00:00`);
+                    if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate >= startDate) {
+                        removeCertificateInlineError(endInput);
+                    }
+                }
+            }
+        }, true);
+
+        moreCertificateRecordsContainerEl.addEventListener('change', function (e) {
+            const target = e.target;
+            if (!target) return;
+            if (target.matches('[data-certificate-start-date], [data-certificate-end-date]')) {
+                const row = target.closest('[data-certificate-row]');
+                if (!row) return;
+                const startInput = row.querySelector('[data-certificate-start-date]');
+                const endInput = row.querySelector('[data-certificate-end-date]');
+                const start = startInput?.value || '';
+                const end = endInput?.value || '';
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (start) {
+                    const startDate = new Date(`${start}T00:00:00`);
+                    if (!Number.isNaN(startDate.getTime()) && startDate > today) {
+                        showCertificateInlineError(startInput, 'Start date cannot be in the future.');
+                        return;
+                    }
+                }
+
+                if (start && end) {
+                    const startDate = new Date(`${start}T00:00:00`);
+                    const endDate = new Date(`${end}T00:00:00`);
+                    if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate < startDate) {
+                        showCertificateInlineError(endInput, 'End date must be on or after start date.');
+                        return;
+                    }
+                }
+            }
+        });
+    }
 
     // --- EMPLOYMENT Record Specifics ---
 
