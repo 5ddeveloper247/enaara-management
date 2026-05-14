@@ -10,6 +10,10 @@
             ->subMinutes((int) $shift->clock_in_window_minutes)
             ->format('H:i');
 
+            $clockInEnd = \Carbon\Carbon::parse($shift->start_time)
+            ->addMinutes((int) $shift->grace_period_minutes)
+            ->format('H:i');
+
             $clockOutEnd = \Carbon\Carbon::parse($shift->end_time)
             ->addMinutes((int) $shift->clock_out_window_minutes)
             ->format('H:i');
@@ -21,7 +25,7 @@
                     data-shift-name="{{ $shift->name }}"
                     data-shift-start="{{ $startTime }}"
                     data-shift-end="{{ $endTime }}"
-                    data-clock-in-window="{{ $clockInStart }} - {{ $startTime }}"
+                    data-clock-in-window="{{ $clockInStart }} - {{ $clockInEnd }}"
                     data-clock-out-window="{{ $endTime }} - {{ $clockOutEnd }}"
                     data-grace-period="{{ $shift->grace_period_minutes }}"
                     data-break-time="{{ $shift->break_time_minutes }}"
@@ -51,7 +55,7 @@
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi bi-clock me-2 text-main small"></i>
                                 <small class="fw-semibold small">
-                                    Clock-in Window: {{ $clockInStart }} - {{ $startTime }}
+                                    Clock-in Window: {{ $clockInStart }} - {{ $clockInEnd }}
                                 </small>
                             </div>
 
