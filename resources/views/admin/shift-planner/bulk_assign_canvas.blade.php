@@ -56,6 +56,7 @@
                 <!-- Day Selection -->
                 <div class="mb-3">
                     <label class="form-label fw-semibold small text-white d-block mb-2">Repeat Days</label>
+                    <p class="small text-white-50 mb-2">Checked days receive the selected shift. Unchecked days are saved as OFF on the roster for the full start and end date range.</p>
                     <div class="d-flex flex-wrap gap-2" id="dayCheckboxesContainer">
                         @php $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; @endphp
                         @foreach($days as $day)
@@ -489,6 +490,7 @@ $(document).ready(function() {
             end_date: $endDateInput.val(),
             assign_mode: $('#modeDefault').is(':checked') ? 'default' : 'custom',
             days: $('.day-checkbox:checked').map(function() { return this.value; }).get(),
+            off_days: $('.day-checkbox:not(:checked)').map(function() { return this.value; }).get(),
             check_conflicts: $('#checkConflicts').is(':checked') ? 1 : 0,
             override_existing: $('#overrideExisting').is(':checked') ? 1 : 0,
             exclude_weekends: $('#excludeWeekends').is(':checked') ? 1 : 0

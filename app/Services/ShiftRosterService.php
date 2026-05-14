@@ -15,6 +15,16 @@ use Illuminate\Support\Facades\Log;
 
 class ShiftRosterService
 {
+    private const WEEKDAYS = [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday',
+    ];
+
     public function floorOptionsForAssignee(string $employeeType, int $employeeId): array
     {
         $floors = $this->resolveAssigneeFloors($employeeType, $employeeId);
@@ -151,54 +161,88 @@ class ShiftRosterService
             $shift = ShiftPlanner::findOrFail((int) $data['shift_planner_id']);
             $refs = $this->parseAssigneeRefs($data['employee_ids'] ?? []);
             $days = array_map('strtolower', $data['days'] ?? []);
+            $offDays = array_map('strtolower', $data['off_days'] ?? []);
+            if ($offDays === []) {
+                $offDays = array_values(array_diff(self::WEEKDAYS, $days));
+            }
             $excludeWeekends = (bool) ($data['exclude_weekends'] ?? false);
             $checkConflicts = (bool) ($data['check_conflicts'] ?? true);
             $overrideExisting = (bool) ($data['override_existing'] ?? false);
+            $workingConflicts = [];
 
-            if ($checkConflicts && ! $overrideExisting) {
-                $conflicts = $this->collectBulkConflicts(
+            if ($checkConflicts && ! $overrideExisting && $days !== []) {
+                $workingConflicts = $this->collectBulkConflicts(
                     $refs,
                     $data['start_date'],
                     $data['end_date'],
                     $days
                 );
-                if ($conflicts !== []) {
-                    return [
-                        'success' => false,
-                        'message' => 'Some employees already have shifts assigned on selected days: ' . implode(', ', $conflicts),
-                        'conflicts' => $conflicts,
-                    ];
-                }
             }
+
+            $skipWorkingDays = $workingConflicts !== [];
 
             $period = CarbonPeriod::create($data['start_date'], $data['end_date']);
             $totalAssigned = 0;
+            $totalOffDays = 0;
 
             foreach ($period as $date) {
                 $dayName = strtolower($date->format('l'));
-                if (! in_array($dayName, $days, true)) {
-                    continue;
-                }
                 if ($excludeWeekends && in_array($dayName, ['saturday', 'sunday'], true)) {
                     continue;
                 }
 
+                $isWorkingDay = in_array($dayName, $days, true);
+                $isOffDay = in_array($dayName, $offDays, true);
+                if (! $isWorkingDay && ! $isOffDay) {
+                    continue;
+                }
+
                 foreach ($refs as $ref) {
-                    $this->upsertAssigneeShiftEntry(
+                    if ($isWorkingDay) {
+                        if ($skipWorkingDays) {
+                            continue;
+                        }
+
+                        $this->upsertAssigneeShiftEntry(
+                            $ref['type'],
+                            $ref['id'],
+                            $date->toDateString(),
+                            $shift,
+                            $overrideExisting
+                        );
+                        $totalAssigned++;
+                        continue;
+                    }
+
+                    $this->upsertAssigneeOffEntry(
                         $ref['type'],
                         $ref['id'],
                         $date->toDateString(),
                         $shift,
                         $overrideExisting
                     );
-                    $totalAssigned++;
+                    $totalOffDays++;
                 }
+            }
+
+            if ($skipWorkingDays && $totalAssigned === 0 && $totalOffDays === 0) {
+                return [
+                    'success' => false,
+                    'message' => 'Some employees already have shifts assigned on selected days: ' . implode(', ', $workingConflicts),
+                    'conflicts' => $workingConflicts,
+                ];
+            }
+
+            $message = 'Shift assignment completed successfully.';
+            if ($skipWorkingDays && $totalOffDays > 0) {
+                $message = 'Off days were assigned. Existing weekday shifts were kept because of conflicts.';
             }
 
             return [
                 'success' => true,
-                'message' => 'Shift assignment completed successfully.',
+                'message' => $message,
                 'total_assigned' => $totalAssigned,
+                'total_off_days' => $totalOffDays,
             ];
         });
     }
@@ -321,25 +365,27 @@ class ShiftRosterService
         }
 
         $shiftsOut = $entries->map(function ($entry) use ($floorLabelMaps) {
+            $isOffDay = strtolower((string) $entry->status) === 'off';
             $shiftName = strtolower($entry->shift->name ?? '');
-            $startTime = $entry->start_time ?? $entry->shift->start_time;
+            $startTime = $isOffDay ? null : ($entry->start_time ?? $entry->shift->start_time);
             $startHour = $startTime ? (int) \Carbon\Carbon::parse($startTime)->format('H') : null;
 
             $shiftType = 'general';
-            if (str_contains($shiftName, 'morning')) {
-                $shiftType = 'morning';
-            } elseif (str_contains($shiftName, 'evening')) {
-                $shiftType = 'evening';
-            } elseif (str_contains($shiftName, 'night')) {
-                $shiftType = 'night';
-            } elseif ($startHour !== null) {
-                // Fallback to time-based detection if name doesn't contain keywords
-                if ($startHour >= 4 && $startHour < 12) {
+            if (! $isOffDay) {
+                if (str_contains($shiftName, 'morning')) {
                     $shiftType = 'morning';
-                } elseif ($startHour >= 12 && $startHour < 18) {
+                } elseif (str_contains($shiftName, 'evening')) {
                     $shiftType = 'evening';
-                } elseif ($startHour >= 18 || $startHour < 4) {
+                } elseif (str_contains($shiftName, 'night')) {
                     $shiftType = 'night';
+                } elseif ($startHour !== null) {
+                    if ($startHour >= 4 && $startHour < 12) {
+                        $shiftType = 'morning';
+                    } elseif ($startHour >= 12 && $startHour < 18) {
+                        $shiftType = 'evening';
+                    } elseif ($startHour >= 18 || $startHour < 4) {
+                        $shiftType = 'night';
+                    }
                 }
             }
 
@@ -361,11 +407,12 @@ class ShiftRosterService
                 'day' => (int) $entry->roster_date->format('d'),
                 'shiftPlannerId' => $entry->shift_planner_id,
                 'shiftType' => $shiftType,
-                'timeStart' => $this->formatShiftTime($entry->start_time ?? $entry->shift->start_time),
-                'timeEnd' => $this->formatShiftTime($entry->end_time ?? $entry->shift->end_time),
+                'timeStart' => $isOffDay ? null : $this->formatShiftTime($entry->start_time ?? $entry->shift->start_time),
+                'timeEnd' => $isOffDay ? null : $this->formatShiftTime($entry->end_time ?? $entry->shift->end_time),
                 'floor' => $floorLabel,
                 'sbuFloorId' => $floorLabel ? ($floorLabelMaps[$lookupKey][$floorLabel] ?? null) : null,
                 'status' => $entry->status,
+                'isOffDay' => $isOffDay,
                 'isCompensatory' => $entry->is_compensatory_earned,
                 'deletedAt' => $entry->deleted_at ? $entry->deleted_at->toDateTimeString() : null,
                 'createdByName' => $entry->createdBy?->name,
@@ -596,6 +643,52 @@ class ShiftRosterService
             ['outsourced_employee_id' => null] + $basePayload
         );
         if ($userId && $entry->wasRecentlyCreated) {
+            $entry->created_by = $userId;
+            $entry->assigned_by = $userId;
+            $entry->save();
+        }
+    }
+
+    private function upsertAssigneeOffEntry(string $type, int $id, string $date, ShiftPlanner $shift, bool $overrideExisting): void
+    {
+        $userId = Auth::id();
+        $basePayload = [
+            'shift_planner_id' => $shift->id,
+            'start_time' => null,
+            'end_time' => null,
+            'floor' => null,
+            'status' => 'off',
+        ];
+
+        if ($type === 'outsourced') {
+            $lookup = ['outsourced_employee_id' => $id, 'roster_date' => $date];
+            $payload = ['employee_id' => null] + $basePayload;
+        } else {
+            $lookup = ['employee_id' => $id, 'roster_date' => $date];
+            $payload = ['outsourced_employee_id' => null] + $basePayload;
+        }
+
+        if ($overrideExisting) {
+            $entry = ShiftRosterEntry::updateOrCreate($lookup, $payload);
+            if ($userId && $entry) {
+                if ($entry->wasRecentlyCreated) {
+                    $entry->created_by = $userId;
+                    $entry->assigned_by = $userId;
+                } else {
+                    $entry->updated_by = $userId;
+                }
+                $entry->save();
+            }
+
+            return;
+        }
+
+        if (ShiftRosterEntry::query()->where($lookup)->exists()) {
+            return;
+        }
+
+        $entry = ShiftRosterEntry::query()->create($lookup + $payload);
+        if ($userId && $entry) {
             $entry->created_by = $userId;
             $entry->assigned_by = $userId;
             $entry->save();

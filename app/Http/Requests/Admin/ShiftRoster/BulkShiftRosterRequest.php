@@ -5,9 +5,20 @@ namespace App\Http\Requests\Admin\ShiftRoster;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class BulkShiftRosterRequest extends FormRequest
 {
+    private const WEEKDAYS = [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday',
+    ];
+
     /**
      * Authorization
      */
@@ -71,6 +82,25 @@ class BulkShiftRosterRequest extends FormRequest
                     $v->errors()->add('employee_ids', 'One or more selected outsourced employees are invalid.');
                 }
             }
+
+            $days = collect($this->input('days', []))
+                ->map(static fn ($day) => strtolower(trim((string) $day)))
+                ->filter()
+                ->unique()
+                ->values();
+            $offDays = collect($this->input('off_days', []))
+                ->map(static fn ($day) => strtolower(trim((string) $day)))
+                ->filter()
+                ->unique()
+                ->values();
+
+            if ($days->isEmpty() && $offDays->isEmpty()) {
+                $v->errors()->add('days', 'Select at least one working day or off day.');
+            }
+
+            if ($days->intersect($offDays)->isNotEmpty()) {
+                $v->errors()->add('off_days', 'A day cannot be both a working day and an off day.');
+            }
         });
     }
 
@@ -90,8 +120,10 @@ class BulkShiftRosterRequest extends FormRequest
             // Dates
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'days' => ['required', 'array', 'min:1'],
-            'days.*' => ['string'],
+            'days' => ['required', 'array'],
+            'days.*' => ['string', Rule::in(self::WEEKDAYS)],
+            'off_days' => ['nullable', 'array'],
+            'off_days.*' => ['string', Rule::in(self::WEEKDAYS)],
             'assign_mode' => ['required', 'string', 'in:default,custom'],
 
             // Options

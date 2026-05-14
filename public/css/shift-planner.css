@@ -391,6 +391,12 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     border-color: rgba(99, 102, 241, 0.35);
 }
 
+.shift-pill.shift-off {
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    color: #4b5563;
+    border-color: rgba(107, 114, 128, 0.35);
+}
+
 .shift-pill.shift-late .shift-status-late {
     color: var(--danger-color);
     font-size: 9px;

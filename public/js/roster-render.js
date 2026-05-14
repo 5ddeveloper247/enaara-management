@@ -108,6 +108,14 @@
     }
 
     function pillHtml(s) {
+        if (s.isOffDay || (s.status && String(s.status).toLowerCase() === 'off')) {
+            return '<div class="shift-pill shift-off">' +
+                '<div class="shift-pill-top">' +
+                '<span class="shift-time">OFF</span>' +
+                '</div>' +
+                '</div>';
+        }
+
         var typeClass = s.shiftType && s.shiftType !== 'general' ? ' shift-' + s.shiftType : '';
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
         var deletedClass = s.deletedAt ? ' shift-cancelled' : '';
