@@ -1594,6 +1594,22 @@ class EmployeeService
             // Latest Ex-Employment
             $latestExEmployment = $emp->exEmployments->sortByDesc('id')->first();
 
+            $latestCertificate = $emp->certificates
+                ->sort(function ($a, $b) {
+                    $endDiff = ($b->end_date?->getTimestamp() ?? 0) <=> ($a->end_date?->getTimestamp() ?? 0);
+                    if ($endDiff !== 0) {
+                        return $endDiff;
+                    }
+
+                    $startDiff = ($b->start_date?->getTimestamp() ?? 0) <=> ($a->start_date?->getTimestamp() ?? 0);
+                    if ($startDiff !== 0) {
+                        return $startDiff;
+                    }
+
+                    return $b->id <=> $a->id;
+                })
+                ->first();
+
             // First Reference
             $firstRef = $emp->references->first();
 
@@ -1702,6 +1718,8 @@ class EmployeeService
                 'latest_degree'       => $latestAcademic?->degree ?? '-',
                 'latest_degree_title' => $latestAcademic?->degree_title ?? '-',
                 'latest_institute'    => $latestAcademic?->institute ?? '-',
+                'latest_certificate_name' => $latestCertificate?->certificate_name ?? '-',
+                'latest_certificate_institute' => $latestCertificate?->institute ?? '-',
 
                 // Certificate
                 'has_certificates'    => $emp->certificates->count() > 0 ? 'Yes' : 'No',
