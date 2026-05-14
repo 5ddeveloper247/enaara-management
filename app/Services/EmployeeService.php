@@ -1626,6 +1626,16 @@ class EmployeeService
             // First Reference
             $firstRef = $emp->references->first();
 
+            $spouseName = trim((string) ($emp->spouse_name ?? ''));
+            $spouseFromGeneral = strtolower(trim((string) ($emp->marital_status ?? ''))) === 'married'
+                && $spouseName !== ''
+                && $spouseName !== '-'
+                ? 1
+                : 0;
+            $wifeRelationCount = $emp->familyMembers
+                ->filter(fn ($member) => strtolower(trim((string) ($member->relation ?? ''))) === 'wife')
+                ->count();
+
             return [
                 'id'                  => $emp->id,
                 'employee_code'       => $emp->employee_code ?? '-',
@@ -1720,6 +1730,7 @@ class EmployeeService
                 // Family
                 'family_count'        => $emp->familyMembers->count(),
                 'parents_count'       => $emp->familyMembers->filter(fn($m) => in_array(strtolower($m->relation ?? ''), ['father', 'mother']))->count(),
+                'spouse_count'        => $spouseFromGeneral + $wifeRelationCount,
                 'kids_count'          => $emp->familyMembers->filter(fn($m) => in_array(strtolower($m->relation ?? ''), ['son', 'daughter']))->count(),
                 'son_count'           => $emp->familyMembers->filter(fn($m) => strtolower($m->relation ?? '') === 'son')->count(),
                 'daughter_count'      => $emp->familyMembers->filter(fn($m) => strtolower($m->relation ?? '') === 'daughter')->count(),
