@@ -3460,7 +3460,7 @@
         if (orgName)    orgName.textContent    = src.label;
         if (wkDays)     wkDays.textContent     = formatDaysList(d.working_days);
         if (wkTime)     wkTime.textContent     = (d.working_start_time && d.working_end_time)
-                                                    ? `${formatTime(d.working_start_time)} â€“ ${formatTime(d.working_end_time)}`
+                                                    ? `${formatTime(d.working_start_time)} - ${formatTime(d.working_end_time)}`
                                                     : '- - -';
         if (graceEl)    graceEl.textContent    = graceMin != null && graceMin !== '' ? `${graceMin} min` : '-';
     }
