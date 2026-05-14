@@ -431,7 +431,6 @@
                                                             <div class="academic-doc-header">
                                                                 <i class="bi bi-file-earmark-text"></i>
                                                                 <span>Transcript</span>
-                                                                <span class="text-danger ms-1">*</span>
                                                             </div>
 
                                                             {{-- Upload zone (shown when no file selected/saved) --}}
@@ -481,7 +480,6 @@
                                                             <div class="academic-doc-header">
                                                                 <i class="bi bi-file-earmark-diploma"></i>
                                                                 <span>Degree Certificate</span>
-                                                                <span class="text-danger ms-1">*</span>
                                                             </div>
 
                                                             {{-- Upload zone --}}
@@ -622,7 +620,6 @@
                                                             <div class="academic-doc-header">
                                                                 <i class="bi bi-file-earmark-medical"></i>
                                                                 <span>Certificate Copy</span>
-                                                                <span class="text-danger ms-1">*</span>
                                                             </div>
 
                                                             {{-- Upload zone --}}
@@ -781,7 +778,6 @@
                                                                     <div class="academic-doc-header">
                                                                         <i class="bi bi-file-earmark-person"></i>
                                                                         <span>Experience Letter</span>
-                                                                        <span class="text-danger ms-1">*</span>
                                                                     </div>
 
                                                                     {{-- Upload zone --}}
@@ -825,12 +821,12 @@
                                                                 </div>
                                                             </div>
 
-                                                            <!-- Salary Slip (Optional) -->
+                                                            <!-- Salary Slip -->
                                                             <div class="col-12 col-md-6">
                                                                 <div class="academic-doc-card">
                                                                     <div class="academic-doc-header">
                                                                         <i class="bi bi-cash-stack"></i>
-                                                                        <span>Salary Slip (Optional)</span>
+                                                                        <span>Salary Slip</span>
                                                                     </div>
 
                                                                     {{-- Upload zone --}}
@@ -979,7 +975,7 @@
                                                                         <div class="academic-doc-card">
                                                                             <div class="academic-doc-header">
                                                                                 <i class="bi bi-file-earmark-medical"></i>
-                                                                                <span>Medical Report / Fitness Certificate (Optional)</span>
+                                                                                <span>Medical Report / Fitness Certificate</span>
                                                                             </div>
 
                                                                             {{-- Upload zone --}}

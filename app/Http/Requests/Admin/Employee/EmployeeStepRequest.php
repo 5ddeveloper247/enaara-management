@@ -796,7 +796,7 @@ class EmployeeStepRequest extends FormRequest
                     'reason_for_leaving' => ['nullable', 'string', 'max:200'],
                     'hr_contact'         => ['nullable', 'string', 'max:15'],
                     'hr_email'           => ['nullable', 'email', 'max:100'],
-                    'experience_letter'  => ['required_without:employment_id', 'nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
+                    'experience_letter'  => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                     'salary_slip'        => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
@@ -811,7 +811,7 @@ class EmployeeStepRequest extends FormRequest
                     'start_date'       => ['required', 'date', 'before_or_equal:today'],
                     'end_date'         => ['required', 'date', 'after_or_equal:start_date'],
                     'institute'        => ['required', 'string', 'max:255', $this->maxWordsRule(20, 'Institute')],
-                    'certificate_file' => ['required_without:certificate_id', 'nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
+                    'certificate_file' => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,pdf'],
                 ]);
 
             case 'medical':

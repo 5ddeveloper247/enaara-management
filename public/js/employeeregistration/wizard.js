@@ -5309,21 +5309,6 @@
             if ((degree === 'Matric' || degree === 'Intermediate / Diploma' || degree === 'Intermediate') && !institute) {
                 addErr('institute', 'Board is required for selected degree.');
             }
-
-            // Mandatory Document Check (either transcript or degree)
-            const transcriptInput = rowElement ? rowElement.querySelector('[data-academic-transcript-file]') : null;
-            const transcriptView = rowElement ? rowElement.querySelector('[data-academic-transcript-view-container]') : null;
-            const isTranscriptSelected = transcriptInput && transcriptInput.files.length > 0;
-            const isTranscriptExisting = transcriptView && !transcriptView.classList.contains('d-none');
-
-            const degreeInput = rowElement ? rowElement.querySelector('[data-academic-degree-file]') : null;
-            const degreeView = rowElement ? rowElement.querySelector('[data-academic-degree-view-container]') : null;
-            const isDegreeSelected = degreeInput && degreeInput.files.length > 0;
-            const isDegreeExisting = degreeView && !degreeView.classList.contains('d-none');
-            
-            if (!isTranscriptSelected && !isTranscriptExisting && !isDegreeSelected && !isDegreeExisting) {
-                addErr('_doc_required', 'Transcript or Degree is required.');
-            }
         }
 
         if (type === 'certificate') {
@@ -5347,16 +5332,6 @@
             if (!institute) addErr('institute', 'Institute is required.');
             else if (institute.length > 255) addErr('institute', 'Institute must not exceed 255 characters.');
             else if (countWords(institute) > 20) addErr('institute', 'Institute can be at most 20 words.');
-
-            // Mandatory Certificate Document Check
-            const certInput = rowElement ? rowElement.querySelector('[data-certificate-file]') : null;
-            const certView = rowElement ? rowElement.querySelector('[data-certificate-view-container]') : null;
-            const isCertSelected = certInput && certInput.files.length > 0;
-            const isCertExisting = certView && !certView.classList.contains('d-none');
-            
-            if (!isCertSelected && !isCertExisting) {
-                addErr('_doc_required', 'Certificate copy is required.');
-            }
         }
 
         if (type === 'employment') {
@@ -5387,16 +5362,6 @@
             if (hrEmail) {
                 if (hrEmail.length > 100) addErr('hr_email', 'HR email must not exceed 100 characters.');
                 else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hrEmail)) addErr('hr_email', 'HR email must be a valid email address.');
-            }
-
-            // Mandatory Experience Letter Check
-            const expInput = rowElement ? rowElement.querySelector('[data-employment-exp-file]') : null;
-            const expView = rowElement ? rowElement.querySelector('[data-employment-exp-view-container]') : null;
-            const isExpSelected = expInput && expInput.files.length > 0;
-            const isExpExisting = expView && !expView.classList.contains('d-none');
-            
-            if (!isExpSelected && !isExpExisting) {
-                addErr('_doc_required', 'Experience letter is required.');
             }
         }
         
