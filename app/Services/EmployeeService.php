@@ -1700,6 +1700,7 @@ class EmployeeService
 
                 // Academic
                 'latest_degree'       => $latestAcademic?->degree ?? '-',
+                'latest_degree_title' => $latestAcademic?->degree_title ?? '-',
                 'latest_institute'    => $latestAcademic?->institute ?? '-',
 
                 // Certificate
