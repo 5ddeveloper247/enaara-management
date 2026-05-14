@@ -279,6 +279,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     // Shift Roster
     Route::get('/shift-roster', [ShiftRosterController::class, 'index'])->name('admin.shift-roster.index');
     Route::get('/shift-roster/grid', [ShiftRosterController::class, 'grid'])->name('admin.shift-roster.grid');
+    Route::get('/shift-roster/floor-options', [ShiftRosterController::class, 'floorOptions'])->name('admin.shift-roster.floor-options');
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
     Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
         ->name('admin.shift-roster.bulk-assign');

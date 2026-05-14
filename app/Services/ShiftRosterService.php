@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
+use App\Models\SbuFloor;
 use App\Models\ShiftPlanner;
 use App\Models\ShiftRosterEntry;
 use Carbon\Carbon;
@@ -14,6 +15,18 @@ use Illuminate\Support\Facades\Log;
 
 class ShiftRosterService
 {
+    public function floorOptionsForAssignee(string $employeeType, int $employeeId): array
+    {
+        $floors = $this->resolveAssigneeFloors($employeeType, $employeeId);
+
+        return $floors->map(fn (SbuFloor $floor) => [
+            'id' => $floor->id,
+            'name' => $floor->name,
+            'floor_number' => $floor->floor_number,
+            'label' => $this->formatFloorLabel($floor),
+        ])->values()->all();
+    }
+
     /**
      * Store a newly created shift roster (Single Day).
      */
@@ -29,11 +42,11 @@ class ShiftRosterService
                 'end_time' => $data['end_time'] ?? $this->formatShiftTime($shift->end_time),
                 'check_in' => $data['check_in'] ?? null,
                 'check_out' => $data['check_out'] ?? null,
-                'floor' => $data['floor'] ?? null,
                 'late_check_in' => (bool) ($data['late_check_in'] ?? false),
                 'status' => (($data['status'] ?? 1) == 1) ? 'pending' : 'cancelled',
                 'assignment_id' => null,
             ];
+            $this->applyFloorToPayload($data, $payload);
 
             if (($data['employee_type'] ?? 'employee') === 'outsourced') {
                 $payload['employee_id'] = null;
@@ -93,10 +106,10 @@ class ShiftRosterService
             'end_time' => $data['end_time'] ?? $entry->end_time,
             'check_in' => $data['check_in'] ?? $entry->check_in,
             'check_out' => $data['check_out'] ?? $entry->check_out,
-            'floor' => $data['floor'] ?? $entry->floor,
             'late_check_in' => (bool) ($data['late_check_in'] ?? $entry->late_check_in),
             'status' => isset($data['status']) ? ((int) $data['status'] === 1 ? 'pending' : 'cancelled') : $entry->status,
         ];
+        $this->applyFloorToPayload($data, $payload, $entry->floor);
 
         if (($data['employee_type'] ?? 'employee') === 'outsourced') {
             $payload['outsourced_employee_id'] = (int) $data['employee_id'];
@@ -294,7 +307,20 @@ class ShiftRosterService
         }
         $entries = $entriesQuery->get();
 
-        $shiftsOut = $entries->map(function($entry) {
+        $floorLabelMaps = [];
+        foreach ($entries as $entry) {
+            $employeeType = $entry->employee_id ? 'employee' : 'outsourced';
+            $sourceId = (int) ($entry->employee_id ?: $entry->outsourced_employee_id);
+            $lookupKey = $this->assigneeLookupKey($employeeType, $sourceId);
+
+            if (! array_key_exists($lookupKey, $floorLabelMaps)) {
+                $floorLabelMaps[$lookupKey] = collect($this->floorOptionsForAssignee($employeeType, $sourceId))
+                    ->mapWithKeys(fn (array $option) => [$option['label'] => (int) $option['id']])
+                    ->all();
+            }
+        }
+
+        $shiftsOut = $entries->map(function ($entry) use ($floorLabelMaps) {
             $shiftName = strtolower($entry->shift->name ?? '');
             $startTime = $entry->start_time ?? $entry->shift->start_time;
             $startHour = $startTime ? (int) \Carbon\Carbon::parse($startTime)->format('H') : null;
@@ -317,6 +343,11 @@ class ShiftRosterService
                 }
             }
 
+            $employeeType = $entry->employee_id ? 'employee' : 'outsourced';
+            $sourceId = (int) ($entry->employee_id ?: $entry->outsourced_employee_id);
+            $lookupKey = $this->assigneeLookupKey($employeeType, $sourceId);
+            $floorLabel = $entry->floor;
+
             return [
                 'rosterId' => $entry->id,
                 'employeeId' => $entry->employee_id
@@ -332,6 +363,8 @@ class ShiftRosterService
                 'shiftType' => $shiftType,
                 'timeStart' => $this->formatShiftTime($entry->start_time ?? $entry->shift->start_time),
                 'timeEnd' => $this->formatShiftTime($entry->end_time ?? $entry->shift->end_time),
+                'floor' => $floorLabel,
+                'sbuFloorId' => $floorLabel ? ($floorLabelMaps[$lookupKey][$floorLabel] ?? null) : null,
                 'status' => $entry->status,
                 'isCompensatory' => $entry->is_compensatory_earned,
                 'deletedAt' => $entry->deleted_at ? $entry->deleted_at->toDateTimeString() : null,
@@ -353,6 +386,100 @@ class ShiftRosterService
     {
         if (!$value) return '00:00';
         return Carbon::parse($value)->format('H:i');
+    }
+
+    private function assigneeLookupKey(string $employeeType, int $employeeId): string
+    {
+        return $employeeType . ':' . $employeeId;
+    }
+
+    private function resolveAssigneeFloors(string $employeeType, int $employeeId)
+    {
+        if ($employeeType === 'outsourced') {
+            $employee = OutsourcedEmployee::query()
+                ->with([
+                    'assignedFloors' => static fn ($query) => $query
+                        ->where('is_active', true)
+                        ->orderBy('floor_number')
+                        ->orderBy('name'),
+                ])
+                ->whereNull('deleted_at')
+                ->findOrFail($employeeId);
+
+            if ($employee->assignedFloors->isNotEmpty()) {
+                return $employee->assignedFloors;
+            }
+
+            if (! $employee->sbu_id) {
+                return collect();
+            }
+
+            return SbuFloor::query()
+                ->where('sbu_id', $employee->sbu_id)
+                ->where('is_active', true)
+                ->orderBy('floor_number')
+                ->orderBy('name')
+                ->get();
+        }
+
+        $employee = Employee::query()
+            ->with([
+                'assignedFloors' => static fn ($query) => $query
+                    ->where('is_active', true)
+                    ->orderBy('floor_number')
+                    ->orderBy('name'),
+            ])
+            ->where('is_active', 1)
+            ->shiftBasedWorkArrangement()
+            ->findOrFail($employeeId);
+
+        if ($employee->assignedFloors->isNotEmpty()) {
+            return $employee->assignedFloors;
+        }
+
+        if (! $employee->sbu_id) {
+            return collect();
+        }
+
+        return SbuFloor::query()
+            ->where('sbu_id', $employee->sbu_id)
+            ->where('is_active', true)
+            ->orderBy('floor_number')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function formatFloorLabel(SbuFloor $floor): string
+    {
+        $name = trim((string) $floor->name);
+        $floorNumber = $floor->floor_number;
+
+        if ($floorNumber !== null && $floorNumber !== '') {
+            return trim($name . ' • ' . $floorNumber);
+        }
+
+        return $name;
+    }
+
+    private function applyFloorToPayload(array $data, array &$payload, ?string $existingFloor = null): void
+    {
+        if (! array_key_exists('sbu_floor_id', $data)) {
+            $payload['floor'] = $existingFloor;
+
+            return;
+        }
+
+        if ($data['sbu_floor_id'] === null) {
+            $payload['floor'] = null;
+
+            return;
+        }
+
+        $floor = SbuFloor::query()
+            ->where('is_active', true)
+            ->findOrFail((int) $data['sbu_floor_id']);
+
+        $payload['floor'] = $this->formatFloorLabel($floor);
     }
 
     /**

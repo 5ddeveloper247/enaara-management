@@ -112,14 +112,13 @@
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
         var deletedClass = s.deletedAt ? ' shift-cancelled' : '';
         var lateBlock = s.lateCheckIn ? '<span class="shift-status-late"><i class="bi bi-exclamation-circle-fill"></i> Late check-in</span>' : '';
-        var floorBlock = (s.floor && String(s.floor).trim()) ? '<span class="shift-floor">' + s.floor + '</span>' : '';
         return '<div class="shift-pill' + typeClass + lateClass + deletedClass + '">' +
             '<div class="shift-pill-top">' +
             '<span class="shift-time">' + formatTimeAMPM(s.timeStart) + ' – ' + formatTimeAMPM(s.timeEnd) + '</span>' +
             '</div>' +
             '<div class="shift-pill-meta">' +
             // '<span class="shift-check"><i class="bi bi-box-arrow-in-right shift-check-icon me-1"></i>' + checkIn + ' <span class="mx-1">•</span><i class="bi bi-box-arrow-right shift-check-icon ms-1 me-1"></i>' + checkOut + '</span>' +
-            floorBlock + lateBlock +
+            lateBlock +
             '</div></div>';
     }
 
@@ -397,6 +396,99 @@
         return padDay(dateObj.getDate()) + ' ' + months[dateObj.getMonth()] + ' ' + dateObj.getFullYear();
     }
 
+    function clearRosterFloorFieldError() {
+        var floorEl = document.getElementById('rosterFloor');
+        var errorEl = document.getElementById('rosterFloorError');
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.classList.add('d-none');
+        }
+        if (floorEl) {
+            floorEl.classList.remove('is-invalid');
+        }
+    }
+
+    function showRosterFloorFieldError(message) {
+        var floorEl = document.getElementById('rosterFloor');
+        var errorEl = document.getElementById('rosterFloorError');
+        if (errorEl) {
+            errorEl.textContent = message || 'Please select a valid floor.';
+            errorEl.classList.remove('d-none');
+        }
+        if (floorEl) {
+            floorEl.classList.add('is-invalid');
+        }
+    }
+
+    function populateRosterFloorOptions(options, selectedFloorId, legacyFloorLabel) {
+        var floorEl = document.getElementById('rosterFloor');
+        if (!floorEl) {
+            return;
+        }
+
+        var selectedValue = selectedFloorId ? String(selectedFloorId) : '';
+        var floorOptions = options || [];
+        var html = '<option value="">Select floor / location</option>';
+
+        floorOptions.forEach(function(option) {
+            html += '<option value="' + String(option.id) + '">' + option.label + '</option>';
+        });
+
+        if (legacyFloorLabel && !selectedValue) {
+            var matchingOption = floorOptions.find(function(option) {
+                return option.label === legacyFloorLabel;
+            });
+            if (matchingOption) {
+                selectedValue = String(matchingOption.id);
+            }
+        }
+
+        floorEl.innerHTML = html;
+        floorEl.value = selectedValue || '';
+    }
+
+    function loadRosterFloorOptions(employeeType, employeeSourceId, selectedFloorId, legacyFloorLabel) {
+        var url = window.rosterFloorOptionsUrl || '';
+        clearRosterFloorFieldError();
+
+        if (!url) {
+            populateRosterFloorOptions([], selectedFloorId, legacyFloorLabel);
+            return Promise.resolve();
+        }
+
+        var params = new URLSearchParams({
+            employee_type: employeeType,
+            employee_id: String(employeeSourceId)
+        });
+
+        return fetch(url + '?' + params.toString(), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+            .then(function(response) {
+                return response.json().then(function(body) {
+                    return { ok: response.ok, status: response.status, body: body };
+                });
+            })
+            .then(function(result) {
+                var options = (result.ok && result.body && result.body.success && Array.isArray(result.body.data))
+                    ? result.body.data
+                    : [];
+                populateRosterFloorOptions(options, selectedFloorId, legacyFloorLabel);
+                if (!result.ok) {
+                    showRosterFloorFieldError((result.body && result.body.message) ? result.body.message : 'Could not load floor options.');
+                }
+            })
+            .catch(function() {
+                populateRosterFloorOptions([], selectedFloorId, legacyFloorLabel);
+                showRosterFloorFieldError('Could not load floor options.');
+            });
+    }
+
     function openRosterShiftCanvas(employeeId, employeeName, deptName, rosterDate, shift) {
         var canvas = document.getElementById('rosterShiftCanvas');
         var titleEl = document.getElementById('rosterShiftCanvasTitle');
@@ -457,7 +549,6 @@
             if (endTimeEl) endTimeEl.value = shift.timeEnd || '';
             if (checkInEl) checkInEl.value = shift.checkIn || '';
             if (checkOutEl) checkOutEl.value = shift.checkOut || '';
-            if (floorEl) floorEl.value = shift.floor || '';
             if (lateCheckInEl) lateCheckInEl.checked = !!shift.lateCheckIn;
             if (notesEl) notesEl.value = shift.notes || '';
 
@@ -485,7 +576,6 @@
             if (endTimeEl) endTimeEl.value = '';
             if (checkInEl) checkInEl.value = '';
             if (checkOutEl) checkOutEl.value = '';
-            if (floorEl) floorEl.value = '';
             if (lateCheckInEl) lateCheckInEl.checked = false;
             if (notesEl) notesEl.value = '';
             if (auditCard) auditCard.style.display = 'none';
@@ -511,8 +601,13 @@
             if (floorEl) floorEl.disabled = false;
         }
 
-        var offcanvas = bootstrap.Offcanvas.getOrCreateInstance(canvas);
-        offcanvas.show();
+        var selectedFloorId = shift ? (shift.sbuFloorId || shift.sbu_floor_id || null) : null;
+        var legacyFloorLabel = shift ? (shift.floor || '') : '';
+
+        loadRosterFloorOptions(employeeType, employeeSourceId, selectedFloorId, legacyFloorLabel).then(function() {
+            var offcanvas = bootstrap.Offcanvas.getOrCreateInstance(canvas);
+            offcanvas.show();
+        });
     }
 
     function saveRosterAssignment() {
@@ -526,6 +621,8 @@
         var shiftPlannerId = document.getElementById('rosterShiftPlannerId').value;
         var rosterId = document.getElementById('rosterShiftRosterId').value;
         var notes = document.getElementById('rosterShiftNotes').value.trim();
+        var floorSelect = document.getElementById('rosterFloor');
+        var sbuFloorId = floorSelect && floorSelect.value ? parseInt(floorSelect.value, 10) : null;
 
         var parsedEmployeeId = parseInt(employeeId, 10);
         if (!employeeId || !rosterDate || !shiftPlannerId || !Number.isFinite(parsedEmployeeId) || parsedEmployeeId <= 0) {
@@ -542,10 +639,12 @@
             end_time: document.getElementById('rosterEndTime').value,
             check_in: document.getElementById('rosterCheckIn').value,
             check_out: document.getElementById('rosterCheckOut').value,
-            floor: document.getElementById('rosterFloor').value,
+            sbu_floor_id: Number.isFinite(sbuFloorId) && sbuFloorId > 0 ? sbuFloorId : null,
             late_check_in: document.getElementById('rosterLateCheckIn')?.checked ? 1 : 0
         };
         if (notes) payload.notes = notes;
+
+        clearRosterFloorFieldError();
 
         console.log("Submitting Roster Assignment:", payload);
 
@@ -593,7 +692,11 @@
                     var msg = 'Could not save assignment.';
                     if (res.body && res.body.message) msg = res.body.message;
                     if (res.status === 422 && res.body.errors) {
-                        msg = Object.values(res.body.errors).flat().join('<br>'); // showSuccess/showError supports HTML
+                        var floorErrors = res.body.errors.sbu_floor_id;
+                        if (floorErrors && floorErrors.length) {
+                            showRosterFloorFieldError(floorErrors[0]);
+                        }
+                        msg = Object.values(res.body.errors).flat().join('<br>');
                     }
                     
                     showError(msg);

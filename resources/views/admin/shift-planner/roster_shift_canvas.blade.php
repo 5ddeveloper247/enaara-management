@@ -109,7 +109,10 @@
 
                 <div class="mb-3">
                     <label for="rosterFloor" class="form-label roster-shift-field-label">Floor / Location</label>
-                    <input type="text" class="form-control roster-shift-input" id="rosterFloor" name="floor" placeholder="e.g. Ward A • 3rd Floor">
+                    <select class="form-select roster-shift-input" id="rosterFloor" name="sbu_floor_id">
+                        <option value="">Select floor / location</option>
+                    </select>
+                    <div class="invalid-feedback d-block d-none" id="rosterFloorError"></div>
                 </div>
 
                 <div class="mb-0">

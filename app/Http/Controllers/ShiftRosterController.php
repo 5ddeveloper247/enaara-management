@@ -10,6 +10,7 @@ use App\Models\ShiftPlanner;
 use App\Services\ShiftRosterService;
 use App\Http\Requests\Admin\ShiftRoster\ShiftRosterRequest;
 use App\Http\Requests\Admin\ShiftRoster\BulkShiftRosterRequest;
+use App\Http\Requests\Admin\ShiftRoster\ShiftRosterFloorOptionsRequest;
 use Illuminate\Http\Request;
 
 class ShiftRosterController extends Controller
@@ -47,6 +48,38 @@ class ShiftRosterController extends Controller
                 'success' => true,
                 'data'    => $data,
             ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function floorOptions(ShiftRosterFloorOptionsRequest $request)
+    {
+        if (! $this->canAccessShiftPlannerRoster()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validated();
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->shiftRosterService->floorOptionsForAssignee(
+                    $validated['employee_type'],
+                    (int) $validated['employee_id']
+                ),
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Employee not found.',
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

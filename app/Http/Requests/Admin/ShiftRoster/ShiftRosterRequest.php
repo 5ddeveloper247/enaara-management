@@ -2,9 +2,10 @@
 
 namespace App\Http\Requests\Admin\ShiftRoster;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
+use App\Services\ShiftRosterService;
+use Illuminate\Foundation\Http\FormRequest;
 
 class ShiftRosterRequest extends FormRequest
 {
@@ -34,7 +35,7 @@ class ShiftRosterRequest extends FormRequest
             'end_time' => ['nullable', 'date_format:H:i'],
             'check_in' => ['nullable', 'date_format:H:i'],
             'check_out' => ['nullable', 'date_format:H:i'],
-            'floor' => ['nullable', 'string', 'max:255'],
+            'sbu_floor_id' => ['nullable', 'integer', 'exists:sbu_floors,id'],
             'late_check_in' => ['nullable', 'boolean'],
 
             'status' => ['nullable', 'integer', 'in:0,1'],
@@ -62,6 +63,8 @@ class ShiftRosterRequest extends FormRequest
             'status.in' => 'Status must be either assigned or cancelled.',
 
             'notes.max' => 'Notes may not be greater than 1000 characters.',
+            'sbu_floor_id.integer' => 'Selected floor is invalid.',
+            'sbu_floor_id.exists' => 'Selected floor does not exist.',
         ];
     }
 
@@ -72,6 +75,18 @@ class ShiftRosterRequest extends FormRequest
             $id = (int) $this->input('employee_id');
             if (! $type || ! $id) {
                 return;
+            }
+
+            $floorId = $this->input('sbu_floor_id');
+            if ($floorId !== null && $floorId !== '') {
+                $allowedIds = collect(app(ShiftRosterService::class)->floorOptionsForAssignee($type, $id))
+                    ->pluck('id')
+                    ->map(fn ($value) => (int) $value)
+                    ->all();
+
+                if (! in_array((int) $floorId, $allowedIds, true)) {
+                    $v->errors()->add('sbu_floor_id', 'Selected floor is not available for this employee.');
+                }
             }
 
             if ($type === 'employee') {
@@ -100,10 +115,13 @@ class ShiftRosterRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $floorId = $this->input('sbu_floor_id');
+
         $this->merge([
             'employee_type' => $this->input('employee_type', 'employee'),
             'status' => $this->has('status') ? $this->status : 1,
             'late_check_in' => $this->has('late_check_in') ? true : false,
+            'sbu_floor_id' => $floorId === '' || $floorId === null ? null : (int) $floorId,
         ]);
     }
 }
