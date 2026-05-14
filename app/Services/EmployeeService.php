@@ -1591,8 +1591,21 @@ class EmployeeService
             // If no rank matched at all, fall back to most-recent end_date, then first-added
             $latestAcademic = $rankedAcademic ?? $emp->academics->sortByDesc('end_date')->sortBy('id')->first();
 
-            // Latest Ex-Employment
-            $latestExEmployment = $emp->exEmployments->sortByDesc('id')->first();
+            $latestExEmployment = $emp->exEmployments
+                ->sort(function ($a, $b) {
+                    $endDiff = ($b->to_date?->getTimestamp() ?? 0) <=> ($a->to_date?->getTimestamp() ?? 0);
+                    if ($endDiff !== 0) {
+                        return $endDiff;
+                    }
+
+                    $startDiff = ($b->from_date?->getTimestamp() ?? 0) <=> ($a->from_date?->getTimestamp() ?? 0);
+                    if ($startDiff !== 0) {
+                        return $startDiff;
+                    }
+
+                    return $b->id <=> $a->id;
+                })
+                ->first();
 
             $latestCertificate = $emp->certificates
                 ->sort(function ($a, $b) {
