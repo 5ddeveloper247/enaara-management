@@ -120,13 +120,14 @@
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
         var deletedClass = s.deletedAt ? ' shift-cancelled' : '';
         var lateBlock = s.lateCheckIn ? '<span class="shift-status-late"><i class="bi bi-exclamation-circle-fill"></i> Late check-in</span>' : '';
+        var floorBlock = s.floor ? '<span class="shift-floor">' + escapeHtml(s.floor) + '</span>' : '';
         return '<div class="shift-pill' + typeClass + lateClass + deletedClass + '">' +
             '<div class="shift-pill-top">' +
             '<span class="shift-time">' + formatTimeAMPM(s.timeStart) + ' – ' + formatTimeAMPM(s.timeEnd) + '</span>' +
             '</div>' +
             '<div class="shift-pill-meta">' +
-            // '<span class="shift-check"><i class="bi bi-box-arrow-in-right shift-check-icon me-1"></i>' + checkIn + ' <span class="mx-1">•</span><i class="bi bi-box-arrow-right shift-check-icon ms-1 me-1"></i>' + checkOut + '</span>' +
             lateBlock +
+            floorBlock +
             '</div></div>';
     }
 

@@ -325,12 +325,14 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     margin-bottom: 3px;
     display: inline-flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 2px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(0, 0, 0, 0.06);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     width: max-content;
     margin: 0 auto 3px auto;
+    text-align: left;
 }
 
 .shift-pill:last-child {
@@ -345,9 +347,10 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 .shift-pill-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 6px;
     font-weight: 600;
+    width: 100%;
 }
 
 .shift-time {
@@ -357,9 +360,11 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 .shift-pill-meta {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 1px;
     font-size: 9px;
     opacity: 0.9;
+    width: 100%;
 }
 
 .shift-check,
@@ -367,6 +372,8 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: left;
+    width: 100%;
 }
 
 .shift-check-icon {

@@ -7,6 +7,7 @@ use App\Http\Controllers\BalanceTrackerController;
 use App\Http\Controllers\BiometricDeviceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DesignationController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OutsourcedEmployeeController;
 use App\Http\Controllers\EmployeeTypeController;
@@ -134,6 +135,13 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/role-levels/edit/{id}', [RoleLevelController::class, 'edit'])->name('admin.role-levels.edit');
     Route::post('/role-levels/edit/{id}', [RoleLevelController::class, 'update'])->name('admin.role-levels.update');
     Route::delete('/role-levels/delete/{id}', [RoleLevelController::class, 'destroy'])->name('admin.role-levels.destroy');
+
+    // Designation Routes
+    Route::get('/designations', [DesignationController::class, 'index'])->name('admin.designations.index');
+    Route::post('/designations/add', [DesignationController::class, 'store'])->name('admin.designations.store');
+    Route::get('/designations/edit/{id}', [DesignationController::class, 'edit'])->name('admin.designations.edit');
+    Route::post('/designations/edit/{id}', [DesignationController::class, 'update'])->name('admin.designations.update');
+    Route::delete('/designations/delete/{id}', [DesignationController::class, 'destroy'])->name('admin.designations.destroy');
 
     Route::get('/leave-type', [LeaveTypeController::class, 'index'])->name('admin.leave.type.index');
     Route::get('/leave-type/add', [LeaveTypeController::class, 'create'])->name('admin.leave.type.add');
