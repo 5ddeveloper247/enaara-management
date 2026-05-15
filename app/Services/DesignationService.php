@@ -120,6 +120,25 @@ class DesignationService
         return $designation->delete();
     }
 
+    public function listActiveByOrganizationAndSbu(int $organizationId, int $sbuId): array
+    {
+        $this->assertSbuBelongsToOrganization($sbuId, $organizationId);
+
+        return Designation::query()
+            ->select(['id', 'name'])
+            ->where('organization_id', $organizationId)
+            ->where('sbu_id', $sbuId)
+            ->where('is_active', true)
+            ->orderByDesc('id')
+            ->get()
+            ->map(static fn (Designation $d): array => [
+                'id' => (int) $d->id,
+                'name' => (string) $d->name,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function getOrganizationHierarchy(): Collection
     {
         return Organization::query()

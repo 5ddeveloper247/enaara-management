@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Employee;
 
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeDesignationId;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesBankRowsFromRequest;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesNokRelationFields;
@@ -15,6 +16,7 @@ class EmployeeUpdateRequest extends FormRequest
 {
     use NormalizesBankRowsFromRequest;
     use NormalizesNokRelationFields;
+    use ValidatesEmployeeDesignationId;
     use ValidatesExactlyOneSalaryBank;
     use ValidatesEmployeeRoleScope;
     use ValidatesUniqueBankIdentifiers;
@@ -70,6 +72,10 @@ class EmployeeUpdateRequest extends FormRequest
         $this->merge([
             'assigned_floor_ids' => $floorIds,
         ]);
+
+        if ($this->has('designation_id') && $this->input('designation_id') !== null && $this->input('designation_id') !== '') {
+            $this->merge(['designation_id' => (int) $this->input('designation_id')]);
+        }
 
         $cnicFields = ['cnic', 'father_cnic', 'nok_cnic', 'spouse_cnic'];
 
@@ -332,7 +338,7 @@ class EmployeeUpdateRequest extends FormRequest
                 Rule::in(['permanent', 'contractual']),
                 Rule::requiredIf(fn () => $this->input('employment_category') === 'employee'),
             ],
-            'designation' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
+            ...$this->designationIdRules(),
             'grade' => ['nullable', 'string', 'max:10', 'regex:' . $this->alphaNumericTextRegex()],
             'branch' => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'location' => ['nullable', 'string', 'max:255'],
@@ -700,7 +706,6 @@ class EmployeeUpdateRequest extends FormRequest
             'employee_type.regex' => 'Employee type may only contain letters and standard punctuation.',
             'employment_type.required' => 'Select Permanent or Contractual.',
             'employment_type.in' => 'The selected permanent or contractual option is invalid.',
-            'designation.regex' => 'Designation may only contain letters, spaces, and punctuation (like dot or hyphen).',
             'grade.max' => 'The grade field must not exceed 10 characters.',
             'grade.regex' => 'Grade may only contain letters, numbers, spaces, and hyphens.',
             'branch.regex' => 'Branch may only contain letters, spaces, and standard punctuation.',

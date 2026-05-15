@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Admin\Employee\EmployeeStoreRequest;
 use App\Http\Requests\Admin\Employee\EmployeeUpdateRequest;
+use App\Services\DesignationService;
 use App\Services\EmployeeService;
 use App\Services\UniversityDirectoryService;
 use Illuminate\Http\JsonResponse;
@@ -19,11 +20,13 @@ class EmployeeController extends Controller
 {
     private EmployeeService $employeeService;
     private UniversityDirectoryService $universityDirectoryService;
+    private DesignationService $designationService;
 
-    public function __construct(EmployeeService $employeeService, UniversityDirectoryService $universityDirectoryService)
+    public function __construct(EmployeeService $employeeService, UniversityDirectoryService $universityDirectoryService, DesignationService $designationService)
     {
         $this->employeeService = $employeeService;
         $this->universityDirectoryService = $universityDirectoryService;
+        $this->designationService = $designationService;
     }
 
     public function index()
@@ -105,6 +108,50 @@ class EmployeeController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Unable to fetch universities right now.',
+                'data' => [],
+            ], 500);
+        }
+    }
+
+    public function designationsForEmployment(Request $request): JsonResponse
+    {
+        if (! validatePermissions('admin/employees')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.',
+                'data' => [],
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'organization_id' => ['required', 'integer', 'exists:organizations,id'],
+            'sbu_id' => ['required', 'integer', 'exists:sbus,id'],
+        ]);
+
+        try {
+            $data = $this->designationService->listActiveByOrganizationAndSbu(
+                (int) $validated['organization_id'],
+                (int) $validated['sbu_id']
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Designations loaded successfully.',
+                'data' => $data,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+                'data' => [],
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Employee designations list failed', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to load designations.',
                 'data' => [],
             ], 500);
         }

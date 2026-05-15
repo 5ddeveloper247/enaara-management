@@ -95,6 +95,7 @@
     const floorChips = document.getElementById('employmentFloorChips');
     const floorPh = document.getElementById('employmentFloorPh');
     const floorHint = document.getElementById('employmentFloorHint');
+    const designationSelect = document.getElementById('employmentDesignationSelect');
     const gradeInput = document.getElementById('grade');
     const gradeDisplayInput = document.getElementById('gradeDisplay');
     const joinDateInput = document.getElementById('employmentJoinDateInput');
@@ -313,7 +314,7 @@
 
     const fieldKeyById = {
         employmentDetailsInternDurationInput: 'intern_duration',
-        designation: 'designation',
+        employmentDesignationSelect: 'designation_id',
         grade: 'grade',
         branch: 'branch',
         location: 'location',
@@ -397,7 +398,6 @@
             spouse_nationality: 100,
             employee_type: 100,
             intern_duration: 10,
-            designation: 50,
             grade: 10,
             branch: 30,
             location: 100,
@@ -477,7 +477,7 @@
         const locationAllowedPattern = /^[A-Za-z0-9\s.'\-&,\/#()]*$/;
         const sectFields = new Set(['sect']);
         const sectAllowedPattern = /^[\p{L}\p{M}\s'.,\-&\/()]*$/u;
-        const alphaTextFields = new Set(['employee_type', 'designation', 'trade', 'corps_regiment', 'ex_army_unit', 'verifying_authority']);
+        const alphaTextFields = new Set(['employee_type', 'trade', 'corps_regiment', 'ex_army_unit', 'verifying_authority']);
         const alphaTextAllowedPattern = /^[A-Za-z\s.\-&,\/()']*$/;
         const alphaNumericTextFields = new Set(['grade', 'intern_duration', 'branch', 'medical_category', 'pma_lc_ots', 'addressee']);
         const alphaNumericTextAllowedPattern = /^[A-Za-z0-9\s.\-&,\/()#']*$/;
@@ -1411,12 +1411,10 @@
         }
 
         bindEmploymentExplicitMaxGuard('#employmentDetailsInternDurationInput', 10);
-        bindEmploymentExplicitMaxGuard('#designation', 50);
         bindEmploymentExplicitMaxGuard('#grade', 10);
         bindEmploymentExplicitMaxGuard('#branch', 30);
         bindEmploymentExplicitMaxGuard('#location', 100);
         bindEmploymentExplicitMaxGuard('#biometric_id', 20);
-        bindEmploymentAlphaTextGuard('#designation', 'Designation');
         bindEmploymentBoundedIntegerGuard('#employmentCustomGracePeriodInput', 600, 3);
         bindEmploymentExplicitMaxGuard('#employmentTerminationReasonInput', 2000);
         bindPoliceExplicitMaxGuard('#policeVerificationMsrNumberInput', 20);
@@ -1874,7 +1872,7 @@
         'opening_grace_period':         'employmentCustomGracePeriodInput',
         'closing_grace_period':         'employmentCustomGracePeriodInput',
         'join_date':                    'employmentJoinDateInput',
-        'designation':                  'designation',
+        'designation_id':             'employmentDesignationSelect',
         'grade':                        'grade',
         'branch':                       'branch',
         'location':                     'location',
@@ -3819,6 +3817,47 @@
         }
     }
 
+    function resetDesignationSelect() {
+        if (!designationSelect) return;
+        designationSelect.innerHTML = '';
+        designationSelect.add(new Option('— Optional —', ''));
+        designationSelect.value = '';
+    }
+
+    async function loadDesignationsForEmployment(orgId, sbuId, preferredId) {
+        if (!designationSelect) return;
+        if (!orgId || !sbuId || !window.employeeDesignationsUrl) {
+            resetDesignationSelect();
+            return;
+        }
+        const params = new URLSearchParams({ organization_id: String(orgId), sbu_id: String(sbuId) });
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const token = tokenMeta ? tokenMeta.getAttribute('content') : '';
+        try {
+            const response = await fetch(window.employeeDesignationsUrl + '?' + params.toString(), {
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': token }
+            });
+            const payload = await response.json().catch(function () { return { success: false, data: [] }; });
+            if (!response.ok || !payload.success || !Array.isArray(payload.data)) {
+                resetDesignationSelect();
+                return;
+            }
+            designationSelect.innerHTML = '';
+            designationSelect.add(new Option('— Optional —', ''));
+            payload.data.forEach(function (row) {
+                designationSelect.add(new Option(row.name, String(row.id)));
+            });
+            const pref = preferredId !== null && preferredId !== undefined && preferredId !== '' ? String(preferredId) : '';
+            if (pref && Array.from(designationSelect.options).some(function (o) { return o.value === pref; })) {
+                designationSelect.value = pref;
+            } else {
+                designationSelect.value = '';
+            }
+        } catch (e) {
+            resetDesignationSelect();
+        }
+    }
+
     function formatDateForInput(dateObj) {
         const year = dateObj.getFullYear();
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -3975,6 +4014,7 @@
             populateFloors(orgId, null);
             const sbuIdAfterOrg = sbuSelect && sbuSelect.value ? sbuSelect.value : null;
             populateDepartments(orgId, sbuIdAfterOrg);
+            resetDesignationSelect();
         });
     }
 
@@ -3985,6 +4025,7 @@
             populateRoles(orgId, sbuId);
             populateDepartments(orgId, sbuId);
             populateFloors(orgId, sbuId);
+            loadDesignationsForEmployment(orgId, sbuId, null);
         });
     }
 
@@ -3997,6 +4038,11 @@
         populateRoles(oId, sId, rId);
         populateDepartments(oId, sId);
         populateFloors(oId, sId);
+        if (sId) {
+            loadDesignationsForEmployment(oId, sId, window.employeeDesignationId || null);
+        } else {
+            resetDesignationSelect();
+        }
     }
     if (probationEndInput) {
         probationEndInput.addEventListener('change', function () {

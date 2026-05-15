@@ -294,11 +294,14 @@
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Designation</label>
-                                                        <input type="text" name="designation" class="form-control"
-                                                            id="designation"
-                                                            value="{{ $employee->designation ?? '' }}"
-                                                            maxlength="50"
-                                                            placeholder="Designation">
+                                                        <select name="designation_id" class="form-select"
+                                                            id="employmentDesignationSelect">
+                                                            <option value="">— Optional —</option>
+                                                            @if (!empty(optional($employee)->designation_id))
+                                                                <option value="{{ $employee->designation_id }}" selected>
+                                                                    {{ $employee->designation ?? 'Selected designation' }}</option>
+                                                            @endif
+                                                        </select>
                                                     </div>
                                                 </div>
                                             </div>

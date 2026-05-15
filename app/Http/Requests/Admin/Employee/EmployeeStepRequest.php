@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Employee;
 
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeDesignationId;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesBankRowsFromRequest;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesNokRelationFields;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
@@ -15,6 +16,7 @@ class EmployeeStepRequest extends FormRequest
 {
     use NormalizesBankRowsFromRequest;
     use NormalizesNokRelationFields;
+    use ValidatesEmployeeDesignationId;
     use ValidatesExactlyOneSalaryBank;
     use ValidatesEmployeeRoleScope;
     use ValidatesUniqueBankIdentifiers;
@@ -161,6 +163,9 @@ class EmployeeStepRequest extends FormRequest
                 'is_ex_armed_force' => $this->boolean('is_ex_armed_force') ? 1 : 0,
                 'is_father_deceased' => $this->boolean('is_father_deceased') ? 1 : 0,
             ]);
+        }
+        if ($this->has('designation_id') && $this->input('designation_id') !== null && $this->input('designation_id') !== '') {
+            $this->merge(['designation_id' => (int) $this->input('designation_id')]);
         }
         if ($st === 5 || $st === 0) {
             $this->normalizeBankRowsFromRequest();
@@ -400,7 +405,7 @@ class EmployeeStepRequest extends FormRequest
                 ],
                 'department_ids.*' => ['integer', 'exists:departments,id'],
                 'employee_type' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
-                'designation' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
+                ...$this->designationIdRules(),
                 'grade' => ['nullable', 'string', 'max:10', 'regex:' . $this->alphaNumericTextRegex()],
                 'branch' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
                 'location' => ['nullable', 'string', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],
@@ -1135,7 +1140,6 @@ class EmployeeStepRequest extends FormRequest
             'role_id.exists' => 'Selected role does not exist.',
 
             'employee_type.regex' => 'Employee type may only contain letters and standard punctuation.',
-            'designation.regex' => 'Designation may only contain letters, spaces, and punctuation (like dot or hyphen).',
             'grade.max' => 'The grade field must not exceed 10 characters.',
             'grade.regex' => 'Grade may only contain letters, numbers, spaces, and hyphens.',
             'branch.regex' => 'Branch may only contain letters, numbers, spaces, and standard punctuation.',

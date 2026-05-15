@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Designation;
 use App\Models\Employee;
 use App\Models\EmployeeIdSequence;
 use App\Models\EmployeePoliceVerification;
@@ -291,9 +292,39 @@ class EmployeeService
         return compact('organizations', 'orgsData', 'rolesData', 'requiredDocumentTypes');
     }
 
+    private function normalizeEmployeeDesignationFields(array &$data, ?Employee $employee = null): void
+    {
+        if (! array_key_exists('designation_id', $data)) {
+            return;
+        }
+        $raw = $data['designation_id'];
+        if ($raw === null || $raw === '' || (int) $raw === 0) {
+            $data['designation_id'] = null;
+            $data['designation'] = null;
+
+            return;
+        }
+        $orgId = (int) ($data['organization_id'] ?? $employee?->organization_id ?? 0);
+        $sbuId = (int) ($data['sbu_id'] ?? $employee?->sbu_id ?? 0);
+        $designation = Designation::query()
+            ->whereKey((int) $raw)
+            ->where('organization_id', $orgId)
+            ->where('sbu_id', $sbuId)
+            ->where('is_active', true)
+            ->first();
+        if (! $designation) {
+            throw ValidationException::withMessages([
+                'designation_id' => ['The selected designation is not valid for this organization and SBU.'],
+            ]);
+        }
+        $data['designation_id'] = (int) $designation->id;
+        $data['designation'] = $designation->name;
+    }
+
     public function store(array $data, array $files = [], array $attachments = []): Employee
     {
         return DB::transaction(function () use ($data, $files, $attachments) {
+            $this->normalizeEmployeeDesignationFields($data);
             $role = Role::find($data['role_id'] ?? 0);
             $code = null;
             $orgLevel = false;
@@ -341,6 +372,7 @@ class EmployeeService
                 'employee_type'       => $data['employee_type'] ?? null,
                 'employment_type'     => $data['employment_type'] ?? null,
                 'designation'         => $data['designation'] ?? null,
+                'designation_id'      => $data['designation_id'] ?? null,
                 'grade'               => $data['grade'] ?? null,
                 'branch'              => $data['branch'] ?? null,
                 'location'            => $data['location'] ?? null,
@@ -1954,6 +1986,7 @@ class EmployeeService
             'nok_contact'         => $employee->nok_contact,
             'is_ex_armed_force'   => (bool) $employee->is_ex_armed_force || $armedForce !== null,
             'join_date'           => $employee->join_date instanceof \Carbon\Carbon ? $employee->join_date->format('Y-m-d') : null,
+            'designation_id'      => $employee->designation_id,
             'designation'         => $employee->designation,
             'grade'               => $employee->grade,
             'branch'              => $employee->branch,
@@ -2106,6 +2139,7 @@ class EmployeeService
     ): Employee {
         return DB::transaction(function () use ($id, $data, $files, $attachments, $keptAttachmentIds, $syncAttachments) {
             $employee = Employee::findOrFail($id);
+            $this->normalizeEmployeeDesignationFields($data, $employee);
             $role      = Role::find($data['role_id'] ?? $employee->role_id);
             $orgLevel  = $role && $role->isOrganizationLevelRole();
 
@@ -2130,6 +2164,7 @@ class EmployeeService
                 'employee_type',
                 'employment_type',
                 'designation',
+                'designation_id',
                 'grade',
                 'branch',
                 'location',

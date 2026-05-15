@@ -27,6 +27,7 @@ class EmployeeEmploymentInformationService
             'department_ids',
             'join_date',
             'designation',
+            'designation_id',
             'grade',
             'branch',
             'location',

@@ -17,7 +17,7 @@ class Employee extends Model
 
     protected $fillable = [
         'full_name', 'father_name', 'employee_code', 'tas_id', 'organization_id', 'sbu_id', 'department_id', 'department_ids',
-        'employee_type_id', 'employee_type', 'employment_type', 'designation', 'grade', 'branch',
+        'employee_type_id', 'employee_type', 'employment_type', 'designation', 'designation_id', 'grade', 'branch',
         'location', 'email', 'phone', 'cnic', 'cnic_issue_date', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
         'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth',
         'religion', 'sect', 'marital_status', 'spouse_name', 'spouse_cnic', 'spouse_nationality', 'nok_name', 'nok_cnic',
@@ -59,6 +59,7 @@ class Employee extends Model
     ];
 
     public function organization()      { return $this->belongsTo(Organization::class); }
+    public function assignedDesignation() { return $this->belongsTo(Designation::class, 'designation_id'); }
     public function sbu()               { return $this->belongsTo(Sbu::class); }
     public function department()        { return $this->belongsTo(Department::class); }
     public function lineManager()       { return $this->belongsTo(Employee::class, 'line_manager_id'); }
