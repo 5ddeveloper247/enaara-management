@@ -4,12 +4,23 @@ namespace App\Services;
 
 use App\Models\Designation;
 use App\Models\Organization;
+use App\Models\Sbu;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
 class DesignationService
 {
+    private function assertSbuBelongsToOrganization(int $sbuId, int $organizationId): void
+    {
+        $sbu = Sbu::query()->select(['id', 'organization_id'])->find($sbuId);
+        if (! $sbu || (int) $sbu->organization_id !== $organizationId) {
+            throw ValidationException::withMessages([
+                'sbu_id' => ['The selected SBU does not belong to the selected organization.'],
+            ]);
+        }
+    }
+
     private function normalizeName(string $value): string
     {
         return mb_strtolower(preg_replace('/\s+/', ' ', trim($value)));
@@ -39,6 +50,7 @@ class DesignationService
     {
         return Designation::query()
             ->with([
+                'organization:id,name',
                 'sbu:id,name,organization_id',
                 'sbu.organization:id,name',
             ])
@@ -64,6 +76,7 @@ class DesignationService
     {
         return Designation::query()
             ->with([
+                'organization:id,name',
                 'sbu:id,name,organization_id',
                 'sbu.organization:id,name',
             ])
@@ -72,8 +85,10 @@ class DesignationService
 
     public function create(array $data): Designation
     {
-        $payload = Arr::only($data, ['sbu_id', 'name', 'description', 'is_active']);
+        $payload = Arr::only($data, ['organization_id', 'sbu_id', 'name', 'description', 'is_active']);
+        $orgId = (int) $payload['organization_id'];
         $sbuId = (int) $payload['sbu_id'];
+        $this->assertSbuBelongsToOrganization($sbuId, $orgId);
         if (! empty($payload['name'])) {
             $this->ensureUniqueName($sbuId, (string) $payload['name']);
         }
@@ -83,8 +98,10 @@ class DesignationService
 
     public function update(Designation $designation, array $data): Designation
     {
-        $payload = Arr::only($data, ['sbu_id', 'name', 'description', 'is_active']);
+        $payload = Arr::only($data, ['organization_id', 'sbu_id', 'name', 'description', 'is_active']);
+        $orgId = (int) ($payload['organization_id'] ?? $designation->organization_id);
         $sbuId = (int) ($payload['sbu_id'] ?? $designation->sbu_id);
+        $this->assertSbuBelongsToOrganization($sbuId, $orgId);
         if (! empty($payload['name'])) {
             $this->ensureUniqueName($sbuId, (string) $payload['name'], (int) $designation->id);
         }
@@ -92,6 +109,7 @@ class DesignationService
         $designation->update($payload);
 
         return $designation->fresh([
+            'organization:id,name',
             'sbu:id,name,organization_id',
             'sbu.organization:id,name',
         ]);

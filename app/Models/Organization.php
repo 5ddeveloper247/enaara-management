@@ -68,6 +68,11 @@ class Organization extends Model
         return $this->hasMany(Sbu::class, 'organization_id');
     }
 
+    public function designations(): HasMany
+    {
+        return $this->hasMany(Designation::class, 'organization_id');
+    }
+
     public function departments(): HasMany
     {
         return $this->hasMany(Department::class, 'organization_id');

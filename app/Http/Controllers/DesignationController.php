@@ -107,7 +107,7 @@ class DesignationController extends Controller
                 'success' => true,
                 'data' => [
                     'id' => $designation->id,
-                    'organization_id' => $designation->sbu?->organization_id,
+                    'organization_id' => $designation->organization_id,
                     'sbu_id' => $designation->sbu_id,
                     'name' => $designation->name,
                     'description' => $designation->description,

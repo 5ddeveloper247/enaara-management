@@ -5,7 +5,7 @@
             <div class="col-md-6 col-lg-4">
                 <div class="card sbu-card border-1 rounded-3 h-100"
                     data-designation-status="{{ $designation->is_active ? 'active' : 'inactive' }}"
-                    data-organization-id="{{ $designation->sbu->organization_id ?? '' }}"
+                    data-organization-id="{{ $designation->organization_id ?? '' }}"
                     data-sbu-id="{{ $designation->sbu_id }}">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -26,7 +26,7 @@
                         </div>
                         <div class="mb-2">
                             <i class="bi bi-building me-1 text-main small"></i>
-                            <small class="text-muted small">{{ $designation->sbu->organization->name ?? '—' }}</small>
+                            <small class="text-muted small">{{ $designation->organization->name ?? ($designation->sbu->organization->name ?? '—') }}</small>
                         </div>
                         <div class="mb-2">
                             <i class="bi bi-diagram-3 me-1 text-main small"></i>
@@ -52,7 +52,7 @@
                                 data-designation-id="{{ $designation->id }}"
                                 data-designation-name="{{ e($designation->name) }}"
                                 data-designation-description="{{ e($designation->description ?? '') }}"
-                                data-designation-organization="{{ e($designation->sbu->organization->name ?? '') }}"
+                                data-designation-organization="{{ e($designation->organization->name ?? ($designation->sbu->organization->name ?? '')) }}"
                                 data-designation-sbu="{{ e($designation->sbu->name ?? '') }}"
                                 data-designation-active="{{ $designation->is_active ? '1' : '0' }}">
                                 <i class="bi bi-eye"></i>

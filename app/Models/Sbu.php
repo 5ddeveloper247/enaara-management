@@ -49,6 +49,11 @@ class Sbu extends Model
         return $this->hasMany(Department::class, 'sbu_id');
     }
 
+    public function designations(): HasMany
+    {
+        return $this->hasMany(Designation::class, 'sbu_id');
+    }
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'role_sbu', 'sbu_id', 'role_id')->withTimestamps();

@@ -10,6 +10,7 @@ class Designation extends Model
     protected $table = 'designations';
 
     protected $fillable = [
+        'organization_id',
         'sbu_id',
         'name',
         'description',
@@ -19,6 +20,11 @@ class Designation extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'organization_id');
+    }
 
     public function sbu(): BelongsTo
     {
