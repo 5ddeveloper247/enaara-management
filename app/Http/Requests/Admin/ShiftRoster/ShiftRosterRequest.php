@@ -36,7 +36,7 @@ class ShiftRosterRequest extends FormRequest
             'end_time' => ['nullable', 'date_format:H:i'],
             'check_in' => ['nullable', 'date_format:H:i'],
             'check_out' => ['nullable', 'date_format:H:i'],
-            'sbu_floor_id' => ['nullable', 'integer', 'exists:sbu_floors,id'],
+            'sbu_floor_id' => ['required', 'integer', 'exists:sbu_floors,id'],
             'location_text' => ['nullable', 'string', 'min:3', 'max:15', 'regex:/^(?=.*[A-Za-z])[A-Za-z0-9\s\-\'\.]+$/'],
             'late_check_in' => ['nullable', 'boolean'],
 
@@ -65,6 +65,7 @@ class ShiftRosterRequest extends FormRequest
             'status.in' => 'Status must be either assigned or cancelled.',
 
             'notes.max' => 'Notes may not be greater than 1000 characters.',
+            'sbu_floor_id.required' => 'Floor is required.',
             'sbu_floor_id.integer' => 'Selected floor is invalid.',
             'sbu_floor_id.exists' => 'Selected floor does not exist.',
             'location_text.min' => 'Location must be at least 3 characters.',
@@ -83,15 +84,13 @@ class ShiftRosterRequest extends FormRequest
             }
 
             $floorId = $this->input('sbu_floor_id');
-            if ($floorId !== null && $floorId !== '') {
-                $allowedIds = collect(app(ShiftRosterService::class)->floorOptionsForAssignee($type, $id))
-                    ->pluck('id')
-                    ->map(fn ($value) => (int) $value)
-                    ->all();
+            $allowedIds = collect(app(ShiftRosterService::class)->floorOptionsForAssignee($type, $id))
+                ->pluck('id')
+                ->map(fn ($value) => (int) $value)
+                ->all();
 
-                if (! in_array((int) $floorId, $allowedIds, true)) {
-                    $v->errors()->add('sbu_floor_id', 'Selected floor is not available for this employee.');
-                }
+            if (! in_array((int) $floorId, $allowedIds, true)) {
+                $v->errors()->add('sbu_floor_id', 'Selected floor is not available for this employee.');
             }
 
             $isCustomTime = filter_var($this->input('is_custom_time'), FILTER_VALIDATE_BOOLEAN);

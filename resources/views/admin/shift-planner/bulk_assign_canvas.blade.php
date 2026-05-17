@@ -56,16 +56,17 @@
                 <!-- Day Selection -->
                 <div class="mb-3">
                     <label class="form-label fw-semibold small text-white d-block mb-2">Repeat Days</label>
-                    <p class="small text-white-50 mb-2">Checked days receive the selected shift. Unchecked days are saved as OFF on the roster for the full start and end date range.</p>
+                    <p class="small text-white-50 mb-2">Select 5 to 6 working days. Checked days receive the selected shift; unchecked days are saved as OFF for the full date range.</p>
                     <div class="d-flex flex-wrap gap-2" id="dayCheckboxesContainer">
                         @php $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; @endphp
                         @foreach($days as $day)
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input day-checkbox" type="checkbox" id="day{{ $day }}" name="days[]" value="{{ strtolower($day) }}" checked>
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day{{ $day }}" name="days[]" value="{{ strtolower($day) }}">
                                 <label class="form-check-label text-white small" for="day{{ $day }}">{{ substr($day, 0, 3) }}</label>
                             </div>
                         @endforeach
                     </div>
+                    <div id="bulkRepeatDaysError" class="invalid-feedback d-block d-none mt-1"></div>
                 </div>
             </div>
 
@@ -120,6 +121,7 @@
                         </div>
                     </div>
                 </div>
+
 
             </div>
 
@@ -244,6 +246,30 @@
                         <span id="selectedCount" class="fw-bold text-info">0</span> employee(s) selected
                     </small>
                 </div>
+
+                <div class="mt-4 pt-3 border-top" style="border-color: #ffffff1a !important;">
+                    <div class="mb-3">
+                        <label for="bulkFloorSelect" class="form-label fw-semibold small text-white">
+                            Floor <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select bg-dark text-white border-secondary" id="bulkFloorSelect" name="sbu_floor_id" disabled>
+                            <option value="">Select employees first</option>
+                        </select>
+                        <div id="bulkFloorSelectError" class="invalid-feedback d-block d-none"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="bulkLocationText" class="form-label fw-semibold small text-white">Location</label>
+                        <input type="text" class="form-control" id="bulkLocationText" name="location_text" maxlength="15" placeholder="Optional (3-15 characters)" autocomplete="off" style="color: #000 !important; background-color: #fff !important;">
+                        <div id="bulkLocationTextError" class="invalid-feedback d-block d-none"></div>
+                    </div>
+
+                    <div class="mb-0">
+                        <label for="bulkShiftNotes" class="form-label fw-semibold small text-white">Notes</label>
+                        <textarea class="form-control" id="bulkShiftNotes" name="notes" rows="3" placeholder="Optional" style="color: #000 !important; background-color: #fff !important;"></textarea>
+                        <div id="bulkShiftNotesError" class="invalid-feedback d-block d-none"></div>
+                    </div>
+                </div>
             </div>
 
             <hr class="my-4" style="border-color: #ffffffab !important">
@@ -305,6 +331,56 @@ $(document).ready(function() {
     var $applyBtn = $('#applyBulkAssignBtn');
     var $canvas = $('#bulkAssignCanvas');
     var $selectedCount = $('#selectedCount');
+    var $repeatDaysError = $('#bulkRepeatDaysError');
+    var MIN_REPEAT_DAYS = 5;
+    var MAX_REPEAT_DAYS = 6;
+
+    function getCheckedRepeatDayCount() {
+        return $('.day-checkbox:checked').length;
+    }
+
+    function clearRepeatDaysError() {
+        $repeatDaysError.addClass('d-none').text('');
+        $('#dayCheckboxesContainer .day-checkbox').removeClass('is-invalid');
+    }
+
+    function showRepeatDaysError(message) {
+        $repeatDaysError.removeClass('d-none').text(message);
+        $('#dayCheckboxesContainer .day-checkbox').addClass('is-invalid');
+    }
+
+    function resetRepeatDays() {
+        $('.day-checkbox').prop('checked', false);
+        clearRepeatDaysError();
+    }
+
+    function validateRepeatDays() {
+        clearRepeatDaysError();
+        var count = getCheckedRepeatDayCount();
+
+        if (count < MIN_REPEAT_DAYS) {
+            showRepeatDaysError('Select at least ' + MIN_REPEAT_DAYS + ' working days.');
+            return false;
+        }
+
+        if (count > MAX_REPEAT_DAYS) {
+            showRepeatDaysError('You can select at most ' + MAX_REPEAT_DAYS + ' working days.');
+            return false;
+        }
+
+        return true;
+    }
+
+    $(document).on('change', '.day-checkbox', function() {
+        var $checkbox = $(this);
+        if ($checkbox.is(':checked') && getCheckedRepeatDayCount() > MAX_REPEAT_DAYS) {
+            $checkbox.prop('checked', false);
+            showRepeatDaysError('You can select at most ' + MAX_REPEAT_DAYS + ' working days.');
+            return;
+        }
+
+        clearRepeatDaysError();
+    });
 
     // Utility: Format Date to YYYY-MM-DD
     function formatDate(date) {
@@ -372,8 +448,122 @@ $(document).ready(function() {
     };
 
     function clearBulkShiftFieldErrors() {
-        $('#bulkShiftSelect, #bulkCustomStartTime, #bulkCustomEndTime').removeClass('is-invalid');
-        $('#bulkShiftSelectError, #bulkCustomStartTimeError, #bulkCustomEndTimeError').addClass('d-none').text('');
+        $('#bulkShiftSelect, #bulkCustomStartTime, #bulkCustomEndTime, #bulkFloorSelect, #bulkLocationText, #bulkShiftNotes').removeClass('is-invalid');
+        $('#bulkShiftSelectError, #bulkCustomStartTimeError, #bulkCustomEndTimeError, #bulkFloorSelectError, #bulkLocationTextError, #bulkShiftNotesError').addClass('d-none').text('');
+    }
+
+    var bulkFloorLoadTimer = null;
+
+    function getSelectedEmployeeIds() {
+        return $('input[name="employee_ids[]"]:checked').map(function() { return this.value; }).get();
+    }
+
+    function populateBulkFloorOptions(options) {
+        var $floor = $('#bulkFloorSelect');
+        var html = '<option value="">Select floor</option>';
+        (options || []).forEach(function(option) {
+            html += '<option value="' + String(option.id) + '">' + option.label + '</option>';
+        });
+        $floor.html(html);
+        $floor.prop('disabled', (options || []).length === 0);
+    }
+
+    function loadBulkFloorOptions() {
+        var ids = getSelectedEmployeeIds();
+        var url = window.rosterBulkFloorOptionsUrl || '';
+
+        if (!ids.length || !url) {
+            $('#bulkFloorSelect').html('<option value="">Select employees first</option>').prop('disabled', true);
+            return;
+        }
+
+        $.ajax({
+            url: url,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ employee_ids: ids }),
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            },
+            success: function(res) {
+                var options = (res && res.success && Array.isArray(res.data)) ? res.data : [];
+                populateBulkFloorOptions(options);
+                if (!options.length) {
+                    showBulkFieldError('#bulkFloorSelect', '#bulkFloorSelectError', 'No floors found for selected employees.');
+                }
+            },
+            error: function() {
+                populateBulkFloorOptions([]);
+                showBulkFieldError('#bulkFloorSelect', '#bulkFloorSelectError', 'Could not load floor options.');
+            }
+        });
+    }
+
+    function scheduleBulkFloorOptionsReload() {
+        if (bulkFloorLoadTimer) {
+            clearTimeout(bulkFloorLoadTimer);
+        }
+        bulkFloorLoadTimer = setTimeout(loadBulkFloorOptions, 200);
+    }
+
+    function validateBulkLocationField() {
+        var value = ($('#bulkLocationText').val() || '').trim();
+        $('#bulkLocationText').removeClass('is-invalid');
+        $('#bulkLocationTextError').addClass('d-none').text('');
+
+        if (value === '') {
+            return true;
+        }
+        if (value.length < 3) {
+            showBulkFieldError('#bulkLocationText', '#bulkLocationTextError', 'Location must be at least 3 characters.');
+            return false;
+        }
+        if (value.length > 15) {
+            showBulkFieldError('#bulkLocationText', '#bulkLocationTextError', 'Location may not be greater than 15 characters.');
+            return false;
+        }
+        if (/^\d+$/.test(value)) {
+            showBulkFieldError('#bulkLocationText', '#bulkLocationTextError', 'Location cannot contain only digits.');
+            return false;
+        }
+        if (!/[A-Za-z]/.test(value)) {
+            showBulkFieldError('#bulkLocationText', '#bulkLocationTextError', 'Location must contain at least one letter.');
+            return false;
+        }
+        if (!/^[A-Za-z0-9\s\-'.]+$/.test(value)) {
+            showBulkFieldError('#bulkLocationText', '#bulkLocationTextError', 'Location may only contain letters, numbers, spaces, hyphens, apostrophes, or periods.');
+            return false;
+        }
+        return true;
+    }
+
+    function validateBulkPlacementFields() {
+        var valid = true;
+
+        if (!$('#bulkFloorSelect').val()) {
+            showBulkFieldError('#bulkFloorSelect', '#bulkFloorSelectError', 'Floor is required.');
+            valid = false;
+        }
+
+        if (!validateBulkLocationField()) {
+            valid = false;
+        }
+
+        var notes = ($('#bulkShiftNotes').val() || '').trim();
+        if (notes.length > 1000) {
+            showBulkFieldError('#bulkShiftNotes', '#bulkShiftNotesError', 'Notes must not exceed 1000 characters.');
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    function resetBulkPlacementFields() {
+        $('#bulkFloorSelect').html('<option value="">Select employees first</option>').prop('disabled', true).val('');
+        $('#bulkLocationText, #bulkShiftNotes').val('');
+        $('#bulkFloorSelect, #bulkLocationText, #bulkShiftNotes').removeClass('is-invalid');
+        $('#bulkFloorSelectError, #bulkLocationTextError, #bulkShiftNotesError').addClass('d-none').text('');
     }
 
     function showBulkFieldError(fieldId, errorId, message) {
@@ -544,6 +734,7 @@ $(document).ready(function() {
 
     function updateSelectedCount() {
         $selectedCount.text($('input[name="employee_ids[]"]:checked').length);
+        scheduleBulkFloorOptionsReload();
     }
 
     $(document).on('change', 'input[name="employee_ids[]"]', function() {
@@ -587,7 +778,11 @@ $(document).ready(function() {
             return;
         }
 
-        var ids = $('input[name="employee_ids[]"]:checked').map(function() { return this.value; }).get();
+        if (!validateRepeatDays()) {
+            return;
+        }
+
+        var ids = getSelectedEmployeeIds();
         if (ids.length === 0) {
             Swal.fire({
                 icon: 'warning',
@@ -595,6 +790,10 @@ $(document).ready(function() {
                 text: 'Select at least one employee.',
                 confirmButtonColor: '#1a237e'
             });
+            return;
+        }
+
+        if (!validateBulkPlacementFields()) {
             return;
         }
 
@@ -626,6 +825,12 @@ $(document).ready(function() {
             payload.end_time = $('#bulkCustomEndTime').val();
         }
 
+        payload.sbu_floor_id = parseInt($('#bulkFloorSelect').val(), 10);
+        var bulkLocation = ($('#bulkLocationText').val() || '').trim();
+        payload.location_text = bulkLocation === '' ? null : bulkLocation;
+        var bulkNotes = ($('#bulkShiftNotes').val() || '').trim();
+        payload.notes = bulkNotes === '' ? null : bulkNotes;
+
         $.ajax({
             url: @json(route('admin.shift-roster.bulk-assign')),
             method: 'POST',
@@ -654,6 +859,18 @@ $(document).ready(function() {
                     if (data.errors.end_time) {
                         showBulkFieldError('#bulkCustomEndTime', '#bulkCustomEndTimeError', data.errors.end_time[0]);
                     }
+                    if (data.errors.days) {
+                        showRepeatDaysError(data.errors.days[0]);
+                    }
+                    if (data.errors.sbu_floor_id) {
+                        showBulkFieldError('#bulkFloorSelect', '#bulkFloorSelectError', data.errors.sbu_floor_id[0]);
+                    }
+                    if (data.errors.location_text) {
+                        showBulkFieldError('#bulkLocationText', '#bulkLocationTextError', data.errors.location_text[0]);
+                    }
+                    if (data.errors.notes) {
+                        showBulkFieldError('#bulkShiftNotes', '#bulkShiftNotesError', data.errors.notes[0]);
+                    }
                     msg = Object.values(data.errors).flat().join('<br>');
                 }
                 showError(msg);
@@ -670,10 +887,14 @@ $(document).ready(function() {
     var bulkCanvasEl = document.getElementById('bulkAssignCanvas');
     if (bulkCanvasEl) {
         bulkCanvasEl.addEventListener('shown.bs.offcanvas', function() {
+            resetRepeatDays();
+            resetBulkPlacementFields();
             toggleShiftAssignmentUi();
         });
     }
 
+    resetRepeatDays();
+    resetBulkPlacementFields();
     toggleAssignMode();
 });
 </script>

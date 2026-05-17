@@ -8,7 +8,9 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Models\ShiftRosterAssignment;
 use App\Models\ShiftRosterEntry;
+use App\Services\ShiftRosterHistoryService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class ProcessShiftAssignment implements ShouldQueue
 {
@@ -89,21 +91,48 @@ class ProcessShiftAssignment implements ShouldQueue
             if ($hasConflict) return;
         }
 
-        // 3. Create or Update Entry
-        ShiftRosterEntry::updateOrCreate(
-            [
-                'employee_id' => $employee->id,
-                'roster_date' => $rosterDate,
-                'shift_planner_id' => $shift->id
-            ],
-            [
-                'assignment_id' => $assignment->id,
-                'start_time' => $shift->start_time,
-                'end_time' => $shift->end_time,
-                'floor' => $shift->floor,
-                'status' => 'pending'
-            ]
-        );
+        $historyService = app(ShiftRosterHistoryService::class);
+        $userId = Auth::id();
+
+        $entry = ShiftRosterEntry::query()
+            ->where('employee_id', $employee->id)
+            ->where('roster_date', $rosterDate)
+            ->first();
+
+        $payload = [
+            'shift_planner_id' => $shift->id,
+            'assignment_id' => $assignment->id,
+            'start_time' => $shift->start_time,
+            'end_time' => $shift->end_time,
+            'floor' => $shift->floor,
+            'status' => 'pending',
+            'is_custom_time' => false,
+        ];
+
+        if ($entry) {
+            $before = $historyService->snapshot($entry);
+            $entry->fill($payload);
+            if ($userId) {
+                $entry->updated_by = $userId;
+            }
+            $entry->save();
+            $historyService->recordUpdated($entry, $before, $userId);
+
+            return;
+        }
+
+        if ($userId) {
+            $payload['created_by'] = $userId;
+            $payload['assigned_by'] = $userId;
+        }
+
+        $entry = ShiftRosterEntry::query()->create([
+            'employee_id' => $employee->id,
+            'roster_date' => $rosterDate,
+            'outsourced_employee_id' => null,
+        ] + $payload);
+
+        $historyService->recordCreated($entry, $userId);
     }
 
     protected function checkRestPeriodConflict($employeeId, $date, $newShift)

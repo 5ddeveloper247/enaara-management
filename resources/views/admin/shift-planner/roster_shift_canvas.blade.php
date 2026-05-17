@@ -51,9 +51,8 @@
                 </div>
                 <div class="roster-audit-filters mb-3" id="rosterAuditFilters" role="group" aria-label="Filter history">
                     <button type="button" class="roster-audit-filter active" data-audit-filter="all">All</button>
-                    <button type="button" class="roster-audit-filter roster-audit-filter--created" data-audit-filter="created">+ Created</button>
+                    <button type="button" class="roster-audit-filter roster-audit-filter--created" data-audit-filter="created">Created & Assigned</button>
                     <button type="button" class="roster-audit-filter roster-audit-filter--updated" data-audit-filter="updated">Updated</button>
-                    <button type="button" class="roster-audit-filter roster-audit-filter--assigned" data-audit-filter="assigned">Assigned</button>
                     <button type="button" class="roster-audit-filter roster-audit-filter--deleted" data-audit-filter="deleted">Removed</button>
                 </div>
                 <div id="rosterAuditHistoryLoading" class="roster-audit-history-loading" style="display: none;" aria-live="polite">
@@ -105,8 +104,8 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label for="rosterFloor" class="form-label roster-shift-field-label">Floor</label>
-                    <select class="form-select roster-shift-input" id="rosterFloor" name="sbu_floor_id">
+                    <label for="rosterFloor" class="form-label roster-shift-field-label">Floor <span class="text-danger">*</span></label>
+                    <select class="form-select roster-shift-input" id="rosterFloor" name="sbu_floor_id" required>
                         <option value="">Select floor</option>
                     </select>
                     <div class="invalid-feedback d-block d-none" id="rosterFloorError"></div>

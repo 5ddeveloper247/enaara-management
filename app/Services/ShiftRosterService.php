@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\Log;
 
 class ShiftRosterService
 {
+    public function __construct(
+        private readonly ShiftRosterHistoryService $historyService
+    ) {
+    }
+
     private const WEEKDAYS = [
         'monday',
         'tuesday',
@@ -27,14 +32,49 @@ class ShiftRosterService
 
     public function floorOptionsForAssignee(string $employeeType, int $employeeId): array
     {
-        $floors = $this->resolveAssigneeFloors($employeeType, $employeeId);
+        return $this->mapFloorOptions($this->resolveAssigneeFloors($employeeType, $employeeId));
+    }
 
-        return $floors->map(fn (SbuFloor $floor) => [
-            'id' => $floor->id,
-            'name' => $floor->name,
-            'floor_number' => $floor->floor_number,
-            'label' => $this->formatFloorLabel($floor),
-        ])->values()->all();
+    public function floorOptionsForBulkAssignees(array $employeeRefs): array
+    {
+        $refs = $this->parseAssigneeRefs($employeeRefs);
+        if ($refs === []) {
+            return [];
+        }
+
+        $sbuIds = collect($refs)
+            ->map(fn (array $ref) => $this->resolveAssigneeSbuId($ref['type'], $ref['id']))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($sbuIds->isEmpty()) {
+            return [];
+        }
+
+        $floors = SbuFloor::query()
+            ->whereIn('sbu_id', $sbuIds)
+            ->where('is_active', true)
+            ->orderBy('floor_number')
+            ->orderBy('name')
+            ->get()
+            ->unique('id');
+
+        return $this->mapFloorOptions($floors);
+    }
+
+    public function assigneeSupportsFloor(string $employeeType, int $employeeId, int $floorId): bool
+    {
+        $sbuId = $this->resolveAssigneeSbuId($employeeType, $employeeId);
+        if (! $sbuId) {
+            return false;
+        }
+
+        return SbuFloor::query()
+            ->whereKey($floorId)
+            ->where('sbu_id', $sbuId)
+            ->where('is_active', true)
+            ->exists();
     }
 
     /**
@@ -112,11 +152,14 @@ class ShiftRosterService
             $payload['outsourced_employee_id'] = null;
         }
 
+        $before = $this->historyService->snapshot($entry);
         $entry->update($payload);
         if ($userId) {
             $entry->updated_by = $userId;
             $entry->save();
         }
+        $entry->refresh();
+        $this->historyService->recordUpdated($entry, $before, $userId);
 
         return $entry;
     }
@@ -132,6 +175,8 @@ class ShiftRosterService
             $entry->deleted_by = $userId;
             $entry->save();
         }
+        $this->historyService->recordDeleted($entry, $userId);
+
         return $entry->delete();
     }
 
@@ -180,6 +225,12 @@ class ShiftRosterService
 
             $skipWorkingDays = $workingConflicts !== [];
 
+            $placementData = [
+                'sbu_floor_id' => $data['sbu_floor_id'] ?? null,
+                'location_text' => $data['location_text'] ?? null,
+                'notes' => $data['notes'] ?? null,
+            ];
+
             $period = CarbonPeriod::create($data['start_date'], $data['end_date']);
             $totalAssigned = 0;
             $totalOffDays = 0;
@@ -210,7 +261,8 @@ class ShiftRosterService
                             $shiftPlannerId,
                             $isCustomTime,
                             $entryStartTime,
-                            $entryEndTime
+                            $entryEndTime,
+                            $placementData
                         );
                         $totalAssigned++;
                         continue;
@@ -441,60 +493,48 @@ class ShiftRosterService
         return $employeeType . ':' . $employeeId;
     }
 
-    private function resolveAssigneeFloors(string $employeeType, int $employeeId)
+    private function resolveAssigneeSbuId(string $employeeType, int $employeeId): ?int
     {
         if ($employeeType === 'outsourced') {
-            $employee = OutsourcedEmployee::query()
-                ->with([
-                    'assignedFloors' => static fn ($query) => $query
-                        ->where('is_active', true)
-                        ->orderBy('floor_number')
-                        ->orderBy('name'),
-                ])
+            $sbuId = OutsourcedEmployee::query()
                 ->whereNull('deleted_at')
-                ->findOrFail($employeeId);
-
-            if ($employee->assignedFloors->isNotEmpty()) {
-                return $employee->assignedFloors;
-            }
-
-            if (! $employee->sbu_id) {
-                return collect();
-            }
-
-            return SbuFloor::query()
-                ->where('sbu_id', $employee->sbu_id)
-                ->where('is_active', true)
-                ->orderBy('floor_number')
-                ->orderBy('name')
-                ->get();
+                ->whereKey($employeeId)
+                ->value('sbu_id');
+        } else {
+            $sbuId = Employee::query()
+                ->where('is_active', 1)
+                ->shiftBasedWorkArrangement()
+                ->whereKey($employeeId)
+                ->value('sbu_id');
         }
 
-        $employee = Employee::query()
-            ->with([
-                'assignedFloors' => static fn ($query) => $query
-                    ->where('is_active', true)
-                    ->orderBy('floor_number')
-                    ->orderBy('name'),
-            ])
-            ->where('is_active', 1)
-            ->shiftBasedWorkArrangement()
-            ->findOrFail($employeeId);
+        return $sbuId ? (int) $sbuId : null;
+    }
 
-        if ($employee->assignedFloors->isNotEmpty()) {
-            return $employee->assignedFloors;
-        }
-
-        if (! $employee->sbu_id) {
+    private function resolveAssigneeFloors(string $employeeType, int $employeeId)
+    {
+        $sbuId = $this->resolveAssigneeSbuId($employeeType, $employeeId);
+        if (! $sbuId) {
             return collect();
         }
 
         return SbuFloor::query()
-            ->where('sbu_id', $employee->sbu_id)
+            ->where('sbu_id', $sbuId)
             ->where('is_active', true)
             ->orderBy('floor_number')
             ->orderBy('name')
             ->get();
+    }
+
+    private function mapFloorOptions($floors): array
+    {
+        return collect($floors)->map(fn (SbuFloor $floor) => [
+            'id' => $floor->id,
+            'name' => $floor->name,
+            'floor_number' => $floor->floor_number,
+            'label' => $this->formatFloorLabel($floor),
+            'sbu_id' => $floor->sbu_id,
+        ])->values()->all();
     }
 
     private function formatFloorLabel(SbuFloor $floor): string
@@ -690,7 +730,8 @@ class ShiftRosterService
         ?int $shiftPlannerId,
         bool $isCustomTime,
         ?string $startTime = null,
-        ?string $endTime = null
+        ?string $endTime = null,
+        array $placementData = []
     ): void {
         $userId = Auth::id();
         $shift = $shiftPlannerId ? ShiftPlanner::find($shiftPlannerId) : null;
@@ -699,9 +740,11 @@ class ShiftRosterService
             'is_custom_time' => $isCustomTime,
             'start_time' => $startTime ?? ($shift ? $this->formatShiftTime($shift->start_time) : null),
             'end_time' => $endTime ?? ($shift ? $this->formatShiftTime($shift->end_time) : null),
-            'floor' => $shift?->floor,
             'status' => 'pending',
         ];
+        $this->applyFloorToPayload($placementData, $basePayload);
+        $this->applyLocationToPayload($placementData, $basePayload);
+        $this->applyNotesToPayload($placementData, $basePayload);
 
         if ($type === 'outsourced') {
             $lookup = ['outsourced_employee_id' => $id, 'roster_date' => $date];
@@ -762,22 +805,232 @@ class ShiftRosterService
         $activeEntry = ShiftRosterEntry::query()->where($lookup)->first();
 
         if ($activeEntry) {
+            $before = $this->historyService->snapshot($activeEntry);
             $activeEntry->fill($payload);
             if ($userId) {
                 $activeEntry->updated_by = $userId;
             }
             $activeEntry->save();
+            $this->historyService->recordUpdated($activeEntry, $before, $userId);
 
             return $activeEntry;
         }
 
-        $entry = ShiftRosterEntry::query()->create($lookup + $payload);
+        $createPayload = $lookup + $payload;
         if ($userId) {
-            $entry->created_by = $userId;
-            $entry->assigned_by = $userId;
-            $entry->save();
+            $createPayload['created_by'] = $userId;
+            $createPayload['assigned_by'] = $userId;
         }
 
+        $entry = ShiftRosterEntry::query()->create($createPayload);
+        $this->historyService->recordCreated($entry, $userId);
+
         return $entry;
+    }
+
+    public function buildMonthlyExportReport(array $options): array
+    {
+        $year = (int) $options['year'];
+        $month = (int) $options['month'];
+        $employeeGroup = $options['employee_group'] ?? 'internal';
+        $includeDeleted = (bool) ($options['include_deleted'] ?? false);
+        $includeDepartmentGrouping = (bool) ($options['include_department_grouping'] ?? true);
+        $includeShiftTimes = (bool) ($options['include_shift_times'] ?? true);
+
+        $period = Carbon::createFromDate($year, $month, 1)->startOfDay();
+        $periodEnd = $period->copy()->endOfMonth();
+        $dateRange = [$period->toDateString(), $periodEnd->toDateString()];
+
+        $entryRelations = [
+            'shift',
+            'employee.department',
+            'outsourcedEmployee.contractorCompany',
+        ];
+
+        $entriesQuery = ShiftRosterEntry::with($entryRelations)
+            ->whereBetween('roster_date', $dateRange)
+            ->orderBy('roster_date')
+            ->orderBy('id');
+
+        if ($employeeGroup === 'third_party') {
+            $entriesQuery->whereNotNull('outsourced_employee_id');
+        } else {
+            $entriesQuery->whereNotNull('employee_id');
+        }
+
+        $entries = $entriesQuery->get();
+
+        if ($includeDeleted) {
+            $trashedQuery = ShiftRosterEntry::onlyTrashed()
+                ->with($entryRelations)
+                ->whereBetween('roster_date', $dateRange)
+                ->orderBy('roster_date')
+                ->orderBy('id');
+
+            if ($employeeGroup === 'third_party') {
+                $trashedQuery->whereNotNull('outsourced_employee_id');
+            } else {
+                $trashedQuery->whereNotNull('employee_id');
+            }
+
+            $entries = $entries->merge($trashedQuery->get())->unique('id')->values();
+        }
+
+        $rows = $entries
+            ->filter(fn (ShiftRosterEntry $entry) => $this->isExportableRosterEntry($entry))
+            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToMonthlyExportRow($entry, $includeShiftTimes))
+            ->values();
+
+        $grouped = $rows->groupBy('department_key');
+        $departments = $grouped
+            ->map(function ($groupRows, $departmentKey) {
+                $first = $groupRows->first();
+
+                return [
+                    'name' => $first['department_name'],
+                    'rows' => $groupRows
+                        ->sortBy(['date_sort', 'employee'])
+                        ->values()
+                        ->map(fn (array $row) => $this->stripExportRowMeta($row))
+                        ->all(),
+                ];
+            })
+            ->sortBy(fn (array $department) => $department['name'], SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+
+        if (! $includeDepartmentGrouping) {
+            $departments = [
+                [
+                    'name' => null,
+                    'rows' => $rows
+                        ->sortBy(['date_sort', 'employee'])
+                        ->values()
+                        ->map(fn (array $row) => $this->stripExportRowMeta($row))
+                        ->all(),
+                ],
+            ];
+        }
+
+        $exportRows = $rows->map(fn (array $row) => $this->stripExportRowMeta($row));
+        $employeeNames = $exportRows->pluck('employee')->unique();
+        $morning = $exportRows->where('shift_type', 'morning')->count();
+        $evening = $exportRows->where('shift_type', 'evening')->count();
+        $night = $exportRows->where('shift_type', 'night')->count();
+        $totalHours = $exportRows->sum('hours');
+
+        return [
+            'organization_name' => config('app.name', 'Enaara Systems'),
+            'report_title' => 'Shift Planner — Monthly Report',
+            'period_label' => $period->format('F Y'),
+            'period_slug' => $period->format('F-Y'),
+            'generated_at' => now()->format('d M Y, h:i A'),
+            'employee_group_label' => $employeeGroup === 'third_party'
+                ? 'Third-party employees'
+                : 'Internal employees',
+            'include_shift_times' => $includeShiftTimes,
+            'include_department_grouping' => $includeDepartmentGrouping,
+            'include_deleted' => $includeDeleted,
+            'stats' => [
+                'total_employees' => $employeeNames->count(),
+                'shifts_scheduled' => $exportRows->count(),
+                'morning' => $morning,
+                'evening' => $evening,
+                'night' => $night,
+                'total_hours' => $totalHours,
+            ],
+            'departments' => $departments,
+        ];
+    }
+
+    private function isExportableRosterEntry(ShiftRosterEntry $entry): bool
+    {
+        $status = strtolower((string) $entry->status);
+
+        return ! in_array($status, ['off', 'cancelled'], true);
+    }
+
+    private function mapEntryToMonthlyExportRow(ShiftRosterEntry $entry, bool $includeShiftTimes): array
+    {
+        $isOffDay = strtolower((string) $entry->status) === 'off';
+        $shiftName = strtolower($entry->shift?->name ?? '');
+        $isCustomTime = (bool) $entry->is_custom_time;
+        $startRaw = $isOffDay ? null : ($entry->start_time ?? $entry->shift?->start_time);
+        $endRaw = $isOffDay ? null : ($entry->end_time ?? $entry->shift?->end_time);
+        $shiftType = $this->resolveShiftType(
+            $startRaw ? $this->formatShiftTime($startRaw) : null,
+            $isOffDay,
+            $isCustomTime,
+            $shiftName
+        );
+
+        $employeeName = $entry->employee?->full_name
+            ?? $entry->outsourcedEmployee?->full_name
+            ?? 'Unknown';
+
+        $departmentName = $this->resolveExportDepartmentName($entry);
+        $shiftLabel = $shiftType === 'general'
+            ? ($entry->shift?->name ?? 'Custom')
+            : ucfirst($shiftType);
+
+        $rosterDate = $entry->roster_date->copy();
+
+        return [
+            'employee' => $employeeName,
+            'date' => $rosterDate->format('d M'),
+            'date_sort' => $rosterDate->format('Y-m-d'),
+            'day' => $rosterDate->format('D'),
+            'start_time' => $includeShiftTimes ? $this->formatDisplayTime($startRaw) : null,
+            'end_time' => $includeShiftTimes ? $this->formatDisplayTime($endRaw) : null,
+            'shift_type' => $shiftType,
+            'shift_label' => $shiftLabel,
+            'hours' => $this->calculateEntryHours($startRaw, $endRaw),
+            'is_deleted' => $entry->trashed(),
+            'department_key' => $departmentName,
+            'department_name' => strtoupper($departmentName),
+        ];
+    }
+
+    private function resolveExportDepartmentName(ShiftRosterEntry $entry): string
+    {
+        if ($entry->employee_id) {
+            return $entry->employee?->department?->name ?? 'Unassigned';
+        }
+
+        return $entry->outsourcedEmployee?->contractorCompany?->third_party_name ?? 'Unassigned';
+    }
+
+    private function stripExportRowMeta(array $row): array
+    {
+        unset($row['department_key'], $row['department_name']);
+
+        return $row;
+    }
+
+    private function formatDisplayTime($value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        return Carbon::parse($value)->format('h:i A');
+    }
+
+    private function calculateEntryHours($startTime, $endTime): int
+    {
+        if (! $startTime || ! $endTime) {
+            return 0;
+        }
+
+        $start = Carbon::parse($startTime);
+        $end = Carbon::parse($endTime);
+
+        if ($end->lessThanOrEqualTo($start)) {
+            $end->addDay();
+        }
+
+        $minutes = $start->diffInMinutes($end);
+
+        return max(1, (int) round($minutes / 60));
     }
 }

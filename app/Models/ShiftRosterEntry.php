@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\LogsActivity;
 use App\Models\User;
@@ -84,4 +85,9 @@ class ShiftRosterEntry extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
+    public function events(): HasMany
+    {
+        return $this->hasMany(ShiftRosterEntryEvent::class, 'shift_roster_entry_id');
+    }
 }
+

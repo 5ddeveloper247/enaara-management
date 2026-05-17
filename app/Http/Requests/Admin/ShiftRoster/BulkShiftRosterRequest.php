@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\ShiftRoster;
 
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
+use App\Services\ShiftRosterService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -94,8 +95,14 @@ class BulkShiftRosterRequest extends FormRequest
                 ->unique()
                 ->values();
 
-            if ($days->isEmpty() && $offDays->isEmpty()) {
-                $v->errors()->add('days', 'Select at least one working day or off day.');
+            $dayCount = $days->count();
+
+            if ($dayCount < 5) {
+                $v->errors()->add('days', 'Select at least 5 working days.');
+            }
+
+            if ($dayCount > 6) {
+                $v->errors()->add('days', 'You can select at most 6 working days.');
             }
 
             if ($days->intersect($offDays)->isNotEmpty()) {
@@ -129,6 +136,37 @@ class BulkShiftRosterRequest extends FormRequest
             if ($hasTimes && $startTime === $endTime) {
                 $v->errors()->add('end_time', 'End time must be different from start time.');
             }
+
+            $floorId = (int) $this->input('sbu_floor_id');
+            $rosterService = app(ShiftRosterService::class);
+            $parsedRefs = [];
+            foreach ($refs as $ref) {
+                [$type, $id] = array_pad(explode(':', (string) $ref, 2), 2, null);
+                if ($type && $id) {
+                    $parsedRefs[] = ['type' => $type, 'id' => (int) $id];
+                }
+            }
+
+            $unsupportedNames = [];
+            foreach ($parsedRefs as $ref) {
+                if (! $rosterService->assigneeSupportsFloor($ref['type'], $ref['id'], $floorId)) {
+                    if ($ref['type'] === 'employee') {
+                        $name = Employee::query()->whereKey($ref['id'])->value('full_name');
+                    } else {
+                        $name = OutsourcedEmployee::query()->whereKey($ref['id'])->value('full_name');
+                    }
+                    if ($name) {
+                        $unsupportedNames[] = $name;
+                    }
+                }
+            }
+
+            if ($unsupportedNames !== []) {
+                $v->errors()->add(
+                    'sbu_floor_id',
+                    'Selected floor is not available for: ' . implode(', ', array_unique($unsupportedNames)) . '.'
+                );
+            }
         });
     }
 
@@ -150,7 +188,7 @@ class BulkShiftRosterRequest extends FormRequest
             // Dates
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'days' => ['required', 'array'],
+            'days' => ['required', 'array', 'min:5', 'max:6'],
             'days.*' => ['string', Rule::in(self::WEEKDAYS)],
             'off_days' => ['nullable', 'array'],
             'off_days.*' => ['string', Rule::in(self::WEEKDAYS)],
@@ -161,7 +199,8 @@ class BulkShiftRosterRequest extends FormRequest
             'override_existing' => ['nullable', 'boolean'],
             'exclude_weekends' => ['nullable', 'boolean'],
 
-            // Optional
+            'sbu_floor_id' => ['required', 'integer', 'exists:sbu_floors,id'],
+            'location_text' => ['nullable', 'string', 'min:3', 'max:15', 'regex:/^(?=.*[A-Za-z])[A-Za-z0-9\s\-\'\.]+$/'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -189,7 +228,18 @@ class BulkShiftRosterRequest extends FormRequest
             'end_date.date' => 'End date must be valid.',
             'end_date.after_or_equal' => 'End date must be after or equal to start date.',
 
+            'days.required' => 'Select working days for the assignment.',
+            'days.min' => 'Select at least 5 working days.',
+            'days.max' => 'You can select at most 6 working days.',
+            'days.*.in' => 'One or more selected days are invalid.',
+
             'notes.max' => 'Notes must not exceed 1000 characters.',
+            'sbu_floor_id.required' => 'Floor is required.',
+            'sbu_floor_id.integer' => 'Selected floor is invalid.',
+            'sbu_floor_id.exists' => 'Selected floor does not exist.',
+            'location_text.min' => 'Location must be at least 3 characters.',
+            'location_text.max' => 'Location may not be greater than 15 characters.',
+            'location_text.regex' => 'Location must contain letters and may include numbers, spaces, or hyphens.',
         ];
     }
 
@@ -200,8 +250,9 @@ class BulkShiftRosterRequest extends FormRequest
     {
         $shiftPlannerId = $this->input('shift_planner_id');
         $isCustomTime = filter_var($this->input('is_custom_time'), FILTER_VALIDATE_BOOLEAN);
+        $floorId = $this->input('sbu_floor_id');
 
-        $this->merge([
+        $merge = [
             'check_conflicts' => filter_var($this->check_conflicts, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
             'override_existing' => filter_var($this->override_existing, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
             'exclude_weekends' => filter_var($this->exclude_weekends, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
@@ -209,6 +260,24 @@ class BulkShiftRosterRequest extends FormRequest
             'shift_planner_id' => $isCustomTime || $shiftPlannerId === '' || $shiftPlannerId === null
                 ? null
                 : (int) $shiftPlannerId,
-        ]);
+            'sbu_floor_id' => $floorId === '' || $floorId === null ? null : (int) $floorId,
+        ];
+
+        if ($this->has('notes')) {
+            $notes = $this->input('notes');
+            $merge['notes'] = ($notes !== null && $notes !== '') ? trim(strip_tags((string) $notes)) : null;
+        }
+
+        if ($this->has('location_text')) {
+            $location = $this->input('location_text');
+            if ($location !== null && $location !== '') {
+                $location = trim(strip_tags((string) $location));
+                $merge['location_text'] = $location === '' ? null : $location;
+            } else {
+                $merge['location_text'] = null;
+            }
+        }
+
+        $this->merge($merge);
     }
 }
