@@ -892,11 +892,25 @@
             valid = false;
         }
 
+        if (!validateRosterFloorField()) {
+            valid = false;
+        }
+
         if (!validateRosterLocationField()) {
             valid = false;
         }
 
         return valid;
+    }
+
+    function validateRosterFloorField() {
+        clearRosterFloorFieldError();
+        var floorEl = document.getElementById('rosterFloor');
+        if (!floorEl || !floorEl.value) {
+            showRosterFloorFieldError('Floor is required.');
+            return false;
+        }
+        return true;
     }
 
     function showRosterFloorFieldError(message) {
