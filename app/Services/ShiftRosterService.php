@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\Log;
 
 class ShiftRosterService
 {
+    public function __construct(
+        private readonly ShiftRosterHistoryService $historyService
+    ) {
+    }
+
     private const WEEKDAYS = [
         'monday',
         'tuesday',
@@ -147,11 +152,14 @@ class ShiftRosterService
             $payload['outsourced_employee_id'] = null;
         }
 
+        $before = $this->historyService->snapshot($entry);
         $entry->update($payload);
         if ($userId) {
             $entry->updated_by = $userId;
             $entry->save();
         }
+        $entry->refresh();
+        $this->historyService->recordUpdated($entry, $before, $userId);
 
         return $entry;
     }
@@ -167,6 +175,8 @@ class ShiftRosterService
             $entry->deleted_by = $userId;
             $entry->save();
         }
+        $this->historyService->recordDeleted($entry, $userId);
+
         return $entry->delete();
     }
 
@@ -795,21 +805,25 @@ class ShiftRosterService
         $activeEntry = ShiftRosterEntry::query()->where($lookup)->first();
 
         if ($activeEntry) {
+            $before = $this->historyService->snapshot($activeEntry);
             $activeEntry->fill($payload);
             if ($userId) {
                 $activeEntry->updated_by = $userId;
             }
             $activeEntry->save();
+            $this->historyService->recordUpdated($activeEntry, $before, $userId);
 
             return $activeEntry;
         }
 
-        $entry = ShiftRosterEntry::query()->create($lookup + $payload);
+        $createPayload = $lookup + $payload;
         if ($userId) {
-            $entry->created_by = $userId;
-            $entry->assigned_by = $userId;
-            $entry->save();
+            $createPayload['created_by'] = $userId;
+            $createPayload['assigned_by'] = $userId;
         }
+
+        $entry = ShiftRosterEntry::query()->create($createPayload);
+        $this->historyService->recordCreated($entry, $userId);
 
         return $entry;
     }

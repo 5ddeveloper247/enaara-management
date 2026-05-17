@@ -525,7 +525,7 @@
     }
 
     function rosterAuditBadgeLabel(event) {
-        if (event.type === 'created') return '+ Created';
+        if (event.type === 'created') return '+ Created & Assigned';
         return escapeHtml(event.actionLabel || 'Updated');
     }
 
