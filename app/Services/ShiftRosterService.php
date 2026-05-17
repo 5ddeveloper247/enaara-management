@@ -44,12 +44,13 @@ class ShiftRosterService
     {
         return DB::transaction(function () use ($data) {
             $userId = Auth::id();
-            $shift = ShiftPlanner::findOrFail((int) $data['shift_planner_id']);
+            $assignment = $this->buildEntryAssignment($data);
             $payload = [
-                'shift_planner_id' => $shift->id,
+                'shift_planner_id' => $assignment['shift_planner_id'],
+                'is_custom_time' => $assignment['is_custom_time'],
                 'roster_date' => $data['roster_date'],
-                'start_time' => $data['start_time'] ?? $this->formatShiftTime($shift->start_time),
-                'end_time' => $data['end_time'] ?? $this->formatShiftTime($shift->end_time),
+                'start_time' => $assignment['start_time'],
+                'end_time' => $assignment['end_time'],
                 'check_in' => $data['check_in'] ?? null,
                 'check_out' => $data['check_out'] ?? null,
                 'late_check_in' => (bool) ($data['late_check_in'] ?? false),
@@ -57,6 +58,7 @@ class ShiftRosterService
                 'assignment_id' => null,
             ];
             $this->applyFloorToPayload($data, $payload);
+            $this->applyNotesToPayload($data, $payload);
 
             if (($data['employee_type'] ?? 'employee') === 'outsourced') {
                 $payload['employee_id'] = null;
@@ -109,17 +111,20 @@ class ShiftRosterService
     {
         $entry = ShiftRosterEntry::findOrFail($id);
         $userId = Auth::id();
+        $assignment = $this->buildEntryAssignment($data, $entry);
         $payload = [
-            'shift_planner_id' => $data['shift_planner_id'],
+            'shift_planner_id' => $assignment['shift_planner_id'],
+            'is_custom_time' => $assignment['is_custom_time'],
             'roster_date' => $data['roster_date'],
-            'start_time' => $data['start_time'] ?? $entry->start_time,
-            'end_time' => $data['end_time'] ?? $entry->end_time,
+            'start_time' => $assignment['start_time'],
+            'end_time' => $assignment['end_time'],
             'check_in' => $data['check_in'] ?? $entry->check_in,
             'check_out' => $data['check_out'] ?? $entry->check_out,
             'late_check_in' => (bool) ($data['late_check_in'] ?? $entry->late_check_in),
             'status' => isset($data['status']) ? ((int) $data['status'] === 1 ? 'pending' : 'cancelled') : $entry->status,
         ];
         $this->applyFloorToPayload($data, $payload, $entry->floor);
+        $this->applyNotesToPayload($data, $payload);
 
         if (($data['employee_type'] ?? 'employee') === 'outsourced') {
             $payload['outsourced_employee_id'] = (int) $data['employee_id'];
@@ -158,7 +163,23 @@ class ShiftRosterService
     public function bulkAssign(array $data): array
     {
         return DB::transaction(function () use ($data) {
-            $shift = ShiftPlanner::findOrFail((int) $data['shift_planner_id']);
+            $isCustomTime = $this->isCustomTimeRequest($data);
+            $shiftPlannerId = null;
+            $entryStartTime = null;
+            $entryEndTime = null;
+
+            if ($isCustomTime) {
+                $entryStartTime = $this->formatShiftTime($data['start_time']);
+                $entryEndTime = $this->formatShiftTime($data['end_time']);
+            } elseif (! empty($data['shift_planner_id'])) {
+                $shiftPlannerId = (int) $data['shift_planner_id'];
+                if (! empty($data['start_time']) && ! empty($data['end_time'])) {
+                    $entryStartTime = $this->formatShiftTime($data['start_time']);
+                    $entryEndTime = $this->formatShiftTime($data['end_time']);
+                }
+            } else {
+                throw new \InvalidArgumentException('Select a shift or enable custom start and end time.');
+            }
             $refs = $this->parseAssigneeRefs($data['employee_ids'] ?? []);
             $days = array_map('strtolower', $data['days'] ?? []);
             $offDays = array_map('strtolower', $data['off_days'] ?? []);
@@ -207,8 +228,11 @@ class ShiftRosterService
                             $ref['type'],
                             $ref['id'],
                             $date->toDateString(),
-                            $shift,
-                            $overrideExisting
+                            $overrideExisting,
+                            $shiftPlannerId,
+                            $isCustomTime,
+                            $entryStartTime,
+                            $entryEndTime
                         );
                         $totalAssigned++;
                         continue;
@@ -218,7 +242,7 @@ class ShiftRosterService
                         $ref['type'],
                         $ref['id'],
                         $date->toDateString(),
-                        $shift,
+                        $shiftPlannerId,
                         $overrideExisting
                     );
                     $totalOffDays++;
@@ -366,28 +390,10 @@ class ShiftRosterService
 
         $shiftsOut = $entries->map(function ($entry) use ($floorLabelMaps) {
             $isOffDay = strtolower((string) $entry->status) === 'off';
-            $shiftName = strtolower($entry->shift->name ?? '');
-            $startTime = $isOffDay ? null : ($entry->start_time ?? $entry->shift->start_time);
-            $startHour = $startTime ? (int) \Carbon\Carbon::parse($startTime)->format('H') : null;
-
-            $shiftType = 'general';
-            if (! $isOffDay) {
-                if (str_contains($shiftName, 'morning')) {
-                    $shiftType = 'morning';
-                } elseif (str_contains($shiftName, 'evening')) {
-                    $shiftType = 'evening';
-                } elseif (str_contains($shiftName, 'night')) {
-                    $shiftType = 'night';
-                } elseif ($startHour !== null) {
-                    if ($startHour >= 4 && $startHour < 12) {
-                        $shiftType = 'morning';
-                    } elseif ($startHour >= 12 && $startHour < 18) {
-                        $shiftType = 'evening';
-                    } elseif ($startHour >= 18 || $startHour < 4) {
-                        $shiftType = 'night';
-                    }
-                }
-            }
+            $shiftName = strtolower($entry->shift?->name ?? '');
+            $isCustomTime = (bool) $entry->is_custom_time;
+            $startTime = $isOffDay ? null : ($entry->start_time ?? $entry->shift?->start_time);
+            $shiftType = $this->resolveShiftType($startTime, $isOffDay, $isCustomTime, $shiftName);
 
             $employeeType = $entry->employee_id ? 'employee' : 'outsourced';
             $sourceId = (int) ($entry->employee_id ?: $entry->outsourced_employee_id);
@@ -406,15 +412,20 @@ class ShiftRosterService
                 // Kept for backward compatibility/fallbacks.
                 'day' => (int) $entry->roster_date->format('d'),
                 'shiftPlannerId' => $entry->shift_planner_id,
+                'isCustomTime' => $isCustomTime,
                 'shiftType' => $shiftType,
-                'timeStart' => $isOffDay ? null : $this->formatShiftTime($entry->start_time ?? $entry->shift->start_time),
-                'timeEnd' => $isOffDay ? null : $this->formatShiftTime($entry->end_time ?? $entry->shift->end_time),
+                'timeStart' => $isOffDay ? null : $this->formatShiftTime($entry->start_time ?? $entry->shift?->start_time),
+                'timeEnd' => $isOffDay ? null : $this->formatShiftTime($entry->end_time ?? $entry->shift?->end_time),
                 'floor' => $floorLabel,
+                'notes' => $entry->notes,
                 'sbuFloorId' => $floorLabel ? ($floorLabelMaps[$lookupKey][$floorLabel] ?? null) : null,
                 'status' => $entry->status,
                 'isOffDay' => $isOffDay,
                 'isCompensatory' => $entry->is_compensatory_earned,
-                'deletedAt' => $entry->deleted_at ? $entry->deleted_at->toDateTimeString() : null,
+                'deletedAt' => $entry->deleted_at?->toDateTimeString(),
+                'createdAt' => $entry->created_at?->toDateTimeString(),
+                'updatedAt' => $entry->updated_by ? $entry->updated_at?->toDateTimeString() : null,
+                'assignedAt' => $entry->assigned_by ? $entry->created_at?->toDateTimeString() : null,
                 'createdByName' => $entry->createdBy?->name,
                 'updatedByName' => $entry->updatedBy?->name,
                 'assignedByName' => $entry->assignedBy?->name,
@@ -529,6 +540,16 @@ class ShiftRosterService
         $payload['floor'] = $this->formatFloorLabel($floor);
     }
 
+    private function applyNotesToPayload(array $data, array &$payload): void
+    {
+        if (! array_key_exists('notes', $data)) {
+            return;
+        }
+
+        $notes = is_string($data['notes']) ? trim($data['notes']) : null;
+        $payload['notes'] = ($notes === null || $notes === '') ? null : $notes;
+    }
+
     /**
      * @param array<int, string> $refs
      * @return array<int, array{type:string,id:int}>
@@ -582,14 +603,101 @@ class ShiftRosterService
         return array_values(array_unique($names));
     }
 
-    private function upsertAssigneeShiftEntry(string $type, int $id, string $date, ShiftPlanner $shift, bool $overrideExisting): void
+    private function isCustomTimeRequest(array $data): bool
     {
-        $userId = Auth::id();
-        $basePayload = [
+        if (filter_var($data['is_custom_time'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return true;
+        }
+
+        $hasTimes = ! empty($data['start_time']) && ! empty($data['end_time']);
+        $hasShift = ! empty($data['shift_planner_id']);
+
+        return $hasTimes && ! $hasShift;
+    }
+
+    private function buildEntryAssignment(array $data, ?ShiftRosterEntry $existing = null): array
+    {
+        if ($this->isCustomTimeRequest($data)) {
+            return [
+                'shift_planner_id' => null,
+                'is_custom_time' => true,
+                'start_time' => $this->formatShiftTime($data['start_time']),
+                'end_time' => $this->formatShiftTime($data['end_time']),
+            ];
+        }
+
+        $shiftId = $data['shift_planner_id'] ?? $existing?->shift_planner_id;
+        if (! $shiftId) {
+            throw new \InvalidArgumentException('Select a shift from the list or enable custom start and end time.');
+        }
+
+        $shift = ShiftPlanner::findOrFail((int) $shiftId);
+        $hasTimeOverride = ! empty($data['start_time']) && ! empty($data['end_time']);
+
+        return [
             'shift_planner_id' => $shift->id,
-            'start_time' => $this->formatShiftTime($shift->start_time),
-            'end_time' => $this->formatShiftTime($shift->end_time),
-            'floor' => $shift->floor ?? null,
+            'is_custom_time' => false,
+            'start_time' => $hasTimeOverride
+                ? $this->formatShiftTime($data['start_time'])
+                : $this->formatShiftTime($shift->start_time),
+            'end_time' => $hasTimeOverride
+                ? $this->formatShiftTime($data['end_time'])
+                : $this->formatShiftTime($shift->end_time),
+        ];
+    }
+
+    private function resolveShiftType(?string $startTime, bool $isOffDay, bool $isCustomTime, string $shiftName = ''): string
+    {
+        if ($isOffDay) {
+            return 'off';
+        }
+
+        if ($startTime) {
+            $hour = (int) Carbon::parse($startTime)->format('H');
+            if ($hour >= 4 && $hour < 12) {
+                return 'morning';
+            }
+            if ($hour >= 12 && $hour < 18) {
+                return 'evening';
+            }
+            if ($hour >= 18 || $hour < 4) {
+                return 'night';
+            }
+        }
+
+        if (! $isCustomTime && $shiftName !== '') {
+            if (str_contains($shiftName, 'morning')) {
+                return 'morning';
+            }
+            if (str_contains($shiftName, 'evening')) {
+                return 'evening';
+            }
+            if (str_contains($shiftName, 'night')) {
+                return 'night';
+            }
+        }
+
+        return 'general';
+    }
+
+    private function upsertAssigneeShiftEntry(
+        string $type,
+        int $id,
+        string $date,
+        bool $overrideExisting,
+        ?int $shiftPlannerId,
+        bool $isCustomTime,
+        ?string $startTime = null,
+        ?string $endTime = null
+    ): void {
+        $userId = Auth::id();
+        $shift = $shiftPlannerId ? ShiftPlanner::find($shiftPlannerId) : null;
+        $basePayload = [
+            'shift_planner_id' => $shiftPlannerId,
+            'is_custom_time' => $isCustomTime,
+            'start_time' => $startTime ?? ($shift ? $this->formatShiftTime($shift->start_time) : null),
+            'end_time' => $endTime ?? ($shift ? $this->formatShiftTime($shift->end_time) : null),
+            'floor' => $shift?->floor,
             'status' => 'pending',
         ];
 
@@ -611,7 +719,7 @@ class ShiftRosterService
                 return;
             }
             $entry = ShiftRosterEntry::firstOrCreate(
-                ['outsourced_employee_id' => $id, 'roster_date' => $date, 'shift_planner_id' => $shift->id],
+                ['outsourced_employee_id' => $id, 'roster_date' => $date],
                 ['employee_id' => null] + $basePayload
             );
             if ($userId && $entry->wasRecentlyCreated) {
@@ -639,7 +747,7 @@ class ShiftRosterService
             return;
         }
         $entry = ShiftRosterEntry::firstOrCreate(
-            ['employee_id' => $id, 'roster_date' => $date, 'shift_planner_id' => $shift->id],
+            ['employee_id' => $id, 'roster_date' => $date],
             ['outsourced_employee_id' => null] + $basePayload
         );
         if ($userId && $entry->wasRecentlyCreated) {
@@ -649,11 +757,12 @@ class ShiftRosterService
         }
     }
 
-    private function upsertAssigneeOffEntry(string $type, int $id, string $date, ShiftPlanner $shift, bool $overrideExisting): void
+    private function upsertAssigneeOffEntry(string $type, int $id, string $date, ?int $shiftPlannerId, bool $overrideExisting): void
     {
         $userId = Auth::id();
         $basePayload = [
-            'shift_planner_id' => $shift->id,
+            'shift_planner_id' => $shiftPlannerId,
+            'is_custom_time' => false,
             'start_time' => null,
             'end_time' => null,
             'floor' => null,

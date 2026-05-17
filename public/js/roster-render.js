@@ -107,21 +107,40 @@
         return hours + ':' + minutes + ' ' + ampm;
     }
 
+    function shiftTypeIconHtml(shiftType) {
+        var icon = '';
+        if (shiftType === 'morning') {
+            icon = 'bi-sun-fill';
+        } else if (shiftType === 'evening') {
+            icon = 'bi-cloud-sun-fill';
+        } else if (shiftType === 'night') {
+            icon = 'bi-moon-stars-fill';
+        }
+        if (!icon) {
+            return '';
+        }
+        return '<span class="shift-pill-icon" aria-hidden="true"><i class="bi ' + icon + '"></i></span>';
+    }
+
     function pillHtml(s) {
         if (s.isOffDay || (s.status && String(s.status).toLowerCase() === 'off')) {
             return '<div class="shift-pill shift-off">' +
+                '<span class="shift-pill-icon" aria-hidden="true"><i class="bi bi-calendar-x"></i></span>' +
                 '<div class="shift-pill-top">' +
                 '<span class="shift-time">OFF</span>' +
                 '</div>' +
                 '</div>';
         }
 
-        var typeClass = s.shiftType && s.shiftType !== 'general' ? ' shift-' + s.shiftType : '';
+        var shiftType = s.shiftType && s.shiftType !== 'general' ? s.shiftType : '';
+        var typeClass = shiftType ? ' shift-' + shiftType : '';
         var lateClass = s.lateCheckIn ? ' shift-late' : '';
         var deletedClass = s.deletedAt ? ' shift-cancelled' : '';
+        var iconBlock = shiftTypeIconHtml(shiftType);
         var lateBlock = s.lateCheckIn ? '<span class="shift-status-late"><i class="bi bi-exclamation-circle-fill"></i> Late check-in</span>' : '';
         var floorBlock = s.floor ? '<span class="shift-floor">' + escapeHtml(s.floor) + '</span>' : '';
         return '<div class="shift-pill' + typeClass + lateClass + deletedClass + '">' +
+            iconBlock +
             '<div class="shift-pill-top">' +
             '<span class="shift-time">' + formatTimeAMPM(s.timeStart) + ' – ' + formatTimeAMPM(s.timeEnd) + '</span>' +
             '</div>' +
@@ -405,6 +424,61 @@
         return padDay(dateObj.getDate()) + ' ' + months[dateObj.getMonth()] + ' ' + dateObj.getFullYear();
     }
 
+    function formatRosterAuditDateTime(value) {
+        if (!value) {
+            return '—';
+        }
+        var normalized = String(value).trim().replace(' ', 'T');
+        var dateObj = new Date(normalized);
+        if (isNaN(dateObj.getTime())) {
+            return '—';
+        }
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var hours = dateObj.getHours();
+        var minutes = pad2(dateObj.getMinutes());
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        return padDay(dateObj.getDate()) + ' ' + months[dateObj.getMonth()] + ' ' + dateObj.getFullYear()
+            + ', ' + pad2(hours) + ':' + minutes + ' ' + ampm;
+    }
+
+    function setRosterAuditField(nameEl, timeEl, name, timeValue) {
+        if (nameEl) {
+            nameEl.textContent = name || '—';
+        }
+        if (timeEl) {
+            timeEl.textContent = name ? formatRosterAuditDateTime(timeValue) : '—';
+        }
+    }
+
+    function resetRosterAuditFields() {
+        setRosterAuditField(
+            document.getElementById('rosterShiftCreatedBy'),
+            document.getElementById('rosterShiftCreatedAt'),
+            null,
+            null
+        );
+        setRosterAuditField(
+            document.getElementById('rosterShiftUpdatedBy'),
+            document.getElementById('rosterShiftUpdatedAt'),
+            null,
+            null
+        );
+        setRosterAuditField(
+            document.getElementById('rosterShiftAssignedBy'),
+            document.getElementById('rosterShiftAssignedAt'),
+            null,
+            null
+        );
+        setRosterAuditField(
+            document.getElementById('rosterShiftDeletedBy'),
+            document.getElementById('rosterShiftDeletedAt'),
+            null,
+            null
+        );
+    }
+
     function clearRosterFloorFieldError() {
         var floorEl = document.getElementById('rosterFloor');
         var errorEl = document.getElementById('rosterFloorError');
@@ -415,6 +489,90 @@
         if (floorEl) {
             floorEl.classList.remove('is-invalid');
         }
+    }
+
+    function clearRosterShiftFieldErrors() {
+        ['#rosterShiftPlannerId', '#rosterStartTime', '#rosterEndTime'].forEach(function(sel) {
+            var el = document.querySelector(sel);
+            if (el) el.classList.remove('is-invalid');
+        });
+        ['#rosterShiftPlannerError', '#rosterStartTimeError', '#rosterEndTimeError'].forEach(function(sel) {
+            var el = document.querySelector(sel);
+            if (el) {
+                el.textContent = '';
+                el.classList.add('d-none');
+            }
+        });
+    }
+
+    function showRosterShiftFieldError(fieldSel, errorSel, message) {
+        var field = document.querySelector(fieldSel);
+        var error = document.querySelector(errorSel);
+        if (field) field.classList.add('is-invalid');
+        if (error) {
+            error.textContent = message;
+            error.classList.remove('d-none');
+        }
+    }
+
+    function rosterUsesCustomTime() {
+        var cb = document.getElementById('rosterUseCustomTime');
+        return cb ? cb.checked : false;
+    }
+
+    function toggleRosterCustomTimeUi() {
+        var useCustom = rosterUsesCustomTime();
+        var timeRow = document.getElementById('rosterShiftTimeRow');
+        var shiftSelect = document.getElementById('rosterShiftPlannerId');
+        var requiredMark = document.getElementById('rosterShiftRequiredMark');
+
+        if (timeRow) {
+            timeRow.style.display = useCustom ? '' : 'none';
+        }
+        if (shiftSelect) {
+            shiftSelect.required = !useCustom;
+        }
+        if (requiredMark) {
+            requiredMark.style.display = useCustom ? 'none' : '';
+        }
+
+        if (!useCustom) {
+            var startEl = document.getElementById('rosterStartTime');
+            var endEl = document.getElementById('rosterEndTime');
+            if (startEl) startEl.value = '';
+            if (endEl) endEl.value = '';
+        }
+
+        clearRosterShiftFieldErrors();
+    }
+
+    function validateRosterShiftFields() {
+        clearRosterShiftFieldErrors();
+        var shiftId = document.getElementById('rosterShiftPlannerId')?.value || '';
+        var useCustom = rosterUsesCustomTime();
+        var startTime = document.getElementById('rosterStartTime')?.value || '';
+        var endTime = document.getElementById('rosterEndTime')?.value || '';
+        var valid = true;
+
+        if (useCustom) {
+            if (!startTime) {
+                showRosterShiftFieldError('#rosterStartTime', '#rosterStartTimeError', 'Start time is required.');
+                valid = false;
+            }
+            if (!endTime) {
+                showRosterShiftFieldError('#rosterEndTime', '#rosterEndTimeError', 'End time is required.');
+                valid = false;
+            }
+            if (startTime && endTime && startTime === endTime) {
+                showRosterShiftFieldError('#rosterEndTime', '#rosterEndTimeError', 'End time must be different from start time.');
+                valid = false;
+            }
+        } else if (!shiftId) {
+            showRosterShiftFieldError('#rosterShiftPlannerId', '#rosterShiftPlannerError', 'Please select a shift.');
+            valid = false;
+        }
+
+        return valid;
     }
 
     function showRosterFloorFieldError(message) {
@@ -515,10 +673,16 @@
         var employeeTypeEl = document.getElementById('rosterShiftEmployeeType');
         var auditCard = document.getElementById('rosterShiftAuditCard');
         var createdByEl = document.getElementById('rosterShiftCreatedBy');
+        var createdAtEl = document.getElementById('rosterShiftCreatedAt');
         var updatedByEl = document.getElementById('rosterShiftUpdatedBy');
+        var updatedAtEl = document.getElementById('rosterShiftUpdatedAt');
         var assignedByEl = document.getElementById('rosterShiftAssignedBy');
+        var assignedAtEl = document.getElementById('rosterShiftAssignedAt');
+        var updatedWrap = document.getElementById('rosterShiftUpdatedWrap');
+        var assignedWrap = document.getElementById('rosterShiftAssignedWrap');
         var deletedWrap = document.getElementById('rosterShiftDeletedWrap');
         var deletedByEl = document.getElementById('rosterShiftDeletedBy');
+        var deletedAtEl = document.getElementById('rosterShiftDeletedAt');
 
         if (!canvas) return;
         var employeeRef = String(employeeId || '');
@@ -553,7 +717,14 @@
             if (titleEl) titleEl.textContent = 'Edit Shift';
             if (saveBtnText) saveBtnText.textContent = 'Update';
             if (deleteWrap) deleteWrap.style.display = 'block';
-            if (shiftSelect) shiftSelect.value = String(shift.shiftPlannerId || shift.shift_planner_id || '');
+            var isCustomEntry = !!(shift.isCustomTime || shift.is_custom_time);
+            if (shiftSelect) {
+                if (isCustomEntry) {
+                    shiftSelect.value = '';
+                } else {
+                    shiftSelect.value = String(shift.shiftPlannerId || shift.shift_planner_id || '');
+                }
+            }
             if (startTimeEl) startTimeEl.value = shift.timeStart || '';
             if (endTimeEl) endTimeEl.value = shift.timeEnd || '';
             if (checkInEl) checkInEl.value = shift.checkIn || '';
@@ -561,14 +732,40 @@
             if (lateCheckInEl) lateCheckInEl.checked = !!shift.lateCheckIn;
             if (notesEl) notesEl.value = shift.notes || '';
 
-            if (createdByEl) createdByEl.textContent = shift.createdByName || '—';
-            if (updatedByEl) updatedByEl.textContent = shift.updatedByName || '—';
-            if (assignedByEl) assignedByEl.textContent = shift.assignedByName || '—';
+            setRosterAuditField(
+                createdByEl,
+                createdAtEl,
+                shift.createdByName,
+                shift.createdAt || shift.created_at
+            );
+            setRosterAuditField(
+                updatedByEl,
+                updatedAtEl,
+                shift.updatedByName,
+                shift.updatedAt || shift.updated_at
+            );
+            setRosterAuditField(
+                assignedByEl,
+                assignedAtEl,
+                shift.assignedByName,
+                shift.assignedAt || shift.assigned_at
+            );
+            setRosterAuditField(
+                deletedByEl,
+                deletedAtEl,
+                shift.deletedByName,
+                shift.deletedAt || shift.deleted_at
+            );
 
-            if (deletedWrap) {
-                deletedWrap.style.display = shift.deletedByName ? 'flex' : 'none';
+            if (updatedWrap) {
+                updatedWrap.style.display = shift.updatedByName ? '' : 'none';
             }
-            if (deletedByEl) deletedByEl.textContent = shift.deletedByName || '—';
+            if (assignedWrap) {
+                assignedWrap.style.display = shift.assignedByName ? '' : 'none';
+            }
+            if (deletedWrap) {
+                deletedWrap.style.display = shift.deletedByName ? '' : 'none';
+            }
 
             if (auditCard) {
                 var hasAnyAudit = !!(shift.createdByName || shift.updatedByName || shift.assignedByName || shift.deletedByName);
@@ -583,17 +780,24 @@
             if (shiftSelect) shiftSelect.value = '';
             if (startTimeEl) startTimeEl.value = '';
             if (endTimeEl) endTimeEl.value = '';
+            var useCustomReset = document.getElementById('rosterUseCustomTime');
+            if (useCustomReset) useCustomReset.checked = false;
             if (checkInEl) checkInEl.value = '';
             if (checkOutEl) checkOutEl.value = '';
             if (lateCheckInEl) lateCheckInEl.checked = false;
             if (notesEl) notesEl.value = '';
             if (auditCard) auditCard.style.display = 'none';
-            if (createdByEl) createdByEl.textContent = '—';
-            if (updatedByEl) updatedByEl.textContent = '—';
-            if (assignedByEl) assignedByEl.textContent = '—';
+            resetRosterAuditFields();
+            if (updatedWrap) updatedWrap.style.display = '';
+            if (assignedWrap) assignedWrap.style.display = '';
             if (deletedWrap) deletedWrap.style.display = 'none';
-            if (deletedByEl) deletedByEl.textContent = '—';
         }
+
+        var useCustomCb = document.getElementById('rosterUseCustomTime');
+        if (useCustomCb) {
+            useCustomCb.checked = !!(shift && (shift.isCustomTime || shift.is_custom_time));
+        }
+        toggleRosterCustomTimeUi();
 
         var saveBtn = document.getElementById('rosterShiftSaveBtn');
         if (shift && shift.deletedAt) {
@@ -601,11 +805,17 @@
             if (saveBtn) saveBtn.style.display = 'none';
             if (deleteWrap) deleteWrap.style.display = 'none';
             if (shiftSelect) shiftSelect.disabled = true;
+            if (useCustomCb) useCustomCb.disabled = true;
+            if (startTimeEl) startTimeEl.disabled = true;
+            if (endTimeEl) endTimeEl.disabled = true;
             if (notesEl) notesEl.disabled = true;
             if (floorEl) floorEl.disabled = true;
         } else {
             if (saveBtn) saveBtn.style.display = 'inline-block';
             if (shiftSelect) shiftSelect.disabled = false;
+            if (useCustomCb) useCustomCb.disabled = false;
+            if (startTimeEl) startTimeEl.disabled = false;
+            if (endTimeEl) endTimeEl.disabled = false;
             if (notesEl) notesEl.disabled = false;
             if (floorEl) floorEl.disabled = false;
         }
@@ -634,28 +844,40 @@
         var sbuFloorId = floorSelect && floorSelect.value ? parseInt(floorSelect.value, 10) : null;
 
         var parsedEmployeeId = parseInt(employeeId, 10);
-        if (!employeeId || !rosterDate || !shiftPlannerId || !Number.isFinite(parsedEmployeeId) || parsedEmployeeId <= 0) {
+        if (!employeeId || !rosterDate || !Number.isFinite(parsedEmployeeId) || parsedEmployeeId <= 0) {
             showError('Employee is required.');
             return;
         }
 
+        if (!validateRosterShiftFields()) {
+            return;
+        }
+
+        var useCustom = rosterUsesCustomTime();
+        var startTimeVal = useCustom ? (document.getElementById('rosterStartTime')?.value || '') : '';
+        var endTimeVal = useCustom ? (document.getElementById('rosterEndTime')?.value || '') : '';
+
         var payload = {
             employee_id: parsedEmployeeId,
             employee_type: employeeType,
-            shift_planner_id: parseInt(shiftPlannerId, 10),
             roster_date: rosterDate,
-            start_time: document.getElementById('rosterStartTime').value,
-            end_time: document.getElementById('rosterEndTime').value,
-            check_in: document.getElementById('rosterCheckIn').value,
-            check_out: document.getElementById('rosterCheckOut').value,
             sbu_floor_id: Number.isFinite(sbuFloorId) && sbuFloorId > 0 ? sbuFloorId : null,
             late_check_in: document.getElementById('rosterLateCheckIn')?.checked ? 1 : 0
         };
-        if (notes) payload.notes = notes;
+
+        payload.is_custom_time = useCustom ? 1 : 0;
+        if (!useCustom && shiftPlannerId) {
+            payload.shift_planner_id = parseInt(shiftPlannerId, 10);
+        }
+        if (startTimeVal) {
+            payload.start_time = startTimeVal;
+        }
+        if (endTimeVal) {
+            payload.end_time = endTimeVal;
+        }
+        payload.notes = notes;
 
         clearRosterFloorFieldError();
-
-        console.log("Submitting Roster Assignment:", payload);
 
         var url = rosterId ? (base + '/' + rosterId) : storeUrl;
         var saveBtn = document.getElementById('rosterShiftSaveBtn');
@@ -683,7 +905,6 @@
                 });
             })
             .then(function(res) {
-                console.log("Roster Save Response:", res);
                 if (saveBtn) {
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i><span id="rosterShiftSaveBtnText">' + (rosterId ? 'Update' : 'Save') + '</span>';
@@ -704,6 +925,15 @@
                         var floorErrors = res.body.errors.sbu_floor_id;
                         if (floorErrors && floorErrors.length) {
                             showRosterFloorFieldError(floorErrors[0]);
+                        }
+                        if (res.body.errors.shift_planner_id) {
+                            showRosterShiftFieldError('#rosterShiftPlannerId', '#rosterShiftPlannerError', res.body.errors.shift_planner_id[0]);
+                        }
+                        if (res.body.errors.start_time) {
+                            showRosterShiftFieldError('#rosterStartTime', '#rosterStartTimeError', res.body.errors.start_time[0]);
+                        }
+                        if (res.body.errors.end_time) {
+                            showRosterShiftFieldError('#rosterEndTime', '#rosterEndTimeError', res.body.errors.end_time[0]);
                         }
                         msg = Object.values(res.body.errors).flat().join('<br>');
                     }
@@ -834,22 +1064,24 @@
         if (plannerSelect && !plannerSelect._rosterBound) {
             plannerSelect._rosterBound = true;
             plannerSelect.addEventListener('change', function() {
+                if (!rosterUsesCustomTime()) {
+                    return;
+                }
                 var opt = this.options[this.selectedIndex];
+                var startEl = document.getElementById('rosterStartTime');
+                var endEl = document.getElementById('rosterEndTime');
                 if (opt && opt.value) {
                     var start = opt.getAttribute('data-start');
                     var end = opt.getAttribute('data-end');
-                    if (start) document.getElementById('rosterStartTime').value = start;
-                    if (end) document.getElementById('rosterEndTime').value = end;
-                    // Default check-in/out to start/end
-                    if (start) document.getElementById('rosterCheckIn').value = start;
-                    if (end) document.getElementById('rosterCheckOut').value = end;
-                } else {
-                    document.getElementById('rosterStartTime').value = '';
-                    document.getElementById('rosterEndTime').value = '';
-                    document.getElementById('rosterCheckIn').value = '';
-                    document.getElementById('rosterCheckOut').value = '';
+                    if (start && startEl) startEl.value = start;
+                    if (end && endEl) endEl.value = end;
                 }
             });
+        }
+        var rosterUseCustomTimeEl = document.getElementById('rosterUseCustomTime');
+        if (rosterUseCustomTimeEl && !rosterUseCustomTimeEl._rosterBound) {
+            rosterUseCustomTimeEl._rosterBound = true;
+            rosterUseCustomTimeEl.addEventListener('change', toggleRosterCustomTimeUi);
         }
     }
 

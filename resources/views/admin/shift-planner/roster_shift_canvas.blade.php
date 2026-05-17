@@ -31,34 +31,46 @@
             </section>
 
             <section class="roster-shift-section roster-shift-audit-card mb-4" id="rosterShiftAuditCard" style="display: none;" aria-label="Audit">
-                <div class="roster-shift-section-label mb-2">Audit</div>
-                <ul class="list-unstyled mb-0 roster-shift-audit-list">
-                    <li class="roster-shift-audit-item">
-                        <span class="roster-shift-audit-icon"><i class="bi bi-person-plus"></i></span>
-                        <div class="roster-shift-audit-body">
+                <div class="roster-shift-section-label mb-3">Audit</div>
+                <ul class="list-unstyled mb-0 roster-shift-audit-timeline">
+                    <li class="roster-shift-audit-step roster-shift-audit-step--created">
+                        <div class="roster-shift-audit-marker">
+                            <span class="roster-shift-audit-icon"><i class="bi bi-person-plus"></i></span>
+                        </div>
+                        <div class="roster-shift-audit-content">
                             <span class="roster-shift-audit-label">Created by</span>
                             <span class="roster-shift-audit-value" id="rosterShiftCreatedBy">—</span>
+                            <span class="roster-shift-audit-time-value" id="rosterShiftCreatedAt">—</span>
                         </div>
                     </li>
-                    <li class="roster-shift-audit-item">
-                        <span class="roster-shift-audit-icon"><i class="bi bi-arrow-repeat"></i></span>
-                        <div class="roster-shift-audit-body">
+                    <li class="roster-shift-audit-step roster-shift-audit-step--updated" id="rosterShiftUpdatedWrap">
+                        <div class="roster-shift-audit-marker">
+                            <span class="roster-shift-audit-icon"><i class="bi bi-arrow-repeat"></i></span>
+                        </div>
+                        <div class="roster-shift-audit-content">
                             <span class="roster-shift-audit-label">Updated by</span>
                             <span class="roster-shift-audit-value" id="rosterShiftUpdatedBy">—</span>
+                            <span class="roster-shift-audit-time-value" id="rosterShiftUpdatedAt">—</span>
                         </div>
                     </li>
-                    <li class="roster-shift-audit-item">
-                        <span class="roster-shift-audit-icon"><i class="bi bi-person-check"></i></span>
-                        <div class="roster-shift-audit-body">
+                    <li class="roster-shift-audit-step roster-shift-audit-step--assigned" id="rosterShiftAssignedWrap">
+                        <div class="roster-shift-audit-marker">
+                            <span class="roster-shift-audit-icon"><i class="bi bi-person-check"></i></span>
+                        </div>
+                        <div class="roster-shift-audit-content">
                             <span class="roster-shift-audit-label">Assigned by</span>
                             <span class="roster-shift-audit-value" id="rosterShiftAssignedBy">—</span>
+                            <span class="roster-shift-audit-time-value" id="rosterShiftAssignedAt">—</span>
                         </div>
                     </li>
-                    <li class="roster-shift-audit-item" id="rosterShiftDeletedWrap" style="display: none;">
-                        <span class="roster-shift-audit-icon text-danger"><i class="bi bi-trash"></i></span>
-                        <div class="roster-shift-audit-body">
+                    <li class="roster-shift-audit-step roster-shift-audit-step--deleted" id="rosterShiftDeletedWrap" style="display: none;">
+                        <div class="roster-shift-audit-marker">
+                            <span class="roster-shift-audit-icon"><i class="bi bi-trash"></i></span>
+                        </div>
+                        <div class="roster-shift-audit-content">
                             <span class="roster-shift-audit-label">Deleted by</span>
-                            <span class="roster-shift-audit-value text-danger" id="rosterShiftDeletedBy">—</span>
+                            <span class="roster-shift-audit-value" id="rosterShiftDeletedBy">—</span>
+                            <span class="roster-shift-audit-time-value" id="rosterShiftDeletedAt">—</span>
                         </div>
                     </li>
                 </ul>
@@ -70,7 +82,9 @@
                 <div class="roster-shift-section-label mb-3">Assignment</div>
 
                 <div class="mb-3">
-                    <label for="rosterShiftPlannerId" class="form-label roster-shift-field-label">Shift <span class="text-danger">*</span></label>
+                    <label for="rosterShiftPlannerId" class="form-label roster-shift-field-label">
+                        Shift <span id="rosterShiftRequiredMark" class="text-danger">*</span>
+                    </label>
                     <select class="form-select roster-shift-input" id="rosterShiftPlannerId" name="shift_planner_id" required>
                         <option value="">Select Shift</option>
                         @forelse($shifts ?? [] as $shift)
@@ -82,28 +96,24 @@
                         @empty
                         @endforelse
                     </select>
+                    <div id="rosterShiftPlannerError" class="invalid-feedback d-block d-none"></div>
                 </div>
 
-                <div style="display: none;">
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label for="rosterStartTime" class="form-label roster-shift-field-label">Start Time</label>
-                            <input type="time" class="form-control roster-shift-input" id="rosterStartTime" name="start_time">
-                        </div>
-                        <div class="col-6">
-                            <label for="rosterEndTime" class="form-label roster-shift-field-label">End Time</label>
-                            <input type="time" class="form-control roster-shift-input" id="rosterEndTime" name="end_time">
-                        </div>
+                <div class="form-check form-switch mb-3 roster-shift-custom-toggle">
+                    <input class="form-check-input" type="checkbox" id="rosterUseCustomTime" value="1">
+                    <label class="form-check-label roster-shift-field-label" for="rosterUseCustomTime">Use custom start and end time</label>
+                </div>
+
+                <div class="row g-2 mb-3" id="rosterShiftTimeRow" style="display: none;">
+                    <div class="col-6">
+                        <label for="rosterStartTime" class="form-label roster-shift-field-label">Start Time <span class="text-danger">*</span></label>
+                        <input type="time" class="form-control roster-shift-input roster-shift-time-input" id="rosterStartTime" name="start_time">
+                        <div id="rosterStartTimeError" class="invalid-feedback d-block d-none"></div>
                     </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label for="rosterCheckIn" class="form-label roster-shift-field-label">Check-in</label>
-                            <input type="time" class="form-control roster-shift-input" id="rosterCheckIn" name="check_in">
-                        </div>
-                        <div class="col-6">
-                            <label for="rosterCheckOut" class="form-label roster-shift-field-label">Check-out</label>
-                            <input type="time" class="form-control roster-shift-input" id="rosterCheckOut" name="check_out">
-                        </div>
+                    <div class="col-6">
+                        <label for="rosterEndTime" class="form-label roster-shift-field-label">End Time <span class="text-danger">*</span></label>
+                        <input type="time" class="form-control roster-shift-input roster-shift-time-input" id="rosterEndTime" name="end_time">
+                        <div id="rosterEndTimeError" class="invalid-feedback d-block d-none"></div>
                     </div>
                 </div>
 
@@ -136,3 +146,4 @@
         </div>
     </div>
 </div>
+

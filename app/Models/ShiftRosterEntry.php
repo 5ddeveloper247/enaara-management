@@ -19,12 +19,14 @@ class ShiftRosterEntry extends Model
         'employee_id',
         'outsourced_employee_id',
         'shift_planner_id',
+        'is_custom_time',
         'roster_date',
         'start_time',
         'end_time',
         'check_in',
         'check_out',
         'floor',
+        'notes',
         'late_check_in',
         'status',
         'is_compensatory_earned',
@@ -37,6 +39,7 @@ class ShiftRosterEntry extends Model
     protected $casts = [
         'roster_date' => 'date',
         'late_check_in' => 'boolean',
+        'is_custom_time' => 'boolean',
         'is_compensatory_earned' => 'boolean',
     ];
 

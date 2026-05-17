@@ -319,6 +319,7 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 }
 
 .shift-pill {
+    position: relative;
     border-radius: 6px;
     padding: 4px 6px;
     font-size: 9px;
@@ -331,8 +332,13 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     border: 1px solid rgba(0, 0, 0, 0.06);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     width: max-content;
+    min-width: 88px;
     margin: 0 auto 3px auto;
     text-align: left;
+}
+
+.shift-pill:has(.shift-pill-icon) {
+    padding-right: 22px;
 }
 
 .shift-pill:last-child {
@@ -346,15 +352,34 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 
 .shift-pill-top {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: flex-start;
-    gap: 6px;
     font-weight: 600;
     width: 100%;
+    padding-right: 0;
+}
+
+.shift-pill-icon {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    opacity: 0.92;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.shift-pill-icon .bi {
+    display: block;
 }
 
 .shift-time {
     white-space: nowrap;
+    line-height: 1.2;
 }
 
 .shift-pill-meta {
@@ -541,53 +566,109 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     background: rgba(0, 0, 0, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
-    padding: 0.85rem 1rem;
+    padding: 0.9rem 1rem 0.75rem;
 }
 
-.roster-shift-audit-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
+.roster-shift-audit-timeline {
+    position: relative;
+    margin: 0;
+    padding: 0.15rem 0 0 0;
 }
 
-.roster-shift-audit-item {
+.roster-shift-audit-timeline::before {
+    content: '';
+    position: absolute;
+    left: 1.125rem;
+    top: 2.25rem;
+    bottom: 2.25rem;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.14);
+    z-index: 0;
+}
+
+.roster-shift-audit-step {
     display: flex;
     align-items: flex-start;
-    gap: 0.65rem;
+    gap: 0.85rem;
+    position: relative;
+    z-index: 1;
+    padding: 0 0 1.35rem 0;
+}
+
+.roster-shift-audit-step:last-child {
+    padding-bottom: 0;
+}
+
+.roster-shift-audit-marker {
+    position: relative;
+    flex-shrink: 0;
+    z-index: 1;
 }
 
 .roster-shift-audit-icon {
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 0.45rem;
-    background: rgba(255, 255, 255, 0.1);
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.85);
+    font-size: 1rem;
 }
 
-.roster-shift-audit-body {
+.roster-shift-audit-step--created .roster-shift-audit-icon {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.roster-shift-audit-step--updated .roster-shift-audit-icon {
+    background: rgba(59, 130, 246, 0.22);
+    color: #60a5fa;
+}
+
+.roster-shift-audit-step--assigned .roster-shift-audit-icon {
+    background: rgba(99, 102, 241, 0.22);
+    color: #a5b4fc;
+}
+
+.roster-shift-audit-step--deleted .roster-shift-audit-icon {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.roster-shift-audit-content {
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
+    gap: 0.2rem;
     min-width: 0;
+    padding-top: 0.15rem;
 }
 
 .roster-shift-audit-label {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     color: rgba(255, 255, 255, 0.45);
+    line-height: 1.2;
 }
 
 .roster-shift-audit-value {
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #fff;
+    line-height: 1.3;
     word-break: break-word;
+}
+
+.roster-shift-audit-time-value {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.35;
+}
+
+.roster-shift-audit-step--deleted .roster-shift-audit-value,
+.roster-shift-audit-step--deleted .roster-shift-audit-time-value {
+    color: #fca5a5;
 }
 
 .roster-shift-divider {
@@ -611,6 +692,19 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 .roster-shift-offcanvas .roster-shift-input:focus {
     border-color: rgba(255, 255, 255, 0.65);
     box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.12);
+}
+
+.roster-shift-offcanvas .roster-shift-time-input {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+.roster-shift-offcanvas .roster-shift-custom-toggle .form-check-input {
+    cursor: pointer;
+}
+
+.roster-shift-offcanvas .roster-shift-custom-toggle .form-check-label {
+    cursor: pointer;
 }
 
 .roster-shift-notes {

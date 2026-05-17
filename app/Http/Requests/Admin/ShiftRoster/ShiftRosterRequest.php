@@ -28,7 +28,8 @@ class ShiftRosterRequest extends FormRequest
                 'required',
                 'integer',
             ],
-            'shift_planner_id' => ['required', 'integer', 'exists:shift_planners,id'],
+            'shift_planner_id' => ['nullable', 'integer', 'exists:shift_planners,id'],
+            'is_custom_time' => ['nullable', 'boolean'],
             'roster_date' => ['required', 'date'],
 
             'start_time' => ['nullable', 'date_format:H:i'],
@@ -89,6 +90,34 @@ class ShiftRosterRequest extends FormRequest
                 }
             }
 
+            $isCustomTime = filter_var($this->input('is_custom_time'), FILTER_VALIDATE_BOOLEAN);
+            $shiftId = $this->input('shift_planner_id');
+            $startTime = $this->input('start_time');
+            $endTime = $this->input('end_time');
+            $hasTimes = $startTime && $endTime;
+            $hasPartialTimes = ($startTime && ! $endTime) || (! $startTime && $endTime);
+
+            if ($isCustomTime) {
+                if ($shiftId) {
+                    $v->errors()->add('shift_planner_id', 'Clear the shift selection when using custom time.');
+                }
+                if (! $hasTimes) {
+                    $v->errors()->add('start_time', 'Start and end time are required for custom shifts.');
+                    $v->errors()->add('end_time', 'Start and end time are required for custom shifts.');
+                }
+            } elseif (! $shiftId) {
+                $v->errors()->add('shift_planner_id', 'Select a shift from the list or enable custom start and end time.');
+            }
+
+            if ($hasPartialTimes) {
+                $v->errors()->add('start_time', 'Both start and end time are required when using custom times.');
+                $v->errors()->add('end_time', 'Both start and end time are required when using custom times.');
+            }
+
+            if ($hasTimes && $startTime === $endTime) {
+                $v->errors()->add('end_time', 'End time must be different from start time.');
+            }
+
             if ($type === 'employee') {
                 $exists = Employee::query()
                     ->whereKey($id)
@@ -117,11 +146,30 @@ class ShiftRosterRequest extends FormRequest
     {
         $floorId = $this->input('sbu_floor_id');
 
-        $this->merge([
+        $shiftPlannerId = $this->input('shift_planner_id');
+        $isCustomTime = filter_var($this->input('is_custom_time'), FILTER_VALIDATE_BOOLEAN);
+
+        $merge = [
             'employee_type' => $this->input('employee_type', 'employee'),
             'status' => $this->has('status') ? $this->status : 1,
             'late_check_in' => $this->has('late_check_in') ? true : false,
             'sbu_floor_id' => $floorId === '' || $floorId === null ? null : (int) $floorId,
-        ]);
+            'is_custom_time' => $isCustomTime,
+            'shift_planner_id' => $isCustomTime || $shiftPlannerId === '' || $shiftPlannerId === null
+                ? null
+                : (int) $shiftPlannerId,
+        ];
+
+        if ($this->has('notes')) {
+            $notes = $this->input('notes');
+            if ($notes !== null && $notes !== '') {
+                $notes = trim(strip_tags((string) $notes));
+            } else {
+                $notes = null;
+            }
+            $merge['notes'] = $notes;
+        }
+
+        $this->merge($merge);
     }
 }

@@ -101,6 +101,34 @@ class BulkShiftRosterRequest extends FormRequest
             if ($days->intersect($offDays)->isNotEmpty()) {
                 $v->errors()->add('off_days', 'A day cannot be both a working day and an off day.');
             }
+
+            $isCustomTime = filter_var($this->input('is_custom_time'), FILTER_VALIDATE_BOOLEAN);
+            $startTime = $this->input('start_time');
+            $endTime = $this->input('end_time');
+            $shiftId = $this->input('shift_planner_id');
+            $hasTimes = $startTime && $endTime;
+            $hasPartialTimes = ($startTime && ! $endTime) || (! $startTime && $endTime);
+
+            if ($isCustomTime) {
+                if ($shiftId) {
+                    $v->errors()->add('shift_planner_id', 'Clear the shift selection when using custom time.');
+                }
+                if (! $hasTimes) {
+                    $v->errors()->add('start_time', 'Start and end time are required for custom shifts.');
+                    $v->errors()->add('end_time', 'Start and end time are required for custom shifts.');
+                }
+            } elseif (! $shiftId) {
+                $v->errors()->add('shift_planner_id', 'Select a shift or enable custom start and end time.');
+            }
+
+            if ($hasPartialTimes) {
+                $v->errors()->add('start_time', 'Both start and end time are required when using custom times.');
+                $v->errors()->add('end_time', 'Both start and end time are required when using custom times.');
+            }
+
+            if ($hasTimes && $startTime === $endTime) {
+                $v->errors()->add('end_time', 'End time must be different from start time.');
+            }
         });
     }
 
@@ -114,8 +142,10 @@ class BulkShiftRosterRequest extends FormRequest
             'employee_ids' => ['required', 'array', 'min:1'],
             'employee_ids.*' => ['required', 'string', 'regex:/^(employee|outsourced):\d+$/'],
 
-            // Shift
-            'shift_planner_id' => ['required', 'integer', 'exists:shift_planners,id'],
+            'shift_planner_id' => ['nullable', 'integer', 'exists:shift_planners,id'],
+            'is_custom_time' => ['nullable', 'boolean'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
 
             // Dates
             'start_date' => ['required', 'date'],
@@ -148,8 +178,9 @@ class BulkShiftRosterRequest extends FormRequest
             'employee_ids.*.exists' => 'One or more selected employees are invalid.',
             'employee_ids.*.regex' => 'Employee selection format is invalid.',
 
-            'shift_planner_id.required' => 'Shift is required.',
             'shift_planner_id.exists' => 'Selected shift does not exist.',
+            'start_time.date_format' => 'Start time must be a valid time.',
+            'end_time.date_format' => 'End time must be a valid time.',
 
             'start_date.required' => 'Start date is required.',
             'start_date.date' => 'Start date must be valid.',
@@ -167,10 +198,17 @@ class BulkShiftRosterRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $shiftPlannerId = $this->input('shift_planner_id');
+        $isCustomTime = filter_var($this->input('is_custom_time'), FILTER_VALIDATE_BOOLEAN);
+
         $this->merge([
             'check_conflicts' => filter_var($this->check_conflicts, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
             'override_existing' => filter_var($this->override_existing, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
             'exclude_weekends' => filter_var($this->exclude_weekends, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
+            'is_custom_time' => $isCustomTime,
+            'shift_planner_id' => $isCustomTime || $shiftPlannerId === '' || $shiftPlannerId === null
+                ? null
+                : (int) $shiftPlannerId,
         ]);
     }
 }

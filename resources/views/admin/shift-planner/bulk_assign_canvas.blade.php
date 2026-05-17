@@ -74,23 +74,51 @@
             <!-- Shift Selection -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
-                    <i class="bi bi-clock-history me-2"></i>Assign Shift
+                    <i class="bi bi-clock-history me-2"></i>2. Assign Shift
                 </h6>
+
+                <p class="small text-white-50 mb-3">Select a shift, or enable custom time below.</p>
 
                 <div class="mb-3">
                     <label for="bulkShiftSelect" class="form-label fw-semibold small text-white">
-                        Shift <span class="text-danger">*</span>
+                        Shift <span id="bulkShiftRequiredMark" class="text-danger">*</span>
                     </label>
                     <select class="form-select bg-dark text-white border-secondary" id="bulkShiftSelect" name="shift_planner_id" required>
                         <option value="">Select Shift</option>
                         @forelse($shifts ?? [] as $shift)
-                            <option value="{{ $shift->id }}">
+                            <option value="{{ $shift->id }}"
+                                    data-start="{{ \Carbon\Carbon::parse($shift->start_time)->format('H:i') }}"
+                                    data-end="{{ \Carbon\Carbon::parse($shift->end_time)->format('H:i') }}">
                                 {{ $shift->name }} ({{ \Carbon\Carbon::parse($shift->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('h:i A') }})
                             </option>
                         @empty
                             <option value="">No shifts available</option>
                         @endforelse
                     </select>
+                    <div id="bulkShiftSelectError" class="invalid-feedback d-block d-none"></div>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="bulkUseCustomTime" value="1">
+                    <label class="form-check-label text-white small" for="bulkUseCustomTime">Use custom start and end time</label>
+                </div>
+                <div id="bulkShiftTimeFields" style="display: none;">
+                    <div class="row g-3 mb-0">
+                        <div class="col-6">
+                            <label for="bulkCustomStartTime" class="form-label fw-semibold small text-white">
+                                Start Time <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" class="form-control bulk-shift-time-input" id="bulkCustomStartTime" name="start_time" style="color: #000 !important; background-color: #fff !important;">
+                            <div id="bulkCustomStartTimeError" class="invalid-feedback d-block d-none"></div>
+                        </div>
+                        <div class="col-6">
+                            <label for="bulkCustomEndTime" class="form-label fw-semibold small text-white">
+                                End Time <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" class="form-control bulk-shift-time-input" id="bulkCustomEndTime" name="end_time" style="color: #000 !important; background-color: #fff !important;">
+                            <div id="bulkCustomEndTimeError" class="invalid-feedback d-block d-none"></div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -343,27 +371,85 @@ $(document).ready(function() {
         $('.quick-date-btn[data-mode="' + mode + '"]').removeClass('btn-outline-light').addClass('btn-light');
     };
 
+    function clearBulkShiftFieldErrors() {
+        $('#bulkShiftSelect, #bulkCustomStartTime, #bulkCustomEndTime').removeClass('is-invalid');
+        $('#bulkShiftSelectError, #bulkCustomStartTimeError, #bulkCustomEndTimeError').addClass('d-none').text('');
+    }
+
+    function showBulkFieldError(fieldId, errorId, message) {
+        $(fieldId).addClass('is-invalid');
+        $(errorId).removeClass('d-none').text(message);
+    }
+
+    function isCustomAssignMode() {
+        return $('#modeCustom').is(':checked');
+    }
+
+    function bulkUsesCustomTime() {
+        return $('#bulkUseCustomTime').is(':checked');
+    }
+
+    function toggleBulkCustomTimeFields() {
+        var useCustom = bulkUsesCustomTime();
+
+        $('#bulkShiftTimeFields').toggle(useCustom);
+        $('#bulkShiftRequiredMark').toggle(!useCustom);
+        $('#bulkShiftSelect').prop('required', !useCustom);
+        if (!useCustom) {
+            $('#bulkCustomStartTime, #bulkCustomEndTime').val('');
+        }
+        clearBulkShiftFieldErrors();
+    }
+
+    function resetBulkShiftCustomTime() {
+        $('#bulkUseCustomTime').prop('checked', false);
+        $('#bulkCustomStartTime, #bulkCustomEndTime').val('');
+        $('#bulkShiftTimeFields').hide();
+        toggleBulkCustomTimeFields();
+    }
+
+    function toggleShiftAssignmentUi() {
+        clearBulkShiftFieldErrors();
+        resetBulkShiftCustomTime();
+    }
+
+    $('#bulkUseCustomTime').on('change', toggleBulkCustomTimeFields);
+
+    $('#bulkShiftSelect').on('change', function() {
+        if (!bulkUsesCustomTime()) {
+            return;
+        }
+        var opt = this.options[this.selectedIndex];
+        if (!opt || !opt.value) {
+            return;
+        }
+        var start = opt.getAttribute('data-start');
+        var end = opt.getAttribute('data-end');
+        if (start) {
+            $('#bulkCustomStartTime').val(start);
+        }
+        if (end) {
+            $('#bulkCustomEndTime').val(end);
+        }
+    });
+
     function toggleAssignMode() {
         var isDefault = $('#modeDefault').is(':checked');
-        console.log("Mode Change: isDefault =", isDefault);
-        
+
         $('#defaultModeContainer').toggle(isDefault);
-        
+        toggleShiftAssignmentUi();
+
         if (isDefault) {
             $startDateInput.prop('readonly', true).css('background-color', '#e9ecef');
             $endDateInput.prop('readonly', true).css('background-color', '#e9ecef');
-            
-            // Auto-trigger "This Week" if no dates are set yet
+
             if (!$startDateInput.val()) {
-                console.log("Initial load: Triggering This Week");
                 window.setBulkDates('this_week');
             }
         } else {
-            // In Custom mode, dates are NOT readonly
             $startDateInput.prop('readonly', false).css('background-color', '#fff');
             $endDateInput.prop('readonly', false).css('background-color', '#fff');
         }
-
     }
 
     // Event Handlers
@@ -464,17 +550,48 @@ $(document).ready(function() {
         updateSelectedCount();
     });
 
+    function validateBulkShiftFields() {
+        clearBulkShiftFieldErrors();
+        var valid = true;
+
+        if (bulkUsesCustomTime()) {
+            var startTime = $('#bulkCustomStartTime').val();
+            var endTime = $('#bulkCustomEndTime').val();
+            if (!startTime) {
+                showBulkFieldError('#bulkCustomStartTime', '#bulkCustomStartTimeError', 'Start time is required.');
+                valid = false;
+            }
+            if (!endTime) {
+                showBulkFieldError('#bulkCustomEndTime', '#bulkCustomEndTimeError', 'End time is required.');
+                valid = false;
+            }
+            if (startTime && endTime && startTime === endTime) {
+                showBulkFieldError('#bulkCustomEndTime', '#bulkCustomEndTimeError', 'End time must be different from start time.');
+                valid = false;
+            }
+        } else if (!$('#bulkShiftSelect').val()) {
+            showBulkFieldError('#bulkShiftSelect', '#bulkShiftSelectError', 'Please select a shift or enable custom time.');
+            valid = false;
+        }
+
+        return valid;
+    }
+
     $('#applyBulkAssignBtn').on('click', function() {
         if (!$form[0].checkValidity()) {
             $form[0].reportValidity();
             return;
         }
 
+        if (!validateBulkShiftFields()) {
+            return;
+        }
+
         var ids = $('input[name="employee_ids[]"]:checked').map(function() { return this.value; }).get();
         if (ids.length === 0) {
-            Swal.fire({ 
-                icon: 'warning', 
-                title: 'Wait!', 
+            Swal.fire({
+                icon: 'warning',
+                title: 'Wait!',
                 text: 'Select at least one employee.',
                 confirmButtonColor: '#1a237e'
             });
@@ -483,18 +600,31 @@ $(document).ready(function() {
 
         $applyBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Applying...');
 
+        var isCustom = isCustomAssignMode();
         var payload = {
             employee_ids: ids,
-            shift_planner_id: $('#bulkShiftSelect').val(),
             start_date: $startDateInput.val(),
             end_date: $endDateInput.val(),
-            assign_mode: $('#modeDefault').is(':checked') ? 'default' : 'custom',
+            assign_mode: isCustom ? 'custom' : 'default',
             days: $('.day-checkbox:checked').map(function() { return this.value; }).get(),
             off_days: $('.day-checkbox:not(:checked)').map(function() { return this.value; }).get(),
             check_conflicts: $('#checkConflicts').is(':checked') ? 1 : 0,
             override_existing: $('#overrideExisting').is(':checked') ? 1 : 0,
             exclude_weekends: $('#excludeWeekends').is(':checked') ? 1 : 0
         };
+
+        var useBulkCustom = bulkUsesCustomTime();
+        payload.is_custom_time = useBulkCustom ? 1 : 0;
+        if (!useBulkCustom) {
+            var bulkShiftId = $('#bulkShiftSelect').val();
+            if (bulkShiftId) {
+                payload.shift_planner_id = bulkShiftId;
+            }
+        }
+        if (useBulkCustom) {
+            payload.start_time = $('#bulkCustomStartTime').val();
+            payload.end_time = $('#bulkCustomEndTime').val();
+        }
 
         $.ajax({
             url: @json(route('admin.shift-roster.bulk-assign')),
@@ -503,16 +633,29 @@ $(document).ready(function() {
             contentType: 'application/json',
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function(res) {
-                if(res.success) {
-                    showSuccess(res.message, 'Assigned').then(() => {
-                        location.reload(); 
+                if (res.success) {
+                    showSuccess(res.message, 'Assigned').then(function() {
+                        location.reload();
                     });
                 } else {
                     showError(res.message, 'Conflict');
                 }
             },
             error: function(xhr) {
-                var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Error processing request';
+                var data = xhr.responseJSON || {};
+                var msg = data.message || 'Error processing request';
+                if (xhr.status === 422 && data.errors) {
+                    if (data.errors.shift_planner_id) {
+                        showBulkFieldError('#bulkShiftSelect', '#bulkShiftSelectError', data.errors.shift_planner_id[0]);
+                    }
+                    if (data.errors.start_time) {
+                        showBulkFieldError('#bulkCustomStartTime', '#bulkCustomStartTimeError', data.errors.start_time[0]);
+                    }
+                    if (data.errors.end_time) {
+                        showBulkFieldError('#bulkCustomEndTime', '#bulkCustomEndTimeError', data.errors.end_time[0]);
+                    }
+                    msg = Object.values(data.errors).flat().join('<br>');
+                }
                 showError(msg);
             },
             complete: function() {
@@ -524,7 +667,13 @@ $(document).ready(function() {
     $('#selectByDeptBtn').on('click', function() { $('#deptSelectionWrapper').slideToggle(); });
     $('#selectByVendorBtn').on('click', function() { $('#vendorSelectionWrapper').slideToggle(); });
 
-    // Initial Trigger
+    var bulkCanvasEl = document.getElementById('bulkAssignCanvas');
+    if (bulkCanvasEl) {
+        bulkCanvasEl.addEventListener('shown.bs.offcanvas', function() {
+            toggleShiftAssignmentUi();
+        });
+    }
+
     toggleAssignMode();
 });
 </script>
