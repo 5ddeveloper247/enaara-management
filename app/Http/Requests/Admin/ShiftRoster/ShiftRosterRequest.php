@@ -37,6 +37,7 @@ class ShiftRosterRequest extends FormRequest
             'check_in' => ['nullable', 'date_format:H:i'],
             'check_out' => ['nullable', 'date_format:H:i'],
             'sbu_floor_id' => ['nullable', 'integer', 'exists:sbu_floors,id'],
+            'location_text' => ['nullable', 'string', 'min:3', 'max:15', 'regex:/^(?=.*[A-Za-z])[A-Za-z0-9\s\-\'\.]+$/'],
             'late_check_in' => ['nullable', 'boolean'],
 
             'status' => ['nullable', 'integer', 'in:0,1'],
@@ -66,6 +67,9 @@ class ShiftRosterRequest extends FormRequest
             'notes.max' => 'Notes may not be greater than 1000 characters.',
             'sbu_floor_id.integer' => 'Selected floor is invalid.',
             'sbu_floor_id.exists' => 'Selected floor does not exist.',
+            'location_text.min' => 'Location must be at least 3 characters.',
+            'location_text.max' => 'Location may not be greater than 15 characters.',
+            'location_text.regex' => 'Location must contain letters and may include numbers, spaces, or hyphens.',
         ];
     }
 
@@ -168,6 +172,17 @@ class ShiftRosterRequest extends FormRequest
                 $notes = null;
             }
             $merge['notes'] = $notes;
+        }
+
+        if ($this->has('location_text')) {
+            $location = $this->input('location_text');
+            if ($location !== null && $location !== '') {
+                $location = trim(strip_tags((string) $location));
+                $location = $location === '' ? null : $location;
+            } else {
+                $location = null;
+            }
+            $merge['location_text'] = $location;
         }
 
         $this->merge($merge);

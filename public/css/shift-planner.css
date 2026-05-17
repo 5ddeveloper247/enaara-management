@@ -418,12 +418,20 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 }
 
 .shift-check,
-.shift-floor {
+.shift-floor,
+.shift-location,
+.shift-place {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: left;
     width: 100%;
+    display: block;
+}
+
+.shift-place-sep {
+    opacity: 0.7;
+    font-weight: 400;
 }
 
 .shift-check-icon {

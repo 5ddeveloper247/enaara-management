@@ -105,11 +105,16 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label for="rosterFloor" class="form-label roster-shift-field-label">Floor / Location</label>
+                    <label for="rosterFloor" class="form-label roster-shift-field-label">Floor</label>
                     <select class="form-select roster-shift-input" id="rosterFloor" name="sbu_floor_id">
-                        <option value="">Select floor / location</option>
+                        <option value="">Select floor</option>
                     </select>
                     <div class="invalid-feedback d-block d-none" id="rosterFloorError"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="rosterLocation" class="form-label roster-shift-field-label">Location</label>
+                    <input type="text" class="form-control roster-shift-input" id="rosterLocation" name="location_text" maxlength="15" placeholder="Optional (3–15 characters)" autocomplete="off">
+                    <div class="invalid-feedback d-block d-none" id="rosterLocationError"></div>
                 </div>
                 <div class="mb-0">
                     <label for="rosterShiftNotes" class="form-label roster-shift-field-label">Notes</label>

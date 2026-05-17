@@ -26,6 +26,7 @@ class ShiftRosterEntry extends Model
         'check_in',
         'check_out',
         'floor',
+        'location_text',
         'notes',
         'late_check_in',
         'status',

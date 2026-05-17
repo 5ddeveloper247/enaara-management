@@ -25,6 +25,7 @@ class ShiftRosterAuditHistoryService
         'start_time' => 'Shift time',
         'end_time' => 'Shift time',
         'floor' => 'Floor',
+        'location_text' => 'Location',
         'notes' => 'Notes',
         'is_custom_time' => 'Custom time',
         'status' => 'Status',

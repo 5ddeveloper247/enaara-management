@@ -58,6 +58,7 @@ class ShiftRosterService
                 'assignment_id' => null,
             ];
             $this->applyFloorToPayload($data, $payload);
+            $this->applyLocationToPayload($data, $payload);
             $this->applyNotesToPayload($data, $payload);
 
             if (($data['employee_type'] ?? 'employee') === 'outsourced') {
@@ -100,6 +101,7 @@ class ShiftRosterService
             'status' => isset($data['status']) ? ((int) $data['status'] === 1 ? 'pending' : 'cancelled') : $entry->status,
         ];
         $this->applyFloorToPayload($data, $payload, $entry->floor);
+        $this->applyLocationToPayload($data, $payload, $entry->location_text);
         $this->applyNotesToPayload($data, $payload);
 
         if (($data['employee_type'] ?? 'employee') === 'outsourced') {
@@ -404,6 +406,7 @@ class ShiftRosterService
                 'timeStart' => $isOffDay ? null : $this->formatShiftTime($entry->start_time ?? $entry->shift?->start_time),
                 'timeEnd' => $isOffDay ? null : $this->formatShiftTime($entry->end_time ?? $entry->shift?->end_time),
                 'floor' => $floorLabel,
+                'location' => $entry->location_text,
                 'notes' => $entry->notes,
                 'sbuFloorId' => $floorLabel ? ($floorLabelMaps[$lookupKey][$floorLabel] ?? null) : null,
                 'status' => $entry->status,
@@ -525,6 +528,18 @@ class ShiftRosterService
             ->findOrFail((int) $data['sbu_floor_id']);
 
         $payload['floor'] = $this->formatFloorLabel($floor);
+    }
+
+    private function applyLocationToPayload(array $data, array &$payload, ?string $existingLocation = null): void
+    {
+        if (! array_key_exists('location_text', $data)) {
+            $payload['location_text'] = $existingLocation;
+
+            return;
+        }
+
+        $location = is_string($data['location_text']) ? trim($data['location_text']) : null;
+        $payload['location_text'] = ($location === null || $location === '') ? null : $location;
     }
 
     private function applyNotesToPayload(array $data, array &$payload): void
