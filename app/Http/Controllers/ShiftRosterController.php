@@ -8,7 +8,9 @@ use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftPlanner;
 use App\Services\ShiftRosterAuditHistoryService;
+use App\Services\ShiftRosterPdfExportService;
 use App\Services\ShiftRosterService;
+use App\Http\Requests\Admin\ShiftRoster\ShiftRosterPdfExportRequest;
 use App\Http\Requests\Admin\ShiftRoster\ShiftRosterRequest;
 use App\Http\Requests\Admin\ShiftRoster\BulkShiftRosterRequest;
 use App\Http\Requests\Admin\ShiftRoster\ShiftRosterFloorOptionsRequest;
@@ -18,9 +20,14 @@ class ShiftRosterController extends Controller
 {
     protected $shiftRosterService;
 
-    public function __construct(ShiftRosterService $shiftRosterService)
-    {
+    protected $shiftRosterPdfExportService;
+
+    public function __construct(
+        ShiftRosterService $shiftRosterService,
+        ShiftRosterPdfExportService $shiftRosterPdfExportService
+    ) {
         $this->shiftRosterService = $shiftRosterService;
+        $this->shiftRosterPdfExportService = $shiftRosterPdfExportService;
     }
 
     private function canAccessShiftPlannerRoster(): bool
@@ -54,6 +61,25 @@ class ShiftRosterController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function exportPdf(ShiftRosterPdfExportRequest $request)
+    {
+        if (! $this->canAccessShiftPlannerRoster()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+
+        try {
+            return $this->shiftRosterPdfExportService->download($request->validated());
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to export shift roster PDF: ' . $e->getMessage(),
             ], 500);
         }
     }

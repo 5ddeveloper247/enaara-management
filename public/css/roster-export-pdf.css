@@ -1,0 +1,120 @@
+.roster-export-pdf-dialog {
+    max-width: 620px;
+}
+
+.roster-export-pdf-content {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.roster-export-pdf-header {
+    background: var(--main-color);
+    color: #fff;
+    padding: 1rem 1.25rem;
+}
+
+.roster-export-pdf-header-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.roster-export-pdf-body {
+    padding: 1.25rem 1.25rem 0.5rem;
+    background: #fff;
+}
+
+.roster-export-pdf-footer {
+    padding: 0.75rem 1.25rem 1.25rem;
+    background: #fff;
+}
+
+.roster-export-pdf-section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 0.65rem;
+}
+
+.roster-export-pdf-field-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 0.4rem;
+}
+
+.roster-export-pdf-select {
+    border-radius: 10px;
+    font-size: 0.9rem;
+    border-color: #dee2e6;
+}
+
+.roster-export-pdf-select:focus {
+    border-color: var(--main-color);
+    box-shadow: 0 0 0 0.2rem rgba(1, 36, 69, 0.12);
+}
+
+.roster-export-month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.roster-export-month-btn {
+    border: 1px solid #e8e4dc;
+    background: #f5f1e8;
+    color: var(--dark-color);
+    border-radius: 10px;
+    padding: 0.55rem 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.roster-export-month-btn:hover {
+    border-color: var(--main-color);
+    color: var(--main-color);
+}
+
+.roster-export-month-btn.is-active {
+    background: var(--main-color);
+    border-color: var(--main-color);
+    color: #fff;
+}
+
+.roster-export-include-list {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 0.65rem 0.85rem;
+    background: #fafbfc;
+}
+
+.roster-export-include-item {
+    padding: 0.35rem 0;
+}
+
+.roster-export-include-item .form-check-input:checked {
+    background-color: var(--main-color);
+    border-color: var(--main-color);
+}
+
+.roster-export-include-item .form-check-label {
+    font-size: 0.88rem;
+    color: var(--dark-color);
+}
+
+@media (max-width: 480px) {
+    .roster-export-month-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

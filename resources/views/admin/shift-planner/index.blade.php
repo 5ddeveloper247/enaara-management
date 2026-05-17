@@ -9,6 +9,7 @@
     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
     <!-- Shift Planner CSS -->
     <link href="{{ asset('css/shift-planner.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/roster-export-pdf.css') }}" rel="stylesheet">
 
     <style>
         .btn {
@@ -99,6 +100,10 @@
                             style="display: none;">
                             <i class="bi bi-people-fill me-1"></i>Bulk Assign
                         </button>
+                        <button type="button" class="btn btn-outline-secondary me-2" id="rosterExportPdfBtn"
+                            style="display: none;">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                        </button>
                         <button type="button" class="btn btn-primary bg-main border-0" id="addShiftBtn">
                             <i class="bi bi-plus-circle me-1"></i>Add New Shift
                         </button>
@@ -147,6 +152,8 @@
 
     <!-- Bulk Assign Canvas -->
     @include('admin.shift-planner.bulk_assign_canvas')
+
+    @include('admin.shift-planner.roster_export_pdf_modal')
 @endsection
 
 @push('scripts')
@@ -161,8 +168,10 @@
         window.rosterUpdateUrlBase = @json(url('/admin/shift-roster'));
         window.rosterChangeHistoryUrlBase = @json(url('/admin/shift-roster'));
         window.rosterFloorOptionsUrl = @json(route('admin.shift-roster.floor-options'));
+        window.rosterExportPdfUrl = @json(route('admin.shift-roster.export-pdf'));
     </script>
     <script src="{{ asset('js/roster-render.js') }}"></script>
+    <script src="{{ asset('js/roster-export-pdf.js') }}"></script>
 
     <script>
         $(document).ready(function() {
@@ -180,12 +189,14 @@
             $('#shift-management-tab').on('shown.bs.tab', function() {
                 $('#addShiftBtn').show();
                 $('#bulkAssignBtn').hide();
+                $('#rosterExportPdfBtn').hide();
                 setShiftPlannerRosterLayout(false);
             });
 
             $('#roster-tab').on('shown.bs.tab', function() {
                 $('#addShiftBtn').hide();
                 $('#bulkAssignBtn').show();
+                $('#rosterExportPdfBtn').show();
                 setShiftPlannerRosterLayout(true);
                 setTimeout(function() {
                     if (typeof initRosterCalendar === 'function') {

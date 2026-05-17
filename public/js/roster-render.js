@@ -1435,6 +1435,15 @@
         }
     }
 
+    window.getRosterExportContext = function() {
+        return {
+            year: rosterViewDate.getFullYear(),
+            month: rosterViewDate.getMonth(),
+            personnelFilter: rosterPersonnelFilter,
+            showDeleted: !!rosterShowDeleted
+        };
+    };
+
     window.loadRosterGrid = loadRosterGrid;
     window.reloadRosterGrid = loadRosterGrid;
     window.initRosterCalendar = loadRosterGrid;
