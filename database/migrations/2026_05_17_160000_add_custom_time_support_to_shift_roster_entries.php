@@ -85,31 +85,19 @@ return new class extends Migration
               )
         ');
 
-        if (! $this->checkConstraintExists('shift_roster_entries', 'chk_shift_roster_assignment_type')) {
-            DB::statement("
-                ALTER TABLE shift_roster_entries
-                ADD CONSTRAINT chk_shift_roster_assignment_type CHECK (
-                    (status = 'off')
-                    OR (
-                        is_custom_time = 1
-                        AND shift_planner_id IS NULL
-                        AND start_time IS NOT NULL
-                        AND end_time IS NOT NULL
-                    )
-                    OR (
-                        is_custom_time = 0
-                        AND shift_planner_id IS NOT NULL
-                    )
-                )
-            ");
+        $this->dropAssignmentTypeCheckIfExists();
+    }
+
+    private function dropAssignmentTypeCheckIfExists(): void
+    {
+        if ($this->checkConstraintExists('shift_roster_entries', 'chk_shift_roster_assignment_type')) {
+            DB::statement('ALTER TABLE shift_roster_entries DROP CHECK chk_shift_roster_assignment_type');
         }
     }
 
     public function down(): void
     {
-        if ($this->checkConstraintExists('shift_roster_entries', 'chk_shift_roster_assignment_type')) {
-            DB::statement('ALTER TABLE shift_roster_entries DROP CHECK chk_shift_roster_assignment_type');
-        }
+        $this->dropAssignmentTypeCheckIfExists();
 
         Schema::table('shift_roster_entries', function (Blueprint $table) {
             if ($this->indexExists('shift_roster_entries', 'unique_employee_roster_day')) {
