@@ -63,44 +63,20 @@ class ShiftRosterService
             if (($data['employee_type'] ?? 'employee') === 'outsourced') {
                 $payload['employee_id'] = null;
                 $payload['outsourced_employee_id'] = (int) $data['employee_id'];
-                $entry = ShiftRosterEntry::updateOrCreate(
-                    [
-                        'outsourced_employee_id' => (int) $data['employee_id'],
-                        'roster_date' => $data['roster_date'],
-                    ],
-                    $payload
-                );
-                if ($userId) {
-                    if ($entry->wasRecentlyCreated) {
-                        $entry->created_by = $userId;
-                        $entry->assigned_by = $userId;
-                    } else {
-                        $entry->updated_by = $userId;
-                    }
-                    $entry->save();
-                }
-                return $entry;
-            }
-
-            $payload['employee_id'] = (int) $data['employee_id'];
-            $payload['outsourced_employee_id'] = null;
-            $entry = ShiftRosterEntry::updateOrCreate(
-                [
+                $lookup = [
+                    'outsourced_employee_id' => (int) $data['employee_id'],
+                    'roster_date' => $data['roster_date'],
+                ];
+            } else {
+                $payload['employee_id'] = (int) $data['employee_id'];
+                $payload['outsourced_employee_id'] = null;
+                $lookup = [
                     'employee_id' => (int) $data['employee_id'],
                     'roster_date' => $data['roster_date'],
-                ],
-                $payload
-            );
-            if ($userId) {
-                if ($entry->wasRecentlyCreated) {
-                    $entry->created_by = $userId;
-                    $entry->assigned_by = $userId;
-                } else {
-                    $entry->updated_by = $userId;
-                }
-                $entry->save();
+                ];
             }
-            return $entry;
+
+            return $this->saveDailyRosterEntry($lookup, $payload, $userId);
         });
     }
 
@@ -274,7 +250,7 @@ class ShiftRosterService
     /**
      * Get data for the roster grid.
      */
-    public function getGridData(int $year, int $month, int $weekIndex, ?string $filter = 'internal'): array
+    public function getGridData(int $year, int $month, int $weekIndex, ?string $filter = 'internal', bool $includeDeleted = false): array
     {
         // Calendar week range: always Monday -> Sunday
         // Week 1 starts from the Monday of the week that contains the first day of the month.
@@ -348,32 +324,43 @@ class ShiftRosterService
         
         $empPayload = $empPayload->concat($outsourcedPayload)->values()->all();
 
-        $entriesQuery = ShiftRosterEntry::with([
-                'shift',
-                'createdBy:id,name',
-                'updatedBy:id,name',
-                'assignedBy:id,name',
-                'deletedBy:id,name',
-            ])
-            ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()]);
+        $employeeScope = function ($query) use ($shiftEmployeeIds, $outsourcedIds) {
+            if ($shiftEmployeeIds !== [] || $outsourcedIds !== []) {
+                $query->where(function ($q) use ($shiftEmployeeIds, $outsourcedIds) {
+                    if ($shiftEmployeeIds !== []) {
+                        $q->whereIn('employee_id', $shiftEmployeeIds);
+                    }
+                    if ($outsourcedIds !== []) {
+                        $q->orWhereIn('outsourced_employee_id', $outsourcedIds);
+                    }
+                });
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        };
 
-        if ($filter === 'deleted') {
-            $entriesQuery->onlyTrashed();
-        }
+        $entryRelations = [
+            'shift',
+            'createdBy:id,name',
+            'updatedBy:id,name',
+            'assignedBy:id,name',
+            'deletedBy:id,name',
+        ];
 
-        if ($shiftEmployeeIds !== [] || $outsourcedIds !== []) {
-            $entriesQuery->where(function ($q) use ($shiftEmployeeIds, $outsourcedIds) {
-                if ($shiftEmployeeIds !== []) {
-                    $q->whereIn('employee_id', $shiftEmployeeIds);
-                }
-                if ($outsourcedIds !== []) {
-                    $q->orWhereIn('outsourced_employee_id', $outsourcedIds);
-                }
-            });
-        } else {
-            $entriesQuery->whereRaw('1 = 0');
-        }
+        $dateRange = [$startDate->toDateString(), $endDate->toDateString()];
+
+        $entriesQuery = ShiftRosterEntry::with($entryRelations)
+            ->whereBetween('roster_date', $dateRange);
+        $employeeScope($entriesQuery);
         $entries = $entriesQuery->get();
+
+        if ($includeDeleted) {
+            $trashedQuery = ShiftRosterEntry::onlyTrashed()
+                ->with($entryRelations)
+                ->whereBetween('roster_date', $dateRange);
+            $employeeScope($trashedQuery);
+            $entries = $entries->merge($trashedQuery->get())->unique('id')->values();
+        }
 
         $floorLabelMaps = [];
         foreach ($entries as $entry) {
@@ -702,59 +689,24 @@ class ShiftRosterService
         ];
 
         if ($type === 'outsourced') {
-            if ($overrideExisting) {
-                $entry = ShiftRosterEntry::updateOrCreate(
-                    ['outsourced_employee_id' => $id, 'roster_date' => $date],
-                    ['employee_id' => null] + $basePayload
-                );
-                if ($userId && $entry) {
-                    if ($entry->wasRecentlyCreated) {
-                        $entry->created_by = $userId;
-                        $entry->assigned_by = $userId;
-                    } else {
-                        $entry->updated_by = $userId;
-                    }
-                    $entry->save();
-                }
-                return;
-            }
-            $entry = ShiftRosterEntry::firstOrCreate(
-                ['outsourced_employee_id' => $id, 'roster_date' => $date],
-                ['employee_id' => null] + $basePayload
-            );
-            if ($userId && $entry->wasRecentlyCreated) {
-                $entry->created_by = $userId;
-                $entry->assigned_by = $userId;
-                $entry->save();
-            }
-            return;
+            $lookup = ['outsourced_employee_id' => $id, 'roster_date' => $date];
+            $payload = ['employee_id' => null] + $basePayload;
+        } else {
+            $lookup = ['employee_id' => $id, 'roster_date' => $date];
+            $payload = ['outsourced_employee_id' => null] + $basePayload;
         }
 
         if ($overrideExisting) {
-            $entry = ShiftRosterEntry::updateOrCreate(
-                ['employee_id' => $id, 'roster_date' => $date],
-                ['outsourced_employee_id' => null] + $basePayload
-            );
-            if ($userId && $entry) {
-                if ($entry->wasRecentlyCreated) {
-                    $entry->created_by = $userId;
-                    $entry->assigned_by = $userId;
-                } else {
-                    $entry->updated_by = $userId;
-                }
-                $entry->save();
-            }
+            $this->saveDailyRosterEntry($lookup, $payload, $userId);
+
             return;
         }
-        $entry = ShiftRosterEntry::firstOrCreate(
-            ['employee_id' => $id, 'roster_date' => $date],
-            ['outsourced_employee_id' => null] + $basePayload
-        );
-        if ($userId && $entry->wasRecentlyCreated) {
-            $entry->created_by = $userId;
-            $entry->assigned_by = $userId;
-            $entry->save();
+
+        if (ShiftRosterEntry::query()->where($lookup)->exists()) {
+            return;
         }
+
+        $this->saveDailyRosterEntry($lookup, $payload, $userId);
     }
 
     private function upsertAssigneeOffEntry(string $type, int $id, string $date, ?int $shiftPlannerId, bool $overrideExisting): void
@@ -778,16 +730,7 @@ class ShiftRosterService
         }
 
         if ($overrideExisting) {
-            $entry = ShiftRosterEntry::updateOrCreate($lookup, $payload);
-            if ($userId && $entry) {
-                if ($entry->wasRecentlyCreated) {
-                    $entry->created_by = $userId;
-                    $entry->assigned_by = $userId;
-                } else {
-                    $entry->updated_by = $userId;
-                }
-                $entry->save();
-            }
+            $this->saveDailyRosterEntry($lookup, $payload, $userId);
 
             return;
         }
@@ -796,11 +739,30 @@ class ShiftRosterService
             return;
         }
 
+        $this->saveDailyRosterEntry($lookup, $payload, $userId);
+    }
+
+    private function saveDailyRosterEntry(array $lookup, array $payload, ?int $userId): ShiftRosterEntry
+    {
+        $activeEntry = ShiftRosterEntry::query()->where($lookup)->first();
+
+        if ($activeEntry) {
+            $activeEntry->fill($payload);
+            if ($userId) {
+                $activeEntry->updated_by = $userId;
+            }
+            $activeEntry->save();
+
+            return $activeEntry;
+        }
+
         $entry = ShiftRosterEntry::query()->create($lookup + $payload);
-        if ($userId && $entry) {
+        if ($userId) {
             $entry->created_by = $userId;
             $entry->assigned_by = $userId;
             $entry->save();
         }
+
+        return $entry;
     }
 }

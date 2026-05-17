@@ -3,6 +3,7 @@
     var rosterWeekIndex = 1;
     var rosterData = null;
     var rosterPersonnelFilter = 'internal';
+    var rosterShowDeleted = false;
 
     function stripTime(d) {
         return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -120,6 +121,32 @@
             return '';
         }
         return '<span class="shift-pill-icon" aria-hidden="true"><i class="bi ' + icon + '"></i></span>';
+    }
+
+    function sortShiftsForCell(shiftList) {
+        var active = [];
+        var deleted = [];
+        (shiftList || []).forEach(function(s) {
+            if (s.deletedAt) {
+                deleted.push(s);
+            } else {
+                active.push(s);
+            }
+        });
+        return active.concat(deleted);
+    }
+
+    function renderCellShiftsHtml(shiftList) {
+        var ordered = sortShiftsForCell(shiftList);
+        if (!ordered.length) {
+            return '';
+        }
+        var html = '<div class="shift-cell-stack">';
+        ordered.forEach(function(s) {
+            html += '<div class="shift-pill-hit" data-shift="' + encodeURIComponent(JSON.stringify(s)) + '">' + pillHtml(s) + '</div>';
+        });
+        html += '</div>';
+        return html;
     }
 
     function pillHtml(s) {
@@ -245,7 +272,10 @@
         shifts.forEach(function(s) {
             var dayKey = s.rosterDate ? s.rosterDate : rosterDateIso(s.day);
             var k = s.employeeId + '-' + dayKey;
-            if (!shiftsByEmpDay[k]) shiftsByEmpDay[k] = s;
+            if (!shiftsByEmpDay[k]) {
+                shiftsByEmpDay[k] = [];
+            }
+            shiftsByEmpDay[k].push(s);
         });
 
         var year = rosterViewDate.getFullYear();
@@ -276,12 +306,6 @@
             depts.forEach(function(dept) {
                 var deptEmployees = employees.filter(function(e) {
                     if (Number(e.departmentId) !== Number(dept.id)) return false;
-                    if (rosterPersonnelFilter === 'deleted') {
-                        // In deleted tab, show employee if they have at least one deleted shift in the current data
-                        return shifts.some(function(s) {
-                            return String(s.employeeId) === String(e.id) && s.deletedAt;
-                        });
-                    }
                     if (rosterPersonnelFilter === 'third_party') return String(e.sourceType || '') === 'outsourced';
                     return String(e.sourceType || '') !== 'outsourced';
                 });
@@ -312,42 +336,38 @@
                     days.forEach(function(d) {
                         var iso = dateToISO(d);
                         var k = empRef + '-' + iso;
-                        var s = shiftsByEmpDay[k];
+                        var cellShifts = shiftsByEmpDay[k] || [];
                         var today = stripTime(new Date());
                         var cellDate = stripTime(d);
                         var isPast = cellDate < today;
+                        var hasActiveShift = cellShifts.some(function(s) { return !s.deletedAt; });
 
                         var td = document.createElement('td');
-                        
-                        /* Old Logic
-                        td.className = 'roster-day-cell shift-cell';
-                        */
-                        // New Logic: Only add 'roster-day-cell' if it has a shift OR it's not in the past
                         td.className = 'shift-cell';
-                        if (s || !isPast) {
+                        if (cellShifts.length || !isPast) {
                             td.classList.add('roster-day-cell');
                         }
 
                         td.setAttribute('data-employee-id', String(empRef));
                         td.setAttribute('data-roster-date', iso);
                         td.setAttribute('data-day', String(d.getDate()));
-                        
+
                         if (d.getMonth() !== rosterViewDate.getMonth() || d.getFullYear() !== rosterViewDate.getFullYear()) {
                             td.style.opacity = '0.55';
                         }
-                        
-                        if (s) {
-                            td.setAttribute('data-shift', JSON.stringify(s));
-                            td.innerHTML = pillHtml(s);
-                        } else {
-                            /* Old Logic
+
+                        if (cellShifts.length) {
+                            td.setAttribute('data-shifts', JSON.stringify(cellShifts));
+                            td.innerHTML = renderCellShiftsHtml(cellShifts);
+                        }
+
+                        if (!hasActiveShift && !isPast) {
                             td.classList.add('roster-day-cell-empty');
-                            td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100" style="min-height:2rem"><i class="bi bi-plus-lg"></i></span>';
-                            */
-                            // New Logic: Only show '+' icon if it's not in the past
-                            if (!isPast) {
-                                td.classList.add('roster-day-cell-empty');
-                                td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100" style="min-height:2rem"><i class="bi bi-plus-lg"></i></span>';
+                            var addHtml = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add"><i class="bi bi-plus-lg"></i></span>';
+                            if (cellShifts.length) {
+                                td.insertAdjacentHTML('beforeend', addHtml);
+                            } else {
+                                td.innerHTML = addHtml;
                             }
                         }
                         tr.appendChild(td);
@@ -360,8 +380,6 @@
                 var emptyLabel = 'No internal employees found for this period.';
                 if (rosterPersonnelFilter === 'third_party') {
                     emptyLabel = 'No third-party personnel found for this period.';
-                } else if (rosterPersonnelFilter === 'deleted') {
-                    emptyLabel = 'No deleted shifts found for this period.';
                 }
                 emptyByTabTr.innerHTML = '<td colspan="' + colspan + '" class="text-center py-5 text-muted">' +
                     '<i class="bi bi-info-circle me-2"></i>' + emptyLabel + '</td>';
@@ -396,7 +414,9 @@
         }
         var year = rosterViewDate.getFullYear();
         var month = rosterViewDate.getMonth() + 1;
-        var url = gridUrl + '?year=' + year + '&month=' + month + '&week=' + rosterWeekIndex + '&filter=' + rosterPersonnelFilter;
+        var url = gridUrl + '?year=' + year + '&month=' + month + '&week=' + rosterWeekIndex
+            + '&filter=' + encodeURIComponent(rosterPersonnelFilter)
+            + '&include_deleted=' + (rosterShowDeleted ? '1' : '0');
 
         fetch(url, {
             method: 'GET',
@@ -1177,15 +1197,22 @@
         if (table && !table._rosterCellBound) {
             table._rosterCellBound = true;
             table.addEventListener('click', function(e) {
-                var td = e.target.closest('.roster-day-cell');
+                var pillHit = e.target.closest('.shift-pill-hit');
+                var td = pillHit ? pillHit.closest('.roster-day-cell') : e.target.closest('.roster-day-cell');
                 if (!td) return;
                 e.preventDefault();
                 var employeeId = td.getAttribute('data-employee-id');
                 var rosterDate = td.getAttribute('data-roster-date');
-                var shiftData = td.getAttribute('data-shift');
                 var shift = null;
-                if (shiftData) {
-                    try { shift = JSON.parse(shiftData); } catch (err) { shift = null; }
+                if (pillHit) {
+                    var pillShiftData = pillHit.getAttribute('data-shift');
+                    if (pillShiftData) {
+                        try {
+                            shift = JSON.parse(decodeURIComponent(pillShiftData));
+                        } catch (err) {
+                            try { shift = JSON.parse(pillShiftData); } catch (err2) { shift = null; }
+                        }
+                    }
                 }
                 var empName = '';
                 var deptName = '';
@@ -1283,10 +1310,10 @@
         window._rosterPersonnelTabsBound = true;
         var internalTab = document.getElementById('rosterInternalTab');
         var thirdPartyTab = document.getElementById('rosterThirdPartyTab');
-        var deletedTab = document.getElementById('rosterDeletedTab');
+        var showDeletedCb = document.getElementById('rosterShowDeletedShifts');
 
         function setActiveTab(activeTabId) {
-            [internalTab, thirdPartyTab, deletedTab].forEach(function(tab) {
+            [internalTab, thirdPartyTab].forEach(function(tab) {
                 if (!tab) return;
                 if (tab.id === activeTabId) {
                     tab.classList.add('active');
@@ -1312,10 +1339,9 @@
                 loadRosterGrid();
             });
         }
-        if (deletedTab) {
-            deletedTab.addEventListener('click', function() {
-                rosterPersonnelFilter = 'deleted';
-                setActiveTab('rosterDeletedTab');
+        if (showDeletedCb) {
+            showDeletedCb.addEventListener('change', function() {
+                rosterShowDeleted = !!showDeletedCb.checked;
                 loadRosterGrid();
             });
         }

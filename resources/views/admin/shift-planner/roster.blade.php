@@ -23,7 +23,10 @@
                             <div id="rosterPersonnelSwitcher" class="d-flex align-items-center gap-1 ms-1 flex-wrap">
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-2 roster-personnel-btn active" id="rosterInternalTab" role="tab" aria-selected="true">Internal Employees</button>
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-2 roster-personnel-btn" id="rosterThirdPartyTab" role="tab" aria-selected="false">Third-Party Employees</button>
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-2 roster-personnel-btn" id="rosterDeletedTab" role="tab" aria-selected="false">Deleted Shifts</button>
+                            </div>
+                            <div class="form-check form-check-inline roster-show-deleted-wrap ms-1 mb-0">
+                                <input class="form-check-input" type="checkbox" id="rosterShowDeletedShifts" value="1">
+                                <label class="form-check-label small text-dark" for="rosterShowDeletedShifts">Show deleted shifts</label>
                             </div>
                         </div>
                     </div>

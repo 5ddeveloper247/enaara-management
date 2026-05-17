@@ -41,9 +41,10 @@ class ShiftRosterController extends Controller
         $month = (int) $request->query('month', date('n'));
         $week = (int) $request->query('week', 1);
         $filter = $request->query('filter', 'internal');
+        $includeDeleted = filter_var($request->query('include_deleted'), FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $data = $this->shiftRosterService->getGridData($year, $month, $week, $filter);
+            $data = $this->shiftRosterService->getGridData($year, $month, $week, $filter, $includeDeleted);
 
             return response()->json([
                 'success' => true,
@@ -186,7 +187,6 @@ class ShiftRosterController extends Controller
                 'success' => true,
                 'message' => 'Shift assignment request submitted.',
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -211,7 +211,6 @@ class ShiftRosterController extends Controller
                 'success' => true,
                 'message' => 'Shift roster entry updated successfully.',
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

@@ -318,6 +318,27 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     text-align: center !important;
 }
 
+.shift-cell-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 100%;
+}
+
+.shift-pill-hit {
+    display: block;
+    width: 100%;
+    cursor: pointer;
+}
+
+.shift-cell .roster-day-add {
+    min-height: 1.25rem;
+    font-size: 0.85rem;
+    opacity: 0.65;
+    cursor: pointer;
+}
+
 .shift-pill {
     position: relative;
     border-radius: 6px;
