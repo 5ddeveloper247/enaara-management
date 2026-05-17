@@ -27,14 +27,49 @@ class ShiftRosterService
 
     public function floorOptionsForAssignee(string $employeeType, int $employeeId): array
     {
-        $floors = $this->resolveAssigneeFloors($employeeType, $employeeId);
+        return $this->mapFloorOptions($this->resolveAssigneeFloors($employeeType, $employeeId));
+    }
 
-        return $floors->map(fn (SbuFloor $floor) => [
-            'id' => $floor->id,
-            'name' => $floor->name,
-            'floor_number' => $floor->floor_number,
-            'label' => $this->formatFloorLabel($floor),
-        ])->values()->all();
+    public function floorOptionsForBulkAssignees(array $employeeRefs): array
+    {
+        $refs = $this->parseAssigneeRefs($employeeRefs);
+        if ($refs === []) {
+            return [];
+        }
+
+        $sbuIds = collect($refs)
+            ->map(fn (array $ref) => $this->resolveAssigneeSbuId($ref['type'], $ref['id']))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($sbuIds->isEmpty()) {
+            return [];
+        }
+
+        $floors = SbuFloor::query()
+            ->whereIn('sbu_id', $sbuIds)
+            ->where('is_active', true)
+            ->orderBy('floor_number')
+            ->orderBy('name')
+            ->get()
+            ->unique('id');
+
+        return $this->mapFloorOptions($floors);
+    }
+
+    public function assigneeSupportsFloor(string $employeeType, int $employeeId, int $floorId): bool
+    {
+        $sbuId = $this->resolveAssigneeSbuId($employeeType, $employeeId);
+        if (! $sbuId) {
+            return false;
+        }
+
+        return SbuFloor::query()
+            ->whereKey($floorId)
+            ->where('sbu_id', $sbuId)
+            ->where('is_active', true)
+            ->exists();
     }
 
     /**
@@ -180,6 +215,12 @@ class ShiftRosterService
 
             $skipWorkingDays = $workingConflicts !== [];
 
+            $placementData = [
+                'sbu_floor_id' => $data['sbu_floor_id'] ?? null,
+                'location_text' => $data['location_text'] ?? null,
+                'notes' => $data['notes'] ?? null,
+            ];
+
             $period = CarbonPeriod::create($data['start_date'], $data['end_date']);
             $totalAssigned = 0;
             $totalOffDays = 0;
@@ -210,7 +251,8 @@ class ShiftRosterService
                             $shiftPlannerId,
                             $isCustomTime,
                             $entryStartTime,
-                            $entryEndTime
+                            $entryEndTime,
+                            $placementData
                         );
                         $totalAssigned++;
                         continue;
@@ -441,10 +483,8 @@ class ShiftRosterService
         return $employeeType . ':' . $employeeId;
     }
 
-    private function resolveAssigneeFloors(string $employeeType, int $employeeId)
+    private function resolveAssigneeSbuId(string $employeeType, int $employeeId): ?int
     {
-        $sbuId = null;
-
         if ($employeeType === 'outsourced') {
             $sbuId = OutsourcedEmployee::query()
                 ->whereNull('deleted_at')
@@ -458,6 +498,12 @@ class ShiftRosterService
                 ->value('sbu_id');
         }
 
+        return $sbuId ? (int) $sbuId : null;
+    }
+
+    private function resolveAssigneeFloors(string $employeeType, int $employeeId)
+    {
+        $sbuId = $this->resolveAssigneeSbuId($employeeType, $employeeId);
         if (! $sbuId) {
             return collect();
         }
@@ -468,6 +514,17 @@ class ShiftRosterService
             ->orderBy('floor_number')
             ->orderBy('name')
             ->get();
+    }
+
+    private function mapFloorOptions($floors): array
+    {
+        return collect($floors)->map(fn (SbuFloor $floor) => [
+            'id' => $floor->id,
+            'name' => $floor->name,
+            'floor_number' => $floor->floor_number,
+            'label' => $this->formatFloorLabel($floor),
+            'sbu_id' => $floor->sbu_id,
+        ])->values()->all();
     }
 
     private function formatFloorLabel(SbuFloor $floor): string
@@ -663,7 +720,8 @@ class ShiftRosterService
         ?int $shiftPlannerId,
         bool $isCustomTime,
         ?string $startTime = null,
-        ?string $endTime = null
+        ?string $endTime = null,
+        array $placementData = []
     ): void {
         $userId = Auth::id();
         $shift = $shiftPlannerId ? ShiftPlanner::find($shiftPlannerId) : null;
@@ -672,9 +730,11 @@ class ShiftRosterService
             'is_custom_time' => $isCustomTime,
             'start_time' => $startTime ?? ($shift ? $this->formatShiftTime($shift->start_time) : null),
             'end_time' => $endTime ?? ($shift ? $this->formatShiftTime($shift->end_time) : null),
-            'floor' => $shift?->floor,
             'status' => 'pending',
         ];
+        $this->applyFloorToPayload($placementData, $basePayload);
+        $this->applyLocationToPayload($placementData, $basePayload);
+        $this->applyNotesToPayload($placementData, $basePayload);
 
         if ($type === 'outsourced') {
             $lookup = ['outsourced_employee_id' => $id, 'roster_date' => $date];

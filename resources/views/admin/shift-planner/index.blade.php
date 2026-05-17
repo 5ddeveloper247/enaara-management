@@ -168,6 +168,7 @@
         window.rosterUpdateUrlBase = @json(url('/admin/shift-roster'));
         window.rosterChangeHistoryUrlBase = @json(url('/admin/shift-roster'));
         window.rosterFloorOptionsUrl = @json(route('admin.shift-roster.floor-options'));
+        window.rosterBulkFloorOptionsUrl = @json(route('admin.shift-roster.bulk-floor-options'));
         window.rosterExportPdfUrl = @json(route('admin.shift-roster.export-pdf'));
     </script>
     <script src="{{ asset('js/roster-render.js') }}"></script>

@@ -14,6 +14,7 @@ use App\Http\Requests\Admin\ShiftRoster\ShiftRosterPdfExportRequest;
 use App\Http\Requests\Admin\ShiftRoster\ShiftRosterRequest;
 use App\Http\Requests\Admin\ShiftRoster\BulkShiftRosterRequest;
 use App\Http\Requests\Admin\ShiftRoster\ShiftRosterFloorOptionsRequest;
+use App\Http\Requests\Admin\ShiftRoster\BulkShiftRosterFloorOptionsRequest;
 use Illuminate\Http\Request;
 
 class ShiftRosterController extends Controller
@@ -108,6 +109,30 @@ class ShiftRosterController extends Controller
                 'success' => false,
                 'message' => 'Employee not found.',
             ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function bulkFloorOptions(BulkShiftRosterFloorOptionsRequest $request)
+    {
+        if (! $this->canAccessShiftPlannerRoster()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => $this->shiftRosterService->floorOptionsForBulkAssignees(
+                    $request->validated()['employee_ids']
+                ),
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
