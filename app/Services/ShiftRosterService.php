@@ -443,54 +443,27 @@ class ShiftRosterService
 
     private function resolveAssigneeFloors(string $employeeType, int $employeeId)
     {
+        $sbuId = null;
+
         if ($employeeType === 'outsourced') {
-            $employee = OutsourcedEmployee::query()
-                ->with([
-                    'assignedFloors' => static fn ($query) => $query
-                        ->where('is_active', true)
-                        ->orderBy('floor_number')
-                        ->orderBy('name'),
-                ])
+            $sbuId = OutsourcedEmployee::query()
                 ->whereNull('deleted_at')
-                ->findOrFail($employeeId);
-
-            if ($employee->assignedFloors->isNotEmpty()) {
-                return $employee->assignedFloors;
-            }
-
-            if (! $employee->sbu_id) {
-                return collect();
-            }
-
-            return SbuFloor::query()
-                ->where('sbu_id', $employee->sbu_id)
-                ->where('is_active', true)
-                ->orderBy('floor_number')
-                ->orderBy('name')
-                ->get();
+                ->whereKey($employeeId)
+                ->value('sbu_id');
+        } else {
+            $sbuId = Employee::query()
+                ->where('is_active', 1)
+                ->shiftBasedWorkArrangement()
+                ->whereKey($employeeId)
+                ->value('sbu_id');
         }
 
-        $employee = Employee::query()
-            ->with([
-                'assignedFloors' => static fn ($query) => $query
-                    ->where('is_active', true)
-                    ->orderBy('floor_number')
-                    ->orderBy('name'),
-            ])
-            ->where('is_active', 1)
-            ->shiftBasedWorkArrangement()
-            ->findOrFail($employeeId);
-
-        if ($employee->assignedFloors->isNotEmpty()) {
-            return $employee->assignedFloors;
-        }
-
-        if (! $employee->sbu_id) {
+        if (! $sbuId) {
             return collect();
         }
 
         return SbuFloor::query()
-            ->where('sbu_id', $employee->sbu_id)
+            ->where('sbu_id', $sbuId)
             ->where('is_active', true)
             ->orderBy('floor_number')
             ->orderBy('name')
