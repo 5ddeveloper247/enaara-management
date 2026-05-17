@@ -443,40 +443,269 @@
             + ', ' + pad2(hours) + ':' + minutes + ' ' + ampm;
     }
 
-    function setRosterAuditField(nameEl, timeEl, name, timeValue) {
-        if (nameEl) {
-            nameEl.textContent = name || '—';
+    var rosterAuditPanelState = {
+        events: [],
+        filter: 'all',
+        tab: 'timeline'
+    };
+    var rosterAuditControlsBound = false;
+
+    function formatRosterAuditShortDateTime(value) {
+        if (!value) {
+            return '—';
         }
-        if (timeEl) {
-            timeEl.textContent = name ? formatRosterAuditDateTime(timeValue) : '—';
+        var normalized = String(value).trim().replace(' ', 'T');
+        var dateObj = new Date(normalized);
+        if (isNaN(dateObj.getTime())) {
+            return '—';
+        }
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var hours = dateObj.getHours();
+        var minutes = pad2(dateObj.getMinutes());
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        return padDay(dateObj.getDate()) + ' ' + months[dateObj.getMonth()] + ' · ' + pad2(hours) + ':' + minutes + ' ' + ampm;
+    }
+
+    function rosterAuditDisplayValue(value, role) {
+        var raw = value === null || value === undefined ? '' : String(value).trim();
+        if (raw === '' || raw === '—') {
+            return '<span class="roster-audit-value-empty">empty</span>';
+        }
+        var safe = escapeHtml(raw);
+        if (role === 'old') {
+            return '<span class="roster-audit-value-old">' + safe + '</span>';
+        }
+        if (role === 'new') {
+            return '<span class="roster-audit-value-new">' + safe + '</span>';
+        }
+        return safe;
+    }
+
+    function rosterAuditEventIcon(type) {
+        if (type === 'created') return 'bi-plus-lg';
+        if (type === 'assigned') return 'bi-person-check';
+        if (type === 'deleted') return 'bi-trash';
+        return 'bi-pencil';
+    }
+
+    function rosterAuditBadgeLabel(event) {
+        if (event.type === 'created') return '+ Created';
+        return escapeHtml(event.actionLabel || 'Updated');
+    }
+
+    function bindRosterAuditPanelControls() {
+        if (rosterAuditControlsBound) return;
+        var panel = document.getElementById('rosterShiftAuditCard');
+        if (!panel) return;
+        rosterAuditControlsBound = true;
+        panel.addEventListener('click', function(e) {
+            var tabBtn = e.target.closest('[data-audit-tab]');
+            if (tabBtn) {
+                rosterAuditPanelState.tab = tabBtn.getAttribute('data-audit-tab') || 'timeline';
+                panel.querySelectorAll('.roster-audit-tab').forEach(function(btn) {
+                    var active = btn === tabBtn;
+                    btn.classList.toggle('active', active);
+                    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+                renderRosterAuditHistoryList();
+                return;
+            }
+            var filterBtn = e.target.closest('[data-audit-filter]');
+            if (filterBtn) {
+                rosterAuditPanelState.filter = filterBtn.getAttribute('data-audit-filter') || 'all';
+                panel.querySelectorAll('.roster-audit-filter').forEach(function(btn) {
+                    btn.classList.toggle('active', btn === filterBtn);
+                });
+                renderRosterAuditHistoryList();
+            }
+        });
+    }
+
+    function resetRosterAuditPanel() {
+        rosterAuditPanelState.events = [];
+        rosterAuditPanelState.filter = 'all';
+        rosterAuditPanelState.tab = 'timeline';
+        var card = document.getElementById('rosterShiftAuditCard');
+        var list = document.getElementById('rosterAuditHistoryList');
+        var empty = document.getElementById('rosterAuditHistoryEmpty');
+        var loading = document.getElementById('rosterAuditHistoryLoading');
+        var scroll = document.getElementById('rosterAuditHistoryScroll');
+        if (list) list.innerHTML = '';
+        if (empty) {
+            empty.style.display = 'none';
+            empty.querySelector('span').textContent = 'No history recorded for this shift yet.';
+        }
+        if (loading) loading.style.display = 'none';
+        if (scroll) scroll.style.display = 'none';
+        if (card) card.style.display = 'none';
+    }
+
+    function updateRosterAuditStats(stats) {
+        var s = stats || {};
+        var createdEl = document.getElementById('rosterAuditStatCreated');
+        var updatedEl = document.getElementById('rosterAuditStatUpdated');
+        var removedEl = document.getElementById('rosterAuditStatRemoved');
+        if (createdEl) createdEl.textContent = String(s.created || 0);
+        if (updatedEl) updatedEl.textContent = String(s.updated || 0);
+        if (removedEl) removedEl.textContent = String(s.removed || 0);
+    }
+
+    function getFilteredRosterAuditEvents() {
+        var events = rosterAuditPanelState.events || [];
+        var filter = rosterAuditPanelState.filter || 'all';
+        var tab = rosterAuditPanelState.tab || 'timeline';
+        return events.filter(function(event) {
+            if (filter !== 'all' && event.type !== filter) {
+                return false;
+            }
+            if (tab === 'changes') {
+                return Array.isArray(event.changes) && event.changes.length > 0;
+            }
+            return true;
+        });
+    }
+
+    function renderRosterAuditHistoryList() {
+        var card = document.getElementById('rosterShiftAuditCard');
+        var list = document.getElementById('rosterAuditHistoryList');
+        var empty = document.getElementById('rosterAuditHistoryEmpty');
+        var scroll = document.getElementById('rosterAuditHistoryScroll');
+        if (!card || !list) return;
+
+        var filtered = getFilteredRosterAuditEvents();
+        list.innerHTML = '';
+
+        if (!filtered.length) {
+            if (empty) {
+                empty.querySelector('span').textContent = rosterAuditPanelState.events.length
+                    ? 'No events match the selected filter.'
+                    : 'No history recorded for this shift yet.';
+                empty.style.display = 'flex';
+            }
+            if (scroll) scroll.style.display = 'none';
+            return;
+        }
+
+        if (empty) empty.style.display = 'none';
+        if (scroll) scroll.style.display = 'block';
+
+        filtered.forEach(function(event) {
+            var type = event.type || 'updated';
+            var li = document.createElement('li');
+            li.className = 'roster-audit-event roster-audit-event--' + type;
+
+            var changes = Array.isArray(event.changes) ? event.changes : [];
+            var changesHtml = '';
+            if (changes.length) {
+                changesHtml = '<ul class="roster-audit-change-list">';
+                changes.forEach(function(change) {
+                    changesHtml += '<li class="roster-audit-change-row">' +
+                        '<span class="roster-audit-change-field">' + escapeHtml((change.label || change.field || 'Field').toUpperCase()) + '</span>' +
+                        '<div class="roster-audit-change-diff">' +
+                        rosterAuditDisplayValue(change.before, 'old') +
+                        '<i class="bi bi-arrow-right roster-audit-change-arrow" aria-hidden="true"></i>' +
+                        rosterAuditDisplayValue(change.after, 'new') +
+                        '</div>' +
+                        '</li>';
+                });
+                changesHtml += '</ul>';
+            }
+
+            var summary = event.summary ? '<p class="roster-audit-event-summary">' + escapeHtml(event.summary) + '</p>' : '';
+
+            li.innerHTML =
+                '<div class="roster-audit-event-marker">' +
+                '<span class="roster-audit-event-icon"><i class="bi ' + rosterAuditEventIcon(type) + '"></i></span>' +
+                '</div>' +
+                '<div class="roster-audit-event-body">' +
+                '<div class="roster-audit-event-top">' +
+                '<div class="roster-audit-event-top-main">' +
+                '<span class="roster-audit-event-badge">' + rosterAuditBadgeLabel(event) + '</span>' +
+                '<span class="roster-audit-event-user">' + escapeHtml(event.userName || 'System') + '</span>' +
+                '</div>' +
+                '<span class="roster-audit-event-time">' + escapeHtml(formatRosterAuditShortDateTime(event.at)) + '</span>' +
+                '</div>' +
+                summary +
+                changesHtml +
+                '</div>';
+
+            list.appendChild(li);
+        });
+    }
+
+    function applyRosterAuditPayload(payload) {
+        if (Array.isArray(payload)) {
+            rosterAuditPanelState.events = payload;
+            updateRosterAuditStats({
+                created: payload.filter(function(e) { return e.type === 'created' || e.action === 'created'; }).length,
+                updated: payload.filter(function(e) { return e.type === 'updated' || e.action === 'updated'; }).length,
+                removed: payload.filter(function(e) { return e.type === 'deleted' || e.action === 'deleted'; }).length
+            });
+            return;
+        }
+        rosterAuditPanelState.events = payload.events || [];
+        updateRosterAuditStats(payload.stats || {});
+        var subtitleEl = document.getElementById('rosterAuditHistorySubtitle');
+        if (subtitleEl && payload.subtitle) {
+            subtitleEl.textContent = payload.subtitle;
         }
     }
 
-    function resetRosterAuditFields() {
-        setRosterAuditField(
-            document.getElementById('rosterShiftCreatedBy'),
-            document.getElementById('rosterShiftCreatedAt'),
-            null,
-            null
-        );
-        setRosterAuditField(
-            document.getElementById('rosterShiftUpdatedBy'),
-            document.getElementById('rosterShiftUpdatedAt'),
-            null,
-            null
-        );
-        setRosterAuditField(
-            document.getElementById('rosterShiftAssignedBy'),
-            document.getElementById('rosterShiftAssignedAt'),
-            null,
-            null
-        );
-        setRosterAuditField(
-            document.getElementById('rosterShiftDeletedBy'),
-            document.getElementById('rosterShiftDeletedAt'),
-            null,
-            null
-        );
+    function loadRosterAuditHistory(rosterId) {
+        var base = window.rosterChangeHistoryUrlBase || window.rosterUpdateUrlBase || '';
+        var card = document.getElementById('rosterShiftAuditCard');
+        var list = document.getElementById('rosterAuditHistoryList');
+        var empty = document.getElementById('rosterAuditHistoryEmpty');
+        var loading = document.getElementById('rosterAuditHistoryLoading');
+        var scroll = document.getElementById('rosterAuditHistoryScroll');
+
+        bindRosterAuditPanelControls();
+        resetRosterAuditPanel();
+
+        if (!base || !rosterId || !card) {
+            return;
+        }
+
+        card.style.display = 'block';
+        if (loading) loading.style.display = 'flex';
+        if (empty) empty.style.display = 'none';
+        if (scroll) scroll.style.display = 'none';
+        if (list) list.innerHTML = '';
+
+        fetch(base + '/' + encodeURIComponent(rosterId) + '/change-history', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+            .then(function(r) {
+                return r.json().then(function(body) {
+                    return { ok: r.ok, body: body };
+                });
+            })
+            .then(function(res) {
+                if (loading) loading.style.display = 'none';
+                if (res.ok && res.body && res.body.success) {
+                    applyRosterAuditPayload(res.body.data || {});
+                    renderRosterAuditHistoryList();
+                    return;
+                }
+                if (empty) {
+                    empty.querySelector('span').textContent = 'Could not load change history.';
+                    empty.style.display = 'flex';
+                }
+            })
+            .catch(function() {
+                if (loading) loading.style.display = 'none';
+                if (empty) {
+                    empty.querySelector('span').textContent = 'Could not load change history.';
+                    empty.style.display = 'flex';
+                }
+            });
     }
 
     function clearRosterFloorFieldError() {
@@ -672,17 +901,6 @@
         var lateCheckInEl = document.getElementById('rosterLateCheckIn');
         var employeeTypeEl = document.getElementById('rosterShiftEmployeeType');
         var auditCard = document.getElementById('rosterShiftAuditCard');
-        var createdByEl = document.getElementById('rosterShiftCreatedBy');
-        var createdAtEl = document.getElementById('rosterShiftCreatedAt');
-        var updatedByEl = document.getElementById('rosterShiftUpdatedBy');
-        var updatedAtEl = document.getElementById('rosterShiftUpdatedAt');
-        var assignedByEl = document.getElementById('rosterShiftAssignedBy');
-        var assignedAtEl = document.getElementById('rosterShiftAssignedAt');
-        var updatedWrap = document.getElementById('rosterShiftUpdatedWrap');
-        var assignedWrap = document.getElementById('rosterShiftAssignedWrap');
-        var deletedWrap = document.getElementById('rosterShiftDeletedWrap');
-        var deletedByEl = document.getElementById('rosterShiftDeletedBy');
-        var deletedAtEl = document.getElementById('rosterShiftDeletedAt');
 
         if (!canvas) return;
         var employeeRef = String(employeeId || '');
@@ -732,44 +950,10 @@
             if (lateCheckInEl) lateCheckInEl.checked = !!shift.lateCheckIn;
             if (notesEl) notesEl.value = shift.notes || '';
 
-            setRosterAuditField(
-                createdByEl,
-                createdAtEl,
-                shift.createdByName,
-                shift.createdAt || shift.created_at
-            );
-            setRosterAuditField(
-                updatedByEl,
-                updatedAtEl,
-                shift.updatedByName,
-                shift.updatedAt || shift.updated_at
-            );
-            setRosterAuditField(
-                assignedByEl,
-                assignedAtEl,
-                shift.assignedByName,
-                shift.assignedAt || shift.assigned_at
-            );
-            setRosterAuditField(
-                deletedByEl,
-                deletedAtEl,
-                shift.deletedByName,
-                shift.deletedAt || shift.deleted_at
-            );
-
-            if (updatedWrap) {
-                updatedWrap.style.display = shift.updatedByName ? '' : 'none';
-            }
-            if (assignedWrap) {
-                assignedWrap.style.display = shift.assignedByName ? '' : 'none';
-            }
-            if (deletedWrap) {
-                deletedWrap.style.display = shift.deletedByName ? '' : 'none';
-            }
-
-            if (auditCard) {
-                var hasAnyAudit = !!(shift.createdByName || shift.updatedByName || shift.assignedByName || shift.deletedByName);
-                auditCard.style.display = hasAnyAudit ? 'block' : 'none';
+            if (shift.rosterId) {
+                loadRosterAuditHistory(shift.rosterId);
+            } else {
+                resetRosterAuditPanel();
             }
         } else {
             if (rosterIdEl) rosterIdEl.value = '';
@@ -786,11 +970,7 @@
             if (checkOutEl) checkOutEl.value = '';
             if (lateCheckInEl) lateCheckInEl.checked = false;
             if (notesEl) notesEl.value = '';
-            if (auditCard) auditCard.style.display = 'none';
-            resetRosterAuditFields();
-            if (updatedWrap) updatedWrap.style.display = '';
-            if (assignedWrap) assignedWrap.style.display = '';
-            if (deletedWrap) deletedWrap.style.display = 'none';
+            resetRosterAuditPanel();
         }
 
         var useCustomCb = document.getElementById('rosterUseCustomTime');

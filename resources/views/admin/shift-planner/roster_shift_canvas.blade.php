@@ -12,7 +12,6 @@
             <input type="hidden" id="rosterShiftEmployeeType" name="employee_type" value="employee">
             <input type="hidden" id="rosterShiftEmployeeId" name="employee_id" value="">
             <input type="hidden" id="rosterShiftDay" name="day" value="">
-
             <section class="roster-shift-section roster-shift-summary-card mb-4" aria-label="Roster context">
                 <div class="d-flex gap-3 align-items-start">
                     <div class="roster-shift-avatar flex-shrink-0" id="rosterShiftEmployeeInitial" aria-hidden="true">?</div>
@@ -29,58 +28,49 @@
                     </div>
                 </div>
             </section>
-
-            <section class="roster-shift-section roster-shift-audit-card mb-4" id="rosterShiftAuditCard" style="display: none;" aria-label="Audit">
-                <div class="roster-shift-section-label mb-3">Audit</div>
-                <ul class="list-unstyled mb-0 roster-shift-audit-timeline">
-                    <li class="roster-shift-audit-step roster-shift-audit-step--created">
-                        <div class="roster-shift-audit-marker">
-                            <span class="roster-shift-audit-icon"><i class="bi bi-person-plus"></i></span>
-                        </div>
-                        <div class="roster-shift-audit-content">
-                            <span class="roster-shift-audit-label">Created by</span>
-                            <span class="roster-shift-audit-value" id="rosterShiftCreatedBy">—</span>
-                            <span class="roster-shift-audit-time-value" id="rosterShiftCreatedAt">—</span>
-                        </div>
-                    </li>
-                    <li class="roster-shift-audit-step roster-shift-audit-step--updated" id="rosterShiftUpdatedWrap">
-                        <div class="roster-shift-audit-marker">
-                            <span class="roster-shift-audit-icon"><i class="bi bi-arrow-repeat"></i></span>
-                        </div>
-                        <div class="roster-shift-audit-content">
-                            <span class="roster-shift-audit-label">Updated by</span>
-                            <span class="roster-shift-audit-value" id="rosterShiftUpdatedBy">—</span>
-                            <span class="roster-shift-audit-time-value" id="rosterShiftUpdatedAt">—</span>
-                        </div>
-                    </li>
-                    <li class="roster-shift-audit-step roster-shift-audit-step--assigned" id="rosterShiftAssignedWrap">
-                        <div class="roster-shift-audit-marker">
-                            <span class="roster-shift-audit-icon"><i class="bi bi-person-check"></i></span>
-                        </div>
-                        <div class="roster-shift-audit-content">
-                            <span class="roster-shift-audit-label">Assigned by</span>
-                            <span class="roster-shift-audit-value" id="rosterShiftAssignedBy">—</span>
-                            <span class="roster-shift-audit-time-value" id="rosterShiftAssignedAt">—</span>
-                        </div>
-                    </li>
-                    <li class="roster-shift-audit-step roster-shift-audit-step--deleted" id="rosterShiftDeletedWrap" style="display: none;">
-                        <div class="roster-shift-audit-marker">
-                            <span class="roster-shift-audit-icon"><i class="bi bi-trash"></i></span>
-                        </div>
-                        <div class="roster-shift-audit-content">
-                            <span class="roster-shift-audit-label">Deleted by</span>
-                            <span class="roster-shift-audit-value" id="rosterShiftDeletedBy">—</span>
-                            <span class="roster-shift-audit-time-value" id="rosterShiftDeletedAt">—</span>
-                        </div>
-                    </li>
-                </ul>
+            <section class="roster-shift-section roster-audit-history-panel mb-4" id="rosterShiftAuditCard" style="display: none;" aria-label="Audit history">
+                <h6 class="roster-audit-history-title mb-1">Audit history</h6>
+                <p class="roster-audit-history-subtitle mb-3" id="rosterAuditHistorySubtitle">Shift roster entry</p>
+                <div class="roster-audit-stats row g-0 mb-3" id="rosterAuditStats">
+                    <div class="col-4 roster-audit-stat roster-audit-stat--created">
+                        <span class="roster-audit-stat-value" id="rosterAuditStatCreated">0</span>
+                        <span class="roster-audit-stat-label">Created</span>
+                    </div>
+                    <div class="col-4 roster-audit-stat roster-audit-stat--updated">
+                        <span class="roster-audit-stat-value" id="rosterAuditStatUpdated">0</span>
+                        <span class="roster-audit-stat-label">Updates</span>
+                    </div>
+                    <div class="col-4 roster-audit-stat roster-audit-stat--removed">
+                        <span class="roster-audit-stat-value" id="rosterAuditStatRemoved">0</span>
+                        <span class="roster-audit-stat-label">Removed</span>
+                    </div>
+                </div>
+                <div class="roster-audit-tabs mb-2" role="tablist">
+                    <button type="button" class="roster-audit-tab active" data-audit-tab="timeline" role="tab" aria-selected="true">Timeline</button>
+                    <button type="button" class="roster-audit-tab" data-audit-tab="changes" role="tab" aria-selected="false">What changed</button>
+                </div>
+                <div class="roster-audit-filters mb-3" id="rosterAuditFilters" role="group" aria-label="Filter history">
+                    <button type="button" class="roster-audit-filter active" data-audit-filter="all">All</button>
+                    <button type="button" class="roster-audit-filter roster-audit-filter--created" data-audit-filter="created">+ Created</button>
+                    <button type="button" class="roster-audit-filter roster-audit-filter--updated" data-audit-filter="updated">Updated</button>
+                    <button type="button" class="roster-audit-filter roster-audit-filter--assigned" data-audit-filter="assigned">Assigned</button>
+                    <button type="button" class="roster-audit-filter roster-audit-filter--deleted" data-audit-filter="deleted">Removed</button>
+                </div>
+                <div id="rosterAuditHistoryLoading" class="roster-audit-history-loading" style="display: none;" aria-live="polite">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span>Loading history…</span>
+                </div>
+                <div id="rosterAuditHistoryEmpty" class="roster-audit-history-empty" style="display: none;">
+                    <i class="bi bi-clock-history" aria-hidden="true"></i>
+                    <span>No history recorded for this shift yet.</span>
+                </div>
+                <div class="roster-audit-history-scroll" id="rosterAuditHistoryScroll">
+                    <ul class="list-unstyled mb-0 roster-audit-timeline" id="rosterAuditHistoryList"></ul>
+                </div>
             </section>
-
             <div class="roster-shift-divider mb-4" role="presentation"></div>
-
             <section class="roster-shift-section mb-2" aria-label="Edit assignment">
                 <div class="roster-shift-section-label mb-3">Assignment</div>
-
                 <div class="mb-3">
                     <label for="rosterShiftPlannerId" class="form-label roster-shift-field-label">
                         Shift <span id="rosterShiftRequiredMark" class="text-danger">*</span>
@@ -98,12 +88,10 @@
                     </select>
                     <div id="rosterShiftPlannerError" class="invalid-feedback d-block d-none"></div>
                 </div>
-
                 <div class="form-check form-switch mb-3 roster-shift-custom-toggle">
                     <input class="form-check-input" type="checkbox" id="rosterUseCustomTime" value="1">
                     <label class="form-check-label roster-shift-field-label" for="rosterUseCustomTime">Use custom start and end time</label>
                 </div>
-
                 <div class="row g-2 mb-3" id="rosterShiftTimeRow" style="display: none;">
                     <div class="col-6">
                         <label for="rosterStartTime" class="form-label roster-shift-field-label">Start Time <span class="text-danger">*</span></label>
@@ -116,7 +104,6 @@
                         <div id="rosterEndTimeError" class="invalid-feedback d-block d-none"></div>
                     </div>
                 </div>
-
                 <div class="mb-3">
                     <label for="rosterFloor" class="form-label roster-shift-field-label">Floor / Location</label>
                     <select class="form-select roster-shift-input" id="rosterFloor" name="sbu_floor_id">
@@ -124,7 +111,6 @@
                     </select>
                     <div class="invalid-feedback d-block d-none" id="rosterFloorError"></div>
                 </div>
-
                 <div class="mb-0">
                     <label for="rosterShiftNotes" class="form-label roster-shift-field-label">Notes</label>
                     <textarea class="form-control roster-shift-input roster-shift-notes" id="rosterShiftNotes" name="notes" rows="3" placeholder="Optional"></textarea>
@@ -146,4 +132,3 @@
         </div>
     </div>
 </div>
-

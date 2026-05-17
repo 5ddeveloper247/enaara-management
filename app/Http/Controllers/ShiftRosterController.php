@@ -7,6 +7,7 @@ use App\Models\ShiftRosterAssignment;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftPlanner;
+use App\Services\ShiftRosterAuditHistoryService;
 use App\Services\ShiftRosterService;
 use App\Http\Requests\Admin\ShiftRoster\ShiftRosterRequest;
 use App\Http\Requests\Admin\ShiftRoster\BulkShiftRosterRequest;
@@ -116,6 +117,33 @@ class ShiftRosterController extends Controller
             ->get();
 
         return view('admin.shift-planner.roster', compact('rosters', 'employees', 'outsourcedEmployees', 'shifts'));
+    }
+
+    public function changeHistory($id, ShiftRosterAuditHistoryService $auditHistoryService)
+    {
+        if (! $this->canAccessShiftPlannerRoster()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => $auditHistoryService->forEntry((int) $id),
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Roster entry not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not load change history.',
+            ], 500);
+        }
     }
 
     public function show($id)

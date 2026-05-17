@@ -292,6 +292,8 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
     Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
         ->name('admin.shift-roster.bulk-assign');
+    Route::get('/shift-roster/{id}/change-history', [ShiftRosterController::class, 'changeHistory'])
+        ->name('admin.shift-roster.change-history');
     Route::get('/shift-roster/{id}', [ShiftRosterController::class, 'show'])->name('admin.shift-roster.show');
     Route::post('/shift-roster/{id}', [ShiftRosterController::class, 'update'])->name('admin.shift-roster.update');
     Route::delete('/shift-roster/{id}', [ShiftRosterController::class, 'destroy'])->name('admin.shift-roster.destroy');

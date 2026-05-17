@@ -7,17 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 trait LogsActivity
 {
-    public static function bootLogsActivity()
-    {
-        static::registerEvents();
-    }
-
-    protected static function booted()
-    {
-        static::registerEvents();
-    }
-
-    protected static function registerEvents()
+    public static function bootLogsActivity(): void
     {
         static::created(function (Model $model) {
             app(AuditTrailService::class)->logModelAction($model, 'created');

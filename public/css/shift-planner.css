@@ -338,7 +338,7 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 }
 
 .shift-pill:has(.shift-pill-icon) {
-    padding-right: 22px;
+    padding-right: 18px;
 }
 
 .shift-pill:last-child {
@@ -361,20 +361,24 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 
 .shift-pill-icon {
     position: absolute;
-    top: 4px;
-    right: 5px;
+    top: 5px;
+    right: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    width: 10px;
+    height: 10px;
+    font-size: 9px;
     line-height: 1;
-    opacity: 0.92;
+    opacity: 0.88;
     pointer-events: none;
     z-index: 1;
 }
 
 .shift-pill-icon .bi {
     display: block;
+    font-size: 9px;
+    line-height: 1;
 }
 
 .shift-time {
@@ -669,6 +673,376 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 .roster-shift-audit-step--deleted .roster-shift-audit-value,
 .roster-shift-audit-step--deleted .roster-shift-audit-time-value {
     color: #fca5a5;
+}
+
+.roster-audit-history-panel {
+    background: rgba(0, 0, 0, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.95rem 1rem 0.85rem;
+}
+
+.roster-audit-history-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+}
+
+.roster-audit-history-subtitle {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+}
+
+.roster-audit-stats {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.roster-audit-stat {
+    text-align: center;
+    padding: 0.55rem 0.35rem;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.roster-audit-stat:last-child {
+    border-right: none;
+}
+
+.roster-audit-stat-value {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.roster-audit-stat-label {
+    display: block;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 0.15rem;
+}
+
+.roster-audit-stat--created .roster-audit-stat-value {
+    color: #4ade80;
+}
+
+.roster-audit-stat--updated .roster-audit-stat-value {
+    color: #60a5fa;
+}
+
+.roster-audit-stat--removed .roster-audit-stat-value {
+    color: #f87171;
+}
+
+.roster-audit-tabs {
+    display: flex;
+    gap: 0.35rem;
+    padding: 0.2rem;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 0.45rem;
+}
+
+.roster-audit-tab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.35rem;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.roster-audit-tab.active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.roster-audit-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.roster-audit-filter {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.28rem 0.55rem;
+    border-radius: 999px;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.roster-audit-filter.active {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: #fff;
+}
+
+.roster-audit-filter--created.active {
+    background: rgba(34, 197, 94, 0.18);
+    border-color: rgba(74, 222, 128, 0.45);
+    color: #86efac;
+}
+
+.roster-audit-filter--updated.active {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(96, 165, 250, 0.45);
+    color: #93c5fd;
+}
+
+.roster-audit-filter--assigned.active {
+    background: rgba(99, 102, 241, 0.22);
+    border-color: rgba(165, 180, 252, 0.45);
+    color: #c4b5fd;
+}
+
+.roster-audit-filter--deleted.active {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(248, 113, 113, 0.45);
+    color: #fca5a5;
+}
+
+.roster-audit-history-loading,
+.roster-audit-history-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.55);
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+}
+
+.roster-audit-history-empty {
+    flex-direction: column;
+}
+
+.roster-audit-history-empty .bi {
+    font-size: 1.25rem;
+    opacity: 0.7;
+}
+
+.roster-audit-history-scroll {
+    max-height: min(340px, 42vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.25rem;
+    margin-right: -0.15rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.roster-audit-history-scroll::-webkit-scrollbar {
+    width: 5px;
+}
+
+.roster-audit-history-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 4px;
+}
+
+.roster-audit-timeline {
+    position: relative;
+    margin: 0;
+    padding: 0.2rem 0 0.35rem 0;
+}
+
+.roster-audit-timeline::before {
+    content: '';
+    position: absolute;
+    left: 1.05rem;
+    top: 1.5rem;
+    bottom: 1rem;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.12);
+    z-index: 0;
+}
+
+.roster-audit-event {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 1;
+    padding: 0 0 1.1rem 0;
+}
+
+.roster-audit-event:last-child {
+    padding-bottom: 0.25rem;
+}
+
+.roster-audit-event-marker {
+    flex-shrink: 0;
+    z-index: 1;
+}
+
+.roster-audit-event-icon {
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+}
+
+.roster-audit-event--created .roster-audit-event-icon {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.roster-audit-event--assigned .roster-audit-event-icon {
+    background: rgba(99, 102, 241, 0.22);
+    color: #a5b4fc;
+}
+
+.roster-audit-event--updated .roster-audit-event-icon {
+    background: rgba(59, 130, 246, 0.22);
+    color: #60a5fa;
+}
+
+.roster-audit-event--deleted .roster-audit-event-icon {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.roster-audit-event-body {
+    flex: 1;
+    min-width: 0;
+    padding-top: 0.05rem;
+}
+
+.roster-audit-event-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.roster-audit-event-top-main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.roster-audit-event-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.roster-audit-event--created .roster-audit-event-badge {
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+}
+
+.roster-audit-event--assigned .roster-audit-event-badge {
+    background: rgba(99, 102, 241, 0.22);
+    color: #c4b5fd;
+}
+
+.roster-audit-event--updated .roster-audit-event-badge {
+    background: rgba(59, 130, 246, 0.22);
+    color: #93c5fd;
+}
+
+.roster-audit-event--deleted .roster-audit-event-badge {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+
+.roster-audit-event-user {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.roster-audit-event-time {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.45);
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-top: 0.15rem;
+}
+
+.roster-audit-event-summary {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.62);
+    margin: 0 0 0.4rem 0;
+    line-height: 1.35;
+}
+
+.roster-audit-change-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.roster-audit-change-row {
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.roster-audit-change-field {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.42);
+    margin-bottom: 0.2rem;
+}
+
+.roster-audit-change-diff {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.roster-audit-value-old {
+    color: #f87171;
+    text-decoration: line-through;
+    text-decoration-color: rgba(248, 113, 113, 0.65);
+}
+
+.roster-audit-value-empty {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.38);
+}
+
+.roster-audit-value-new {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.3rem;
+    background: rgba(34, 197, 94, 0.18);
+    color: #86efac;
+    font-weight: 600;
+}
+
+.roster-audit-change-arrow {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.35);
 }
 
 .roster-shift-divider {
