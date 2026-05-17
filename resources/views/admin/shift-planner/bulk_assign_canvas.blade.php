@@ -56,16 +56,17 @@
                 <!-- Day Selection -->
                 <div class="mb-3">
                     <label class="form-label fw-semibold small text-white d-block mb-2">Repeat Days</label>
-                    <p class="small text-white-50 mb-2">Checked days receive the selected shift. Unchecked days are saved as OFF on the roster for the full start and end date range.</p>
+                    <p class="small text-white-50 mb-2">Select 5 to 6 working days. Checked days receive the selected shift; unchecked days are saved as OFF for the full date range.</p>
                     <div class="d-flex flex-wrap gap-2" id="dayCheckboxesContainer">
                         @php $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; @endphp
                         @foreach($days as $day)
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input day-checkbox" type="checkbox" id="day{{ $day }}" name="days[]" value="{{ strtolower($day) }}" checked>
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day{{ $day }}" name="days[]" value="{{ strtolower($day) }}">
                                 <label class="form-check-label text-white small" for="day{{ $day }}">{{ substr($day, 0, 3) }}</label>
                             </div>
                         @endforeach
                     </div>
+                    <div id="bulkRepeatDaysError" class="invalid-feedback d-block d-none mt-1"></div>
                 </div>
             </div>
 
@@ -305,6 +306,56 @@ $(document).ready(function() {
     var $applyBtn = $('#applyBulkAssignBtn');
     var $canvas = $('#bulkAssignCanvas');
     var $selectedCount = $('#selectedCount');
+    var $repeatDaysError = $('#bulkRepeatDaysError');
+    var MIN_REPEAT_DAYS = 5;
+    var MAX_REPEAT_DAYS = 6;
+
+    function getCheckedRepeatDayCount() {
+        return $('.day-checkbox:checked').length;
+    }
+
+    function clearRepeatDaysError() {
+        $repeatDaysError.addClass('d-none').text('');
+        $('#dayCheckboxesContainer .day-checkbox').removeClass('is-invalid');
+    }
+
+    function showRepeatDaysError(message) {
+        $repeatDaysError.removeClass('d-none').text(message);
+        $('#dayCheckboxesContainer .day-checkbox').addClass('is-invalid');
+    }
+
+    function resetRepeatDays() {
+        $('.day-checkbox').prop('checked', false);
+        clearRepeatDaysError();
+    }
+
+    function validateRepeatDays() {
+        clearRepeatDaysError();
+        var count = getCheckedRepeatDayCount();
+
+        if (count < MIN_REPEAT_DAYS) {
+            showRepeatDaysError('Select at least ' + MIN_REPEAT_DAYS + ' working days.');
+            return false;
+        }
+
+        if (count > MAX_REPEAT_DAYS) {
+            showRepeatDaysError('You can select at most ' + MAX_REPEAT_DAYS + ' working days.');
+            return false;
+        }
+
+        return true;
+    }
+
+    $(document).on('change', '.day-checkbox', function() {
+        var $checkbox = $(this);
+        if ($checkbox.is(':checked') && getCheckedRepeatDayCount() > MAX_REPEAT_DAYS) {
+            $checkbox.prop('checked', false);
+            showRepeatDaysError('You can select at most ' + MAX_REPEAT_DAYS + ' working days.');
+            return;
+        }
+
+        clearRepeatDaysError();
+    });
 
     // Utility: Format Date to YYYY-MM-DD
     function formatDate(date) {
@@ -587,6 +638,10 @@ $(document).ready(function() {
             return;
         }
 
+        if (!validateRepeatDays()) {
+            return;
+        }
+
         var ids = $('input[name="employee_ids[]"]:checked').map(function() { return this.value; }).get();
         if (ids.length === 0) {
             Swal.fire({
@@ -654,6 +709,9 @@ $(document).ready(function() {
                     if (data.errors.end_time) {
                         showBulkFieldError('#bulkCustomEndTime', '#bulkCustomEndTimeError', data.errors.end_time[0]);
                     }
+                    if (data.errors.days) {
+                        showRepeatDaysError(data.errors.days[0]);
+                    }
                     msg = Object.values(data.errors).flat().join('<br>');
                 }
                 showError(msg);
@@ -670,10 +728,12 @@ $(document).ready(function() {
     var bulkCanvasEl = document.getElementById('bulkAssignCanvas');
     if (bulkCanvasEl) {
         bulkCanvasEl.addEventListener('shown.bs.offcanvas', function() {
+            resetRepeatDays();
             toggleShiftAssignmentUi();
         });
     }
 
+    resetRepeatDays();
     toggleAssignMode();
 });
 </script>
