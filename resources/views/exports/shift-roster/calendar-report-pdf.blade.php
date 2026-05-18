@@ -489,12 +489,16 @@
     </div>
 
     <div class="pdf-footer">
-        <table class="footer-table">
-            <tr>
-                <td>enaara.com • Confidential — internal use only</td>
-                <td style="text-align: right;">Shift roster export</td>
-            </tr>
-        </table>
-    </div>
+    <table class="footer-table">
+        <tr>
+            <td>
+                EFM-HCM • Secure Internal Workforce Management Report
+            </td>
+            <td style="text-align: right;">
+                Powered by 5D Solutions — Building smarter business systems
+            </td>
+        </tr>
+    </table>
+</div>
 </body>
 </html>
