@@ -52,6 +52,52 @@ class ShiftRosterExportReportService
         ]);
     }
 
+    public function buildCalendarReport(array $options): array
+    {
+        $context = $this->resolveExportContext($options);
+        $days = $this->buildCalendarDays($context['date_range']);
+        $dateKeys = array_column($days, 'date_key');
+
+        $entries = $this->fetchExportEntries($context)
+            ->filter(fn (ShiftRosterEntry $entry) => $this->isExportableRosterEntry($entry));
+
+        $exportRows = $entries
+            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToExportRow($entry, $context['include_shift_times']))
+            ->values();
+
+        $employeeCount = $entries
+            ->groupBy(fn (ShiftRosterEntry $entry) => $this->assigneeExportKey($entry))
+            ->count();
+
+        if (! $context['include_department_grouping']) {
+            $departments = [
+                [
+                    'name' => null,
+                    'employees' => $this->buildCalendarEmployees($entries, $dateKeys, $context),
+                ],
+            ];
+        } else {
+            $departments = $entries
+                ->groupBy(fn (ShiftRosterEntry $entry) => $this->resolveExportDepartmentName($entry))
+                ->map(function (Collection $departmentEntries, string $departmentName) use ($dateKeys, $context) {
+                    return [
+                        'name' => strtoupper($departmentName),
+                        'employees' => $this->buildCalendarEmployees($departmentEntries, $dateKeys, $context),
+                    ];
+                })
+                ->sortBy(fn (array $department) => $department['name'], SORT_NATURAL | SORT_FLAG_CASE)
+                ->values()
+                ->all();
+        }
+
+        return array_merge($this->buildReportShell($context), [
+            'report_title' => 'Shift Planner — Shift Roster Export',
+            'days' => $days,
+            'departments' => $departments,
+            'stats' => $this->buildStatsFromRows($exportRows, $employeeCount),
+        ]);
+    }
+
     public function buildPerEmployeeReport(array $options): array
     {
         $context = $this->resolveExportContext($options);
@@ -284,6 +330,72 @@ class ShiftRosterExportReportService
         unset($row['employee'], $row['department_key'], $row['department_name']);
 
         return $row;
+    }
+
+    private function buildCalendarDays(array $dateRange): array
+    {
+        $start = Carbon::parse($dateRange[0])->startOfDay();
+        $end = Carbon::parse($dateRange[1])->startOfDay();
+        $days = [];
+
+        for ($date = $start->copy(); $date->lessThanOrEqualTo($end); $date->addDay()) {
+            $days[] = [
+                'day' => $date->format('d'),
+                'dow' => strtoupper($date->format('D')),
+                'date_key' => $date->format('Y-m-d'),
+            ];
+        }
+
+        return $days;
+    }
+
+    private function buildCalendarEmployees(Collection $entries, array $dateKeys, array $context): array
+    {
+        return $entries
+            ->groupBy(fn (ShiftRosterEntry $entry) => $this->assigneeExportKey($entry))
+            ->map(function (Collection $group) use ($dateKeys, $context) {
+                $first = $group->first();
+                $name = $first->employee?->full_name
+                    ?? $first->outsourcedEmployee?->full_name
+                    ?? 'Unknown';
+
+                $cellsByDate = [];
+
+                foreach ($group->sortBy(fn (ShiftRosterEntry $entry) => $entry->roster_date->format('Y-m-d') . '-' . $entry->id) as $entry) {
+                    $cellsByDate[$entry->roster_date->format('Y-m-d')] = $this->mapEntryToCalendarCell(
+                        $entry,
+                        $context['include_shift_times']
+                    );
+                }
+
+                $cells = [];
+
+                foreach ($dateKeys as $dateKey) {
+                    $cells[] = $cellsByDate[$dateKey] ?? null;
+                }
+
+                return [
+                    'name' => $name,
+                    'cells' => $cells,
+                ];
+            })
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+    }
+
+    private function mapEntryToCalendarCell(ShiftRosterEntry $entry, bool $includeShiftTimes): array
+    {
+        $row = $this->mapEntryToExportRow($entry, $includeShiftTimes);
+
+        return [
+            'shift_type' => $row['shift_type'],
+            'shift_label' => $row['shift_label'],
+            'time_start' => $row['start_time'],
+            'time_end' => $row['end_time'],
+            'hours' => $row['hours'],
+            'is_deleted' => $row['is_deleted'],
+        ];
     }
 
     private function resolveExportDepartmentName(ShiftRosterEntry $entry): string

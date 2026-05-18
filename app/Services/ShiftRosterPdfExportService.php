@@ -23,6 +23,16 @@ class ShiftRosterPdfExportService
                 strtolower($report['period_slug']),
                 $options['employee_group'] ?? 'internal'
             );
+            $orientation = 'portrait';
+        } elseif ($layout === 'calendar') {
+            $report = $this->exportReportService->buildCalendarReport($options);
+            $view = 'exports.shift-roster.calendar-report-pdf';
+            $filename = sprintf(
+                'shift-roster-%s-%s-calendar.pdf',
+                strtolower($report['period_slug']),
+                $options['employee_group'] ?? 'internal'
+            );
+            $orientation = 'landscape';
         } else {
             $report = $this->exportReportService->buildTabularReport($options);
             $view = 'exports.shift-roster.monthly-report-pdf';
@@ -31,10 +41,11 @@ class ShiftRosterPdfExportService
                 strtolower($report['period_slug']),
                 $options['employee_group'] ?? 'internal'
             );
+            $orientation = 'portrait';
         }
 
         $pdf = Pdf::loadView($view, $report)
-            ->setPaper('a4', 'portrait');
+            ->setPaper('a4', $orientation);
 
         return $pdf->download($filename);
     }
