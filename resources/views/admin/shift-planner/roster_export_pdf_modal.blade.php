@@ -68,6 +68,42 @@
                     </div>
                 </div>
 
+                <section class="roster-export-pdf-section" aria-labelledby="rosterExportLayoutLabel">
+                    <p class="roster-export-pdf-section-label" id="rosterExportLayoutLabel">Layout</p>
+                    <div class="roster-export-layout-grid" id="rosterExportLayoutGrid" role="radiogroup" aria-label="Export layout">
+                        <button type="button"
+                            class="roster-export-layout-card is-active"
+                            data-export-layout="calendar"
+                            aria-pressed="true">
+                            <span class="roster-export-layout-icon" aria-hidden="true">
+                                <i class="bi bi-grid-3x3-gap-fill"></i>
+                            </span>
+                            <span class="roster-export-layout-title">Monthly calendar</span>
+                            <span class="roster-export-layout-desc">Grid by day</span>
+                        </button>
+                        <button type="button"
+                            class="roster-export-layout-card"
+                            data-export-layout="tabular"
+                            aria-pressed="false">
+                            <span class="roster-export-layout-icon" aria-hidden="true">
+                                <i class="bi bi-table"></i>
+                            </span>
+                            <span class="roster-export-layout-title">Tabular list</span>
+                            <span class="roster-export-layout-desc">Row per shift</span>
+                        </button>
+                        <button type="button"
+                            class="roster-export-layout-card"
+                            data-export-layout="per_employee"
+                            aria-pressed="false">
+                            <span class="roster-export-layout-icon" aria-hidden="true">
+                                <i class="bi bi-person-fill"></i>
+                            </span>
+                            <span class="roster-export-layout-title">Per employee</span>
+                            <span class="roster-export-layout-desc">Grouped by person</span>
+                        </button>
+                    </div>
+                </section>
+
                 <section class="roster-export-pdf-section mb-0" aria-labelledby="rosterExportIncludeLabel">
                     <p class="roster-export-pdf-section-label" id="rosterExportIncludeLabel">Include in export</p>
                     <div class="roster-export-include-list">

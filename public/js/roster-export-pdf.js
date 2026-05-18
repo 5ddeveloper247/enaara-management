@@ -1,6 +1,7 @@
 (function() {
     var selectedMonth = new Date().getMonth();
     var exportPeriodType = 'month';
+    var exportLayout = 'calendar';
 
     function getModalEl() {
         return document.getElementById('rosterExportPdfModal');
@@ -45,6 +46,17 @@
             btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         });
         syncDateRangeFromMonthYear();
+    }
+
+    function setExportLayout(layout) {
+        var allowed = ['calendar', 'tabular', 'per_employee'];
+        exportLayout = allowed.indexOf(layout) >= 0 ? layout : 'calendar';
+
+        document.querySelectorAll('.roster-export-layout-card').forEach(function(card) {
+            var isActive = card.getAttribute('data-export-layout') === exportLayout;
+            card.classList.toggle('is-active', isActive);
+            card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
     }
 
     function setExportPeriodType(type) {
@@ -176,6 +188,7 @@
 
         setSelectedMonth(month);
         setExportPeriodType('month');
+        setExportLayout('calendar');
 
         var groupSelect = document.getElementById('rosterExportEmployeeGroup');
         if (groupSelect) {
@@ -373,6 +386,12 @@
             });
         });
 
+        document.querySelectorAll('.roster-export-layout-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                setExportLayout(this.getAttribute('data-export-layout'));
+            });
+        });
+
         var yearSelect = document.getElementById('rosterExportYear');
         if (yearSelect) {
             yearSelect.addEventListener('change', function() {
@@ -392,6 +411,7 @@
         populateYearOptions();
         setSelectedMonth(new Date().getMonth());
         setExportPeriodType('month');
+        setExportLayout('calendar');
         bindEvents();
     }
 
@@ -403,4 +423,7 @@
 
     window.openRosterExportPdfModal = openExportModal;
     window.collectRosterExportPdfOptions = collectExportOptions;
+    window.getRosterExportLayout = function() {
+        return exportLayout;
+    };
 })();
