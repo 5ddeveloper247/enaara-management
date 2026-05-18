@@ -13,7 +13,7 @@ class ShiftRosterPdfExportService
 
     public function download(array $options): Response
     {
-        $layout = $options['export_layout'] ?? 'tabular';
+        $layout = $options['export_layout'] ?? 'per_employee';
 
         if ($layout === 'per_employee') {
             $report = $this->exportReportService->buildPerEmployeeReport($options);

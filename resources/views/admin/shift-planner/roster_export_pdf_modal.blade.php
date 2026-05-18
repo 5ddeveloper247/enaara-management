@@ -73,13 +73,13 @@
                     <div class="roster-export-layout-grid" id="rosterExportLayoutGrid" role="radiogroup" aria-label="Export layout">
                         <button type="button"
                             class="roster-export-layout-card is-active"
-                            data-export-layout="calendar"
+                            data-export-layout="per_employee"
                             aria-pressed="true">
                             <span class="roster-export-layout-icon" aria-hidden="true">
-                                <i class="bi bi-grid-3x3-gap-fill"></i>
+                                <i class="bi bi-person-fill"></i>
                             </span>
-                            <span class="roster-export-layout-title">Monthly calendar</span>
-                            <span class="roster-export-layout-desc">Grid by day</span>
+                            <span class="roster-export-layout-title">Per employee</span>
+                            <span class="roster-export-layout-desc">Grouped by person</span>
                         </button>
                         <button type="button"
                             class="roster-export-layout-card"
@@ -93,13 +93,13 @@
                         </button>
                         <button type="button"
                             class="roster-export-layout-card"
-                            data-export-layout="per_employee"
+                            data-export-layout="calendar"
                             aria-pressed="false">
                             <span class="roster-export-layout-icon" aria-hidden="true">
-                                <i class="bi bi-person-fill"></i>
+                                <i class="bi bi-grid-3x3-gap-fill"></i>
                             </span>
-                            <span class="roster-export-layout-title">Per employee</span>
-                            <span class="roster-export-layout-desc">Grouped by person</span>
+                            <span class="roster-export-layout-title">Monthly calendar</span>
+                            <span class="roster-export-layout-desc">Grid by day</span>
                         </button>
                     </div>
                 </section>

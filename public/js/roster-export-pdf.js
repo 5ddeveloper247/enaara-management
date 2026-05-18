@@ -1,7 +1,7 @@
 (function() {
     var selectedMonth = new Date().getMonth();
     var exportPeriodType = 'month';
-    var exportLayout = 'calendar';
+    var exportLayout = 'per_employee';
 
     function getModalEl() {
         return document.getElementById('rosterExportPdfModal');
@@ -50,7 +50,7 @@
 
     function setExportLayout(layout) {
         var allowed = ['calendar', 'tabular', 'per_employee'];
-        exportLayout = allowed.indexOf(layout) >= 0 ? layout : 'calendar';
+        exportLayout = allowed.indexOf(layout) >= 0 ? layout : 'per_employee';
 
         document.querySelectorAll('.roster-export-layout-card').forEach(function(card) {
             var isActive = card.getAttribute('data-export-layout') === exportLayout;
@@ -188,7 +188,7 @@
 
         setSelectedMonth(month);
         setExportPeriodType('month');
-        setExportLayout('calendar');
+        setExportLayout('per_employee');
 
         var groupSelect = document.getElementById('rosterExportEmployeeGroup');
         if (groupSelect) {
@@ -412,7 +412,7 @@
         populateYearOptions();
         setSelectedMonth(new Date().getMonth());
         setExportPeriodType('month');
-        setExportLayout('calendar');
+        setExportLayout('per_employee');
         bindEvents();
     }
 

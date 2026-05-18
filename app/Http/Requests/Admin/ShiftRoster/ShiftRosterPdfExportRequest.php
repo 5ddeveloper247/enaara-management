@@ -83,9 +83,9 @@ class ShiftRosterPdfExportRequest extends FormRequest
             $exportPeriodType = 'month';
         }
 
-        $exportLayout = $this->input('export_layout', 'tabular');
+        $exportLayout = $this->input('export_layout', 'per_employee');
         if (! in_array($exportLayout, ['calendar', 'tabular', 'per_employee'], true)) {
-            $exportLayout = 'tabular';
+            $exportLayout = 'per_employee';
         }
 
         $merge = [
