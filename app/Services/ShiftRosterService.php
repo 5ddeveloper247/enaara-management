@@ -830,16 +830,26 @@ class ShiftRosterService
 
     public function buildMonthlyExportReport(array $options): array
     {
-        $year = (int) $options['year'];
-        $month = (int) $options['month'];
         $employeeGroup = $options['employee_group'] ?? 'internal';
         $includeDeleted = (bool) ($options['include_deleted'] ?? false);
         $includeDepartmentGrouping = (bool) ($options['include_department_grouping'] ?? true);
         $includeShiftTimes = (bool) ($options['include_shift_times'] ?? true);
 
-        $period = Carbon::createFromDate($year, $month, 1)->startOfDay();
-        $periodEnd = $period->copy()->endOfMonth();
-        $dateRange = [$period->toDateString(), $periodEnd->toDateString()];
+        if (($options['export_period_type'] ?? 'month') === 'date_range') {
+            $period = Carbon::parse($options['start_date'])->startOfDay();
+            $periodEnd = Carbon::parse($options['end_date'])->endOfDay();
+            $dateRange = [$period->toDateString(), $periodEnd->toDateString()];
+            $periodLabel = $period->format('d M Y') . ' – ' . $periodEnd->format('d M Y');
+            $periodSlug = $period->format('Y-m-d') . '_to_' . $periodEnd->format('Y-m-d');
+        } else {
+            $year = (int) $options['year'];
+            $month = (int) $options['month'];
+            $period = Carbon::createFromDate($year, $month, 1)->startOfDay();
+            $periodEnd = $period->copy()->endOfMonth();
+            $dateRange = [$period->toDateString(), $periodEnd->toDateString()];
+            $periodLabel = $period->format('F Y');
+            $periodSlug = $period->format('F-Y');
+        }
 
         $entryRelations = [
             'shift',
@@ -922,8 +932,8 @@ class ShiftRosterService
         return [
             'organization_name' => config('app.name', 'Enaara Systems'),
             'report_title' => 'Shift Planner — Monthly Report',
-            'period_label' => $period->format('F Y'),
-            'period_slug' => $period->format('F-Y'),
+            'period_label' => $periodLabel,
+            'period_slug' => $periodSlug,
             'generated_at' => now()->format('d M Y, h:i A'),
             'employee_group_label' => $employeeGroup === 'third_party'
                 ? 'Third-party employees'

@@ -63,6 +63,35 @@
     box-shadow: 0 0 0 0.2rem rgba(1, 36, 69, 0.12);
 }
 
+.roster-export-period-type {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.roster-export-period-type-btn {
+    border: 1px solid #e8e4dc;
+    background: #f5f1e8;
+    color: var(--dark-color);
+    border-radius: 10px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.roster-export-period-type-btn:hover {
+    border-color: var(--main-color);
+    color: var(--main-color);
+}
+
+.roster-export-period-type-btn.is-active {
+    background: var(--main-color);
+    border-color: var(--main-color);
+    color: #fff;
+}
+
 .roster-export-month-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
