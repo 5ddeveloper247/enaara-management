@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <title>{{ $report_title }} — {{ $period_label }}</title>
@@ -112,10 +113,21 @@
             color: #012445;
         }
 
-        .stat-morning { color: #0369a1; }
-        .stat-evening { color: #c2410c; }
-        .stat-night { color: #6d28d9; }
-        .stat-hours-total { color: #15803d; }
+        .stat-morning {
+            color: #0369a1;
+        }
+
+        .stat-evening {
+            color: #c2410c;
+        }
+
+        .stat-night {
+            color: #6d28d9;
+        }
+
+        .stat-hours-total {
+            color: #15803d;
+        }
 
         .employee-card {
             background: #f8fafc;
@@ -251,11 +263,30 @@
             font-weight: bold;
         }
 
-        .pill-morning { background: #e0f2fe; color: #0369a1; }
-        .pill-evening { background: #ffedd5; color: #c2410c; }
-        .pill-night { background: #ede9fe; color: #6d28d9; }
-        .pill-general { background: #f1f5f9; color: #475569; }
-        .pill-hours { background: #dcfce7; color: #15803d; }
+        .pill-morning {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .pill-evening {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+
+        .pill-night {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+        .pill-general {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .pill-hours {
+            background: #dcfce7;
+            color: #15803d;
+        }
 
         .employee-card-footer {
             width: 100%;
@@ -312,9 +343,17 @@
             vertical-align: middle;
         }
 
-        .dot-morning { background: #0369a1; }
-        .dot-evening { background: #c2410c; }
-        .dot-night { background: #6d28d9; }
+        .dot-morning {
+            background: #0369a1;
+        }
+
+        .dot-evening {
+            background: #c2410c;
+        }
+
+        .dot-night {
+            background: #6d28d9;
+        }
 
         .pdf-footer {
             position: fixed;
@@ -333,6 +372,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="pdf-header">
         <table class="pdf-header-table">
@@ -352,7 +392,7 @@
     <p class="meta-line">{{ $employee_group_label }}</p>
 
     @if(($stats['shifts_scheduled'] ?? 0) === 0)
-        <div class="empty-note">No shifts found for this period and filter. Adjust the period, employee group, or include deleted shifts.</div>
+    <div class="empty-note">No shifts found for this period and filter. Adjust the period, employee group, or include deleted shifts.</div>
     @endif
 
     <table class="stats-bar">
@@ -385,71 +425,71 @@
     </table>
 
     @foreach($employees as $employee)
-        <div class="employee-card">
-            <table class="employee-card-header">
-                <tr>
-                    <td class="avatar-wrap">
-                        <table class="avatar-table" cellpadding="0" cellspacing="0" role="presentation">
-                            <tr>
-                                <td class="avatar-cell">{{ $employee['initials'] }}</td>
-                            </tr>
-                        </table>
-                    </td>
-                    <td>
-                        <p class="employee-name">{{ $employee['name'] }}</p>
-                        <p class="employee-dept">{{ $employee['department'] }}</p>
-                    </td>
-                    <td class="employee-badges">
-                        <span class="badge-pill badge-shifts">{{ $employee['shift_count'] }} shifts</span>
-                        <span class="badge-pill badge-hours">{{ $employee['total_hours'] }} hrs</span>
-                    </td>
-                </tr>
-            </table>
-
-            <table class="shift-table">
-                <thead>
-                    <tr>
-                        <th style="width: 14%;">Date</th>
-                        <th style="width: 10%;">Day</th>
-                        @if($include_shift_times)
-                            <th style="width: 16%;">Start time</th>
-                            <th style="width: 16%;">End time</th>
-                        @endif
-                        <th style="width: 18%;">Shift type</th>
-                        <th style="width: 12%;">Total hours</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($employee['shifts'] as $shift)
-                        <tr class="{{ !empty($shift['is_deleted']) ? 'row-deleted' : '' }}">
-                            <td>{{ $shift['date'] }}</td>
-                            <td>{{ $shift['day'] }}</td>
-                            @if($include_shift_times)
-                                <td>{{ $shift['start_time'] }}</td>
-                                <td>{{ $shift['end_time'] }}</td>
-                            @endif
-                            <td>
-                                <span class="pill pill-{{ $shift['shift_type'] }}">{{ $shift['shift_label'] }}</span>
-                            </td>
-                            <td><span class="pill pill-hours">{{ $shift['hours'] }} hrs</span></td>
-                        </tr>
-                    @empty
+    <div class="employee-card">
+        <table class="employee-card-header">
+            <tr>
+                <td class="avatar-wrap">
+                    <table class="avatar-table" cellpadding="0" cellspacing="0" role="presentation">
                         <tr>
-                            <td colspan="{{ $include_shift_times ? 6 : 4 }}" style="text-align: center; color: #64748b;">
-                                No shifts in this period.
-                            </td>
+                            <td class="avatar-cell">{{ $employee['initials'] }}</td>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </table>
+                </td>
+                <td>
+                    <p class="employee-name">{{ $employee['name'] }}</p>
+                    <p class="employee-dept">{{ $employee['department'] }}</p>
+                </td>
+                <td class="employee-badges">
+                    <span class="badge-pill badge-shifts">{{ $employee['shift_count'] }} shifts</span>
+                    <span class="badge-pill badge-hours">{{ $employee['total_hours'] }} hrs</span>
+                </td>
+            </tr>
+        </table>
 
-            <table class="employee-card-footer">
+        <table class="shift-table">
+            <thead>
                 <tr>
-                    <td>{{ $employee['shift_count'] }} shifts this month</td>
-                    <td class="total-hours">Total: {{ $employee['total_hours'] }} hrs</td>
+                    <th style="width: 14%;">Date</th>
+                    <th style="width: 10%;">Day</th>
+                    @if($include_shift_times)
+                    <th style="width: 16%;">Start time</th>
+                    <th style="width: 16%;">End time</th>
+                    @endif
+                    <th style="width: 18%;">Shift type</th>
+                    <th style="width: 12%;">Total hours</th>
                 </tr>
-            </table>
-        </div>
+            </thead>
+            <tbody>
+                @forelse($employee['shifts'] as $shift)
+                <tr class="{{ !empty($shift['is_deleted']) ? 'row-deleted' : '' }}">
+                    <td>{{ $shift['date'] }}</td>
+                    <td>{{ $shift['day'] }}</td>
+                    @if($include_shift_times)
+                    <td>{{ $shift['start_time'] }}</td>
+                    <td>{{ $shift['end_time'] }}</td>
+                    @endif
+                    <td>
+                        <span class="pill pill-{{ $shift['shift_type'] }}">{{ $shift['shift_label'] }}</span>
+                    </td>
+                    <td><span class="pill pill-hours">{{ $shift['hours'] }} hrs</span></td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="{{ $include_shift_times ? 6 : 4 }}" style="text-align: center; color: #64748b;">
+                        No shifts in this period.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+
+        <table class="employee-card-footer">
+            <tr>
+                <td>{{ $employee['shift_count'] }} shifts this month</td>
+                <td class="total-hours">Total: {{ $employee['total_hours'] }} hrs</td>
+            </tr>
+        </table>
+    </div>
     @endforeach
 
     <div class="legend-wrap">
@@ -466,10 +506,11 @@
     <div class="pdf-footer">
         <table class="footer-table">
             <tr>
-                <td>enaara.com • Confidential — internal use only</td>
-                <td style="text-align: right;">Per-employee shift roster export</td>
+                <td>EFM-HCM • Secure Internal Workforce Management Report</td>
+                <td style="text-align: right;">Powered by 5D Solutions — Building smarter business systems</td>
             </tr>
         </table>
     </div>
 </body>
+
 </html>
