@@ -8,20 +8,44 @@ use Illuminate\Http\Response;
 class ShiftRosterPdfExportService
 {
     public function __construct(
-        protected ShiftRosterService $shiftRosterService
+        protected ShiftRosterExportReportService $exportReportService
     ) {}
 
     public function download(array $options): Response
     {
-        $report = $this->shiftRosterService->buildMonthlyExportReport($options);
-        $filename = sprintf(
-            'shift-roster-%s-%s.pdf',
-            strtolower($report['period_slug']),
-            $options['employee_group']
-        );
+        $layout = $options['export_layout'] ?? 'per_employee';
 
-        $pdf = Pdf::loadView('exports.shift-roster.monthly-report-pdf', $report)
-            ->setPaper('a4', 'portrait');
+        if ($layout === 'per_employee') {
+            $report = $this->exportReportService->buildPerEmployeeReport($options);
+            $view = 'exports.shift-roster.per-employee-pdf';
+            $filename = sprintf(
+                'shift-roster-%s-%s-per-employee.pdf',
+                strtolower($report['period_slug']),
+                $options['employee_group'] ?? 'internal'
+            );
+            $orientation = 'portrait';
+        } elseif ($layout === 'calendar') {
+            $report = $this->exportReportService->buildCalendarReport($options);
+            $view = 'exports.shift-roster.calendar-report-pdf';
+            $filename = sprintf(
+                'shift-roster-%s-%s-calendar.pdf',
+                strtolower($report['period_slug']),
+                $options['employee_group'] ?? 'internal'
+            );
+            $orientation = 'landscape';
+        } else {
+            $report = $this->exportReportService->buildTabularReport($options);
+            $view = 'exports.shift-roster.monthly-report-pdf';
+            $filename = sprintf(
+                'shift-roster-%s-%s.pdf',
+                strtolower($report['period_slug']),
+                $options['employee_group'] ?? 'internal'
+            );
+            $orientation = 'portrait';
+        }
+
+        $pdf = Pdf::loadView($view, $report)
+            ->setPaper('a4', $orientation);
 
         return $pdf->download($filename);
     }

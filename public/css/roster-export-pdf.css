@@ -1,5 +1,5 @@
 .roster-export-pdf-dialog {
-    max-width: 620px;
+    max-width: 680px;
 }
 
 .roster-export-pdf-content {
@@ -63,6 +63,35 @@
     box-shadow: 0 0 0 0.2rem rgba(1, 36, 69, 0.12);
 }
 
+.roster-export-period-type {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.roster-export-period-type-btn {
+    border: 1px solid #e8e4dc;
+    background: #f5f1e8;
+    color: var(--dark-color);
+    border-radius: 10px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.roster-export-period-type-btn:hover {
+    border-color: var(--main-color);
+    color: var(--main-color);
+}
+
+.roster-export-period-type-btn.is-active {
+    background: var(--main-color);
+    border-color: var(--main-color);
+    color: #fff;
+}
+
 .roster-export-month-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -92,6 +121,79 @@
     color: #fff;
 }
 
+.roster-export-layout-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+}
+
+.roster-export-layout-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    width: 100%;
+    min-height: 118px;
+    padding: 0.85rem 0.5rem 0.75rem;
+    border: 1px solid #e8e4dc;
+    border-radius: 12px;
+    background: #ffffff;
+    color: var(--dark-color);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.roster-export-layout-card:hover {
+    border-color: #c9c2b4;
+    box-shadow: 0 2px 8px rgba(1, 36, 69, 0.06);
+}
+
+.roster-export-layout-card.is-active {
+    background: #f5f1e8;
+    border-color: #d9d0c0;
+    box-shadow: inset 0 0 0 1px rgba(1, 36, 69, 0.04);
+}
+
+.roster-export-layout-card:focus-visible {
+    outline: 2px solid var(--main-color);
+    outline-offset: 2px;
+}
+
+.roster-export-layout-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 0.5rem;
+    font-size: 1.15rem;
+    color: var(--main-color);
+    opacity: 0.9;
+}
+
+.roster-export-layout-card.is-active .roster-export-layout-icon {
+    opacity: 1;
+}
+
+.roster-export-layout-title {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--dark-color);
+    margin-bottom: 0.2rem;
+}
+
+.roster-export-layout-desc {
+    display: block;
+    font-size: 0.72rem;
+    line-height: 1.3;
+    color: #6c757d;
+    font-weight: 400;
+}
+
 .roster-export-include-list {
     border: 1px solid #e9ecef;
     border-radius: 12px;
@@ -111,6 +213,31 @@
 .roster-export-include-item .form-check-label {
     font-size: 0.88rem;
     color: var(--dark-color);
+}
+
+@media (max-width: 576px) {
+    .roster-export-layout-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .roster-export-layout-card {
+        min-height: auto;
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        gap: 0.75rem;
+        padding: 0.75rem 0.85rem;
+    }
+
+    .roster-export-layout-icon {
+        margin-bottom: 0;
+        flex-shrink: 0;
+    }
+
+    .roster-export-layout-title,
+    .roster-export-layout-desc {
+        text-align: left;
+    }
 }
 
 @media (max-width: 480px) {

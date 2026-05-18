@@ -1,4 +1,4 @@
-<div class="modal fade" id="rosterExportPdfModal" tabindex="-1" aria-labelledby="rosterExportPdfModalLabel" aria-hidden="true">
+﻿<div class="modal fade" id="rosterExportPdfModal" tabindex="-1" aria-labelledby="rosterExportPdfModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered roster-export-pdf-dialog">
         <div class="modal-content roster-export-pdf-content border-0 shadow-lg">
             <div class="modal-header roster-export-pdf-header border-0">
@@ -11,7 +11,22 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body roster-export-pdf-body">
-                <section class="roster-export-pdf-section" aria-labelledby="rosterExportMonthLabel">
+                <section class="roster-export-pdf-section" aria-labelledby="rosterExportPeriodTypeLabel">
+                    <p class="roster-export-pdf-section-label" id="rosterExportPeriodTypeLabel">Period</p>
+                    <div class="roster-export-period-type" id="rosterExportPeriodType" role="group" aria-label="Export period type">
+                        <button type="button"
+                            class="roster-export-period-type-btn is-active"
+                            data-period-type="month"
+                            aria-pressed="true">By month</button>
+                        <button type="button"
+                            class="roster-export-period-type-btn"
+                            data-period-type="date_range"
+                            aria-pressed="false">Date range</button>
+                    </div>
+                </section>
+
+                <div id="rosterExportPeriodMonth">
+                    <section id="rosterExportMonthPicker" class="roster-export-pdf-section" aria-labelledby="rosterExportMonthLabel">
                     <p class="roster-export-pdf-section-label" id="rosterExportMonthLabel">Select month</p>
                     <div class="roster-export-month-grid" id="rosterExportMonthGrid" role="group" aria-label="Month">
                         @foreach (['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as $index => $label)
@@ -23,19 +38,71 @@
                     </div>
                 </section>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-sm-6">
-                        <label for="rosterExportYear" class="roster-export-pdf-field-label">Year</label>
-                        <select class="form-select roster-export-pdf-select" id="rosterExportYear" name="year"></select>
-                    </div>
-                    <div class="col-sm-6">
-                        <label for="rosterExportEmployeeGroup" class="roster-export-pdf-field-label">Employee group</label>
-                        <select class="form-select roster-export-pdf-select" id="rosterExportEmployeeGroup" name="employee_group">
-                            <option value="internal">Internal employees</option>
-                            <option value="third_party">Third-party employees</option>
-                        </select>
+                    <div id="rosterExportYearRow" class="row g-3 mb-4">
+                        <div id="rosterExportYearCol" class="col-sm-6">
+                            <label for="rosterExportYear" class="roster-export-pdf-field-label">Year</label>
+                            <select class="form-select roster-export-pdf-select" id="rosterExportYear" name="year"></select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="rosterExportEmployeeGroup" class="roster-export-pdf-field-label">Employee group</label>
+                            <select class="form-select roster-export-pdf-select" id="rosterExportEmployeeGroup" name="employee_group">
+                                <option value="internal">Internal employees</option>
+                                <option value="third_party">Third-party employees</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
+
+                <div id="rosterExportPeriodDateRange" class="d-none">
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label for="rosterExportStartDate" class="roster-export-pdf-field-label">Start date</label>
+                            <input type="date" class="form-control roster-export-pdf-select" id="rosterExportStartDate" name="start_date">
+                            <div class="invalid-feedback d-none" id="rosterExportStartDateError"></div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="rosterExportEndDate" class="roster-export-pdf-field-label">End date</label>
+                            <input type="date" class="form-control roster-export-pdf-select" id="rosterExportEndDate" name="end_date">
+                            <div class="invalid-feedback d-none" id="rosterExportEndDateError"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="roster-export-pdf-section" aria-labelledby="rosterExportLayoutLabel">
+                    <p class="roster-export-pdf-section-label" id="rosterExportLayoutLabel">Layout</p>
+                    <div class="roster-export-layout-grid" id="rosterExportLayoutGrid" role="radiogroup" aria-label="Export layout">
+                        <button type="button"
+                            class="roster-export-layout-card is-active"
+                            data-export-layout="per_employee"
+                            aria-pressed="true">
+                            <span class="roster-export-layout-icon" aria-hidden="true">
+                                <i class="bi bi-person-fill"></i>
+                            </span>
+                            <span class="roster-export-layout-title">Per employee</span>
+                            <span class="roster-export-layout-desc">Grouped by person</span>
+                        </button>
+                        <button type="button"
+                            class="roster-export-layout-card"
+                            data-export-layout="tabular"
+                            aria-pressed="false">
+                            <span class="roster-export-layout-icon" aria-hidden="true">
+                                <i class="bi bi-table"></i>
+                            </span>
+                            <span class="roster-export-layout-title">Tabular list</span>
+                            <span class="roster-export-layout-desc">Row per shift</span>
+                        </button>
+                        <button type="button"
+                            class="roster-export-layout-card"
+                            data-export-layout="calendar"
+                            aria-pressed="false">
+                            <span class="roster-export-layout-icon" aria-hidden="true">
+                                <i class="bi bi-grid-3x3-gap-fill"></i>
+                            </span>
+                            <span class="roster-export-layout-title">Monthly calendar</span>
+                            <span class="roster-export-layout-desc">Grid by day</span>
+                        </button>
+                    </div>
+                </section>
 
                 <section class="roster-export-pdf-section mb-0" aria-labelledby="rosterExportIncludeLabel">
                     <p class="roster-export-pdf-section-label" id="rosterExportIncludeLabel">Include in export</p>
