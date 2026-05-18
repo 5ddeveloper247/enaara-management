@@ -204,6 +204,7 @@
     function collectExportOptions() {
         var base = {
             export_period_type: exportPeriodType,
+            export_layout: exportLayout,
             employee_group: document.getElementById('rosterExportEmployeeGroup')?.value || 'internal',
             include_shift_times: !!document.getElementById('rosterExportIncludeTimes')?.checked,
             include_department_grouping: !!document.getElementById('rosterExportIncludeDept')?.checked,
