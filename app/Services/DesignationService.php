@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Organization;
 use App\Models\Sbu;
@@ -21,16 +22,28 @@ class DesignationService
         }
     }
 
+    private function assertDepartmentBelongsToSbu(int $departmentId, int $sbuId, int $organizationId): void
+    {
+        $department = Department::query()->select(['id', 'sbu_id', 'organization_id'])->find($departmentId);
+        if (! $department
+            || (int) $department->sbu_id !== $sbuId
+            || (int) $department->organization_id !== $organizationId) {
+            throw ValidationException::withMessages([
+                'department_id' => ['The selected department does not belong to the selected SBU and organization.'],
+            ]);
+        }
+    }
+
     private function normalizeName(string $value): string
     {
         return mb_strtolower(preg_replace('/\s+/', ' ', trim($value)));
     }
 
-    private function ensureUniqueName(int $sbuId, string $name, ?int $ignoreId = null): void
+    private function ensureUniqueName(int $departmentId, string $name, ?int $ignoreId = null): void
     {
         $normalized = $this->normalizeName($name);
 
-        $query = Designation::query()->where('sbu_id', $sbuId);
+        $query = Designation::query()->where('department_id', $departmentId);
         if ($ignoreId) {
             $query->where('id', '!=', $ignoreId);
         }
@@ -41,7 +54,7 @@ class DesignationService
 
         if ($exists) {
             throw ValidationException::withMessages([
-                'name' => ['This designation name is already in use for the selected SBU.'],
+                'name' => ['This designation name is already in use for the selected department.'],
             ]);
         }
     }
@@ -53,6 +66,7 @@ class DesignationService
                 'organization:id,name',
                 'sbu:id,name,organization_id',
                 'sbu.organization:id,name',
+                'department:id,name,sbu_id',
             ])
             ->orderByDesc('id')
             ->get();
@@ -79,18 +93,21 @@ class DesignationService
                 'organization:id,name',
                 'sbu:id,name,organization_id',
                 'sbu.organization:id,name',
+                'department:id,name,sbu_id',
             ])
             ->find($id);
     }
 
     public function create(array $data): Designation
     {
-        $payload = Arr::only($data, ['organization_id', 'sbu_id', 'name', 'description', 'is_active']);
+        $payload = Arr::only($data, ['organization_id', 'sbu_id', 'department_id', 'name', 'description', 'is_active']);
         $orgId = (int) $payload['organization_id'];
         $sbuId = (int) $payload['sbu_id'];
+        $departmentId = (int) $payload['department_id'];
         $this->assertSbuBelongsToOrganization($sbuId, $orgId);
+        $this->assertDepartmentBelongsToSbu($departmentId, $sbuId, $orgId);
         if (! empty($payload['name'])) {
-            $this->ensureUniqueName($sbuId, (string) $payload['name']);
+            $this->ensureUniqueName($departmentId, (string) $payload['name']);
         }
 
         return Designation::create($payload);
@@ -98,12 +115,14 @@ class DesignationService
 
     public function update(Designation $designation, array $data): Designation
     {
-        $payload = Arr::only($data, ['organization_id', 'sbu_id', 'name', 'description', 'is_active']);
+        $payload = Arr::only($data, ['organization_id', 'sbu_id', 'department_id', 'name', 'description', 'is_active']);
         $orgId = (int) ($payload['organization_id'] ?? $designation->organization_id);
         $sbuId = (int) ($payload['sbu_id'] ?? $designation->sbu_id);
+        $departmentId = (int) ($payload['department_id'] ?? $designation->department_id);
         $this->assertSbuBelongsToOrganization($sbuId, $orgId);
+        $this->assertDepartmentBelongsToSbu($departmentId, $sbuId, $orgId);
         if (! empty($payload['name'])) {
-            $this->ensureUniqueName($sbuId, (string) $payload['name'], (int) $designation->id);
+            $this->ensureUniqueName($departmentId, (string) $payload['name'], (int) $designation->id);
         }
 
         $designation->update($payload);
@@ -112,6 +131,7 @@ class DesignationService
             'organization:id,name',
             'sbu:id,name,organization_id',
             'sbu.organization:id,name',
+            'department:id,name,sbu_id',
         ]);
     }
 
@@ -120,15 +140,21 @@ class DesignationService
         return $designation->delete();
     }
 
-    public function listActiveByOrganizationAndSbu(int $organizationId, int $sbuId): array
+    public function listActiveByOrganizationAndSbu(int $organizationId, int $sbuId, ?int $departmentId = null): array
     {
         $this->assertSbuBelongsToOrganization($sbuId, $organizationId);
 
-        return Designation::query()
+        $query = Designation::query()
             ->select(['id', 'name'])
             ->where('organization_id', $organizationId)
             ->where('sbu_id', $sbuId)
-            ->where('is_active', true)
+            ->where('is_active', true);
+
+        if ($departmentId !== null && $departmentId > 0) {
+            $query->where('department_id', $departmentId);
+        }
+
+        return $query
             ->orderByDesc('id')
             ->get()
             ->map(static fn (Designation $d): array => [
@@ -147,6 +173,11 @@ class DesignationService
             ->with([
                 'sbus' => static function ($query): void {
                     $query->select(['id', 'organization_id', 'name'])
+                        ->where('is_active', true)
+                        ->orderBy('name');
+                },
+                'sbus.departments' => static function ($query): void {
+                    $query->select(['id', 'sbu_id', 'name'])
                         ->where('is_active', true)
                         ->orderBy('name');
                 },

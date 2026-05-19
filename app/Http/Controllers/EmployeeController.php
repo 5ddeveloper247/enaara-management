@@ -126,12 +126,15 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'organization_id' => ['required', 'integer', 'exists:organizations,id'],
             'sbu_id' => ['required', 'integer', 'exists:sbus,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
         try {
+            $departmentId = isset($validated['department_id']) ? (int) $validated['department_id'] : null;
             $data = $this->designationService->listActiveByOrganizationAndSbu(
                 (int) $validated['organization_id'],
-                (int) $validated['sbu_id']
+                (int) $validated['sbu_id'],
+                $departmentId > 0 ? $departmentId : null
             );
 
             return response()->json([

@@ -109,6 +109,7 @@ class DesignationController extends Controller
                     'id' => $designation->id,
                     'organization_id' => $designation->organization_id,
                     'sbu_id' => $designation->sbu_id,
+                    'department_id' => $designation->department_id,
                     'name' => $designation->name,
                     'description' => $designation->description,
                     'is_active' => $designation->is_active,

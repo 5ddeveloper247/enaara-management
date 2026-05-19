@@ -36,6 +36,15 @@
             </div>
 
             <div class="mb-3">
+                <label for="edit_ds_department_id" class="form-label fw-semibold small text-white">
+                    Department <span class="text-danger">*</span>
+                </label>
+                <select class="form-select" id="edit_ds_department_id" name="department_id" disabled required>
+                    <option value="" hidden>— Select Department —</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
                 <label for="edit_ds_name" class="form-label fw-semibold small text-white">
                     Name <span class="text-danger">*</span>
                 </label>

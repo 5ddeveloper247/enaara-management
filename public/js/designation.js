@@ -17,6 +17,15 @@
         }) || null;
     }
 
+    function findSbu(organization, sbuId) {
+        if (!organization || !organization.sbus) {
+            return null;
+        }
+        return organization.sbus.find(function(sbu) {
+            return String(sbu.id) === String(sbuId);
+        }) || null;
+    }
+
     function setSelectOptions(select, placeholder, items, selectedValue) {
         const $select = $(select);
         $select.empty();
@@ -31,26 +40,42 @@
         });
     }
 
-    function resetFormCascade(orgSelector, sbuSelector) {
+    function resetFormCascade(orgSelector, sbuSelector, departmentSelector) {
         $(orgSelector).val('');
         setSelectOptions(sbuSelector, '— Select SBU —', []);
         $(sbuSelector).prop('disabled', true);
+        setSelectOptions(departmentSelector, '— Select Department —', []);
+        $(departmentSelector).prop('disabled', true);
     }
 
-    function populateFormSbus(orgSelector, sbuSelector, selectedSbuId) {
+    function populateFormSbus(orgSelector, sbuSelector, departmentSelector, selectedSbuId, selectedDepartmentId) {
         const orgId = $(orgSelector).val();
         const organization = findOrganization(orgId);
 
         setSelectOptions(sbuSelector, '— Select SBU —', organization ? organization.sbus : [], selectedSbuId);
         $(sbuSelector).prop('disabled', !organization);
+        populateFormDepartments(orgSelector, sbuSelector, departmentSelector, selectedDepartmentId);
     }
 
-    function setFormCascade(orgSelector, sbuSelector, organizationId, sbuId) {
+    function populateFormDepartments(orgSelector, sbuSelector, departmentSelector, selectedDepartmentId) {
+        const orgId = $(orgSelector).val();
+        const sbuId = $(sbuSelector).val();
+        const organization = findOrganization(orgId);
+        const sbu = findSbu(organization, sbuId);
+
+        setSelectOptions(departmentSelector, '— Select Department —', sbu ? sbu.departments : [], selectedDepartmentId);
+        $(departmentSelector).prop('disabled', !sbu);
+    }
+
+    function setFormCascade(orgSelector, sbuSelector, departmentSelector, organizationId, sbuId, departmentId) {
         $(orgSelector).val(organizationId || '');
-        populateFormSbus(orgSelector, sbuSelector, sbuId);
+        populateFormSbus(orgSelector, sbuSelector, departmentSelector, sbuId, departmentId);
 
         if (sbuId) {
             $(sbuSelector).val(sbuId);
+        }
+        if (departmentId) {
+            $(departmentSelector).val(departmentId);
         }
     }
 
@@ -83,14 +108,16 @@
         const name = get('data-designation-name');
         const organization = get('data-designation-organization');
         const sbu = get('data-designation-sbu');
+        const department = get('data-designation-department');
 
         $('#detailDesignationLogoPlaceholder').text((name.substring(0, 2) || '?').toUpperCase());
         $('#detailDesignationName').text(name);
-        $('#detailDesignationScopeBadge').text([organization, sbu].filter(function(value) {
+        $('#detailDesignationScopeBadge').text([organization, sbu, department].filter(function(value) {
             return value && value !== '—';
         }).join(' · ') || '—');
         $('#detailDesignationOrganization').text(organization);
         $('#detailDesignationSbu').text(sbu);
+        $('#detailDesignationDepartment').text(department);
         $('#detailDesignationDescription').text(get('data-designation-description'));
         $('#detailDesignationStatus').text(get('data-designation-active') === '1' ? 'Active' : 'Inactive');
     }
@@ -122,7 +149,7 @@
 
         clearFormMessages('#addDesignationForm');
         $('#ds_is_active').val('1');
-        resetFormCascade('#ds_organization_id', '#ds_sbu_id');
+        resetFormCascade('#ds_organization_id', '#ds_sbu_id', '#ds_department_id');
     }
 
     function resetEditForm() {
@@ -135,7 +162,7 @@
         clearFormMessages('#editDesignationForm');
         $('#edit_ds_is_active').val('1');
         $('#editDesignationForm').attr('data-update-url', '');
-        resetFormCascade('#edit_ds_organization_id', '#edit_ds_sbu_id');
+        resetFormCascade('#edit_ds_organization_id', '#edit_ds_sbu_id', '#edit_ds_department_id');
     }
 
     function showValidationErrors(formSelector, errors) {
@@ -144,6 +171,7 @@
             ? {
                 organization_id: '#ds_organization_id',
                 sbu_id: '#ds_sbu_id',
+                department_id: '#ds_department_id',
                 name: '#ds_name',
                 description: '#ds_description',
                 is_active: '#ds_is_active',
@@ -151,6 +179,7 @@
             : {
                 organization_id: '#edit_ds_organization_id',
                 sbu_id: '#edit_ds_sbu_id',
+                department_id: '#edit_ds_department_id',
                 name: '#edit_ds_name',
                 description: '#edit_ds_description',
                 is_active: '#edit_ds_is_active',
@@ -270,8 +299,10 @@
                     setFormCascade(
                         '#edit_ds_organization_id',
                         '#edit_ds_sbu_id',
+                        '#edit_ds_department_id',
                         data.organization_id ?? '',
-                        data.sbu_id ?? ''
+                        data.sbu_id ?? '',
+                        data.department_id ?? ''
                     );
                     $('#edit_ds_name').val(data.name ?? '');
                     $('#edit_ds_description').val(data.description ?? '');
@@ -460,11 +491,19 @@
         });
 
         $('#ds_organization_id').on('change', function() {
-            populateFormSbus('#ds_organization_id', '#ds_sbu_id');
+            populateFormSbus('#ds_organization_id', '#ds_sbu_id', '#ds_department_id');
+        });
+
+        $('#ds_sbu_id').on('change', function() {
+            populateFormDepartments('#ds_organization_id', '#ds_sbu_id', '#ds_department_id');
         });
 
         $('#edit_ds_organization_id').on('change', function() {
-            populateFormSbus('#edit_ds_organization_id', '#edit_ds_sbu_id');
+            populateFormSbus('#edit_ds_organization_id', '#edit_ds_sbu_id', '#edit_ds_department_id');
+        });
+
+        $('#edit_ds_sbu_id').on('change', function() {
+            populateFormDepartments('#edit_ds_organization_id', '#edit_ds_sbu_id', '#edit_ds_department_id');
         });
 
         $('#clearFiltersBtn').on('click', function() {
