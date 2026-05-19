@@ -17,9 +17,9 @@
                     <h5 class="mb-0">Manage Leave Types</h5>
                 </div>
                 <div class="col-md-6 text-end">
-                    <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas" data-bs-target="#leaveTypeEditCanvas" id="addLeaveTypeBtn">
+                    <a href="{{ route('admin.leave.type.add') }}" class="btn btn-primary bg-main border-0">
                         <i class="bi bi-plus-circle me-1"></i>Add New Leave Type
-                    </button>
+                    </a>
                 </div>
             </div>
 
@@ -195,7 +195,7 @@
         var leaveTypeEditUrl = '{{ route("admin.leave.type.edit", ":id") }}';
         var leaveTypeUpdateUrl = '{{ route("admin.leave.type.update", ":id") }}';
         var leaveTypeStoreUrl = '{{ route("admin.leave.type.store") }}';
-        var leaveTypeCreateUrl = '{{ route("admin.leave.type.add") }}';
+        var leaveTypeOrganizations = @json($organizations ?? []);
         var departmentsUrl = '{{ route("admin.department.index") }}';
         var leaveDeptPool = [];
         var leaveDeptSelected = [];
@@ -494,6 +494,15 @@
             e.stopPropagation();
         });
 
+        function populateOrganizationSelect(selectedOrgId) {
+            var orgSelect = $('#editOrganizationId');
+            orgSelect.empty().append('<option value="">Select Organization</option>');
+            leaveTypeOrganizations.forEach(function(org) {
+                var selected = selectedOrgId && String(org.id) === String(selectedOrgId) ? 'selected' : '';
+                orgSelect.append('<option value="' + org.id + '" ' + selected + '>' + org.name + '</option>');
+            });
+        }
+
         function loadLeaveTypeForAdd() {
             $('#editFormMode').val('add');
             $('#editLeaveTypeId').val('');
@@ -501,40 +510,22 @@
             $('#canvasEditIcon').removeClass('bi-pencil').addClass('bi-plus-circle');
             $('#submitBtnText').text('Create Leave Type');
 
-            $.ajax({
-                url: leaveTypeCreateUrl,
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                success: function(response) {
-                    var orgSelect = $('#editOrganizationId');
-                    orgSelect.empty().append('<option value="">Select Organization</option>');
-                    response.organizations.forEach(function(org) {
-                        orgSelect.append('<option value="' + org.id + '">' + org.name + '</option>');
-                    });
+            populateOrganizationSelect(null);
 
-                    $('#editLeaveTypeName').val('');
-                    $('#editLeaveTypeCode').val('');
-                    $('#editAnnualQuota').val('0');
-                    $('#editLeaveTypeIsActive').prop('checked', true);
-                    $('#editSbuId').empty().append('<option value="">Please select Organization first...</option>');
-                    leaveDeptPool = [];
-                    leaveDeptSelected = [];
-                    $('#leaveDeptPlaceholder').text('Select an organization first...').show();
-                    syncLeaveDeptState();
+            $('#editLeaveTypeName').val('');
+            $('#editLeaveTypeCode').val('');
+            $('#editAnnualQuota').val('0');
+            $('#editLeaveTypeIsActive').prop('checked', true);
+            $('#editSbuId').empty().append('<option value="">Please select Organization first...</option>');
+            leaveDeptPool = [];
+            leaveDeptSelected = [];
+            $('#leaveDeptPlaceholder').text('Select an organization first...').show();
+            syncLeaveDeptState();
 
-                    $('.invalid-feedback').text('').hide();
-                    $('.form-select, .form-control').removeClass('is-invalid');
-                    $('#leaveDeptBox').removeClass('is-invalid');
-                    $('#selectAllDepartments').prop('checked', false);
-                },
-                error: function(xhr) {
-                    console.error('Error loading data for add:', xhr);
-                    alert('Failed to load form data. Please try again.');
-                }
-            });
+            $('.invalid-feedback').text('').hide();
+            $('.form-select, .form-control').removeClass('is-invalid');
+            $('#leaveDeptBox').removeClass('is-invalid');
+            $('#selectAllDepartments').prop('checked', false);
         }
 
         function loadLeaveTypeForEdit(leaveTypeId) {
@@ -552,24 +543,26 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 success: function(response) {
-                    $('#editLeaveTypeId').val(response.leaveType.id);
-                    $('#editLeaveTypeName').val(response.leaveType.name);
-                    $('#editLeaveTypeCode').val(response.leaveType.code || '');
-                    $('#editAnnualQuota').val(response.leaveType.annual_quota);
-                    $('#editLeaveTypeIsActive').prop('checked', response.leaveType.is_active);
-
-                    var orgSelect = $('#editOrganizationId');
-                    orgSelect.empty().append('<option value="">Select Organization</option>');
-                    response.organizations.forEach(function(org) {
-                        var selected = org.id == response.leaveType.organization_id ? 'selected' : '';
-                        orgSelect.append('<option value="' + org.id + '" ' + selected + '>' + org.name + '</option>');
-                    });
-
-                    if (response.leaveType.organization_id) {
-                        loadSbus(response.leaveType.organization_id, response.leaveType.sbu_id);
+                    if (!response.success || !response.data) {
+                        alert(response.message || 'Failed to load leave type data.');
+                        return;
                     }
-                    if (response.leaveType.sbu_id) {
-                        loadDepartments(response.leaveType.sbu_id, response.department_ids);
+
+                    var data = response.data;
+
+                    $('#editLeaveTypeId').val(data.id);
+                    $('#editLeaveTypeName').val(data.name);
+                    $('#editLeaveTypeCode').val(data.code || '');
+                    $('#editAnnualQuota').val(data.annual_quota);
+                    $('#editLeaveTypeIsActive').prop('checked', data.is_active);
+
+                    populateOrganizationSelect(data.organization_id);
+
+                    if (data.organization_id) {
+                        loadSbus(data.organization_id, data.sbu_id);
+                    }
+                    if (data.sbu_id) {
+                        loadDepartments(data.sbu_id, data.department_ids);
                     } else {
                         leaveDeptPool = [];
                         leaveDeptSelected = [];

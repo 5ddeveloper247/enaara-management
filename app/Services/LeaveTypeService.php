@@ -3,21 +3,18 @@
 namespace App\Services;
 
 use App\Models\LeaveType;
-use App\Models\Organization;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class LeaveTypeService
 {
     public function getList(): Collection
     {
-        return LeaveType::with(['organization', 'sbu', 'departments'])
+        return LeaveType::with(['organization', 'sbu', 'departments', 'setting'])
             ->orderByDesc('id')
             ->get();
-    }
-
-    public function getOrganizationsForFilter(): Collection
-    {
-        return Organization::orderBy('name')->get(['id', 'name']);
     }
 
     public function getCounts(): array
@@ -35,30 +32,163 @@ class LeaveTypeService
 
     public function findById(int $id): ?LeaveType
     {
-        return LeaveType::with(['organization', 'sbu', 'departments'])->find($id);
+        return LeaveType::with(['organization', 'sbu', 'departments', 'setting'])->find($id);
     }
 
-    public function create(array $data): LeaveType
+    public function formatForForm(LeaveType $leaveType): array
     {
-        return LeaveType::create($data);
-    }
+        $data = [
+            'id' => $leaveType->id,
+            'organization_id' => $leaveType->organization_id,
+            'sbu_id' => $leaveType->sbu_id,
+            'name' => $leaveType->name,
+            'code' => $leaveType->code,
+            'leave_category' => $leaveType->leave_category,
+            'description' => $leaveType->description,
+            'annual_quota' => $leaveType->annual_quota,
+            'is_active' => $leaveType->is_active,
+            'department_ids' => $leaveType->departments->pluck('id')->values()->all(),
+        ];
 
-    public function update(LeaveType $leaveType, array $data): LeaveType
-    {
-        $leaveType->update($data);
-
-        return $leaveType->fresh('organization');
-    }
-
-    public function destroy(int $id): bool
-    {
-        $leaveType = $this->findById($id);
-        
-        if ($leaveType) {
-            return $leaveType->delete();
+        $setting = $leaveType->setting;
+        if ($setting) {
+            $data = array_merge($data, [
+                'employment_type' => $setting->employment_type,
+                'gender' => $setting->gender,
+                'min_service_months' => $setting->min_service_months,
+                'eligible_from' => $setting->eligible_from,
+                'probation_eligible' => $setting->probation_eligible,
+                'unit_of_leave' => $setting->unit_of_leave,
+                'accrual_frequency' => $setting->accrual_frequency,
+                'accrual_start_month' => $setting->accrual_start_month,
+                'carry_forward' => $setting->carry_forward,
+                'max_carry_forward_days' => $setting->max_carry_forward_days,
+                'encashment_allowed' => $setting->encashment_allowed,
+                'encashment_rule' => $setting->encashment_rule,
+                'max_consecutive_days' => $setting->max_consecutive_days,
+                'advance_notice_days' => $setting->advance_notice_days,
+                'short_leave_applicable' => $setting->short_leave_applicable,
+                'short_leave_max_hours' => $setting->short_leave_max_hours,
+            ]);
         }
-        
-        return false;
+
+        return $data;
+    }
+
+    private function extractMainAttributes(array $data): array
+    {
+        return Arr::only($data, [
+            'organization_id',
+            'sbu_id',
+            'name',
+            'code',
+            'leave_category',
+            'description',
+            'annual_quota',
+            'is_active',
+        ]);
+    }
+
+    private function extractSettingAttributes(array $data): array
+    {
+        return [
+            'employment_type' => $data['employment_type'] ?? 'all',
+            'gender' => $data['gender'] ?? 'all',
+            'min_service_months' => (int) ($data['min_service_months'] ?? 0),
+            'eligible_from' => $data['eligible_from'] ?? 'doj',
+            'probation_eligible' => (bool) ($data['probation_eligible'] ?? false),
+            'unit_of_leave' => $data['unit_of_leave'] ?? 'days',
+            'accrual_frequency' => $data['accrual_frequency'] ?? null,
+            'accrual_start_month' => filled($data['accrual_start_month'] ?? null)
+                ? (int) $data['accrual_start_month']
+                : null,
+            'carry_forward' => $data['carry_forward'] ?? 'no',
+            'max_carry_forward_days' => filled($data['max_carry_forward_days'] ?? null)
+                ? $data['max_carry_forward_days']
+                : null,
+            'encashment_allowed' => $data['encashment_allowed'] ?? 'no',
+            'encashment_rule' => $data['encashment_rule'] ?? null,
+            'max_consecutive_days' => filled($data['max_consecutive_days'] ?? null)
+                ? (int) $data['max_consecutive_days']
+                : null,
+            'advance_notice_days' => (int) ($data['advance_notice_days'] ?? 0),
+            'short_leave_applicable' => (bool) ($data['short_leave_applicable'] ?? false),
+            'short_leave_max_hours' => filled($data['short_leave_max_hours'] ?? null)
+                ? (int) $data['short_leave_max_hours']
+                : null,
+        ];
+    }
+
+    public function store(array $data): LeaveType
+    {
+        DB::beginTransaction();
+
+        try {
+            $departmentIds = $data['department_ids'] ?? [];
+
+            $leaveType = LeaveType::create($this->extractMainAttributes($data));
+            $leaveType->setting()->create($this->extractSettingAttributes($data));
+            $leaveType->departments()->sync($departmentIds);
+
+            DB::commit();
+
+            return $leaveType->fresh(['organization', 'sbu', 'departments', 'setting']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Leave type store failed: ' . $e->getMessage());
+
+            throw $e;
+        }
+    }
+
+    public function update(int $id, array $data): LeaveType
+    {
+        DB::beginTransaction();
+
+        try {
+            $leaveType = LeaveType::findOrFail($id);
+            $departmentIds = $data['department_ids'] ?? [];
+
+            $leaveType->update($this->extractMainAttributes($data));
+
+            $settingPayload = $this->extractSettingAttributes($data);
+            if ($leaveType->setting) {
+                $leaveType->setting()->update($settingPayload);
+            } else {
+                $leaveType->setting()->create($settingPayload);
+            }
+
+            $leaveType->departments()->sync($departmentIds);
+
+            DB::commit();
+
+            return $leaveType->fresh(['organization', 'sbu', 'departments', 'setting']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Leave type update failed: ' . $e->getMessage());
+
+            throw $e;
+        }
+    }
+
+    public function destroy(int $id): void
+    {
+        DB::beginTransaction();
+
+        try {
+            $leaveType = LeaveType::findOrFail($id);
+
+            $leaveType->delete();
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Leave type delete failed: ' . $e->getMessage());
+
+            throw $e;
+        }
     }
 }
-

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 use App\Traits\LogsActivity;
 
@@ -17,6 +18,8 @@ class LeaveType extends Model
         'sbu_id',
         'name',
         'code',
+        'leave_category',
+        'description',
         'annual_quota',
         'is_active',
     ];
@@ -39,6 +42,11 @@ class LeaveType extends Model
     public function sbu(): BelongsTo
     {
         return $this->belongsTo(Sbu::class);
+    }
+
+    public function setting(): HasOne
+    {
+        return $this->hasOne(LeaveTypeSetting::class);
     }
 }
 
