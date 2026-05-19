@@ -6,6 +6,37 @@
 
 @push('styles')
 <link href="{{ asset('css/users.css') }}" rel="stylesheet">
+<style>
+    .lt-sbu-chip-wrap {
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        max-width: 280px;
+    }
+    .lt-sbu-list-chip {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        line-height: 1.2;
+        padding: 0.25rem 0.55rem;
+        border-radius: 0.35rem;
+        background: #f1f5f9;
+        color: #012445;
+        border: 1px solid #e2e8f0;
+        white-space: nowrap;
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+    .lt-sbu-list-chip-more {
+        background: var(--main-color, #012445);
+        color: #fff;
+        border-color: var(--main-color, #012445);
+        cursor: default;
+    }
+</style>
 @endpush
 
 @section('content')
@@ -110,17 +141,24 @@
                                 @endif
                             </td>
                             <td>
-                                @php $sbuCount = $lt->sbus->count(); @endphp
-                                @if($sbuCount === 0 && $lt->sbu)
-                                <span class="badge px-3 rounded-1 bg-secondary">{{ $lt->sbu->name }}</span>
-                                @elseif($sbuCount === 0)
+                                @php
+                                    $assignedSbus = $lt->sbus->isNotEmpty()
+                                        ? $lt->sbus
+                                        : ($lt->sbu ? collect([$lt->sbu]) : collect());
+                                    $sbuTotal = $assignedSbus->count();
+                                    $sbuNamesAll = $assignedSbus->pluck('name')->implode(', ');
+                                @endphp
+                                @if($sbuTotal === 0)
                                 <span class="text-muted small">__</span>
-                                @elseif($sbuCount === 1)
-                                <span class="badge px-3 rounded-1 bg-secondary">{{ $lt->sbus->first()->name }}</span>
                                 @else
-                                <span class="badge px-3 rounded-1 bg-secondary" title="{{ $lt->sbus->pluck('name')->implode(', ') }}">
-                                    Multiple ({{ $sbuCount }})
-                                </span>
+                                <div class="lt-sbu-chip-wrap" title="{{ $sbuNamesAll }}">
+                                    @foreach($assignedSbus->take(2) as $sbu)
+                                    <span class="lt-sbu-list-chip">{{ $sbu->name }}</span>
+                                    @endforeach
+                                    @if($sbuTotal > 2)
+                                    <span class="lt-sbu-list-chip lt-sbu-list-chip-more">+{{ $sbuTotal - 2 }} more</span>
+                                    @endif
+                                </div>
                                 @endif
                             </td>
                             <td>{{ number_format((float) $lt->annual_quota, 2) }}</td>

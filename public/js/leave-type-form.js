@@ -338,7 +338,19 @@
             setSaveButtonLoading(true);
 
             clearFieldErrors();
+            if (cascadeApi && typeof cascadeApi.refreshHiddenInputs === 'function') {
+                cascadeApi.refreshHiddenInputs();
+            }
             const formData = new FormData(form);
+            if (cascadeApi && typeof cascadeApi.getSelectedSbuIds === 'function') {
+                const selectedSbuIds = cascadeApi.getSelectedSbuIds();
+                if (selectedSbuIds.length) {
+                    formData.delete('sbu_ids[]');
+                    selectedSbuIds.forEach(function (sbuId) {
+                        formData.append('sbu_ids[]', sbuId);
+                    });
+                }
+            }
             if (!formData.has('is_active')) {
                 formData.append('is_active', '0');
             }
@@ -689,6 +701,12 @@
 
         return {
             loadSbus: loadSbus,
+            getSelectedSbuIds: function () {
+                return sbuSelected.slice();
+            },
+            refreshHiddenInputs: function () {
+                renderSbuHiddenInputs();
+            },
         };
     }
 })();
