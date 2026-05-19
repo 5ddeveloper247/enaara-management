@@ -86,7 +86,7 @@
                             <section class="lt-section-block">
                                 <h2 class="lt-section-title">Eligibility &amp; Applicable To</h2>
                                 <div class="row g-3">
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <label for="lt_organization_id" class="form-label">Organization <span class="text-danger">*</span></label>
                                         <select class="form-select" id="lt_organization_id" name="organization_id" required>
                                             <option value="" hidden selected>Select Organization</option>
@@ -95,13 +95,32 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label for="lt_sbu_id" class="form-label">SBU <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="lt_sbu_id" name="sbu_id" disabled required>
-                                            <option value="" hidden selected>Select Organization first</option>
-                                        </select>
+                                    <div class="col-md-6">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label mb-0">SBU <span class="text-danger">*</span></label>
+                                            <div class="form-check form-check-inline small mb-0">
+                                                <input class="form-check-input" type="checkbox" id="lt_select_all_sbus">
+                                                <label class="form-check-label text-muted" for="lt_select_all_sbus">Select All</label>
+                                            </div>
+                                        </div>
+                                        <div id="lt_sbu_hidden_inputs"></div>
+                                        <div id="lt_sbu_box" class="lt-dept-input-box" role="button" tabindex="0" aria-haspopup="listbox">
+                                            <div id="lt_sbu_chips" style="display:contents"></div>
+                                            <span class="lt-dept-ph" id="lt_sbu_placeholder">Select Organization first</span>
+                                            <svg class="lt-dept-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </div>
+                                        <div id="lt_sbu_dropdown" class="lt-dept-dropdown" style="display:none">
+                                            <div class="lt-dept-search-row">
+                                                <input type="text" id="lt_sbu_search" placeholder="Search SBU..." autocomplete="off">
+                                            </div>
+                                            <div id="lt_sbu_list" class="lt-dept-opt-list"></div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-4">
+                                </div>
+                                <div class="row g-3 gx-4 mt-1 lt-eligibility-row">
+                                    <div class="col-md-3">
                                         <label for="lt_employment_type" class="form-label">Employment Type</label>
                                         <select class="form-select" id="lt_employment_type" name="employment_type">
                                             <option value="all" selected>All</option>
@@ -110,7 +129,7 @@
                                             <option value="probation">Probation</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="lt_gender" class="form-label">Gender</label>
                                         <select class="form-select" id="lt_gender" name="gender">
                                             <option value="all" selected>All</option>
@@ -118,14 +137,14 @@
                                             <option value="female">Female</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="lt_min_service" class="form-label">Minimum Service</label>
                                         <div class="lt-suffix-field">
                                             <input type="number" class="form-control" id="lt_min_service" name="min_service_months" min="0" value="0">
                                             <span class="lt-suffix">months</span>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="lt_eligible_from" class="form-label">Eligible From</label>
                                         <select class="form-select" id="lt_eligible_from" name="eligible_from">
                                             <option value="doj" selected>Date of Joining</option>
@@ -133,6 +152,8 @@
                                             <option value="custom">Custom Date</option>
                                         </select>
                                     </div>
+                                </div>
+                                <div class="row g-3 mt-2">
                                     <div class="col-md-6">
                                         <div class="lt-inline-switch">
                                             <div class="form-check form-switch mb-0">

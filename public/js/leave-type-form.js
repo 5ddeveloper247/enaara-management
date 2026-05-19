@@ -46,7 +46,7 @@
             }
         }
 
-        const cascadeApi = initOrgSbuCascade(config);
+        const cascadeApi = initOrgSbuMultiPicker(config);
 
         function bindCounter(textarea, counterEl) {
             if (!textarea || !counterEl) {
@@ -161,7 +161,7 @@
             const orgSelect = document.getElementById('lt_organization_id');
             if (orgSelect && data.organization_id && cascade && cascade.loadSbus) {
                 orgSelect.value = String(data.organization_id);
-                cascade.loadSbus(data.organization_id, data.sbu_id || null);
+                cascade.loadSbus(data.organization_id, data.sbu_ids || (data.sbu_id ? [data.sbu_id] : []));
             }
 
             updatePreview();
@@ -172,6 +172,7 @@
         }
 
         const fieldIdMap = {
+            sbu_ids: 'lt_sbu_box',
             annual_quota: 'lt_entitlement_days',
             min_service_months: 'lt_min_service',
             max_carry_forward_days: 'lt_max_carry_forward',
@@ -210,6 +211,9 @@
         function getErrorColumn(el) {
             if (!el) {
                 return null;
+            }
+            if (el.id === 'lt_sbu_box') {
+                return el.closest('.col-md-6') || el.parentElement;
             }
             const suffix = el.closest('.lt-suffix-field');
             if (suffix) {
@@ -418,12 +422,23 @@
         });
     });
 
-    function initOrgSbuCascade(config) {
+    function initOrgSbuMultiPicker(config) {
         const orgSelect = document.getElementById('lt_organization_id');
-        const sbuSelect = document.getElementById('lt_sbu_id');
-        if (!orgSelect || !sbuSelect) {
+        if (!orgSelect) {
             return {};
         }
+
+        let sbuPool = [];
+        let sbuSelected = [];
+
+        const sbuBox = document.getElementById('lt_sbu_box');
+        const sbuDropdown = document.getElementById('lt_sbu_dropdown');
+        const sbuChips = document.getElementById('lt_sbu_chips');
+        const sbuPlaceholder = document.getElementById('lt_sbu_placeholder');
+        const sbuList = document.getElementById('lt_sbu_list');
+        const sbuSearch = document.getElementById('lt_sbu_search');
+        const sbuHiddenWrap = document.getElementById('lt_sbu_hidden_inputs');
+        const selectAllSbus = document.getElementById('lt_select_all_sbus');
 
         function jsonHeaders() {
             return {
@@ -432,37 +447,147 @@
             };
         }
 
-        function setSbuOptions(items, selectedId) {
-            sbuSelect.innerHTML = '';
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.hidden = true;
-            placeholder.selected = !selectedId;
-            placeholder.textContent = items.length ? 'Select SBU' : 'No SBU found';
-            sbuSelect.appendChild(placeholder);
-
-            items.forEach(function (sbu) {
-                const opt = document.createElement('option');
-                opt.value = String(sbu.id);
-                opt.textContent = sbu.name;
-                if (selectedId && String(sbu.id) === String(selectedId)) {
-                    opt.selected = true;
-                }
-                sbuSelect.appendChild(opt);
-            });
-
-            sbuSelect.disabled = items.length === 0;
+        function resetSbus(message) {
+            sbuPool = [];
+            sbuSelected = [];
+            if (selectAllSbus) {
+                selectAllSbus.checked = false;
+                selectAllSbus.disabled = true;
+            }
+            if (sbuPlaceholder) {
+                sbuPlaceholder.textContent = message || 'Select Organization first';
+                sbuPlaceholder.style.display = '';
+            }
+            if (sbuDropdown) {
+                sbuDropdown.style.display = 'none';
+            }
+            if (sbuBox) {
+                sbuBox.classList.remove('open');
+            }
+            if (sbuSearch) {
+                sbuSearch.value = '';
+            }
+            if (sbuList) {
+                sbuList.innerHTML = '';
+            }
+            syncSbuUi();
         }
 
-        function loadSbus(organizationId, selectedSbuId) {
+        function renderSbuHiddenInputs() {
+            if (!sbuHiddenWrap) {
+                return;
+            }
+            sbuHiddenWrap.innerHTML = '';
+            sbuSelected.forEach(function (id) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'sbu_ids[]';
+                input.value = id;
+                sbuHiddenWrap.appendChild(input);
+            });
+        }
+
+        function renderSbuChips() {
+            if (!sbuChips || !sbuPlaceholder) {
+                return;
+            }
+            sbuChips.innerHTML = '';
+            if (!sbuSelected.length) {
+                sbuPlaceholder.style.display = '';
+                return;
+            }
+            sbuPlaceholder.style.display = 'none';
+            sbuSelected.forEach(function (id) {
+                const row = sbuPool.find(function (s) {
+                    return String(s.id) === String(id);
+                });
+                const name = row ? row.name : id;
+                const chip = document.createElement('span');
+                chip.className = 'lt-dept-chip';
+                chip.textContent = name + ' ';
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'lt-dept-chip-x';
+                removeBtn.setAttribute('aria-label', 'Remove ' + name);
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    sbuSelected = sbuSelected.filter(function (v) {
+                        return v !== id;
+                    });
+                    if (selectAllSbus) {
+                        selectAllSbus.checked = false;
+                    }
+                    syncSbuUi();
+                });
+                chip.appendChild(removeBtn);
+                sbuChips.appendChild(chip);
+            });
+        }
+
+        function renderSbuList() {
+            if (!sbuList) {
+                return;
+            }
+            const q = (sbuSearch?.value || '').toLowerCase().trim();
+            const rows = sbuPool.filter(function (s) {
+                return !q || String(s.name || '').toLowerCase().includes(q);
+            });
+            if (!rows.length) {
+                sbuList.innerHTML = '<div class="lt-dept-no-result">No SBUs found</div>';
+                return;
+            }
+            sbuList.innerHTML = '';
+            rows.forEach(function (s) {
+                const id = String(s.id);
+                const picked = sbuSelected.includes(id);
+                const opt = document.createElement('div');
+                opt.className = 'lt-dept-opt' + (picked ? ' picked' : '');
+                opt.innerHTML =
+                    '<span class="lt-dept-opt-cb">' +
+                    '<svg class="lt-dept-opt-ck" viewBox="0 0 16 16" fill="none">' +
+                    '<path d="M3.5 8.2l3 3L12.5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+                    '</svg></span>' +
+                    '<span class="lt-dept-opt-name"></span>';
+                opt.querySelector('.lt-dept-opt-name').textContent = s.name;
+                opt.addEventListener('click', function () {
+                    if (picked) {
+                        sbuSelected = sbuSelected.filter(function (v) {
+                            return v !== id;
+                        });
+                    } else {
+                        sbuSelected.push(id);
+                    }
+                    if (selectAllSbus) {
+                        selectAllSbus.checked =
+                            sbuPool.length > 0 && sbuSelected.length === sbuPool.length;
+                    }
+                    syncSbuUi();
+                });
+                sbuList.appendChild(opt);
+            });
+        }
+
+        function syncSbuUi() {
+            renderSbuHiddenInputs();
+            renderSbuChips();
+            renderSbuList();
+        }
+
+        function loadSbus(organizationId, selectedIds) {
+            selectedIds = (selectedIds || []).map(String);
             if (!organizationId) {
-                setSbuOptions([]);
-                sbuSelect.disabled = true;
+                resetSbus('Select Organization first');
                 return;
             }
 
-            sbuSelect.disabled = true;
-            setSbuOptions([], null);
+            if (sbuPlaceholder) {
+                sbuPlaceholder.textContent = 'Loading SBUs...';
+                sbuPlaceholder.style.display = '';
+            }
+            if (sbuList) {
+                sbuList.innerHTML = '';
+            }
 
             const url = new URL(config.sbuUrl, window.location.origin);
             url.searchParams.set('organization_id', organizationId);
@@ -473,20 +598,97 @@
                 })
                 .then(function (data) {
                     const sbus = Array.isArray(data.sbus) ? data.sbus : [];
-                    setSbuOptions(sbus, selectedSbuId);
+                    sbuPool = sbus.map(function (sbu) {
+                        return { id: String(sbu.id), name: sbu.name };
+                    });
+                    sbuSelected = selectedIds.filter(function (id) {
+                        return sbuPool.some(function (s) {
+                            return s.id === id;
+                        });
+                    });
+                    if (selectAllSbus) {
+                        selectAllSbus.disabled = sbuPool.length === 0;
+                        selectAllSbus.checked =
+                            sbuPool.length > 0 && sbuSelected.length === sbuPool.length;
+                    }
+                    if (sbuPlaceholder) {
+                        sbuPlaceholder.textContent = sbuPool.length
+                            ? 'Select SBUs...'
+                            : 'No SBUs found for this organization';
+                    }
+                    syncSbuUi();
                 })
                 .catch(function () {
-                    setSbuOptions([]);
+                    resetSbus('Error loading SBUs');
                 });
         }
 
         orgSelect.addEventListener('change', function () {
-            loadSbus(orgSelect.value, null);
+            loadSbus(orgSelect.value, []);
         });
+
+        if (selectAllSbus) {
+            selectAllSbus.addEventListener('change', function () {
+                if (selectAllSbus.checked) {
+                    sbuSelected = sbuPool.map(function (s) {
+                        return s.id;
+                    });
+                } else {
+                    sbuSelected = [];
+                }
+                syncSbuUi();
+            });
+        }
+
+        if (sbuBox && sbuDropdown) {
+            sbuBox.addEventListener('click', function (e) {
+                if (!sbuPool.length) {
+                    return;
+                }
+                e.stopPropagation();
+                const isOpen = sbuDropdown.style.display !== 'none';
+                if (isOpen) {
+                    sbuDropdown.style.display = 'none';
+                    sbuBox.classList.remove('open');
+                } else {
+                    sbuDropdown.style.display = 'block';
+                    sbuBox.classList.add('open');
+                    renderSbuList();
+                    if (sbuSearch) {
+                        sbuSearch.focus();
+                    }
+                }
+            });
+
+            sbuBox.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    sbuBox.click();
+                }
+            });
+        }
+
+        if (sbuSearch) {
+            sbuSearch.addEventListener('input', renderSbuList);
+            sbuSearch.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        }
+
+        document.addEventListener('click', function (e) {
+            if (!sbuBox || !sbuDropdown) {
+                return;
+            }
+            if (!sbuDropdown.contains(e.target) && !sbuBox.contains(e.target)) {
+                sbuDropdown.style.display = 'none';
+                sbuBox.classList.remove('open');
+            }
+        });
+
+        resetSbus('Select Organization first');
 
         return {
             loadSbus: loadSbus,
         };
     }
-
 })();

@@ -39,6 +39,11 @@ class LeaveType extends Model
         return $this->belongsToMany(Department::class, 'leave_type_department');
     }
 
+    public function sbus(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Sbu::class, 'leave_type_sbu');
+    }
+
     public function sbu(): BelongsTo
     {
         return $this->belongsTo(Sbu::class);

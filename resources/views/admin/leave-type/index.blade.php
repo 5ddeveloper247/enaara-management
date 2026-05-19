@@ -110,10 +110,17 @@
                                 @endif
                             </td>
                             <td>
-                                @if($lt->sbu)
+                                @php $sbuCount = $lt->sbus->count(); @endphp
+                                @if($sbuCount === 0 && $lt->sbu)
                                 <span class="badge px-3 rounded-1 bg-secondary">{{ $lt->sbu->name }}</span>
+                                @elseif($sbuCount === 0)
+                                <span class="text-muted small">__</span>
+                                @elseif($sbuCount === 1)
+                                <span class="badge px-3 rounded-1 bg-secondary">{{ $lt->sbus->first()->name }}</span>
                                 @else
-                                <span class="text-muted">__</span>
+                                <span class="badge px-3 rounded-1 bg-secondary" title="{{ $lt->sbus->pluck('name')->implode(', ') }}">
+                                    Multiple ({{ $sbuCount }})
+                                </span>
                                 @endif
                             </td>
                             <td>{{ number_format((float) $lt->annual_quota, 2) }}</td>

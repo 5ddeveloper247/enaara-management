@@ -14,10 +14,9 @@ trait ValidatesLeaveTypeInput
     protected function leaveTypeRules(?int $ignoreLeaveTypeId = null): array
     {
         $orgId = (int) $this->input('organization_id');
-        $sbuId = (int) $this->input('sbu_id');
 
         $nameRule = Rule::unique('leave_types', 'name')
-            ->where(fn ($query) => $query->where('organization_id', $orgId)->where('sbu_id', $sbuId));
+            ->where(fn ($query) => $query->where('organization_id', $orgId));
 
         if ($ignoreLeaveTypeId) {
             $nameRule = $nameRule->ignore($ignoreLeaveTypeId);
@@ -25,8 +24,8 @@ trait ValidatesLeaveTypeInput
 
         return [
             'organization_id' => ['required', 'integer', 'exists:organizations,id'],
-            'sbu_id' => [
-                'required',
+            'sbu_ids' => ['required', 'array', 'min:1'],
+            'sbu_ids.*' => [
                 'integer',
                 Rule::exists('sbus', 'id')->where(fn ($query) => $query->where('organization_id', $orgId)),
             ],
@@ -67,11 +66,12 @@ trait ValidatesLeaveTypeInput
         return [
             'organization_id.required' => 'Organization is required.',
             'organization_id.exists' => 'Selected organization is invalid.',
-            'sbu_id.required' => 'SBU is required.',
-            'sbu_id.exists' => 'Selected SBU is invalid for this organization.',
+            'sbu_ids.required' => 'At least one SBU is required.',
+            'sbu_ids.min' => 'At least one SBU is required.',
+            'sbu_ids.*.exists' => 'One or more selected SBUs are invalid for this organization.',
             'name.required' => 'Leave type name is required.',
             'name.regex' => 'Leave type name must contain letters and cannot be only numbers.',
-            'name.unique' => 'This leave type already exists for the selected organization and SBU.',
+            'name.unique' => 'This leave type already exists for the selected organization.',
             'code.required' => 'Leave code is required.',
             'code.regex' => 'Leave code must be 2–5 uppercase letters or numbers.',
             'leave_category.required' => 'Leave category is required.',
@@ -102,6 +102,10 @@ trait ValidatesLeaveTypeInput
 
         if ($this->filled('description')) {
             $merge['description'] = trim(strip_tags((string) $this->input('description')));
+        }
+
+        if ($this->has('sbu_ids') && is_array($this->input('sbu_ids'))) {
+            $merge['sbu_ids'] = array_values(array_filter(array_map('intval', $this->input('sbu_ids'))));
         }
 
         $this->merge($merge);

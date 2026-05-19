@@ -148,6 +148,10 @@
     line-height: 1.3;
 }
 
+.lt-add-page .lt-eligibility-row {
+    --bs-gutter-x: 1.75rem;
+}
+
 .lt-add-page .form-label {
     font-size: 0.78rem;
     font-weight: 600;
@@ -499,6 +503,30 @@
 
 .lt-dept-opt.picked .lt-dept-opt-ck {
     display: block;
+}
+
+.lt-subsection-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.lt-sbu-privilege-wrap {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.lt-sbu-privilege-table thead th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #64748b;
+}
+
+.lt-add-page .lt-dept-input-box.is-invalid,
+.lt-add-page #lt_sbu_box.is-invalid {
+    border-color: #dc3545;
 }
 
 .lt-dept-no-result {

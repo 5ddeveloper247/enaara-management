@@ -12,7 +12,7 @@ class LeaveTypeService
 {
     public function getList(): Collection
     {
-        return LeaveType::with(['organization', 'sbu', 'setting'])
+        return LeaveType::with(['organization', 'sbu', 'sbus', 'setting'])
             ->orderByDesc('id')
             ->get();
     }
@@ -32,7 +32,7 @@ class LeaveTypeService
 
     public function findById(int $id): ?LeaveType
     {
-        return LeaveType::with(['organization', 'sbu', 'setting'])->find($id);
+        return LeaveType::with(['organization', 'sbu', 'sbus', 'setting'])->find($id);
     }
 
     public function formatForForm(LeaveType $leaveType): array
@@ -41,6 +41,7 @@ class LeaveTypeService
             'id' => $leaveType->id,
             'organization_id' => $leaveType->organization_id,
             'sbu_id' => $leaveType->sbu_id,
+            'sbu_ids' => $leaveType->sbus->pluck('id')->values()->all(),
             'name' => $leaveType->name,
             'code' => $leaveType->code,
             'leave_category' => $leaveType->leave_category,
@@ -74,11 +75,20 @@ class LeaveTypeService
         return $data;
     }
 
+    private function normalizeSbuIds(array $data): array
+    {
+        $ids = $data['sbu_ids'] ?? [];
+        if (! is_array($ids)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $ids))));
+    }
+
     private function extractMainAttributes(array $data): array
     {
         return Arr::only($data, [
             'organization_id',
-            'sbu_id',
             'name',
             'code',
             'leave_category',
@@ -123,13 +133,18 @@ class LeaveTypeService
         DB::beginTransaction();
 
         try {
-            $leaveType = LeaveType::create($this->extractMainAttributes($data));
+            $sbuIds = $this->normalizeSbuIds($data);
+            $attributes = $this->extractMainAttributes($data);
+            $attributes['sbu_id'] = $sbuIds[0] ?? null;
+
+            $leaveType = LeaveType::create($attributes);
             $leaveType->setting()->create($this->extractSettingAttributes($data));
+            $leaveType->sbus()->sync($sbuIds);
             $leaveType->departments()->detach();
 
             DB::commit();
 
-            return $leaveType->fresh(['organization', 'sbu', 'setting']);
+            return $leaveType->fresh(['organization', 'sbu', 'sbus', 'setting']);
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -145,8 +160,11 @@ class LeaveTypeService
 
         try {
             $leaveType = LeaveType::findOrFail($id);
+            $sbuIds = $this->normalizeSbuIds($data);
+            $attributes = $this->extractMainAttributes($data);
+            $attributes['sbu_id'] = $sbuIds[0] ?? null;
 
-            $leaveType->update($this->extractMainAttributes($data));
+            $leaveType->update($attributes);
 
             $settingPayload = $this->extractSettingAttributes($data);
             if ($leaveType->setting) {
@@ -155,11 +173,12 @@ class LeaveTypeService
                 $leaveType->setting()->create($settingPayload);
             }
 
+            $leaveType->sbus()->sync($sbuIds);
             $leaveType->departments()->detach();
 
             DB::commit();
 
-            return $leaveType->fresh(['organization', 'sbu', 'setting']);
+            return $leaveType->fresh(['organization', 'sbu', 'sbus', 'setting']);
         } catch (\Exception $e) {
             DB::rollBack();
 
