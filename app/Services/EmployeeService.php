@@ -306,15 +306,25 @@ class EmployeeService
         }
         $orgId = (int) ($data['organization_id'] ?? $employee?->organization_id ?? 0);
         $sbuId = (int) ($data['sbu_id'] ?? $employee?->sbu_id ?? 0);
+        $departmentId = (int) ($data['department_id'] ?? $employee?->department_id ?? 0);
+        if ($departmentId <= 0 && ! empty($data['department_ids']) && is_array($data['department_ids'])) {
+            $departmentId = (int) ($data['department_ids'][0] ?? 0);
+        }
+        if ($departmentId <= 0) {
+            throw ValidationException::withMessages([
+                'designation_id' => ['Select a department before choosing a designation.'],
+            ]);
+        }
         $designation = Designation::query()
             ->whereKey((int) $raw)
             ->where('organization_id', $orgId)
             ->where('sbu_id', $sbuId)
+            ->where('department_id', $departmentId)
             ->where('is_active', true)
             ->first();
         if (! $designation) {
             throw ValidationException::withMessages([
-                'designation_id' => ['The selected designation is not valid for this organization and SBU.'],
+                'designation_id' => ['The selected designation is not valid for this organization, SBU, and department.'],
             ]);
         }
         $data['designation_id'] = (int) $designation->id;

@@ -19,8 +19,20 @@ trait ValidatesEmployeeDesignationId
                     }
                     $orgId = (int) $this->input('organization_id');
                     $sbuId = (int) $this->input('sbu_id');
+                    $departmentId = (int) ($this->input('department_id') ?: 0);
+                    if ($departmentId <= 0) {
+                        $deptIds = $this->input('department_ids', []);
+                        if (is_array($deptIds) && ! empty($deptIds)) {
+                            $departmentId = (int) $deptIds[0];
+                        }
+                    }
                     if ($sbuId <= 0 || $orgId <= 0) {
                         $fail('Select organization and SBU before choosing a designation.');
+
+                        return;
+                    }
+                    if ($departmentId <= 0) {
+                        $fail('Select a department before choosing a designation.');
 
                         return;
                     }
@@ -28,10 +40,11 @@ trait ValidatesEmployeeDesignationId
                         ->whereKey((int) $value)
                         ->where('organization_id', $orgId)
                         ->where('sbu_id', $sbuId)
+                        ->where('department_id', $departmentId)
                         ->where('is_active', true)
                         ->exists();
                     if (! $exists) {
-                        $fail('The selected designation is not valid for this organization and SBU.');
+                        $fail('The selected designation is not valid for this organization, SBU, and department.');
                     }
                 },
             ],

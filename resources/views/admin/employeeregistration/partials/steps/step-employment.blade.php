@@ -295,8 +295,8 @@
                                                     <div class="col-md-6">
                                                         <label class="form-label">Designation</label>
                                                         <select name="designation_id" class="form-select"
-                                                            id="employmentDesignationSelect">
-                                                            <option value="">— Optional —</option>
+                                                            id="employmentDesignationSelect" disabled>
+                                                            <option value="">— Select department first —</option>
                                                             @if (!empty(optional($employee)->designation_id))
                                                                 <option value="{{ $employee->designation_id }}" selected>
                                                                     {{ $employee->designation ?? 'Selected designation' }}</option>

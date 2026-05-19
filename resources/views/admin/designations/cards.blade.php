@@ -32,6 +32,10 @@
                             <i class="bi bi-diagram-3 me-1 text-main small"></i>
                             <small class="text-muted small">{{ $designation->sbu->name ?? '—' }}</small>
                         </div>
+                        <div class="mb-2">
+                            <i class="bi bi-grid me-1 text-main small"></i>
+                            <small class="text-muted small">{{ $designation->department->name ?? '—' }}</small>
+                        </div>
                         <div class="mt-3 pt-3 border-top d-flex gap-1">
                             <button type="button"
                                 class="btn btn-sm btn-outline-primary flex-grow-1 edit-designation-btn"
@@ -54,6 +58,7 @@
                                 data-designation-description="{{ e($designation->description ?? '') }}"
                                 data-designation-organization="{{ e($designation->organization->name ?? ($designation->sbu->organization->name ?? '')) }}"
                                 data-designation-sbu="{{ e($designation->sbu->name ?? '') }}"
+                                data-designation-department="{{ e($designation->department->name ?? '') }}"
                                 data-designation-active="{{ $designation->is_active ? '1' : '0' }}">
                                 <i class="bi bi-eye"></i>
                             </button>

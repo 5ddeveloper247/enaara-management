@@ -13,6 +13,7 @@ class Designation extends Model
     protected $fillable = [
         'organization_id',
         'sbu_id',
+        'department_id',
         'name',
         'description',
         'is_active',
@@ -30,6 +31,11 @@ class Designation extends Model
     public function sbu(): BelongsTo
     {
         return $this->belongsTo(Sbu::class, 'sbu_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id');
     }
 
     public function employees(): HasMany

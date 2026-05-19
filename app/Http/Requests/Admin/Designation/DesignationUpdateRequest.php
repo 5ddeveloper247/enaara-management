@@ -18,6 +18,7 @@ class DesignationUpdateRequest extends FormRequest
                 : $this->input('is_active'),
             'organization_id' => $this->filled('organization_id') ? (int) $this->input('organization_id') : $this->input('organization_id'),
             'sbu_id' => $this->filled('sbu_id') ? (int) $this->input('sbu_id') : $this->input('sbu_id'),
+            'department_id' => $this->filled('department_id') ? (int) $this->input('department_id') : $this->input('department_id'),
         ]);
     }
 
@@ -41,6 +42,7 @@ class DesignationUpdateRequest extends FormRequest
         $id = (int) $this->route('id');
         $orgId = (int) $this->input('organization_id');
         $sbuId = (int) $this->input('sbu_id');
+        $departmentId = (int) $this->input('department_id');
 
         return [
             'organization_id' => ['required', 'integer', 'exists:organizations,id'],
@@ -51,26 +53,33 @@ class DesignationUpdateRequest extends FormRequest
                     $q->where('organization_id', $orgId);
                 }),
             ],
+            'department_id' => [
+                'required',
+                'integer',
+                Rule::exists('departments', 'id')->where(function ($q) use ($orgId, $sbuId) {
+                    $q->where('organization_id', $orgId)->where('sbu_id', $sbuId);
+                }),
+            ],
             'name' => [
                 'required',
                 'string',
                 'min:2',
                 'max:100',
                 'regex:' . $this->alphaTextRegex(),
-                function (string $attribute, mixed $value, \Closure $fail) use ($sbuId, $id) {
-                    if ($sbuId <= 0) {
+                function (string $attribute, mixed $value, \Closure $fail) use ($departmentId, $id) {
+                    if ($departmentId <= 0) {
                         return;
                     }
 
                     $normalizedInput = $this->normalizeName((string) $value);
                     $existingNames = Designation::query()
-                        ->where('sbu_id', $sbuId)
+                        ->where('department_id', $departmentId)
                         ->where('id', '!=', $id)
                         ->pluck('name');
 
                     foreach ($existingNames as $existingName) {
                         if ($this->normalizeName((string) $existingName) === $normalizedInput) {
-                            $fail('This designation name is already in use for the selected SBU.');
+                            $fail('This designation name is already in use for the selected department.');
                             return;
                         }
                     }
@@ -88,6 +97,8 @@ class DesignationUpdateRequest extends FormRequest
             'organization_id.exists' => 'Selected organization is invalid.',
             'sbu_id.required' => 'SBU is required.',
             'sbu_id.exists' => 'Selected SBU is invalid for this organization.',
+            'department_id.required' => 'Department is required.',
+            'department_id.exists' => 'Selected department is invalid for this SBU.',
             'name.required' => 'Designation name is required.',
             'name.min' => 'Designation name must be at least 2 characters.',
             'name.max' => 'Designation name must not exceed 100 characters.',

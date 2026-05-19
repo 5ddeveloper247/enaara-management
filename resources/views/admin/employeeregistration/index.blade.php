@@ -59,6 +59,7 @@
         window.isEditMode = @json(isset($employee));
         window.employeeId = @json(optional($employee)->id);
         window.employeeDesignationId = @json(optional($employee)->designation_id);
+        window.employeeDepartmentId = @json(optional($employee)->department_id);
         window.previewEmployeeCodeUrl = @json(route('admin.employee.preview_code'));
         window.employeeDesignationsUrl = @json(route('admin.employee.designations_for_employment'));
         window.universitiesDirectoryUrl = @json(route('admin.employee.universities'));
