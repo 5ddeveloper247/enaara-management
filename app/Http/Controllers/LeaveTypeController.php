@@ -88,7 +88,7 @@ class LeaveTypeController extends Controller
         }
     }
 
-    public function edit($id)
+    public function edit($id): View|\Illuminate\Http\JsonResponse
     {
         if (! validatePermissions('admin/leave-type/edit')) {
             if (request()->expectsJson() || request()->ajax()) {
@@ -105,15 +105,30 @@ class LeaveTypeController extends Controller
             $leaveType = $this->leaveTypeService->findById((int) $id);
 
             if (! $leaveType) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Leave type not found.',
-                ], 404);
+                if (request()->expectsJson() || request()->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Leave type not found.',
+                    ], 404);
+                }
+
+                abort(404);
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $this->leaveTypeService->formatForForm($leaveType),
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $this->leaveTypeService->formatForForm($leaveType),
+                ]);
+            }
+
+            $organizations = Organization::orderBy('name')->get(['id', 'name']);
+
+            return view('admin.leave-type.create', [
+                'organizations' => $organizations,
+                'leaveType' => $leaveType,
+                'initialData' => $this->leaveTypeService->formatForForm($leaveType),
+                'isEdit' => true,
             ]);
         } catch (\Exception $e) {
             Log::error('Leave type edit fetch failed', [
@@ -121,10 +136,14 @@ class LeaveTypeController extends Controller
                 'exception' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch leave type.',
-            ], 500);
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to fetch leave type.',
+                ], 500);
+            }
+
+            abort(500);
         }
     }
 

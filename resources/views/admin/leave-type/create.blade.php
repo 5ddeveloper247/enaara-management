@@ -1,6 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'Add Leave Type - Admin Panel')
+@php
+    $isEdit = !empty($isEdit) && isset($leaveType);
+@endphp
+
+@section('title', ($isEdit ? 'Edit' : 'Add') . ' Leave Type - Admin Panel')
 
 @section('page-title', 'Leave Types')
 
@@ -18,15 +22,22 @@
                 </a>
                 <div class="lt-page-header-text">
                     <div class="lt-page-title-row">
-                        <span class="lt-page-icon" aria-hidden="true"><i class="bi bi-calendar2-plus"></i></span>
-                        <h1 class="lt-page-title mb-0">Add Leave Type</h1>
+                        <span class="lt-page-icon" aria-hidden="true">
+                            <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-calendar2-plus' }}"></i>
+                        </span>
+                        <h1 class="lt-page-title mb-0">{{ $isEdit ? 'Edit Leave Type' : 'Add Leave Type' }}</h1>
                     </div>
-                    <p class="lt-page-subtitle mb-0">Configure leave policy, entitlement, and eligibility settings.</p>
+                    <p class="lt-page-subtitle mb-0">
+                        {{ $isEdit ? 'Update leave policy, entitlement, and eligibility settings.' : 'Configure leave policy, entitlement, and eligibility settings.' }}
+                    </p>
                 </div>
             </div>
         </div>
 
-        <form id="leaveTypeAddForm" action="{{ route('admin.leave.type.store') }}" method="post" novalidate>
+        <form id="leaveTypeAddForm"
+            action="{{ $isEdit ? route('admin.leave.type.update', $leaveType->id) : route('admin.leave.type.store') }}"
+            method="post"
+            novalidate>
             @csrf
 
             <div class="row g-3">
@@ -258,9 +269,11 @@
 
                     <div class="lt-form-footer mt-3">
                         <a href="{{ route('admin.leave.type.index') }}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="button" class="btn btn-primary bg-main border-0" id="ltSaveBtn" data-default-label="Save Leave Type">
+                        <button type="button" class="btn btn-primary bg-main border-0" id="ltSaveBtn"
+                            data-default-label="{{ $isEdit ? 'Update Leave Type' : 'Save Leave Type' }}"
+                            data-loading-label="{{ $isEdit ? 'Updating...' : 'Saving...' }}">
                             <i class="bi bi-check-lg me-1 lt-save-icon" aria-hidden="true"></i>
-                            <span class="lt-save-label">Save Leave Type</span>
+                            <span class="lt-save-label">{{ $isEdit ? 'Update Leave Type' : 'Save Leave Type' }}</span>
                         </button>
                     </div>
                 </div>
@@ -334,11 +347,15 @@
 @push('scripts')
 <script>
     window.leaveTypeFormConfig = {
-        storeUrl: @json(route('admin.leave.type.store')),
+        mode: @json($isEdit ? 'edit' : 'create'),
+        submitUrl: @json($isEdit ? route('admin.leave.type.update', $leaveType->id) : route('admin.leave.type.store')),
         indexUrl: @json(route('admin.leave.type.index')),
         sbuUrl: @json(route('admin.sbu.index')),
         departmentUrl: @json(route('admin.department.index')),
         csrfToken: @json(csrf_token()),
+        initialData: @json($initialData ?? null),
+        successTitle: @json($isEdit ? 'Updated' : 'Saved'),
+        successMessage: @json($isEdit ? 'Leave type updated successfully.' : 'Leave type created successfully.'),
     };
 </script>
 <script src="{{ asset('js/leave-type-form.js') }}?v={{ filemtime(public_path('js/leave-type-form.js')) }}"></script>

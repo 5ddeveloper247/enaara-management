@@ -20,11 +20,12 @@
             const label = saveBtn.querySelector('.lt-save-label');
             const icon = saveBtn.querySelector('.lt-save-icon');
             const defaultLabel = saveBtn.getAttribute('data-default-label') || 'Save Leave Type';
+            const loadingLabel = saveBtn.getAttribute('data-loading-label') || 'Saving...';
 
             if (loading) {
                 saveBtn.disabled = true;
                 if (label) {
-                    label.textContent = 'Saving...';
+                    label.textContent = loadingLabel;
                 }
                 if (icon) {
                     icon.className = 'spinner-border spinner-border-sm me-1 lt-save-icon';
@@ -45,7 +46,7 @@
             }
         }
 
-        initOrgSbuDepartmentCascade(config);
+        const cascadeApi = initOrgSbuDepartmentCascade(config);
 
         function bindCounter(textarea, counterEl) {
             if (!textarea || !counterEl) {
@@ -105,6 +106,74 @@
         });
 
         updatePreview();
+
+        function setFormFieldValue(name, value) {
+            const el = form.querySelector('[name="' + name + '"]');
+            if (!el) {
+                return;
+            }
+            if (el.type === 'checkbox') {
+                el.checked = !!value;
+                return;
+            }
+            if (value === null || value === undefined) {
+                el.value = '';
+                return;
+            }
+            el.value = String(value);
+        }
+
+        function populateLeaveTypeForm(data, cascade) {
+            if (!data) {
+                return;
+            }
+
+            setFormFieldValue('name', data.name);
+            setFormFieldValue('code', data.code);
+            setFormFieldValue('leave_category', data.leave_category);
+            setFormFieldValue('description', data.description);
+            setFormFieldValue('annual_quota', data.annual_quota);
+            setFormFieldValue('is_active', data.is_active);
+            setFormFieldValue('employment_type', data.employment_type || 'all');
+            setFormFieldValue('gender', data.gender || 'all');
+            setFormFieldValue('min_service_months', data.min_service_months ?? 0);
+            setFormFieldValue('eligible_from', data.eligible_from || 'doj');
+            setFormFieldValue('probation_eligible', data.probation_eligible);
+            setFormFieldValue('unit_of_leave', data.unit_of_leave || 'days');
+            setFormFieldValue('accrual_frequency', data.accrual_frequency || '');
+            setFormFieldValue('accrual_start_month', data.accrual_start_month || '');
+            setFormFieldValue('carry_forward', data.carry_forward || 'no');
+            setFormFieldValue('max_carry_forward_days', data.max_carry_forward_days ?? '');
+            setFormFieldValue('encashment_allowed', data.encashment_allowed || 'no');
+            setFormFieldValue('encashment_rule', data.encashment_rule || '');
+            setFormFieldValue('max_consecutive_days', data.max_consecutive_days ?? '');
+            setFormFieldValue('advance_notice_days', data.advance_notice_days ?? 0);
+            setFormFieldValue('short_leave_applicable', data.short_leave_applicable);
+            setFormFieldValue('short_leave_max_hours', data.short_leave_max_hours || '');
+
+            if (desc && data.description) {
+                const countEl = document.getElementById('lt_description_count');
+                if (countEl) {
+                    countEl.textContent = String(data.description).length;
+                }
+            }
+
+            const orgSelect = document.getElementById('lt_organization_id');
+            if (orgSelect && data.organization_id && cascade && cascade.loadSbus) {
+                orgSelect.value = String(data.organization_id);
+                cascade.loadSbus(
+                    data.organization_id,
+                    data.sbu_id || null,
+                    data.department_ids || []
+                );
+            }
+
+            updatePreview();
+        }
+
+        if (config.initialData) {
+            populateLeaveTypeForm(config.initialData, cascadeApi);
+        }
 
         const fieldIdMap = {
             department_ids: 'lt_dept_box',
@@ -264,8 +333,8 @@
                 return;
             }
 
-            const storeUrl = config.storeUrl || form.getAttribute('action');
-            if (!storeUrl) {
+            const submitUrl = config.submitUrl || config.storeUrl || form.getAttribute('action');
+            if (!submitUrl) {
                 return;
             }
 
@@ -286,7 +355,7 @@
 
             let submitSucceeded = false;
 
-            fetch(storeUrl, {
+            fetch(submitUrl, {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',
@@ -306,8 +375,8 @@
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Saved',
-                                text: result.body.message || 'Leave type created successfully.',
+                                title: config.successTitle || 'Saved',
+                                text: result.body.message || config.successMessage || 'Leave type saved successfully.',
                                 confirmButtonColor: '#012445',
                             }).then(function () {
                                 window.location.href = config.indexUrl || '/admin/leave-type';
@@ -532,7 +601,7 @@
             renderDepartmentList();
         }
 
-        function loadSbus(organizationId, selectedSbuId) {
+        function loadSbus(organizationId, selectedSbuId, selectedDeptIds) {
             if (!organizationId) {
                 setSbuOptions([]);
                 sbuSelect.disabled = true;
@@ -555,7 +624,7 @@
                     const sbus = Array.isArray(data.sbus) ? data.sbus : [];
                     setSbuOptions(sbus, selectedSbuId);
                     if (selectedSbuId) {
-                        loadDepartments(selectedSbuId, []);
+                        loadDepartments(selectedSbuId, selectedDeptIds || []);
                     }
                 })
                 .catch(function () {
@@ -693,5 +762,10 @@
         });
 
         resetDepartments('Select Organization and SBU first');
+
+        return {
+            loadSbus: loadSbus,
+            loadDepartments: loadDepartments,
+        };
     }
 })();
