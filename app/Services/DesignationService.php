@@ -144,15 +144,18 @@ class DesignationService
     {
         $this->assertSbuBelongsToOrganization($sbuId, $organizationId);
 
+        if ($departmentId === null || $departmentId <= 0) {
+            return [];
+        }
+
+        $this->assertDepartmentBelongsToSbu($departmentId, $sbuId, $organizationId);
+
         $query = Designation::query()
             ->select(['id', 'name'])
             ->where('organization_id', $organizationId)
             ->where('sbu_id', $sbuId)
+            ->where('department_id', $departmentId)
             ->where('is_active', true);
-
-        if ($departmentId !== null && $departmentId > 0) {
-            $query->where('department_id', $departmentId);
-        }
 
         return $query
             ->orderByDesc('id')

@@ -3817,20 +3817,60 @@
         }
     }
 
-    function resetDesignationSelect() {
-        if (!designationSelect) return;
-        designationSelect.innerHTML = '';
-        designationSelect.add(new Option('— Optional —', ''));
-        designationSelect.value = '';
+    function getPrimaryDepartmentId() {
+        if (!deptSelect) {
+            return null;
+        }
+        const selected = Array.from(deptSelect.options).filter(function (o) {
+            return o.selected && o.value;
+        });
+        if (!selected.length && window.employeeDepartmentId) {
+            return String(window.employeeDepartmentId);
+        }
+        return selected.length ? String(selected[0].value) : null;
     }
 
-    async function loadDesignationsForEmployment(orgId, sbuId, preferredId) {
+    function resetDesignationSelect(message) {
         if (!designationSelect) return;
-        if (!orgId || !sbuId || !window.employeeDesignationsUrl) {
+        designationSelect.innerHTML = '';
+        designationSelect.add(new Option(message || '— Select department first —', ''));
+        designationSelect.value = '';
+        designationSelect.disabled = true;
+    }
+
+    function refreshDesignationsForEmployment(preferredId) {
+        const orgId = orgSelect ? orgSelect.value : null;
+        const sbuId = sbuSelect ? sbuSelect.value : null;
+        const departmentId = getPrimaryDepartmentId();
+
+        if (!orgId || !sbuId || !departmentId) {
             resetDesignationSelect();
             return;
         }
-        const params = new URLSearchParams({ organization_id: String(orgId), sbu_id: String(sbuId) });
+
+        const pref = preferredId !== undefined && preferredId !== null
+            ? preferredId
+            : (window.employeeDesignationId || (designationSelect ? designationSelect.value : ''));
+
+        loadDesignationsForEmployment(orgId, sbuId, departmentId, pref);
+    }
+
+    async function loadDesignationsForEmployment(orgId, sbuId, departmentId, preferredId) {
+        if (!designationSelect) return;
+        if (!orgId || !sbuId || !departmentId || !window.employeeDesignationsUrl) {
+            resetDesignationSelect();
+            return;
+        }
+
+        designationSelect.disabled = true;
+        designationSelect.innerHTML = '';
+        designationSelect.add(new Option('Loading designations...', ''));
+
+        const params = new URLSearchParams({
+            organization_id: String(orgId),
+            sbu_id: String(sbuId),
+            department_id: String(departmentId),
+        });
         const tokenMeta = document.querySelector('meta[name="csrf-token"]');
         const token = tokenMeta ? tokenMeta.getAttribute('content') : '';
         try {
@@ -3839,7 +3879,7 @@
             });
             const payload = await response.json().catch(function () { return { success: false, data: [] }; });
             if (!response.ok || !payload.success || !Array.isArray(payload.data)) {
-                resetDesignationSelect();
+                resetDesignationSelect('— Unable to load designations —');
                 return;
             }
             designationSelect.innerHTML = '';
@@ -3847,14 +3887,18 @@
             payload.data.forEach(function (row) {
                 designationSelect.add(new Option(row.name, String(row.id)));
             });
+            designationSelect.disabled = false;
             const pref = preferredId !== null && preferredId !== undefined && preferredId !== '' ? String(preferredId) : '';
             if (pref && Array.from(designationSelect.options).some(function (o) { return o.value === pref; })) {
                 designationSelect.value = pref;
             } else {
                 designationSelect.value = '';
             }
+            if (window.employeeDesignationId && designationSelect.value === String(window.employeeDesignationId)) {
+                window.employeeDesignationId = null;
+            }
         } catch (e) {
-            resetDesignationSelect();
+            resetDesignationSelect('— Unable to load designations —');
         }
     }
 
@@ -4025,7 +4069,7 @@
             populateRoles(orgId, sbuId);
             populateDepartments(orgId, sbuId);
             populateFloors(orgId, sbuId);
-            loadDesignationsForEmployment(orgId, sbuId, null);
+            resetDesignationSelect();
         });
     }
 
@@ -4038,11 +4082,7 @@
         populateRoles(oId, sId, rId);
         populateDepartments(oId, sId);
         populateFloors(oId, sId);
-        if (sId) {
-            loadDesignationsForEmployment(oId, sId, window.employeeDesignationId || null);
-        } else {
-            resetDesignationSelect();
-        }
+        refreshDesignationsForEmployment(window.employeeDesignationId || null);
     }
     if (probationEndInput) {
         probationEndInput.addEventListener('change', function () {
@@ -4194,6 +4234,7 @@
                     }
                     renderDeptChips();
                     syncDeptDropdownState();
+                    refreshDesignationsForEmployment(null);
                 });
 
                 deptList.appendChild(div);
@@ -4255,6 +4296,7 @@
                 if (opt) opt.selected = false;
                 renderDeptChips();
                 syncDeptDropdownState();
+                refreshDesignationsForEmployment(null);
                 return;
             }
             if (deptDd) {
@@ -4304,13 +4346,19 @@
             deptSelect.innerHTML = '';
         } else {
             if (deptHint) deptHint.style.display = 'none';
-            const currentSelectedIds = Array.from(deptSelect.options).filter(o => o.selected).map(o => parseInt(o.value));
+            const currentSelectedIds = Array.from(deptSelect.options).filter(o => o.selected).map(o => parseInt(o.value, 10));
+            if (window.employeeDepartmentId) {
+                const savedDeptId = parseInt(window.employeeDepartmentId, 10);
+                if (Number.isFinite(savedDeptId) && !currentSelectedIds.includes(savedDeptId)) {
+                    currentSelectedIds.push(savedDeptId);
+                }
+            }
             deptSelect.innerHTML = '';
             availableDepartments.sort((a,b) => a.name.localeCompare(b.name));
             
             availableDepartments.forEach(dept => {
                 const opt = new Option(dept.name, dept.id);
-                if (currentSelectedIds.includes(parseInt(dept.id))) {
+                if (currentSelectedIds.includes(parseInt(dept.id, 10))) {
                     opt.selected = true;
                 }
                 deptSelect.add(opt);
@@ -4318,6 +4366,7 @@
         }
         renderDeptChips();
         buildDeptDropdownOptions();
+        refreshDesignationsForEmployment(window.employeeDesignationId || null);
     }
 
     window.empDeptComboBox = {

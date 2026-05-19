@@ -123,18 +123,28 @@ class EmployeeController extends Controller
             ], 403);
         }
 
+        $orgId = (int) $request->input('organization_id');
+        $sbuId = (int) $request->input('sbu_id');
+
         $validated = $request->validate([
             'organization_id' => ['required', 'integer', 'exists:organizations,id'],
-            'sbu_id' => ['required', 'integer', 'exists:sbus,id'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'sbu_id' => [
+                'required',
+                'integer',
+                \Illuminate\Validation\Rule::exists('sbus', 'id')->where(fn ($q) => $q->where('organization_id', $orgId)),
+            ],
+            'department_id' => [
+                'required',
+                'integer',
+                \Illuminate\Validation\Rule::exists('departments', 'id')->where(fn ($q) => $q->where('organization_id', $orgId)->where('sbu_id', $sbuId)),
+            ],
         ]);
 
         try {
-            $departmentId = isset($validated['department_id']) ? (int) $validated['department_id'] : null;
             $data = $this->designationService->listActiveByOrganizationAndSbu(
                 (int) $validated['organization_id'],
                 (int) $validated['sbu_id'],
-                $departmentId > 0 ? $departmentId : null
+                (int) $validated['department_id']
             );
 
             return response()->json([

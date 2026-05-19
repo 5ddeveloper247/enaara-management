@@ -31,15 +31,19 @@ trait ValidatesEmployeeDesignationId
 
                         return;
                     }
-                    $query = Designation::query()
+                    if ($departmentId <= 0) {
+                        $fail('Select a department before choosing a designation.');
+
+                        return;
+                    }
+                    $exists = Designation::query()
                         ->whereKey((int) $value)
                         ->where('organization_id', $orgId)
                         ->where('sbu_id', $sbuId)
-                        ->where('is_active', true);
-                    if ($departmentId > 0) {
-                        $query->where('department_id', $departmentId);
-                    }
-                    if (! $query->exists()) {
+                        ->where('department_id', $departmentId)
+                        ->where('is_active', true)
+                        ->exists();
+                    if (! $exists) {
                         $fail('The selected designation is not valid for this organization, SBU, and department.');
                     }
                 },
