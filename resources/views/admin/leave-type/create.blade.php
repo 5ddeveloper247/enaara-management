@@ -12,15 +12,18 @@
 <div class="lt-add-page">
     <div class="container-fluid py-2">
         <div class="lt-page-header">
-            <nav class="lt-breadcrumb" aria-label="breadcrumb">
-                <a href="{{ route('admin.leave.type.index') }}">Leave Setup</a>
-                <span class="mx-1">›</span>
-                <a href="{{ route('admin.leave.type.index') }}">Leave Types</a>
-                <span class="mx-1">›</span>
-                <span class="active">Add Leave Type</span>
-            </nav>
-            <h1 class="lt-page-title">Add Leave Type</h1>
-            <p class="lt-page-subtitle">Configure leave policy, entitlement, and eligibility settings.</p>
+            <div class="lt-page-header-main">
+                <a href="{{ route('admin.leave.type.index') }}" class="lt-back-btn" aria-label="Back to leave types">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                </a>
+                <div class="lt-page-header-text">
+                    <div class="lt-page-title-row">
+                        <span class="lt-page-icon" aria-hidden="true"><i class="bi bi-calendar2-plus"></i></span>
+                        <h1 class="lt-page-title mb-0">Add Leave Type</h1>
+                    </div>
+                    <p class="lt-page-subtitle mb-0">Configure leave policy, entitlement, and eligibility settings.</p>
+                </div>
+            </div>
         </div>
 
         <form id="leaveTypeAddForm" action="{{ route('admin.leave.type.store') }}" method="post" novalidate>
