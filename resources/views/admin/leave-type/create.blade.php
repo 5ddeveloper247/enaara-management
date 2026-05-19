@@ -110,29 +110,6 @@
                                             <option value="probation">Probation</option>
                                         </select>
                                     </div>
-                                    <div class="col-12">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <label class="form-label mb-0">Departments</label>
-                                            <div class="form-check form-check-inline small mb-0">
-                                                <input class="form-check-input" type="checkbox" id="lt_select_all_departments">
-                                                <label class="form-check-label text-muted" for="lt_select_all_departments">Select All</label>
-                                            </div>
-                                        </div>
-                                        <div id="lt_department_hidden_inputs"></div>
-                                        <div id="lt_dept_box" class="lt-dept-input-box" role="button" tabindex="0" aria-haspopup="listbox">
-                                            <div id="lt_dept_chips" style="display:contents"></div>
-                                            <span class="lt-dept-ph" id="lt_dept_placeholder">Select Organization and SBU first</span>
-                                            <svg class="lt-dept-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </div>
-                                        <div id="lt_dept_dropdown" class="lt-dept-dropdown" style="display:none">
-                                            <div class="lt-dept-search-row">
-                                                <input type="text" id="lt_dept_search" placeholder="Search Department..." autocomplete="off">
-                                            </div>
-                                            <div id="lt_dept_list" class="lt-dept-opt-list"></div>
-                                        </div>
-                                    </div>
                                     <div class="col-md-4">
                                         <label for="lt_gender" class="form-label">Gender</label>
                                         <select class="form-select" id="lt_gender" name="gender">
@@ -351,7 +328,6 @@
         submitUrl: @json($isEdit ? route('admin.leave.type.update', $leaveType->id) : route('admin.leave.type.store')),
         indexUrl: @json(route('admin.leave.type.index')),
         sbuUrl: @json(route('admin.sbu.index')),
-        departmentUrl: @json(route('admin.department.index')),
         csrfToken: @json(csrf_token()),
         initialData: @json($initialData ?? null),
         successTitle: @json($isEdit ? 'Updated' : 'Saved'),

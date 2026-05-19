@@ -86,7 +86,6 @@
                             <th>Code</th>
                             <th>Organization</th>
                             <th>SBU</th>
-                            <th>Department</th>
                             <th>Annual Quota</th>
                             <th>Status</th>
                             <th class="text-end">Actions</th>
@@ -117,22 +116,6 @@
                                 <span class="text-muted">__</span>
                                 @endif
                             </td>
-                            <td>
-                                @php $deptCount = $lt->departments->count(); @endphp
-                                @if($deptCount == 0)
-                                <span class="text-muted small">__</span>
-                                @elseif($deptCount == 1)
-                                <span class="badge px-3 rounded-1 bg-info">{{ $lt->departments->first()->name }}</span>
-                                @else
-                                <button type="button" class="badge bg-info text-white rounded-1 border-0 px-3 view-depts-btn"
-                                    style="font-size: inherit; vertical-align: baseline;"
-                                    data-bs-toggle="modal" data-bs-target="#departmentsModal"
-                                    data-leave-type-name="{{ $lt->name }}"
-                                    data-departments="{{ $lt->departments->pluck('name')->implode(',') }}">
-                                    Multiple ({{ $deptCount }})
-                                </button>
-                                @endif
-                            </td>
                             <td>{{ number_format((float) $lt->annual_quota, 2) }}</td>
                             <td>
                                 @if($lt->is_active)
@@ -157,27 +140,6 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal for viewing multiple departments -->
-<div class="modal fade" id="departmentsModal" tabindex="-1" aria-labelledby="departmentsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold" id="departmentsModalLabel">Affected Departments</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted small mb-3">Leave Type: <span id="modalLeaveTypeName" class="fw-bold text-dark"></span></p>
-                <div id="modalDepartmentsList" class="d-flex flex-wrap gap-2">
-                    <!-- Departments will be injected here -->
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -237,19 +199,6 @@
                         }
                     });
                 }
-            });
-        });
-
-        // View Departments Modal Handler
-        $(document).on('click', '.view-depts-btn', function() {
-            const name = $(this).data('leave-type-name');
-            const depts = $(this).data('departments').split(',');
-
-            $('#modalLeaveTypeName').text(name);
-            const list = $('#modalDepartmentsList');
-            list.empty();
-            depts.forEach(function(dept) {
-                list.append(`<span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-2 rounded-pill">${dept}</span>`);
             });
         });
     });

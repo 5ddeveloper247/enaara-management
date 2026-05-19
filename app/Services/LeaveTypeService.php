@@ -12,7 +12,7 @@ class LeaveTypeService
 {
     public function getList(): Collection
     {
-        return LeaveType::with(['organization', 'sbu', 'departments', 'setting'])
+        return LeaveType::with(['organization', 'sbu', 'setting'])
             ->orderByDesc('id')
             ->get();
     }
@@ -32,7 +32,7 @@ class LeaveTypeService
 
     public function findById(int $id): ?LeaveType
     {
-        return LeaveType::with(['organization', 'sbu', 'departments', 'setting'])->find($id);
+        return LeaveType::with(['organization', 'sbu', 'setting'])->find($id);
     }
 
     public function formatForForm(LeaveType $leaveType): array
@@ -47,7 +47,6 @@ class LeaveTypeService
             'description' => $leaveType->description,
             'annual_quota' => $leaveType->annual_quota,
             'is_active' => $leaveType->is_active,
-            'department_ids' => $leaveType->departments->pluck('id')->values()->all(),
         ];
 
         $setting = $leaveType->setting;
@@ -124,15 +123,13 @@ class LeaveTypeService
         DB::beginTransaction();
 
         try {
-            $departmentIds = $data['department_ids'] ?? [];
-
             $leaveType = LeaveType::create($this->extractMainAttributes($data));
             $leaveType->setting()->create($this->extractSettingAttributes($data));
-            $leaveType->departments()->sync($departmentIds);
+            $leaveType->departments()->detach();
 
             DB::commit();
 
-            return $leaveType->fresh(['organization', 'sbu', 'departments', 'setting']);
+            return $leaveType->fresh(['organization', 'sbu', 'setting']);
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -148,7 +145,6 @@ class LeaveTypeService
 
         try {
             $leaveType = LeaveType::findOrFail($id);
-            $departmentIds = $data['department_ids'] ?? [];
 
             $leaveType->update($this->extractMainAttributes($data));
 
@@ -159,11 +155,11 @@ class LeaveTypeService
                 $leaveType->setting()->create($settingPayload);
             }
 
-            $leaveType->departments()->sync($departmentIds);
+            $leaveType->departments()->detach();
 
             DB::commit();
 
-            return $leaveType->fresh(['organization', 'sbu', 'departments', 'setting']);
+            return $leaveType->fresh(['organization', 'sbu', 'setting']);
         } catch (\Exception $e) {
             DB::rollBack();
 

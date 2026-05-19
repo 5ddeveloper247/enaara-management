@@ -30,13 +30,6 @@ trait ValidatesLeaveTypeInput
                 'integer',
                 Rule::exists('sbus', 'id')->where(fn ($query) => $query->where('organization_id', $orgId)),
             ],
-            'department_ids' => ['nullable', 'array'],
-            'department_ids.*' => [
-                'integer',
-                Rule::exists('departments', 'id')->where(function ($query) use ($orgId, $sbuId) {
-                    $query->where('organization_id', $orgId)->where('sbu_id', $sbuId);
-                }),
-            ],
             'name' => [
                 'required',
                 'string',
@@ -76,7 +69,6 @@ trait ValidatesLeaveTypeInput
             'organization_id.exists' => 'Selected organization is invalid.',
             'sbu_id.required' => 'SBU is required.',
             'sbu_id.exists' => 'Selected SBU is invalid for this organization.',
-            'department_ids.*.exists' => 'One or more selected departments are invalid for this SBU.',
             'name.required' => 'Leave type name is required.',
             'name.regex' => 'Leave type name must contain letters and cannot be only numbers.',
             'name.unique' => 'This leave type already exists for the selected organization and SBU.',
@@ -110,10 +102,6 @@ trait ValidatesLeaveTypeInput
 
         if ($this->filled('description')) {
             $merge['description'] = trim(strip_tags((string) $this->input('description')));
-        }
-
-        if ($this->has('department_ids') && is_array($this->input('department_ids'))) {
-            $merge['department_ids'] = array_values(array_filter(array_map('intval', $this->input('department_ids'))));
         }
 
         $this->merge($merge);
