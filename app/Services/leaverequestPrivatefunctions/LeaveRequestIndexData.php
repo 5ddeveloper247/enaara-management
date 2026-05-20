@@ -81,8 +81,11 @@ class LeaveRequestIndexData
     {
         $statusMap = $this->statusSlugMap();
 
-        return $requests->map(function ($request) use ($statusMap, $currentUser, $isSuperAdmin, $balanceLookup) {
-            $isApprover = $currentUser && $currentUser->id === $request->to_user_id;
+        $currentEmployee = $currentUser?->employee;
+
+        return $requests->map(function ($request) use ($statusMap, $currentUser, $currentEmployee, $isSuperAdmin, $balanceLookup) {
+            $isAssignedApprover = $currentEmployee
+                && (int) $request->to_employee_id === (int) $currentEmployee->id;
 
             $balanceKey = $this->employeeLeaveQuotaRecords->rowKey(
                 (int) $request->from_employee_id,
@@ -90,8 +93,16 @@ class LeaveRequestIndexData
                 (int) Carbon::parse($request->start_date)->year
             );
 
-            $canRecommend = $isApprover && (int) $request->action_type === self::RECOMMENDATION_ACTION_TYPE;
-            $canApprove = $isApprover && (int) $request->action_type === self::FINAL_APPROVAL_ACTION_TYPE;
+            $actionType = (int) $request->action_type;
+            $statusCode = (int) $request->status;
+
+            $canRecommend = ($isAssignedApprover || $isSuperAdmin)
+                && $actionType === self::RECOMMENDATION_ACTION_TYPE
+                && in_array($statusCode, [0, 1, 2], true);
+
+            $canApprove = ($isAssignedApprover || $isSuperAdmin)
+                && $actionType === self::FINAL_APPROVAL_ACTION_TYPE
+                && $statusCode === 0;
 
             return [
                 'id' => $request->id,
@@ -111,13 +122,14 @@ class LeaveRequestIndexData
                 'approvalLevel' => $this->approvalLevelLabel((int) $request->action_type),
                 'pendingSince' => $request->created_at ? $request->created_at->diffForHumans() : '-',
                 'balance' => $balanceLookup[$balanceKey] ?? '0 / 0',
-                'isApprover' => $isApprover,
+                'actionType' => $actionType,
+                'isApprover' => $isAssignedApprover,
                 'isSuperAdmin' => $isSuperAdmin,
-                'canApprove' => $canApprove || $isSuperAdmin,
-                'canReject' => $canApprove || $isSuperAdmin,
-                'canCancel' => $canApprove || $isSuperAdmin,
-                'canRecommend' => $canRecommend || $isSuperAdmin,
-                'canNotRecommend' => $canRecommend || $isSuperAdmin,
+                'canApprove' => $canApprove,
+                'canReject' => $canApprove,
+                'canCancel' => $canApprove,
+                'canRecommend' => $canRecommend,
+                'canNotRecommend' => $canRecommend,
             ];
         })->values()->all();
     }
