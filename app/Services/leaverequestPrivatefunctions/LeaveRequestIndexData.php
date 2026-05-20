@@ -8,7 +8,6 @@ use App\Models\LeaveType;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class LeaveRequestIndexData
 {
@@ -27,14 +26,13 @@ class LeaveRequestIndexData
     {
         $currentUser = Auth::user();
         $currentEmployee = $currentUser?->employee;
-        $isSuperAdmin = $this->userIsSuperAdmin((int) $currentUser->id);
 
-        $leaveRequests = $this->paginateLeaveRequests($currentEmployee, $isSuperAdmin);
+        $leaveRequests = $this->paginateLeaveRequests($currentEmployee);
         $balanceLookup = $this->employeeLeaveQuotaRecords->buildBalanceLookupForRequests(
             $leaveRequests->getCollection()
         );
 
-        $counts = $this->getDashboardCounts();
+        $counts = $this->getDashboardCounts($currentEmployee);
         $personalQuota = $this->buildPersonalQuota($currentEmployee);
 
         return view('admin.leave-requests.index', [
@@ -50,7 +48,6 @@ class LeaveRequestIndexData
             'mappedLeaveRequests' => $this->mapLeaveRequestsForTable(
                 $leaveRequests->getCollection(),
                 $currentUser,
-                $isSuperAdmin,
                 $balanceLookup
             ),
             'pendingCount' => $counts['pending'],
@@ -61,7 +58,7 @@ class LeaveRequestIndexData
         ]);
     }
 
-    private function paginateLeaveRequests(?Employee $currentEmployee, bool $isSuperAdmin)
+    private function paginateLeaveRequests(?Employee $currentEmployee)
     {
         return EmployeLeaveRequest::with([
             'fromEmployee.department:id,name',
@@ -70,20 +67,22 @@ class LeaveRequestIndexData
             'toEmployee:id,full_name,department_id,organization_id,role_id',
             'leaveType:id,name,annual_quota',
         ])
-            ->when(! $isSuperAdmin && $currentEmployee, function ($query) use ($currentEmployee) {
-                $query->where('to_employee_id', $currentEmployee->id);
-            })
+            ->when(
+                $currentEmployee,
+                fn ($query) => $query->where('to_employee_id', $currentEmployee->id),
+                fn ($query) => $query->whereRaw('1 = 0')
+            )
             ->latest('id')
             ->paginate(20);
     }
 
-    private function mapLeaveRequestsForTable($requests, $currentUser, bool $isSuperAdmin, array $balanceLookup): array
+    private function mapLeaveRequestsForTable($requests, $currentUser, array $balanceLookup): array
     {
         $statusMap = $this->statusSlugMap();
 
         $currentEmployee = $currentUser?->employee;
 
-        return $requests->map(function ($request) use ($statusMap, $currentUser, $currentEmployee, $isSuperAdmin, $balanceLookup) {
+        return $requests->map(function ($request) use ($statusMap, $currentEmployee, $balanceLookup) {
             $isAssignedApprover = $currentEmployee
                 && (int) $request->to_employee_id === (int) $currentEmployee->id;
 
@@ -96,11 +95,11 @@ class LeaveRequestIndexData
             $actionType = (int) $request->action_type;
             $statusCode = (int) $request->status;
 
-            $canRecommend = ($isAssignedApprover || $isSuperAdmin)
+            $canRecommend = $isAssignedApprover
                 && $actionType === self::RECOMMENDATION_ACTION_TYPE
                 && in_array($statusCode, [0, 1, 2], true);
 
-            $canApprove = ($isAssignedApprover || $isSuperAdmin)
+            $canApprove = $isAssignedApprover
                 && $actionType === self::FINAL_APPROVAL_ACTION_TYPE
                 && $statusCode === 0;
 
@@ -124,7 +123,6 @@ class LeaveRequestIndexData
                 'balance' => $balanceLookup[$balanceKey] ?? '0 / 0',
                 'actionType' => $actionType,
                 'isApprover' => $isAssignedApprover,
-                'isSuperAdmin' => $isSuperAdmin,
                 'canApprove' => $canApprove,
                 'canReject' => $canApprove,
                 'canCancel' => $canApprove,
@@ -134,10 +132,15 @@ class LeaveRequestIndexData
         })->values()->all();
     }
 
-    private function getDashboardCounts(): array
+    private function getDashboardCounts(?Employee $currentEmployee): array
     {
         $row = EmployeLeaveRequest::query()
-            ->whereIn('action_type', self::MASTER_ACTION_TYPES)
+            ->when(
+                $currentEmployee,
+                fn ($query) => $query->where('to_employee_id', $currentEmployee->id),
+                fn ($query) => $query->whereRaw('1 = 0')
+            )
+            ->whereIn('action_type', [0, 1, 2])
             ->selectRaw('SUM(CASE WHEN status IN (0, 1, 2) THEN 1 ELSE 0 END) as pending_count')
             ->selectRaw('SUM(CASE WHEN status = 3 AND updated_at >= ? THEN 1 ELSE 0 END) as approved_today_count', [now()->startOfDay()])
             ->selectRaw('SUM(CASE WHEN status = 3 AND start_date <= ? AND end_date >= ? THEN 1 ELSE 0 END) as away_today_count', [
@@ -169,14 +172,6 @@ class LeaveRequestIndexData
             $employee->id,
             $leaveTypes
         );
-    }
-
-    private function userIsSuperAdmin(int $userId): bool
-    {
-        return DB::table('user_roles')
-            ->where('user_id', $userId)
-            ->where('role_id', 1)
-            ->exists();
     }
 
     private function approvalLevelLabel(int $actionType): string

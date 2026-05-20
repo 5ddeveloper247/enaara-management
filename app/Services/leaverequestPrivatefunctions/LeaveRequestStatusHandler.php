@@ -10,7 +10,6 @@ use App\Notifications\LeaveStatusUpdateNotification;
 use App\Services\AuditTrailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class LeaveRequestStatusHandler
 {
@@ -64,11 +63,7 @@ class LeaveRequestStatusHandler
     ) {
         $currentUser = Auth::user();
 
-        if ($this->userIsSuperAdmin($currentUser->id)) {
-            return null;
-        }
-
-        $isAssigned = $leaveRequest->to_employee_id === optional($currentUser->employee)->id;
+        $isAssigned = (int) $leaveRequest->to_employee_id === (int) optional($currentUser->employee)->id;
 
         if (! $isAssigned) {
             return $this->deny($request, 'You do not have permission to act on this request.');
@@ -240,14 +235,6 @@ class LeaveRequestStatusHandler
             ->where('end_date', $leaveRequest->end_date)
             ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
             ->get();
-    }
-
-    private function userIsSuperAdmin(int $userId): bool
-    {
-        return DB::table('user_roles')
-            ->where('user_id', $userId)
-            ->where('role_id', 1)
-            ->exists();
     }
 
     private function statusLabelForCode(int $statusCode): string
