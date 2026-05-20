@@ -6,12 +6,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Notifications\Notifiable;
 use App\Models\Role;
 use App\Traits\LogsActivity;
 
 class Employee extends Model
 {
-    use SoftDeletes, LogsActivity;
+    use Notifiable, SoftDeletes, LogsActivity;
 
     protected $table = 'employees';
 
@@ -96,5 +97,17 @@ class Employee extends Model
     public function scopeShiftBasedWorkArrangement($query)
     {
         return $query->where('engagement_mode', 'shifts');
+    }
+
+    public function routeNotificationForMail(): ?string
+    {
+        $email = trim((string) ($this->email ?? ''));
+
+        return $email !== '' ? $email : null;
+    }
+
+    public function getNameAttribute(): string
+    {
+        return (string) ($this->attributes['full_name'] ?? 'Employee');
     }
 }

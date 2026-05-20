@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Employee;
 use App\Models\EmployeLeaveRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -20,6 +21,10 @@ class LeaveApprovalNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
+        if ($notifiable instanceof Employee) {
+            return ['mail', 'database'];
+        }
+
         return ['database', 'mail'];
     }
 
