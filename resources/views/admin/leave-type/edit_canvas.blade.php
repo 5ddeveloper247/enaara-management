@@ -215,7 +215,7 @@
 
             <div class="mb-3">
                 <label for="editAnnualQuota" class="form-label text-white">Annual Quota <span class="text-danger">*</span></label>
-                <input type="number" name="annual_quota" id="editAnnualQuota" class="form-control" step="0.25" min="0" max="999.99" required>
+                <input type="number" name="annual_quota" id="editAnnualQuota" class="form-control" step="any" min="0" max="999.99" required>
                 <div class="invalid-feedback" id="editAnnualQuotaError"></div>
             </div>
 
