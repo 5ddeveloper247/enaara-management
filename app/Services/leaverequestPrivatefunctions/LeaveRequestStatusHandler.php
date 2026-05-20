@@ -21,6 +21,7 @@ class LeaveRequestStatusHandler
     public function __construct(
         private AuditTrailService $auditTrailService,
         private LeaveRequestApproverResolver $leaveRequestApproverResolver,
+        private LeaveRequestNotifier $leaveRequestNotifier,
     ) {}
 
     public function handle(Request $request, int $leaveRequestId)
@@ -156,14 +157,14 @@ class LeaveRequestStatusHandler
         $finalRows = $this->findRelatedFinalApprovalRows($leaveRequest);
 
         foreach ($finalRows as $finalRow) {
-            $hodUser = User::find($finalRow->to_user_id);
+            $notification = (new LeaveApprovalRequestToHodNotification($finalRow, $actorName))
+                ->delay(now()->addSeconds(5));
 
-            if ($hodUser && $hodUser->is_active) {
-                $hodUser->notify(
-                    (new LeaveApprovalRequestToHodNotification($finalRow, $actorName))
-                        ->delay(now()->addSeconds(5))
-                );
-            }
+            $this->leaveRequestNotifier->notifyEmployeeById(
+                (int) $finalRow->to_employee_id,
+                $notification,
+                true
+            );
         }
     }
 
@@ -183,17 +184,22 @@ class LeaveRequestStatusHandler
             return;
         }
 
-        $hodUsers = $this->leaveRequestApproverResolver->resolveHodForFinalApproval($fromEmployee)
-            ->map(fn ($emp) => User::where('employee_id', $emp->id)->where('is_active', true)->first())
-            ->filter();
+        $hodEmployees = $this->leaveRequestApproverResolver->resolveHodForFinalApproval($fromEmployee);
 
-        foreach ($hodUsers as $hodUser) {
-            if ($hodUser->id !== $requesterUser?->id) {
-                $hodUser->notify(
-                    (new LeaveApprovedToHodNotification($leaveRequest, $actorName))
-                        ->delay(now()->addSeconds(6))
-                );
+        foreach ($hodEmployees as $hodEmployee) {
+            $hodUser = User::query()
+                ->where('employee_id', $hodEmployee->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($hodUser && $hodUser->id === $requesterUser?->id) {
+                continue;
             }
+
+            $notification = (new LeaveApprovedToHodNotification($leaveRequest, $actorName))
+                ->delay(now()->addSeconds(6));
+
+            $this->leaveRequestNotifier->notifyApprover($hodEmployee, $notification, true);
         }
     }
 
@@ -233,7 +239,6 @@ class LeaveRequestStatusHandler
             ->where('start_date', $leaveRequest->start_date)
             ->where('end_date', $leaveRequest->end_date)
             ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
-            ->whereNotNull('to_user_id')
             ->get();
     }
 

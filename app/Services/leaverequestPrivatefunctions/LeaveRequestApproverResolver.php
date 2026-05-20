@@ -5,12 +5,15 @@ namespace App\Services\leaverequestPrivatefunctions;
 use App\Models\Employee;
 use App\Models\EmployeLeaveRequest;
 use App\Models\Role;
-use App\Models\User;
 use App\Notifications\LeaveApprovalNotification;
 use Illuminate\Support\Collection;
 
 class LeaveRequestApproverResolver
 {
+    public function __construct(
+        private LeaveRequestNotifier $leaveRequestNotifier,
+    ) {}
+
     public function resolveManagersForRecommendation(Employee $employee): Collection
     {
         return $this->resolveApprovers($employee, 'max');
@@ -27,13 +30,10 @@ class LeaveRequestApproverResolver
             return;
         }
 
-        $approverUser = User::where('employee_id', $manager->id)->first();
-
-        if ($approverUser === null) {
-            return;
-        }
-
-        $approverUser->notify(new LeaveApprovalNotification($leaveRequest));
+        $this->leaveRequestNotifier->notifyApprover(
+            $manager,
+            new LeaveApprovalNotification($leaveRequest)
+        );
     }
 
     private function resolveApprovers(Employee $employee, string $levelStrategy): Collection

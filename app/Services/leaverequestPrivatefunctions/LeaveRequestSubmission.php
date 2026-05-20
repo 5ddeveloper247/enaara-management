@@ -22,6 +22,7 @@ class LeaveRequestSubmission
 
     public function __construct(
         private LeaveRequestApproverResolver $leaveRequestApproverResolver,
+        private LeaveRequestNotifier $leaveRequestNotifier,
     ) {}
 
     public function create(
@@ -133,12 +134,10 @@ class LeaveRequestSubmission
 
             $this->loadLeaveRequestRelations($finalLeaveRequest);
 
-            if ($hodUser) {
-                $hodUser->notify(
-                    (new LeaveApprovalRequestToHodNotification($finalLeaveRequest))
-                        ->delay(now()->addSeconds(5))
-                );
-            }
+            $notification = (new LeaveApprovalRequestToHodNotification($finalLeaveRequest))
+                ->delay(now()->addSeconds(5));
+
+            $this->leaveRequestNotifier->notifyApprover($hodEmployee, $notification, true);
 
             $finalLeaveRequests->push($finalLeaveRequest);
         }
