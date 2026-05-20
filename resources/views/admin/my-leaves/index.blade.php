@@ -297,7 +297,10 @@
             const badges = {
                 'approved': '<span class="badge bg-success">Approved</span>',
                 'pending': '<span class="badge bg-warning text-dark">Pending</span>',
-                'rejected': '<span class="badge bg-danger">Rejected</span>'
+                'rejected': '<span class="badge bg-danger">Rejected</span>',
+                'recommended': '<span class="badge bg-info text-dark">Recommended</span>',
+                'not_recommended': '<span class="badge bg-danger">Not Recommended</span>',
+                'cancelled': '<span class="badge bg-secondary">Cancelled</span>'
             };
             return badges[status] || badges['pending'];
         }
