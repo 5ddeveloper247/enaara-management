@@ -5,7 +5,7 @@
             <small class="text-muted">&copy; {{ date('Y') }} {{ config('app.name', 'Admin Panel') }}. All rights reserved.</small>
         </div>
         <div>
-            <small class="text-muted">Version 1.0.0</small>
+            <small class="text-muted">Made with ❤️ by 5D Solutions</small>
         </div>
     </div>
 </footer>
