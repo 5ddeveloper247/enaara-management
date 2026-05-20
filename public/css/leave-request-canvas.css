@@ -1,0 +1,48 @@
+.lr-canvas-balance-box {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.lr-canvas-balance-title {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.8125rem;
+    letter-spacing: 0.01em;
+}
+
+.lr-canvas-balance-row {
+    padding-bottom: 0.875rem;
+    margin-bottom: 0.875rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lr-canvas-balance-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.lr-canvas-balance-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.lr-canvas-balance-summary {
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 400;
+    margin-top: 0.15rem;
+}
+
+.lr-canvas-balance-meta {
+    margin-top: 0.4rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+}
+
+.lr-canvas-applied {
+    color: #ffd700;
+}
+
+.lr-canvas-approved {
+    color: #87ceeb;
+}

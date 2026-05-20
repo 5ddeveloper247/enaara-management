@@ -16,6 +16,8 @@ class EmployeeLeaveQuotaRecords
 {
     private const MASTER_ACTION_TYPES = [0, 2];
 
+    private const REQUEST_ACTION_TYPES_FOR_BALANCE = [0, 1, 2];
+
     public function buildSummaryForEmployee(int $employeeId, Collection $leaveTypes, ?int $year = null): array
     {
         if ($leaveTypes->isEmpty()) {
@@ -25,24 +27,65 @@ class EmployeeLeaveQuotaRecords
         $year = $year ?? (int) now()->year;
         $context = $this->loadQuotaContext($employeeId, $leaveTypes->pluck('id')->all(), $year);
         $summary = [];
+        $today = Carbon::today()->toDateString();
 
         foreach ($leaveTypes as $type) {
-            $maxAllowed = $this->maxAllowedDays($context, (int) $type->id, (float) $type->annual_quota);
-            $used = $this->usedDays($context, (int) $type->id);
+            $leaveTypeId = (int) $type->id;
+            $maxAllowed = $this->maxAllowedDays($context, $leaveTypeId, (float) $type->annual_quota);
+
+            $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
+            $approved = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [3], $today, '>=');
+            $claimed = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [3], $today, '<');
+
+            $reserved = $applied + $approved + $claimed;
+            $remaining = max(0, $maxAllowed - $reserved);
 
             $summary[] = [
                 'id' => $type->id,
                 'type' => $type->name,
                 'total' => $maxAllowed,
-                'used' => $used,
-                'remaining' => max(0, $maxAllowed - $used),
+                'applied' => $applied,
+                'approved' => $approved,
+                'claimed' => $claimed,
+                'used' => $reserved,
+                'remaining' => $remaining,
                 'percentage' => $maxAllowed > 0
-                    ? min(100, (int) round(($used / $maxAllowed) * 100))
+                    ? min(100, (int) round(($reserved / $maxAllowed) * 100))
                     : 0,
             ];
         }
 
         return $summary;
+    }
+
+    private function sumDedupedRequestDuration(
+        int $employeeId,
+        int $leaveTypeId,
+        int $year,
+        array $statuses,
+        ?string $compareEndDate,
+        ?string $endDateOperator = null
+    ): float {
+        $base = EmployeLeaveRequest::query()
+            ->where('from_employee_id', $employeeId)
+            ->where('leave_type_id', $leaveTypeId)
+            ->whereYear('start_date', $year)
+            ->whereIn('action_type', self::REQUEST_ACTION_TYPES_FOR_BALANCE)
+            ->whereIn('status', $statuses);
+
+        if ($compareEndDate !== null && $endDateOperator === '>=') {
+            $base->whereDate('end_date', '>=', $compareEndDate);
+        }
+
+        if ($compareEndDate !== null && $endDateOperator === '<') {
+            $base->whereDate('end_date', '<', $compareEndDate);
+        }
+
+        $sub = (clone $base)
+            ->selectRaw('MAX(duration) as block_days')
+            ->groupBy('start_date', 'end_date');
+
+        return (float) DB::query()->fromSub($sub, 'deduped_blocks')->sum('block_days');
     }
 
     public function buildBalanceLookupForRequests(Collection $requests): array
