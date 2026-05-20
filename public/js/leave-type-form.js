@@ -61,6 +61,23 @@
 
         bindCounter(desc, descCount);
 
+        function preventWheelChangingNumberInput(el) {
+            if (!el) {
+                return;
+            }
+            el.addEventListener(
+                'wheel',
+                function (e) {
+                    if (document.activeElement === el) {
+                        e.preventDefault();
+                    }
+                },
+                { passive: false }
+            );
+        }
+
+        preventWheelChangingNumberInput(document.getElementById('lt_entitlement_days'));
+
         function labelForSelect(select) {
             if (!select || select.selectedIndex < 0) {
                 return '—';

@@ -45,7 +45,7 @@
                         </div>
                         <div class="col-md-6">
                             <label for="annual_quota" class="form-label">Annual Quota <span class="text-danger">*</span></label>
-                            <input type="number" name="annual_quota" id="annual_quota" step="0.25" min="0" max="999.99" class="form-control @error('annual_quota') is-invalid @enderror" value="{{ old('annual_quota', $leaveType->annual_quota) }}" required>
+                            <input type="number" name="annual_quota" id="annual_quota" step="any" min="0" max="999.99" class="form-control @error('annual_quota') is-invalid @enderror" value="{{ old('annual_quota', $leaveType->annual_quota) }}" required>
                             @error('annual_quota')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
@@ -67,3 +67,14 @@
     </div>
 @endsection
 
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById('annual_quota');
+        if (!el) return;
+        el.addEventListener('wheel', function (e) {
+            if (document.activeElement === el) e.preventDefault();
+        }, { passive: false });
+    });
+</script>
+@endpush

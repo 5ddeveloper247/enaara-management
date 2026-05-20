@@ -170,7 +170,7 @@
                                 <div class="row g-3">
                                     <div class="col-md-3">
                                         <label for="lt_entitlement_days" class="form-label">Days / Entitlement <span class="text-danger">*</span></label>
-                                        <input type="number" class="form-control" id="lt_entitlement_days" name="annual_quota" step="0.25" min="0" max="999.99" value="0" data-preview="entitlement">
+                                        <input type="number" class="form-control" id="lt_entitlement_days" name="annual_quota" step="any" min="0" max="999.99" value="0" data-preview="entitlement">
                                     </div>
                                     <div class="col-md-3">
                                         <label for="lt_unit" class="form-label">Unit <span class="text-danger">*</span></label>
