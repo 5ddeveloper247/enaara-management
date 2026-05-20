@@ -4,6 +4,7 @@ namespace App\Services\leaverequestPrivatefunctions;
 
 use App\Models\Employee;
 use App\Models\EmployeeLeaveQuota;
+use App\Models\EmployeLeaveEntity;
 use App\Models\EmployeLeaveRequest;
 use App\Models\LeaveBalanceAdjustment;
 use App\Models\LeaveType;
@@ -27,15 +28,13 @@ class EmployeeLeaveQuotaRecords
         $year = $year ?? (int) now()->year;
         $context = $this->loadQuotaContext($employeeId, $leaveTypes->pluck('id')->all(), $year);
         $summary = [];
-        $today = Carbon::today()->toDateString();
-
         foreach ($leaveTypes as $type) {
             $leaveTypeId = (int) $type->id;
             $maxAllowed = $this->maxAllowedDays($context, $leaveTypeId, (float) $type->annual_quota);
 
             $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
-            $approved = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [3], $today, '>=');
-            $claimed = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [3], $today, '<');
+            $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
+            $claimed = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 1);
 
             $reserved = $applied + $approved + $claimed;
             $remaining = max(0, $maxAllowed - $reserved);
@@ -86,6 +85,20 @@ class EmployeeLeaveQuotaRecords
             ->groupBy('start_date', 'end_date');
 
         return (float) DB::query()->fromSub($sub, 'deduped_blocks')->sum('block_days');
+    }
+
+    private function sumLeaveEntityDurationByStatus(
+        int $employeeId,
+        int $leaveTypeId,
+        int $year,
+        int $entityStatus
+    ): float {
+        return (float) EmployeLeaveEntity::query()
+            ->where('employee_id', $employeeId)
+            ->where('leave_type_id', $leaveTypeId)
+            ->where('status', $entityStatus)
+            ->whereYear('leave_date', $year)
+            ->sum('duration');
     }
 
     public function buildBalanceLookupForRequests(Collection $requests): array
