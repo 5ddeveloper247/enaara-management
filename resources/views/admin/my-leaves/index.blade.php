@@ -23,6 +23,60 @@
             height: 150px;
             margin: 0 auto;
         }
+
+        .ml-balance-card {
+            border: 1px solid #e9ecef;
+            border-radius: 1rem;
+            padding: 1rem 0.75rem 1.25rem;
+            height: 100%;
+            background: #fff;
+        }
+
+        .ml-balance-summary {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #495057;
+            margin-top: 0.25rem;
+        }
+
+        .ml-balance-rows {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #f1f3f5;
+            text-align: left;
+            font-size: 0.78rem;
+        }
+
+        .ml-balance-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .ml-balance-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .ml-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .ml-dot-applied {
+            background: #fd7e14;
+        }
+
+        .ml-dot-approved {
+            background: #0d6efd;
+        }
+
+        .ml-dot-claimed {
+            background: #198754;
+        }
     </style>
 @endpush
 
@@ -52,18 +106,39 @@
                     <div class="card-body">
                         <div class="row g-4">
                             @foreach ($personalQuota as $quota)
+                                @php
+                                    $rem = $quota['remaining'] ?? 0;
+                                    $tot = $quota['total'] ?? 0;
+                                    $applied = $quota['applied'] ?? 0;
+                                    $approved = $quota['approved'] ?? 0;
+                                    $claimed = $quota['claimed'] ?? 0;
+                                @endphp
                                 <div class="col-md-3">
-                                    <div class="text-center">
+                                    <div class="ml-balance-card text-center">
                                         <div class="donut-chart-container">
                                             <canvas id="leaveChart_{{ $quota['id'] }}"></canvas>
                                             <div class="chart-center-text">
-                                                <div class="chart-number">{{ $quota['used'] }}</div>
-                                                <div class="chart-label">Used</div>
-                                                <div class="chart-total">of {{ $quota['total'] }}</div>
+                                                <div class="chart-number">{{ $rem }}</div>
+                                                <div class="chart-label">days left</div>
+                                                <div class="chart-total">of {{ $tot }}</div>
                                             </div>
                                         </div>
-                                        <h6 class="mt-3 mb-1">{{ $quota['type'] }}</h6>
-                                        <small class="text-muted">{{ $quota['remaining'] }} days remaining</small>
+                                        <h6 class="mt-3 mb-1 px-1">{{ $quota['type'] }}</h6>
+                                        <!-- <div class="ml-balance-summary">{{ $rem }} of {{ $tot }} days left</div> -->
+                                        <div class="ml-balance-rows px-2">
+                                            <div class="ml-balance-row">
+                                                <span class="d-flex align-items-center gap-2"><span class="ml-dot ml-dot-applied"></span> Applied</span>
+                                                <strong>{{ $applied }}d</strong>
+                                            </div>
+                                            <div class="ml-balance-row">
+                                                <span class="d-flex align-items-center gap-2"><span class="ml-dot ml-dot-approved"></span> Approved</span>
+                                                <strong>{{ $approved }}d</strong>
+                                            </div>
+                                            <div class="ml-balance-row">
+                                                <span class="d-flex align-items-center gap-2"><span class="ml-dot ml-dot-claimed"></span> Claimed</span>
+                                                <strong>{{ $claimed }}d</strong>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach
@@ -122,34 +197,35 @@
         });
 
         function initializeDonutCharts() {
+            const segmentApplied = '#fd7e14';
+            const segmentApproved = '#0d6efd';
+            const segmentClaimed = '#198754';
+            const segmentLeft = '#e9ecef';
+
             myLeaves.forEach(quota => {
                 const ctx = document.getElementById(`leaveChart_${quota.id}`);
                 if (!ctx) return;
 
-                const colors = {
-                    'annual': '#e6c673',
-                    'sick': '#dc3545',
-                    'casual': '#0dcaf0',
-                    'comp': '#ffc107',
-                    'maternity': '#fd7e14',
-                    'unpaid': '#6c757d'
-                };
+                const applied = Number(quota.applied || 0);
+                const approved = Number(quota.approved || 0);
+                const claimed = Number(quota.claimed || 0);
+                const remaining = Number(quota.remaining || 0);
+                const total = Number(quota.total || 0);
 
-                const typeLower = quota.type.toLowerCase();
-                let color = '#6c757d'; // default
-                for (const [key, val] of Object.entries(colors)) {
-                    if (typeLower.includes(key)) {
-                        color = val;
-                        break;
-                    }
+                let data = [applied, approved, claimed, remaining];
+                let colors = [segmentApplied, segmentApproved, segmentClaimed, segmentLeft];
+
+                if (total <= 0) {
+                    data = [1];
+                    colors = ['#e9ecef'];
                 }
 
                 new Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         datasets: [{
-                            data: [quota.used, quota.remaining],
-                            backgroundColor: [color, '#e9ecef'],
+                            data,
+                            backgroundColor: colors,
                             borderWidth: 0
                         }]
                     },
@@ -159,7 +235,17 @@
                         maintainAspectRatio: true,
                         plugins: {
                             legend: { display: false },
-                            tooltip: { enabled: false }
+                            tooltip: {
+                                callbacks: {
+                                    label(ctx) {
+                                        if (total <= 0) return '';
+                                        const labels = ['Applied', 'Approved', 'Claimed', 'Remaining'];
+                                        const i = ctx.dataIndex;
+                                        const v = ctx.raw;
+                                        return `${labels[i]}: ${v} day${v === 1 ? '' : 's'}`;
+                                    }
+                                }
+                            }
                         }
                     }
                 });
@@ -297,7 +383,10 @@
             const badges = {
                 'approved': '<span class="badge bg-success">Approved</span>',
                 'pending': '<span class="badge bg-warning text-dark">Pending</span>',
-                'rejected': '<span class="badge bg-danger">Rejected</span>'
+                'rejected': '<span class="badge bg-danger">Rejected</span>',
+                'recommended': '<span class="badge bg-info text-dark">Recommended</span>',
+                'not_recommended': '<span class="badge bg-danger">Not Recommended</span>',
+                'cancelled': '<span class="badge bg-secondary">Cancelled</span>'
             };
             return badges[status] || badges['pending'];
         }

@@ -7,7 +7,6 @@ use App\Http\Requests\Admin\LeaveRequestStore;
 use App\Services\LeaveRequestService;
 use Illuminate\Http\RedirectResponse;
 use App\Models\Employee;
-use App\Models\LeaveType;
 use Auth;
 class LeaveRequestController extends Controller
 {
@@ -37,7 +36,7 @@ class LeaveRequestController extends Controller
             'personalQuota' => $personalQuota,
             'personalHistory' => $personalHistory,
             'employees' => Employee::where('is_active', true)->orderBy('full_name')->get(),
-            'leaveTypes' => LeaveType::where('is_active', true)->orderBy('name')->get(),
+            'leaveTypes' => $this->leaveRequestService->getMyLeavesLeaveTypes(),
         ]);
     }
 

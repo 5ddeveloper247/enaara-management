@@ -79,35 +79,6 @@
 
     <!-- Counters -->
     @include('admin.leave-requests.counters')
-
-    <!-- Who's Away Today -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card border-0 rounded-4">
-                <div class="card-header bg-transparent border-0 p-4">
-                    <h6 class="mb-0 fw-semibold">Who's Away Today</h6>
-                </div>
-                <div class="card-body">
-                    <div id="awayTodayList">
-                        <!-- Sample data will be populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 rounded-4">
-                <div class="card-header bg-transparent border-0 p-4">
-                    <h6 class="mb-0 fw-semibold">Departmental Quota Warnings</h6>
-                </div>
-                <div class="card-body">
-                    <div id="quotaWarnings">
-                        <!-- Sample warnings will be populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Pending Requests -->
     <div class="row">
         <div class="col-md-12">
