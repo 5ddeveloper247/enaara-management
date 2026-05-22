@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\Log;
 class ShiftRosterService
 {
     public function __construct(
-        private readonly ShiftRosterHistoryService $historyService
+        private readonly ShiftRosterHistoryService $historyService,
+        private readonly PublicHolidayResolver $publicHolidayResolver,
+        private readonly CompensatoryLeaveAwardService $compensatoryLeaveAwardService,
     ) {
     }
 
@@ -147,9 +149,16 @@ class ShiftRosterService
         if (($data['employee_type'] ?? 'employee') === 'outsourced') {
             $payload['outsourced_employee_id'] = (int) $data['employee_id'];
             $payload['employee_id'] = null;
+            $payload['compensatory_reason'] = null;
         } else {
             $payload['employee_id'] = (int) $data['employee_id'];
             $payload['outsourced_employee_id'] = null;
+            $this->compensatoryLeaveAwardService->applyCompensatoryReasonToPayload(
+                $payload,
+                $entry,
+                $entry->employee,
+                (string) $data['roster_date']
+            );
         }
 
         $before = $this->historyService->snapshot($entry);
@@ -474,6 +483,17 @@ class ShiftRosterService
                 'deletedByName' => $entry->deletedBy?->name,
             ];
         })->all();
+
+        $virtualHolidays = $this->publicHolidayResolver->buildVirtualRosterHolidaysForGrid(
+            $employees,
+            $outsourcedEmployees,
+            $startDate,
+            $endDate
+        );
+
+        if ($virtualHolidays !== []) {
+            $shiftsOut = array_merge($shiftsOut, $virtualHolidays);
+        }
 
         return [
             'departments' => $departments,
@@ -803,6 +823,18 @@ class ShiftRosterService
     private function saveDailyRosterEntry(array $lookup, array $payload, ?int $userId): ShiftRosterEntry
     {
         $activeEntry = ShiftRosterEntry::query()->where($lookup)->first();
+
+        if (! empty($lookup['employee_id'])) {
+            $employee = Employee::query()->find((int) $lookup['employee_id']);
+            $this->compensatoryLeaveAwardService->applyCompensatoryReasonToPayload(
+                $payload,
+                $activeEntry,
+                $employee,
+                (string) $payload['roster_date']
+            );
+        } else {
+            $payload['compensatory_reason'] = null;
+        }
 
         if ($activeEntry) {
             $before = $this->historyService->snapshot($activeEntry);

@@ -32,6 +32,7 @@ class ShiftRosterEntry extends Model
         'late_check_in',
         'status',
         'is_compensatory_earned',
+        'compensatory_reason',
         'created_by',
         'updated_by',
         'assigned_by',

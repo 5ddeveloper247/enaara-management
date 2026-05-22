@@ -124,16 +124,19 @@
     }
 
     function sortShiftsForCell(shiftList) {
+        var holidays = [];
         var active = [];
         var deleted = [];
         (shiftList || []).forEach(function(s) {
             if (s.deletedAt) {
                 deleted.push(s);
+            } else if (s.isPublicHoliday) {
+                holidays.push(s);
             } else {
                 active.push(s);
             }
         });
-        return active.concat(deleted);
+        return holidays.concat(active).concat(deleted);
     }
 
     function renderCellShiftsHtml(shiftList) {
@@ -164,6 +167,19 @@
     }
 
     function pillHtml(s) {
+        if (s.isPublicHoliday || (s.status && String(s.status).toLowerCase() === 'holiday')) {
+            var holidayLabel = s.holidayName ? String(s.holidayName) : 'Holiday';
+            if (holidayLabel.length > 18) {
+                holidayLabel = holidayLabel.substring(0, 16) + '…';
+            }
+            return '<div class="shift-pill shift-holiday" title="' + escapeHtml(s.holidayName || 'Public holiday') + '">' +
+                '<span class="shift-pill-icon" aria-hidden="true"><i class="bi bi-calendar-event"></i></span>' +
+                '<div class="shift-pill-top">' +
+                '<span class="shift-time">' + escapeHtml(holidayLabel) + '</span>' +
+                '</div>' +
+                '</div>';
+        }
+
         if (s.isOffDay || (s.status && String(s.status).toLowerCase() === 'off')) {
             return '<div class="shift-pill shift-off">' +
                 '<span class="shift-pill-icon" aria-hidden="true"><i class="bi bi-calendar-x"></i></span>' +
@@ -354,12 +370,20 @@
                         var today = stripTime(new Date());
                         var cellDate = stripTime(d);
                         var isPast = cellDate < today;
-                        var hasActiveShift = cellShifts.some(function(s) { return !s.deletedAt; });
+                        var hasActiveShift = cellShifts.some(function(s) {
+                            return !s.deletedAt && !s.isPublicHoliday;
+                        });
+                        var hasPublicHoliday = cellShifts.some(function(s) {
+                            return !s.deletedAt && s.isPublicHoliday;
+                        });
 
                         var td = document.createElement('td');
                         td.className = 'shift-cell';
                         if (cellShifts.length || !isPast) {
                             td.classList.add('roster-day-cell');
+                        }
+                        if (hasPublicHoliday) {
+                            td.classList.add('roster-day-holiday');
                         }
 
                         td.setAttribute('data-employee-id', String(empRef));
@@ -383,6 +407,9 @@
                             } else {
                                 td.innerHTML = addHtml;
                             }
+                        } else if (hasPublicHoliday && hasActiveShift && !isPast) {
+                            td.insertAdjacentHTML('beforeend',
+                                '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add roster-day-add-inline"><i class="bi bi-plus-lg"></i></span>');
                         }
                         tr.appendChild(td);
                     });
@@ -1316,6 +1343,11 @@
                         }
                     }
                 }
+
+                if (shift && shift.isPublicHoliday) {
+                    shift = null;
+                }
+
                 var empName = '';
                 var deptName = '';
                 if (rosterData && rosterData.employees) {
