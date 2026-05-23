@@ -68,7 +68,17 @@
                 </div>
             </section>
             <div class="roster-shift-divider mb-4" role="presentation"></div>
-            <section class="roster-shift-section mb-2" aria-label="Edit assignment">
+            <section class="roster-shift-section mb-2 roster-shift-off-day-panel" id="rosterShiftOffDayPanel" style="display: none;" aria-label="Off day">
+                <div class="roster-shift-section-label mb-3">Off day</div>
+                <div class="roster-shift-off-day-card">
+                    <span class="roster-shift-off-day-icon" aria-hidden="true"><i class="bi bi-calendar-x"></i></span>
+                    <div>
+                        <div class="roster-shift-off-day-title">Marked as off</div>
+                        <p class="roster-shift-off-day-text mb-0">This roster entry is an off day. Remove it to assign a shift on this date.</p>
+                    </div>
+                </div>
+            </section>
+            <section class="roster-shift-section mb-2" id="rosterShiftAssignmentSection" aria-label="Edit assignment">
                 <div class="roster-shift-section-label mb-3">Assignment</div>
                 <div class="mb-3">
                     <label for="rosterShiftPlannerId" class="form-label roster-shift-field-label">

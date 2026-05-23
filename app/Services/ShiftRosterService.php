@@ -461,8 +461,8 @@ class ShiftRosterService
                 'rosterDate' => $entry->roster_date->toDateString(),
                 // Kept for backward compatibility/fallbacks.
                 'day' => (int) $entry->roster_date->format('d'),
-                'shiftPlannerId' => $entry->shift_planner_id,
-                'isCustomTime' => $isCustomTime,
+                'shiftPlannerId' => $isOffDay ? null : $entry->shift_planner_id,
+                'isCustomTime' => $isOffDay ? false : $isCustomTime,
                 'shiftType' => $shiftType,
                 'timeStart' => $isOffDay ? null : $this->formatShiftTime($entry->start_time ?? $entry->shift?->start_time),
                 'timeEnd' => $isOffDay ? null : $this->formatShiftTime($entry->end_time ?? $entry->shift?->end_time),
@@ -830,7 +830,7 @@ class ShiftRosterService
                 $payload,
                 $activeEntry,
                 $employee,
-                (string) $payload['roster_date']
+                (string) ($lookup['roster_date'] ?? $payload['roster_date'] ?? '')
             );
         } else {
             $payload['compensatory_reason'] = null;
