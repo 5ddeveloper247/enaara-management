@@ -202,8 +202,61 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     min-width: 48px;
     width: 48px;
     text-align: center !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding: 0.35rem 0.15rem !important;
+    vertical-align: bottom !important;
+}
+
+.roster-col-day.roster-col-holiday {
+    min-width: 62px;
+    width: 62px;
+    white-space: normal !important;
+}
+
+.roster-col-day-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+    line-height: 1.15;
+}
+
+.roster-col-day-label {
+    display: block;
+    font-size: inherit;
+    white-space: nowrap;
+}
+
+.roster-col-holiday-badge {
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    padding: 2px 3px;
+    border-radius: 4px;
+    font-size: 7px;
+    font-weight: 600;
+    line-height: 1.15;
+    text-transform: none;
+    letter-spacing: 0;
+    color: #dcfce7;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(187, 247, 208, 0.4);
+    cursor: default;
+}
+
+.roster-col-holiday-badge .bi {
+    font-size: 7px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.roster-col-holiday-text {
+    white-space: normal;
+    word-break: break-word;
+    text-align: center;
+    hyphens: auto;
 }
 
 
@@ -475,10 +528,6 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     font-size: 11px;
 }
 
-.roster-day-holiday.roster-day-cell {
-    background-color: rgba(220, 252, 231, 0.35);
-}
-
 .shift-pill.shift-late .shift-status-late {
     color: var(--danger-color);
     font-size: 9px;
@@ -532,6 +581,11 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
         min-width: 44px;
         width: 44px;
         font-size: 0.75rem;
+    }
+
+    .roster-col-day.roster-col-holiday {
+        min-width: 56px;
+        width: 56px;
     }
 
     .shift-cell {

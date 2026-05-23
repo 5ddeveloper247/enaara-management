@@ -240,7 +240,47 @@
         if (monthEl) monthEl.textContent = formatRosterMonthYear(rosterViewDate);
     }
 
-    function buildTheadRow(days) {
+    function collectHolidaysByDate(shifts) {
+        var byDate = {};
+        (shifts || []).forEach(function(s) {
+            if (!s.isPublicHoliday || s.deletedAt) {
+                return;
+            }
+            var iso = s.rosterDate ? String(s.rosterDate) : '';
+            if (!iso) {
+                return;
+            }
+            if (!byDate[iso]) {
+                byDate[iso] = {};
+            }
+            var name = s.holidayName ? String(s.holidayName).trim() : 'Holiday';
+            byDate[iso][name] = true;
+        });
+        var result = {};
+        Object.keys(byDate).forEach(function(iso) {
+            result[iso] = Object.keys(byDate[iso]);
+        });
+        return result;
+    }
+
+    function holidayHeaderBadgeHtml(names) {
+        if (!names || !names.length) {
+            return '';
+        }
+        var label = names.join(', ');
+        return '<span class="roster-col-holiday-badge" title="' + escapeHtml(label) + '">' +
+            '<i class="bi bi-calendar-event" aria-hidden="true"></i>' +
+            '<span class="roster-col-holiday-text">' + escapeHtml(label) + '</span>' +
+            '</span>';
+    }
+
+    function stripPublicHolidaysFromCellShifts(cellShifts) {
+        return (cellShifts || []).filter(function(s) {
+            return !(s.isPublicHoliday && !s.deletedAt);
+        });
+    }
+
+    function buildTheadRow(days, holidaysByDate) {
         var tr = document.getElementById('rosterTheadRow');
         if (!tr) return;
         var existing = tr.querySelectorAll('.roster-col-day');
@@ -248,9 +288,18 @@
         var viewMonth = rosterViewDate.getMonth();
         var viewYear = rosterViewDate.getFullYear();
         days.forEach(function(d) {
+            var iso = dateToISO(d);
+            var holidayNames = (holidaysByDate && holidaysByDate[iso]) ? holidaysByDate[iso] : [];
             var th = document.createElement('th');
             th.className = 'roster-col-day';
-            th.textContent = getDayName(d) + ' ' + d.getDate();
+            th.setAttribute('data-roster-date', iso);
+            if (holidayNames.length) {
+                th.classList.add('roster-col-holiday');
+            }
+            th.innerHTML = '<div class="roster-col-day-inner">' +
+                '<span class="roster-col-day-label">' + getDayName(d) + ' ' + d.getDate() + '</span>' +
+                holidayHeaderBadgeHtml(holidayNames) +
+                '</div>';
             if (d.getMonth() !== viewMonth || d.getFullYear() !== viewYear) {
                 th.style.opacity = '0.55';
             }
@@ -315,8 +364,9 @@
         if (rosterWeekIndex < 1) rosterWeekIndex = 1;
 
         var days = getWeekDays(year, month1, rosterWeekIndex);
+        var holidaysByDate = collectHolidaysByDate(shifts);
 
-        buildTheadRow(days);
+        buildTheadRow(days, holidaysByDate);
         updateRosterWeekDisplay();
 
         var tbody = document.getElementById('rosterTableBody');
@@ -366,14 +416,15 @@
                     days.forEach(function(d) {
                         var iso = dateToISO(d);
                         var k = empRef + '-' + iso;
-                        var cellShifts = shiftsByEmpDay[k] || [];
+                        var rawCellShifts = shiftsByEmpDay[k] || [];
+                        var cellShifts = stripPublicHolidaysFromCellShifts(rawCellShifts);
                         var today = stripTime(new Date());
                         var cellDate = stripTime(d);
                         var isPast = cellDate < today;
                         var hasActiveShift = cellShifts.some(function(s) {
-                            return !s.deletedAt && !s.isPublicHoliday;
+                            return !s.deletedAt;
                         });
-                        var hasPublicHoliday = cellShifts.some(function(s) {
+                        var hasPublicHoliday = rawCellShifts.some(function(s) {
                             return !s.deletedAt && s.isPublicHoliday;
                         });
 
@@ -381,9 +432,6 @@
                         td.className = 'shift-cell';
                         if (cellShifts.length || !isPast) {
                             td.classList.add('roster-day-cell');
-                        }
-                        if (hasPublicHoliday) {
-                            td.classList.add('roster-day-holiday');
                         }
 
                         td.setAttribute('data-employee-id', String(empRef));
@@ -397,6 +445,8 @@
                         if (cellShifts.length) {
                             td.setAttribute('data-shifts', JSON.stringify(cellShifts));
                             td.innerHTML = renderCellShiftsHtml(cellShifts);
+                        } else if (rawCellShifts.length && hasPublicHoliday) {
+                            td.setAttribute('data-shifts', '[]');
                         }
 
                         if (!hasActiveShift && !isPast) {
