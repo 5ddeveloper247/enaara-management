@@ -9,6 +9,10 @@ use Illuminate\Validation\ValidationException;
 
 class LeaveRequestApplicationChecks
 {
+    public function __construct(
+        private LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
+    ) {}
+
     public function assertEligibleForApplication(
         Employee $employee,
         LeaveType $leaveType,
@@ -16,6 +20,8 @@ class LeaveRequestApplicationChecks
         Carbon $endDate,
         float $durationDays
     ): void {
+        $this->leaveRequestLeaveTypeFilter->assertCompensatoryLeaveAllowed($employee, $leaveType, $startDate);
+
         $leaveType->loadMissing('setting');
         $setting = $leaveType->setting;
 

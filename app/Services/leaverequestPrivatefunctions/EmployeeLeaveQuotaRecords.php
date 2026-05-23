@@ -57,6 +57,24 @@ class EmployeeLeaveQuotaRecords
         return $summary;
     }
 
+    public function earnedLeaveRemainingDays(int $employeeId, int $leaveTypeId, ?int $year = null): float
+    {
+        $year = $year ?? (int) now()->year;
+        $context = $this->loadQuotaContext($employeeId, [$leaveTypeId], $year);
+
+        $quota = $context['quotas'][$leaveTypeId] ?? null;
+        $maxAllowed = $quota
+            ? (float) $quota->quota + (float) ($context['adjustments'][$leaveTypeId] ?? 0)
+            : 0.0;
+
+        $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
+        $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
+        $claimed = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 1);
+        $reserved = $applied + $approved + $claimed;
+
+        return max(0, $maxAllowed - $reserved);
+    }
+
     private function sumDedupedRequestDuration(
         int $employeeId,
         int $leaveTypeId,

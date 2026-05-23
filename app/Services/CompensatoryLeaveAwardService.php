@@ -23,7 +23,11 @@ class CompensatoryLeaveAwardService
     {
         return LeaveType::query()
             ->where('is_active', true)
-            ->whereRaw('LOWER(code) = ?', ['cpl'])
+            ->where(function ($query) {
+                $query->whereRaw('LOWER(code) = ?', ['cpl'])
+                    ->orWhereRaw('LOWER(name) LIKE ?', ['%compensatory%']);
+            })
+            ->orderByRaw("CASE WHEN LOWER(code) = 'cpl' THEN 0 ELSE 1 END")
             ->first();
     }
 

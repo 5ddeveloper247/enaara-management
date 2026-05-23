@@ -171,7 +171,14 @@
 
         var employeeId = employeeSelect.value;
         populateLeaveTypes(leaveTypeSelect, []);
-        if (!employeeId) return;
+        var balanceContainer = document.getElementById('leaveBalanceContainer');
+        if (!employeeId) {
+          if (balanceContainer) {
+            balanceContainer.innerHTML =
+              '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
+          }
+          return;
+        }
 
         setLeaveTypesLoading(leaveTypeSelect, true);
 

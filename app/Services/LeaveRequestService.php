@@ -15,6 +15,7 @@ use App\Services\leaverequestPrivatefunctions\LeaveRequestSubmission;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestIndexData;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestStatusHandler;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestApplicationChecks;
+use App\Services\leaverequestPrivatefunctions\LeaveRequestLeaveTypeFilter;
 
 class LeaveRequestService
 {
@@ -25,6 +26,7 @@ class LeaveRequestService
         protected LeaveRequestStatusHandler $leaveRequestStatusHandler,
         protected LeaveRequestIndexData $leaveRequestIndexData,
         protected LeaveRequestApplicationChecks $leaveRequestApplicationChecks,
+        protected LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
     ) {}
 
     public function index()
@@ -34,7 +36,16 @@ class LeaveRequestService
 
     public function getMyLeavesLeaveTypes()
     {
-        return $this->authenticatedEmployeeRecords->getLeaveTypesForAuthenticatedEmployee();
+        $employee = $this->authenticatedEmployeeRecords->resolveAuthenticatedEmployee();
+
+        if ($employee === null) {
+            return collect();
+        }
+
+        return $this->leaveRequestLeaveTypeFilter->filterForEmployee(
+            $this->authenticatedEmployeeRecords->getLeaveTypesForEmployee($employee),
+            $employee->id
+        );
     }
 
     public function getPersonalQuotaSummary($employeeId)
@@ -50,6 +61,11 @@ class LeaveRequestService
             $employeeId,
             $leaveTypes
         );
+    }
+
+    public function filterPersonalQuotaForLeaveForm(array $personalQuota, int $employeeId): array
+    {
+        return $this->leaveRequestLeaveTypeFilter->filterQuotaSummary($personalQuota, $employeeId);
     }
 
     public function getPersonalLeaveHistory($employeeId)
@@ -183,12 +199,18 @@ class LeaveRequestService
 
         $employee = Employee::with('role')->findOrFail((int) $request->input('employee_id'));
 
-        $leaveTypes = $this->authenticatedEmployeeRecords
-            ->getLeaveTypesForQuotaSummary($employee)
+        $leaveTypes = $this->leaveRequestLeaveTypeFilter
+            ->filterForEmployee(
+                $this->authenticatedEmployeeRecords->getLeaveTypesForQuotaSummary($employee),
+                $employee->id
+            )
             ->map(fn ($type) => $type->only(['id', 'name']))
             ->values();
 
-        $quotaSummary = $this->getPersonalQuotaSummary($employee->id);
+        $quotaSummary = $this->leaveRequestLeaveTypeFilter->filterQuotaSummary(
+            $this->getPersonalQuotaSummary($employee->id),
+            $employee->id
+        );
 
         return response()->json([
             'success' => true,

@@ -20,6 +20,7 @@ class LeaveRequestIndexData
     public function __construct(
         private EmployeeLeaveQuotaRecords $employeeLeaveQuotaRecords,
         private AuthenticatedEmployeeRecords $authenticatedEmployeeRecords,
+        private LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
     ) {}
 
     public function buildIndexView(): View
@@ -40,10 +41,12 @@ class LeaveRequestIndexData
                 ->where('is_active', true)
                 ->orderBy('full_name')
                 ->get(['id', 'full_name', 'employee_code']),
-            'leaveTypes' => LeaveType::query()
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get(['id', 'name']),
+            'leaveTypes' => $this->leaveRequestLeaveTypeFilter->excludeCompensatoryFromList(
+                LeaveType::query()
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+            ),
             'leaveRequests' => $leaveRequests,
             'mappedLeaveRequests' => $this->mapLeaveRequestsForTable(
                 $leaveRequests->getCollection(),

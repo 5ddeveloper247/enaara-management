@@ -33,7 +33,7 @@ class LeaveRequestController extends Controller
         $personalHistory = $this->leaveRequestService->getPersonalLeaveHistory($employeeId);
 
         return view('admin.my-leaves.index', [
-            'personalQuota' => $personalQuota,
+            'personalQuota' => $this->leaveRequestService->filterPersonalQuotaForLeaveForm($personalQuota, $employeeId),
             'personalHistory' => $personalHistory,
             'employees' => Employee::where('is_active', true)->orderBy('full_name')->get(),
             'leaveTypes' => $this->leaveRequestService->getMyLeavesLeaveTypes(),

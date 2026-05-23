@@ -48,15 +48,19 @@
                 <div class="p-3 rounded-3 border mb-3" style="border-color: #ffffff1a !important;">
                     <small class="opacity-75 text-white d-block mb-2">Current Leave Balance</small>
                     <div class="row g-2" id="leaveBalanceContainer">
-                        @isset($personalQuota)
-                            @foreach($personalQuota as $quota)
-                                <div class="col-6">
-                                    <div class="small">{{ $quota['type'] }}: <strong>{{ $quota['remaining'] }}</strong> days</div>
-                                </div>
-                            @endforeach
+                        @if(request()->routeIs('admin.my.leaves.index'))
+                            @isset($personalQuota)
+                                @foreach($personalQuota as $quota)
+                                    <div class="col-6">
+                                        <div class="small">{{ $quota['type'] }}: <strong>{{ $quota['remaining'] }}</strong> days</div>
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="col-12 text-center py-2 opacity-50 small">No leave balances available</div>
+                            @endisset
                         @else
                             <div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>
-                        @endisset
+                        @endif
                     </div>
                 </div>
             </div>
