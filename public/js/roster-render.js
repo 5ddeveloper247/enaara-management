@@ -340,6 +340,45 @@
         });
     }
 
+    function sortRosterEmployeesByRoleLevel(employeeList) {
+        return (employeeList || []).slice().sort(function(a, b) {
+            var levelA = Number(a.roleLevel);
+            var levelB = Number(b.roleLevel);
+            if (!Number.isFinite(levelA)) levelA = 999999;
+            if (!Number.isFinite(levelB)) levelB = 999999;
+            if (levelA !== levelB) {
+                return levelA - levelB;
+            }
+            return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' });
+        });
+    }
+
+    function renderRosterEmployeeCellHtml(emp) {
+        var isThirdPartyPersonnel = String(emp.sourceType || '') === 'outsourced';
+        var employeeCode = String(emp.employeeCode || emp.employee_code || '').trim();
+        var designation = String(emp.designation || '').trim();
+        var nameHtml = escapeHtml(emp.name || '');
+        if (isThirdPartyPersonnel) {
+            nameHtml += ' <span class="badge text-bg-info ms-1 roster-emp-third-party-badge">Third-Party</span>';
+        }
+        var codeHtml = employeeCode
+            ? '<span class="roster-emp-id" title="Employee ID">' + escapeHtml(employeeCode) + '</span>'
+            : '<span class="roster-emp-id roster-emp-id-empty" title="Employee ID">—</span>';
+        var designationHtml = designation
+            ? '<span class="roster-emp-designation" title="Designation">' + escapeHtml(designation) + '</span>'
+            : '<span class="roster-emp-designation roster-emp-designation-empty">—</span>';
+
+        return [
+            '<div class="roster-emp-cell">',
+            '<span class="roster-emp-name">', nameHtml, '</span>',
+            '<div class="roster-emp-subrow">',
+            codeHtml,
+            designationHtml,
+            '</div>',
+            '</div>'
+        ].join('');
+    }
+
     function renderRosterTableFromData() {
         var r = rosterData;
         if (!r || !r.departments || !r.employees) return;
@@ -384,11 +423,11 @@
             tbody.appendChild(emptyTr);
         } else {
             depts.forEach(function(dept) {
-                var deptEmployees = employees.filter(function(e) {
+                var deptEmployees = sortRosterEmployeesByRoleLevel(employees.filter(function(e) {
                     if (Number(e.departmentId) !== Number(dept.id)) return false;
                     if (rosterPersonnelFilter === 'third_party') return String(e.sourceType || '') === 'outsourced';
                     return String(e.sourceType || '') !== 'outsourced';
-                });
+                }));
                 if (deptEmployees.length === 0) {
                     return;
                 }
@@ -404,15 +443,10 @@
 
                 deptEmployees.forEach(function(emp) {
                     var empRef = emp.id ?? emp.employeeId ?? emp.employee_id ?? '';
-                    var isThirdPartyPersonnel = String(emp.sourceType || '') === 'outsourced';
-                    var employeeNameHtml = escapeHtml(emp.name);
-                    if (isThirdPartyPersonnel) {
-                        employeeNameHtml += ' <span class="badge text-bg-info ms-1">Third-Party Personnel</span>';
-                    }
                     var tr = document.createElement('tr');
                     tr.className = 'roster-emp-row';
                     tr.setAttribute('data-dept-id', String(dept.id));
-                    tr.innerHTML = '<td></td><td class="text-muted">' + employeeNameHtml + '</td>';
+                    tr.innerHTML = '<td></td><td class="roster-col-employee-cell">' + renderRosterEmployeeCellHtml(emp) + '</td>';
                     days.forEach(function(d) {
                         var iso = dateToISO(d);
                         var k = empRef + '-' + iso;

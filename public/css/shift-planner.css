@@ -187,8 +187,8 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 }
 
 .roster-col-employee {
-    min-width: 180px;
-    width: 200px;
+    min-width: 220px;
+    width: 240px;
     position: sticky;
     left: 44px;
     z-index: 2;
@@ -196,6 +196,58 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
     backface-visibility: hidden;
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
+}
+
+.roster-emp-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.roster-emp-subrow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.5rem;
+    min-width: 0;
+}
+
+.roster-emp-id {
+    flex: 0 0 auto;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--main-color);
+    word-break: break-word;
+}
+
+.roster-emp-id-empty {
+    color: #9ca3af;
+}
+
+.roster-emp-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.roster-emp-designation {
+    font-size: 0.72rem;
+    line-height: 1.25;
+    color: #6b7280;
+    word-break: break-word;
+}
+
+.roster-emp-designation-empty {
+    color: #9ca3af;
+}
+
+.roster-emp-third-party-badge {
+    font-size: 0.62rem !important;
+    vertical-align: middle;
 }
 
 .roster-col-day {
@@ -313,10 +365,13 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     position: sticky;
     left: 44px;
     z-index: 1;
-    min-width: 180px;
+    min-width: 220px;
+    width: 240px;
     background: #fff !important;
     border-right: 1px solid rgba(0, 0, 0, 0.06);
     font-size: 0.85rem;
+    vertical-align: middle !important;
+    padding: 0.45rem 0.55rem !important;
 }
 
 .roster-table tbody tr.roster-emp-row:hover td:nth-child(2) {

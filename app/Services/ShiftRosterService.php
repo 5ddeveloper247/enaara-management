@@ -331,10 +331,9 @@ class ShiftRosterService
         $startDate = $firstWeekStart->copy()->addWeeks($weekIndex - 1)->startOfDay();
         $endDate = $startDate->copy()->addDays(6)->endOfDay();
 
-        $employees = Employee::with('department')
+        $employees = Employee::with(['department', 'assignedDesignation', 'role.roleLevel'])
             ->where('is_active', 1)
             ->shiftBasedWorkArrangement()
-            ->orderBy('department_id')
             ->get();
         $outsourcedEmployees = OutsourcedEmployee::with('contractorCompany')
             ->whereNull('deleted_at')
@@ -380,6 +379,9 @@ class ShiftRosterService
             'sourceType' => 'employee',
             'sourceId' => $e->id,
             'name' => $e->full_name,
+            'employeeCode' => $e->employee_code ?? '',
+            'designation' => trim((string) ($e->assignedDesignation?->name ?? $e->designation ?? '')),
+            'roleLevel' => $e->role?->resolvedNumericLevel() ?? 999999,
             'departmentId' => (int) $e->department_id,
             'departmentName' => $e->department->name ?? 'Unassigned'
         ])->values();
@@ -389,11 +391,22 @@ class ShiftRosterService
             'sourceType' => 'outsourced',
             'sourceId' => $e->id,
             'name' => $e->full_name,
+            'employeeCode' => $e->biometric_id ? (string) $e->biometric_id : ('OSP-' . $e->id),
+            'designation' => trim((string) ($e->job_role_trade ?? '')),
+            'roleLevel' => 999999,
             'departmentId' => 1000000 + (int) $e->contractor_company_id,
             'departmentName' => $e->contractorCompany->third_party_name ?? 'Unassigned'
         ])->values();
         
-        $empPayload = $empPayload->concat($outsourcedPayload)->values()->all();
+        $empPayload = collect($empPayload)
+            ->concat($outsourcedPayload)
+            ->sortBy(fn ($emp) => sprintf(
+                '%010d-%s',
+                (int) ($emp['roleLevel'] ?? 999999),
+                mb_strtolower((string) ($emp['name'] ?? ''))
+            ))
+            ->values()
+            ->all();
 
         $employeeScope = function ($query) use ($shiftEmployeeIds, $outsourcedIds) {
             if ($shiftEmployeeIds !== [] || $outsourcedIds !== []) {
