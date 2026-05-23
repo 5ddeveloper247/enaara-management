@@ -39,7 +39,7 @@ class LeaveRequestIndexData
             'employees' => Employee::query()
                 ->where('is_active', true)
                 ->orderBy('full_name')
-                ->get(['id', 'full_name']),
+                ->get(['id', 'full_name', 'employee_code']),
             'leaveTypes' => LeaveType::query()
                 ->where('is_active', true)
                 ->orderBy('name')

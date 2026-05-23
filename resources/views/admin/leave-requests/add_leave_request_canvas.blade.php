@@ -2,7 +2,12 @@
 <div class="offcanvas offcanvas-end bg-main text-white" tabindex="-1" id="addLeaveRequestCanvas" aria-labelledby="addLeaveRequestCanvasLabel" style="width: 600px;">
     <div class="offcanvas-header border-bottom" style="border-color: #ffffff42 !important">
         <h5 class="offcanvas-title" id="addLeaveRequestCanvasLabel">
-            <i class="bi bi-plus-circle me-2"></i>New Leave Request
+            <i class="bi bi-plus-circle me-2"></i>
+            @if(request()->routeIs('admin.my.leaves.index'))
+                New Leave Request
+            @else
+                Apply Leave for Employee
+            @endif
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
@@ -24,17 +29,18 @@
                     </div>
                     <input type="hidden" id="leaveEmployee" name="employee_id" value="{{ Auth::user()->employee_id }}">
                     @else
-                    <label for="leaveEmployee" class="form-label fw-semibold small text-white">Select Employee <span class="text-danger">*</span></label>
+                    <label for="leaveEmployee" class="form-label fw-semibold small text-white">Employee <span class="text-danger">*</span></label>
                     <select class="form-select" id="leaveEmployee" name="employee_id" required>
                         <option value="">Select Employee</option>
                         @isset($employees)
                         @foreach($employees as $employee)
                         <option value="{{ $employee->id }}">
-                            {{ $employee->full_name }}
+                            {{ $employee->full_name }}@if(!empty($employee->employee_code)) ({{ $employee->employee_code }})@endif
                         </option>
                         @endforeach
                         @endisset
                     </select>
+                    <small class="opacity-75 text-white d-block mt-1">Submitted by {{ Auth::user()->name }}</small>
                     @endif
                 </div>
 

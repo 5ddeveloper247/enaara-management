@@ -89,10 +89,12 @@
                 <small class="text-muted">Manage your personal leave requests and balance</small>
             </div>
             <div class="col-md-6 text-end">
+                @if(validatePermissions('admin/leave-request/add'))
                 <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                     data-bs-target="#addLeaveRequestCanvas">
                     <i class="bi bi-plus-circle me-1"></i>Quick Request
                 </button>
+                @endif
             </div>
         </div>
 

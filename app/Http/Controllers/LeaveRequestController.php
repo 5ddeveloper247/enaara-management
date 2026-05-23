@@ -66,6 +66,10 @@ class LeaveRequestController extends Controller
 
     public function leaveTypesForEmployee(Request $request)
     {
+        if (! validatePermissions('admin/leave-request/add')) {
+            abort(403, 'Unauthorized action.');
+        }
+
        return $this->leaveRequestService->leaveTypesForEmployee($request);
     }
 

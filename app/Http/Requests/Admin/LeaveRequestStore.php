@@ -28,7 +28,10 @@ class LeaveRequestStore extends FormRequest
         $departmentId = $employee?->department_id;
 
         return [
-            'employee_id' => 'required|exists:employees,id',
+            'employee_id' => [
+                'required',
+                Rule::exists('employees', 'id')->where(fn ($q) => $q->where('is_active', true)),
+            ],
             'leave_type_id' => [
                 'required',
                 Rule::exists('leave_types', 'id')
@@ -41,7 +44,16 @@ class LeaveRequestStore extends FormRequest
             ],
             'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'required|string|max:600',
+            'reason' => [
+                'required',
+                'string',
+                'max:600',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (is_string($value) && preg_match('/<[^>]+>/', $value)) {
+                        $fail('Reason must not contain HTML or script tags.');
+                    }
+                },
+            ],
             // ✅ Medical report validation
             'medical_report' => [
                 'nullable',
