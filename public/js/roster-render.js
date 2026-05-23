@@ -280,6 +280,10 @@
         });
     }
 
+    function isRosterHolidayDate(iso, holidaysByDate) {
+        return !!(holidaysByDate && iso && holidaysByDate[iso] && holidaysByDate[iso].length);
+    }
+
     function buildTheadRow(days, holidaysByDate) {
         var tr = document.getElementById('rosterTheadRow');
         if (!tr) return;
@@ -294,7 +298,7 @@
             th.className = 'roster-col-day';
             th.setAttribute('data-roster-date', iso);
             if (holidayNames.length) {
-                th.classList.add('roster-col-holiday');
+                th.classList.add('roster-col-holiday', 'roster-day-col-holiday');
             }
             th.innerHTML = '<div class="roster-col-day-inner">' +
                 '<span class="roster-col-day-label">' + getDayName(d) + ' ' + d.getDate() + '</span>' +
@@ -467,6 +471,9 @@
 
                         var td = document.createElement('td');
                         td.className = 'shift-cell';
+                        if (isRosterHolidayDate(iso, holidaysByDate)) {
+                            td.classList.add('roster-day-col-holiday');
+                        }
                         if (cellShifts.length || !isPast) {
                             td.classList.add('roster-day-cell');
                         }

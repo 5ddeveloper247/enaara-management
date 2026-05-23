@@ -349,6 +349,14 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     background: rgba(1, 36, 69, 0.03) !important;
 }
 
+.roster-table tbody td.roster-day-col-holiday {
+    background-color: #e2e6ea !important;
+}
+
+.roster-table tbody tr.roster-emp-row:hover td.roster-day-col-holiday {
+    background-color: #d5dbe1 !important;
+}
+
 .roster-table tbody tr.roster-emp-row td:first-child {
     position: sticky;
     left: 0;
