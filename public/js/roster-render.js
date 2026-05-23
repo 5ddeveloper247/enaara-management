@@ -422,7 +422,10 @@
                         var cellDate = stripTime(d);
                         var isPast = cellDate < today;
                         var hasActiveShift = cellShifts.some(function(s) {
-                            return !s.deletedAt;
+                            return isRosterWorkingShift(s);
+                        });
+                        var hasOffDayEntry = cellShifts.some(function(s) {
+                            return isRosterOffDayShift(s) && !s.deletedAt;
                         });
                         var hasPublicHoliday = rawCellShifts.some(function(s) {
                             return !s.deletedAt && s.isPublicHoliday;
@@ -449,7 +452,7 @@
                             td.setAttribute('data-shifts', '[]');
                         }
 
-                        if (!hasActiveShift && !isPast) {
+                        if (!hasActiveShift && !hasOffDayEntry && !isPast) {
                             td.classList.add('roster-day-cell-empty');
                             var addHtml = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add"><i class="bi bi-plus-lg"></i></span>';
                             if (cellShifts.length) {
@@ -1082,10 +1085,18 @@
         return status === 'off' || shift.shiftType === 'off';
     }
 
+    function isRosterWorkingShift(s) {
+        if (!s || s.deletedAt) {
+            return false;
+        }
+        return !isRosterOffDayShift(s) && !s.isPublicHoliday;
+    }
+
     function setRosterShiftCanvasViewMode(mode) {
         var assignmentSection = document.getElementById('rosterShiftAssignmentSection');
         var offDayPanel = document.getElementById('rosterShiftOffDayPanel');
         var saveBtn = document.getElementById('rosterShiftSaveBtn');
+        var saveBtnText = document.getElementById('rosterShiftSaveBtnText');
         var shiftSelect = document.getElementById('rosterShiftPlannerId');
         var useCustomCb = document.getElementById('rosterUseCustomTime');
         var startTimeEl = document.getElementById('rosterStartTime');
@@ -1093,18 +1104,25 @@
         var notesEl = document.getElementById('rosterShiftNotes');
         var floorEl = document.getElementById('rosterFloor');
         var locationEl = document.getElementById('rosterLocation');
-        var isOff = mode === 'off';
+        var isOffConvert = mode === 'off-convert';
         var isDeleted = mode === 'deleted';
-        var disableFields = isOff || isDeleted;
+        var disableFields = isDeleted;
 
         if (assignmentSection) {
-            assignmentSection.style.display = isOff ? 'none' : '';
+            assignmentSection.style.display = isDeleted ? 'none' : '';
         }
         if (offDayPanel) {
-            offDayPanel.style.display = isOff ? '' : 'none';
+            offDayPanel.style.display = isOffConvert ? '' : 'none';
         }
         if (saveBtn) {
-            saveBtn.style.display = (isOff || isDeleted) ? 'none' : 'inline-block';
+            saveBtn.style.display = isDeleted ? 'none' : 'inline-block';
+        }
+        if (saveBtnText && mode === 'create') {
+            saveBtnText.textContent = 'Save';
+        } else if (saveBtnText && isOffConvert) {
+            saveBtnText.textContent = 'Convert to Shift';
+        } else if (saveBtnText && mode === 'edit') {
+            saveBtnText.textContent = 'Update';
         }
 
         [shiftSelect, useCustomCb, startTimeEl, endTimeEl, notesEl, floorEl, locationEl].forEach(function(el) {
@@ -1169,7 +1187,7 @@
                 if (iconEl) iconEl.innerHTML = '<i class="bi bi-pencil-square me-2"></i>';
                 if (titleEl) titleEl.textContent = 'Edit Shift';
             }
-            if (saveBtnText) saveBtnText.textContent = 'Update';
+            if (saveBtnText && !isOffDayEntry) saveBtnText.textContent = 'Update';
             if (deleteWrap) deleteWrap.style.display = 'block';
             var isCustomEntry = !!(shift.isCustomTime || shift.is_custom_time);
             if (shiftSelect) {
@@ -1222,7 +1240,7 @@
             setRosterShiftCanvasViewMode('deleted');
             if (deleteWrap) deleteWrap.style.display = 'none';
         } else if (isOffDayEntry) {
-            setRosterShiftCanvasViewMode('off');
+            setRosterShiftCanvasViewMode('off-convert');
         } else {
             setRosterShiftCanvasViewMode(shift ? 'edit' : 'create');
             if (deleteWrap && shift) {
@@ -1230,8 +1248,8 @@
             }
         }
 
-        var selectedFloorId = shift && !isOffDayEntry ? (shift.sbuFloorId || shift.sbu_floor_id || null) : null;
-        var legacyFloorLabel = shift && !isOffDayEntry ? (shift.floor || '') : '';
+        var selectedFloorId = shift ? (shift.sbuFloorId || shift.sbu_floor_id || null) : null;
+        var legacyFloorLabel = shift ? (shift.floor || '') : '';
 
         loadRosterFloorOptions(employeeType, employeeSourceId, selectedFloorId, legacyFloorLabel).then(function() {
             var offcanvas = bootstrap.Offcanvas.getOrCreateInstance(canvas);

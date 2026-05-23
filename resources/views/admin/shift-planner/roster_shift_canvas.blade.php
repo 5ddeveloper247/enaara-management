@@ -74,7 +74,7 @@
                     <span class="roster-shift-off-day-icon" aria-hidden="true"><i class="bi bi-calendar-x"></i></span>
                     <div>
                         <div class="roster-shift-off-day-title">Marked as off</div>
-                        <p class="roster-shift-off-day-text mb-0">This roster entry is an off day. Remove it to assign a shift on this date.</p>
+                        <p class="roster-shift-off-day-text mb-0">This date is marked as off. Only off applies until you convert it below — history stays on the same record.</p>
                     </div>
                 </div>
             </section>

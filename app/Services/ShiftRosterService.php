@@ -12,6 +12,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class ShiftRosterService
 {
@@ -119,6 +120,13 @@ class ShiftRosterService
                 ];
             }
 
+            $existingEntry = ShiftRosterEntry::query()->where($lookup)->first();
+            if ($existingEntry && strtolower((string) $existingEntry->status) === 'off') {
+                throw ValidationException::withMessages([
+                    'roster_date' => 'This date is marked as off. Open the off day entry and convert it to assign a shift while keeping history.',
+                ]);
+            }
+
             return $this->saveDailyRosterEntry($lookup, $payload, $userId);
         });
     }
@@ -140,7 +148,7 @@ class ShiftRosterService
             'check_in' => $data['check_in'] ?? $entry->check_in,
             'check_out' => $data['check_out'] ?? $entry->check_out,
             'late_check_in' => (bool) ($data['late_check_in'] ?? $entry->late_check_in),
-            'status' => isset($data['status']) ? ((int) $data['status'] === 1 ? 'pending' : 'cancelled') : $entry->status,
+            'status' => $this->resolveUpdatedEntryStatus($entry, $data),
         ];
         $this->applyFloorToPayload($data, $payload, $entry->floor);
         $this->applyLocationToPayload($data, $payload, $entry->location_text);
@@ -774,6 +782,11 @@ class ShiftRosterService
             $payload = ['outsourced_employee_id' => null] + $basePayload;
         }
 
+        $existingEntry = ShiftRosterEntry::query()->where($lookup)->first();
+        if ($existingEntry && strtolower((string) $existingEntry->status) === 'off') {
+            return;
+        }
+
         if ($overrideExisting) {
             $this->saveDailyRosterEntry($lookup, $payload, $userId);
 
@@ -858,6 +871,19 @@ class ShiftRosterService
         $this->historyService->recordCreated($entry, $userId);
 
         return $entry;
+    }
+
+    private function resolveUpdatedEntryStatus(ShiftRosterEntry $entry, array $data): string
+    {
+        if (strtolower((string) $entry->status) === 'off') {
+            return 'pending';
+        }
+
+        if (isset($data['status'])) {
+            return (int) $data['status'] === 1 ? 'pending' : 'cancelled';
+        }
+
+        return (string) $entry->status;
     }
 
 }
