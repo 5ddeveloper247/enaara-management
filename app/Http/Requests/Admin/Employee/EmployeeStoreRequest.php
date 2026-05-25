@@ -450,7 +450,6 @@ class EmployeeStoreRequest extends FormRequest
                 Rule::requiredIf(fn () => ($this->input('verification_status') ?? '') !== 'In Process'),
                 'nullable',
                 'date',
-                'after_or_equal:msr_date',
                 Rule::when(
                     fn () => ($this->input('verification_status') ?? '') !== 'In Process',
                     ['before_or_equal:today']
@@ -692,7 +691,6 @@ class EmployeeStoreRequest extends FormRequest
             'verifying_authority.min'      => 'Verifying authority must be at least 2 characters.',
             'verification_letter_no.required' => 'Verification letter number and date is required when status is Cleared or Not Cleared.',
             'verification_letter_date.required' => 'Verification letter date is required when status is Cleared or Not Cleared.',
-            'verification_letter_date.after_or_equal' => 'Verification letter date must be on or after MSR date.',
             'verification_letter_date.before_or_equal' => 'Verification letter date cannot be in the future.',
             'next_verification_date.required' => 'Next verification date is required when status is Cleared or Not Cleared.',
             'next_verification_date.after' => 'Next verification date must be after verification letter date.',

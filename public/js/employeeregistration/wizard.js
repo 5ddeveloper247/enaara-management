@@ -1529,12 +1529,9 @@
             }
 
             if (letterDateInput) {
-                const msrDate = parseDate(msrDateInput ? msrDateInput.value : '');
                 const letterDate = parseDate(letterDateInput.value);
                 if (isMandatory && letterDate && letterDate > today) {
                     showInputGuardError(letterDateInput, 'Verification letter date cannot be in the future.');
-                } else if (letterDate && msrDate && letterDate < msrDate) {
-                    showInputGuardError(letterDateInput, 'Verification letter date must be on or after MSR date.');
                 } else {
                     removeInputGuardError(letterDateInput);
                 }
