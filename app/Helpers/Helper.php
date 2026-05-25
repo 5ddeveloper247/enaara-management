@@ -62,12 +62,18 @@ if (!function_exists('storeUploadedFile')) {
     }
 }
 
-function validatePermissions($slug){
+function validatePermissions($slug)
+{
     return HasPermissionsTrait::getPremissionsByRoute($slug);
-    //return true;
 }
 
-function getLeftMenu($moduleCatId){
+function userHasSystemAdminRole(): bool
+{
+    return HasPermissionsTrait::userHasSystemAdminRole();
+}
+
+function getLeftMenu($moduleCatId)
+{
     return HasPermissionsTrait::getLeftMenuByCategory($moduleCatId);
 }
 

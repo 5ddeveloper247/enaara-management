@@ -73,4 +73,14 @@ class RolePrivilege extends Model
             ->distinct('modules.id')
             ->get();
     }
+
+    public static function drawAllMenuModulesForCategory(int $moduleCatId)
+    {
+        return Module::query()
+            ->where('module_category_id', $moduleCatId)
+            ->where('show_in_menu', 1)
+            ->whereNull('deleted_at')
+            ->orderBy('display_order')
+            ->get();
+    }
 }

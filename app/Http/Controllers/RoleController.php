@@ -86,6 +86,7 @@ class RoleController extends Controller
             'description' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'is_primary' => 'boolean',
+            'is_system_admin' => 'boolean',
             'organization_id' => 'required|exists:organizations,id',
             'sbu_ids' => 'nullable|array',
             'sbu_ids.*' => 'integer|exists:sbus,id',
@@ -100,6 +101,7 @@ class RoleController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_primary'] = $request->boolean('is_primary');
+        $validated['is_system_admin'] = $request->boolean('is_system_admin');
         $validated['sbu_ids'] = $request->input('sbu_ids', []);
         $validated['module_ids'] = $request->input('module_ids', []);
         unset($validated['level_id']);
@@ -180,6 +182,7 @@ class RoleController extends Controller
             'description' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'is_primary' => 'boolean',
+            'is_system_admin' => 'boolean',
             'organization_id' => 'required|exists:organizations,id',
             'sbu_ids' => 'nullable|array',
             'sbu_ids.*' => 'integer|exists:sbus,id',
@@ -194,6 +197,7 @@ class RoleController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_primary'] = $request->boolean('is_primary');
+        $validated['is_system_admin'] = $request->boolean('is_system_admin');
         $validated['sbu_ids'] = $request->input('sbu_ids', []);
         $validated['module_ids'] = $request->input('module_ids', []);
         unset($validated['level_id']);

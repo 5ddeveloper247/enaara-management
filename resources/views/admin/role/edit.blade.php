@@ -286,19 +286,20 @@
                         </select>
                         @error('is_active')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <!-- <div class="col-md-6">
-                        <label for="is_primary" class="form-label">Primary Role</label>
+                    <div class="col-md-6">
+                        <label for="is_system_admin" class="form-label">System Administrator</label>
                         <div class="form-check form-switch mt-2">
-                            <input type="hidden" name="is_primary" value="0">
-                            <input type="checkbox" name="is_primary" id="is_primary" class="form-check-input" value="1" {{ old('is_primary', isset($role->is_primary) ? $role->is_primary : false) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="is_primary">Mark as primary role</label>
+                            <input type="hidden" name="is_system_admin" value="0">
+                            <input type="checkbox" name="is_system_admin" id="is_system_admin" class="form-check-input" value="1" {{ old('is_system_admin', $role->is_system_admin ?? false) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="is_system_admin">Full access (bypass all permission checks)</label>
                         </div>
-                        @error('is_primary')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                    </div> -->
+                        <small class="text-muted">Module selection below is optional for this role.</small>
+                        @error('is_system_admin')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
                 </div>
 
                 <hr class="my-4">
-                <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center justify-content-between mb-3" id="modulePermissionsSection">
                     <h6 class="mb-0 fw-semibold">
                         <i class="bi bi-grid me-2"></i>Module Permissions
                     </h6>
@@ -563,6 +564,22 @@
                 cb.checked = selectAllModules.checked;
             });
         });
+
+        const systemAdminToggle = document.getElementById('is_system_admin');
+        const modulePermissionsSection = document.getElementById('modulePermissionsSection');
+
+        function syncSystemAdminModuleSection() {
+            const isSystemAdmin = systemAdminToggle?.checked === true;
+            document.querySelectorAll('.module-privilege-cb, #selectAllModules').forEach(function(el) {
+                el.disabled = isSystemAdmin;
+            });
+            if (modulePermissionsSection) {
+                modulePermissionsSection.style.opacity = isSystemAdmin ? '0.55' : '1';
+            }
+        }
+
+        systemAdminToggle?.addEventListener('change', syncSystemAdminModuleSection);
+        syncSystemAdminModuleSection();
 
         const currentOrganizationId = @json(old('organization_id', $role->organization_id));
         const currentSbuIds = @json(old('sbu_ids', $selectedSbuIds ?? []));

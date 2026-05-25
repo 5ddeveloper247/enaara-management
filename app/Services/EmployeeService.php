@@ -50,7 +50,8 @@ class EmployeeService
     public function __construct(
         AuditTrailService $auditTrailService,
         EmployeeGeneralInformationService $generalInformation,
-        EmployeeEmploymentInformationService $employmentInformation
+        EmployeeEmploymentInformationService $employmentInformation,
+        private readonly UserRoleSyncService $userRoleSyncService
     ) {
         $this->auditTrailService   = $auditTrailService;
         $this->generalInformation  = $generalInformation;
@@ -468,6 +469,8 @@ class EmployeeService
             }
 
             Log::info('Employee created', ['id' => $employee->id, 'code' => $code]);
+
+            $this->userRoleSyncService->syncFromEmployee($employee);
 
             $this->auditTrailService->log(
                 action: 'created',
@@ -2349,7 +2352,9 @@ class EmployeeService
                 $employee->armedForce()->delete();
             }
 
-            // Sync with associated user account if it exists
+            $employee->refresh();
+            $this->userRoleSyncService->syncFromEmployee($employee);
+
             if ($employee->user) {
                 $userUpdateData = [];
                 $emailToSync = $data['email'] ?? $data['contact_email'] ?? null;

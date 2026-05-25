@@ -126,6 +126,7 @@ class RoleService
 
         $data['is_active'] = (bool) ($data['is_active'] ?? false);
         $data['is_primary'] = (bool) ($data['is_primary'] ?? false);
+        $data['is_system_admin'] = (bool) ($data['is_system_admin'] ?? false);
         $data['organization_id'] = $data['organization_id'] ?? null;
         $sbuIds = array_values(array_filter(array_unique(array_map('intval', $sbuIds))));
         $data['sbu_id'] = $sbuIds[0] ?? null;
@@ -163,6 +164,7 @@ class RoleService
 
         $data['is_active'] = (bool) ($data['is_active'] ?? false);
         $data['is_primary'] = (bool) ($data['is_primary'] ?? false);
+        $data['is_system_admin'] = (bool) ($data['is_system_admin'] ?? false);
         $data['organization_id'] = $data['organization_id'] ?? null;
         if ($sbuIds !== null) {
             $sbuIds = array_values(array_filter(array_unique(array_map('intval', $sbuIds))));

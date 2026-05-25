@@ -43,22 +43,29 @@
                             @else
                                 <span class="badge bg-secondary">Inactive</span>
                             @endif
+                            @if(!empty($role->is_system_admin))
+                                <span class="badge bg-warning text-dark ms-1">System Administrator</span>
+                            @endif
                         </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label text-muted small">Created</label>
                         <div class="fw-semibold">{{ $role->created_at ? $role->created_at->format('M d, Y') : '—' }}</div>
                     </div>
-                    @if($role->relationLoaded('modules') && $role->modules->isNotEmpty())
                     <div class="col-12">
                         <label class="form-label text-muted small">Module Permissions</label>
-                        <div class="d-flex flex-wrap gap-2">
-                            @foreach($role->modules as $module)
-                                <span class="badge px-3 rounded-1 bg-primary">{{ $module->module_name ?? 'Module #'.$module->id }}</span>
-                            @endforeach
-                        </div>
+                        @if(!empty($role->is_system_admin))
+                            <div class="text-muted">All modules (permission checks bypassed for users with this role).</div>
+                        @elseif($role->relationLoaded('modules') && $role->modules->isNotEmpty())
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach($role->modules as $module)
+                                    <span class="badge px-3 rounded-1 bg-primary">{{ $module->module_name ?? 'Module #'.$module->id }}</span>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-muted">—</div>
+                        @endif
                     </div>
-                    @endif
                 </div>
             </div>
         </div>

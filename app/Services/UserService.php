@@ -14,6 +14,10 @@ use Illuminate\Support\Str;
 
 class UserService
 {
+    public function __construct(
+        private readonly UserRoleSyncService $userRoleSyncService
+    ) {}
+
     public function index(): View
     {
         $linkedEmployeeIds = User::whereNotNull('employee_id')->pluck('employee_id');
@@ -155,11 +159,7 @@ class UserService
             ]);
 
             $employee = Employee::findOrFail((int) $data['employee_id']);
-
-            UserRole::create([
-                'user_id' => $user->id,
-                'role_id' => $employee->role_id,
-            ]);
+            $this->userRoleSyncService->syncFromEmployee($employee);
 
             $user->notify(new TemporaryPasswordNotification($plainPassword, 'welcome'));
 
@@ -201,12 +201,7 @@ class UserService
             $user->update($updateData);
 
             $employee = Employee::findOrFail((int) $data['employee_id']);
-
-            $user->userRoles()->whereNull('deleted_at')->update(['deleted_at' => now()]);
-            UserRole::create([
-                'user_id' => $user->id,
-                'role_id' => $employee->role_id,
-            ]);
+            $this->userRoleSyncService->syncFromEmployee($employee);
 
             Log::info('User updated', ['user_id' => $user->id]);
 

@@ -25,11 +25,13 @@ class Role extends Model
         'role_level_id',
         'is_active',
         'is_primary',
+        'is_system_admin',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_primary' => 'boolean',
+        'is_system_admin' => 'boolean',
     ];
 
     public static function slugFromName(string $name): string
