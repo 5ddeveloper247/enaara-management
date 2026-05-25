@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -96,6 +97,27 @@ class Role extends Model
     public function sbus(): BelongsToMany
     {
         return $this->belongsToMany(Sbu::class, 'role_sbu', 'role_id', 'sbu_id')->withTimestamps();
+    }
+
+    public function scopeExcludingSystemAdmin(Builder $query): Builder
+    {
+        $systemAdminLevelIds = RoleLevel::query()
+            ->where('level', RoleLevel::SYSTEM_ADMIN_LEVEL)
+            ->pluck('id');
+
+        return $query
+            ->where(function (Builder $q) {
+                $q->where('is_system_admin', false)
+                    ->orWhereNull('is_system_admin');
+            })
+            ->where(function (Builder $q) {
+                $q->where('slug', '!=', 'super-admin')
+                    ->orWhereNull('slug');
+            })
+            ->where(function (Builder $q) use ($systemAdminLevelIds) {
+                $q->whereNull('role_level_id')
+                    ->orWhereNotIn('role_level_id', $systemAdminLevelIds);
+            });
     }
 
     public function isOrganizationLevelRole(): bool

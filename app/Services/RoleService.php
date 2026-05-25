@@ -69,7 +69,8 @@ class RoleService
 
     public function getList(): Collection
     {
-        return Role::withCount('modules')
+        return Role::excludingSystemAdmin()
+            ->withCount('modules')
             ->with([
                 'modules' => fn ($q) => $q->orderBy('module_name')->limit(5),
                 'organization:id,name',
@@ -85,9 +86,9 @@ class RoleService
     public function getCounts(): array
     {
         return [
-            'total' => Role::count(),
-            'active' => Role::where('is_active', true)->count(),
-            'inactive' => Role::where('is_active', false)->count(),
+            'total' => Role::excludingSystemAdmin()->count(),
+            'active' => Role::excludingSystemAdmin()->where('is_active', true)->count(),
+            'inactive' => Role::excludingSystemAdmin()->where('is_active', false)->count(),
         ];
     }
 

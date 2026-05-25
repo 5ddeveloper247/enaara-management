@@ -63,7 +63,7 @@ class RoleController extends Controller
         $moduleCategories = $this->roleService->getModuleCategoriesWithModules();
         $organizations = Organization::where('is_active', true)->orderBy('name')->get();
         $departments = Department::where('is_active', true)->orderBy('name')->get();
-        $parentRoles = Role::where('is_active', true)->orderBy('name')->get();
+        $parentRoles = Role::excludingSystemAdmin()->where('is_active', true)->orderBy('name')->get();
         $levels = RoleLevel::excludingSystemAdmin()->orderBy('level')->get();
         $sbus= Sbu::where('is_active', true)->orderBy('name')->get();
         return view('admin.role.create', [
@@ -149,7 +149,8 @@ class RoleController extends Controller
         if (empty($selectedSbuIds) && $role->sbu_id) {
             $selectedSbuIds = [(int) $role->sbu_id];
         }
-        $parentRoles = Role::where('is_active', true)
+        $parentRoles = Role::excludingSystemAdmin()
+            ->where('is_active', true)
             ->where('id', '!=', $role->id)
             ->orderBy('name')
             ->get();
@@ -320,6 +321,7 @@ class RoleController extends Controller
             ->groupBy('name');
 
         $roles = Role::query()
+            ->excludingSystemAdmin()
             ->joinSub($roleLevelByName, 'role_level_map', function ($join) {
                 $join->on('role_level_map.name', '=', 'roles.name');
             })
