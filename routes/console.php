@@ -24,3 +24,11 @@ Schedule::command('shift-roster:finalize')
     ->runInBackground()
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/shift_roster_finalize.log'));
+
+Schedule::command('compensatory:sync-quotas')
+    ->daily()
+    ->at('23:59')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/compensatory_sync_quotas.log'));

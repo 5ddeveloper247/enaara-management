@@ -5,6 +5,7 @@ namespace App\Services\leaverequestPrivatefunctions;
 use App\Models\Employee;
 use App\Models\LeaveType;
 use App\Services\CompensatoryLeaveAwardService;
+use App\Services\CompensatoryLeaveBalanceService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -13,7 +14,7 @@ class LeaveRequestLeaveTypeFilter
 {
     public function __construct(
         private CompensatoryLeaveAwardService $compensatoryLeaveAwardService,
-        private EmployeeLeaveQuotaRecords $employeeLeaveQuotaRecords,
+        private CompensatoryLeaveBalanceService $compensatoryLeaveBalanceService,
     ) {}
 
     public function filterForEmployee(Collection $leaveTypes, int $employeeId, ?int $year = null): Collection
@@ -61,11 +62,7 @@ class LeaveRequestLeaveTypeFilter
 
         $year = $year ?? (int) now()->year;
 
-        return $this->employeeLeaveQuotaRecords->earnedLeaveRemainingDays(
-            $employeeId,
-            (int) $cplType->id,
-            $year
-        );
+        return $this->compensatoryLeaveBalanceService->remainingDays($employeeId, $year);
     }
 
     public function assertCompensatoryLeaveAllowed(Employee $employee, LeaveType $leaveType, Carbon $startDate): void
@@ -76,7 +73,8 @@ class LeaveRequestLeaveTypeFilter
 
         if ($this->compensatoryRemainingDays($employee->id, (int) $startDate->year) <= 0) {
             throw ValidationException::withMessages([
-                'leave_type_id' => 'Compensatory leave is not available. You have no compensatory leave balance.',
+                'leave_type_id' => 'Compensatory leave is not available. You have no balance, or earned days older than '
+                    .CompensatoryLeaveBalanceService::EXPIRY_DAYS.' days have expired.',
             ]);
         }
     }

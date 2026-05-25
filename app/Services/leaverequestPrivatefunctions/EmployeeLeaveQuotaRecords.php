@@ -8,6 +8,7 @@ use App\Models\EmployeLeaveEntity;
 use App\Models\EmployeLeaveRequest;
 use App\Models\LeaveBalanceAdjustment;
 use App\Models\LeaveType;
+use App\Services\CompensatoryLeaveBalanceService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,10 @@ use Illuminate\Validation\ValidationException;
 
 class EmployeeLeaveQuotaRecords
 {
+    public function __construct(
+        private CompensatoryLeaveBalanceService $compensatoryLeaveBalanceService,
+    ) {}
+
     private const MASTER_ACTION_TYPES = [0, 2];
 
     private const REQUEST_ACTION_TYPES_FOR_BALANCE = [0, 1, 2];
@@ -30,14 +35,24 @@ class EmployeeLeaveQuotaRecords
         $summary = [];
         foreach ($leaveTypes as $type) {
             $leaveTypeId = (int) $type->id;
-            $maxAllowed = $this->maxAllowedDays($context, $leaveTypeId, (float) $type->annual_quota);
 
-            $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
-            $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
-            $claimed = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 1);
+            if ($this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId)) {
+                $maxAllowed = $this->compensatoryLeaveBalanceService->validEarnedDays($employeeId);
+                $reserved = $this->compensatoryUsageDays($employeeId, $leaveTypeId, $year);
+                $remaining = max(0, $maxAllowed - $reserved);
+                $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
+                $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
+                $claimed = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 1);
+            } else {
+                $maxAllowed = $this->maxAllowedDays($context, $leaveTypeId, (float) $type->annual_quota);
 
-            $reserved = $applied + $approved + $claimed;
-            $remaining = max(0, $maxAllowed - $reserved);
+                $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
+                $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
+                $claimed = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 1);
+
+                $reserved = $applied + $approved + $claimed;
+                $remaining = max(0, $maxAllowed - $reserved);
+            }
 
             $summary[] = [
                 'id' => $type->id,
@@ -59,6 +74,10 @@ class EmployeeLeaveQuotaRecords
 
     public function earnedLeaveRemainingDays(int $employeeId, int $leaveTypeId, ?int $year = null): float
     {
+        if ($this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId)) {
+            return $this->compensatoryLeaveBalanceService->remainingDays($employeeId, $year);
+        }
+
         $year = $year ?? (int) now()->year;
         $context = $this->loadQuotaContext($employeeId, [$leaveTypeId], $year);
 
@@ -67,12 +86,20 @@ class EmployeeLeaveQuotaRecords
             ? (float) $quota->quota + (float) ($context['adjustments'][$leaveTypeId] ?? 0)
             : 0.0;
 
+        $reserved = $this->compensatoryUsageDays($employeeId, $leaveTypeId, $year);
+
+        return max(0, $maxAllowed - $reserved);
+    }
+
+    public function compensatoryUsageDays(int $employeeId, int $leaveTypeId, ?int $year = null): float
+    {
+        $year = $year ?? (int) now()->year;
+
         $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
         $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
         $claimed = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 1);
-        $reserved = $applied + $approved + $claimed;
 
-        return max(0, $maxAllowed - $reserved);
+        return $applied + $approved + $claimed;
     }
 
     private function sumDedupedRequestDuration(
@@ -199,6 +226,23 @@ class EmployeeLeaveQuotaRecords
         float $requestedDays
     ): void {
         $year = (int) $startDate->year;
+
+        if ($this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId)) {
+            $remaining = $this->compensatoryLeaveBalanceService->remainingDays(
+                $employee->id,
+                $year,
+                $startDate->copy()->startOfDay()
+            );
+
+            if ($requestedDays > $remaining) {
+                throw ValidationException::withMessages([
+                    'leave_type_id' => "Insufficient compensatory leave balance. You have {$remaining} day(s) available (earned days expire after "
+                        .CompensatoryLeaveBalanceService::EXPIRY_DAYS.' days), but you are requesting '.$requestedDays.' day(s).',
+                ]);
+            }
+
+            return;
+        }
 
         $leaveType = LeaveType::query()
             ->whereKey($leaveTypeId)
