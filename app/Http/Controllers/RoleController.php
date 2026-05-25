@@ -20,6 +20,13 @@ class RoleController extends Controller
         private RoleService $roleService
     ) {}
 
+    private function abortIfSystemAdminRole(?Role $role): void
+    {
+        if ($role && ($role->is_system_admin || $role->slug === 'super-admin')) {
+            abort(404);
+        }
+    }
+
     private function denyIfUnauthorized(string|array $permission, bool $expectsJson = false): ?JsonResponse
     {
         $permissions = is_array($permission) ? $permission : [$permission];
@@ -86,7 +93,6 @@ class RoleController extends Controller
             'description' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'is_primary' => 'boolean',
-            'is_system_admin' => 'boolean',
             'organization_id' => 'required|exists:organizations,id',
             'sbu_ids' => 'nullable|array',
             'sbu_ids.*' => 'integer|exists:sbus,id',
@@ -95,13 +101,12 @@ class RoleController extends Controller
             'module_ids' => 'nullable|array',
             'module_ids.*' => 'integer|exists:modules,id',
         ]);
-        $roleLevel = RoleLevel::findOrFail((int) $validated['level_id']);
+        $roleLevel = RoleLevel::excludingSystemAdmin()->findOrFail((int) $validated['level_id']);
         $validated['name'] = $roleLevel->name;
         $validated['role_level_id'] = $roleLevel->id;
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_primary'] = $request->boolean('is_primary');
-        $validated['is_system_admin'] = $request->boolean('is_system_admin');
         $validated['sbu_ids'] = $request->input('sbu_ids', []);
         $validated['module_ids'] = $request->input('module_ids', []);
         unset($validated['level_id']);
@@ -120,6 +125,8 @@ class RoleController extends Controller
             abort(404);
         }
 
+        $this->abortIfSystemAdminRole($role);
+
         return view('admin.role.show', [
             'role' => $role,
         ]);
@@ -134,6 +141,8 @@ class RoleController extends Controller
         if (!$role instanceof Role) {
             abort(404);
         }
+
+        $this->abortIfSystemAdminRole($role);
 
         $moduleCategories = $this->roleService->getModuleCategoriesWithModules();
         $organizations = Organization::where('is_active', true)->orderBy('name')->get();
@@ -177,13 +186,14 @@ class RoleController extends Controller
             abort(404);
         }
 
+        $this->abortIfSystemAdminRole($role);
+
         $validated = $request->validate([
             'level_id' => 'required|exists:role_levels,id',
             'slug' => 'nullable|string|max:255|unique:roles,slug,' . $role->id,
             'description' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'is_primary' => 'boolean',
-            'is_system_admin' => 'boolean',
             'organization_id' => 'required|exists:organizations,id',
             'sbu_ids' => 'nullable|array',
             'sbu_ids.*' => 'integer|exists:sbus,id',
@@ -192,13 +202,12 @@ class RoleController extends Controller
             'module_ids' => 'nullable|array',
             'module_ids.*' => 'integer|exists:modules,id',
         ]);
-        $roleLevel = RoleLevel::findOrFail((int) $validated['level_id']);
+        $roleLevel = RoleLevel::excludingSystemAdmin()->findOrFail((int) $validated['level_id']);
         $validated['name'] = $roleLevel->name;
         $validated['role_level_id'] = $roleLevel->id;
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_primary'] = $request->boolean('is_primary');
-        $validated['is_system_admin'] = $request->boolean('is_system_admin');
         $validated['sbu_ids'] = $request->input('sbu_ids', []);
         $validated['module_ids'] = $request->input('module_ids', []);
         unset($validated['level_id']);
@@ -219,6 +228,9 @@ class RoleController extends Controller
         if ($denied instanceof JsonResponse) {
             return $denied;
         }
+
+        $role = Role::find($id);
+        $this->abortIfSystemAdminRole($role);
 
         $deleted = $this->roleService->delete($id);
 

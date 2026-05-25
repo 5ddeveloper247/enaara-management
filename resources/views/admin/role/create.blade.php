@@ -295,16 +295,6 @@
                         </select>
                         @error('is_active')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="col-md-6">
-                        <label for="is_system_admin" class="form-label">System Administrator</label>
-                        <div class="form-check form-switch mt-2">
-                            <input type="hidden" name="is_system_admin" value="0">
-                            <input type="checkbox" name="is_system_admin" id="is_system_admin" class="form-check-input" value="1" {{ old('is_system_admin') ? 'checked' : '' }}>
-                            <label class="form-check-label" for="is_system_admin">Full access (bypass all permission checks)</label>
-                        </div>
-                        <small class="text-muted">Module selection below is optional for this role.</small>
-                        @error('is_system_admin')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                    </div>
                 </div>
 
                 <hr class="my-4">
@@ -565,22 +555,6 @@
                 cb.checked = selectAllModules.checked;
             });
         });
-
-        const systemAdminToggle = document.getElementById('is_system_admin');
-        const modulePermissionsSection = document.getElementById('modulePermissionsSection');
-
-        function syncSystemAdminModuleSection() {
-            const isSystemAdmin = systemAdminToggle?.checked === true;
-            document.querySelectorAll('.module-privilege-cb, #selectAllModules').forEach(function(el) {
-                el.disabled = isSystemAdmin;
-            });
-            if (modulePermissionsSection) {
-                modulePermissionsSection.style.opacity = isSystemAdmin ? '0.55' : '1';
-            }
-        }
-
-        systemAdminToggle?.addEventListener('change', syncSystemAdminModuleSection);
-        syncSystemAdminModuleSection();
 
         const oldOrganizationId = @json(old('organization_id'));
         const oldSbuIds = @json(old('sbu_ids', []));
