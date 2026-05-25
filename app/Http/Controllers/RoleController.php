@@ -64,7 +64,7 @@ class RoleController extends Controller
         $organizations = Organization::where('is_active', true)->orderBy('name')->get();
         $departments = Department::where('is_active', true)->orderBy('name')->get();
         $parentRoles = Role::where('is_active', true)->orderBy('name')->get();
-        $levels= RoleLevel::orderBy('level')->get();
+        $levels = RoleLevel::excludingSystemAdmin()->orderBy('level')->get();
         $sbus= Sbu::where('is_active', true)->orderBy('name')->get();
         return view('admin.role.create', [
             'moduleCategories' => $moduleCategories,
@@ -138,7 +138,7 @@ class RoleController extends Controller
         $moduleCategories = $this->roleService->getModuleCategoriesWithModules();
         $organizations = Organization::where('is_active', true)->orderBy('name')->get();
         $departments = Department::where('is_active', true)->orderBy('name')->get();
-        $levels = RoleLevel::orderBy('level')->get();
+        $levels = RoleLevel::excludingSystemAdmin()->orderBy('level')->get();
         $selectedLevelId = $role->role_level_id
             ?? RoleLevel::query()
                 ->whereRaw('LOWER(TRIM(name)) = ?', [Str::lower(trim((string) $role->name))])

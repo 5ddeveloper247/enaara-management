@@ -35,14 +35,17 @@ class RoleLevelService
 
     public function getList(): Collection
     {
-        return RoleLevel::orderBy('level')->orderBy('id')->get();
+        return RoleLevel::excludingSystemAdmin()
+            ->orderBy('level')
+            ->orderBy('id')
+            ->get();
     }
 
     public function getCounts(): array
     {
-        $total = RoleLevel::count();
-        $active = RoleLevel::where('is_active', true)->count();
-        $inactive = RoleLevel::where('is_active', false)->count();
+        $total = RoleLevel::excludingSystemAdmin()->count();
+        $active = RoleLevel::excludingSystemAdmin()->where('is_active', true)->count();
+        $inactive = RoleLevel::excludingSystemAdmin()->where('is_active', false)->count();
 
         return [
             'total' => $total,
