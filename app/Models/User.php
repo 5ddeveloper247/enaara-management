@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -55,6 +56,25 @@ class User extends Authenticatable
     public function userRoles(): HasMany
     {
         return $this->hasMany(UserRole::class);
+    }
+
+    public function scopeExcludingSystemAdmin(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('roles', function (Builder $q) {
+            $q->where(function (Builder $inner) {
+                $inner->where('is_system_admin', true)
+                    ->orWhere('slug', 'super-admin');
+            });
+        });
+    }
+
+    public function isSystemAdminUser(): bool
+    {
+        $this->loadMissing('roles');
+
+        return $this->roles->contains(
+            fn (Role $role) => $role->is_system_admin || $role->slug === 'super-admin'
+        );
     }
 
     /**

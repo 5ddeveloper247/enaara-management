@@ -20,7 +20,7 @@ class UserService
 
     public function index(): View
     {
-        $linkedEmployeeIds = User::whereNotNull('employee_id')->pluck('employee_id');
+        $linkedEmployeeIds = User::excludingSystemAdmin()->whereNotNull('employee_id')->pluck('employee_id');
 
         $employees = Employee::with(['role:id,name', 'contact:id,employee_id,email', 'sbu:id,name', 'mediaFiles'])
             ->whereNull('deleted_at')
@@ -38,7 +38,8 @@ class UserService
 
     public function getTableData(): array
     {
-        $users = User::with(['roles', 'employee.department', 'employee.sbu', 'employee.mediaFiles'])
+        $users = User::excludingSystemAdmin()
+            ->with(['roles', 'employee.department', 'employee.sbu', 'employee.mediaFiles'])
             ->orderByDesc('id')
             ->get();
 
@@ -126,7 +127,7 @@ class UserService
 
     public function getStats(): array
     {
-        $users   = User::with('roles')->get();
+        $users   = User::excludingSystemAdmin()->with('roles')->get();
         $total   = $users->count();
         $active  = $users->where('is_active', true)->count();
 
@@ -173,6 +174,9 @@ class UserService
     {
         return DB::transaction(function () use ($id) {
             $user = User::findOrFail($id);
+            if ($user->isSystemAdminUser()) {
+                throw new \RuntimeException('This user cannot be modified.');
+            }
             $plain = Str::password(12);
 
             $user->password             = $plain;
@@ -191,6 +195,9 @@ class UserService
     {
         return DB::transaction(function () use ($id, $data) {
             $user = User::findOrFail($id);
+            if ($user->isSystemAdminUser()) {
+                throw new \RuntimeException('This user cannot be modified.');
+            }
 
             $updateData = [
                 'name'        => $data['name'],
@@ -212,6 +219,9 @@ class UserService
     public function updateStatus(int $id, bool $isActive): User
     {
         $user = User::findOrFail($id);
+        if ($user->isSystemAdminUser()) {
+            throw new \RuntimeException('This user cannot be modified.');
+        }
         $user->update(['is_active' => $isActive]);
         Log::info('User status updated', ['user_id' => $id, 'is_active' => $isActive]);
         return $user;
@@ -220,6 +230,9 @@ class UserService
     public function destroy(int $id): void
     {
         $user = User::findOrFail($id);
+        if ($user->isSystemAdminUser()) {
+            throw new \RuntimeException('This user cannot be deleted.');
+        }
         $user->userRoles()->whereNull('deleted_at')->update(['deleted_at' => now()]);
         $user->delete();
         Log::info('User deleted', ['user_id' => $id]);
