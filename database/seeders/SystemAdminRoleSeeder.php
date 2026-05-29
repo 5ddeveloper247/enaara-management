@@ -51,7 +51,7 @@ class SystemAdminRoleSeeder extends Seeder
             'role_level_id' => $roleLevel->id,
         ]);
 
-        $email = 'superadmin@enaara.local';
+        $email = 'super.admin@efmoffices.com';
         $password = 'SuperAdmin@123';
 
         $user = User::query()->firstOrCreate(
