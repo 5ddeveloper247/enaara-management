@@ -289,36 +289,10 @@
                 </div>
 
                 <hr class="my-4">
-                <div class="d-flex align-items-center justify-content-between mb-3" id="modulePermissionsSection">
-                    <h6 class="mb-0 fw-semibold">
-                        <i class="bi bi-grid me-2"></i>Module Permissions
-                    </h6>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="selectAllModules">
-                        <label class="form-check-label" for="selectAllModules">Select All Modules</label>
-                    </div>
-                </div>
                 @php
                 $selectedModuleIds = old('module_ids', $role->modules->pluck('id')->toArray());
                 @endphp
-                @foreach($moduleCategories ?? [] as $category)
-                <div class="mb-4">
-                    <h6 class="text-muted small mb-2">{{ $category->category_name ?? 'Uncategorized' }} <span class="fw-normal">({{ $category->modules->count() }} modules)</span></h6>
-                    <div class="row g-2">
-                        @foreach($category->modules as $module)
-                        <div class="col-md-4 col-lg-3">
-                            <div class="form-check">
-                                <input class="form-check-input module-privilege-cb" type="checkbox" name="module_ids[]" value="{{ $module->id }}" id="module_{{ $module->id }}" {{ in_array($module->id, $selectedModuleIds) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="module_{{ $module->id }}">{{ $module->module_name ?? $module->id }}</label>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endforeach
-                @if(empty($moduleCategories) || $moduleCategories->isEmpty())
-                <p class="text-muted small">No modules available. Add modules first.</p>
-                @endif
+                @include('admin.role.partials.module_permissions_table')
 
                 <hr class="my-4">
                 <div class="col-12">
@@ -334,7 +308,6 @@
         const organizationSelect = document.getElementById('organization_id');
         const levelSelect = document.getElementById('level_id');
         const parentRoleSelect = document.getElementById('parent_role_id');
-        const selectAllModules = document.getElementById('selectAllModules');
         const currentRoleId = "{{ $role->id }}";
         const sbuHiddenInputs = document.getElementById('sbu-hidden-inputs');
         const sbuBox = document.getElementById('sbu-box');
@@ -547,12 +520,6 @@
         levelSelect?.addEventListener('change', function() {
             const organizationId = organizationSelect?.value || '';
             loadParentRoles(organizationId, getSelectedSbuIds());
-        });
-
-        selectAllModules?.addEventListener('change', function() {
-            document.querySelectorAll('.module-privilege-cb').forEach(function(cb) {
-                cb.checked = selectAllModules.checked;
-            });
         });
 
         const currentOrganizationId = @json(old('organization_id', $role->organization_id));
