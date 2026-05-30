@@ -234,10 +234,6 @@
             padding: 3px 2px 1px 2px;
         }
 
-        .shift-dot-row td {
-            padding: 1px 2px;
-        }
-
         .shift-time-row td {
             padding: 0 2px;
         }
@@ -258,17 +254,9 @@
         .shift-label-night { color: #6d28d9; }
         .shift-label-general { color: #475569; }
 
-        .shift-dot {
-            display: inline-block;
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-        }
-
         .dot-morning { background: #0369a1; }
         .dot-evening { background: #c2410c; }
         .dot-night { background: #6d28d9; }
-        .dot-general { background: #64748b; }
 
         .shift-time {
             font-size: 4.5px;
@@ -439,11 +427,6 @@
                                         <tr class="shift-label-row">
                                             <td bgcolor="{{ $shiftBg }}">
                                                 <p class="shift-label shift-label-{{ $shiftType }}">{{ $cell['shift_label'] }}</p>
-                                            </td>
-                                        </tr>
-                                        <tr class="shift-dot-row">
-                                            <td bgcolor="{{ $shiftBg }}">
-                                                <span class="shift-dot dot-{{ $shiftType }}"></span>
                                             </td>
                                         </tr>
                                         @if($include_shift_times && $timeStart && $timeEnd)
