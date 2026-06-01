@@ -111,13 +111,13 @@
                 {
                     data: 'role',
                     render: renderSimple,
-                    orderable: true
+                    orderable: true,
+                    visible: false
                 }, // 12 Role
                 {
                     data: 'grade',
                     render: renderSimple,
-                    orderable: true,
-                    visible: false
+                    orderable: true
                 }, // 13 Grade
                 {
                     data: 'employee_status',
@@ -211,7 +211,7 @@
                 text: 'Select Columns',
                 className: 'btn btn-sm border-0 bg-main text-black',
                 columns: [
-                    0, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                    0, 4, 7, 8, 9, 10, 11, 13, 12, 14, 15, 16,
                     // 17, // Summary
                     18,
                     // 19, // Site Assignment
