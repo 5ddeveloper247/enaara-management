@@ -186,6 +186,7 @@
                                             <option value="monthly">Monthly</option>
                                             <option value="quarterly">Quarterly</option>
                                             <option value="yearly" selected>Yearly</option>
+                                            <option value="once_in_tenure">Once in Tenure</option>
                                             <option value="none">None</option>
                                         </select>
                                     </div>
