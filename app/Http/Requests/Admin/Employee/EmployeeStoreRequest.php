@@ -243,7 +243,9 @@ class EmployeeStoreRequest extends FormRequest
     {
         return [
             // Section A — General Information
-            'full_name'              => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+            'first_name'             => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+            'middle_name'            => ['nullable', 'string', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+            'last_name'              => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
             'father_name'            => ['nullable', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
             'email'                  => ['nullable', 'email:rfc,dns', 'max:50', Rule::unique('employees', 'email')],
             'phone'                  => ['nullable', 'string', 'regex:' . $this->contactRegex()],
@@ -575,11 +577,19 @@ class EmployeeStoreRequest extends FormRequest
     {
         return [
             // General
-            'full_name.required'     => 'Full name is required.',
-            'full_name.string'       => 'Name must be a valid text value.',
-            'full_name.min'          => 'Name must be at least 3 characters.',
-            'full_name.max'          => 'Name must not exceed 50 characters.',
-            'full_name.regex'        => 'Name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
+            'first_name.required'    => 'First name is required.',
+            'first_name.string'      => 'First name must be a valid text value.',
+            'first_name.min'         => 'First name must be at least 3 characters.',
+            'first_name.max'         => 'First name must not exceed 50 characters.',
+            'first_name.regex'       => 'First name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
+            'middle_name.string'     => 'Middle name must be a valid text value.',
+            'middle_name.max'        => 'Middle name must not exceed 50 characters.',
+            'middle_name.regex'      => 'Middle name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
+            'last_name.required'     => 'Last name is required.',
+            'last_name.string'       => 'Last name must be a valid text value.',
+            'last_name.min'          => 'Last name must be at least 3 characters.',
+            'last_name.max'          => 'Last name must not exceed 50 characters.',
+            'last_name.regex'        => 'Last name may only contain letters, spaces, apostrophes, dots, hyphens, and underscores.',
 
             'father_name.string'     => 'Father name must be a valid text value.',
             'father_name.min'        => 'Father name must be at least 3 characters.',

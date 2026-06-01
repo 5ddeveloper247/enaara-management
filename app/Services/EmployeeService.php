@@ -372,7 +372,14 @@ class EmployeeService
             $scheduleAttrs = $this->employmentInformation->standardScheduleAttributesForPersist($data, $role, $orgLevel);
 
             $employee = Employee::create([
-                'full_name'           => $data['full_name'],
+                'first_name'          => $data['first_name'],
+                'middle_name'         => $data['middle_name'] ?? null,
+                'last_name'           => $data['last_name'],
+                'full_name'           => EmployeeGeneralInformationService::composeFullName(
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name']
+                ),
                 'father_name'         => $data['father_name'] ?? null,
                 'employee_code'       => $code,
                 'organization_id'     => $data['organization_id'] ?? null,
@@ -1973,6 +1980,9 @@ class EmployeeService
             'role_name'           => $employee->role?->name,
             'saved_departments'   => $savedDepartments,
             'employee_code'       => $employee->employee_code,
+            'first_name'          => $employee->first_name,
+            'middle_name'         => $employee->middle_name,
+            'last_name'           => $employee->last_name,
             'full_name'           => $employee->full_name,
             'father_name'         => $employee->father_name,
             'cnic'                => $employee->cnic,
@@ -2172,7 +2182,9 @@ class EmployeeService
             }
 
             $otherStepColumnNames = [
-                'full_name',
+                'first_name',
+                'middle_name',
+                'last_name',
                 'father_name',
                 'employee_type',
                 'employment_type',
@@ -2363,8 +2375,13 @@ class EmployeeService
                     $userUpdateData['email'] = $emailToSync;
                 }
 
-                if (!empty($data['full_name'])) {
-                    $userUpdateData['name'] = $data['full_name'];
+                $syncedName = EmployeeGeneralInformationService::composeFullName(
+                    $data['first_name'] ?? $employee->first_name,
+                    $data['middle_name'] ?? $employee->middle_name,
+                    $data['last_name'] ?? $employee->last_name,
+                );
+                if ($syncedName !== '') {
+                    $userUpdateData['name'] = $syncedName;
                 }
 
                 if (!empty($userUpdateData)) {

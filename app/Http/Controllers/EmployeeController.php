@@ -42,7 +42,10 @@ class EmployeeController extends Controller
         }
 
         try {
-            Log::info('Employee store request received', ['user_id' => Auth::id(), 'name' => $request->full_name]);
+            Log::info('Employee store request received', [
+                'user_id' => Auth::id(),
+                'name' => trim($request->input('first_name') . ' ' . $request->input('last_name')),
+            ]);
 
             $photos   = $request->hasFile('profile_photo') ? [$request->file('profile_photo')] : [];
             $attachments = $this->extractAttachments($request);

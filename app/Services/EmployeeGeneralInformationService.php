@@ -4,10 +4,23 @@ namespace App\Services;
 
 class EmployeeGeneralInformationService
 {
+    public static function composeFullName(?string $first, ?string $middle, ?string $last): string
+    {
+        $parts = array_filter([
+            trim((string) $first),
+            trim((string) $middle),
+            trim((string) $last),
+        ], static fn (string $part): bool => $part !== '');
+
+        return implode(' ', $parts);
+    }
+
     public function employeeAttributeNames(): array
     {
         return [
-            'full_name',
+            'first_name',
+            'middle_name',
+            'last_name',
             'father_name',
             'cnic',
             'cnic_issue_date',
@@ -48,6 +61,18 @@ class EmployeeGeneralInformationService
                     $payload[$field] = $data[$field] === '' ? null : $data[$field];
                 }
             }
+        }
+
+        if (
+            array_key_exists('first_name', $payload)
+            || array_key_exists('middle_name', $payload)
+            || array_key_exists('last_name', $payload)
+        ) {
+            $payload['full_name'] = self::composeFullName(
+                $payload['first_name'] ?? null,
+                $payload['middle_name'] ?? null,
+                $payload['last_name'] ?? null,
+            );
         }
 
         return $payload;
