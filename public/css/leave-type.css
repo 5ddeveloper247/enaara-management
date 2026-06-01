@@ -326,12 +326,15 @@
     margin-bottom: 0;
 }
 
-.lt-ref-table th {
+.lt-ref-table thead th {
     font-weight: 600;
-    color: #475467;
-    background: #f8fafc;
+    color: #101828 !important;
+    background: #f8fafc !important;
     border-bottom: 1px solid #e2e8f0;
     padding: 0.4rem 0.75rem;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
 }
 
 .lt-ref-table td {

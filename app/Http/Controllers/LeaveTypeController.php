@@ -6,6 +6,8 @@ use App\Http\Requests\Admin\LeaveType\LeaveTypeStoreRequest;
 use App\Http\Requests\Admin\LeaveType\LeaveTypeUpdateRequest;
 use App\Models\Organization;
 use App\Services\LeaveTypeService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
@@ -28,6 +30,39 @@ class LeaveTypeController extends Controller
             'active' => $counts['active'],
             'inactive' => $counts['inactive'],
         ]);
+    }
+
+    public function entitlementReference(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'organization_id' => ['required', 'integer', 'exists:organizations,id'],
+            'sbu_ids' => ['nullable', 'array'],
+            'sbu_ids.*' => ['integer', 'exists:sbus,id'],
+            'exclude_id' => ['nullable', 'integer', 'exists:leave_types,id'],
+        ]);
+
+        try {
+            $rows = $this->leaveTypeService->getEntitlementReference(
+                (int) $validated['organization_id'],
+                $validated['sbu_ids'] ?? [],
+                isset($validated['exclude_id']) ? (int) $validated['exclude_id'] : null,
+            );
+
+            return response()->json([
+                'success' => true,
+                'rows' => $rows,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Leave type entitlement reference failed', [
+                'exception' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load entitlement reference.',
+                'rows' => [],
+            ], 500);
+        }
     }
 
     public function create(): View

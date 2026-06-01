@@ -178,7 +178,9 @@
             const orgSelect = document.getElementById('lt_organization_id');
             if (orgSelect && data.organization_id && cascade && cascade.loadSbus) {
                 orgSelect.value = String(data.organization_id);
-                cascade.loadSbus(data.organization_id, data.sbu_ids || (data.sbu_id ? [data.sbu_id] : []));
+                cascade.loadSbus(data.organization_id, data.sbu_ids || (data.sbu_id ? [data.sbu_id] : []), function () {
+                    loadEntitlementReference(config, cascade);
+                });
             }
 
             updatePreview();
@@ -186,6 +188,8 @@
 
         if (config.initialData) {
             populateLeaveTypeForm(config.initialData, cascadeApi);
+        } else {
+            loadEntitlementReference(config, cascadeApi);
         }
 
         const fieldIdMap = {
@@ -451,6 +455,96 @@
         });
     });
 
+    function escapeHtml(text) {
+        return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function renderEntitlementReferenceRows(rows) {
+        const tbody = document.getElementById('lt_entitlement_reference_body');
+        if (!tbody) {
+            return;
+        }
+
+        if (!rows || !rows.length) {
+            tbody.innerHTML =
+                '<tr><td colspan="2" class="text-muted small text-center py-3">No other leave types found for this organization and SBU selection.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = rows
+            .map(function (row) {
+                const label = row.code
+                    ? escapeHtml(row.name) + ' <span class="text-muted">(' + escapeHtml(row.code) + ')</span>'
+                    : escapeHtml(row.name);
+                return (
+                    '<tr><td>' +
+                    label +
+                    '</td><td class="text-end fw-semibold">' +
+                    escapeHtml(row.days) +
+                    '</td></tr>'
+                );
+            })
+            .join('');
+    }
+
+    function loadEntitlementReference(config, cascadeApi) {
+        const tbody = document.getElementById('lt_entitlement_reference_body');
+        const orgSelect = document.getElementById('lt_organization_id');
+        if (!tbody || !orgSelect || !config.entitlementReferenceUrl) {
+            return;
+        }
+
+        const organizationId = orgSelect.value;
+        if (!organizationId) {
+            tbody.innerHTML =
+                '<tr><td colspan="2" class="text-muted small text-center py-3">Select an organization to see existing leave entitlements.</td></tr>';
+            return;
+        }
+
+        const url = new URL(config.entitlementReferenceUrl, window.location.origin);
+        url.searchParams.set('organization_id', organizationId);
+
+        const sbuIds =
+            cascadeApi && typeof cascadeApi.getSelectedSbuIds === 'function'
+                ? cascadeApi.getSelectedSbuIds()
+                : [];
+        sbuIds.forEach(function (id) {
+            url.searchParams.append('sbu_ids[]', id);
+        });
+
+        if (config.leaveTypeId) {
+            url.searchParams.set('exclude_id', String(config.leaveTypeId));
+        }
+
+        tbody.innerHTML =
+            '<tr><td colspan="2" class="text-muted small text-center py-3">Loading reference...</td></tr>';
+
+        fetch(url.toString(), {
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    renderEntitlementReferenceRows([]);
+                    return;
+                }
+                renderEntitlementReferenceRows(data.rows || []);
+            })
+            .catch(function () {
+                tbody.innerHTML =
+                    '<tr><td colspan="2" class="text-muted small text-center py-3">Unable to load entitlement reference.</td></tr>';
+            });
+    }
+
     function initOrgSbuMultiPicker(config) {
         const orgSelect = document.getElementById('lt_organization_id');
         if (!orgSelect) {
@@ -459,6 +553,20 @@
 
         let sbuPool = [];
         let sbuSelected = [];
+
+        function notifyEntitlementContextChange() {
+            if (typeof config.onEntitlementContextChange === 'function') {
+                config.onEntitlementContextChange();
+            }
+        }
+
+        config.onEntitlementContextChange = function () {
+            loadEntitlementReference(config, {
+                getSelectedSbuIds: function () {
+                    return sbuSelected.slice();
+                },
+            });
+        };
 
         const sbuBox = document.getElementById('lt_sbu_box');
         const sbuDropdown = document.getElementById('lt_sbu_dropdown');
@@ -601,12 +709,17 @@
             renderSbuHiddenInputs();
             renderSbuChips();
             renderSbuList();
+            notifyEntitlementContextChange();
         }
 
-        function loadSbus(organizationId, selectedIds) {
+        function loadSbus(organizationId, selectedIds, onLoaded) {
             selectedIds = (selectedIds || []).map(String);
             if (!organizationId) {
                 resetSbus('Select Organization first');
+                notifyEntitlementContextChange();
+                if (typeof onLoaded === 'function') {
+                    onLoaded();
+                }
                 return;
             }
 
@@ -646,14 +759,22 @@
                             : 'No SBUs found for this organization';
                     }
                     syncSbuUi();
+                    if (typeof onLoaded === 'function') {
+                        onLoaded();
+                    }
                 })
                 .catch(function () {
                     resetSbus('Error loading SBUs');
+                    notifyEntitlementContextChange();
+                    if (typeof onLoaded === 'function') {
+                        onLoaded();
+                    }
                 });
         }
 
         orgSelect.addEventListener('change', function () {
             loadSbus(orgSelect.value, []);
+            notifyEntitlementContextChange();
         });
 
         if (selectAllSbus) {

@@ -326,10 +326,12 @@
                                             <th class="text-end">Days</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <tr><td>Annual</td><td class="text-end">24</td></tr>
-                                        <tr><td>Sick</td><td class="text-end">10</td></tr>
-                                        <tr><td>Casual</td><td class="text-end">8</td></tr>
+                                    <tbody id="lt_entitlement_reference_body">
+                                        <tr>
+                                            <td colspan="2" class="text-muted small text-center py-3">
+                                                Select an organization to see existing leave entitlements.
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -346,9 +348,11 @@
 <script>
     window.leaveTypeFormConfig = {
         mode: @json($isEdit ? 'edit' : 'create'),
+        leaveTypeId: @json($isEdit ? $leaveType->id : null),
         submitUrl: @json($isEdit ? route('admin.leave.type.update', $leaveType->id) : route('admin.leave.type.store')),
         indexUrl: @json(route('admin.leave.type.index')),
         sbuUrl: @json(route('admin.sbu.index')),
+        entitlementReferenceUrl: @json(route('admin.leave.type.entitlement-reference')),
         csrfToken: @json(csrf_token()),
         initialData: @json($initialData ?? null),
         successTitle: @json($isEdit ? 'Updated' : 'Saved'),
