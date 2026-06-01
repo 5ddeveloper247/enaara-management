@@ -73,6 +73,30 @@ class LeaveRequestController extends Controller
        return $this->leaveRequestService->leaveTypesForEmployee($request);
     }
 
+    public function calculateDuration(Request $request)
+    {
+        if (! validatePermissions('admin/leave-request/add') && ! \Auth::user()->employee_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $employee = Employee::findOrFail((int) $request->input('employee_id'));
+        $startDate = \Carbon\Carbon::parse($request->input('start_date'))->startOfDay();
+        $endDate = \Carbon\Carbon::parse($request->input('end_date'))->startOfDay();
+
+        $duration = $this->leaveRequestService->calculateActualLeaveDuration($employee, $startDate, $endDate);
+
+        return response()->json([
+            'success' => true,
+            'duration' => $duration,
+        ]);
+    }
+
     public function updateStatus(Request $request, $id)
     {
         return $this->leaveRequestService->updateStatus($request, $id);

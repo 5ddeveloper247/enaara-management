@@ -162,7 +162,13 @@ class LeaveRequestService
             ]);
         }
 
-        $duration = $startDate->diffInDays($endDate) + 1;
+        $duration = $this->calculateActualLeaveDuration($fromEmployee, $startDate, $endDate);
+
+        if ($duration <= 0) {
+            throw ValidationException::withMessages([
+                'start_date' => 'The selected leave duration only consists of holidays, Sundays, or off days.',
+            ]);
+        }
 
         $leaveType = LeaveType::with('setting')->findOrFail((int) $validated['leave_type_id']);
 
@@ -222,5 +228,71 @@ class LeaveRequestService
     public function updateStatus(Request $request, $id)
     {
         return $this->leaveRequestStatusHandler->handle($request, (int) $id);
+    }
+
+    public function getActiveLeaveDates(Employee $employee, Carbon $startDate, Carbon $endDate): array
+    {
+        $activeDates = [];
+
+        $holidayResolver = app(\App\Services\PublicHolidayResolver::class);
+        $holidays = $holidayResolver->loadHolidaysForRange($startDate, $endDate);
+
+        $rosterEntries = \App\Models\ShiftRosterEntry::query()
+            ->where('employee_id', $employee->id)
+            ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get();
+
+        $hasAnyRoster = $rosterEntries->isNotEmpty();
+
+        $rostersByDate = $rosterEntries->keyBy(function ($item) {
+            return $item->roster_date instanceof Carbon
+                ? $item->roster_date->toDateString()
+                : Carbon::parse($item->roster_date)->toDateString();
+        });
+
+        $current = $startDate->copy()->startOfDay();
+        $end = $endDate->copy()->startOfDay();
+
+        while ($current->lte($end)) {
+            $dateStr = $current->toDateString();
+
+            // Check if public holiday applies
+            $isPublicHoliday = $holidayResolver->resolveForAssigneeOnDate(
+                $holidays,
+                $employee->organization_id ? (int) $employee->organization_id : null,
+                $employee->department_id ? (int) $employee->department_id : null,
+                $employee->sbu_id ? (int) $employee->sbu_id : null,
+                $dateStr
+            ) !== null;
+
+            if ($isPublicHoliday) {
+                $current->addDay();
+                continue;
+            }
+
+            // Check shift roster / weekly off
+            if ($hasAnyRoster) {
+                $roster = $rostersByDate->get($dateStr);
+                if ($roster && strtolower(trim((string) $roster->status)) === 'off') {
+                    $current->addDay();
+                    continue;
+                }
+            } else {
+                if ($current->isSunday()) {
+                    $current->addDay();
+                    continue;
+                }
+            }
+
+            $activeDates[] = $dateStr;
+            $current->addDay();
+        }
+
+        return $activeDates;
+    }
+
+    public function calculateActualLeaveDuration(Employee $employee, Carbon $startDate, Carbon $endDate): float
+    {
+        return (float) count($this->getActiveLeaveDates($employee, $startDate, $endDate));
     }
 }

@@ -82,12 +82,18 @@ class EmployeLeaveRequest extends Model
                     return;
                 }
 
-                DB::transaction(function () use ($leaveRequest, $start, $end) {
+                $employee = Employee::find($leaveRequest->from_employee_id);
+                if (!$employee) {
+                    return;
+                }
+
+                $activeDates = app(\App\Services\LeaveRequestService::class)->getActiveLeaveDates($employee, $start, $end);
+
+                DB::transaction(function () use ($leaveRequest, $activeDates) {
                     // First clear any existing entities (in case dates changed or we are re-approving)
                     $leaveRequest->leaveEntities()->delete();
 
                     $rows = [];
-                    $cursor = $start->copy();
                     
                     // Fallback to employee's department if not set on the request (e.g. for older records)
                     $deptId = $leaveRequest->department_id;
@@ -95,25 +101,26 @@ class EmployeLeaveRequest extends Model
                         $deptId = Employee::where('id', $leaveRequest->from_employee_id)->value('department_id');
                     }
 
-                    while ($cursor->lte($end)) {
+                    foreach ($activeDates as $dateStr) {
                         $rows[] = [
                             'leave_request_id' => $leaveRequest->id,
                             'employee_id' => $leaveRequest->from_employee_id,
                             'leave_type_id' => $leaveRequest->leave_type_id,
                             'department_id' => $deptId,
-                            'leave_date' => $cursor->toDateString(),
-                            'start_date' => $cursor->toDateString(),
-                            'end_date' => $cursor->toDateString(),
+                            'leave_date' => $dateStr,
+                            'start_date' => $dateStr,
+                            'end_date' => $dateStr,
                             'duration' => 1,
                             'status' => 0,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
-                        $cursor->addDay();
                     }
 
                     // Insert fresh entities
-                    EmployeLeaveEntity::query()->insert($rows);
+                    if (!empty($rows)) {
+                        EmployeLeaveEntity::query()->insert($rows);
+                    }
                 });
             } else {
                 // If the request is not approved (or no longer approved), delete any entities.

@@ -21,6 +21,26 @@
     var diffTime = end.getTime() - start.getTime();
     var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // include both days
     calculatedDaysEl.textContent = String(diffDays);
+
+    var employeeSelect = document.getElementById('leaveEmployee');
+    var employeeId = employeeSelect ? employeeSelect.value : null;
+    if (employeeId && startDateInput.value && endDateInput.value) {
+      $.ajax({
+        url: '/admin/leave-request/calculate-duration',
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        data: {
+          employee_id: employeeId,
+          start_date: startDateInput.value,
+          end_date: endDateInput.value
+        },
+        success: function (resp) {
+          if (resp && resp.success && resp.duration !== undefined) {
+            calculatedDaysEl.textContent = String(resp.duration);
+          }
+        }
+      });
+    }
   }
 
   function showMedicalSectionIfSick(leaveTypeSelect, medicalCertSection) {
@@ -179,6 +199,8 @@
           }
           return;
         }
+
+        calculateDays(startDateInput, endDateInput, calculatedDaysEl);
 
         setLeaveTypesLoading(leaveTypeSelect, true);
 
