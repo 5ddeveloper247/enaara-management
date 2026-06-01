@@ -144,6 +144,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::delete('/designations/delete/{id}', [DesignationController::class, 'destroy'])->name('admin.designations.destroy');
 
     Route::get('/leave-type', [LeaveTypeController::class, 'index'])->name('admin.leave.type.index');
+    Route::get('/leave-type/entitlement-reference', [LeaveTypeController::class, 'entitlementReference'])->name('admin.leave.type.entitlement-reference');
     Route::get('/leave-type/add', [LeaveTypeController::class, 'create'])->name('admin.leave.type.add');
     Route::post('/leave-type/add', [LeaveTypeController::class, 'store'])->name('admin.leave.type.store');
     Route::get('/leave-type/edit/{id}', [LeaveTypeController::class, 'edit'])->name('admin.leave.type.edit');

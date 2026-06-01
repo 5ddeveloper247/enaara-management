@@ -30,6 +30,44 @@ class LeaveTypeService
         ];
     }
 
+    public function getEntitlementReference(int $organizationId, array $sbuIds = [], ?int $excludeLeaveTypeId = null): array
+    {
+        $sbuIds = array_values(array_unique(array_filter(array_map('intval', $sbuIds))));
+
+        $query = LeaveType::query()
+            ->select(['id', 'name', 'code', 'annual_quota'])
+            ->where('organization_id', $organizationId)
+            ->where('is_active', true)
+            ->orderBy('name');
+
+        if ($excludeLeaveTypeId) {
+            $query->where('id', '!=', $excludeLeaveTypeId);
+        }
+
+        if ($sbuIds !== []) {
+            $query->where(function ($q) use ($sbuIds) {
+                $q->whereIn('sbu_id', $sbuIds)
+                    ->orWhereHas('sbus', function ($sq) use ($sbuIds) {
+                        $sq->whereIn('sbus.id', $sbuIds);
+                    });
+            });
+        }
+
+        return $query->get()->map(function (LeaveType $leaveType) {
+            $quota = (float) $leaveType->annual_quota;
+            $days = fmod($quota, 1.0) === 0.0
+                ? (string) (int) $quota
+                : rtrim(rtrim(number_format($quota, 2, '.', ''), '0'), '.');
+
+            return [
+                'id' => $leaveType->id,
+                'name' => $leaveType->name,
+                'code' => $leaveType->code,
+                'days' => $days,
+            ];
+        })->values()->all();
+    }
+
     public function findById(int $id): ?LeaveType
     {
         return LeaveType::with(['organization', 'sbu', 'sbus', 'setting'])->find($id);
