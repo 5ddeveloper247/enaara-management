@@ -2403,11 +2403,6 @@ class EmployeeService
 
             if ($employee->user) {
                 $userUpdateData = [];
-                $emailToSync = $data['email'] ?? $data['contact_email'] ?? null;
-
-                if ($emailToSync) {
-                    $userUpdateData['email'] = $emailToSync;
-                }
 
                 $syncedName = EmployeeGeneralInformationService::composeFullName(
                     $data['first_name'] ?? $employee->first_name,
@@ -2420,7 +2415,7 @@ class EmployeeService
 
                 if (!empty($userUpdateData)) {
                     $employee->user->update($userUpdateData);
-                    Log::info('Associated user account synced', ['user_id' => $employee->user->id, 'updates' => array_keys($userUpdateData), 'email' => $emailToSync ?? 'no change']);
+                    Log::info('Associated user account synced', ['user_id' => $employee->user->id, 'updates' => array_keys($userUpdateData)]);
                 }
             }
 
