@@ -109,10 +109,10 @@
                     orderable: false
                 }, // 11 Date of Joining
                 {
-                    data: 'designation',
+                    data: 'role',
                     render: renderSimple,
                     orderable: true
-                }, // 12 Designation
+                }, // 12 Role
                 {
                     data: 'employee_status',
                     render: renderVerificationStatus,
@@ -323,7 +323,7 @@
 
     function renderProfileColumn(data, type, row) {
         var fullName = normalizeValue(row.full_name);
-        var role = normalizeValue(row.role);
+        var designation = normalizeValue(row.designation);
         var employeeNo = normalizeValue(row.employee_code);
         var tasId = normalizeValue(row.biometric_id);
         var initials = normalizeValue(row.initials, '??');
@@ -337,8 +337,8 @@
             escHtml(fullName) :
             '<span class="text-black font-bold">-</span>';
 
-        var roleHtml = role !== '-' ?
-            escHtml(role) :
+        var designationHtml = designation !== '-' ?
+            escHtml(designation) :
             '<span class="text-muted">-</span>';
 
         var employeeNoHtml = employeeNo !== '-' ? escHtml(employeeNo) : '-';
@@ -348,7 +348,7 @@
             avatar +
             '<div class="min-w-0 flex-grow-1">' +
             '<div class="employee-profile-name fw-semibold text-truncate" title="' + escAttr(fullName === '-' ? '' : fullName) + '">' + nameHtml + '</div>' +
-            '<div class="employee-profile-role small text-muted text-truncate" title="' + escAttr(role === '-' ? '' : role) + '">' + roleHtml + '</div>' +
+            '<div class="employee-profile-role small text-muted text-truncate" title="' + escAttr(designation === '-' ? '' : designation) + '">' + designationHtml + '</div>' +
             '<div class="employee-profile-meta mt-1">' +
             '<span class="employee-meta-chip">' + employeeNoHtml + '</span>' +
             '<span class="employee-meta-chip">TAS: ' + tasIdHtml + '</span>' +
