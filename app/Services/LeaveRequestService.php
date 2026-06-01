@@ -125,8 +125,10 @@ class LeaveRequestService
                 'days' => (float) $rows->max('duration'),
                 'reason' => $representative->reason,
                 'status' => $statusMap[$aggregatedStatus] ?? 'pending',
+                'statusCode' => $aggregatedStatus,
                 'statusLabel' => $statusLabelMap[$aggregatedStatus] ?? 'Pending',
                 'category' => $category,
+                'canCancel' => in_array($aggregatedStatus, [0, 1, 2], true),
             ];
         })
             ->values()

@@ -64,6 +64,14 @@ class LeaveRequestStatusHandler
         $currentUser = Auth::user();
 
         $isAssigned = (int) $leaveRequest->to_employee_id === (int) optional($currentUser->employee)->id;
+        $isRequester = (int) $leaveRequest->from_employee_id === (int) optional($currentUser->employee)->id;
+
+        if ($newStatus === 5 && $isRequester) {
+            if (in_array($currentStatus, [0, 1, 2], true)) {
+                return null;
+            }
+            return $this->deny($request, 'You can only cancel a request that is pending or recommended.');
+        }
 
         if (! $isAssigned) {
             return $this->deny($request, 'You do not have permission to act on this request.');
@@ -200,7 +208,7 @@ class LeaveRequestStatusHandler
 
     private function syncRelatedRequestStatuses(EmployeLeaveRequest $leaveRequest, int $newStatus): void
     {
-        if ((int) $leaveRequest->action_type !== self::FINAL_APPROVAL_ACTION_TYPE) {
+        if ((int) $leaveRequest->action_type !== self::FINAL_APPROVAL_ACTION_TYPE && $newStatus !== 5) {
             return;
         }
 
@@ -218,11 +226,12 @@ class LeaveRequestStatusHandler
         EmployeLeaveRequest::where($match)
             ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
             ->where('id', '!=', $leaveRequest->id)
-            ->where('status', 0)
+            ->whereIn('status', [0, 1, 2])
             ->update(['status' => $newStatus]);
 
         EmployeLeaveRequest::where($match)
             ->where('action_type', self::RECOMMENDATION_ACTION_TYPE)
+            ->where('id', '!=', $leaveRequest->id)
             ->where('status', '!=', $newStatus)
             ->update(['status' => $newStatus]);
     }

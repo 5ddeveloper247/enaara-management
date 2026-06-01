@@ -57,8 +57,9 @@
         </div>
     </div>
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
-        <div class="d-flex justify-content-end">
+        <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Close</button>
+            <button type="button" class="btn btn-danger d-none" id="cancelLeaveBtn">Cancel Leave</button>
         </div>
     </div>
 </div>

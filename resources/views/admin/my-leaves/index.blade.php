@@ -418,9 +418,63 @@
             document.getElementById('detailReason').textContent = leave.reason;
             document.getElementById('detailStatus').innerHTML = getStatusBadge(leave.status);
 
+            const cancelBtn = document.getElementById('cancelLeaveBtn');
+            if (cancelBtn) {
+                if (leave.canCancel) {
+                    cancelBtn.classList.remove('d-none');
+                    cancelBtn.onclick = function() {
+                        cancelLeaveRequest(leave.id);
+                    };
+                } else {
+                    cancelBtn.classList.add('d-none');
+                }
+            }
+
             // Show canvas
             const canvas = new bootstrap.Offcanvas(document.getElementById('leaveDetailCanvas'));
             canvas.show();
+        }
+
+        function cancelLeaveRequest(id) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You want to cancel this leave request?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, cancel it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/leave-request/${id}/status`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ status: 5 }) // 5 is the 'cancelled' status code
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire(
+                                'Cancelled!',
+                                'Leave request cancelled successfully.',
+                                'success'
+                            ).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', data.message || 'Failed to cancel leave request.', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        Swal.fire('Error', 'Something went wrong.', 'error');
+                    });
+                }
+            });
         }
     </script>
 @endpush
