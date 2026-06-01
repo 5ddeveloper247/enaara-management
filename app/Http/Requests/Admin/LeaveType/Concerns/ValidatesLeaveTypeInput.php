@@ -48,7 +48,7 @@ trait ValidatesLeaveTypeInput
             'eligible_from' => ['required', 'string', 'in:doj,confirmation,custom'],
             'probation_eligible' => ['boolean'],
             'unit_of_leave' => ['required', 'string', 'in:days,hours'],
-            'accrual_frequency' => ['nullable', 'string', 'in:monthly,quarterly,yearly,none'],
+            'accrual_frequency' => ['nullable', 'string', 'in:monthly,quarterly,yearly,once_in_tenure,none'],
             'accrual_start_month' => ['nullable', 'integer', 'min:1', 'max:12'],
             'carry_forward' => ['required', 'string', 'in:no,yes,as_earned'],
             'max_carry_forward_days' => ['nullable', 'numeric', 'min:0', 'max:999.99'],

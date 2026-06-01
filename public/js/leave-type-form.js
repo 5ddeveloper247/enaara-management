@@ -108,6 +108,20 @@
                     ? '<span class="lt-preview-badge-active">Active</span>'
                     : '<span class="lt-preview-badge-inactive">Inactive</span>';
             }
+
+            // Hide/Show Accrual Start Month when frequency is 'once_in_tenure'
+            const freqEl = document.getElementById('lt_accrual_frequency');
+            const startMonthEl = document.getElementById('lt_accrual_start_month');
+            if (freqEl && startMonthEl) {
+                const col = startMonthEl.closest('.col-md-3');
+                if (col) {
+                    if (freqEl.value === 'once_in_tenure') {
+                        col.style.display = 'none';
+                    } else {
+                        col.style.display = '';
+                    }
+                }
+            }
         }
 
         function setText(id, value) {

@@ -46,6 +46,26 @@ class LeaveRequestApplicationChecks
         $this->assertProbationEligibility($employee, (bool) ($setting->probation_eligible ?? false));
         $this->assertMaxConsecutiveDays($setting->max_consecutive_days, $durationDays);
         $this->assertAdvanceNotice($startDate, (int) ($setting->advance_notice_days ?? 0));
+        $this->assertOnceInTenureRestriction($employee, $leaveType, $setting->accrual_frequency ?? null);
+    }
+
+    private function assertOnceInTenureRestriction(Employee $employee, LeaveType $leaveType, ?string $accrualFrequency): void
+    {
+        if ($accrualFrequency !== 'once_in_tenure') {
+            return;
+        }
+
+        $hasExisting = \App\Models\EmployeLeaveRequest::query()
+            ->where('from_employee_id', $employee->id)
+            ->where('leave_type_id', $leaveType->id)
+            ->whereNotIn('status', [4, 5]) // 4 = rejected, 5 = cancelled
+            ->exists();
+
+        if ($hasExisting) {
+            throw ValidationException::withMessages([
+                'leave_type_id' => 'You can only apply for this leave type once in your entire tenure, and you have already submitted a request.',
+            ]);
+        }
     }
 
     private function assertEmploymentTypeMatches(Employee $employee, string $required): void
