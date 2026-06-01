@@ -94,6 +94,7 @@
                     <th>Gender</th>
                     <th>Date of Joining</th>
                     <th>Role</th>
+                    <th>Grade</th>
                     <th>Status</th>
                     <th>Email</th>
                     <th>Cell Number</th>
@@ -216,8 +217,8 @@
 
             // ── Status badge ─────────────────────────────────────────
             let verificationBadge;
-            if (cells && cells.length >= 23) {
-                verificationBadge = cells[13].innerHTML;
+            if (cells && cells.length >= 24) {
+                verificationBadge = cells[14].innerHTML;
             } else {
                 const status = rowData.employee_status || '—';
                 const bgClass = status === 'Active' ? 'bg-success' :
@@ -232,10 +233,10 @@
             let actionBtnHtml;
             const summary = norm(rowData.summary, '') || [norm(rowData.full_name, ''), employeeId !== '—' ? employeeId : '']
                 .filter(Boolean).join(' - ') || '-';
-            if (cells && cells.length >= 23) {
+            if (cells && cells.length >= 24) {
                 // Restyle the existing button to outline + full width
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = cells[22].innerHTML;
+                tempDiv.innerHTML = cells[23].innerHTML;
                 const existingBtn = tempDiv.querySelector('button');
                 if (existingBtn) {
                     existingBtn.classList.remove('btn-primary');
