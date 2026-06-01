@@ -114,64 +114,70 @@
                     orderable: true
                 }, // 12 Role
                 {
+                    data: 'grade',
+                    render: renderSimple,
+                    orderable: true,
+                    visible: false
+                }, // 13 Grade
+                {
                     data: 'employee_status',
                     render: renderVerificationStatus,
                     orderable: false
-                }, // 13 Status
+                }, // 14 Status
                 {
                     data: 'email',
                     render: renderEmail,
                     orderable: true,
                     visible: false
-                }, // 14 Email
+                }, // 15 Email
                 {
                     data: 'cell_no',
                     render: renderSimple,
                     orderable: false,
                     visible: false
-                }, // 15 Cell Number
+                }, // 16 Cell Number
                 {
                     data: null,
                     render: renderSummary,
                     orderable: false,
                     visible: false
-                }, // 16 Summary
+                }, // 17 Summary
                 {
                     data: 'employment_type',
                     render: renderEmploymentType,
                     orderable: true,
                     visible: false
-                }, // 17 Employment Type
+                }, // 18 Employment Type
                 {
                     data: 'site',
                     render: renderSite,
                     orderable: true,
                     visible: false
-                }, // 18 Site Assignment
+                }, // 19 Site Assignment
                 {
                     data: null,
                     render: renderVendor,
                     orderable: false,
                     visible: false
-                }, // 19 Vendor
+                }, // 20 Vendor
                 {
                     data: 'sync_status',
                     render: renderSyncStatus,
                     orderable: true,
                     visible: false
-                }, // 20 Sync Status
+                }, // 21 Sync Status
                 {
                     data: 'floor_access',
                     render: renderFloorAccess,
                     orderable: true,
                     visible: false
-                }, // 21 Floor Access
+                }, // 22 Floor Access
                 {
                     data: null,
                     render: renderActions,
                     orderable: false,
                     className: 'text-end no-toggle'
-                }, // 22 Actions
+                }, // 23 Actions
             ],
             order: [
                 [2, 'desc']
@@ -183,11 +189,11 @@
                     responsivePriority: 1
                 },
                 {
-                    targets: [0, 4, 6, 13],
+                    targets: [0, 4, 6, 14],
                     responsivePriority: 2
                 },
                 {
-                    targets: [5, 7, 8, 9, 10, 11, 12, 14, 15],
+                    targets: [5, 7, 8, 9, 10, 11, 12, 13, 15, 16],
                     responsivePriority: 3
                 },
             ],
@@ -205,13 +211,13 @@
                 text: 'Select Columns',
                 className: 'btn btn-sm border-0 bg-main text-black',
                 columns: [
-                    0, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                    // 16, // Summary
-                    17,
-                    // 18, // Site Assignment
-                    // 19, // Vendor
-                    // 20, // Sync Status
-                    21
+                    0, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                    // 17, // Summary
+                    18,
+                    // 19, // Site Assignment
+                    // 20, // Vendor
+                    // 21, // Sync Status
+                    22
                 ],
             }],
             dom: '<"row px-4 py-3 align-items-center"<"col-lg-3 col-md-4"l><"col-lg-5 col-md-4 d-flex justify-content-center"<"employee-listing-tab-slot">><"col-lg-4 col-md-4 d-flex justify-content-end gap-2"<B><f>>>r<"employee-datatable-scroll"t><"row px-4 py-2"<"col-md-5"i><"col-md-7"p>>',
