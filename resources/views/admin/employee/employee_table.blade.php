@@ -93,7 +93,7 @@
                     <th>Nationality</th>
                     <th>Gender</th>
                     <th>Date of Joining</th>
-                    <th>Designation</th>
+                    <th>Role</th>
                     <th>Status</th>
                     <th>Email</th>
                     <th>Cell Number</th>
@@ -197,7 +197,7 @@
             // ── Core values ──────────────────────────────────────────
             const fullName = norm(rowData.full_name, 'Unknown');
             const employeeId = norm(rowData.employee_code, '—');
-            const designation = norm(rowData.designation, '—');
+            const role = norm(rowData.role, '—');
             const sbu = norm(rowData.sbu);
             const dept = norm(rowData.department);
             const category = norm(rowData.employment_category);
@@ -326,7 +326,7 @@ const cardHtml = `
                                 title="${attrSafe(fullName)}">${textSafe(fullName)}</h6>
                             <small class="text-muted d-block text-truncate"
                                 style="font-size:0.7rem;max-width:140px;"
-                                title="${attrSafe(designation)}">${textSafe(employeeId)} &mdash; ${textSafe(designation)}</small>
+                                title="${attrSafe(role)}">${textSafe(employeeId)} &mdash; ${textSafe(role)}</small>
                         </div>
                     </div>
                     ${verificationBadge}
