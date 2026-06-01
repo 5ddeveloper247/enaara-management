@@ -297,7 +297,7 @@ class EmployeeService
     {
         $roleId = $data['role_id'] ?? $employee?->role_id;
         $role = $roleId ? Role::find($roleId) : null;
-        if ($role && $role->resolvedNumericLevel() === 4) {
+        if ($role && $role->resolvedNumericLevel() === 3) {
             $orgId = (int) ($data['organization_id'] ?? $employee?->organization_id ?? 0);
             $sbuId = (int) ($data['sbu_id'] ?? $employee?->sbu_id ?? 0);
             $departmentId = (int) ($data['department_id'] ?? $employee?->department_id ?? 0);

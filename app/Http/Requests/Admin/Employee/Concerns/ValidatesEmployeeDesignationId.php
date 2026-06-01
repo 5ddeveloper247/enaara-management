@@ -26,7 +26,7 @@ trait ValidatesEmployeeDesignationId
 
                     $roleId = $this->input('role_id');
                     $role = $roleId ? \App\Models\Role::with('roleLevel')->find($roleId) : null;
-                    if ($role && $role->resolvedNumericLevel() === 4) {
+                    if ($role && $role->resolvedNumericLevel() === 3) {
                         if ($orgId > 0 && $sbuId > 0 && $departmentId > 0) {
                             $department = \App\Models\Department::find($departmentId);
                             if ($department) {

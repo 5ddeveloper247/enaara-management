@@ -3903,7 +3903,7 @@
 
             const selectedRoleId = roleSelect ? roleSelect.value : null;
             const selectedRole = rolesData.find(r => String(r.id) === String(selectedRoleId));
-            const isGm = selectedRole && parseInt(selectedRole.level) === 4;
+            const isGm = selectedRole && parseInt(selectedRole.level) === 3;
 
             if (isGm) {
                 payload.data.forEach(function (row) {

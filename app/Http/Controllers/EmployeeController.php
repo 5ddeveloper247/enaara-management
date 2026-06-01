@@ -147,7 +147,7 @@ class EmployeeController extends Controller
         try {
             $roleId = $request->input('role_id');
             $role = $roleId ? \App\Models\Role::with('roleLevel')->find($roleId) : null;
-            if ($role && $role->resolvedNumericLevel() === 4) {
+            if ($role && $role->resolvedNumericLevel() === 3) {
                 $department = \App\Models\Department::find((int) $validated['department_id']);
                 if ($department) {
                     $designationName = trim($role->name . ' ' . $department->name);
