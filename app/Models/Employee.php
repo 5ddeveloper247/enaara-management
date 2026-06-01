@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Role;
+use App\Services\EmployeeGeneralInformationService;
 use App\Traits\LogsActivity;
 
 class Employee extends Model
@@ -17,7 +18,7 @@ class Employee extends Model
     protected $table = 'employees';
 
     protected $fillable = [
-        'full_name', 'father_name', 'employee_code', 'tas_id', 'organization_id', 'sbu_id', 'department_id', 'department_ids',
+        'full_name', 'first_name', 'middle_name', 'last_name', 'father_name', 'employee_code', 'tas_id', 'organization_id', 'sbu_id', 'department_id', 'department_ids',
         'employee_type_id', 'employee_type', 'employment_type', 'designation', 'designation_id', 'grade', 'branch',
         'location', 'email', 'phone', 'cnic', 'cnic_issue_date', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
         'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth',
@@ -106,8 +107,23 @@ class Employee extends Model
         return $email !== '' ? $email : null;
     }
 
+    public function getFullNameAttribute($value): ?string
+    {
+        $composed = EmployeeGeneralInformationService::composeFullName(
+            $this->attributes['first_name'] ?? null,
+            $this->attributes['middle_name'] ?? null,
+            $this->attributes['last_name'] ?? null,
+        );
+
+        if ($composed !== '') {
+            return $composed;
+        }
+
+        return $value !== null && $value !== '' ? (string) $value : null;
+    }
+
     public function getNameAttribute(): string
     {
-        return (string) ($this->attributes['full_name'] ?? 'Employee');
+        return (string) ($this->full_name ?? 'Employee');
     }
 }

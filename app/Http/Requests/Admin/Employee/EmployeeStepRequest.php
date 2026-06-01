@@ -139,7 +139,7 @@ class EmployeeStepRequest extends FormRequest
             $this->merge(['ntn' => preg_replace('/\D/', '', (string) $this->input('ntn'))]);
         }
 
-        $trimFields = ['full_name', 'father_name', 'name', 'present_address', 'permanent_address', 'relation', 'occupation', 'nok_relation_other'];
+        $trimFields = ['first_name', 'middle_name', 'last_name', 'father_name', 'name', 'present_address', 'permanent_address', 'relation', 'occupation', 'nok_relation_other'];
         foreach ($trimFields as $tf) {
             if ($this->filled($tf)) {
                 $this->merge([$tf => trim((string)$this->input($tf))]);
@@ -334,7 +334,9 @@ class EmployeeStepRequest extends FormRequest
 
         if ($step === 1) {
             $stepRules = array_merge([
-                'full_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+                'first_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+                'middle_name' => ['nullable', 'string', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+                'last_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
                 'father_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
                 'email' => [
                     'nullable',
@@ -1037,11 +1039,19 @@ class EmployeeStepRequest extends FormRequest
     {
         return [
             // General
-            'full_name.required' => 'Name is required.',
-            'full_name.string' => 'Name must be a valid text value.',
-            'full_name.min' => 'Name must be at least 3 characters.',
-            'full_name.max' => 'Name must not exceed 50 characters.',
-            'full_name.regex' => 'Name must contain letters (any language), spaces, apostrophes, dots, hyphens, or underscores — not numbers-only.',
+            'first_name.required' => 'First name is required.',
+            'first_name.string' => 'First name must be a valid text value.',
+            'first_name.min' => 'First name must be at least 3 characters.',
+            'first_name.max' => 'First name must not exceed 50 characters.',
+            'first_name.regex' => 'First name must contain letters (any language), spaces, apostrophes, dots, hyphens, or underscores — not numbers-only.',
+            'middle_name.string' => 'Middle name must be a valid text value.',
+            'middle_name.max' => 'Middle name must not exceed 50 characters.',
+            'middle_name.regex' => 'Middle name must contain letters (any language), spaces, apostrophes, dots, hyphens, or underscores — not numbers-only.',
+            'last_name.required' => 'Last name is required.',
+            'last_name.string' => 'Last name must be a valid text value.',
+            'last_name.min' => 'Last name must be at least 3 characters.',
+            'last_name.max' => 'Last name must not exceed 50 characters.',
+            'last_name.regex' => 'Last name must contain letters (any language), spaces, apostrophes, dots, hyphens, or underscores — not numbers-only.',
 
             'father_name.required' => 'Father name is required.',
             'father_name.string' => "Father name must be a valid text value.",

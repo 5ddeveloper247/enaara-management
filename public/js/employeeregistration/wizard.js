@@ -380,7 +380,9 @@
         }
 
         const maxLengthByField = {
-            full_name: 50,
+            first_name: 50,
+            middle_name: 50,
+            last_name: 50,
             father_name: 50,
             email: 50,
             phone: 15,
@@ -469,7 +471,7 @@
 
         const alphaNumericUpperFields = new Set(['iban']);
 
-        const personNameFields = new Set(['full_name', 'father_name', 'spouse_name', 'nok_name', 'name']);
+        const personNameFields = new Set(['first_name', 'middle_name', 'last_name', 'father_name', 'spouse_name', 'nok_name', 'name']);
         const personNameAllowedPattern = /^[A-Za-z\s.'-]*$/;
         const cityBirthFields = new Set(['city_of_birth']);
         const cityBirthAllowedPattern = /^[A-Za-z0-9\s.'\-&,\/#()]*$/;
@@ -3694,10 +3696,16 @@
         if (!document.getElementById('summaryName')) {
             return;
         }
-        const nameInput = document.querySelector('input[name="full_name"]');
-        if (nameInput) document.getElementById('summaryName').textContent = nameInput.value || 'Not provided';
+        const composedName = [
+            document.querySelector('input[name="first_name"]')?.value,
+            document.querySelector('input[name="middle_name"]')?.value,
+            document.querySelector('input[name="last_name"]')?.value,
+        ].map((part) => (part || '').trim()).filter(Boolean).join(' ');
+        if (document.getElementById('summaryName')) {
+            document.getElementById('summaryName').textContent = composedName || 'Not provided';
+        }
         const sidebarName = document.getElementById('sidebarEmployeeName');
-        if (nameInput && sidebarName) sidebarName.textContent = nameInput.value || 'New Employee';
+        if (sidebarName) sidebarName.textContent = composedName || 'New Employee';
 
         const cnicInput = document.querySelector('input[name="cnic"]');
         const summaryCnic = document.getElementById('summaryCnic');
@@ -3719,7 +3727,7 @@
         }
     }
 
-    document.querySelectorAll('input[name="full_name"], input[name="cnic"]').forEach(el => {
+    document.querySelectorAll('input[name="first_name"], input[name="middle_name"], input[name="last_name"], input[name="cnic"]').forEach(el => {
         el.addEventListener('input', updateSidebarSummary);
     });
     document.querySelectorAll('select[name="gender"], select[name="religion"], select[name="nationality"]').forEach(el => {

@@ -56,9 +56,19 @@
                              </div>
                              <div class="row g-3 w-100">
                                  <div class="col-md-4">
-                                     <label class="form-label">Name <span class="text-danger">*</span></label>
-                                     <input type="text" name="full_name" class="form-control" id="giNameInput"
-                                         value="{{ $employee->full_name ?? '' }}" placeholder="Enter full name">
+                                     <label class="form-label">First Name <span class="text-danger">*</span></label>
+                                     <input type="text" name="first_name" class="form-control" id="giFirstNameInput"
+                                         value="{{ $employee->first_name ?? '' }}" placeholder="Enter first name">
+                                 </div>
+                                 <div class="col-md-4">
+                                     <label class="form-label">Middle Name</label>
+                                     <input type="text" name="middle_name" class="form-control" id="giMiddleNameInput"
+                                         value="{{ $employee->middle_name ?? '' }}" placeholder="Enter middle name">
+                                 </div>
+                                 <div class="col-md-4">
+                                     <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                                     <input type="text" name="last_name" class="form-control" id="giLastNameInput"
+                                         value="{{ $employee->last_name ?? '' }}" placeholder="Enter last name">
                                  </div>
                                  <div class="col-md-4">
                                      <label class="form-label">Father Name <span class="text-danger">*</span></label>
