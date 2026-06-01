@@ -41,6 +41,11 @@ class LeaveRequestSubmission
         $recommenders = $this->leaveRequestApproverResolver->resolveManagersForRecommendation($fromEmployee);
         $hodEmployees = $this->leaveRequestApproverResolver->resolveHodForFinalApproval($fromEmployee);
 
+        $hodIds = $hodEmployees->pluck('id')->toArray();
+        $recommenders = $recommenders->filter(function ($manager) use ($hodIds) {
+            return !in_array($manager->id, $hodIds);
+        });
+
         $createdRequests = $this->createManagerRequests($recommenders, $basePayload);
         $finalLeaveRequests = $this->createHodRequests($hodEmployees, $basePayload);
 
