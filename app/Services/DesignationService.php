@@ -68,27 +68,29 @@ class DesignationService
                 'sbu.organization:id,name',
                 'department:id,name,sbu_id',
             ])
+            ->where('is_system_generated', false)
             ->orderByDesc('id')
             ->get();
     }
 
     public function getCounts(): array
     {
-        $total = Designation::count();
-        $active = Designation::where('is_active', true)->count();
-        $inactive = Designation::where('is_active', false)->count();
+        $base    = Designation::where('is_system_generated', false);
+        $total   = (clone $base)->count();
+        $active  = (clone $base)->where('is_active', true)->count();
+        $inactive = (clone $base)->where('is_active', false)->count();
 
         return [
-            'total' => $total,
-            'active' => $active,
-            'inactive' => $inactive,
-            'active_percentage' => $total > 0 ? (int) round(($active / $total) * 100) : 0,
+            'total'            => $total,
+            'active'           => $active,
+            'inactive'         => $inactive,
+            'active_percentage'=> $total > 0 ? (int) round(($active / $total) * 100) : 0,
         ];
     }
 
     public function findById(int $id): ?Designation
     {
-        return Designation::query()
+        $designation = Designation::query()
             ->with([
                 'organization:id,name',
                 'sbu:id,name,organization_id',
@@ -96,6 +98,13 @@ class DesignationService
                 'department:id,name,sbu_id',
             ])
             ->find($id);
+
+        // Do not expose system-generated designations through the admin UI
+        if ($designation && $designation->is_system_generated) {
+            return null;
+        }
+
+        return $designation;
     }
 
     public function create(array $data): Designation
@@ -115,6 +124,12 @@ class DesignationService
 
     public function update(Designation $designation, array $data): Designation
     {
+        if ($designation->is_system_generated) {
+            throw ValidationException::withMessages([
+                'name' => ['System-generated designations cannot be edited.'],
+            ]);
+        }
+
         $payload = Arr::only($data, ['organization_id', 'sbu_id', 'department_id', 'name', 'description', 'is_active']);
         $orgId = (int) ($payload['organization_id'] ?? $designation->organization_id);
         $sbuId = (int) ($payload['sbu_id'] ?? $designation->sbu_id);
@@ -137,6 +152,12 @@ class DesignationService
 
     public function destroy(Designation $designation): bool
     {
+        if ($designation->is_system_generated) {
+            throw ValidationException::withMessages([
+                'name' => ['System-generated designations cannot be deleted.'],
+            ]);
+        }
+
         return $designation->delete();
     }
 
@@ -155,7 +176,8 @@ class DesignationService
             ->where('organization_id', $organizationId)
             ->where('sbu_id', $sbuId)
             ->where('department_id', $departmentId)
-            ->where('is_active', true);
+            ->where('is_active', true)
+            ->where('is_system_generated', false);
 
         return $query
             ->orderByDesc('id')

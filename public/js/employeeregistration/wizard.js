@@ -2255,8 +2255,18 @@
         const form = document.getElementById('employeeForm');
         if (!form) return;
 
+        const designationSelect = document.getElementById('employmentDesignationSelect');
+        const designationWasDisabled = designationSelect && designationSelect.disabled;
+        if (designationWasDisabled) {
+            designationSelect.disabled = false;
+        }
+
         const formData = new FormData(form);
         formData.append('step', step);
+
+        if (designationWasDisabled) {
+            designationSelect.disabled = true;
+        }
 
         // --- Step 5: Append Saved Bank Accounts ---
         if (step === 5) {
@@ -3871,10 +3881,12 @@
         designationSelect.innerHTML = '';
         designationSelect.add(new Option('Loading designations...', ''));
 
+        const roleId = roleSelect ? roleSelect.value : '';
         const params = new URLSearchParams({
             organization_id: String(orgId),
             sbu_id: String(sbuId),
             department_id: String(departmentId),
+            role_id: String(roleId),
         });
         const tokenMeta = document.querySelector('meta[name="csrf-token"]');
         const token = tokenMeta ? tokenMeta.getAttribute('content') : '';
@@ -3888,17 +3900,33 @@
                 return;
             }
             designationSelect.innerHTML = '';
-            designationSelect.add(new Option('— Optional —', ''));
-            payload.data.forEach(function (row) {
-                designationSelect.add(new Option(row.name, String(row.id)));
-            });
-            designationSelect.disabled = false;
-            const pref = preferredId !== null && preferredId !== undefined && preferredId !== '' ? String(preferredId) : '';
-            if (pref && Array.from(designationSelect.options).some(function (o) { return o.value === pref; })) {
-                designationSelect.value = pref;
+
+            const selectedRoleId = roleSelect ? roleSelect.value : null;
+            const selectedRole = rolesData.find(r => String(r.id) === String(selectedRoleId));
+            const isGm = selectedRole && parseInt(selectedRole.level) === 4;
+
+            if (isGm) {
+                payload.data.forEach(function (row) {
+                    designationSelect.add(new Option(row.name, String(row.id)));
+                });
+                if (payload.data.length > 0) {
+                    designationSelect.value = String(payload.data[0].id);
+                }
+                designationSelect.disabled = true;
             } else {
-                designationSelect.value = '';
+                designationSelect.add(new Option('— Optional —', ''));
+                payload.data.forEach(function (row) {
+                    designationSelect.add(new Option(row.name, String(row.id)));
+                });
+                designationSelect.disabled = false;
+                const pref = preferredId !== null && preferredId !== undefined && preferredId !== '' ? String(preferredId) : '';
+                if (pref && Array.from(designationSelect.options).some(function (o) { return o.value === pref; })) {
+                    designationSelect.value = pref;
+                } else {
+                    designationSelect.value = '';
+                }
             }
+
             if (window.employeeDesignationId && designationSelect.value === String(window.employeeDesignationId)) {
                 window.employeeDesignationId = null;
             }
@@ -4129,6 +4157,7 @@
         roleSelect.addEventListener('change', function () {
             updateDeptRequired(this.value);
             syncGradeWithRole(this.value);
+            refreshDesignationsForEmployment(null);
         });
         // Run on page load for edit mode
         if (roleSelect.value) {
