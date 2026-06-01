@@ -141,9 +141,45 @@ class EmployeeController extends Controller
                 'integer',
                 \Illuminate\Validation\Rule::exists('departments', 'id')->where(fn ($q) => $q->where('organization_id', $orgId)->where('sbu_id', $sbuId)),
             ],
+            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
         ]);
 
         try {
+            $roleId = $request->input('role_id');
+            $role = $roleId ? \App\Models\Role::with('roleLevel')->find($roleId) : null;
+            if ($role && $role->resolvedNumericLevel() === 4) {
+                $department = \App\Models\Department::find((int) $validated['department_id']);
+                if ($department) {
+                    $designationName = trim($role->name . ' ' . $department->name);
+                    $designation = \App\Models\Designation::firstOrCreate([
+                        'organization_id'    => (int) $validated['organization_id'],
+                        'sbu_id'             => (int) $validated['sbu_id'],
+                        'department_id'      => (int) $validated['department_id'],
+                        'name'               => $designationName,
+                        'is_system_generated'=> true,
+                    ], [
+                        'description'        => "Automatically generated designation for level 4 role: {$role->name}",
+                        'is_active'          => true,
+                    ]);
+
+                    if (!$designation->is_active) {
+                        $designation->is_active = true;
+                        $designation->save();
+                    }
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Designations loaded successfully.',
+                        'data' => [
+                            [
+                                'id' => (int) $designation->id,
+                                'name' => (string) $designation->name,
+                            ]
+                        ],
+                    ]);
+                }
+            }
+
             $data = $this->designationService->listActiveByOrganizationAndSbu(
                 (int) $validated['organization_id'],
                 (int) $validated['sbu_id'],

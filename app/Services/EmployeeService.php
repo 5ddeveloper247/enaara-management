@@ -295,6 +295,40 @@ class EmployeeService
 
     private function normalizeEmployeeDesignationFields(array &$data, ?Employee $employee = null): void
     {
+        $roleId = $data['role_id'] ?? $employee?->role_id;
+        $role = $roleId ? Role::find($roleId) : null;
+        if ($role && $role->resolvedNumericLevel() === 4) {
+            $orgId = (int) ($data['organization_id'] ?? $employee?->organization_id ?? 0);
+            $sbuId = (int) ($data['sbu_id'] ?? $employee?->sbu_id ?? 0);
+            $departmentId = (int) ($data['department_id'] ?? $employee?->department_id ?? 0);
+            if ($departmentId <= 0 && ! empty($data['department_ids']) && is_array($data['department_ids'])) {
+                $departmentId = (int) ($data['department_ids'][0] ?? 0);
+            }
+            if ($departmentId > 0 && $orgId > 0 && $sbuId > 0) {
+                $department = Department::find($departmentId);
+                if ($department) {
+                    $designationName = trim($role->name . ' ' . $department->name);
+                    $designation = Designation::firstOrCreate([
+                        'organization_id'     => $orgId,
+                        'sbu_id'              => $sbuId,
+                        'department_id'       => $departmentId,
+                        'name'                => $designationName,
+                        'is_system_generated' => true,
+                    ], [
+                        'description'         => "Automatically generated designation for level 4 role: {$role->name}",
+                        'is_active'           => true,
+                    ]);
+                    if (!$designation->is_active) {
+                        $designation->is_active = true;
+                        $designation->save();
+                    }
+                    $data['designation_id'] = (int) $designation->id;
+                    $data['designation'] = $designation->name;
+                    return;
+                }
+            }
+        }
+
         if (! array_key_exists('designation_id', $data)) {
             return;
         }
