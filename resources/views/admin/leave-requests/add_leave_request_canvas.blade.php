@@ -156,6 +156,39 @@
         </div>
     </div>
 </div>
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+<style>
+    /* Fix for select2 search input focus */
+    .select2-search__field {
+        outline: none;
+    }
+    
+    /* Make the select2 container match standard form-control height */
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 38px;
+    }
+</style>
+@endpush
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="{{ asset('js/leave-request.js') }}"></script>
+<script>
+    $(document).ready(function() {
+        if ($('#leaveEmployee').length) {
+            // Initialize select2
+            $('#leaveEmployee').select2({
+                theme: 'bootstrap-5',
+                dropdownParent: $('#addLeaveRequestCanvas'),
+                width: '100%',
+                placeholder: 'Search Employee...',
+            }).on('change', function(e) {
+                // Dispatch native event for leave-request.js
+                var event = new Event('change');
+                this.dispatchEvent(event);
+            });
+        }
+    });
+</script>
 @endpush
