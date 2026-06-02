@@ -38,6 +38,13 @@ class LeaveRequestStatusHandler
             return $denied;
         }
 
+        // If the requester is cancelling a PENDING request, permanently delete all related rows.
+        $isRequester = (int) $leaveRequest->from_employee_id === (int) optional(Auth::user()->employee)->id;
+        if ($newStatus === 5 && $isRequester && $currentStatus === 0) {
+            $this->deleteRelatedLeaveRequestRows($leaveRequest);
+            return $this->successResponse($request, 'Leave request has been deleted successfully.');
+        }
+
         $leaveRequest->status = $newStatus;
         $leaveRequest->save();
 
@@ -67,10 +74,11 @@ class LeaveRequestStatusHandler
         $isRequester = (int) $leaveRequest->from_employee_id === (int) optional($currentUser->employee)->id;
 
         if ($newStatus === 5 && $isRequester) {
-            if (in_array($currentStatus, [0, 1, 2], true)) {
+            // Allow cancellation if pending (0), recommended (1), not-recommended (2), or approved (3).
+            if (in_array($currentStatus, [0, 1, 2, 3], true)) {
                 return null;
             }
-            return $this->deny($request, 'You can only cancel a request that is pending or recommended.');
+            return $this->deny($request, 'You can only cancel a request that is pending, recommended, or approved.');
         }
 
         if (! $isAssigned) {
@@ -236,6 +244,19 @@ class LeaveRequestStatusHandler
             ->update(['status' => $newStatus]);
     }
 
+    /**
+     * Permanently delete all related leave request rows for the same leave application.
+     * Used when a requester cancels a still-pending request (no manager action taken yet).
+     */
+    private function deleteRelatedLeaveRequestRows(EmployeLeaveRequest $leaveRequest): void
+    {
+        EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
+            ->where('leave_type_id', $leaveRequest->leave_type_id)
+            ->where('start_date', $leaveRequest->start_date)
+            ->where('end_date', $leaveRequest->end_date)
+            ->delete();
+    }
+
     private function findRelatedFinalApprovalRows(EmployeLeaveRequest $leaveRequest)
     {
         return EmployeLeaveRequest::where('from_employee_id', $leaveRequest->from_employee_id)
@@ -267,15 +288,15 @@ class LeaveRequestStatusHandler
         abort(403, $message);
     }
 
-    private function successResponse(Request $request)
+    private function successResponse(Request $request, string $message = 'Status updated successfully.')
     {
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Status updated successfully.',
+                'message' => $message,
             ]);
         }
 
-        return redirect()->back()->with('success', 'Status updated successfully.');
+        return redirect()->back()->with('success', $message);
     }
 }

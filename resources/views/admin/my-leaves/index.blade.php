@@ -423,7 +423,7 @@
                 if (leave.canCancel) {
                     cancelBtn.classList.remove('d-none');
                     cancelBtn.onclick = function() {
-                        cancelLeaveRequest(leave.id);
+                        cancelLeaveRequest(leave.id, leave.statusCode);
                     };
                 } else {
                     cancelBtn.classList.add('d-none');
@@ -435,15 +435,22 @@
             canvas.show();
         }
 
-        function cancelLeaveRequest(id) {
+        function cancelLeaveRequest(id, statusCode) {
+            // statusCode 0 = pending (no manager action taken) → permanently delete
+            // statusCode 1/2/3 = recommended / not-recommended / approved → soft cancel
+            const isPending = statusCode === 0;
+
             Swal.fire({
-                title: 'Are you sure?',
-                text: "You want to cancel this leave request?",
+                title: isPending ? 'Delete Request?' : 'Cancel Leave?',
+                text: isPending
+                    ? 'This request is still pending. It will be permanently deleted since no action has been taken by the manager.'
+                    : 'Are you sure you want to cancel this leave request? This will be recorded.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, cancel it!'
+                confirmButtonText: isPending ? 'Yes, delete it!' : 'Yes, cancel it!',
+                cancelButtonText: 'Go back'
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(`/admin/leave-request/${id}/status`, {
@@ -453,20 +460,20 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                             'Accept': 'application/json'
                         },
-                        body: JSON.stringify({ status: 5 }) // 5 is the 'cancelled' status code
+                        body: JSON.stringify({ status: 5 }) // 5 = cancelled/delete trigger
                     })
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
                             Swal.fire(
-                                'Cancelled!',
-                                'Leave request cancelled successfully.',
+                                isPending ? 'Deleted!' : 'Cancelled!',
+                                data.message || (isPending ? 'Leave request deleted.' : 'Leave request cancelled.'),
                                 'success'
                             ).then(() => {
                                 window.location.reload();
                             });
                         } else {
-                            Swal.fire('Error', data.message || 'Failed to cancel leave request.', 'error');
+                            Swal.fire('Error', data.message || 'Failed to process request.', 'error');
                         }
                     })
                     .catch(err => {

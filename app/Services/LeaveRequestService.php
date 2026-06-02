@@ -128,7 +128,8 @@ class LeaveRequestService
                 'statusCode' => $aggregatedStatus,
                 'statusLabel' => $statusLabelMap[$aggregatedStatus] ?? 'Pending',
                 'category' => $category,
-                'canCancel' => in_array($aggregatedStatus, [0, 1, 2], true),
+                // 0=pending (will delete permanently), 1=recommended, 2=not-recommended, 3=approved (all cancellable)
+                'canCancel' => in_array($aggregatedStatus, [0, 1, 2, 3], true),
             ];
         })
             ->values()
