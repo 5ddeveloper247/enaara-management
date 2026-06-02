@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
+use App\Models\EmployeeLeaveQuota;
 
 use App\Traits\LogsActivity;
 
@@ -70,8 +71,27 @@ class EmployeLeaveRequest extends Model
     protected static function booted(): void
     {
         static::updated(function (EmployeLeaveRequest $leaveRequest) {
+            // If the request is cancelled or rejected, refund any cron-claimed quota and delete entities
+            if (in_array((int) $leaveRequest->status, [4, 5], true)) {
+                // Refund quota.used for entities that the daily cron already marked as claimed (status=1)
+                $claimedByYear = $leaveRequest->leaveEntities()
+                    ->where('status', 1)
+                    ->selectRaw('employee_id, leave_type_id, YEAR(leave_date) as leave_year, SUM(duration) as total_duration')
+                    ->groupBy('employee_id', 'leave_type_id', DB::raw('YEAR(leave_date)'))
+                    ->get();
+
+                foreach ($claimedByYear as $row) {
+                    EmployeeLeaveQuota::where('employee_id', $row->employee_id)
+                        ->where('leave_type_id', $row->leave_type_id)
+                        ->where('year', (int) $row->leave_year)
+                        ->where('used', '>', 0)
+                        ->decrement('used', (float) $row->total_duration);
+                }
+
+                $leaveRequest->leaveEntities()->delete();
+            }
             // When request becomes approved (status=3), create day-wise leave entities. Only for Approver rows.
-            if ((int) $leaveRequest->status === 3 && in_array((int) $leaveRequest->action_type, [0, 2])) {
+            elseif ((int) $leaveRequest->status === 3 && in_array((int) $leaveRequest->action_type, [0, 2])) {
                 if (!$leaveRequest->start_date || !$leaveRequest->end_date || !$leaveRequest->from_employee_id) {
                     return;
                 }

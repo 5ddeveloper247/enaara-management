@@ -231,17 +231,47 @@ class LeaveRequestStatusHandler
             ['end_date', $leaveRequest->end_date],
         ];
 
-        EmployeLeaveRequest::where($match)
-            ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
-            ->where('id', '!=', $leaveRequest->id)
-            ->whereIn('status', [0, 1, 2])
-            ->update(['status' => $newStatus]);
+        if ($newStatus === 5 || $newStatus === 4) {
+            // If cancelling or rejecting, force all related rows to cancelled/rejected.
+            EmployeLeaveRequest::where($match)
+                ->where('id', '!=', $leaveRequest->id)
+                ->where('status', '!=', $newStatus)
+                ->update(['status' => $newStatus]);
 
-        EmployeLeaveRequest::where($match)
-            ->where('action_type', self::RECOMMENDATION_ACTION_TYPE)
-            ->where('id', '!=', $leaveRequest->id)
-            ->where('status', '!=', $newStatus)
-            ->update(['status' => $newStatus]);
+            // Gather all related request IDs (including main request) for entity cleanup
+            $relatedRequestIds = EmployeLeaveRequest::where($match)->pluck('id')->all();
+
+            // Refund quota.used for entities the daily cron already marked as claimed (status=1).
+            // The booted() event handles the main request's entities first; this covers any siblings.
+            $claimedByYear = \App\Models\EmployeLeaveEntity::whereIn('leave_request_id', $relatedRequestIds)
+                ->where('status', 1)
+                ->selectRaw('employee_id, leave_type_id, YEAR(leave_date) as leave_year, SUM(duration) as total_duration')
+                ->groupBy('employee_id', 'leave_type_id', \Illuminate\Support\Facades\DB::raw('YEAR(leave_date)'))
+                ->get();
+
+            foreach ($claimedByYear as $row) {
+                \App\Models\EmployeeLeaveQuota::where('employee_id', $row->employee_id)
+                    ->where('leave_type_id', $row->leave_type_id)
+                    ->where('year', (int) $row->leave_year)
+                    ->where('used', '>', 0)
+                    ->decrement('used', (float) $row->total_duration);
+            }
+
+            // Delete all remaining entities (status=0 not yet claimed)
+            \App\Models\EmployeLeaveEntity::whereIn('leave_request_id', $relatedRequestIds)->delete();
+        } else {
+            EmployeLeaveRequest::where($match)
+                ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
+                ->where('id', '!=', $leaveRequest->id)
+                ->whereIn('status', [0, 1, 2])
+                ->update(['status' => $newStatus]);
+
+            EmployeLeaveRequest::where($match)
+                ->where('action_type', self::RECOMMENDATION_ACTION_TYPE)
+                ->where('id', '!=', $leaveRequest->id)
+                ->where('status', '!=', $newStatus)
+                ->update(['status' => $newStatus]);
+        }
     }
 
     /**

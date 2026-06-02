@@ -516,6 +516,56 @@ class ShiftRosterService
             $shiftsOut = array_merge($shiftsOut, $virtualHolidays);
         }
 
+        // --- Add Virtual Leaves ---
+        $leaveEntities = \App\Models\EmployeLeaveEntity::query()
+            ->with('leaveRequest.leaveType')
+            ->whereIn('employee_id', $shiftEmployeeIds)
+            ->whereIn('status', [0, 1]) // 0: approved, 1: taken
+            ->whereBetween('leave_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get();
+
+        $virtualLeaves = $leaveEntities->map(function ($entity) {
+            $dateString = $entity->leave_date->toDateString();
+            $employeeKey = 'employee:' . $entity->employee_id;
+            $leaveName = $entity->leaveRequest?->leaveType?->name ?? 'Leave';
+
+            return [
+                'rosterId' => null,
+                'employeeId' => $employeeKey,
+                'employeeType' => 'employee',
+                'sourceId' => $entity->employee_id,
+                'rosterDate' => $dateString,
+                'day' => (int) $entity->leave_date->format('d'),
+                'shiftPlannerId' => null,
+                'isCustomTime' => false,
+                'shiftType' => 'leave',
+                'timeStart' => null,
+                'timeEnd' => null,
+                'floor' => null,
+                'location' => null,
+                'notes' => null,
+                'sbuFloorId' => null,
+                'status' => 'leave',
+                'isOffDay' => true, // Treated as off day for calculation
+                'isPublicHoliday' => false,
+                'isLeave' => true,
+                'leaveName' => $leaveName,
+                'isCompensatory' => false,
+                'deletedAt' => null,
+                'createdAt' => null,
+                'updatedAt' => null,
+                'assignedAt' => null,
+                'createdByName' => null,
+                'updatedByName' => null,
+                'assignedByName' => null,
+                'deletedByName' => null,
+            ];
+        })->all();
+
+        if ($virtualLeaves !== []) {
+            $shiftsOut = array_merge($shiftsOut, $virtualLeaves);
+        }
+
         return [
             'departments' => $departments,
             'employees' => $empPayload,

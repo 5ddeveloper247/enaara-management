@@ -180,6 +180,22 @@
                 '</div>';
         }
 
+        if (s.isLeave || (s.status && String(s.status).toLowerCase() === 'leave')) {
+            var rawName = s.leaveName ? String(s.leaveName).trim() : 'leave';
+            // Strip trailing "leave" or "leaves" (case-insensitive) to avoid "On Leave (Sick leave)"
+            var typeName = rawName.replace(/\s*leaves?\s*$/i, '').trim() || rawName;
+            if (typeName.length > 16) {
+                typeName = typeName.substring(0, 14) + '…';
+            }
+            var leaveDisplayText = 'On ' + typeName + ' leave';
+            return '<div class="shift-pill shift-holiday" style="background-color: #fef08a; border-color: #facc15; color: #854d0e;" title="' + escapeHtml(rawName) + '">' +
+                '<span class="shift-pill-icon" aria-hidden="true" style="color: #ca8a04;"><i class="bi bi-person-dash"></i></span>' +
+                '<div class="shift-pill-top">' +
+                '<span class="shift-time">' + escapeHtml(leaveDisplayText) + '</span>' +
+                '</div>' +
+                '</div>';
+        }
+
         if (s.isOffDay || (s.status && String(s.status).toLowerCase() === 'off')) {
             return '<div class="shift-pill shift-off">' +
                 '<span class="shift-pill-icon" aria-hidden="true"><i class="bi bi-calendar-x"></i></span>' +
