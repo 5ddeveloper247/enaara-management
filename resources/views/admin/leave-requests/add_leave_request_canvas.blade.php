@@ -176,9 +176,9 @@
 <script src="{{ asset('js/leave-request.js') }}"></script>
 <script>
     $(document).ready(function() {
-        if ($('#leaveEmployee').length) {
+        if ($('select#leaveEmployee').length) {
             // Initialize select2
-            $('#leaveEmployee').select2({
+            $('select#leaveEmployee').select2({
                 theme: 'bootstrap-5',
                 dropdownParent: $('#addLeaveRequestCanvas'),
                 width: '100%',
