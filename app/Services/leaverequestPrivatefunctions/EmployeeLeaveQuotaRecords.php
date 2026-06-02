@@ -177,6 +177,17 @@ class EmployeeLeaveQuotaRecords
             $quotaByKey[$this->rowKey((int) $quota->employee_id, (int) $quota->leave_type_id, (int) $quota->year)] = $quota;
         }
 
+        // Batch-load all approved-but-not-yet-claimed entities (status=0) for all relevant employees/types/years
+        $approvedEntities = EmployeLeaveEntity::query()
+            ->selectRaw('employee_id, leave_type_id, YEAR(leave_date) as leave_year, SUM(duration) as total_approved')
+            ->whereIn('employee_id', $employeeIds)
+            ->whereIn('leave_type_id', $leaveTypeIds)
+            ->whereIn(DB::raw('YEAR(leave_date)'), $years)
+            ->where('status', 0) // 0 = approved/pending entity (not yet claimed by daily cron)
+            ->groupBy('employee_id', 'leave_type_id', DB::raw('YEAR(leave_date)'))
+            ->get()
+            ->keyBy(fn ($row) => $this->rowKey((int) $row->employee_id, (int) $row->leave_type_id, (int) $row->leave_year));
+
         $lookup = [];
 
         foreach ($requests as $request) {
@@ -192,7 +203,14 @@ class EmployeeLeaveQuotaRecords
             $maxAllowed = $quota
                 ? (float) $quota->quota + $adjustment
                 : $fallback;
-            $used = $quota ? (float) $quota->used : 0.0;
+
+            // quota.used = already claimed days (written by ProcessDailyLeaves cron, entity status=1)
+            $claimed = $quota ? (float) $quota->used : 0.0;
+
+            // Approved but not yet claimed (entity status=0) — deducted immediately on approval
+            $approved = (float) ($approvedEntities[$key]->total_approved ?? 0);
+
+            $used = $claimed + $approved;
             $remaining = max(0, $maxAllowed - $used);
 
             $lookup[$key] = $remaining . ' / ' . $maxAllowed;
