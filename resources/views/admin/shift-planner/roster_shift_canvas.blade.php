@@ -114,8 +114,8 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label for="rosterFloor" class="form-label roster-shift-field-label">Floor <span class="text-danger">*</span></label>
-                    <select class="form-select roster-shift-input" id="rosterFloor" name="sbu_floor_id" required>
+                    <label for="rosterFloor" class="form-label roster-shift-field-label">Floor</label>
+                    <select class="form-select roster-shift-input" id="rosterFloor" name="sbu_floor_id">
                         <option value="">Select floor</option>
                     </select>
                     <div class="invalid-feedback d-block d-none" id="rosterFloorError"></div>

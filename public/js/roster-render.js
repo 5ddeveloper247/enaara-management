@@ -1030,7 +1030,7 @@
         }
 
         if (!validateRosterFloorField()) {
-            valid = false;
+            valid = true;
         }
 
         if (!validateRosterLocationField()) {

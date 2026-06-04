@@ -199,7 +199,7 @@ class BulkShiftRosterRequest extends FormRequest
             'override_existing' => ['nullable', 'boolean'],
             'exclude_weekends' => ['nullable', 'boolean'],
 
-            'sbu_floor_id' => ['required', 'integer', 'exists:sbu_floors,id'],
+            'sbu_floor_id' => ['nullable', 'integer', 'exists:sbu_floors,id'],
             'location_text' => ['nullable', 'string', 'min:3', 'max:15', 'regex:/^(?=.*[A-Za-z])[A-Za-z0-9\s\-\'\.]+$/'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
