@@ -179,7 +179,7 @@
                                                id="emp_employee_{{ $employee->id }}"
                                                name="employee_ids[]">
                                         <label class="form-check-label text-white small" for="emp_employee_{{ $employee->id }}">
-                                            {{ $employee->full_name }}
+                                            {{ trim($employee->first_name ?? '') }}
                                             @if(!empty($employee->department->name ?? null))
                                                 <span class="opacity-50 ms-2">[{{ $employee->department->name }}]</span>
                                             @endif
@@ -227,7 +227,7 @@
                                                id="emp_outsourced_{{ $employee->id }}"
                                                name="employee_ids[]">
                                         <label class="form-check-label text-white small" for="emp_outsourced_{{ $employee->id }}">
-                                            {{ $employee->full_name }}
+                                            {{ trim($employee->full_name ?? '') }}
                                             @if(!empty($employee->contractorCompany->third_party_name ?? null))
                                                 <span class="opacity-50 ms-2">[{{ $employee->contractorCompany->third_party_name }}]</span>
                                             @endif
