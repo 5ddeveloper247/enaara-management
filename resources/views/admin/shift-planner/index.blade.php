@@ -96,15 +96,14 @@
                             style="display: none;">
                             <i class="bi bi-files me-1"></i>Copy Schedule
                         </button>
-                        <button type="button" class="btn btn-outline-secondary me-2" id="bulkAssignBtn"
-                            style="display: none;">
+                        <button type="button" class="btn btn-outline-secondary me-2" id="bulkAssignBtn">
                             <i class="bi bi-people-fill me-1"></i>Bulk Assign
                         </button>
-                        <button type="button" class="btn btn-outline-secondary me-2" id="rosterExportPdfBtn"
-                            style="display: none;">
+                        <button type="button" class="btn btn-outline-secondary me-2" id="rosterExportPdfBtn">
                             <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
                         </button>
-                        <button type="button" class="btn btn-primary bg-main border-0" id="addShiftBtn">
+                        <button type="button" class="btn btn-primary bg-main border-0" id="addShiftBtn"
+                            style="display: none;">
                             <i class="bi bi-plus-circle me-1"></i>Add New Shift
                         </button>
                     </div>
@@ -112,13 +111,13 @@
 
                 <ul class="nav nav-pills" id="shiftPlannerTabs" role="tablist">
                     <li class="nav-item me-2" role="presentation">
-                        <button class="nav-link active" id="shift-management-tab" data-bs-toggle="pill"
+                        <button class="nav-link" id="shift-management-tab" data-bs-toggle="pill"
                             data-bs-target="#shift-management" type="button" role="tab">
                             <i class="bi bi-clock-history me-2"></i>Shift Management
                         </button>
                     </li>
                     <li class="nav-item me-2" role="presentation">
-                        <button class="nav-link" id="roster-tab" data-bs-toggle="pill" data-bs-target="#roster"
+                        <button class="nav-link active" id="roster-tab" data-bs-toggle="pill" data-bs-target="#roster"
                             type="button" role="tab">
                             <i class="bi bi-calendar-week me-2"></i>Roster / Assignment
                         </button>
@@ -130,12 +129,12 @@
         <!-- Tab Content -->
         <div class="tab-content" id="shiftPlannerTabsContent">
             <!-- Shift Management Tab -->
-            <div class="tab-pane fade show active" id="shift-management" role="tabpanel">
+            <div class="tab-pane fade" id="shift-management" role="tabpanel">
                 @include('admin.shift-planner.shift_management')
             </div>
 
             <!-- Roster Tab -->
-            <div class="tab-pane fade" id="roster" role="tabpanel">
+            <div class="tab-pane fade show active" id="roster" role="tabpanel">
                 @include('admin.shift-planner.roster')
             </div>
         </div>
@@ -180,21 +179,14 @@
                 document.body.classList.toggle('shift-planner-roster-mode', !!isRoster);
             }
 
-            $('#rosterBackBtn').on('click', function() {
-                const tabEl = document.getElementById('shift-management-tab');
-                if (tabEl) {
-                    bootstrap.Tab.getOrCreateInstance(tabEl).show();
-                }
-            });
-
-            $('#shift-management-tab').on('shown.bs.tab', function() {
+            function showShiftManagementToolbar() {
                 $('#addShiftBtn').show();
                 $('#bulkAssignBtn').hide();
                 $('#rosterExportPdfBtn').hide();
                 setShiftPlannerRosterLayout(false);
-            });
+            }
 
-            $('#roster-tab').on('shown.bs.tab', function() {
+            function showRosterToolbar() {
                 $('#addShiftBtn').hide();
                 $('#bulkAssignBtn').show();
                 $('#rosterExportPdfBtn').show();
@@ -204,13 +196,26 @@
                         initRosterCalendar();
                     }
                 }, 100);
+            }
+
+            $('#rosterBackBtn').on('click', function() {
+                const tabEl = document.getElementById('shift-management-tab');
+                if (tabEl) {
+                    bootstrap.Tab.getOrCreateInstance(tabEl).show();
+                }
             });
 
-            if (window.location.hash === '#roster') {
-                var rosterTabEl = document.getElementById('roster-tab');
-                if (rosterTabEl && typeof bootstrap !== 'undefined') {
-                    bootstrap.Tab.getOrCreateInstance(rosterTabEl).show();
+            $('#shift-management-tab').on('shown.bs.tab', showShiftManagementToolbar);
+
+            $('#roster-tab').on('shown.bs.tab', showRosterToolbar);
+
+            if (window.location.hash === '#shift-management') {
+                const managementTabEl = document.getElementById('shift-management-tab');
+                if (managementTabEl && typeof bootstrap !== 'undefined') {
+                    bootstrap.Tab.getOrCreateInstance(managementTabEl).show();
                 }
+            } else {
+                showRosterToolbar();
             }
 
             // Add Shift Button
