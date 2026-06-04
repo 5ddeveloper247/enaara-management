@@ -250,7 +250,7 @@
                 <div class="mt-4 pt-3 border-top" style="border-color: #ffffff1a !important;">
                     <div class="mb-3">
                         <label for="bulkFloorSelect" class="form-label fw-semibold small text-white">
-                            Floor <span class="text-danger">*</span>
+                            Floor <span class="opacity-75 fw-normal">(optional)</span>
                         </label>
                         <select class="form-select bg-dark text-white border-secondary" id="bulkFloorSelect" name="sbu_floor_id" disabled>
                             <option value="">Select employees first</option>
@@ -541,11 +541,6 @@ $(document).ready(function() {
     function validateBulkPlacementFields() {
         var valid = true;
 
-        if (!$('#bulkFloorSelect').val()) {
-            showBulkFieldError('#bulkFloorSelect', '#bulkFloorSelectError', 'Floor is required.');
-            valid = false;
-        }
-
         if (!validateBulkLocationField()) {
             valid = false;
         }
@@ -825,7 +820,9 @@ $(document).ready(function() {
             payload.end_time = $('#bulkCustomEndTime').val();
         }
 
-        payload.sbu_floor_id = parseInt($('#bulkFloorSelect').val(), 10);
+        var bulkFloorVal = $('#bulkFloorSelect').val();
+        var bulkFloorId = bulkFloorVal ? parseInt(bulkFloorVal, 10) : null;
+        payload.sbu_floor_id = Number.isFinite(bulkFloorId) && bulkFloorId > 0 ? bulkFloorId : null;
         var bulkLocation = ($('#bulkLocationText').val() || '').trim();
         payload.location_text = bulkLocation === '' ? null : bulkLocation;
         var bulkNotes = ($('#bulkShiftNotes').val() || '').trim();

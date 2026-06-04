@@ -1029,25 +1029,11 @@
             valid = false;
         }
 
-        if (!validateRosterFloorField()) {
-            valid = true;
-        }
-
         if (!validateRosterLocationField()) {
             valid = false;
         }
 
         return valid;
-    }
-
-    function validateRosterFloorField() {
-        clearRosterFloorFieldError();
-        var floorEl = document.getElementById('rosterFloor');
-        if (!floorEl || !floorEl.value) {
-            showRosterFloorFieldError('Floor is required.');
-            return false;
-        }
-        return true;
     }
 
     function showRosterFloorFieldError(message) {
@@ -1070,7 +1056,7 @@
 
         var selectedValue = selectedFloorId ? String(selectedFloorId) : '';
         var floorOptions = options || [];
-        var html = '<option value="">Select floor</option>';
+        var html = '<option value="">Select floor (optional)</option>';
 
         floorOptions.forEach(function(option) {
             html += '<option value="' + String(option.id) + '">' + option.label + '</option>';

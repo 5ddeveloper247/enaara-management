@@ -65,7 +65,6 @@ class ShiftRosterRequest extends FormRequest
             'status.in' => 'Status must be either assigned or cancelled.',
 
             'notes.max' => 'Notes may not be greater than 1000 characters.',
-            'sbu_floor_id.required' => 'Floor is required.',
             'sbu_floor_id.integer' => 'Selected floor is invalid.',
             'sbu_floor_id.exists' => 'Selected floor does not exist.',
             'location_text.min' => 'Location must be at least 3 characters.',

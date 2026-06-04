@@ -137,35 +137,39 @@ class BulkShiftRosterRequest extends FormRequest
                 $v->errors()->add('end_time', 'End time must be different from start time.');
             }
 
-            $floorId = (int) $this->input('sbu_floor_id');
-            $rosterService = app(ShiftRosterService::class);
-            $parsedRefs = [];
-            foreach ($refs as $ref) {
-                [$type, $id] = array_pad(explode(':', (string) $ref, 2), 2, null);
-                if ($type && $id) {
-                    $parsedRefs[] = ['type' => $type, 'id' => (int) $id];
-                }
-            }
+            $floorId = $this->input('sbu_floor_id');
 
-            $unsupportedNames = [];
-            foreach ($parsedRefs as $ref) {
-                if (! $rosterService->assigneeSupportsFloor($ref['type'], $ref['id'], $floorId)) {
-                    if ($ref['type'] === 'employee') {
-                        $name = Employee::query()->whereKey($ref['id'])->value('full_name');
-                    } else {
-                        $name = OutsourcedEmployee::query()->whereKey($ref['id'])->value('full_name');
-                    }
-                    if ($name) {
-                        $unsupportedNames[] = $name;
+            if (filled($floorId)) {
+                $floorId = (int) $floorId;
+                $rosterService = app(ShiftRosterService::class);
+                $parsedRefs = [];
+                foreach ($refs as $ref) {
+                    [$type, $id] = array_pad(explode(':', (string) $ref, 2), 2, null);
+                    if ($type && $id) {
+                        $parsedRefs[] = ['type' => $type, 'id' => (int) $id];
                     }
                 }
-            }
 
-            if ($unsupportedNames !== []) {
-                $v->errors()->add(
-                    'sbu_floor_id',
-                    'Selected floor is not available for: ' . implode(', ', array_unique($unsupportedNames)) . '.'
-                );
+                $unsupportedNames = [];
+                foreach ($parsedRefs as $ref) {
+                    if (! $rosterService->assigneeSupportsFloor($ref['type'], $ref['id'], $floorId)) {
+                        if ($ref['type'] === 'employee') {
+                            $name = Employee::query()->whereKey($ref['id'])->value('full_name');
+                        } else {
+                            $name = OutsourcedEmployee::query()->whereKey($ref['id'])->value('full_name');
+                        }
+                        if ($name) {
+                            $unsupportedNames[] = $name;
+                        }
+                    }
+                }
+
+                if ($unsupportedNames !== []) {
+                    $v->errors()->add(
+                        'sbu_floor_id',
+                        'Selected floor is not available for: ' . implode(', ', array_unique($unsupportedNames)) . '.'
+                    );
+                }
             }
         });
     }
@@ -234,7 +238,6 @@ class BulkShiftRosterRequest extends FormRequest
             'days.*.in' => 'One or more selected days are invalid.',
 
             'notes.max' => 'Notes must not exceed 1000 characters.',
-            'sbu_floor_id.required' => 'Floor is required.',
             'sbu_floor_id.integer' => 'Selected floor is invalid.',
             'sbu_floor_id.exists' => 'Selected floor does not exist.',
             'location_text.min' => 'Location must be at least 3 characters.',
