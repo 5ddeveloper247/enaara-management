@@ -178,6 +178,13 @@ class ShiftRosterService
         $entry->refresh();
         $this->historyService->recordUpdated($entry, $before, $userId);
 
+        if ($entry->employee_id) {
+            $this->compensatoryLeaveAwardService->syncFullWeekSundayCompensatoryTag(
+                (int) $entry->employee_id,
+                $entry->roster_date
+            );
+        }
+
         return $entry;
     }
 
@@ -187,6 +194,8 @@ class ShiftRosterService
     public function destroy($id)
     {
         $entry = ShiftRosterEntry::findOrFail($id);
+        $employeeId = $entry->employee_id;
+        $rosterDate = $entry->roster_date;
         $userId = Auth::id();
         if ($userId) {
             $entry->deleted_by = $userId;
@@ -194,7 +203,16 @@ class ShiftRosterService
         }
         $this->historyService->recordDeleted($entry, $userId);
 
-        return $entry->delete();
+        $deleted = $entry->delete();
+
+        if ($employeeId) {
+            $this->compensatoryLeaveAwardService->syncFullWeekSundayCompensatoryTag(
+                (int) $employeeId,
+                $rosterDate
+            );
+        }
+
+        return $deleted;
     }
 
     /**
@@ -307,6 +325,20 @@ class ShiftRosterService
             $message = 'Shift assignment completed successfully.';
             if ($skipWorkingDays && $totalOffDays > 0) {
                 $message = 'Off days were assigned. Existing weekday shifts were kept because of conflicts.';
+            }
+
+            $syncedWeekKeys = [];
+            foreach ($refs as $ref) {
+                if ($ref['type'] !== 'employee') {
+                    continue;
+                }
+
+                $this->compensatoryLeaveAwardService->syncFullWeekSundayTagsForEmployeeInRange(
+                    $ref['id'],
+                    $data['start_date'],
+                    $data['end_date'],
+                    $syncedWeekKeys
+                );
             }
 
             return [
@@ -922,20 +954,26 @@ class ShiftRosterService
             }
             $activeEntry->save();
             $this->historyService->recordUpdated($activeEntry, $before, $userId);
+            $savedEntry = $activeEntry;
+        } else {
+            $createPayload = $lookup + $payload;
+            if ($userId) {
+                $createPayload['created_by'] = $userId;
+                $createPayload['assigned_by'] = $userId;
+            }
 
-            return $activeEntry;
+            $savedEntry = ShiftRosterEntry::query()->create($createPayload);
+            $this->historyService->recordCreated($savedEntry, $userId);
         }
 
-        $createPayload = $lookup + $payload;
-        if ($userId) {
-            $createPayload['created_by'] = $userId;
-            $createPayload['assigned_by'] = $userId;
+        if (! empty($lookup['employee_id'])) {
+            $this->compensatoryLeaveAwardService->syncFullWeekSundayCompensatoryTag(
+                (int) $lookup['employee_id'],
+                (string) ($savedEntry->roster_date ?? $lookup['roster_date'] ?? $payload['roster_date'] ?? now()->toDateString())
+            );
         }
 
-        $entry = ShiftRosterEntry::query()->create($createPayload);
-        $this->historyService->recordCreated($entry, $userId);
-
-        return $entry;
+        return $savedEntry;
     }
 
     private function resolveUpdatedEntryStatus(ShiftRosterEntry $entry, array $data): string

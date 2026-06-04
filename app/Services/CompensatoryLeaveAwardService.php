@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\EmployeeLeaveQuota;
 use App\Models\LeaveType;
 use App\Models\ShiftRosterEntry;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -14,6 +15,8 @@ class CompensatoryLeaveAwardService
     public const REASON_PUBLIC_HOLIDAY = 'public_holiday';
 
     public const REASON_OFF_DAY = 'off_day';
+
+    public const REASON_FULL_WEEK_SUNDAY = 'full_week_sunday';
 
     public function __construct(
         private readonly PublicHolidayResolver $publicHolidayResolver,
@@ -92,6 +95,83 @@ class CompensatoryLeaveAwardService
         $payload['compensatory_reason'] = null;
     }
 
+    /**
+     * When Mon–Sun all have work shifts, tag Sunday for compensatory leave (one CPL day per week).
+     */
+    public function syncFullWeekSundayCompensatoryTag(int $employeeId, Carbon|string $anyDateInWeek): void
+    {
+        $weekStart = Carbon::parse($anyDateInWeek)->startOfWeek(Carbon::MONDAY);
+        $sundayDate = $weekStart->copy()->addDays(6)->toDateString();
+
+        $sundayEntry = ShiftRosterEntry::query()
+            ->where('employee_id', $employeeId)
+            ->whereDate('roster_date', $sundayDate)
+            ->first();
+
+        if ($this->employeeHasFullWeekWorkShifts($employeeId, $weekStart)) {
+            if (
+                $sundayEntry !== null
+                && $this->isWorkShift($sundayEntry)
+                && ! $sundayEntry->is_compensatory_earned
+            ) {
+                $sundayEntry->compensatory_reason = self::REASON_FULL_WEEK_SUNDAY;
+                $sundayEntry->save();
+            }
+
+            return;
+        }
+
+        if (
+            $sundayEntry !== null
+            && ! $sundayEntry->is_compensatory_earned
+            && strtolower(trim((string) ($sundayEntry->compensatory_reason ?? ''))) === self::REASON_FULL_WEEK_SUNDAY
+        ) {
+            $sundayEntry->compensatory_reason = null;
+            $sundayEntry->save();
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $syncedWeekKeys
+     */
+    public function syncFullWeekSundayTagsForEmployeeInRange(
+        int $employeeId,
+        string $startDate,
+        string $endDate,
+        array &$syncedWeekKeys = []
+    ): void {
+        $cursor = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->startOfDay();
+
+        while ($cursor->lte($end)) {
+            $weekKey = $cursor->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+            if (! array_key_exists($weekKey, $syncedWeekKeys)) {
+                $syncedWeekKeys[$weekKey] = true;
+                $this->syncFullWeekSundayCompensatoryTag($employeeId, $cursor);
+            }
+            $cursor->addDay();
+        }
+    }
+
+    public function employeeHasFullWeekWorkShifts(int $employeeId, Carbon $weekStartMonday): bool
+    {
+        $weekStartMonday = $weekStartMonday->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
+
+        for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
+            $date = $weekStartMonday->copy()->addDays($dayOffset)->toDateString();
+            $entry = ShiftRosterEntry::query()
+                ->where('employee_id', $employeeId)
+                ->whereDate('roster_date', $date)
+                ->first();
+
+            if ($entry === null || ! $this->isWorkShift($entry)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function resolveAwardReason(ShiftRosterEntry $entry): ?string
     {
         if (! $this->isWorkShift($entry) || $entry->employee === null) {
@@ -102,6 +182,15 @@ class CompensatoryLeaveAwardService
 
         if ($stamped === self::REASON_OFF_DAY) {
             return self::REASON_OFF_DAY;
+        }
+
+        if ($stamped === self::REASON_FULL_WEEK_SUNDAY) {
+            return $this->employeeHasFullWeekWorkShifts(
+                (int) $entry->employee_id,
+                $entry->roster_date->copy()->startOfWeek(Carbon::MONDAY)
+            )
+                ? self::REASON_FULL_WEEK_SUNDAY
+                : null;
         }
 
         if ($stamped === self::REASON_PUBLIC_HOLIDAY) {
@@ -168,7 +257,11 @@ class CompensatoryLeaveAwardService
 
             $entry->is_compensatory_earned = true;
             $entry->compensatory_reason = $reason;
-            $entry->status = $reason === self::REASON_OFF_DAY ? 'off_day_worked' : 'holiday_worked';
+            $entry->status = match ($reason) {
+                self::REASON_OFF_DAY => 'off_day_worked',
+                self::REASON_FULL_WEEK_SUNDAY => 'sunday_worked',
+                default => 'holiday_worked',
+            };
             $entry->save();
         });
 
