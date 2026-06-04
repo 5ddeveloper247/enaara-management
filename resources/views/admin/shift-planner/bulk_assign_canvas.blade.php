@@ -431,7 +431,7 @@ $(document).ready(function() {
                 break;
             case 'next_2_months':
                 start = new Date(start.getFullYear(), start.getMonth() + 1, 1);
-                end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
+                end = new Date(start.getFullYear(), start.getMonth() + 2, 0);
                 break;
         }
 
