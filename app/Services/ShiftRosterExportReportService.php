@@ -108,9 +108,7 @@ class ShiftRosterExportReportService
             ->groupBy(fn (ShiftRosterEntry $entry) => $this->assigneeExportKey($entry))
             ->map(function (Collection $group) use ($context) {
                 $first = $group->first();
-                $name = $first->employee?->full_name
-                    ?? $first->outsourcedEmployee?->full_name
-                    ?? 'Unknown';
+                $name = $this->resolveExportEmployeeDisplayName($first);
 
                 $shifts = $group
                     ->sortBy(fn (ShiftRosterEntry $entry) => $entry->roster_date->format('Y-m-d'))
@@ -297,9 +295,7 @@ class ShiftRosterExportReportService
             $shiftName
         );
 
-        $employeeName = $entry->employee?->full_name
-            ?? $entry->outsourcedEmployee?->full_name
-            ?? 'Unknown';
+        $employeeName = $this->resolveExportEmployeeDisplayName($entry);
 
         $departmentName = $this->resolveExportDepartmentName($entry);
         $shiftLabel = $shiftType === 'general'
@@ -355,9 +351,7 @@ class ShiftRosterExportReportService
             ->groupBy(fn (ShiftRosterEntry $entry) => $this->assigneeExportKey($entry))
             ->map(function (Collection $group) use ($dateKeys, $context) {
                 $first = $group->first();
-                $name = $first->employee?->full_name
-                    ?? $first->outsourcedEmployee?->full_name
-                    ?? 'Unknown';
+                $name = $this->resolveExportEmployeeDisplayName($first);
 
                 $cellsByDate = [];
 
@@ -391,11 +385,69 @@ class ShiftRosterExportReportService
         return [
             'shift_type' => $row['shift_type'],
             'shift_label' => $row['shift_label'],
+            'shift_short' => $this->shiftTypeShortLabel($row['shift_type'], $row['shift_label']),
             'time_start' => $row['start_time'],
             'time_end' => $row['end_time'],
+            'time_start_short' => $includeShiftTimes
+                ? $this->formatUltraCompactDisplayTime($row['start_time'])
+                : null,
+            'time_end_short' => $includeShiftTimes
+                ? $this->formatUltraCompactDisplayTime($row['end_time'])
+                : null,
             'hours' => $row['hours'],
             'is_deleted' => $row['is_deleted'],
         ];
+    }
+
+    private function resolveExportEmployeeDisplayName(ShiftRosterEntry $entry): string
+    {
+        if ($entry->employee_id && $entry->employee) {
+            $firstName = trim((string) ($entry->employee->first_name ?? ''));
+
+            if ($firstName !== '') {
+                return $firstName;
+            }
+
+            return $this->firstTokenFromName($entry->employee->full_name);
+        }
+
+        if ($entry->outsourced_employee_id && $entry->outsourcedEmployee) {
+            return $this->firstTokenFromName($entry->outsourcedEmployee->full_name);
+        }
+
+        return 'Unknown';
+    }
+
+    private function firstTokenFromName(?string $name): string
+    {
+        $parts = preg_split('/\s+/u', trim((string) $name), 2, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return $parts[0] ?? 'Unknown';
+    }
+
+    private function shiftTypeShortLabel(string $shiftType, string $fullLabel): string
+    {
+        return match ($shiftType) {
+            'morning' => 'M',
+            'evening' => 'E',
+            'night' => 'N',
+            default => mb_strtoupper(mb_substr(trim($fullLabel), 0, 1)) ?: '•',
+        };
+    }
+
+    private function formatUltraCompactDisplayTime(?string $displayTime): ?string
+    {
+        if (! $displayTime) {
+            return null;
+        }
+
+        try {
+            $parsed = Carbon::parse($displayTime);
+
+            return strtolower($parsed->format($parsed->minute === 0 ? 'ga' : 'g:ia'));
+        } catch (\Throwable) {
+            return str_replace([':00 ', ' AM', ' PM'], ['', 'a', 'p'], $displayTime);
+        }
     }
 
     private function resolveExportDepartmentName(ShiftRosterEntry $entry): string

@@ -44,8 +44,10 @@ class ShiftRosterPdfExportService
             $orientation = 'portrait';
         }
 
+        $paper = $layout === 'calendar' ? 'a3' : 'a4';
+
         $pdf = Pdf::loadView($view, $report)
-            ->setPaper('a4', $orientation);
+            ->setPaper($paper, $orientation);
 
         return $pdf->download($filename);
     }

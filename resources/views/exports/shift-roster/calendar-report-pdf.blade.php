@@ -5,8 +5,8 @@
     <title>{{ $report_title }} — {{ $period_label }}</title>
     <style>
         @page {
-            margin: 12px 8px 24px 8px;
-            size: A4 landscape;
+            margin: 10px 8px 24px 8px;
+            size: A3 landscape;
         }
 
         * {
@@ -24,8 +24,8 @@
         .pdf-header {
             background: #012445;
             color: #ffffff;
-            padding: 16px 20px;
-            margin: -12px -8px 0 -8px;
+            padding: 12px 16px;
+            margin: -10px -8px 0 -8px;
         }
 
         .pdf-header-table {
@@ -38,27 +38,27 @@
         }
 
         .org-name {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: bold;
-            margin: 0 0 4px 0;
+            margin: 0 0 3px 0;
             text-transform: lowercase;
         }
 
         .report-subtitle {
-            font-size: 10px;
+            font-size: 9px;
             margin: 0;
             opacity: 0.92;
         }
 
         .period-label {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             text-align: right;
-            margin: 0 0 4px 0;
+            margin: 0 0 3px 0;
         }
 
         .generated-at {
-            font-size: 8px;
+            font-size: 7px;
             text-align: right;
             margin: 0;
             opacity: 0.88;
@@ -67,20 +67,20 @@
         .meta-line {
             font-size: 7px;
             color: #5c6b7a;
-            margin: 6px 0 8px 0;
+            margin: 5px 0 7px 0;
         }
 
         .stats-bar {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             background: #ffffff;
             border: 1px solid #e2e8f0;
         }
 
         .stats-bar td {
             text-align: center;
-            padding: 8px 4px;
+            padding: 7px 4px;
             border-right: 1px solid #e8edf2;
             vertical-align: middle;
         }
@@ -94,11 +94,11 @@
             letter-spacing: 0.04em;
             text-transform: uppercase;
             color: #6b7c8f;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .stat-value {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             color: #012445;
         }
@@ -113,8 +113,8 @@
             font-size: 8px;
             font-weight: bold;
             letter-spacing: 0.06em;
-            padding: 6px 8px;
-            margin-top: 8px;
+            padding: 5px 8px;
+            margin-top: 6px;
             text-transform: uppercase;
         }
 
@@ -122,72 +122,50 @@
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .calendar-grid th,
         .calendar-grid td {
-            border: 1px solid #e2e8f0;
+            border: 1px solid #d8e0ea;
             vertical-align: middle;
             text-align: center;
             padding: 0;
         }
 
         .calendar-grid thead th {
-            background: #f8fafc;
+            background: #f1f5f9;
             color: #334155;
             font-weight: bold;
             padding: 4px 1px;
         }
 
         .calendar-grid col.col-employee {
-            width: 108px;
+            width: 13%;
+        }
+
+        .calendar-grid col.col-day {
+            width: {{ count($days) > 0 ? round(87 / count($days), 3) : 2.8 }}%;
         }
 
         .col-employee {
-            width: 108px;
-            min-width: 108px;
-            max-width: 108px;
             text-align: left;
             vertical-align: middle;
-            padding: 6px 10px 6px 8px !important;
-            font-size: 7.5px;
+            padding: 4px 6px !important;
+            font-size: 7px;
             font-weight: bold;
             color: #1a2b3c;
             background: #ffffff;
-            word-break: normal;
-            overflow-wrap: normal;
-            line-height: 1.3;
+            white-space: nowrap;
         }
 
         .calendar-grid thead th.col-employee {
-            width: 108px;
-            min-width: 108px;
-            max-width: 108px;
             text-align: left;
-            white-space: nowrap;
-            word-break: normal;
-            line-height: 1.3;
-            padding: 6px 10px 6px 8px !important;
-            font-size: 7.5px;
-            letter-spacing: 0;
-        }
-
-        .employee-name {
-            display: block;
-            white-space: nowrap;
-            word-break: normal;
-            line-height: 1.3;
-        }
-
-        .employee-name-long {
-            white-space: normal;
-            overflow-wrap: break-word;
-            word-break: normal;
-        }
-
-        .col-day {
-            width: auto;
+            font-size: 6.5px;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.03em;
+            padding: 4px 6px !important;
         }
 
         .day-head-num {
@@ -205,69 +183,50 @@
         }
 
         .day-cell {
-            height: 48px;
+            height: 36px;
+            padding: 2px 1px !important;
             background: #ffffff;
-            padding: 0;
         }
 
-        .day-cell-deleted .shift-inner {
+        .day-cell-morning { background: #e0f2fe; }
+        .day-cell-evening { background: #ffedd5; }
+        .day-cell-night { background: #ede9fe; }
+        .day-cell-general { background: #f1f5f9; }
+
+        .day-cell-deleted {
             opacity: 0.72;
         }
 
-        .day-cell-deleted .shift-label {
+        .day-cell-deleted .shift-short-label,
+        .day-cell-deleted .shift-time-stack {
             text-decoration: line-through;
         }
 
-        .shift-inner {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .shift-inner td {
-            text-align: center;
-            vertical-align: middle;
-            padding: 0;
-            border: none;
-        }
-
-        .shift-label-row td {
-            padding: 3px 2px 1px 2px;
-        }
-
-        .shift-time-row td {
-            padding: 0 2px;
-        }
-
-        .shift-time-row-last td {
-            padding: 0 2px 3px 2px;
-        }
-
-        .shift-label {
-            font-size: 5.5px;
+        .shift-short-label {
+            display: block;
+            font-size: 6.5px;
             font-weight: bold;
             line-height: 1.15;
             margin: 0;
         }
 
-        .shift-label-morning { color: #0369a1; }
-        .shift-label-evening { color: #c2410c; }
-        .shift-label-night { color: #6d28d9; }
-        .shift-label-general { color: #475569; }
+        .shift-short-morning { color: #0369a1; }
+        .shift-short-evening { color: #c2410c; }
+        .shift-short-night { color: #6d28d9; }
+        .shift-short-general { color: #475569; }
 
-        .dot-morning { background: #0369a1; }
-        .dot-evening { background: #c2410c; }
-        .dot-night { background: #6d28d9; }
-
-        .shift-time {
-            font-size: 4.5px;
+        .shift-time-stack {
+            display: block;
+            font-size: 5px;
             line-height: 1.2;
-            color: #64748b;
+            color: #475569;
             margin: 0;
+            white-space: nowrap;
         }
 
         .legend-wrap {
-            margin-top: 10px;
-            padding-top: 8px;
+            margin-top: 8px;
+            padding-top: 6px;
             border-top: 1px solid #e2e8f0;
         }
 
@@ -276,7 +235,7 @@
             font-weight: bold;
             text-transform: uppercase;
             color: #64748b;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
 
         .legend-table {
@@ -299,15 +258,19 @@
             vertical-align: middle;
         }
 
+        .dot-morning { background: #0369a1; }
+        .dot-evening { background: #c2410c; }
+        .dot-night { background: #6d28d9; }
+
         .pdf-footer {
             position: fixed;
-            bottom: -18px;
+            bottom: -16px;
             left: 0;
             right: 0;
             font-size: 7px;
             color: #94a3b8;
             border-top: 1px solid #e2e8f0;
-            padding-top: 5px;
+            padding-top: 4px;
         }
 
         .footer-table {
@@ -317,6 +280,15 @@
     </style>
 </head>
 <body>
+    @php
+        $shiftBackgrounds = [
+            'morning' => 'day-cell-morning',
+            'evening' => 'day-cell-evening',
+            'night' => 'day-cell-night',
+            'general' => 'day-cell-general',
+        ];
+    @endphp
+
     <div class="pdf-header">
         <table class="pdf-header-table">
             <tr>
@@ -381,16 +353,16 @@
 
         <table class="calendar-grid">
             <colgroup>
-                <col class="col-employee" style="width: 108px;">
+                <col class="col-employee">
                 @foreach($days as $day)
                     <col class="col-day">
                 @endforeach
             </colgroup>
             <thead>
                 <tr>
-                    <th class="col-employee" style="width: 108px;">Employee</th>
+                    <th class="col-employee">Employee</th>
                     @foreach($days as $day)
-                        <th class="col-day">
+                        <th>
                             <div class="day-head-num">{{ $day['day'] }}</div>
                             <div class="day-head-dow">{{ $day['dow'] }}</div>
                         </th>
@@ -400,54 +372,23 @@
             <tbody>
                 @foreach($department['employees'] as $employee)
                     <tr>
-                        <td class="col-employee" style="width: 108px;">
-                            <span class="employee-name {{ strlen($employee['name']) > 18 ? 'employee-name-long' : '' }}">{{ $employee['name'] }}</span>
-                        </td>
+                        <td class="col-employee">{{ $employee['name'] }}</td>
                         @foreach($employee['cells'] as $cell)
-                            <td class="day-cell{{ ($cell['is_deleted'] ?? false) ? ' day-cell-deleted' : '' }}">
-                                @if($cell)
-                                    @php
-                                        $shiftType = $cell['shift_type'] ?? 'general';
-                                        $shiftBackgrounds = [
-                                            'morning' => '#e0f2fe',
-                                            'evening' => '#ffedd5',
-                                            'night' => '#ede9fe',
-                                            'general' => '#f1f5f9',
-                                        ];
-                                        $shiftBg = $shiftBackgrounds[$shiftType] ?? '#f1f5f9';
-                                        $timeStart = $cell['time_start'] ?? null;
-                                        $timeEnd = $cell['time_end'] ?? null;
-                                        if (! $timeStart && ! empty($cell['time_range'])) {
-                                            $timeParts = preg_split('/\s*-\s*/', $cell['time_range'], 2);
-                                            $timeStart = trim($timeParts[0] ?? '');
-                                            $timeEnd = trim($timeParts[1] ?? '');
-                                        }
-                                    @endphp
-                                    <table class="shift-inner" cellpadding="0" cellspacing="0" width="100%" style="background-color: {{ $shiftBg }};">
-                                        <tr class="shift-label-row">
-                                            <td bgcolor="{{ $shiftBg }}">
-                                                <p class="shift-label shift-label-{{ $shiftType }}">{{ $cell['shift_label'] }}</p>
-                                            </td>
-                                        </tr>
-                                        @if($include_shift_times && $timeStart && $timeEnd)
-                                            <tr class="shift-time-row">
-                                                <td bgcolor="{{ $shiftBg }}">
-                                                    <p class="shift-time">{{ $timeStart }}</p>
-                                                </td>
-                                            </tr>
-                                            <tr class="shift-time-row-last">
-                                                <td bgcolor="{{ $shiftBg }}">
-                                                    <p class="shift-time">{{ $timeEnd }}</p>
-                                                </td>
-                                            </tr>
-                                        @elseif($include_shift_times && $timeStart)
-                                            <tr class="shift-time-row-last">
-                                                <td bgcolor="{{ $shiftBg }}">
-                                                    <p class="shift-time">{{ $timeStart }}</p>
-                                                </td>
-                                            </tr>
+                            @php
+                                $shiftType = is_array($cell) ? ($cell['shift_type'] ?? 'general') : null;
+                                $cellClass = $shiftType ? ($shiftBackgrounds[$shiftType] ?? 'day-cell-general') : '';
+                            @endphp
+                            <td class="day-cell{{ $cellClass ? ' ' . $cellClass : '' }}{{ is_array($cell) && !empty($cell['is_deleted']) ? ' day-cell-deleted' : '' }}">
+                                @if(is_array($cell))
+                                    <span class="shift-short-label shift-short-{{ $shiftType }}">{{ $cell['shift_short'] ?? '•' }}</span>
+                                    @if($include_shift_times)
+                                        @if(!empty($cell['time_start_short']))
+                                            <span class="shift-time-stack">{{ $cell['time_start_short'] }}</span>
                                         @endif
-                                    </table>
+                                        @if(!empty($cell['time_end_short']))
+                                            <span class="shift-time-stack">{{ $cell['time_end_short'] }}</span>
+                                        @endif
+                                    @endif
                                 @endif
                             </td>
                         @endforeach
@@ -461,9 +402,9 @@
         <div class="legend-title">Shift legend</div>
         <table class="legend-table">
             <tr>
-                <td><span class="legend-dot dot-morning"></span> Morning</td>
-                <td><span class="legend-dot dot-evening"></span> Evening</td>
-                <td><span class="legend-dot dot-night"></span> Night</td>
+                <td><span class="legend-dot dot-morning"></span> M — Morning</td>
+                <td><span class="legend-dot dot-evening"></span> E — Evening</td>
+                <td><span class="legend-dot dot-night"></span> N — Night</td>
                 @if($include_deleted)
                     <td><span style="color: #dc2626; font-weight: bold;">×</span> Removed shift</td>
                 @endif
@@ -472,16 +413,12 @@
     </div>
 
     <div class="pdf-footer">
-    <table class="footer-table">
-        <tr>
-            <td>
-                EFM-HCM • Secure Internal Workforce Management Report
-            </td>
-            <td style="text-align: right;">
-                Powered by 5D Solutions — Building smarter business systems
-            </td>
-        </tr>
-    </table>
-</div>
+        <table class="footer-table">
+            <tr>
+                <td>EFM-HCM • Secure Internal Workforce Management Report</td>
+                <td style="text-align: right;">Powered by 5D Solutions — Building smarter business systems</td>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>
