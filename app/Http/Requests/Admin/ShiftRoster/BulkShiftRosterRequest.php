@@ -97,12 +97,12 @@ class BulkShiftRosterRequest extends FormRequest
 
             $dayCount = $days->count();
 
-            if ($dayCount < 5) {
-                $v->errors()->add('days', 'Select at least 5 working days.');
+            if ($dayCount < 1) {
+                $v->errors()->add('days', 'Select at least 1 working day.');
             }
 
-            if ($dayCount > 6) {
-                $v->errors()->add('days', 'You can select at most 6 working days.');
+            if ($dayCount > count(self::WEEKDAYS)) {
+                $v->errors()->add('days', 'You can select at most ' . count(self::WEEKDAYS) . ' working days.');
             }
 
             if ($days->intersect($offDays)->isNotEmpty()) {
@@ -192,7 +192,7 @@ class BulkShiftRosterRequest extends FormRequest
             // Dates
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'days' => ['required', 'array', 'min:5', 'max:6'],
+            'days' => ['required', 'array', 'min:1', 'max:7'],
             'days.*' => ['string', Rule::in(self::WEEKDAYS)],
             'off_days' => ['nullable', 'array'],
             'off_days.*' => ['string', Rule::in(self::WEEKDAYS)],
@@ -233,8 +233,8 @@ class BulkShiftRosterRequest extends FormRequest
             'end_date.after_or_equal' => 'End date must be after or equal to start date.',
 
             'days.required' => 'Select working days for the assignment.',
-            'days.min' => 'Select at least 5 working days.',
-            'days.max' => 'You can select at most 6 working days.',
+            'days.min' => 'Select at least 1 working day.',
+            'days.max' => 'You can select at most 7 working days.',
             'days.*.in' => 'One or more selected days are invalid.',
 
             'notes.max' => 'Notes must not exceed 1000 characters.',

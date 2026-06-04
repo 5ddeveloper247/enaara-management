@@ -56,7 +56,7 @@
                 <!-- Day Selection -->
                 <div class="mb-3">
                     <label class="form-label fw-semibold small text-white d-block mb-2">Repeat Days</label>
-                    <p class="small text-white-50 mb-2">Select 5 to 6 working days. Checked days receive the selected shift; unchecked days are saved as OFF for the full date range.</p>
+                    <p class="small text-white-50 mb-2">Select at least 1 working day (up to all 7). Checked days receive the selected shift; unchecked days are saved as OFF for the full date range.</p>
                     <div class="d-flex flex-wrap gap-2" id="dayCheckboxesContainer">
                         @php $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; @endphp
                         @foreach($days as $day)
@@ -332,8 +332,8 @@ $(document).ready(function() {
     var $canvas = $('#bulkAssignCanvas');
     var $selectedCount = $('#selectedCount');
     var $repeatDaysError = $('#bulkRepeatDaysError');
-    var MIN_REPEAT_DAYS = 5;
-    var MAX_REPEAT_DAYS = 6;
+    var MIN_REPEAT_DAYS = 1;
+    var MAX_REPEAT_DAYS = 7;
 
     function getCheckedRepeatDayCount() {
         return $('.day-checkbox:checked').length;
