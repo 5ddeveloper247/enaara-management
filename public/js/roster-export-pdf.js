@@ -199,9 +199,74 @@
         if (deletedCb) {
             deletedCb.checked = showDeleted;
         }
+
+        loadPdfDepartments();
+    }
+
+    function loadPdfDepartments() {
+        var select = document.getElementById('rosterExportDepartment');
+        var groupSelect = document.getElementById('rosterExportEmployeeGroup');
+        var departmentsUrl = window.rosterExportDepartmentsUrl
+            || window.rosterExportExcelDepartmentsUrl
+            || '';
+
+        if (!select || !departmentsUrl) {
+            return;
+        }
+
+        var employeeGroup = groupSelect ? groupSelect.value : 'internal';
+        var previousValue = select.value;
+
+        select.innerHTML = '<option value="">All departments</option>';
+        select.disabled = true;
+
+        fetch(departmentsUrl + '?employee_group=' + encodeURIComponent(employeeGroup), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+            .then(function(response) {
+                return response.text().then(function(bodyText) {
+                    return {
+                        ok: response.ok,
+                        bodyText: bodyText
+                    };
+                });
+            })
+            .then(function(result) {
+                var body = {};
+                try {
+                    body = JSON.parse(result.bodyText || '{}');
+                } catch (e) {
+                    body = {};
+                }
+
+                if (!result.ok || !body.success) {
+                    return;
+                }
+
+                var departments = Array.isArray(body.departments) ? body.departments : [];
+                departments.forEach(function(department) {
+                    var option = document.createElement('option');
+                    option.value = String(department.id);
+                    option.textContent = department.name || ('Department ' + department.id);
+                    select.appendChild(option);
+                });
+
+                if (previousValue && select.querySelector('option[value="' + previousValue + '"]')) {
+                    select.value = previousValue;
+                }
+            })
+            .finally(function() {
+                select.disabled = false;
+            });
     }
 
     function collectExportOptions() {
+        var departmentValue = document.getElementById('rosterExportDepartment')?.value || '';
         var base = {
             export_period_type: exportPeriodType,
             export_layout: exportLayout,
@@ -210,6 +275,10 @@
             include_department_grouping: !!document.getElementById('rosterExportIncludeDept')?.checked,
             include_deleted: !!document.getElementById('rosterExportIncludeDeleted')?.checked
         };
+
+        if (departmentValue) {
+            base.department_id = parseInt(departmentValue, 10);
+        }
 
         if (exportPeriodType === 'date_range') {
             base.start_date = document.getElementById('rosterExportStartDate')?.value || '';
@@ -399,6 +468,13 @@
                 if (exportPeriodType === 'date_range') {
                     syncDateRangeFromMonthYear();
                 }
+            });
+        }
+
+        var groupSelect = document.getElementById('rosterExportEmployeeGroup');
+        if (groupSelect) {
+            groupSelect.addEventListener('change', function() {
+                loadPdfDepartments();
             });
         }
 

@@ -389,7 +389,12 @@
         </table>
     </div>
 
-    <p class="meta-line">{{ $employee_group_label }}</p>
+    <p class="meta-line">
+        {{ $employee_group_label }}
+        @if(!empty($department_label))
+            • {{ $department_label }}
+        @endif
+    </p>
 
     @if(($stats['shifts_scheduled'] ?? 0) === 0)
     <div class="empty-note">No shifts found for this period and filter. Adjust the period, employee group, or include deleted shifts.</div>

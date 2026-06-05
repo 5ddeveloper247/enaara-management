@@ -38,7 +38,7 @@
                     </div>
                 </section>
 
-                    <div id="rosterExportYearRow" class="row g-3 mb-4">
+                    <div id="rosterExportYearRow" class="row g-3">
                         <div id="rosterExportYearCol" class="col-sm-6">
                             <label for="rosterExportYear" class="roster-export-pdf-field-label">Year</label>
                             <select class="form-select roster-export-pdf-select" id="rosterExportYear" name="year"></select>
@@ -48,6 +48,12 @@
                             <select class="form-select roster-export-pdf-select" id="rosterExportEmployeeGroup" name="employee_group">
                                 <option value="internal">Internal employees</option>
                                 <option value="third_party">Third-party employees</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="rosterExportDepartment" class="roster-export-pdf-field-label">Department</label>
+                            <select class="form-select roster-export-pdf-select" id="rosterExportDepartment" name="department_id">
+                                <option value="">All departments</option>
                             </select>
                         </div>
                     </div>

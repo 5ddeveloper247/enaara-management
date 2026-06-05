@@ -29,6 +29,7 @@ class ShiftRosterPdfExportRequest extends FormRequest
             ],
             'export_layout' => ['nullable', 'in:calendar,tabular,per_employee'],
             'employee_group' => ['required', 'in:internal,third_party'],
+            'department_id' => ['nullable', 'integer', 'min:1'],
             'include_shift_times' => ['nullable', 'boolean'],
             'include_department_grouping' => ['nullable', 'boolean'],
             'include_deleted' => ['nullable', 'boolean'],
@@ -92,6 +93,7 @@ class ShiftRosterPdfExportRequest extends FormRequest
             'export_period_type' => $exportPeriodType,
             'export_layout' => $exportLayout,
             'employee_group' => $this->input('employee_group', 'internal'),
+            'department_id' => $this->filled('department_id') ? (int) $this->input('department_id') : null,
             'include_shift_times' => filter_var($this->input('include_shift_times'), FILTER_VALIDATE_BOOLEAN),
             'include_department_grouping' => filter_var(
                 $this->input('include_department_grouping', true),

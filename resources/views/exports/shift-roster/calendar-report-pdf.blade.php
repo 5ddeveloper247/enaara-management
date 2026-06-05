@@ -306,6 +306,9 @@
 
     <p class="meta-line">
         {{ $employee_group_label }}
+        @if(!empty($department_label))
+            • {{ $department_label }}
+        @endif
         @if($include_deleted)
             • Including deleted shifts
         @endif

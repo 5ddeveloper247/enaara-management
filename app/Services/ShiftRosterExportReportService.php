@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\ShiftRosterEntry;
+use App\Models\ThirdParty;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -162,8 +164,12 @@ class ShiftRosterExportReportService
             $periodSlug = $period->format('F-Y');
         }
 
+        $departmentId = ! empty($options['department_id']) ? (int) $options['department_id'] : null;
+
         return [
             'employee_group' => $employeeGroup,
+            'department_id' => $departmentId,
+            'department_label' => $this->resolveDepartmentFilterLabel($employeeGroup, $departmentId),
             'include_deleted' => $includeDeleted,
             'include_department_grouping' => $includeDepartmentGrouping,
             'include_shift_times' => $includeShiftTimes,
@@ -171,6 +177,19 @@ class ShiftRosterExportReportService
             'period_label' => $periodLabel,
             'period_slug' => $periodSlug,
         ];
+    }
+
+    private function resolveDepartmentFilterLabel(string $employeeGroup, ?int $departmentId): ?string
+    {
+        if (! $departmentId) {
+            return null;
+        }
+
+        if ($employeeGroup === 'third_party') {
+            return ThirdParty::query()->find($departmentId)?->third_party_name;
+        }
+
+        return Department::query()->find($departmentId)?->name;
     }
 
     private function fetchExportEntries(array $context): Collection
@@ -188,8 +207,20 @@ class ShiftRosterExportReportService
 
         if ($context['employee_group'] === 'third_party') {
             $entriesQuery->whereNotNull('outsourced_employee_id');
+
+            if (! empty($context['department_id'])) {
+                $entriesQuery->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
+                    $employeeQuery->where('contractor_company_id', $context['department_id']);
+                });
+            }
         } else {
             $entriesQuery->whereNotNull('employee_id');
+
+            if (! empty($context['department_id'])) {
+                $entriesQuery->whereHas('employee', function ($employeeQuery) use ($context) {
+                    $employeeQuery->where('department_id', $context['department_id']);
+                });
+            }
         }
 
         $entries = $entriesQuery->get();
@@ -203,8 +234,20 @@ class ShiftRosterExportReportService
 
             if ($context['employee_group'] === 'third_party') {
                 $trashedQuery->whereNotNull('outsourced_employee_id');
+
+                if (! empty($context['department_id'])) {
+                    $trashedQuery->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
+                        $employeeQuery->where('contractor_company_id', $context['department_id']);
+                    });
+                }
             } else {
                 $trashedQuery->whereNotNull('employee_id');
+
+                if (! empty($context['department_id'])) {
+                    $trashedQuery->whereHas('employee', function ($employeeQuery) use ($context) {
+                        $employeeQuery->where('department_id', $context['department_id']);
+                    });
+                }
             }
 
             $entries = $entries->merge($trashedQuery->get())->unique('id')->values();
@@ -232,6 +275,7 @@ class ShiftRosterExportReportService
             'employee_group_label' => $context['employee_group'] === 'third_party'
                 ? 'Third-party employees'
                 : 'Internal employees',
+            'department_label' => $context['department_label'] ?? null,
             'include_shift_times' => $context['include_shift_times'],
             'include_department_grouping' => $context['include_department_grouping'],
             'include_deleted' => $context['include_deleted'],

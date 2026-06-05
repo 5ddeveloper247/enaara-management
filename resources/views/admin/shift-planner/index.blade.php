@@ -174,6 +174,7 @@
         window.rosterFloorOptionsUrl = @json(route('admin.shift-roster.floor-options'));
         window.rosterBulkFloorOptionsUrl = @json(route('admin.shift-roster.bulk-floor-options'));
         window.rosterExportPdfUrl = @json(route('admin.shift-roster.export-pdf'));
+        window.rosterExportDepartmentsUrl = @json(route('admin.shift-roster.export-excel.departments'));
     </script>
     <script src="{{ asset('js/roster-render.js') }}"></script>
     <script src="{{ asset('js/roster-export-pdf.js') }}"></script>
