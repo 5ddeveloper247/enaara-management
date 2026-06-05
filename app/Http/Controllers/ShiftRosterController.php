@@ -266,8 +266,14 @@ class ShiftRosterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Shift roster entry updated successfully.',
+                'message' => 'Shift roster change submitted to GM for approval.',
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -290,9 +296,14 @@ class ShiftRosterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Shift roster entry deleted successfully.',
+                'message' => 'Shift roster removal submitted to GM for approval.',
             ]);
-
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

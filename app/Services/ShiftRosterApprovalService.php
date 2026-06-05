@@ -61,6 +61,52 @@ class ShiftRosterApprovalService
         );
     }
 
+    public function submitUpdate(int $entryId, array $data): ShiftRosterApprovalRequest
+    {
+        $entry = ShiftRosterEntry::query()->findOrFail($entryId);
+        [$assigneeType, $assigneeId] = $this->resolveAssigneeFromEntry($entry);
+
+        $rosterDate = (string) ($data['roster_date'] ?? $entry->roster_date?->toDateString());
+        $this->assertNoPendingApprovalForAssigneeDate($assigneeType, $assigneeId, $rosterDate);
+
+        $item = $this->shiftRosterService->buildUpdateApprovalItem($entry, $data);
+        $baseLabel = $this->shiftRosterService->resolveApprovalLabelForEntry($entry);
+
+        return $this->createRequest(
+            assigneeType: $assigneeType,
+            assigneeId: $assigneeId,
+            requestType: 'update',
+            items: [$item],
+            shiftLabel: 'Update: ' . $baseLabel
+        );
+    }
+
+    public function submitDelete(int $entryId): ShiftRosterApprovalRequest
+    {
+        $entry = ShiftRosterEntry::query()->findOrFail($entryId);
+        [$assigneeType, $assigneeId] = $this->resolveAssigneeFromEntry($entry);
+
+        $rosterDate = $entry->roster_date?->toDateString();
+        if (! $rosterDate) {
+            throw ValidationException::withMessages([
+                'roster_date' => 'Unable to submit roster removal for approval.',
+            ]);
+        }
+
+        $this->assertNoPendingApprovalForAssigneeDate($assigneeType, $assigneeId, $rosterDate);
+
+        $item = $this->shiftRosterService->buildDeleteApprovalItem($entry);
+        $baseLabel = $this->shiftRosterService->resolveApprovalLabelForEntry($entry);
+
+        return $this->createRequest(
+            assigneeType: $assigneeType,
+            assigneeId: $assigneeId,
+            requestType: 'delete',
+            items: [$item],
+            shiftLabel: 'Remove: ' . $baseLabel
+        );
+    }
+
     /**
      * @param array<int, array<string, mixed>> $items
      */
@@ -240,9 +286,11 @@ class ShiftRosterApprovalService
                 ->map(fn (ShiftRosterApprovalRequestItem $item) => [
                     'date' => $item->roster_date?->format('D d M Y'),
                     'entry_type' => $item->entry_type,
-                    'shift_name' => $item->entry_type === 'off'
-                        ? 'Off'
-                        : ($item->shift?->name ?? ($item->is_custom_time ? 'Custom' : 'Shift')),
+                    'shift_name' => $item->entry_type === 'delete'
+                        ? 'Remove shift'
+                        : ($item->entry_type === 'off'
+                            ? 'Off'
+                            : ($item->shift?->name ?? ($item->is_custom_time ? 'Custom' : 'Shift'))),
                     'start_time' => $this->formatTimeForDisplay($item->start_time),
                     'end_time' => $this->formatTimeForDisplay($item->end_time),
                     'floor' => $item->floor ?? '-',
@@ -321,6 +369,12 @@ class ShiftRosterApprovalService
             $payload = ['employee_id' => null];
         }
 
+        if ($item->entry_type === 'delete') {
+            $this->shiftRosterService->deleteApprovedRosterEntry($lookup, $userId);
+
+            return;
+        }
+
         if ($item->entry_type === 'off') {
             $payload += [
                 'shift_planner_id' => $item->shift_planner_id,
@@ -393,6 +447,43 @@ class ShiftRosterApprovalService
                 'approval' => 'You are not authorized to approve this roster request.',
             ]);
         }
+    }
+
+    private function assertNoPendingApprovalForAssigneeDate(string $assigneeType, int $assigneeId, string $rosterDate): void
+    {
+        $query = ShiftRosterApprovalRequest::query()
+            ->where('approval_status', 'pending')
+            ->whereHas('items', fn ($itemQuery) => $itemQuery->whereDate('roster_date', $rosterDate));
+
+        if ($assigneeType === 'outsourced') {
+            $query->where('outsourced_employee_id', $assigneeId);
+        } else {
+            $query->where('employee_id', $assigneeId);
+        }
+
+        if ($query->exists()) {
+            throw ValidationException::withMessages([
+                'roster_date' => 'A roster change for this date is already pending GM approval.',
+            ]);
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: int}
+     */
+    private function resolveAssigneeFromEntry(ShiftRosterEntry $entry): array
+    {
+        if ($entry->outsourced_employee_id) {
+            return ['outsourced', (int) $entry->outsourced_employee_id];
+        }
+
+        if ($entry->employee_id) {
+            return ['employee', (int) $entry->employee_id];
+        }
+
+        throw ValidationException::withMessages([
+            'employee_id' => 'Unable to resolve the employee for this roster entry.',
+        ]);
     }
 
     private function assertNoExistingOffDay(string $employeeType, int $employeeId, string $rosterDate): void

@@ -123,78 +123,96 @@ class ShiftRosterService
     }
 
     /**
-     * Update an existing shift roster entry.
+     * Update an existing shift roster entry (submitted for GM approval).
      */
     public function update(array $data, $id)
     {
-        $entry = ShiftRosterEntry::findOrFail($id);
-        $userId = Auth::id();
-        $assignment = $this->buildEntryAssignment($data, $entry);
-        $payload = [
-            'shift_planner_id' => $assignment['shift_planner_id'],
-            'is_custom_time' => $assignment['is_custom_time'],
-            'roster_date' => $data['roster_date'],
-            'start_time' => $assignment['start_time'],
-            'end_time' => $assignment['end_time'],
-            'check_in' => $data['check_in'] ?? $entry->check_in,
-            'check_out' => $data['check_out'] ?? $entry->check_out,
-            'late_check_in' => (bool) ($data['late_check_in'] ?? $entry->late_check_in),
-            'status' => $this->resolveUpdatedEntryStatus($entry, $data),
-        ];
-        $this->applyFloorToPayload($data, $payload, $entry->floor);
-        $this->applyLocationToPayload($data, $payload, $entry->location_text);
-        $this->applyNotesToPayload($data, $payload);
-
-        if (($data['employee_type'] ?? 'employee') === 'outsourced') {
-            $payload['outsourced_employee_id'] = (int) $data['employee_id'];
-            $payload['employee_id'] = null;
-            $payload['compensatory_reason'] = null;
-        } else {
-            $payload['employee_id'] = (int) $data['employee_id'];
-            $payload['outsourced_employee_id'] = null;
-            $this->compensatoryLeaveAwardService->applyCompensatoryReasonToPayload(
-                $payload,
-                $entry,
-                $entry->employee,
-                (string) $data['roster_date']
-            );
-        }
-
-        $before = $this->historyService->snapshot($entry);
-        $entry->update($payload);
-        if ($userId) {
-            $entry->updated_by = $userId;
-            $entry->save();
-        }
-        $entry->refresh();
-        $this->historyService->recordUpdated($entry, $before, $userId);
-
-        if ($entry->employee_id) {
-            $this->compensatoryLeaveAwardService->syncFullWeekSundayCompensatoryTag(
-                (int) $entry->employee_id,
-                $entry->roster_date
-            );
-        }
-
-        return $entry;
+        return app(ShiftRosterApprovalService::class)->submitUpdate((int) $id, $data);
     }
 
     /**
-     * Delete a shift roster entry.
+     * Delete a shift roster entry (submitted for GM approval).
      */
     public function destroy($id)
     {
-        $entry = ShiftRosterEntry::findOrFail($id);
+        return app(ShiftRosterApprovalService::class)->submitDelete((int) $id);
+    }
+
+    public function buildUpdateApprovalItem(ShiftRosterEntry $entry, array $data): array
+    {
+        $assignment = $this->buildEntryAssignment($data, $entry);
+        $rosterDate = (string) ($data['roster_date'] ?? $entry->roster_date?->toDateString());
+        $entryStatus = $this->resolveUpdatedEntryStatus($entry, $data);
+
+        $placement = [];
+        $this->applyFloorToPayload($data, $placement, $entry->floor);
+        $this->applyLocationToPayload($data, $placement, $entry->location_text);
+        $this->applyNotesToPayload($data, $placement);
+
+        return [
+            'roster_date' => $rosterDate,
+            'entry_type' => 'shift',
+            'shift_planner_id' => $assignment['shift_planner_id'],
+            'is_custom_time' => $assignment['is_custom_time'],
+            'start_time' => $assignment['start_time'],
+            'end_time' => $assignment['end_time'],
+            'floor' => $placement['floor'] ?? $entry->floor,
+            'location_text' => $placement['location_text'] ?? $entry->location_text,
+            'notes' => $placement['notes'] ?? $entry->notes,
+            'entry_status' => $entryStatus,
+        ];
+    }
+
+    public function buildDeleteApprovalItem(ShiftRosterEntry $entry): array
+    {
+        return [
+            'roster_date' => $entry->roster_date?->toDateString(),
+            'entry_type' => 'delete',
+            'shift_planner_id' => $entry->shift_planner_id,
+            'is_custom_time' => (bool) $entry->is_custom_time,
+            'start_time' => $entry->start_time,
+            'end_time' => $entry->end_time,
+            'floor' => $entry->floor,
+            'location_text' => $entry->location_text,
+            'notes' => $entry->notes,
+            'entry_status' => (string) $entry->status,
+        ];
+    }
+
+    public function resolveApprovalLabelForEntry(ShiftRosterEntry $entry): string
+    {
+        if (strtolower((string) $entry->status) === 'off') {
+            return 'Off day';
+        }
+
+        if ($entry->is_custom_time) {
+            return 'Custom shift';
+        }
+
+        if ($entry->shift_planner_id) {
+            return ShiftPlanner::query()->find($entry->shift_planner_id)?->name ?? 'Shift';
+        }
+
+        return 'Shift';
+    }
+
+    public function deleteApprovedRosterEntry(array $lookup, ?int $userId): void
+    {
+        $entry = ShiftRosterEntry::query()->where($lookup)->first();
+        if (! $entry) {
+            return;
+        }
+
         $employeeId = $entry->employee_id;
         $rosterDate = $entry->roster_date;
-        $userId = Auth::id();
+
         if ($userId) {
             $entry->deleted_by = $userId;
             $entry->save();
         }
-        $this->historyService->recordDeleted($entry, $userId);
 
-        $deleted = $entry->delete();
+        $this->historyService->recordDeleted($entry, $userId);
+        $entry->delete();
 
         if ($employeeId) {
             $this->compensatoryLeaveAwardService->syncFullWeekSundayCompensatoryTag(
@@ -202,8 +220,6 @@ class ShiftRosterService
                 $rosterDate
             );
         }
-
-        return $deleted;
     }
 
     /**

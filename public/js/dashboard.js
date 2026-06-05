@@ -903,13 +903,16 @@
             items.forEach(function (item) {
                 var tr = document.createElement('tr');
 
-                var timeLabel = item.entry_type === 'off'
-                    ? '-'
-                    : ((item.start_time || '-') + ' – ' + (item.end_time || '-'));
-                var typeBadgeClass = item.entry_type === 'off'
+                var typeBadgeClass = item.entry_type === 'off' || item.entry_type === 'delete'
                     ? 'roster-approval-type-badge roster-approval-type-badge--off'
                     : 'roster-approval-type-badge';
-                var typeLabel = item.entry_type === 'off' ? 'Off' : (item.shift_name || 'Shift');
+                var typeLabel = item.entry_type === 'delete'
+                    ? 'Remove'
+                    : (item.entry_type === 'off' ? 'Off' : (item.shift_name || 'Shift'));
+
+                var timeLabel = item.entry_type === 'off' || item.entry_type === 'delete'
+                    ? '-'
+                    : ((item.start_time || '-') + ' – ' + (item.end_time || '-'));
 
                 tr.innerHTML =
                     '<td>' + DashboardApprovals.esc(item.date) + '</td>' +
