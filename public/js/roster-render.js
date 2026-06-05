@@ -472,9 +472,6 @@
                         var k = empRef + '-' + iso;
                         var rawCellShifts = shiftsByEmpDay[k] || [];
                         var cellShifts = stripPublicHolidaysFromCellShifts(rawCellShifts);
-                        var today = stripTime(new Date());
-                        var cellDate = stripTime(d);
-                        var isPast = cellDate < today;
                         var hasActiveShift = cellShifts.some(function(s) {
                             return isRosterWorkingShift(s);
                         });
@@ -486,12 +483,9 @@
                         });
 
                         var td = document.createElement('td');
-                        td.className = 'shift-cell';
+                        td.className = 'shift-cell roster-day-cell';
                         if (isRosterHolidayDate(iso, holidaysByDate)) {
                             td.classList.add('roster-day-col-holiday');
-                        }
-                        if (cellShifts.length || !isPast) {
-                            td.classList.add('roster-day-cell');
                         }
 
                         td.setAttribute('data-employee-id', String(empRef));
@@ -509,7 +503,7 @@
                             td.setAttribute('data-shifts', '[]');
                         }
 
-                        if (!hasActiveShift && !hasOffDayEntry && !isPast) {
+                        if (!hasActiveShift && !hasOffDayEntry) {
                             td.classList.add('roster-day-cell-empty');
                             var addHtml = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add"><i class="bi bi-plus-lg"></i></span>';
                             if (cellShifts.length) {
@@ -517,7 +511,7 @@
                             } else {
                                 td.innerHTML = addHtml;
                             }
-                        } else if (hasPublicHoliday && hasActiveShift && !isPast) {
+                        } else if (hasPublicHoliday && hasActiveShift) {
                             td.insertAdjacentHTML('beforeend',
                                 '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add roster-day-add-inline"><i class="bi bi-plus-lg"></i></span>');
                         }
