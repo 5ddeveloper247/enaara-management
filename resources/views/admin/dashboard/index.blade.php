@@ -34,7 +34,10 @@
                     </div>
 
                     <div class="col-lg-7">
-                        @include('admin.dashboard.pending-approvals')
+                        <div class="row g-3">
+                            @include('admin.dashboard.pending-approvals')
+                            @include('admin.dashboard.pending-roster-approvals')
+                        </div>
                     </div>
 
                     <div class="col-lg-5">
