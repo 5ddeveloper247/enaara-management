@@ -866,7 +866,7 @@
                     DashboardRosterApprovals.renderDetail(json.data);
                 })
                 .catch(function (err) {
-                    DashboardUtils.showAlert(err.message || 'Could not load roster request.');
+                    DashboardRosterApprovals.showRosterAlert(err.message || 'Could not load roster request.', 'error');
                 });
         },
 
@@ -966,9 +966,33 @@
             approved.querySelector('.roster-approval-step__status').textContent = 'Awaiting';
         },
 
-        approveCurrent() {
+        ensureSwalModalFocusFix() {
+            if (this._swalFocusFixBound) return;
+            this._swalFocusFixBound = true;
+            document.addEventListener('focusin', function (e) {
+                if (e.target.closest && e.target.closest('.swal2-container')) {
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+        },
+
+        showRosterAlert(message, type) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: type === 'success' ? 'success' : (type === 'error' ? 'error' : 'info'),
+                    title: type === 'success' ? 'Success' : (type === 'error' ? 'Error' : 'Notice'),
+                    text: message,
+                    timer: type === 'success' ? 1800 : undefined,
+                    showConfirmButton: type !== 'success'
+                });
+                return;
+            }
+
+            alert(message);
+        },
+
+        performApprove() {
             if (!this.currentRequestId) return;
-            if (!DashboardUtils.confirmAction('Approve this shift roster?')) return;
 
             var baseUrl = (window._dashRoutes && window._dashRoutes.rosterApprovalApprove)
                 ? window._dashRoutes.rosterApprovalApprove
@@ -991,21 +1015,20 @@
                     if (!result.ok || !result.body.success) {
                         throw new Error(result.body.message || 'Approval failed.');
                     }
-                    DashboardUtils.showAlert(result.body.message || 'Roster approved.', 'success');
+                    DashboardRosterApprovals.showRosterAlert(result.body.message || 'Roster approved.', 'success');
                     DashboardRosterApprovals.closeModal();
                     DashboardRosterApprovals.loadPendingRosterApprovals();
                 })
                 .catch(function (err) {
-                    DashboardUtils.showAlert(err.message || 'Approval failed.');
+                    DashboardRosterApprovals.showRosterAlert(err.message || 'Approval failed.', 'error');
                 })
                 .finally(function () {
                     if (approveBtn) approveBtn.disabled = false;
                 });
         },
 
-        rejectCurrent() {
+        performReject(reason) {
             if (!this.currentRequestId) return;
-            if (!DashboardUtils.confirmAction('Reject this shift roster request?')) return;
 
             var baseUrl = (window._dashRoutes && window._dashRoutes.rosterApprovalReject)
                 ? window._dashRoutes.rosterApprovalReject
@@ -1021,23 +1044,90 @@
                     'X-CSRF-TOKEN': window._csrfToken || '',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ reason: '' })
+                body: JSON.stringify({ reason: reason || '' })
             })
                 .then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
                 .then(function (result) {
                     if (!result.ok || !result.body.success) {
                         throw new Error(result.body.message || 'Reject failed.');
                     }
-                    DashboardUtils.showAlert(result.body.message || 'Roster rejected.', 'success');
+                    DashboardRosterApprovals.showRosterAlert(result.body.message || 'Roster rejected.', 'success');
                     DashboardRosterApprovals.closeModal();
                     DashboardRosterApprovals.loadPendingRosterApprovals();
                 })
                 .catch(function (err) {
-                    DashboardUtils.showAlert(err.message || 'Reject failed.');
+                    DashboardRosterApprovals.showRosterAlert(err.message || 'Reject failed.', 'error');
                 })
                 .finally(function () {
                     if (rejectBtn) rejectBtn.disabled = false;
                 });
+        },
+
+        approveCurrent() {
+            if (!this.currentRequestId) return;
+
+            if (typeof Swal === 'undefined') {
+                if (!confirm('Approve this shift roster?')) return;
+                this.performApprove();
+                return;
+            }
+
+            Swal.fire({
+                title: 'Approve roster?',
+                text: 'This will assign the submitted shifts to the employee.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, approve',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    DashboardRosterApprovals.performApprove();
+                }
+            });
+        },
+
+        rejectCurrent() {
+            if (!this.currentRequestId) return;
+
+            if (typeof Swal === 'undefined') {
+                if (!confirm('Reject this shift roster request?')) return;
+                this.performReject('');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Reject roster?',
+                text: 'The submitted roster will not be applied.',
+                icon: 'warning',
+                input: 'textarea',
+                inputPlaceholder: 'Optional rejection reason...',
+                inputAttributes: {
+                    maxlength: 1000,
+                    autocapitalize: 'off',
+                    autocorrect: 'off'
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, reject',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true,
+                didOpen: function () {
+                    var input = Swal.getInput();
+                    if (input) {
+                        input.removeAttribute('readonly');
+                        input.removeAttribute('disabled');
+                        input.focus();
+                    }
+                }
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    DashboardRosterApprovals.performReject(result.value || '');
+                }
+            });
         },
 
         closeModal() {
@@ -1049,6 +1139,7 @@
         },
 
         initButtons() {
+            this.ensureSwalModalFocusFix();
             var approveBtn = document.getElementById('rosterApprovalApproveBtn');
             var rejectBtn = document.getElementById('rosterApprovalRejectBtn');
             if (approveBtn) approveBtn.addEventListener('click', function () { DashboardRosterApprovals.approveCurrent(); });

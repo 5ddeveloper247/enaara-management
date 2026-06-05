@@ -1,4 +1,4 @@
-<div class="modal fade" id="rosterApprovalModal" tabindex="-1" aria-labelledby="rosterApprovalModalLabel" aria-hidden="true">
+<div class="modal fade" id="rosterApprovalModal" tabindex="-1" aria-labelledby="rosterApprovalModalLabel" aria-hidden="true" data-bs-focus="false">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg roster-approval-modal">
             <div class="roster-approval-modal__header">
