@@ -408,6 +408,7 @@ class EmployeeService
             $employee = Employee::create([
                 'first_name'          => $data['first_name'],
                 'middle_name'         => $data['middle_name'] ?? null,
+                'roster_display_middle_name' => ! empty($data['roster_display_middle_name']),
                 'last_name'           => $data['last_name'],
                 'full_name'           => EmployeeGeneralInformationService::composeFullName(
                     $data['first_name'],

@@ -437,7 +437,7 @@ class ShiftRosterService
             'id' => 'employee:' . $e->id,
             'sourceType' => 'employee',
             'sourceId' => $e->id,
-            'name' => trim((string) ($e->first_name ?? '')),
+            'name' => $e->rosterDisplayName(),
             'employeeCode' => $e->employee_code ?? '',
             'designation' => trim((string) ($e->assignedDesignation?->name ?? $e->designation ?? '')),
             'roleLevel' => $e->role?->resolvedNumericLevel() ?? 999999,
@@ -769,7 +769,7 @@ class ShiftRosterService
         $outsourcedIds = collect($refs)->where('type', 'outsourced')->pluck('id')->all();
 
         $conflictingEntries = ShiftRosterEntry::query()
-            ->with(['employee:id,first_name', 'outsourcedEmployee:id,full_name'])
+            ->with(['employee:id,first_name,middle_name,full_name,roster_display_middle_name', 'outsourcedEmployee:id,full_name'])
             ->whereBetween('roster_date', [$startDate, $endDate])
             ->where(function ($query) use ($employeeIds, $outsourcedIds) {
                 if ($employeeIds !== []) {
@@ -787,7 +787,7 @@ class ShiftRosterService
         $names = [];
         foreach ($conflictingEntries as $entry) {
             $name = $entry->employee
-                ? trim((string) ($entry->employee->first_name ?? ''))
+                ? $entry->employee->rosterDisplayName()
                 : trim((string) ($entry->outsourcedEmployee?->full_name ?? ''));
             if ($name !== '') {
                 $names[] = $name;

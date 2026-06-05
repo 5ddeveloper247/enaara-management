@@ -529,13 +529,7 @@ class ShiftRosterExportReportService
     private function resolveExportEmployeeDisplayName(ShiftRosterEntry $entry): string
     {
         if ($entry->employee_id && $entry->employee) {
-            $firstName = trim((string) ($entry->employee->first_name ?? ''));
-
-            if ($firstName !== '') {
-                return $firstName;
-            }
-
-            return $this->firstTokenFromName($entry->employee->full_name);
+            return $entry->employee->rosterDisplayName();
         }
 
         if ($entry->outsourced_employee_id && $entry->outsourcedEmployee) {

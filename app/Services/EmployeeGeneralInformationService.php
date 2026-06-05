@@ -20,6 +20,7 @@ class EmployeeGeneralInformationService
         return [
             'first_name',
             'middle_name',
+            'roster_display_middle_name',
             'last_name',
             'father_name',
             'cnic',
@@ -55,7 +56,7 @@ class EmployeeGeneralInformationService
         $payload = [];
         foreach ($this->employeeAttributeNames() as $field) {
             if (array_key_exists($field, $data)) {
-                if ($field === 'is_ex_armed_force' || $field === 'is_father_deceased') {
+                if ($field === 'is_ex_armed_force' || $field === 'is_father_deceased' || $field === 'roster_display_middle_name') {
                     $payload[$field] = (bool) $data[$field];
                 } else {
                     $payload[$field] = $data[$field] === '' ? null : $data[$field];

@@ -18,7 +18,7 @@ class Employee extends Model
     protected $table = 'employees';
 
     protected $fillable = [
-        'full_name', 'first_name', 'middle_name', 'last_name', 'father_name', 'employee_code', 'tas_id', 'organization_id', 'sbu_id', 'department_id', 'department_ids',
+        'full_name', 'first_name', 'middle_name', 'roster_display_middle_name', 'last_name', 'father_name', 'employee_code', 'tas_id', 'organization_id', 'sbu_id', 'department_id', 'department_ids',
         'employee_type_id', 'employee_type', 'employment_type', 'designation', 'designation_id', 'grade', 'branch',
         'location', 'email', 'phone', 'cnic', 'cnic_issue_date', 'cnic_expiry', 'father_cnic', 'ntn', 'gender',
         'nationality', 'dob', 'domicile_district', 'domicile_province', 'city_of_birth',
@@ -55,6 +55,7 @@ class Employee extends Model
         'is_active'           => 'boolean',
         'is_ex_armed_force'   => 'boolean',
         'is_father_deceased'  => 'boolean',
+        'roster_display_middle_name' => 'boolean',
         'hybrid_days'         => 'array',
         'department_ids'      => 'array',
         'working_days'        => 'array',
@@ -120,6 +121,25 @@ class Employee extends Model
         }
 
         return $value !== null && $value !== '' ? (string) $value : null;
+    }
+
+    public function rosterDisplayName(): string
+    {
+        if ((bool) $this->roster_display_middle_name) {
+            $middle = trim((string) ($this->middle_name ?? ''));
+            if ($middle !== '') {
+                return $middle;
+            }
+        }
+
+        $first = trim((string) ($this->first_name ?? ''));
+        if ($first !== '') {
+            return $first;
+        }
+
+        $parts = preg_split('/\s+/u', trim((string) ($this->full_name ?? '')), 2, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return $parts[0] ?? 'Unknown';
     }
 
     public function getNameAttribute(): string

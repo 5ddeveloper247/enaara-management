@@ -162,6 +162,7 @@ class EmployeeStepRequest extends FormRequest
             $this->merge([
                 'is_ex_armed_force' => $this->boolean('is_ex_armed_force') ? 1 : 0,
                 'is_father_deceased' => $this->boolean('is_father_deceased') ? 1 : 0,
+                'roster_display_middle_name' => $this->boolean('roster_display_middle_name') ? 1 : 0,
             ]);
         }
         if ($this->has('designation_id') && $this->input('designation_id') !== null && $this->input('designation_id') !== '') {
@@ -367,6 +368,7 @@ class EmployeeStepRequest extends FormRequest
                 ],
                 'ntn' => ['nullable', 'string', 'regex:/^(?:[0-9]{7}|[0-9]{13})$/'],
                 'is_ex_armed_force' => ['nullable', 'boolean'],
+                'roster_display_middle_name' => ['nullable', 'boolean'],
                 'gender' => ['required', Rule::in(['Male', 'Female', 'Other'])],
                 'nationality' => ['required', 'string', 'min:2', 'max:100', 'regex:' . $this->localeNameTextRegex()],
                 'dob' => ['required', 'date', 'before:today'],

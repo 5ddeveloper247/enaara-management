@@ -212,20 +212,7 @@ class ShiftRosterExcelExportService
 
     private function resolveEmployeeFullName(Employee $employee): string
     {
-        $fullName = trim((string) ($employee->full_name ?? ''));
-        if ($fullName !== '') {
-            return $fullName;
-        }
-
-        $parts = array_filter([
-            trim((string) ($employee->first_name ?? '')),
-            trim((string) ($employee->middle_name ?? '')),
-            trim((string) ($employee->last_name ?? '')),
-        ], fn (string $part) => $part !== '');
-
-        $composed = trim(implode(' ', $parts));
-
-        return $composed !== '' ? $composed : 'Unknown';
+        return $employee->rosterDisplayName();
     }
 
     private function groupEntriesByAssigneeAndDate(Collection $entries): array

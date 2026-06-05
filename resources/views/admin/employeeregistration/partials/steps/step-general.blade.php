@@ -61,7 +61,14 @@
                                          value="{{ $employee->first_name ?? '' }}" placeholder="Enter first name">
                                  </div>
                                  <div class="col-md-4">
-                                     <label class="form-label">Middle Name</label>
+                                     <div class="d-flex align-items-center gap-2 mb-1">
+                                         <label class="form-label mb-0" for="giMiddleNameInput">Middle Name</label>
+                                         <input type="checkbox" class="form-check-input m-0 flex-shrink-0 gi-middle-name-checkbox"
+                                             id="giMiddleNameCheckbox" name="roster_display_middle_name" value="1"
+                                             aria-label="Show middle name on shift roster"
+                                             @checked(optional($employee)->roster_display_middle_name ?? false)
+                                             style="width: 14px; height: 14px;">
+                                     </div>
                                      <input type="text" name="middle_name" class="form-control" id="giMiddleNameInput"
                                          value="{{ $employee->middle_name ?? '' }}" placeholder="Enter middle name">
                                  </div>
