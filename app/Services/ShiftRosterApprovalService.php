@@ -11,6 +11,7 @@ use App\Models\ShiftRosterEntry;
 use App\Models\User;
 use App\Notifications\ShiftRosterApprovalRequiredNotification;
 use App\Notifications\ShiftRosterApprovedNotification;
+use App\Notifications\ShiftRosterRejectedNotification;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -142,6 +143,9 @@ class ShiftRosterApprovalService
                 'rejected_at' => now(),
                 'rejection_reason' => $reason,
             ]);
+
+            $request->refresh();
+            $this->notifyRequesterRejected($request);
 
             return $request->fresh();
         });
@@ -356,6 +360,20 @@ class ShiftRosterApprovalService
             ?? 'GM';
 
         $requester->notify(new ShiftRosterApprovedNotification($request, $approverName));
+    }
+
+    private function notifyRequesterRejected(ShiftRosterApprovalRequest $request): void
+    {
+        $requester = User::query()->find($request->requested_by);
+        if (! $requester) {
+            return;
+        }
+
+        $approverName = Auth::user()?->name
+            ?? $request->approverEmployee?->full_name
+            ?? 'GM';
+
+        $requester->notify(new ShiftRosterRejectedNotification($request, $approverName));
     }
 
     private function assertUserCanApprove(ShiftRosterApprovalRequest $request, ?int $userId): void
