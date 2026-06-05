@@ -277,7 +277,7 @@
         ws['!rows'][0] = { hpt: 24 };
 
         for (var r = 1; r < rowCount; r++) {
-            ws['!rows'][r] = { hpt: 38 };
+            ws['!rows'][r] = { hpt: 42 };
         }
 
         ws['!views'] = [{
@@ -288,6 +288,33 @@
             activeCell: 'D2',
             showGridLines: true
         }];
+    }
+
+    function applyCalendarCellStyles(ws, columns, rowCount) {
+        var dateColumnIndexes = columns
+            .map(function (col, idx) {
+                return col.key && col.key.indexOf('date_') === 0 ? idx : -1;
+            })
+            .filter(function (idx) {
+                return idx >= 0;
+            });
+
+        dateColumnIndexes.forEach(function (colIdx) {
+            for (var r = 1; r < rowCount; r++) {
+                var ref = XLSX.utils.encode_cell({ c: colIdx, r: r });
+                if (!ws[ref]) {
+                    continue;
+                }
+
+                ws[ref].s = {
+                    alignment: {
+                        vertical: 'top',
+                        horizontal: 'center',
+                        wrapText: true
+                    }
+                };
+            }
+        });
     }
 
     function excelFileName(prefix) {
@@ -315,6 +342,7 @@
 
         if (layout === 'calendar') {
             applyCalendarSheetLayout(ws, data);
+            applyCalendarCellStyles(ws, columns, data.length);
         }
 
         ws['!autofilter'] = {
