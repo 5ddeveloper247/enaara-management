@@ -17,7 +17,7 @@ class ShiftRosterExcelExportRequest extends FormRequest
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'month' => ['required', 'integer', 'min:1', 'max:12'],
             'employee_group' => ['required', 'in:internal,third_party'],
-            'include_deleted' => ['nullable', 'boolean'],
+            'department_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -39,7 +39,7 @@ class ShiftRosterExcelExportRequest extends FormRequest
             'year' => (int) $this->input('year'),
             'month' => (int) $this->input('month'),
             'employee_group' => $this->input('employee_group', 'internal'),
-            'include_deleted' => filter_var($this->input('include_deleted'), FILTER_VALIDATE_BOOLEAN),
+            'department_id' => $this->filled('department_id') ? (int) $this->input('department_id') : null,
         ]);
     }
 }

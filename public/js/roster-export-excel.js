@@ -49,7 +49,6 @@
         var year = ctx ? ctx.year : new Date().getFullYear();
         var month = ctx ? ctx.month : new Date().getMonth();
         var filter = ctx ? ctx.personnelFilter : 'internal';
-        var showDeleted = ctx ? !!ctx.showDeleted : false;
 
         var yearSelect = document.getElementById('rosterExportExcelYear');
         if (yearSelect) {
@@ -63,19 +62,85 @@
             groupSelect.value = filter === 'third_party' ? 'third_party' : 'internal';
         }
 
-        var deletedCb = document.getElementById('rosterExportExcelIncludeDeleted');
-        if (deletedCb) {
-            deletedCb.checked = showDeleted;
+        loadExcelDepartments();
+    }
+
+    function loadExcelDepartments() {
+        var select = document.getElementById('rosterExportExcelDepartment');
+        var groupSelect = document.getElementById('rosterExportExcelEmployeeGroup');
+        var departmentsUrl = window.rosterExportExcelDepartmentsUrl || '';
+
+        if (!select || !departmentsUrl) {
+            return;
         }
+
+        var employeeGroup = groupSelect ? groupSelect.value : 'internal';
+        var previousValue = select.value;
+
+        select.innerHTML = '<option value="">All departments</option>';
+        select.disabled = true;
+
+        fetch(departmentsUrl + '?employee_group=' + encodeURIComponent(employeeGroup), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+            .then(function (response) {
+                return response.text().then(function (bodyText) {
+                    return {
+                        ok: response.ok,
+                        bodyText: bodyText
+                    };
+                });
+            })
+            .then(function (result) {
+                var body = {};
+                try {
+                    body = JSON.parse(result.bodyText || '{}');
+                } catch (e) {
+                    body = {};
+                }
+
+                if (!result.ok || !body.success) {
+                    throw new Error(parseErrorMessage(result.bodyText, 'Could not load departments.'));
+                }
+
+                var departments = Array.isArray(body.departments) ? body.departments : [];
+                departments.forEach(function (department) {
+                    var option = document.createElement('option');
+                    option.value = String(department.id);
+                    option.textContent = department.name || ('Department ' + department.id);
+                    select.appendChild(option);
+                });
+
+                if (previousValue && select.querySelector('option[value="' + previousValue + '"]')) {
+                    select.value = previousValue;
+                }
+            })
+            .catch(function () {
+                // Keep "All departments" if the LOV request fails.
+            })
+            .finally(function () {
+                select.disabled = false;
+            });
     }
 
     function collectExcelExportOptions() {
-        return {
+        var departmentValue = document.getElementById('rosterExportExcelDepartment')?.value || '';
+        var options = {
             year: parseInt(document.getElementById('rosterExportExcelYear')?.value || '0', 10),
             month: selectedExcelMonth + 1,
-            employee_group: document.getElementById('rosterExportExcelEmployeeGroup')?.value || 'internal',
-            include_deleted: !!document.getElementById('rosterExportExcelIncludeDeleted')?.checked
+            employee_group: document.getElementById('rosterExportExcelEmployeeGroup')?.value || 'internal'
         };
+
+        if (departmentValue) {
+            options.department_id = parseInt(departmentValue, 10);
+        }
+
+        return options;
     }
 
     function openExcelExportModal() {
@@ -441,6 +506,13 @@
                 setSelectedExcelMonth(parseInt(this.getAttribute('data-month'), 10));
             });
         });
+
+        var groupSelect = document.getElementById('rosterExportExcelEmployeeGroup');
+        if (groupSelect) {
+            groupSelect.addEventListener('change', function () {
+                loadExcelDepartments();
+            });
+        }
 
         var submitBtn = document.getElementById('rosterExportExcelSubmitBtn');
         if (submitBtn) {

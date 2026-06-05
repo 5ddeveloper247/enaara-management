@@ -23,7 +23,7 @@
                     </div>
                 </section>
 
-                <div class="row g-3 mb-4">
+                <div class="row g-3 mb-0">
                     <div class="col-sm-6">
                         <label for="rosterExportExcelYear" class="roster-export-excel-field-label">Year</label>
                         <select class="form-select roster-export-excel-select" id="rosterExportExcelYear" name="year"></select>
@@ -35,17 +35,13 @@
                             <option value="third_party">Third-party employees</option>
                         </select>
                     </div>
-                </div>
-
-                <section class="roster-export-excel-section mb-0" aria-labelledby="rosterExportExcelIncludeLabel">
-                    <p class="roster-export-excel-section-label" id="rosterExportExcelIncludeLabel">Include in export</p>
-                    <div class="roster-export-excel-include-list">
-                        <div class="form-check roster-export-excel-include-item mb-0">
-                            <input class="form-check-input" type="checkbox" id="rosterExportExcelIncludeDeleted" value="1">
-                            <label class="form-check-label" for="rosterExportExcelIncludeDeleted">Show deleted shifts</label>
-                        </div>
+                    <div class="col-12">
+                        <label for="rosterExportExcelDepartment" class="roster-export-excel-field-label">Department</label>
+                        <select class="form-select roster-export-excel-select" id="rosterExportExcelDepartment" name="department_id">
+                            <option value="">All departments</option>
+                        </select>
                     </div>
-                </section>
+                </div>
             </div>
             <div class="modal-footer roster-export-excel-footer border-0">
                 <button type="button" class="btn btn-outline-secondary rounded-2" data-bs-dismiss="modal">Cancel</button>

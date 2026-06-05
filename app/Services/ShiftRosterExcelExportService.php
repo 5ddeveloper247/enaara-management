@@ -2,14 +2,56 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftRosterEntry;
+use App\Models\ThirdParty;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class ShiftRosterExcelExportService
 {
+    public function listDepartments(string $employeeGroup): array
+    {
+        if ($employeeGroup === 'third_party') {
+            $companyIds = OutsourcedEmployee::query()
+                ->whereNull('deleted_at')
+                ->whereNotNull('contractor_company_id')
+                ->distinct()
+                ->pluck('contractor_company_id');
+
+            return ThirdParty::query()
+                ->whereIn('id', $companyIds)
+                ->orderBy('third_party_name')
+                ->get(['id', 'third_party_name'])
+                ->map(fn (ThirdParty $company) => [
+                    'id' => $company->id,
+                    'name' => (string) $company->third_party_name,
+                ])
+                ->values()
+                ->all();
+        }
+
+        $departmentIds = Employee::query()
+            ->where('is_active', 1)
+            ->shiftBasedWorkArrangement()
+            ->whereNotNull('department_id')
+            ->distinct()
+            ->pluck('department_id');
+
+        return Department::query()
+            ->whereIn('id', $departmentIds)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Department $department) => [
+                'id' => $department->id,
+                'name' => (string) $department->name,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function buildPayload(array $options): array
     {
         $context = $this->resolveContext($options);
@@ -19,7 +61,7 @@ class ShiftRosterExcelExportService
 
         $entries = $this->fetchEntries($context);
         $entriesByAssigneeDate = $this->groupEntriesByAssigneeAndDate($entries);
-        $assignees = $this->fetchAssignees($context['employee_group']);
+        $assignees = $this->fetchAssignees($context);
 
         $rows = $assignees
             ->sortBy([
@@ -111,19 +153,26 @@ class ShiftRosterExcelExportService
 
         return [
             'employee_group' => $options['employee_group'] ?? 'internal',
-            'include_deleted' => (bool) ($options['include_deleted'] ?? false),
+            'department_id' => ! empty($options['department_id']) ? (int) $options['department_id'] : null,
             'date_range' => [$period->toDateString(), $periodEnd->toDateString()],
             'period_label' => $period->format('F Y'),
             'period_slug' => $period->format('F-Y'),
         ];
     }
 
-    private function fetchAssignees(string $employeeGroup): Collection
+    private function fetchAssignees(array $context): Collection
     {
-        if ($employeeGroup === 'third_party') {
-            return OutsourcedEmployee::with('contractorCompany')
-                ->whereNull('deleted_at')
-                ->get()
+        $departmentId = $context['department_id'] ?? null;
+
+        if ($context['employee_group'] === 'third_party') {
+            $query = OutsourcedEmployee::with('contractorCompany')
+                ->whereNull('deleted_at');
+
+            if ($departmentId) {
+                $query->where('contractor_company_id', $departmentId);
+            }
+
+            return $query->get()
                 ->map(function (OutsourcedEmployee $employee) {
                     $department = $employee->contractorCompany?->third_party_name ?? 'Unassigned';
 
@@ -139,10 +188,15 @@ class ShiftRosterExcelExportService
                 });
         }
 
-        return Employee::with('department')
+        $query = Employee::with('department')
             ->where('is_active', 1)
-            ->shiftBasedWorkArrangement()
-            ->get()
+            ->shiftBasedWorkArrangement();
+
+        if ($departmentId) {
+            $query->where('department_id', $departmentId);
+        }
+
+        return $query->get()
             ->map(function (Employee $employee) {
                 $department = $employee->department?->name ?? 'Unassigned';
 
@@ -216,42 +270,35 @@ class ShiftRosterExcelExportService
 
         if ($context['employee_group'] === 'third_party') {
             $query->whereNotNull('outsourced_employee_id');
+
+            if (! empty($context['department_id'])) {
+                $query->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
+                    $employeeQuery->where('contractor_company_id', $context['department_id']);
+                });
+            }
         } else {
             $query->whereNotNull('employee_id');
-        }
 
-        $entries = $query->get();
-
-        if ($context['include_deleted']) {
-            $trashedQuery = ShiftRosterEntry::onlyTrashed()
-                ->with($relations)
-                ->whereBetween('roster_date', $context['date_range'])
-                ->orderBy('roster_date')
-                ->orderBy('id');
-
-            if ($context['employee_group'] === 'third_party') {
-                $trashedQuery->whereNotNull('outsourced_employee_id');
-            } else {
-                $trashedQuery->whereNotNull('employee_id');
+            if (! empty($context['department_id'])) {
+                $query->whereHas('employee', function ($employeeQuery) use ($context) {
+                    $employeeQuery->where('department_id', $context['department_id']);
+                });
             }
-
-            $entries = $entries->merge($trashedQuery->get())->unique('id')->values();
         }
 
-        return $entries;
+        return $query->get();
     }
 
     private function formatCalendarCell(ShiftRosterEntry $entry): string
     {
         $status = strtolower((string) $entry->status);
-        $prefix = $entry->trashed() ? '[Deleted] ' : '';
 
         if ($status === 'off') {
-            return $prefix . 'OFF';
+            return 'OFF';
         }
 
         if ($status === 'cancelled') {
-            return $prefix . 'Cancelled';
+            return 'Cancelled';
         }
 
         $isOffDay = false;
@@ -281,10 +328,10 @@ class ShiftRosterExcelExportService
         $end = $this->formatDisplayTime($endRaw);
 
         if ($start && $end) {
-            return $prefix . $displayShiftName . "\n" . $start . ' - ' . $end;
+            return $displayShiftName . "\n" . $start . ' - ' . $end;
         }
 
-        return $prefix . $displayShiftName;
+        return $displayShiftName;
     }
 
     private function formatShiftTime($value): string

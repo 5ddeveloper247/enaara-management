@@ -294,6 +294,8 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/shift-roster/floor-options', [ShiftRosterController::class, 'floorOptions'])->name('admin.shift-roster.floor-options');
     Route::post('/shift-roster/bulk-floor-options', [ShiftRosterController::class, 'bulkFloorOptions'])->name('admin.shift-roster.bulk-floor-options');
     Route::post('/shift-roster/export-pdf', [ShiftRosterController::class, 'exportPdf'])->name('admin.shift-roster.export-pdf');
+    Route::get('/shift-roster/export-excel/departments', [ShiftRosterExcelExportController::class, 'departmentOptions'])
+        ->name('admin.shift-roster.export-excel.departments');
     Route::post('/shift-roster/export-excel', ShiftRosterExcelExportController::class)->name('admin.shift-roster.export-excel');
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
     Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
