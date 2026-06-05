@@ -10,6 +10,7 @@
     <!-- Shift Planner CSS -->
     <link href="{{ asset('css/shift-planner.css') }}" rel="stylesheet">
     <link href="{{ asset('css/roster-export-pdf.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/roster-export-excel.css') }}" rel="stylesheet">
 
     <style>
         .btn {
@@ -102,6 +103,9 @@
                         <button type="button" class="btn btn-outline-secondary me-2" id="rosterExportPdfBtn">
                             <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
                         </button>
+                        <button type="button" class="btn btn-outline-secondary me-2" id="rosterExportExcelBtn" style="display: none;">
+                            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export Excel
+                        </button>
                         <button type="button" class="btn btn-primary bg-main border-0" id="addShiftBtn"
                             style="display: none;">
                             <i class="bi bi-plus-circle me-1"></i>Add New Shift
@@ -153,6 +157,7 @@
     @include('admin.shift-planner.bulk_assign_canvas')
 
     @include('admin.shift-planner.roster_export_pdf_modal')
+    @include('admin.shift-planner.roster_export_excel_modal')
 @endsection
 
 @push('scripts')
@@ -172,6 +177,7 @@
     </script>
     <script src="{{ asset('js/roster-render.js') }}"></script>
     <script src="{{ asset('js/roster-export-pdf.js') }}"></script>
+    @include('admin.shift-planner.roster_export_excel_scripts')
 
     <script>
         $(document).ready(function() {

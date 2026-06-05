@@ -1,0 +1,93 @@
+.roster-export-excel-dialog {
+    max-width: 680px;
+}
+
+.roster-export-excel-content {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.roster-export-excel-header {
+    background: var(--main-color);
+    color: #fff;
+    padding: 1rem 1.25rem;
+}
+
+.roster-export-excel-header-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.roster-export-excel-body {
+    padding: 1.25rem 1.25rem 0.5rem;
+    background: #fff;
+}
+
+.roster-export-excel-footer {
+    padding: 0.75rem 1.25rem 1.25rem;
+    background: #fff;
+}
+
+.roster-export-excel-section-label,
+.roster-export-excel-field-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 0.65rem;
+}
+
+.roster-export-excel-field-label {
+    margin-bottom: 0.4rem;
+}
+
+.roster-export-excel-select {
+    border-radius: 10px;
+    font-size: 0.9rem;
+    border-color: #dee2e6;
+}
+
+.roster-export-excel-select:focus {
+    border-color: var(--main-color);
+    box-shadow: 0 0 0 0.2rem rgba(1, 36, 69, 0.12);
+}
+
+.roster-export-excel-month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.roster-export-excel-month-btn {
+    border: 1px solid #e8e4dc;
+    background: #f5f1e8;
+    color: var(--dark-color);
+    border-radius: 10px;
+    padding: 0.55rem 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.roster-export-excel-month-btn:hover {
+    border-color: var(--main-color);
+    color: var(--main-color);
+}
+
+.roster-export-excel-month-btn.is-active {
+    background: var(--main-color);
+    border-color: var(--main-color);
+    color: #fff;
+}
+
+.roster-export-excel-include-item .form-check-label {
+    font-size: 0.9rem;
+}

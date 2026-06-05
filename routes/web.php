@@ -30,6 +30,7 @@ use App\Http\Controllers\SbuController;
 use App\Http\Controllers\SbuFloorsController;
 use App\Http\Controllers\ShiftPlannerController;
 use App\Http\Controllers\ShiftRosterController;
+use App\Http\Controllers\ShiftRosterExcelExportController;
 use App\Http\Controllers\ShiftTypesController;
 use App\Http\Controllers\ThirdPartyController;
 use App\Http\Controllers\UserController;
@@ -293,6 +294,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/shift-roster/floor-options', [ShiftRosterController::class, 'floorOptions'])->name('admin.shift-roster.floor-options');
     Route::post('/shift-roster/bulk-floor-options', [ShiftRosterController::class, 'bulkFloorOptions'])->name('admin.shift-roster.bulk-floor-options');
     Route::post('/shift-roster/export-pdf', [ShiftRosterController::class, 'exportPdf'])->name('admin.shift-roster.export-pdf');
+    Route::post('/shift-roster/export-excel', ShiftRosterExcelExportController::class)->name('admin.shift-roster.export-excel');
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
     Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
         ->name('admin.shift-roster.bulk-assign');
