@@ -3,25 +3,10 @@
 
     var selectedExcelMonth = new Date().getMonth();
 
-    var ROSTER_EXCEL_COLUMNS = [
+    var ROSTER_EXCEL_FALLBACK_COLUMNS = [
         { header: 'Employee Name', key: 'employee_name' },
         { header: 'Employee Code', key: 'employee_code' },
-        { header: 'Employee Type', key: 'employee_type' },
-        { header: 'Department', key: 'department' },
-        { header: 'Roster Date', key: 'roster_date' },
-        { header: 'Day', key: 'day' },
-        { header: 'Status', key: 'status' },
-        { header: 'Shift Name', key: 'shift_name' },
-        { header: 'Shift Type', key: 'shift_type' },
-        { header: 'Start Time', key: 'start_time' },
-        { header: 'End Time', key: 'end_time' },
-        { header: 'Hours', key: 'hours' },
-        { header: 'Floor', key: 'floor' },
-        { header: 'Location', key: 'location' },
-        { header: 'Notes', key: 'notes' },
-        { header: 'Custom Time', key: 'custom_time' },
-        { header: 'Compensatory', key: 'compensatory' },
-        { header: 'Deleted', key: 'deleted' }
+        { header: 'Department', key: 'department' }
     ];
 
     function csrfToken() {
@@ -126,13 +111,6 @@
     }
 
     function formatCellValue(row, col) {
-        if (col.key === 'hours') {
-            var hours = row[col.key];
-            if (hours === null || hours === undefined || hours === '') {
-                return '';
-            }
-            return String(hours);
-        }
         return normalizeValue(row[col.key], '');
     }
 
@@ -148,19 +126,103 @@
         return [header].concat(body);
     }
 
-    function computeColumnWidths(data, columns) {
+    function cellDisplayWidth(cell) {
+        var text = String(cell === null || cell === undefined ? '' : cell);
+        var lines = text.split('\n');
+        var max = 0;
+
+        lines.forEach(function (line) {
+            if (line.length > max) {
+                max = line.length;
+            }
+        });
+
+        return max;
+    }
+
+    function calendarColumnMinWidth(col) {
+        if (col.key === 'employee_name') {
+            return 28;
+        }
+        if (col.key === 'employee_code') {
+            return 14;
+        }
+        if (col.key === 'department') {
+            return 34;
+        }
+        if (col.key && col.key.indexOf('date_') === 0) {
+            return 18;
+        }
+
+        return 18;
+    }
+
+    function calendarColumnMaxWidth(col) {
+        if (col.key === 'employee_name') {
+            return 48;
+        }
+        if (col.key === 'employee_code') {
+            return 22;
+        }
+        if (col.key === 'department') {
+            return 52;
+        }
+        if (col.key && col.key.indexOf('date_') === 0) {
+            return 24;
+        }
+
+        return 80;
+    }
+
+    function computeColumnWidths(data, columns, layout) {
+        var isCalendar = layout === 'calendar';
         var widths = columns.map(function (col) {
+            if (isCalendar) {
+                return { wch: calendarColumnMinWidth(col) };
+            }
+
             return { wch: Math.max(18, col.header.length + 6) };
         });
+
         data.forEach(function (row) {
             row.forEach(function (cell, idx) {
-                var len = String(cell === null || cell === undefined ? '' : cell).length;
-                if (len + 6 > widths[idx].wch) {
-                    widths[idx].wch = Math.min(80, len + 6);
+                var col = columns[idx];
+                var len = isCalendar ? cellDisplayWidth(cell) : String(cell === null || cell === undefined ? '' : cell).length;
+                var padding = isCalendar ? 2 : 6;
+                var maxWidth = isCalendar ? calendarColumnMaxWidth(col) : 80;
+                var headerLen = col && col.header ? col.header.length : 0;
+
+                if (headerLen + padding > widths[idx].wch) {
+                    widths[idx].wch = Math.min(maxWidth, headerLen + padding);
+                }
+
+                if (len + padding > widths[idx].wch) {
+                    widths[idx].wch = Math.min(maxWidth, len + padding);
                 }
             });
         });
+
         return widths;
+    }
+
+    function applyCalendarSheetLayout(ws, data) {
+        var rowCount = data.length;
+
+        ws['!rows'] = [];
+        ws['!rows'][0] = { hpt: 24 };
+
+        for (var r = 1; r < rowCount; r++) {
+            ws['!rows'][r] = { hpt: 38 };
+        }
+
+        ws['!views'] = [{
+            state: 'frozen',
+            xSplit: 3,
+            ySplit: 1,
+            topLeftCell: 'D2',
+            activeCell: 'D2',
+            showGridLines: true
+        }];
     }
 
     function excelFileName(prefix) {
@@ -180,10 +242,16 @@
 
         var columns = Array.isArray(payload.columns) && payload.columns.length
             ? payload.columns
-            : ROSTER_EXCEL_COLUMNS;
+            : ROSTER_EXCEL_FALLBACK_COLUMNS;
+        var layout = payload.layout || 'calendar';
         var data = buildSheetData(rows, columns);
         var ws = XLSX.utils.aoa_to_sheet(data);
-        ws['!cols'] = computeColumnWidths(data, columns);
+        ws['!cols'] = computeColumnWidths(data, columns, layout);
+
+        if (layout === 'calendar') {
+            applyCalendarSheetLayout(ws, data);
+        }
+
         ws['!autofilter'] = {
             ref: XLSX.utils.encode_range({
                 s: { c: 0, r: 0 },

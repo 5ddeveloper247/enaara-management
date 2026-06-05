@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Employee;
+use App\Models\OutsourcedEmployee;
 use App\Models\ShiftRosterEntry;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -11,11 +13,33 @@ class ShiftRosterExcelExportService
     public function buildPayload(array $options): array
     {
         $context = $this->resolveContext($options);
-        $columns = $this->columns();
+        $days = $this->buildCalendarDays($context['date_range']);
+        $columns = $this->buildCalendarColumns($days);
         $keys = array_column($columns, 'key');
 
-        $rows = $this->collectRows($context)
-            ->map(function (array $row) use ($keys) {
+        $entries = $this->fetchEntries($context);
+        $entriesByAssigneeDate = $this->groupEntriesByAssigneeAndDate($entries);
+        $assignees = $this->fetchAssignees($context['employee_group']);
+
+        $rows = $assignees
+            ->sortBy([
+                ['department_sort', 'asc'],
+                ['employee_name', 'asc'],
+            ])
+            ->map(function (array $assignee) use ($days, $entriesByAssigneeDate, $keys) {
+                $row = [
+                    'employee_name' => $assignee['employee_name'],
+                    'employee_code' => $assignee['employee_code'],
+                    'department' => $assignee['department'],
+                ];
+
+                foreach ($days as $day) {
+                    $dateKey = $day['date_key'];
+                    $columnKey = $this->dateColumnKey($dateKey);
+                    $entry = $entriesByAssigneeDate[$assignee['assignee_key']][$dateKey] ?? null;
+                    $row[$columnKey] = $entry ? $this->formatCalendarCell($entry) : '';
+                }
+
                 $payload = [];
                 foreach ($keys as $key) {
                     $payload[$key] = $row[$key] ?? '';
@@ -29,6 +53,7 @@ class ShiftRosterExcelExportService
         $employeeGroup = $options['employee_group'] ?? 'internal';
 
         return [
+            'layout' => 'calendar',
             'columns' => $columns,
             'rows' => $rows,
             'sheet_name' => 'Shift Roster',
@@ -37,28 +62,44 @@ class ShiftRosterExcelExportService
         ];
     }
 
-    private function columns(): array
+    private function buildCalendarColumns(array $days): array
     {
-        return [
+        $columns = [
             ['header' => 'Employee Name', 'key' => 'employee_name'],
             ['header' => 'Employee Code', 'key' => 'employee_code'],
-            ['header' => 'Employee Type', 'key' => 'employee_type'],
             ['header' => 'Department', 'key' => 'department'],
-            ['header' => 'Roster Date', 'key' => 'roster_date'],
-            ['header' => 'Day', 'key' => 'day'],
-            ['header' => 'Status', 'key' => 'status'],
-            ['header' => 'Shift Name', 'key' => 'shift_name'],
-            ['header' => 'Shift Type', 'key' => 'shift_type'],
-            ['header' => 'Start Time', 'key' => 'start_time'],
-            ['header' => 'End Time', 'key' => 'end_time'],
-            ['header' => 'Hours', 'key' => 'hours'],
-            ['header' => 'Floor', 'key' => 'floor'],
-            ['header' => 'Location', 'key' => 'location'],
-            ['header' => 'Notes', 'key' => 'notes'],
-            ['header' => 'Custom Time', 'key' => 'custom_time'],
-            ['header' => 'Compensatory', 'key' => 'compensatory'],
-            ['header' => 'Deleted', 'key' => 'deleted'],
         ];
+
+        foreach ($days as $day) {
+            $columns[] = [
+                'header' => $day['day'] . ' ' . $day['dow'],
+                'key' => $this->dateColumnKey($day['date_key']),
+            ];
+        }
+
+        return $columns;
+    }
+
+    private function buildCalendarDays(array $dateRange): array
+    {
+        $start = Carbon::parse($dateRange[0])->startOfDay();
+        $end = Carbon::parse($dateRange[1])->startOfDay();
+        $days = [];
+
+        for ($date = $start->copy(); $date->lessThanOrEqualTo($end); $date->addDay()) {
+            $days[] = [
+                'day' => $date->format('d'),
+                'dow' => $date->format('D'),
+                'date_key' => $date->format('Y-m-d'),
+            ];
+        }
+
+        return $days;
+    }
+
+    private function dateColumnKey(string $dateKey): string
+    {
+        return 'date_' . str_replace('-', '_', $dateKey);
     }
 
     private function resolveContext(array $options): array
@@ -77,17 +118,87 @@ class ShiftRosterExcelExportService
         ];
     }
 
-    private function collectRows(array $context): Collection
+    private function fetchAssignees(string $employeeGroup): Collection
     {
-        return $this->fetchEntries($context)
-            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntry($entry))
-            ->sortBy([
-                ['roster_date_sort', 'asc'],
-                ['department_sort', 'asc'],
-                ['employee_name', 'asc'],
-                ['entry_id', 'asc'],
-            ])
-            ->values();
+        if ($employeeGroup === 'third_party') {
+            return OutsourcedEmployee::with('contractorCompany')
+                ->whereNull('deleted_at')
+                ->get()
+                ->map(function (OutsourcedEmployee $employee) {
+                    $department = $employee->contractorCompany?->third_party_name ?? 'Unassigned';
+
+                    return [
+                        'assignee_key' => 'outsourced:' . $employee->id,
+                        'employee_name' => trim((string) ($employee->full_name ?? '')) ?: 'Unknown',
+                        'employee_code' => $employee->biometric_id
+                            ? (string) $employee->biometric_id
+                            : ('OSP-' . $employee->id),
+                        'department' => $department,
+                        'department_sort' => mb_strtolower($department),
+                    ];
+                });
+        }
+
+        return Employee::with('department')
+            ->where('is_active', 1)
+            ->shiftBasedWorkArrangement()
+            ->get()
+            ->map(function (Employee $employee) {
+                $department = $employee->department?->name ?? 'Unassigned';
+
+                return [
+                    'assignee_key' => 'employee:' . $employee->id,
+                    'employee_name' => $this->resolveEmployeeFullName($employee),
+                    'employee_code' => trim((string) ($employee->employee_code ?? '')),
+                    'department' => $department,
+                    'department_sort' => mb_strtolower($department),
+                ];
+            });
+    }
+
+    private function resolveEmployeeFullName(Employee $employee): string
+    {
+        $fullName = trim((string) ($employee->full_name ?? ''));
+        if ($fullName !== '') {
+            return $fullName;
+        }
+
+        $parts = array_filter([
+            trim((string) ($employee->first_name ?? '')),
+            trim((string) ($employee->middle_name ?? '')),
+            trim((string) ($employee->last_name ?? '')),
+        ], fn (string $part) => $part !== '');
+
+        $composed = trim(implode(' ', $parts));
+
+        return $composed !== '' ? $composed : 'Unknown';
+    }
+
+    private function groupEntriesByAssigneeAndDate(Collection $entries): array
+    {
+        $grouped = [];
+
+        foreach ($entries as $entry) {
+            $assigneeKey = $this->assigneeKey($entry);
+            $dateKey = $entry->roster_date->format('Y-m-d');
+
+            if (! isset($grouped[$assigneeKey])) {
+                $grouped[$assigneeKey] = [];
+            }
+
+            $grouped[$assigneeKey][$dateKey] = $entry;
+        }
+
+        return $grouped;
+    }
+
+    private function assigneeKey(ShiftRosterEntry $entry): string
+    {
+        if ($entry->employee_id) {
+            return 'employee:' . $entry->employee_id;
+        }
+
+        return 'outsourced:' . $entry->outsourced_employee_id;
     }
 
     private function fetchEntries(array $context): Collection
@@ -130,13 +241,24 @@ class ShiftRosterExcelExportService
         return $entries;
     }
 
-    private function mapEntry(ShiftRosterEntry $entry): array
+    private function formatCalendarCell(ShiftRosterEntry $entry): string
     {
-        $isOffDay = strtolower((string) $entry->status) === 'off';
+        $status = strtolower((string) $entry->status);
+        $prefix = $entry->trashed() ? '[Deleted] ' : '';
+
+        if ($status === 'off') {
+            return $prefix . 'OFF';
+        }
+
+        if ($status === 'cancelled') {
+            return $prefix . 'Cancelled';
+        }
+
+        $isOffDay = false;
         $shiftNameRaw = strtolower($entry->shift?->name ?? '');
         $isCustomTime = (bool) $entry->is_custom_time;
-        $startRaw = $isOffDay ? null : ($entry->start_time ?? $entry->shift?->start_time);
-        $endRaw = $isOffDay ? null : ($entry->end_time ?? $entry->shift?->end_time);
+        $startRaw = $entry->start_time ?? $entry->shift?->start_time;
+        $endRaw = $entry->end_time ?? $entry->shift?->end_time;
         $shiftType = $this->resolveShiftType(
             $startRaw ? $this->formatShiftTime($startRaw) : null,
             $isOffDay,
@@ -144,99 +266,25 @@ class ShiftRosterExcelExportService
             $shiftNameRaw
         );
 
-        $departmentName = $this->resolveDepartmentName($entry);
-        $rosterDate = $entry->roster_date->copy();
-        $status = strtolower((string) $entry->status);
-
         $displayShiftName = '';
-        if ($isOffDay) {
-            $displayShiftName = 'Off';
-        } elseif ($entry->shift?->name) {
+        if ($entry->shift?->name) {
             $displayShiftName = (string) $entry->shift->name;
         } elseif ($isCustomTime) {
             $displayShiftName = 'Custom';
+        } elseif ($shiftType !== 'general') {
+            $displayShiftName = ucfirst($shiftType);
+        } else {
+            $displayShiftName = 'Shift';
         }
 
-        $shiftTypeLabel = match ($shiftType) {
-            'off' => 'Off',
-            'morning', 'evening', 'night' => ucfirst($shiftType),
-            default => $entry->shift?->name ? 'General' : ($isCustomTime ? 'Custom' : ''),
-        };
+        $start = $this->formatDisplayTime($startRaw);
+        $end = $this->formatDisplayTime($endRaw);
 
-        return [
-            'entry_id' => $entry->id,
-            'employee_name' => $this->resolveEmployeeName($entry),
-            'employee_code' => $this->resolveEmployeeCode($entry),
-            'employee_type' => $entry->employee_id ? 'Internal' : 'Third-party',
-            'department' => $departmentName,
-            'department_sort' => mb_strtolower($departmentName),
-            'roster_date' => $rosterDate->format('d M Y'),
-            'roster_date_sort' => $rosterDate->format('Y-m-d'),
-            'day' => $rosterDate->format('D'),
-            'status' => ucfirst($status),
-            'shift_name' => $displayShiftName,
-            'shift_type' => $shiftTypeLabel,
-            'start_time' => $this->formatDisplayTime($startRaw) ?? '',
-            'end_time' => $this->formatDisplayTime($endRaw) ?? '',
-            'hours' => $isOffDay ? 0 : $this->calculateEntryHours($startRaw, $endRaw),
-            'floor' => trim((string) ($entry->floor ?? '')),
-            'location' => trim((string) ($entry->location_text ?? '')),
-            'notes' => trim((string) ($entry->notes ?? '')),
-            'custom_time' => $isCustomTime ? 'Yes' : 'No',
-            'compensatory' => $entry->is_compensatory_earned ? 'Yes' : 'No',
-            'deleted' => $entry->trashed() ? 'Yes' : 'No',
-        ];
-    }
-
-    private function resolveEmployeeName(ShiftRosterEntry $entry): string
-    {
-        if ($entry->employee_id && $entry->employee) {
-            $employee = $entry->employee;
-            $fullName = trim((string) ($employee->full_name ?? ''));
-            if ($fullName !== '') {
-                return $fullName;
-            }
-
-            $parts = array_filter([
-                trim((string) ($employee->first_name ?? '')),
-                trim((string) ($employee->middle_name ?? '')),
-                trim((string) ($employee->last_name ?? '')),
-            ], fn (string $part) => $part !== '');
-
-            $composed = trim(implode(' ', $parts));
-
-            return $composed !== '' ? $composed : 'Unknown';
+        if ($start && $end) {
+            return $prefix . $displayShiftName . "\n" . $start . ' - ' . $end;
         }
 
-        if ($entry->outsourced_employee_id && $entry->outsourcedEmployee) {
-            return trim((string) ($entry->outsourcedEmployee->full_name ?? '')) ?: 'Unknown';
-        }
-
-        return 'Unknown';
-    }
-
-    private function resolveEmployeeCode(ShiftRosterEntry $entry): string
-    {
-        if ($entry->employee_id && $entry->employee) {
-            return trim((string) ($entry->employee->employee_code ?? ''));
-        }
-
-        if ($entry->outsourced_employee_id && $entry->outsourcedEmployee) {
-            $biometricId = $entry->outsourcedEmployee->biometric_id;
-
-            return $biometricId ? (string) $biometricId : ('OSP-' . $entry->outsourced_employee_id);
-        }
-
-        return '';
-    }
-
-    private function resolveDepartmentName(ShiftRosterEntry $entry): string
-    {
-        if ($entry->employee_id) {
-            return $entry->employee?->department?->name ?? 'Unassigned';
-        }
-
-        return $entry->outsourcedEmployee?->contractorCompany?->third_party_name ?? 'Unassigned';
+        return $prefix . $displayShiftName;
     }
 
     private function formatShiftTime($value): string
@@ -255,24 +303,6 @@ class ShiftRosterExcelExportService
         }
 
         return Carbon::parse($value)->format('h:i A');
-    }
-
-    private function calculateEntryHours($startTime, $endTime): int
-    {
-        if (! $startTime || ! $endTime) {
-            return 0;
-        }
-
-        $start = Carbon::parse($startTime);
-        $end = Carbon::parse($endTime);
-
-        if ($end->lessThanOrEqualTo($start)) {
-            $end->addDay();
-        }
-
-        $minutes = $start->diffInMinutes($end);
-
-        return max(1, (int) round($minutes / 60));
     }
 
     private function resolveShiftType(?string $startTime, bool $isOffDay, bool $isCustomTime, string $shiftName = ''): string
