@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Department;
+use App\Models\ShiftRosterApprovalRequest;
 use App\Models\ShiftRosterEntry;
 use App\Models\ThirdParty;
 use Carbon\Carbon;
@@ -279,6 +280,75 @@ class ShiftRosterExportReportService
             'include_shift_times' => $context['include_shift_times'],
             'include_department_grouping' => $context['include_department_grouping'],
             'include_deleted' => $context['include_deleted'],
+            'signatures' => $this->buildSignatureBlock($context),
+        ];
+    }
+
+    private function buildSignatureBlock(array $context): array
+    {
+        $query = ShiftRosterApprovalRequest::query()
+            ->with([
+                'requestedByUser.employee.assignedDesignation',
+                'requestedByUser.employee.role',
+                'approverEmployee.role',
+                'approverEmployee.assignedDesignation',
+            ])
+            ->where('approval_status', 'approved')
+            ->whereDate('start_date', '<=', $context['date_range'][1])
+            ->whereDate('end_date', '>=', $context['date_range'][0]);
+
+        if ($context['employee_group'] === 'third_party') {
+            $query->whereNotNull('outsourced_employee_id');
+
+            if (! empty($context['department_id'])) {
+                $query->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
+                    $employeeQuery->where('contractor_company_id', $context['department_id']);
+                });
+            }
+        } else {
+            $query->whereNotNull('employee_id');
+
+            if (! empty($context['department_id'])) {
+                $query->whereHas('employee', function ($employeeQuery) use ($context) {
+                    $employeeQuery->where('department_id', $context['department_id']);
+                });
+            }
+        }
+
+        $request = $query->orderByDesc('approved_at')->first();
+
+        if ($request === null) {
+            return [
+                'applied_by_name' => '',
+                'applied_by_designation' => '',
+                'approved_by_name' => '',
+                'approved_by_designation' => '',
+            ];
+        }
+
+        $requester = $request->requestedByUser;
+        $requesterEmployee = $requester?->employee;
+        $approver = $request->approverEmployee;
+
+        $requesterDesignation = trim((string) (
+            $requesterEmployee?->assignedDesignation?->name
+            ?? $requesterEmployee?->designation
+            ?? $requesterEmployee?->role?->name
+            ?? ''
+        ));
+
+        $approverDesignation = trim((string) (
+            $approver?->assignedDesignation?->name
+            ?? $approver?->designation
+            ?? $approver?->role?->name
+            ?? ''
+        ));
+
+        return [
+            'applied_by_name' => trim((string) ($requester?->name ?? '')),
+            'applied_by_designation' => $requesterDesignation,
+            'approved_by_name' => trim((string) ($approver?->full_name ?? $approver?->first_name ?? '')),
+            'approved_by_designation' => $approverDesignation,
         ];
     }
 

@@ -5,7 +5,7 @@
     <title>{{ $report_title }} — {{ $period_label }}</title>
     <style>
         @page {
-            margin: 10px 8px 24px 8px;
+            margin: 10px 8px 52px 8px;
             size: A3 landscape;
         }
 
@@ -277,6 +277,62 @@
             width: 100%;
             border-collapse: collapse;
         }
+
+        .signature-block {
+            margin-top: 10px;
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+        }
+
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .signature-cell {
+            width: 42%;
+            vertical-align: top;
+        }
+
+        .signature-cell-left {
+            padding-right: 8px;
+        }
+
+        .signature-cell-right {
+            padding-left: 8px;
+        }
+
+        .signature-gap {
+            width: 16%;
+        }
+
+        .signature-heading {
+            font-size: 7px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #475569;
+            margin-bottom: 3px;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #94a3b8;
+            height: 18px;
+            margin-bottom: 5px;
+            max-width: 180px;
+        }
+
+        .signature-meta {
+            font-size: 7px;
+            color: #334155;
+            margin-bottom: 2px;
+            line-height: 1.35;
+        }
+
+        .signature-meta-label {
+            font-weight: bold;
+            color: #64748b;
+        }
     </style>
 </head>
 <body>
@@ -414,6 +470,8 @@
             </tr>
         </table>
     </div>
+
+    @include('exports.shift-roster.partials.signature-block-pdf')
 
     <div class="pdf-footer">
         <table class="footer-table">
