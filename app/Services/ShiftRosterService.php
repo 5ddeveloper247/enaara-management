@@ -23,6 +23,40 @@ class ShiftRosterService
     ) {
     }
 
+    public function buildEntryAssignmentForApproval(array $data, ?ShiftRosterEntry $existing = null): array
+    {
+        return $this->buildEntryAssignment($data, $existing);
+    }
+
+    public function applyApprovedRosterEntry(array $lookup, array $payload, ?int $userId): ShiftRosterEntry
+    {
+        return $this->saveDailyRosterEntry($lookup, $payload, $userId);
+    }
+
+    public function syncCompensatoryTagsForEmployeeInRange(int $employeeId, string $startDate, string $endDate): void
+    {
+        $syncedWeekKeys = [];
+        $this->compensatoryLeaveAwardService->syncFullWeekSundayTagsForEmployeeInRange(
+            $employeeId,
+            $startDate,
+            $endDate,
+            $syncedWeekKeys
+        );
+    }
+
+    public function resolveFloorLabelFromData(array $data): ?string
+    {
+        if (! array_key_exists('sbu_floor_id', $data) || $data['sbu_floor_id'] === null || $data['sbu_floor_id'] === '') {
+            return null;
+        }
+
+        $floor = SbuFloor::query()
+            ->where('is_active', true)
+            ->find((int) $data['sbu_floor_id']);
+
+        return $floor ? $this->formatFloorLabel($floor) : null;
+    }
+
     private const WEEKDAYS = [
         'monday',
         'tuesday',
@@ -85,50 +119,7 @@ class ShiftRosterService
      */
     public function store(array $data)
     {
-        return DB::transaction(function () use ($data) {
-            $userId = Auth::id();
-            $assignment = $this->buildEntryAssignment($data);
-            $payload = [
-                'shift_planner_id' => $assignment['shift_planner_id'],
-                'is_custom_time' => $assignment['is_custom_time'],
-                'roster_date' => $data['roster_date'],
-                'start_time' => $assignment['start_time'],
-                'end_time' => $assignment['end_time'],
-                'check_in' => $data['check_in'] ?? null,
-                'check_out' => $data['check_out'] ?? null,
-                'late_check_in' => (bool) ($data['late_check_in'] ?? false),
-                'status' => (($data['status'] ?? 1) == 1) ? 'pending' : 'cancelled',
-                'assignment_id' => null,
-            ];
-            $this->applyFloorToPayload($data, $payload);
-            $this->applyLocationToPayload($data, $payload);
-            $this->applyNotesToPayload($data, $payload);
-
-            if (($data['employee_type'] ?? 'employee') === 'outsourced') {
-                $payload['employee_id'] = null;
-                $payload['outsourced_employee_id'] = (int) $data['employee_id'];
-                $lookup = [
-                    'outsourced_employee_id' => (int) $data['employee_id'],
-                    'roster_date' => $data['roster_date'],
-                ];
-            } else {
-                $payload['employee_id'] = (int) $data['employee_id'];
-                $payload['outsourced_employee_id'] = null;
-                $lookup = [
-                    'employee_id' => (int) $data['employee_id'],
-                    'roster_date' => $data['roster_date'],
-                ];
-            }
-
-            $existingEntry = ShiftRosterEntry::query()->where($lookup)->first();
-            if ($existingEntry && strtolower((string) $existingEntry->status) === 'off') {
-                throw ValidationException::withMessages([
-                    'roster_date' => 'This date is marked as off. Open the off day entry and convert it to assign a shift while keeping history.',
-                ]);
-            }
-
-            return $this->saveDailyRosterEntry($lookup, $payload, $userId);
-        });
+        return app(ShiftRosterApprovalService::class)->submitSingle($data);
     }
 
     /**
@@ -269,6 +260,9 @@ class ShiftRosterService
             $period = CarbonPeriod::create($data['start_date'], $data['end_date']);
             $totalAssigned = 0;
             $totalOffDays = 0;
+            $proposalsByRef = [];
+            $shiftLabel = $this->resolveBulkShiftLabel($shiftPlannerId, $isCustomTime, $data);
+            $approvalService = app(ShiftRosterApprovalService::class);
 
             foreach ($period as $date) {
                 $dayName = strtolower($date->format('l'));
@@ -283,16 +277,19 @@ class ShiftRosterService
                 }
 
                 foreach ($refs as $ref) {
+                    $refKey = $ref['type'] . ':' . $ref['id'];
+
                     if ($isWorkingDay) {
                         if ($skipWorkingDays) {
                             continue;
                         }
 
-                        $this->upsertAssigneeShiftEntry(
-                            $ref['type'],
-                            $ref['id'],
+                        if (! $overrideExisting && $this->assigneeEntryExists($ref['type'], $ref['id'], $date->toDateString())) {
+                            continue;
+                        }
+
+                        $proposalsByRef[$refKey][] = $this->buildBulkShiftProposalItem(
                             $date->toDateString(),
-                            $overrideExisting,
                             $shiftPlannerId,
                             $isCustomTime,
                             $entryStartTime,
@@ -303,15 +300,35 @@ class ShiftRosterService
                         continue;
                     }
 
-                    $this->upsertAssigneeOffEntry(
-                        $ref['type'],
-                        $ref['id'],
-                        $date->toDateString(),
-                        $shiftPlannerId,
-                        $overrideExisting
-                    );
-                    $totalOffDays++;
+                    if ($isOffDay) {
+                        if (! $overrideExisting && $this->assigneeEntryExists($ref['type'], $ref['id'], $date->toDateString())) {
+                            continue;
+                        }
+
+                        $proposalsByRef[$refKey][] = $this->buildBulkOffProposalItem(
+                            $date->toDateString(),
+                            $shiftPlannerId
+                        );
+                        $totalOffDays++;
+                    }
                 }
+            }
+
+            $submittedRequests = 0;
+            foreach ($refs as $ref) {
+                $refKey = $ref['type'] . ':' . $ref['id'];
+                $items = $proposalsByRef[$refKey] ?? [];
+                if ($items === []) {
+                    continue;
+                }
+
+                $approvalService->submitBulkForAssignee(
+                    $ref['type'],
+                    $ref['id'],
+                    $items,
+                    $shiftLabel
+                );
+                $submittedRequests++;
             }
 
             if ($skipWorkingDays && $totalAssigned === 0 && $totalOffDays === 0) {
@@ -322,23 +339,16 @@ class ShiftRosterService
                 ];
             }
 
-            $message = 'Shift assignment completed successfully.';
-            if ($skipWorkingDays && $totalOffDays > 0) {
-                $message = 'Off days were assigned. Existing weekday shifts were kept because of conflicts.';
+            if ($submittedRequests === 0) {
+                return [
+                    'success' => false,
+                    'message' => 'No roster days were submitted for approval.',
+                ];
             }
 
-            $syncedWeekKeys = [];
-            foreach ($refs as $ref) {
-                if ($ref['type'] !== 'employee') {
-                    continue;
-                }
-
-                $this->compensatoryLeaveAwardService->syncFullWeekSundayTagsForEmployeeInRange(
-                    $ref['id'],
-                    $data['start_date'],
-                    $data['end_date'],
-                    $syncedWeekKeys
-                );
+            $message = 'Shift roster submitted to GM for approval.';
+            if ($skipWorkingDays && $totalOffDays > 0) {
+                $message = 'Off days were submitted for approval. Existing weekday shifts were kept because of conflicts.';
             }
 
             return [
@@ -346,6 +356,7 @@ class ShiftRosterService
                 'message' => $message,
                 'total_assigned' => $totalAssigned,
                 'total_off_days' => $totalOffDays,
+                'approval_requests' => $submittedRequests,
             ];
         });
     }
@@ -974,6 +985,77 @@ class ShiftRosterService
         }
 
         return $savedEntry;
+    }
+
+    private function buildBulkShiftProposalItem(
+        string $date,
+        ?int $shiftPlannerId,
+        bool $isCustomTime,
+        ?string $startTime,
+        ?string $endTime,
+        array $placementData
+    ): array {
+        $shift = $shiftPlannerId ? ShiftPlanner::find($shiftPlannerId) : null;
+        $item = [
+            'roster_date' => $date,
+            'entry_type' => 'shift',
+            'shift_planner_id' => $shiftPlannerId,
+            'is_custom_time' => $isCustomTime,
+            'start_time' => $startTime ?? ($shift ? $this->formatShiftTime($shift->start_time) : null),
+            'end_time' => $endTime ?? ($shift ? $this->formatShiftTime($shift->end_time) : null),
+            'entry_status' => 'pending',
+        ];
+
+        $payload = [];
+        $this->applyFloorToPayload($placementData, $payload);
+        $this->applyLocationToPayload($placementData, $payload);
+        $this->applyNotesToPayload($placementData, $payload);
+
+        $item['floor'] = $payload['floor'] ?? null;
+        $item['location_text'] = $payload['location_text'] ?? null;
+        $item['notes'] = $payload['notes'] ?? null;
+
+        return $item;
+    }
+
+    private function buildBulkOffProposalItem(string $date, ?int $shiftPlannerId): array
+    {
+        return [
+            'roster_date' => $date,
+            'entry_type' => 'off',
+            'shift_planner_id' => $shiftPlannerId,
+            'is_custom_time' => false,
+            'start_time' => null,
+            'end_time' => null,
+            'floor' => null,
+            'location_text' => null,
+            'notes' => null,
+            'entry_status' => 'off',
+        ];
+    }
+
+    private function resolveBulkShiftLabel(?int $shiftPlannerId, bool $isCustomTime, array $data): string
+    {
+        if ($isCustomTime) {
+            return 'Custom shift';
+        }
+
+        if ($shiftPlannerId) {
+            return ShiftPlanner::query()->find($shiftPlannerId)?->name ?? 'Shift roster';
+        }
+
+        return 'Shift roster';
+    }
+
+    private function assigneeEntryExists(string $type, int $id, string $date): bool
+    {
+        $query = ShiftRosterEntry::query()->where('roster_date', $date);
+
+        if ($type === 'outsourced') {
+            return $query->where('outsourced_employee_id', $id)->exists();
+        }
+
+        return $query->where('employee_id', $id)->exists();
     }
 
     private function resolveUpdatedEntryStatus(ShiftRosterEntry $entry, array $data): string

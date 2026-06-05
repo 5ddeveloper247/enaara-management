@@ -30,6 +30,7 @@ use App\Http\Controllers\SbuController;
 use App\Http\Controllers\SbuFloorsController;
 use App\Http\Controllers\ShiftPlannerController;
 use App\Http\Controllers\ShiftRosterController;
+use App\Http\Controllers\ShiftRosterApprovalController;
 use App\Http\Controllers\ShiftRosterExcelExportController;
 use App\Http\Controllers\ShiftTypesController;
 use App\Http\Controllers\ThirdPartyController;
@@ -65,6 +66,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
     Route::get('/dashboard/attendance-chart', [DashboardController::class, 'attendanceChart'])->name('admin.dashboard.attendance-chart');
     Route::get('/dashboard/pending-approvals', [DashboardController::class, 'pendingApprovals'])->name('admin.dashboard.pending-approvals');
+    Route::get('/dashboard/pending-roster-approvals', [DashboardController::class, 'pendingRosterApprovals'])->name('admin.dashboard.pending-roster-approvals');
     Route::get('/dashboard/upcoming-holidays', [DashboardController::class, 'upcomingHolidays'])->name('admin.dashboard.upcoming-holidays');
     Route::get('/dashboard/who-is-out', [DashboardController::class, 'whoIsOutToday'])->name('admin.dashboard.who-is-out');
 
@@ -300,6 +302,14 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
     Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
         ->name('admin.shift-roster.bulk-assign');
+    Route::get('/shift-roster/approvals/pending', [ShiftRosterApprovalController::class, 'pending'])
+        ->name('admin.shift-roster.approvals.pending');
+    Route::get('/shift-roster/approvals/{id}', [ShiftRosterApprovalController::class, 'show'])
+        ->name('admin.shift-roster.approvals.show');
+    Route::post('/shift-roster/approvals/{id}/approve', [ShiftRosterApprovalController::class, 'approve'])
+        ->name('admin.shift-roster.approvals.approve');
+    Route::post('/shift-roster/approvals/{id}/reject', [ShiftRosterApprovalController::class, 'reject'])
+        ->name('admin.shift-roster.approvals.reject');
     Route::get('/shift-roster/{id}/change-history', [ShiftRosterController::class, 'changeHistory'])
         ->name('admin.shift-roster.change-history');
     Route::get('/shift-roster/{id}', [ShiftRosterController::class, 'show'])->name('admin.shift-roster.show');

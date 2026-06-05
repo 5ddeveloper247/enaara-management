@@ -40,6 +40,16 @@ class DashboardController extends Controller
         }
     }
 
+    public function pendingRosterApprovals(): JsonResponse
+    {
+        try {
+            $data = $this->dashboardService->getPendingRosterApprovals();
+            return response()->json(['success' => true, 'data' => $data, 'count' => count($data)]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
     public function upcomingHolidays(Request $request): JsonResponse
     {
         try {

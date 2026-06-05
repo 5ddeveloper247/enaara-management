@@ -7,11 +7,17 @@ use App\Models\EmployeLeaveRequest;
 use App\Models\Geofence;
 use App\Models\PublicHoliday;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class DashboardService
 {
+    public function __construct(
+        private readonly ShiftRosterApprovalService $shiftRosterApprovalService
+    ) {
+    }
+
     public function index()
     {
         $geofences = Geofence::with('sbu')->orderBy('name')->get();
@@ -64,6 +70,20 @@ class DashboardService
                 'reason'       => $r->reason ?? '',
             ];
         })->values()->all();
+    }
+
+    public function getPendingRosterApprovals(): array
+    {
+        $user = Auth::user();
+        if (! $user || ! $user->employee_id) {
+            return [];
+        }
+
+        return $this->shiftRosterApprovalService
+            ->getPendingForApprover((int) $user->employee_id)
+            ->map(fn ($request) => $this->shiftRosterApprovalService->formatPendingListItem($request))
+            ->values()
+            ->all();
     }
 
     public function getUpcomingHolidays(int $days = 7): array

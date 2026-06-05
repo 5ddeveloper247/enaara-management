@@ -236,8 +236,14 @@ class ShiftRosterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Shift assignment request submitted.',
+                'message' => 'Shift roster submitted to GM for approval.',
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

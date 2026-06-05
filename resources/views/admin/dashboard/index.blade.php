@@ -63,6 +63,7 @@
 </div>
 
 @include('admin.dashboard.slide-over-panel')
+@include('admin.dashboard.roster-approval-modal')
 @endsection
 
 
@@ -100,6 +101,10 @@
     window._dashRoutes = {
         attendanceChart:    '{{ route('admin.dashboard.attendance-chart') }}',
         pendingApprovals:   '{{ route('admin.dashboard.pending-approvals') }}',
+        pendingRosterApprovals: '{{ route('admin.dashboard.pending-roster-approvals') }}',
+        rosterApprovalShow: '{{ url('/admin/shift-roster/approvals') }}',
+        rosterApprovalApprove: '{{ url('/admin/shift-roster/approvals') }}',
+        rosterApprovalReject: '{{ url('/admin/shift-roster/approvals') }}',
         upcomingHolidays:   '{{ route('admin.dashboard.upcoming-holidays') }}',
         whoIsOutToday:      '{{ route('admin.dashboard.who-is-out') }}',
         leaveRequestStatus: '/admin/leave-request/{id}/status',

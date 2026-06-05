@@ -588,3 +588,252 @@
     font-weight: 600;
     color: var(--bs-gray-600);
 }
+
+/* ============================================
+   ROSTER APPROVAL MODAL
+   ============================================ */
+.roster-approval-modal {
+    border-radius: 1.25rem;
+    overflow: hidden;
+}
+
+.roster-approval-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.roster-approval-avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--main-color, #012445), #1a4a6e);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.roster-approval-info-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    padding: 1rem 1.125rem;
+    background: #f8f4ef;
+    border-radius: 0.875rem;
+    height: 100%;
+}
+
+.roster-approval-info-card--compact {
+    padding: 0.875rem 1rem;
+}
+
+.roster-approval-info-card__icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.625rem;
+    background: rgba(1, 36, 69, 0.08);
+    color: var(--main-color, #012445);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.roster-approval-info-card__icon--shift {
+    background: rgba(255, 193, 7, 0.15);
+    color: #b78103;
+}
+
+.roster-approval-info-card__icon--period {
+    background: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.roster-approval-info-card__icon--duration {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+}
+
+.roster-approval-info-card__label {
+    font-size: 0.75rem;
+    color: var(--bs-gray-600);
+    margin-bottom: 0.15rem;
+}
+
+.roster-approval-info-card__value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--main-color, #012445);
+    line-height: 1.35;
+}
+
+.roster-approval-stepper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
+}
+
+.roster-approval-step {
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+}
+
+.roster-approval-step__icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    margin: 0 auto 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bs-gray-200);
+    color: var(--bs-gray-600);
+    font-size: 1rem;
+}
+
+.roster-approval-step__label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--main-color, #012445);
+}
+
+.roster-approval-step__status {
+    font-size: 0.75rem;
+    color: var(--bs-gray-500);
+}
+
+.roster-approval-step--done .roster-approval-step__icon {
+    background: rgba(25, 135, 84, 0.15);
+    color: #198754;
+}
+
+.roster-approval-step--done .roster-approval-step__status {
+    color: #198754;
+}
+
+.roster-approval-step--active .roster-approval-step__icon {
+    background: rgba(255, 193, 7, 0.2);
+    color: #b78103;
+}
+
+.roster-approval-step--active .roster-approval-step__status {
+    color: #b78103;
+    font-weight: 600;
+}
+
+.roster-approval-step--awaiting .roster-approval-step__icon {
+    background: var(--bs-gray-100);
+    color: var(--bs-gray-500);
+}
+
+.roster-approval-step--rejected .roster-approval-step__icon {
+    background: rgba(220, 53, 69, 0.12);
+    color: #dc3545;
+}
+
+.roster-approval-step--rejected .roster-approval-step__status {
+    color: #dc3545;
+}
+
+.roster-approval-step__line {
+    flex: 0 0 2rem;
+    height: 2px;
+    background: var(--bs-border-color);
+    margin-top: 1.2rem;
+}
+
+.roster-approval-schedule__table-wrap {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.875rem;
+    overflow: auto;
+    max-height: 22rem;
+}
+
+.roster-approval-schedule__table thead th {
+    background: #fafafa;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--bs-gray-600);
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 0.75rem 1rem;
+}
+
+.roster-approval-schedule__table tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    font-size: 0.875rem;
+}
+
+.roster-approval-schedule__table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.roster-approval-type-badge {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.roster-approval-type-badge--off {
+    background: rgba(108, 117, 125, 0.12);
+    color: #6c757d;
+}
+
+.roster-approval-modal__footer {
+    padding: 1rem 1.5rem 1.5rem;
+    justify-content: space-between;
+}
+
+@media (max-width: 767.98px) {
+    .roster-approval-stepper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .roster-approval-step__line {
+        display: none;
+    }
+
+    .roster-approval-step {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        text-align: left;
+    }
+
+    .roster-approval-step__icon {
+        margin: 0;
+    }
+
+    .roster-approval-modal__footer {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .roster-approval-modal__footer > .d-flex {
+        width: 100%;
+    }
+
+    #rosterApprovalActionButtons {
+        width: 100%;
+    }
+
+    #rosterApprovalActionButtons .btn {
+        flex: 1;
+    }
+}

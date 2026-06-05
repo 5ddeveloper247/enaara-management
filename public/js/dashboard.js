@@ -756,6 +756,312 @@
     };
 
     // ============================================
+    // ROSTER APPROVALS
+    // ============================================
+    const DashboardRosterApprovals = {
+        currentRequestId: null,
+
+        loadPendingRosterApprovals() {
+            var url = (window._dashRoutes && window._dashRoutes.pendingRosterApprovals)
+                ? window._dashRoutes.pendingRosterApprovals
+                : '/admin/dashboard/pending-roster-approvals';
+
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    var loader = document.getElementById('rosterApprovalsLoader');
+                    if (loader) loader.remove();
+                    if (!json.success) return;
+                    DashboardRosterApprovals.renderApprovals(json.data || []);
+                    DashboardRosterApprovals.updateBadge(json.count || 0);
+                })
+                .catch(function (err) {
+                    console.error('Pending roster approvals load failed:', err);
+                    var loader = document.getElementById('rosterApprovalsLoader');
+                    if (loader) loader.innerHTML = '<span class="text-danger small px-4">Failed to load.</span>';
+                });
+        },
+
+        renderApprovals(items) {
+            var list = document.getElementById('rosterApprovalsList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            if (!items || items.length === 0) {
+                var empty = document.getElementById('pendingRosterApprovalsEmpty');
+                if (empty) empty.classList.remove('d-none');
+                return;
+            }
+
+            var empty = document.getElementById('pendingRosterApprovalsEmpty');
+            if (empty) empty.classList.add('d-none');
+
+            items.forEach(function (item) {
+                var div = document.createElement('div');
+                div.className = 'approval-item roster-approval-item';
+                div.innerHTML =
+                    '<div class="d-flex align-items-center justify-content-between gap-2">' +
+                    '<div class="d-flex align-items-center flex-grow-1">' +
+                    '<div class="employee-avatar me-2">' + DashboardApprovals.esc(item.initials) + '</div>' +
+                    '<div class="flex-grow-1">' +
+                    '<h6 class="mb-0 small">' + DashboardApprovals.esc(item.name) + '</h6>' +
+                    '<small class="text-muted">' + DashboardApprovals.esc(item.shift_label) + '</small>' +
+                    '<div class="small text-muted">' + DashboardApprovals.esc(item.duration_label) + '</div>' +
+                    '<div class="small text-muted">By ' + DashboardApprovals.esc(item.requested_by) + ' • ' + DashboardApprovals.esc(item.request_date) + '</div>' +
+                    '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-sm btn-outline-secondary rounded-3 border roster-view-btn" data-id="' + item.id + '">' +
+                    '<i class="bi bi-eye me-1"></i>Review</button>' +
+                    '</div>';
+                list.appendChild(div);
+            });
+
+            list.querySelectorAll('.roster-view-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    DashboardRosterApprovals.openModal(parseInt(btn.getAttribute('data-id'), 10));
+                });
+            });
+        },
+
+        updateBadge(count) {
+            var badge = document.getElementById('pendingRosterApprovalsBadge');
+            if (badge) badge.textContent = String(count || 0);
+        },
+
+        openModal(requestId) {
+            this.currentRequestId = requestId;
+            var modalEl = document.getElementById('rosterApprovalModal');
+            if (!modalEl || typeof bootstrap === 'undefined') return;
+
+            var loader = document.getElementById('rosterApprovalModalLoader');
+            var content = document.getElementById('rosterApprovalModalContent');
+            if (loader) loader.classList.remove('d-none');
+            if (content) content.classList.add('d-none');
+
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            this.loadDetail(requestId);
+        },
+
+        loadDetail(requestId) {
+            var baseUrl = (window._dashRoutes && window._dashRoutes.rosterApprovalShow)
+                ? window._dashRoutes.rosterApprovalShow
+                : '/admin/shift-roster/approvals';
+
+            fetch(baseUrl + '/' + requestId, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    if (!json.success || !json.data) {
+                        throw new Error(json.message || 'Could not load roster request.');
+                    }
+                    DashboardRosterApprovals.renderDetail(json.data);
+                })
+                .catch(function (err) {
+                    DashboardUtils.showAlert(err.message || 'Could not load roster request.');
+                });
+        },
+
+        renderDetail(data) {
+            var loader = document.getElementById('rosterApprovalModalLoader');
+            var content = document.getElementById('rosterApprovalModalContent');
+            if (loader) loader.classList.add('d-none');
+            if (content) content.classList.remove('d-none');
+
+            var avatar = document.getElementById('rosterApprovalAvatar');
+            if (avatar) avatar.textContent = data.assignee_initials || '--';
+
+            document.getElementById('rosterApprovalAssignee').textContent = data.assignee_name || '-';
+            document.getElementById('rosterApprovalDepartment').textContent = data.department || '-';
+            document.getElementById('rosterApprovalRequestedBy').textContent = data.requested_by || '-';
+            document.getElementById('rosterApprovalShiftLabel').textContent = data.shift_label || '-';
+            document.getElementById('rosterApprovalPeriod').textContent = data.period_label
+                || ((data.start_date || '-') + ' – ' + (data.end_date || '-'));
+            document.getElementById('rosterApprovalDuration').textContent = data.duration_label || '-';
+
+            this.renderStepper(data.approval_status || 'pending');
+
+            var items = data.items || [];
+            var totalItems = data.total_items || items.length;
+            var previewCount = document.getElementById('rosterApprovalPreviewCount');
+            if (previewCount) {
+                previewCount.textContent = totalItems + (totalItems === 1 ? ' day' : ' days');
+            }
+
+            var tbody = document.getElementById('rosterApprovalItemsBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            items.forEach(function (item) {
+                var tr = document.createElement('tr');
+
+                var timeLabel = item.entry_type === 'off'
+                    ? '-'
+                    : ((item.start_time || '-') + ' – ' + (item.end_time || '-'));
+                var typeBadgeClass = item.entry_type === 'off'
+                    ? 'roster-approval-type-badge roster-approval-type-badge--off'
+                    : 'roster-approval-type-badge';
+                var typeLabel = item.entry_type === 'off' ? 'Off' : (item.shift_name || 'Shift');
+
+                tr.innerHTML =
+                    '<td>' + DashboardApprovals.esc(item.date) + '</td>' +
+                    '<td><span class="' + typeBadgeClass + '">' + DashboardApprovals.esc(typeLabel) + '</span></td>' +
+                    '<td>' + DashboardApprovals.esc(timeLabel) + '</td>';
+                tbody.appendChild(tr);
+            });
+
+            var actionButtons = document.getElementById('rosterApprovalActionButtons');
+            if (actionButtons) {
+                actionButtons.classList.toggle('d-none', (data.approval_status || 'pending') !== 'pending');
+            }
+        },
+
+        renderStepper(status) {
+            var stepper = document.getElementById('rosterApprovalStepper');
+            if (!stepper) return;
+
+            var submitted = stepper.querySelector('[data-step="submitted"]');
+            var review = stepper.querySelector('[data-step="review"]');
+            var approved = stepper.querySelector('[data-step="approved"]');
+            if (!submitted || !review || !approved) return;
+
+            var resetStep = function (el, baseClass) {
+                el.className = 'roster-approval-step ' + baseClass;
+            };
+
+            resetStep(submitted, 'roster-approval-step--done');
+            resetStep(review, 'roster-approval-step--awaiting');
+            resetStep(approved, 'roster-approval-step--awaiting');
+
+            submitted.querySelector('.roster-approval-step__status').textContent = 'Done';
+
+            if (status === 'approved') {
+                resetStep(review, 'roster-approval-step--done');
+                resetStep(approved, 'roster-approval-step--done');
+                review.querySelector('.roster-approval-step__status').textContent = 'Done';
+                approved.querySelector('.roster-approval-step__status').textContent = 'Done';
+                return;
+            }
+
+            if (status === 'rejected') {
+                resetStep(review, 'roster-approval-step--rejected');
+                review.querySelector('.roster-approval-step__status').textContent = 'Rejected';
+                approved.querySelector('.roster-approval-step__status').textContent = 'Cancelled';
+                return;
+            }
+
+            resetStep(review, 'roster-approval-step--active');
+            review.querySelector('.roster-approval-step__status').textContent = 'Pending';
+            approved.querySelector('.roster-approval-step__status').textContent = 'Awaiting';
+        },
+
+        approveCurrent() {
+            if (!this.currentRequestId) return;
+            if (!DashboardUtils.confirmAction('Approve this shift roster?')) return;
+
+            var baseUrl = (window._dashRoutes && window._dashRoutes.rosterApprovalApprove)
+                ? window._dashRoutes.rosterApprovalApprove
+                : '/admin/shift-roster/approvals';
+            var approveBtn = document.getElementById('rosterApprovalApproveBtn');
+            if (approveBtn) approveBtn.disabled = true;
+
+            fetch(baseUrl + '/' + this.currentRequestId + '/approve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': window._csrfToken || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({})
+            })
+                .then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+                .then(function (result) {
+                    if (!result.ok || !result.body.success) {
+                        throw new Error(result.body.message || 'Approval failed.');
+                    }
+                    DashboardUtils.showAlert(result.body.message || 'Roster approved.', 'success');
+                    DashboardRosterApprovals.closeModal();
+                    DashboardRosterApprovals.loadPendingRosterApprovals();
+                })
+                .catch(function (err) {
+                    DashboardUtils.showAlert(err.message || 'Approval failed.');
+                })
+                .finally(function () {
+                    if (approveBtn) approveBtn.disabled = false;
+                });
+        },
+
+        rejectCurrent() {
+            if (!this.currentRequestId) return;
+            if (!DashboardUtils.confirmAction('Reject this shift roster request?')) return;
+
+            var baseUrl = (window._dashRoutes && window._dashRoutes.rosterApprovalReject)
+                ? window._dashRoutes.rosterApprovalReject
+                : '/admin/shift-roster/approvals';
+            var rejectBtn = document.getElementById('rosterApprovalRejectBtn');
+            if (rejectBtn) rejectBtn.disabled = true;
+
+            fetch(baseUrl + '/' + this.currentRequestId + '/reject', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': window._csrfToken || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ reason: '' })
+            })
+                .then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+                .then(function (result) {
+                    if (!result.ok || !result.body.success) {
+                        throw new Error(result.body.message || 'Reject failed.');
+                    }
+                    DashboardUtils.showAlert(result.body.message || 'Roster rejected.', 'success');
+                    DashboardRosterApprovals.closeModal();
+                    DashboardRosterApprovals.loadPendingRosterApprovals();
+                })
+                .catch(function (err) {
+                    DashboardUtils.showAlert(err.message || 'Reject failed.');
+                })
+                .finally(function () {
+                    if (rejectBtn) rejectBtn.disabled = false;
+                });
+        },
+
+        closeModal() {
+            var modalEl = document.getElementById('rosterApprovalModal');
+            if (!modalEl || typeof bootstrap === 'undefined') return;
+            var instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+            this.currentRequestId = null;
+        },
+
+        initButtons() {
+            var approveBtn = document.getElementById('rosterApprovalApproveBtn');
+            var rejectBtn = document.getElementById('rosterApprovalRejectBtn');
+            if (approveBtn) approveBtn.addEventListener('click', function () { DashboardRosterApprovals.approveCurrent(); });
+            if (rejectBtn) rejectBtn.addEventListener('click', function () { DashboardRosterApprovals.rejectCurrent(); });
+        },
+
+        openFromQueryParam() {
+            var params = new URLSearchParams(window.location.search);
+            var requestId = parseInt(params.get('roster_approval') || '0', 10);
+            if (requestId > 0) {
+                this.openModal(requestId);
+            }
+        }
+    };
+
+    // ============================================
     // UPCOMING HOLIDAYS
     // ============================================
     const DashboardHolidays = {
@@ -1041,6 +1347,9 @@
         // Initialize approval management
         DashboardApprovals.loadPendingApprovals();
         DashboardApprovals.initSlideOverKeyboard();
+        DashboardRosterApprovals.loadPendingRosterApprovals();
+        DashboardRosterApprovals.initButtons();
+        DashboardRosterApprovals.openFromQueryParam();
 
         // Initialize exception management
         DashboardExceptions.initNotifyButtons();
