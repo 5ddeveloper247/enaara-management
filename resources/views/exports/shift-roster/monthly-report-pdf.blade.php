@@ -268,6 +268,14 @@
             padding-top: 6px;
         }
 
+        .print-info {
+            font-size: 6.5px;
+            color: #94a3b8;
+            text-align: right;
+            margin-bottom: 3px;
+            line-height: 1.2;
+        }
+
         .footer-table {
             width: 100%;
             border-collapse: collapse;
@@ -464,6 +472,7 @@
     @include('exports.shift-roster.partials.signature-block-pdf')
 
     <div class="pdf-footer">
+    @include('exports.shift-roster.partials.print-info-pdf')
     <table class="footer-table">
         <tr>
             <td>EFM-HCM • Secure Internal Workforce Management Report</td>

@@ -281,6 +281,19 @@ class ShiftRosterExportReportService
             'include_department_grouping' => $context['include_department_grouping'],
             'include_deleted' => $context['include_deleted'],
             'signatures' => $this->buildSignatureBlock($context),
+            'print_info' => $this->buildPrintInfo(),
+        ];
+    }
+
+    private function buildPrintInfo(): array
+    {
+        $user = auth()->user();
+        $now = now();
+
+        return [
+            'printed_by_name' => trim((string) ($user?->name ?? '')),
+            'printed_at_date' => $now->format('d M Y'),
+            'printed_at_time' => $now->format('h:i A'),
         ];
     }
 
