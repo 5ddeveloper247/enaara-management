@@ -760,6 +760,7 @@
     // ============================================
     const DashboardRosterApprovals = {
         currentRequestId: null,
+        currentRequestData: null,
 
         loadPendingRosterApprovals() {
             var url = (window._dashRoutes && window._dashRoutes.pendingRosterApprovals)
@@ -871,6 +872,7 @@
         },
 
         renderDetail(data) {
+            this.currentRequestData = data || null;
             var loader = document.getElementById('rosterApprovalModalLoader');
             var content = document.getElementById('rosterApprovalModalContent');
             if (loader) loader.classList.add('d-none');
@@ -1063,18 +1065,57 @@
                 });
         },
 
+        getApproveConfirmCopy(data) {
+            data = data || this.currentRequestData || {};
+            var requestType = data.request_type || '';
+            var items = data.items || [];
+            var hasDelete = items.some(function (item) { return item.entry_type === 'delete'; });
+            var hasShift = items.some(function (item) { return item.entry_type === 'shift'; });
+            var hasOff = items.some(function (item) { return item.entry_type === 'off'; });
+
+            if (requestType === 'delete' || (hasDelete && !hasShift && !hasOff)) {
+                return {
+                    title: 'Approve removal?',
+                    text: items.length > 1
+                        ? 'This will remove the submitted shifts from the employee roster.'
+                        : 'This will remove the submitted shift from the employee roster.'
+                };
+            }
+
+            if (requestType === 'update') {
+                return {
+                    title: 'Approve update?',
+                    text: 'This will apply the submitted roster changes to the employee.'
+                };
+            }
+
+            if (hasOff && !hasShift) {
+                return {
+                    title: 'Approve roster?',
+                    text: 'This will mark the submitted off day(s) on the employee roster.'
+                };
+            }
+
+            return {
+                title: 'Approve roster?',
+                text: 'This will assign the submitted shifts to the employee.'
+            };
+        },
+
         approveCurrent() {
             if (!this.currentRequestId) return;
 
+            var confirmCopy = this.getApproveConfirmCopy();
+
             if (typeof Swal === 'undefined') {
-                if (!confirm('Approve this shift roster?')) return;
+                if (!confirm(confirmCopy.text)) return;
                 this.performApprove();
                 return;
             }
 
             Swal.fire({
-                title: 'Approve roster?',
-                text: 'This will assign the submitted shifts to the employee.',
+                title: confirmCopy.title,
+                text: confirmCopy.text,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#198754',
@@ -1136,6 +1177,7 @@
             var instance = bootstrap.Modal.getInstance(modalEl);
             if (instance) instance.hide();
             this.currentRequestId = null;
+            this.currentRequestData = null;
         },
 
         initButtons() {
