@@ -817,7 +817,7 @@
                     '</div>' +
                     '</div>' +
                     '<button type="button" class="btn btn-sm btn-outline-secondary rounded-3 border roster-view-btn" data-id="' + item.id + '">' +
-                    '<i class="bi bi-eye me-1"></i>Review</button>' +
+                    '<i class="bi bi-eye me-1"></i>View</button>' +
                     '</div>';
                 list.appendChild(div);
             });

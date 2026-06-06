@@ -259,6 +259,35 @@
         return dayNames[date.getDay()];
     }
 
+    function syncRosterPersonnelTabUi() {
+        var internalTab = document.getElementById('rosterInternalTab');
+        var thirdPartyTab = document.getElementById('rosterThirdPartyTab');
+        var activeId = rosterPersonnelFilter === 'third_party' ? 'rosterThirdPartyTab' : 'rosterInternalTab';
+
+        [internalTab, thirdPartyTab].forEach(function(tab) {
+            if (!tab) return;
+            var isActive = tab.id === activeId;
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+    }
+
+    function applyRosterReviewNavigation(data) {
+        if (!data || !data.review_year || !data.review_month) {
+            return;
+        }
+
+        rosterViewDate = new Date(parseInt(data.review_year, 10), parseInt(data.review_month, 10) - 1, 1);
+        rosterWeekIndex = parseInt(data.first_review_week || '1', 10) || 1;
+
+        if (data.employee_group === 'third_party' || data.employee_group === 'internal') {
+            rosterPersonnelFilter = data.employee_group;
+            syncRosterPersonnelTabUi();
+        }
+
+        updateRosterWeekDisplay();
+    }
+
     function updateRosterWeekDisplay() {
         var weekLabelEl = document.getElementById('rosterWeekLabel');
         var weekDatesEl = document.getElementById('rosterWeekDates');
@@ -1827,6 +1856,7 @@
                 }
 
                 rosterGmApprovalContext = json.data;
+                applyRosterReviewNavigation(json.data);
 
                 var rosterTab = document.getElementById('roster-tab');
                 if (rosterTab && typeof bootstrap !== 'undefined') {
