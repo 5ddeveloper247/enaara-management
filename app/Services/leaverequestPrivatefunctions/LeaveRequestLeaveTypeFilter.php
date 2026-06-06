@@ -25,6 +25,7 @@ class LeaveRequestLeaveTypeFilter
         return $leaveTypes
             ->reject(fn ($type) => $this->shouldHideCompensatoryType($type, $employeeId, $year))
             ->reject(fn ($type) => $this->shouldHideMaternityLeaveType($type, $employee))
+            ->reject(fn ($type) => $this->shouldHidePaternityLeaveType($type, $employee))
             ->values();
     }
 
@@ -49,6 +50,10 @@ class LeaveRequestLeaveTypeFilter
 
             if ($this->isMaternityLeaveType($leaveType)) {
                 return $employee !== null && $this->isEmployeeEligibleForMaternityLeave($employee);
+            }
+
+            if ($this->isPaternityLeaveType($leaveType)) {
+                return $employee !== null && $this->isEmployeeEligibleForPaternityLeave($employee, $leaveType);
             }
 
             if (! $this->isCompensatoryLeaveType($leaveType)) {
@@ -121,6 +126,45 @@ class LeaveRequestLeaveTypeFilter
         return $gender === 'female' && strcasecmp($maritalStatus, 'Married') === 0;
     }
 
+    public function assertPaternityLeaveAllowed(Employee $employee, LeaveType $leaveType): void
+    {
+        if (! $this->isPaternityLeaveType($leaveType)) {
+            return;
+        }
+
+        if ($this->isEmployeeEligibleForPaternityLeave($employee, $leaveType)) {
+            return;
+        }
+
+        $requiredGender = $this->requiredGenderForPaternityLeave($leaveType);
+        $requiredLabel = $this->genderLabelForMessage($requiredGender ?? 'male');
+        $actualGender = strtolower(trim((string) ($employee->gender ?? '')));
+
+        if ($requiredGender !== null && $actualGender !== $requiredGender) {
+            throw ValidationException::withMessages([
+                'leave_type_id' => "Paternity leave is only available for {$requiredLabel} employees.",
+            ]);
+        }
+
+        throw ValidationException::withMessages([
+            'leave_type_id' => "Paternity leave is only available for married {$requiredLabel} employees.",
+        ]);
+    }
+
+    public function isEmployeeEligibleForPaternityLeave(Employee $employee, $type): bool
+    {
+        $requiredGender = $this->requiredGenderForPaternityLeave($type);
+
+        if ($requiredGender === null) {
+            return false;
+        }
+
+        $actualGender = strtolower(trim((string) ($employee->gender ?? '')));
+        $maritalStatus = trim((string) ($employee->marital_status ?? ''));
+
+        return $actualGender === $requiredGender && strcasecmp($maritalStatus, 'Married') === 0;
+    }
+
     private function shouldHideCompensatoryType($type, int $employeeId, int $year): bool
     {
         if (! $this->isCompensatoryLeaveType($type)) {
@@ -143,6 +187,19 @@ class LeaveRequestLeaveTypeFilter
         return ! $this->isEmployeeEligibleForMaternityLeave($employee);
     }
 
+    private function shouldHidePaternityLeaveType($type, ?Employee $employee): bool
+    {
+        if (! $this->isPaternityLeaveType($type)) {
+            return false;
+        }
+
+        if ($employee === null) {
+            return true;
+        }
+
+        return ! $this->isEmployeeEligibleForPaternityLeave($employee, $type);
+    }
+
     private function isMaternityLeaveType($type): bool
     {
         $code = strtoupper(trim((string) ($type->code ?? '')));
@@ -162,6 +219,51 @@ class LeaveRequestLeaveTypeFilter
         }
 
         return strtolower(trim((string) ($type->setting?->gender ?? ''))) === 'female';
+    }
+
+    private function isPaternityLeaveType($type): bool
+    {
+        $code = strtoupper(trim((string) ($type->code ?? '')));
+
+        if ($code === 'PL') {
+            return true;
+        }
+
+        $name = strtolower(trim((string) ($type->name ?? '')));
+
+        if (! str_contains($name, 'paternity')) {
+            return false;
+        }
+
+        return $this->requiredGenderForPaternityLeave($type) !== null;
+    }
+
+    private function requiredGenderForPaternityLeave($type): ?string
+    {
+        if ($type instanceof LeaveType && ! $type->relationLoaded('setting')) {
+            $type->loadMissing('setting');
+        }
+
+        $gender = strtolower(trim((string) ($type->setting?->gender ?? '')));
+
+        if (in_array($gender, ['male', 'female'], true)) {
+            return $gender;
+        }
+
+        if (strtoupper(trim((string) ($type->code ?? ''))) === 'PL') {
+            return 'male';
+        }
+
+        return null;
+    }
+
+    private function genderLabelForMessage(string $gender): string
+    {
+        return match (strtolower($gender)) {
+            'male' => 'male',
+            'female' => 'female',
+            default => $gender,
+        };
     }
 
     private function isCompensatoryLeaveType($type): bool
