@@ -1744,11 +1744,7 @@
         }
         if (summaryEl) {
             var scopeLabel = data.segment_scope_label ? data.segment_scope_label + ' • ' : '';
-            var segmentProgress = '';
-            if (data.request_type === 'roster' && (data.pending_segments || data.approved_segments)) {
-                segmentProgress = ' • ' + (data.approved_segments || 0) + ' dept approved, ' + (data.pending_segments || 0) + ' pending';
-            }
-            summaryEl.textContent = scopeLabel + (data.period_label || '') + ' • ' + (data.duration_label || '') + ' • Submitted by ' + (data.requested_by || 'Unknown') + segmentProgress;
+            summaryEl.textContent = scopeLabel + (data.period_label || '') + ' • ' + (data.duration_label || '') + ' • Submitted by ' + (data.requested_by || 'Unknown');
         }
         if (gmBar) gmBar.classList.remove('d-none');
         var applyBar = document.getElementById('rosterApplyApprovalBar');
