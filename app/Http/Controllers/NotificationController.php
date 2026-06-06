@@ -19,7 +19,7 @@ class NotificationController extends Controller
         $targetUrl = $data['url'] ?? '/admin/leave-request';
 
         if (($data['type'] ?? '') === 'shift_roster_approval' && ! empty($data['approval_request_id'])) {
-            $targetUrl = url('/admin/dashboard?roster_approval=' . (int) $data['approval_request_id']);
+            $targetUrl = url('/admin/shift-planner?roster_approval=' . (int) $data['approval_request_id']);
         }
 
         return redirect($targetUrl);
