@@ -24,6 +24,10 @@ class ShiftRosterFinalizeService
             ->whereDate('roster_date', $dateStr)
             ->where('status', 'pending')
             ->whereNotNull('employee_id')
+            ->where(function ($query) {
+                $query->whereHas('approvalRequest', fn ($approvalQuery) => $approvalQuery->where('approval_status', 'approved'))
+                    ->orWhereHas('approvalSegment', fn ($segmentQuery) => $segmentQuery->where('approval_status', 'approved'));
+            })
             ->with(['employee.department', 'employee.organization'])
             ->orderBy('id')
             ->get();
@@ -80,6 +84,10 @@ class ShiftRosterFinalizeService
             ->whereDate('roster_date', $dateStr)
             ->where('status', 'pending')
             ->whereNotNull('employee_id')
+            ->where(function ($query) {
+                $query->whereHas('approvalRequest', fn ($approvalQuery) => $approvalQuery->where('approval_status', 'approved'))
+                    ->orWhereHas('approvalSegment', fn ($segmentQuery) => $segmentQuery->where('approval_status', 'approved'));
+            })
             ->count();
     }
 }

@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
+use App\Models\ShiftRosterEntry;
+use App\Models\User;
 
 class ShiftRosterApproverResolver
 {
@@ -115,5 +117,34 @@ class ShiftRosterApproverResolver
         $employee = Employee::query()->find($assigneeId);
 
         return $employee ? $this->resolveGmForEmployee($employee) : null;
+    }
+
+    public function resolveGmForRosterSubmission(?User $user, ?ShiftRosterEntry $sampleEntry = null): ?Employee
+    {
+        if ($user && $user->employee_id) {
+            $employee = Employee::query()->find($user->employee_id);
+
+            if ($employee) {
+                $gm = $this->resolveGmForEmployee($employee);
+
+                if ($gm !== null) {
+                    return $gm;
+                }
+            }
+        }
+
+        if ($sampleEntry === null) {
+            return null;
+        }
+
+        if ($sampleEntry->employee_id) {
+            return $this->resolveGmForAssignee('employee', (int) $sampleEntry->employee_id);
+        }
+
+        if ($sampleEntry->outsourced_employee_id) {
+            return $this->resolveGmForAssignee('outsourced', (int) $sampleEntry->outsourced_employee_id);
+        }
+
+        return null;
     }
 }

@@ -302,6 +302,8 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/shift-roster', [ShiftRosterController::class, 'store'])->name('admin.shift-roster.store');
     Route::post('/shift-roster/bulk-assign', [ShiftRosterController::class, 'bulkAssign'])
         ->name('admin.shift-roster.bulk-assign');
+    Route::post('/shift-roster/apply-for-approval', [ShiftRosterApprovalController::class, 'applyForApproval'])
+        ->name('admin.shift-roster.apply-for-approval');
     Route::get('/shift-roster/approvals/pending', [ShiftRosterApprovalController::class, 'pending'])
         ->name('admin.shift-roster.approvals.pending');
     Route::get('/shift-roster/approvals/{id}', [ShiftRosterApprovalController::class, 'show'])

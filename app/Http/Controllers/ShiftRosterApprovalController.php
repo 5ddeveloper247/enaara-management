@@ -24,7 +24,10 @@ class ShiftRosterApprovalController extends Controller
 
         $requests = $this->approvalService
             ->getPendingForApprover($user->employee_id ? (int) $user->employee_id : null)
-            ->map(fn ($request) => $this->approvalService->formatPendingListItem($request))
+            ->map(fn (array $item) => $this->approvalService->formatPendingListItem(
+                $item['request'],
+                $item['segment'] ?? null
+            ))
             ->values()
             ->all();
 
@@ -73,6 +76,42 @@ class ShiftRosterApprovalController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => collect($e->errors())->flatten()->first() ?? 'Unable to approve roster request.',
+            ], 422);
+        }
+    }
+
+    public function applyForApproval(Request $request): JsonResponse
+    {
+        if (! validatePermissions('admin/shift-planner') && ! validatePermissions('admin/shift-roster')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'year' => ['required', 'integer', 'min:2000', 'max:2100'],
+                'month' => ['required', 'integer', 'min:1', 'max:12'],
+                'employee_group' => ['nullable', 'in:internal,third_party'],
+            ]);
+
+            $approvalRequest = $this->approvalService->submitPendingEntriesForApproval(
+                (int) $validated['year'],
+                (int) $validated['month'],
+                $validated['employee_group'] ?? 'internal'
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Roster submitted to GM for approval.',
+                'data' => [
+                    'request_count' => 1,
+                    'request_ids' => [$approvalRequest->id],
+                    'request_id' => $approvalRequest->id,
+                ],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unable to submit roster for approval.',
             ], 422);
         }
     }

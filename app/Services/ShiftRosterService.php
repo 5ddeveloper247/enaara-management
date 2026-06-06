@@ -6,6 +6,8 @@ use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\SbuFloor;
 use App\Models\ShiftPlanner;
+use App\Models\ShiftRosterApprovalRequest;
+use App\Models\ShiftRosterApprovalSegment;
 use App\Models\ShiftRosterEntry;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -115,27 +117,49 @@ class ShiftRosterService
     }
 
     /**
-     * Store a newly created shift roster (Single Day).
+     * Store a newly created shift roster entry as a draft pending approval.
      */
-    public function store(array $data)
+    public function store(array $data): ShiftRosterEntry
     {
-        return app(ShiftRosterApprovalService::class)->submitSingle($data);
+        $employeeType = ($data['employee_type'] ?? 'employee') === 'outsourced' ? 'outsourced' : 'employee';
+        $employeeId = (int) $data['employee_id'];
+        $rosterDate = (string) $data['roster_date'];
+
+        $this->assertNoExistingOffDay($employeeType, $employeeId, $rosterDate);
+
+        [$lookup, $payload] = $this->buildDraftEntryPayload($data);
+
+        return $this->saveDailyRosterEntry($lookup, $payload, Auth::id());
     }
 
     /**
-     * Update an existing shift roster entry (submitted for GM approval).
+     * Update an existing draft shift roster entry.
      */
-    public function update(array $data, $id)
+    public function update(array $data, $id): ShiftRosterEntry
     {
-        return app(ShiftRosterApprovalService::class)->submitUpdate((int) $id, $data);
+        $entry = ShiftRosterEntry::query()->findOrFail((int) $id);
+        $this->assertEntryEditable($entry);
+
+        [$lookup, $payload] = $this->buildDraftEntryPayload($data, $entry);
+        $payload['shift_roster_approval_request_id'] = null;
+
+        return $this->saveDailyRosterEntry($lookup, $payload, Auth::id());
     }
 
     /**
-     * Delete a shift roster entry (submitted for GM approval).
+     * Delete a draft shift roster entry.
      */
-    public function destroy($id)
+    public function destroy($id): void
     {
-        return app(ShiftRosterApprovalService::class)->submitDelete((int) $id);
+        $entry = ShiftRosterEntry::query()->findOrFail((int) $id);
+        $this->assertEntryEditable($entry);
+
+        $this->deleteApprovedRosterEntry(
+            $entry->employee_id
+                ? ['employee_id' => (int) $entry->employee_id, 'roster_date' => $entry->roster_date->toDateString()]
+                : ['outsourced_employee_id' => (int) $entry->outsourced_employee_id, 'roster_date' => $entry->roster_date->toDateString()],
+            Auth::id()
+        );
     }
 
     public function buildUpdateApprovalItem(ShiftRosterEntry $entry, array $data): array
@@ -276,9 +300,6 @@ class ShiftRosterService
             $period = CarbonPeriod::create($data['start_date'], $data['end_date']);
             $totalAssigned = 0;
             $totalOffDays = 0;
-            $proposalsByRef = [];
-            $shiftLabel = $this->resolveBulkShiftLabel($shiftPlannerId, $isCustomTime, $data);
-            $approvalService = app(ShiftRosterApprovalService::class);
 
             foreach ($period as $date) {
                 $dayName = strtolower($date->format('l'));
@@ -293,8 +314,6 @@ class ShiftRosterService
                 }
 
                 foreach ($refs as $ref) {
-                    $refKey = $ref['type'] . ':' . $ref['id'];
-
                     if ($isWorkingDay) {
                         if ($skipWorkingDays) {
                             continue;
@@ -304,8 +323,11 @@ class ShiftRosterService
                             continue;
                         }
 
-                        $proposalsByRef[$refKey][] = $this->buildBulkShiftProposalItem(
+                        $this->upsertAssigneeShiftEntry(
+                            $ref['type'],
+                            $ref['id'],
                             $date->toDateString(),
+                            $overrideExisting,
                             $shiftPlannerId,
                             $isCustomTime,
                             $entryStartTime,
@@ -321,30 +343,16 @@ class ShiftRosterService
                             continue;
                         }
 
-                        $proposalsByRef[$refKey][] = $this->buildBulkOffProposalItem(
+                        $this->upsertAssigneeOffEntry(
+                            $ref['type'],
+                            $ref['id'],
                             $date->toDateString(),
-                            $shiftPlannerId
+                            $shiftPlannerId,
+                            $overrideExisting
                         );
                         $totalOffDays++;
                     }
                 }
-            }
-
-            $submittedRequests = 0;
-            foreach ($refs as $ref) {
-                $refKey = $ref['type'] . ':' . $ref['id'];
-                $items = $proposalsByRef[$refKey] ?? [];
-                if ($items === []) {
-                    continue;
-                }
-
-                $approvalService->submitBulkForAssignee(
-                    $ref['type'],
-                    $ref['id'],
-                    $items,
-                    $shiftLabel
-                );
-                $submittedRequests++;
             }
 
             if ($skipWorkingDays && $totalAssigned === 0 && $totalOffDays === 0) {
@@ -355,16 +363,16 @@ class ShiftRosterService
                 ];
             }
 
-            if ($submittedRequests === 0) {
+            if ($totalAssigned === 0 && $totalOffDays === 0) {
                 return [
                     'success' => false,
-                    'message' => 'No roster days were submitted for approval.',
+                    'message' => 'No roster days were saved.',
                 ];
             }
 
-            $message = 'Shift roster submitted to GM for approval.';
+            $message = 'Shift roster saved as pending. Use Apply for Approval when ready.';
             if ($skipWorkingDays && $totalOffDays > 0) {
-                $message = 'Off days were submitted for approval. Existing weekday shifts were kept because of conflicts.';
+                $message = 'Off days saved as pending. Existing weekday shifts were kept because of conflicts.';
             }
 
             return [
@@ -372,7 +380,6 @@ class ShiftRosterService
                 'message' => $message,
                 'total_assigned' => $totalAssigned,
                 'total_off_days' => $totalOffDays,
-                'approval_requests' => $submittedRequests,
             ];
         });
     }
@@ -380,8 +387,14 @@ class ShiftRosterService
     /**
      * Get data for the roster grid.
      */
-    public function getGridData(int $year, int $month, int $weekIndex, ?string $filter = 'internal', bool $includeDeleted = false): array
-    {
+    public function getGridData(
+        int $year,
+        int $month,
+        int $weekIndex,
+        ?string $filter = 'internal',
+        bool $includeDeleted = false,
+        ?int $approvalRequestId = null
+    ): array {
         // Calendar week range: always Monday -> Sunday
         // Week 1 starts from the Monday of the week that contains the first day of the month.
         $monthStart = Carbon::createFromDate($year, $month, 1)->startOfDay();
@@ -389,6 +402,14 @@ class ShiftRosterService
 
         $startDate = $firstWeekStart->copy()->addWeeks($weekIndex - 1)->startOfDay();
         $endDate = $startDate->copy()->addDays(6)->endOfDay();
+
+        $viewerUserId = Auth::id();
+        $viewerEmployeeId = Auth::user()?->employee_id ? (int) Auth::user()->employee_id : null;
+        $approvalReviewScope = $this->resolveApprovalReviewScope(
+            $approvalRequestId,
+            $viewerUserId,
+            $viewerEmployeeId
+        );
 
         $employees = Employee::with(['department', 'assignedDesignation', 'role.roleLevel'])
             ->where('is_active', 1)
@@ -398,6 +419,18 @@ class ShiftRosterService
             ->whereNull('deleted_at')
             ->orderBy('full_name')
             ->get();
+
+        if ($approvalReviewScope) {
+            $scopedEmployeeIds = $approvalReviewScope['employee_ids'];
+            $scopedOutsourcedIds = $approvalReviewScope['outsourced_ids'];
+
+            $employees = $employees->filter(
+                fn (Employee $employee) => in_array((int) $employee->id, $scopedEmployeeIds, true)
+            )->values();
+            $outsourcedEmployees = $outsourcedEmployees->filter(
+                fn (OutsourcedEmployee $outsourced) => in_array((int) $outsourced->id, $scopedOutsourcedIds, true)
+            )->values();
+        }
 
         $shiftEmployeeIds = $employees->pluck('id')->all();
         $outsourcedIds = $outsourcedEmployees->pluck('id')->all();
@@ -484,6 +517,8 @@ class ShiftRosterService
 
         $entryRelations = [
             'shift',
+            'approvalRequest',
+            'approvalSegment',
             'createdBy:id,name',
             'updatedBy:id,name',
             'assignedBy:id,name',
@@ -494,15 +529,44 @@ class ShiftRosterService
 
         $entriesQuery = ShiftRosterEntry::with($entryRelations)
             ->whereBetween('roster_date', $dateRange);
-        $employeeScope($entriesQuery);
+
+        if ($approvalReviewScope) {
+            $entriesQuery->where('shift_roster_approval_request_id', $approvalReviewScope['request_id']);
+            if ($approvalReviewScope['segment_id']) {
+                $entriesQuery->where('shift_roster_approval_segment_id', $approvalReviewScope['segment_id']);
+            }
+        } else {
+            $employeeScope($entriesQuery);
+        }
+
         $entries = $entriesQuery->get();
+
+        if (! $approvalReviewScope) {
+            $entries = $entries
+                ->filter(fn (ShiftRosterEntry $entry) => $this->entryVisibleToViewer(
+                    $entry,
+                    $viewerUserId,
+                    $viewerEmployeeId
+                ))
+                ->values();
+        }
 
         if ($includeDeleted) {
             $trashedQuery = ShiftRosterEntry::onlyTrashed()
                 ->with($entryRelations)
                 ->whereBetween('roster_date', $dateRange);
             $employeeScope($trashedQuery);
-            $entries = $entries->merge($trashedQuery->get())->unique('id')->values();
+            $entries = $entries
+                ->merge(
+                    $trashedQuery->get()
+                        ->filter(fn (ShiftRosterEntry $entry) => $this->entryVisibleToViewer(
+                            $entry,
+                            $viewerUserId,
+                            $viewerEmployeeId
+                        ))
+                )
+                ->unique('id')
+                ->values();
         }
 
         $floorLabelMaps = [];
@@ -518,51 +582,14 @@ class ShiftRosterService
             }
         }
 
-        $shiftsOut = $entries->map(function ($entry) use ($floorLabelMaps) {
-            $isOffDay = strtolower((string) $entry->status) === 'off';
-            $shiftName = strtolower($entry->shift?->name ?? '');
-            $isCustomTime = (bool) $entry->is_custom_time;
-            $startTime = $isOffDay ? null : ($entry->start_time ?? $entry->shift?->start_time);
-            $shiftType = $this->resolveShiftType($startTime, $isOffDay, $isCustomTime, $shiftName);
-
-            $employeeType = $entry->employee_id ? 'employee' : 'outsourced';
-            $sourceId = (int) ($entry->employee_id ?: $entry->outsourced_employee_id);
-            $lookupKey = $this->assigneeLookupKey($employeeType, $sourceId);
-            $floorLabel = $entry->floor;
-
-            return [
-                'rosterId' => $entry->id,
-                'employeeId' => $entry->employee_id
-                    ? ('employee:' . $entry->employee_id)
-                    : ('outsourced:' . $entry->outsourced_employee_id),
-                'employeeType' => $entry->employee_id ? 'employee' : 'outsourced',
-                'sourceId' => $entry->employee_id ?: $entry->outsourced_employee_id,
-                // Full date is used by the front-end to correctly align Mon->Sun columns.
-                'rosterDate' => $entry->roster_date->toDateString(),
-                // Kept for backward compatibility/fallbacks.
-                'day' => (int) $entry->roster_date->format('d'),
-                'shiftPlannerId' => $isOffDay ? null : $entry->shift_planner_id,
-                'isCustomTime' => $isOffDay ? false : $isCustomTime,
-                'shiftType' => $shiftType,
-                'timeStart' => $isOffDay ? null : $this->formatShiftTime($entry->start_time ?? $entry->shift?->start_time),
-                'timeEnd' => $isOffDay ? null : $this->formatShiftTime($entry->end_time ?? $entry->shift?->end_time),
-                'floor' => $floorLabel,
-                'location' => $entry->location_text,
-                'notes' => $entry->notes,
-                'sbuFloorId' => $floorLabel ? ($floorLabelMaps[$lookupKey][$floorLabel] ?? null) : null,
-                'status' => $entry->status,
-                'isOffDay' => $isOffDay,
-                'isCompensatory' => $entry->is_compensatory_earned,
-                'deletedAt' => $entry->deleted_at?->toDateTimeString(),
-                'createdAt' => $entry->created_at?->toDateTimeString(),
-                'updatedAt' => $entry->updated_by ? $entry->updated_at?->toDateTimeString() : null,
-                'assignedAt' => $entry->assigned_by ? $entry->created_at?->toDateTimeString() : null,
-                'createdByName' => $entry->createdBy?->name,
-                'updatedByName' => $entry->updatedBy?->name,
-                'assignedByName' => $entry->assignedBy?->name,
-                'deletedByName' => $entry->deletedBy?->name,
-            ];
-        })->all();
+        $shiftsOut = $entries
+            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToGridShift(
+                $entry,
+                $floorLabelMaps,
+                $viewerUserId,
+                $viewerEmployeeId
+            ))
+            ->all();
 
         $virtualHolidays = $this->publicHolidayResolver->buildVirtualRosterHolidaysForGrid(
             $employees,
@@ -625,11 +652,134 @@ class ShiftRosterService
             $shiftsOut = array_merge($shiftsOut, $virtualLeaves);
         }
 
+        $draftPendingQuery = ShiftRosterEntry::query()
+            ->with(['approvalRequest', 'approvalSegment'])
+            ->whereBetween('roster_date', $dateRange);
+        $employeeScope($draftPendingQuery);
+        $draftPendingCount = $draftPendingQuery
+            ->whereNull('shift_roster_approval_request_id')
+            ->whereIn('status', ['pending', 'off'])
+            ->get()
+            ->filter(fn (ShiftRosterEntry $entry) => $this->entryVisibleToViewer(
+                $entry,
+                $viewerUserId,
+                $viewerEmployeeId
+            ))
+            ->count();
+
         return [
             'departments' => $departments,
             'employees' => $empPayload,
-            'shifts' => $shiftsOut
+            'shifts' => $shiftsOut,
+            'meta' => [
+                'draftPendingCount' => $approvalReviewScope ? 0 : $draftPendingCount,
+                'canApplyForApproval' => $approvalReviewScope ? false : $draftPendingCount > 0,
+                'approvalReviewMode' => $approvalReviewScope !== null,
+                'approvalRequestId' => $approvalReviewScope['request_id'] ?? null,
+            ],
         ];
+    }
+
+    /**
+     * @return array{request_id:int, segment_id:?int, employee_ids:array<int, int>, outsourced_ids:array<int, int>}|null
+     */
+    private function resolveApprovalReviewScope(
+        ?int $approvalRequestId,
+        ?int $viewerUserId,
+        ?int $viewerEmployeeId
+    ): ?array {
+        if (! $approvalRequestId) {
+            return null;
+        }
+
+        $request = ShiftRosterApprovalRequest::query()
+            ->with('segments')
+            ->find($approvalRequestId);
+
+        if (! $request) {
+            return null;
+        }
+
+        if (! $request->isPending()) {
+            return null;
+        }
+
+        $this->assertCanAccessApprovalReview($request, $viewerUserId, $viewerEmployeeId);
+
+        $entryQuery = ShiftRosterEntry::query()
+            ->where('shift_roster_approval_request_id', $approvalRequestId);
+
+        $segmentId = null;
+        if ($request->request_type === 'roster') {
+            $viewer = Auth::user();
+            $segment = null;
+
+            if ($viewerEmployeeId) {
+                $segment = $request->segments
+                    ->first(fn (ShiftRosterApprovalSegment $item) => (int) $item->approver_employee_id === (int) $viewerEmployeeId
+                        && $item->isPending());
+            }
+
+            if ($segment) {
+                $segmentId = (int) $segment->id;
+                $entryQuery->where('shift_roster_approval_segment_id', $segmentId);
+            } elseif (! $viewer?->isSystemAdminUser()) {
+                throw ValidationException::withMessages([
+                    'approval' => 'You are not authorized to review this roster request.',
+                ]);
+            }
+        }
+
+        $scopedEntries = $entryQuery->get(['employee_id', 'outsourced_employee_id']);
+
+        return [
+            'request_id' => $approvalRequestId,
+            'segment_id' => $segmentId,
+            'employee_ids' => $scopedEntries
+                ->whereNotNull('employee_id')
+                ->pluck('employee_id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all(),
+            'outsourced_ids' => $scopedEntries
+                ->whereNotNull('outsourced_employee_id')
+                ->pluck('outsourced_employee_id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function assertCanAccessApprovalReview(
+        ShiftRosterApprovalRequest $request,
+        ?int $viewerUserId,
+        ?int $viewerEmployeeId
+    ): void {
+        $viewer = Auth::user();
+
+        if ($viewer?->isSystemAdminUser()) {
+            return;
+        }
+
+        if ($request->request_type === 'roster') {
+            if ($viewerEmployeeId && $request->segments->contains(
+                fn (ShiftRosterApprovalSegment $segment) => (int) $segment->approver_employee_id === (int) $viewerEmployeeId
+            )) {
+                return;
+            }
+        } elseif ($viewerEmployeeId && (int) $request->approver_employee_id === (int) $viewerEmployeeId) {
+            return;
+        }
+
+        if ($viewerUserId && (int) $request->requested_by === (int) $viewerUserId) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'approval' => 'You are not authorized to review this roster request.',
+        ]);
     }
 
     private function formatShiftTime($value): string
@@ -893,6 +1043,7 @@ class ShiftRosterService
             'start_time' => $startTime ?? ($shift ? $this->formatShiftTime($shift->start_time) : null),
             'end_time' => $endTime ?? ($shift ? $this->formatShiftTime($shift->end_time) : null),
             'status' => 'pending',
+            'shift_roster_approval_request_id' => null,
         ];
         $this->applyFloorToPayload($placementData, $basePayload);
         $this->applyLocationToPayload($placementData, $basePayload);
@@ -911,17 +1062,15 @@ class ShiftRosterService
             return;
         }
 
-        if ($overrideExisting) {
+        if ($existingEntry) {
+            $this->assertEntryEditable($existingEntry);
+        }
+
+        if ($overrideExisting || ! $existingEntry) {
             $this->saveDailyRosterEntry($lookup, $payload, $userId);
 
             return;
         }
-
-        if (ShiftRosterEntry::query()->where($lookup)->exists()) {
-            return;
-        }
-
-        $this->saveDailyRosterEntry($lookup, $payload, $userId);
     }
 
     private function upsertAssigneeOffEntry(string $type, int $id, string $date, ?int $shiftPlannerId, bool $overrideExisting): void
@@ -934,6 +1083,7 @@ class ShiftRosterService
             'end_time' => null,
             'floor' => null,
             'status' => 'off',
+            'shift_roster_approval_request_id' => null,
         ];
 
         if ($type === 'outsourced') {
@@ -944,17 +1094,14 @@ class ShiftRosterService
             $payload = ['outsourced_employee_id' => null] + $basePayload;
         }
 
-        if ($overrideExisting) {
+        $existingEntry = ShiftRosterEntry::query()->where($lookup)->first();
+        if ($existingEntry) {
+            $this->assertEntryEditable($existingEntry);
+        }
+
+        if ($overrideExisting || ! $existingEntry) {
             $this->saveDailyRosterEntry($lookup, $payload, $userId);
-
-            return;
         }
-
-        if (ShiftRosterEntry::query()->where($lookup)->exists()) {
-            return;
-        }
-
-        $this->saveDailyRosterEntry($lookup, $payload, $userId);
     }
 
     private function saveDailyRosterEntry(array $lookup, array $payload, ?int $userId): ShiftRosterEntry
@@ -974,6 +1121,10 @@ class ShiftRosterService
         }
 
         if ($activeEntry) {
+            if ($this->isGmApprovedEntry($activeEntry) && empty($activeEntry->published_snapshot)) {
+                $payload['published_snapshot'] = $this->buildPublishedSnapshotFromEntry($activeEntry);
+            }
+
             $before = $this->historyService->snapshot($activeEntry);
             $activeEntry->fill($payload);
             if ($userId) {
@@ -1085,6 +1236,393 @@ class ShiftRosterService
         }
 
         return (string) $entry->status;
+    }
+
+    /**
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    private function buildDraftEntryPayload(array $data, ?ShiftRosterEntry $existing = null): array
+    {
+        $employeeType = ($data['employee_type'] ?? 'employee') === 'outsourced' ? 'outsourced' : 'employee';
+        $employeeId = (int) $data['employee_id'];
+        $rosterDate = (string) ($data['roster_date'] ?? $existing?->roster_date?->toDateString());
+
+        $assignment = $this->buildEntryAssignment($data, $existing);
+        $entryStatus = $existing
+            ? $this->resolveUpdatedEntryStatus($existing, $data)
+            : (((int) ($data['status'] ?? 1)) === 1 ? 'pending' : 'cancelled');
+
+        if ($employeeType === 'outsourced') {
+            $lookup = ['outsourced_employee_id' => $employeeId, 'roster_date' => $rosterDate];
+            $payload = ['employee_id' => null];
+        } else {
+            $lookup = ['employee_id' => $employeeId, 'roster_date' => $rosterDate];
+            $payload = ['outsourced_employee_id' => null];
+        }
+
+        $payload += [
+            'shift_planner_id' => $assignment['shift_planner_id'],
+            'is_custom_time' => $assignment['is_custom_time'],
+            'start_time' => $assignment['start_time'],
+            'end_time' => $assignment['end_time'],
+            'status' => $entryStatus,
+            'shift_roster_approval_request_id' => null,
+        ];
+
+        $this->applyFloorToPayload($data, $payload, $existing?->floor);
+        $this->applyLocationToPayload($data, $payload, $existing?->location_text);
+        $this->applyNotesToPayload($data, $payload);
+
+        return [$lookup, $payload];
+    }
+
+    private function assertEntryEditable(ShiftRosterEntry $entry): void
+    {
+        if (! $entry->shift_roster_approval_request_id) {
+            return;
+        }
+
+        $request = ShiftRosterApprovalRequest::query()->find($entry->shift_roster_approval_request_id);
+        if ($request && $request->isPending()) {
+            throw ValidationException::withMessages([
+                'roster_date' => 'This roster is awaiting GM approval and cannot be changed.',
+            ]);
+        }
+    }
+
+    private function assertNoExistingOffDay(string $employeeType, int $employeeId, string $rosterDate): void
+    {
+        $query = ShiftRosterEntry::query()->where('roster_date', $rosterDate);
+
+        if ($employeeType === 'outsourced') {
+            $query->where('outsourced_employee_id', $employeeId);
+        } else {
+            $query->where('employee_id', $employeeId);
+        }
+
+        $existingEntry = $query->first();
+
+        if ($existingEntry && strtolower((string) $existingEntry->status) === 'off') {
+            throw ValidationException::withMessages([
+                'roster_date' => 'This date is marked as off. Open the off day entry and convert it to assign a shift while keeping history.',
+            ]);
+        }
+    }
+
+    private function isDraftPendingEntry(ShiftRosterEntry $entry): bool
+    {
+        if ($entry->shift_roster_approval_request_id) {
+            return false;
+        }
+
+        return in_array(strtolower((string) $entry->status), ['pending', 'off'], true);
+    }
+
+    private function isAwaitingGmApprovalEntry(ShiftRosterEntry $entry): bool
+    {
+        if (! $entry->shift_roster_approval_request_id) {
+            return false;
+        }
+
+        if ($entry->approvalRequest?->request_type === 'roster') {
+            return $entry->approvalSegment?->approval_status === 'pending';
+        }
+
+        return $entry->approvalRequest?->approval_status === 'pending';
+    }
+
+    private function isGmApprovedEntry(ShiftRosterEntry $entry): bool
+    {
+        if (! $entry->shift_roster_approval_request_id) {
+            return false;
+        }
+
+        if ($entry->approvalRequest?->request_type === 'roster') {
+            if ($entry->approvalSegment?->approval_status === 'approved') {
+                return true;
+            }
+
+            return $entry->approvalRequest?->approval_status === 'approved';
+        }
+
+        return $entry->approvalRequest?->approval_status === 'approved';
+    }
+
+    private function resolveEntryApprovalStatus(ShiftRosterEntry $entry): ?string
+    {
+        if (! $entry->shift_roster_approval_request_id) {
+            return null;
+        }
+
+        if ($entry->approvalRequest?->request_type === 'roster') {
+            return $entry->approvalSegment?->approval_status
+                ?? $entry->approvalRequest?->approval_status;
+        }
+
+        return $entry->approvalRequest?->approval_status;
+    }
+
+    public function restorePublishedSnapshot(ShiftRosterEntry $entry): ShiftRosterEntry
+    {
+        $snapshot = $entry->published_snapshot;
+        if (! is_array($snapshot) || $snapshot === []) {
+            return $entry;
+        }
+
+        $entry->fill([
+            'shift_planner_id' => $snapshot['shift_planner_id'] ?? null,
+            'is_custom_time' => (bool) ($snapshot['is_custom_time'] ?? false),
+            'start_time' => $snapshot['start_time'] ?? null,
+            'end_time' => $snapshot['end_time'] ?? null,
+            'floor' => $snapshot['floor'] ?? null,
+            'location_text' => $snapshot['location_text'] ?? null,
+            'notes' => $snapshot['notes'] ?? null,
+            'status' => $snapshot['status'] ?? 'pending',
+            'shift_roster_approval_request_id' => $snapshot['shift_roster_approval_request_id'] ?? null,
+            'shift_roster_approval_segment_id' => $snapshot['shift_roster_approval_segment_id'] ?? null,
+            'is_compensatory_earned' => (bool) ($snapshot['is_compensatory_earned'] ?? false),
+            'compensatory_reason' => $snapshot['compensatory_reason'] ?? null,
+            'published_snapshot' => null,
+        ]);
+        $entry->save();
+
+        return $entry->fresh();
+    }
+
+    public function clearPublishedSnapshotsForEntries(iterable $entryIds): void
+    {
+        ShiftRosterEntry::query()
+            ->whereIn('id', collect($entryIds)->filter()->values()->all())
+            ->update(['published_snapshot' => null]);
+    }
+
+    private function mapEntryToGridShift(
+        ShiftRosterEntry $entry,
+        array $floorLabelMaps,
+        ?int $viewerUserId,
+        ?int $viewerEmployeeId
+    ): array {
+        $usePublished = $this->shouldShowPublishedSnapshotToViewer($entry, $viewerUserId, $viewerEmployeeId);
+        $highlightPending = $this->shouldHighlightPendingChangeForViewer($entry, $viewerUserId, $viewerEmployeeId);
+        $snapshot = $usePublished ? ($entry->published_snapshot ?? []) : [];
+
+        $status = (string) ($usePublished ? ($snapshot['status'] ?? $entry->status) : $entry->status);
+        $isOffDay = strtolower($status) === 'off';
+        $shiftPlannerId = $usePublished
+            ? ($snapshot['shift_planner_id'] ?? $entry->shift_planner_id)
+            : $entry->shift_planner_id;
+        $isCustomTime = $usePublished
+            ? (bool) ($snapshot['is_custom_time'] ?? $entry->is_custom_time)
+            : (bool) $entry->is_custom_time;
+        $startTime = $usePublished ? ($snapshot['start_time'] ?? $entry->start_time) : $entry->start_time;
+        $endTime = $usePublished ? ($snapshot['end_time'] ?? $entry->end_time) : $entry->end_time;
+        $floorLabel = $usePublished ? ($snapshot['floor'] ?? $entry->floor) : $entry->floor;
+        $locationText = $usePublished ? ($snapshot['location_text'] ?? $entry->location_text) : $entry->location_text;
+        $notes = $usePublished ? ($snapshot['notes'] ?? $entry->notes) : $entry->notes;
+
+        $shift = $entry->shift;
+        if ($usePublished && $shiftPlannerId && (int) $shiftPlannerId !== (int) $entry->shift_planner_id) {
+            $shift = ShiftPlanner::query()->find($shiftPlannerId);
+        }
+
+        $shiftName = strtolower($shift?->name ?? '');
+        $resolvedStart = $isOffDay ? null : ($startTime ?? $shift?->start_time);
+        $shiftType = $this->resolveShiftType($resolvedStart, $isOffDay, $isCustomTime, $shiftName);
+
+        $employeeType = $entry->employee_id ? 'employee' : 'outsourced';
+        $sourceId = (int) ($entry->employee_id ?: $entry->outsourced_employee_id);
+        $lookupKey = $this->assigneeLookupKey($employeeType, $sourceId);
+
+        return [
+            'rosterId' => $entry->id,
+            'employeeId' => $entry->employee_id
+                ? ('employee:' . $entry->employee_id)
+                : ('outsourced:' . $entry->outsourced_employee_id),
+            'employeeType' => $employeeType,
+            'sourceId' => $entry->employee_id ?: $entry->outsourced_employee_id,
+            'rosterDate' => $entry->roster_date->toDateString(),
+            'day' => (int) $entry->roster_date->format('d'),
+            'shiftPlannerId' => $isOffDay ? null : $shiftPlannerId,
+            'isCustomTime' => $isOffDay ? false : $isCustomTime,
+            'shiftType' => $shiftType,
+            'timeStart' => $isOffDay ? null : $this->formatShiftTime($startTime ?? $shift?->start_time),
+            'timeEnd' => $isOffDay ? null : $this->formatShiftTime($endTime ?? $shift?->end_time),
+            'floor' => $floorLabel,
+            'location' => $locationText,
+            'notes' => $notes,
+            'sbuFloorId' => $floorLabel ? ($floorLabelMaps[$lookupKey][$floorLabel] ?? null) : null,
+            'status' => $status,
+            'approvalRequestId' => $usePublished
+                ? ($snapshot['shift_roster_approval_request_id'] ?? null)
+                : $entry->shift_roster_approval_request_id,
+            'approvalStatus' => $usePublished ? 'approved' : $this->resolveEntryApprovalStatus($entry),
+            'isDraftPending' => ! $usePublished && $this->isDraftPendingEntry($entry),
+            'isAwaitingGmApproval' => ! $usePublished && $this->isAwaitingGmApprovalEntry($entry),
+            'isGmApproved' => $usePublished || ($this->isGmApprovedEntry($entry) && ! $this->hasPendingPublishedChange($entry)),
+            'isPendingChangeHighlight' => $highlightPending,
+            'isOffDay' => $isOffDay,
+            'isCompensatory' => $usePublished
+                ? (bool) ($snapshot['is_compensatory_earned'] ?? false)
+                : $entry->is_compensatory_earned,
+            'deletedAt' => $entry->deleted_at?->toDateTimeString(),
+            'createdAt' => $entry->created_at?->toDateTimeString(),
+            'updatedAt' => $entry->updated_by ? $entry->updated_at?->toDateTimeString() : null,
+            'assignedAt' => $entry->assigned_by ? $entry->created_at?->toDateTimeString() : null,
+            'createdByName' => $entry->createdBy?->name,
+            'updatedByName' => $entry->updatedBy?->name,
+            'assignedByName' => $entry->assignedBy?->name,
+            'deletedByName' => $entry->deletedBy?->name,
+        ];
+    }
+
+    private function buildPublishedSnapshotFromEntry(ShiftRosterEntry $entry): array
+    {
+        return [
+            'shift_planner_id' => $entry->shift_planner_id,
+            'is_custom_time' => (bool) $entry->is_custom_time,
+            'start_time' => $entry->start_time,
+            'end_time' => $entry->end_time,
+            'floor' => $entry->floor,
+            'location_text' => $entry->location_text,
+            'notes' => $entry->notes,
+            'status' => (string) $entry->status,
+            'shift_roster_approval_request_id' => $entry->shift_roster_approval_request_id,
+            'shift_roster_approval_segment_id' => $entry->shift_roster_approval_segment_id,
+            'is_compensatory_earned' => (bool) $entry->is_compensatory_earned,
+            'compensatory_reason' => $entry->compensatory_reason,
+        ];
+    }
+
+    private function hasPendingPublishedChange(ShiftRosterEntry $entry): bool
+    {
+        return is_array($entry->published_snapshot) && $entry->published_snapshot !== [];
+    }
+
+    private function shouldShowPublishedSnapshotToViewer(
+        ShiftRosterEntry $entry,
+        ?int $viewerUserId,
+        ?int $viewerEmployeeId
+    ): bool {
+        if (! $this->hasPendingPublishedChange($entry)) {
+            return false;
+        }
+
+        return ! $this->viewerSeesPendingChange($entry, $viewerUserId, $viewerEmployeeId);
+    }
+
+    private function shouldHighlightPendingChangeForViewer(
+        ShiftRosterEntry $entry,
+        ?int $viewerUserId,
+        ?int $viewerEmployeeId
+    ): bool {
+        if (! $this->hasPendingPublishedChange($entry)) {
+            return false;
+        }
+
+        return $this->viewerIsApplier($entry, $viewerUserId);
+    }
+
+    private function viewerIsApplier(ShiftRosterEntry $entry, ?int $viewerUserId): bool
+    {
+        if (! $viewerUserId) {
+            return false;
+        }
+
+        if ($entry->shift_roster_approval_request_id) {
+            return (int) $entry->approvalRequest?->requested_by === (int) $viewerUserId;
+        }
+
+        return (int) $entry->created_by === (int) $viewerUserId;
+    }
+
+    private function viewerSeesPendingChange(
+        ShiftRosterEntry $entry,
+        ?int $viewerUserId,
+        ?int $viewerEmployeeId
+    ): bool {
+        if (! $viewerUserId) {
+            return false;
+        }
+
+        $viewer = Auth::user();
+        if ($viewer?->isSystemAdminUser()) {
+            return true;
+        }
+
+        if ($entry->shift_roster_approval_request_id) {
+            if ((int) $entry->approvalRequest?->requested_by === (int) $viewerUserId) {
+                return true;
+            }
+
+            if ($viewerEmployeeId) {
+                if ($entry->approvalRequest?->request_type === 'roster') {
+                    if ((int) $entry->approvalSegment?->approver_employee_id === (int) $viewerEmployeeId
+                        && $entry->approvalSegment?->approval_status === 'pending') {
+                        return true;
+                    }
+                } elseif ((int) $entry->approvalRequest?->approver_employee_id === (int) $viewerEmployeeId
+                    && $entry->approvalRequest?->approval_status === 'pending') {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if ($this->isDraftPendingEntry($entry)) {
+            return (int) $entry->created_by === (int) $viewerUserId;
+        }
+
+        return false;
+    }
+
+    private function entryVisibleToViewer(
+        ShiftRosterEntry $entry,
+        ?int $viewerUserId,
+        ?int $viewerEmployeeId
+    ): bool {
+        if ($this->hasPendingPublishedChange($entry)) {
+            return true;
+        }
+
+        if ($this->isGmApprovedEntry($entry)) {
+            return true;
+        }
+
+        if (! $viewerUserId) {
+            return false;
+        }
+
+        $viewer = Auth::user();
+        if ($viewer?->isSystemAdminUser()) {
+            return true;
+        }
+
+        if ($entry->shift_roster_approval_request_id) {
+            if ((int) $entry->approvalRequest?->requested_by === (int) $viewerUserId) {
+                return true;
+            }
+
+            if ($viewerEmployeeId) {
+                if ($entry->approvalRequest?->request_type === 'roster') {
+                    if ((int) $entry->approvalSegment?->approver_employee_id === (int) $viewerEmployeeId
+                        && $entry->approvalSegment?->approval_status === 'pending') {
+                        return true;
+                    }
+                } elseif ((int) $entry->approvalRequest?->approver_employee_id === (int) $viewerEmployeeId
+                    && $entry->approvalRequest?->approval_status === 'pending') {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if ($this->isDraftPendingEntry($entry)) {
+            return (int) $entry->created_by === (int) $viewerUserId;
+        }
+
+        return true;
     }
 
 }

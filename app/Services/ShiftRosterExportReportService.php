@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Department;
+use App\Models\ShiftPlanner;
 use App\Models\ShiftRosterApprovalRequest;
 use App\Models\ShiftRosterEntry;
 use App\Models\ThirdParty;
@@ -199,6 +200,8 @@ class ShiftRosterExportReportService
     {
         $entryRelations = [
             'shift',
+            'approvalRequest',
+            'approvalSegment',
             'employee.department',
             'employee.assignedDesignation',
             'employee.role',
@@ -455,16 +458,51 @@ class ShiftRosterExportReportService
     {
         $status = strtolower((string) $entry->status);
 
-        return ! in_array($status, ['off', 'cancelled'], true);
+        if (in_array($status, ['off', 'cancelled'], true)) {
+            return false;
+        }
+
+        if ($entry->shift_roster_approval_request_id && ! $this->isEntryGmApproved($entry)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function isEntryGmApproved(ShiftRosterEntry $entry): bool
+    {
+        if (is_array($entry->published_snapshot) && $entry->published_snapshot !== []) {
+            return true;
+        }
+
+        if ($entry->approvalRequest?->request_type === 'roster') {
+            return $entry->approvalSegment?->approval_status === 'approved';
+        }
+
+        return $entry->approvalRequest?->approval_status === 'approved';
+    }
+
+    private function resolvePublishedSnapshot(ShiftRosterEntry $entry): ?array
+    {
+        $snapshot = $entry->published_snapshot;
+
+        return is_array($snapshot) && $snapshot !== [] ? $snapshot : null;
     }
 
     private function mapEntryToExportRow(ShiftRosterEntry $entry, bool $includeShiftTimes): array
     {
-        $isOffDay = strtolower((string) $entry->status) === 'off';
-        $shiftName = strtolower($entry->shift?->name ?? '');
-        $isCustomTime = (bool) $entry->is_custom_time;
-        $startRaw = $isOffDay ? null : ($entry->start_time ?? $entry->shift?->start_time);
-        $endRaw = $isOffDay ? null : ($entry->end_time ?? $entry->shift?->end_time);
+        $snapshot = $this->resolvePublishedSnapshot($entry);
+        $status = (string) ($snapshot['status'] ?? $entry->status);
+        $isOffDay = strtolower($status) === 'off';
+        $shiftPlannerId = $snapshot['shift_planner_id'] ?? $entry->shift_planner_id;
+        $shift = $entry->shift;
+        if ($snapshot && $shiftPlannerId && (int) $shiftPlannerId !== (int) $entry->shift_planner_id) {
+            $shift = ShiftPlanner::query()->find($shiftPlannerId);
+        }
+        $shiftName = strtolower($shift?->name ?? '');
+        $isCustomTime = (bool) ($snapshot['is_custom_time'] ?? $entry->is_custom_time);
+        $startRaw = $isOffDay ? null : ($snapshot['start_time'] ?? $entry->start_time ?? $shift?->start_time);
+        $endRaw = $isOffDay ? null : ($snapshot['end_time'] ?? $entry->end_time ?? $shift?->end_time);
         $shiftType = $this->resolveShiftType(
             $startRaw ? $this->formatShiftTime($startRaw) : null,
             $isOffDay,

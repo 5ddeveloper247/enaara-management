@@ -175,6 +175,11 @@
         window.rosterBulkFloorOptionsUrl = @json(route('admin.shift-roster.bulk-floor-options'));
         window.rosterExportPdfUrl = @json(route('admin.shift-roster.export-pdf'));
         window.rosterExportDepartmentsUrl = @json(route('admin.shift-roster.export-excel.departments'));
+        window.rosterApplyForApprovalUrl = @json(route('admin.shift-roster.apply-for-approval'));
+        window.rosterApprovalShowUrl = @json(url('/admin/shift-roster/approvals'));
+        window.rosterApprovalApproveUrl = @json(url('/admin/shift-roster/approvals'));
+        window.rosterApprovalRejectUrl = @json(url('/admin/shift-roster/approvals'));
+        window.shiftPlannerUrl = @json(route('admin.shift-planner.index'));
     </script>
     <script src="{{ asset('js/roster-render.js') }}"></script>
     <script src="{{ asset('js/roster-export-pdf.js') }}"></script>

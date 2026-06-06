@@ -64,6 +64,11 @@ class ShiftRosterApprovalRequest extends Model
         return $this->hasMany(ShiftRosterApprovalRequestItem::class);
     }
 
+    public function segments(): HasMany
+    {
+        return $this->hasMany(ShiftRosterApprovalSegment::class, 'shift_roster_approval_request_id');
+    }
+
     public function isPending(): bool
     {
         return $this->approval_status === 'pending';

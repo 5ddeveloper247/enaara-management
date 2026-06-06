@@ -824,7 +824,12 @@
 
             list.querySelectorAll('.roster-view-btn').forEach(function (btn) {
                 btn.addEventListener('click', function () {
-                    DashboardRosterApprovals.openModal(parseInt(btn.getAttribute('data-id'), 10));
+                    var requestId = parseInt(btn.getAttribute('data-id'), 10);
+                    var plannerUrl = (window._dashRoutes && window._dashRoutes.shiftPlannerUrl)
+                        ? window._dashRoutes.shiftPlannerUrl
+                        : '/admin/shift-planner';
+                    sessionStorage.setItem('rosterApprovalReviewId', String(requestId));
+                    window.location.href = plannerUrl;
                 });
             });
         },
@@ -1192,7 +1197,11 @@
             var params = new URLSearchParams(window.location.search);
             var requestId = parseInt(params.get('roster_approval') || '0', 10);
             if (requestId > 0) {
-                this.openModal(requestId);
+                var plannerUrl = (window._dashRoutes && window._dashRoutes.shiftPlannerUrl)
+                    ? window._dashRoutes.shiftPlannerUrl
+                    : '/admin/shift-planner';
+                sessionStorage.setItem('rosterApprovalReviewId', String(requestId));
+                window.location.href = plannerUrl;
             }
         }
     };

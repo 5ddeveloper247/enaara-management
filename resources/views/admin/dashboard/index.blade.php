@@ -108,6 +108,7 @@
         rosterApprovalShow: '{{ url('/admin/shift-roster/approvals') }}',
         rosterApprovalApprove: '{{ url('/admin/shift-roster/approvals') }}',
         rosterApprovalReject: '{{ url('/admin/shift-roster/approvals') }}',
+        shiftPlannerUrl: '{{ route('admin.shift-planner.index') }}',
         upcomingHolidays:   '{{ route('admin.dashboard.upcoming-holidays') }}',
         whoIsOutToday:      '{{ route('admin.dashboard.who-is-out') }}',
         leaveRequestStatus: '/admin/leave-request/{id}/status',

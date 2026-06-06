@@ -81,7 +81,10 @@ class DashboardService
 
         return $this->shiftRosterApprovalService
             ->getPendingForApprover((int) $user->employee_id)
-            ->map(fn ($request) => $this->shiftRosterApprovalService->formatPendingListItem($request))
+            ->map(fn (array $item) => $this->shiftRosterApprovalService->formatPendingListItem(
+                $item['request'],
+                $item['segment'] ?? null
+            ))
             ->values()
             ->all();
     }

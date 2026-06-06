@@ -50,9 +50,19 @@ class ShiftRosterController extends Controller
         $week = (int) $request->query('week', 1);
         $filter = $request->query('filter', 'internal');
         $includeDeleted = filter_var($request->query('include_deleted'), FILTER_VALIDATE_BOOLEAN);
+        $approvalRequestId = $request->query('approval_request_id')
+            ? (int) $request->query('approval_request_id')
+            : null;
 
         try {
-            $data = $this->shiftRosterService->getGridData($year, $month, $week, $filter, $includeDeleted);
+            $data = $this->shiftRosterService->getGridData(
+                $year,
+                $month,
+                $week,
+                $filter,
+                $includeDeleted,
+                $approvalRequestId
+            );
 
             return response()->json([
                 'success' => true,
@@ -236,7 +246,7 @@ class ShiftRosterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Shift roster submitted to GM for approval.',
+                'message' => 'Shift saved as pending. Use Apply for Approval when ready.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -266,7 +276,7 @@ class ShiftRosterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Shift roster change submitted to GM for approval.',
+                'message' => 'Shift updated and saved as pending.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -296,7 +306,7 @@ class ShiftRosterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Shift roster removal submitted to GM for approval.',
+                'message' => 'Shift removed from roster.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([

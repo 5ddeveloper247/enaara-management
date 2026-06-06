@@ -52,6 +52,35 @@
                         </table>
                     </div>
                 </div>
+
+                <div id="rosterApplyApprovalBar" class="roster-apply-approval-bar d-none">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <p class="mb-0 fw-semibold text-main">Draft roster ready for approval</p>
+                            <p class="mb-0 small text-muted" id="rosterDraftPendingSummary">Pending shifts waiting to be submitted.</p>
+                        </div>
+                        <button type="button" class="btn btn-primary bg-main border-0 rounded-2" id="rosterApplyForApprovalBtn">
+                            <i class="bi bi-send-check me-1"></i>Apply for Approval
+                        </button>
+                    </div>
+                </div>
+
+                <div id="rosterGmApprovalBar" class="roster-gm-approval-bar d-none">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <p class="mb-0 fw-semibold text-main" id="rosterGmApprovalTitle">Review shift roster</p>
+                            <p class="mb-0 small text-muted" id="rosterGmApprovalSummary">Approve or reject this roster request.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-danger rounded-2" id="rosterGmRejectBtn">
+                                <i class="bi bi-x-lg me-1"></i>Reject
+                            </button>
+                            <button type="button" class="btn btn-success border-0 rounded-2" id="rosterGmApproveBtn">
+                                <i class="bi bi-check-lg me-1"></i>Approve
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

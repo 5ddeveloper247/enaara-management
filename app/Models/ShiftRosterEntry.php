@@ -31,6 +31,9 @@ class ShiftRosterEntry extends Model
         'notes',
         'late_check_in',
         'status',
+        'shift_roster_approval_request_id',
+        'shift_roster_approval_segment_id',
+        'published_snapshot',
         'is_compensatory_earned',
         'compensatory_reason',
         'created_by',
@@ -44,6 +47,7 @@ class ShiftRosterEntry extends Model
         'late_check_in' => 'boolean',
         'is_custom_time' => 'boolean',
         'is_compensatory_earned' => 'boolean',
+        'published_snapshot' => 'array',
     ];
 
     public function assignment(): BelongsTo
@@ -64,6 +68,16 @@ class ShiftRosterEntry extends Model
     public function shift(): BelongsTo
     {
         return $this->belongsTo(ShiftPlanner::class, 'shift_planner_id');
+    }
+
+    public function approvalRequest(): BelongsTo
+    {
+        return $this->belongsTo(ShiftRosterApprovalRequest::class, 'shift_roster_approval_request_id');
+    }
+
+    public function approvalSegment(): BelongsTo
+    {
+        return $this->belongsTo(ShiftRosterApprovalSegment::class, 'shift_roster_approval_segment_id');
     }
 
     public function createdBy(): BelongsTo
