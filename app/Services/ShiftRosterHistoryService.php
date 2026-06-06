@@ -83,6 +83,8 @@ class ShiftRosterHistoryService
     {
         $changes = [];
         $skipEndTime = false;
+        $timeRangeChanged = $this->valuesDiffer($before, $after, 'start_time')
+            || $this->valuesDiffer($before, $after, 'end_time');
 
         foreach (self::TRACKED_FIELDS as $field) {
             if ($skipEndTime && $field === 'end_time') {
@@ -96,16 +98,18 @@ class ShiftRosterHistoryService
                 continue;
             }
 
-            if ($field === 'start_time' && $this->valuesDiffer($before, $after, 'end_time')) {
+            if ($timeRangeChanged && $field === 'start_time') {
                 $changes[] = [
-                    'field' => 'start_time',
+                    'field' => 'shift_time_range',
                     'label' => 'Shift time',
-                    'before' => $this->formatStoredValue('start_time', $before['start_time'] ?? null)
-                        . ' – ' . $this->formatStoredValue('end_time', $before['end_time'] ?? null),
-                    'after' => $this->formatStoredValue('start_time', $after['start_time'] ?? null)
-                        . ' – ' . $this->formatStoredValue('end_time', $after['end_time'] ?? null),
+                    'before' => $this->formatTimeRange($before),
+                    'after' => $this->formatTimeRange($after),
                 ];
                 $skipEndTime = true;
+                continue;
+            }
+
+            if ($timeRangeChanged && $field === 'end_time') {
                 continue;
             }
 
@@ -118,6 +122,26 @@ class ShiftRosterHistoryService
         }
 
         return $changes;
+    }
+
+    private function formatTimeRange(array $state): string
+    {
+        $start = $this->formatStoredValue('start_time', $state['start_time'] ?? null);
+        $end = $this->formatStoredValue('end_time', $state['end_time'] ?? null);
+
+        if ($start === '' && $end === '') {
+            return '';
+        }
+
+        if ($start === '') {
+            return $end;
+        }
+
+        if ($end === '') {
+            return $start;
+        }
+
+        return $start . ' – ' . $end;
     }
 
     private function valuesDiffer(array $before, array $after, string $field): bool
