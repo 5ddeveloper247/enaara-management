@@ -179,7 +179,7 @@
                                                id="emp_employee_{{ $employee->id }}"
                                                name="employee_ids[]">
                                         <label class="form-check-label text-white small" for="emp_employee_{{ $employee->id }}">
-                                            {{ trim($employee->first_name ?? '') }}
+                                            {{ $employee->rosterDisplayName() }}
                                             @if(!empty($employee->department->name ?? null))
                                                 <span class="opacity-50 ms-2">[{{ $employee->department->name }}]</span>
                                             @endif
