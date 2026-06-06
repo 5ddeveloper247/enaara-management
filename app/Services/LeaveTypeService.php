@@ -81,6 +81,7 @@ class LeaveTypeService
             'sbu_id' => $leaveType->sbu_id,
             'sbu_ids' => $leaveType->sbus->pluck('id')->values()->all(),
             'name' => $leaveType->name,
+            'leave_condition' => $leaveType->leave_condition,
             'code' => $leaveType->code,
             'leave_category' => $leaveType->leave_category,
             'description' => $leaveType->description,
@@ -128,6 +129,7 @@ class LeaveTypeService
         return Arr::only($data, [
             'organization_id',
             'name',
+            'leave_condition',
             'code',
             'leave_category',
             'description',

@@ -17,6 +17,7 @@ class LeaveType extends Model
         'organization_id',
         'sbu_id',
         'name',
+        'leave_condition',
         'code',
         'leave_category',
         'description',

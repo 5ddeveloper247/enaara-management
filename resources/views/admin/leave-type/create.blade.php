@@ -52,11 +52,19 @@
                                         <label for="lt_name" class="form-label">Leave Type Name <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="lt_name" name="name" placeholder="e.g. Annual Leave" maxlength="255">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-6">
+                                        <label for="lt_leave_condition" class="form-label">Leave Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="lt_leave_condition" name="leave_condition">
+                                            <option value="">Select leave type</option>
+                                            <option value="conditional">Conditional leave</option>
+                                            <option value="unconditional">Unconditional leave</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
                                         <label for="lt_code" class="form-label">Leave Code <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control text-uppercase" id="lt_code" name="code" placeholder="E.G. AL" maxlength="5">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <label for="lt_category" class="form-label">Leave Category <span class="text-danger">*</span></label>
                                         <select class="form-select" id="lt_category" name="leave_category">
                                             <option value="">Select category</option>
@@ -66,7 +74,7 @@
                                             <option value="attendance">Attendance Related</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <label class="form-label d-block">Leave Type Status</label>
                                         <div class="lt-inline-switch">
                                             <div class="form-check form-switch mb-0">
@@ -285,8 +293,12 @@
                             </div>
                             <div class="card-body p-3">
                                 <div class="lt-preview-row">
-                                    <span class="lt-preview-label">Leave Type</span>
+                                    <span class="lt-preview-label">Name</span>
                                     <span class="lt-preview-value" id="preview_name">—</span>
+                                </div>
+                                <div class="lt-preview-row">
+                                    <span class="lt-preview-label">Leave Type</span>
+                                    <span class="lt-preview-value" id="preview_leave_condition">—</span>
                                 </div>
                                 <div class="lt-preview-row">
                                     <span class="lt-preview-label">Code</span>

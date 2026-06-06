@@ -87,6 +87,7 @@
 
         function updatePreview() {
             const name = (document.getElementById('lt_name')?.value || '').trim();
+            const leaveCondition = labelForSelect(document.getElementById('lt_leave_condition'));
             const code = (document.getElementById('lt_code')?.value || '').trim();
             const category = labelForSelect(document.getElementById('lt_category'));
             const entitlement = document.getElementById('lt_entitlement_days')?.value || '0';
@@ -96,6 +97,7 @@
             const active = document.getElementById('lt_is_active')?.checked;
 
             setText('preview_name', name || '—');
+            setText('preview_leave_condition', leaveCondition);
             setText('preview_code', code || '—');
             setText('preview_category', category);
             setText('preview_entitlement', entitlement + ' ' + unit);
@@ -160,6 +162,7 @@
             }
 
             setFormFieldValue('name', data.name);
+            setFormFieldValue('leave_condition', data.leave_condition);
             setFormFieldValue('code', data.code);
             setFormFieldValue('leave_category', data.leave_category);
             setFormFieldValue('description', data.description);
@@ -221,6 +224,7 @@
             encashment_rule: 'lt_encashment_rule',
             carry_forward: 'lt_carry_forward',
             leave_category: 'lt_category',
+            leave_condition: 'lt_leave_condition',
             organization_id: 'lt_organization_id',
             sbu_id: 'lt_sbu_id',
             employment_type: 'lt_employment_type',
