@@ -124,6 +124,7 @@ class ShiftRosterExportReportService
                 return [
                     'initials' => $this->makeInitials($name),
                     'name' => $name,
+                    'designation' => $this->resolveExportEmployeeDesignation($first),
                     'department' => $this->resolveExportDepartmentName($first),
                     'shift_count' => count($shifts),
                     'total_hours' => $totalHours,
@@ -198,6 +199,8 @@ class ShiftRosterExportReportService
         $entryRelations = [
             'shift',
             'employee.department',
+            'employee.assignedDesignation',
+            'employee.role',
             'outsourcedEmployee.contractorCompany',
         ];
 
@@ -433,6 +436,7 @@ class ShiftRosterExportReportService
 
         return [
             'employee' => $employeeName,
+            'designation' => $this->resolveExportEmployeeDesignation($entry),
             'date' => $rosterDate->format('d M'),
             'date_sort' => $rosterDate->format('Y-m-d'),
             'day' => $rosterDate->format('D'),
@@ -497,6 +501,7 @@ class ShiftRosterExportReportService
 
                 return [
                     'name' => $name,
+                    'designation' => $this->resolveExportEmployeeDesignation($first),
                     'cells' => $cells,
                 ];
             })
@@ -537,6 +542,22 @@ class ShiftRosterExportReportService
         }
 
         return 'Unknown';
+    }
+
+    private function resolveExportEmployeeDesignation(ShiftRosterEntry $entry): ?string
+    {
+        if (! $entry->employee_id || ! $entry->employee) {
+            return null;
+        }
+
+        $designation = trim((string) (
+            $entry->employee->assignedDesignation?->name
+            ?? $entry->employee->designation
+            ?? $entry->employee->role?->name
+            ?? ''
+        ));
+
+        return $designation !== '' ? $designation : null;
     }
 
     private function firstTokenFromName(?string $name): string

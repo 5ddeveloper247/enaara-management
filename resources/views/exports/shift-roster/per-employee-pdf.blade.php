@@ -185,6 +185,12 @@
             margin: 0 0 2px 0;
         }
 
+        .employee-designation {
+            font-size: 8px;
+            color: #475569;
+            margin: 0 0 2px 0;
+        }
+
         .employee-dept {
             font-size: 8px;
             color: #64748b;
@@ -506,6 +512,9 @@
                 </td>
                 <td>
                     <p class="employee-name">{{ $employee['name'] }}</p>
+                    @if(!empty($employee['designation']))
+                        <p class="employee-designation">{{ $employee['designation'] }}</p>
+                    @endif
                     <p class="employee-dept">{{ $employee['department'] }}</p>
                 </td>
                 <td class="employee-badges">

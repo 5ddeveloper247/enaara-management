@@ -187,6 +187,23 @@
             color: #15803d;
         }
 
+        .employee-name-cell {
+            line-height: 1.3;
+        }
+
+        .employee-name-text {
+            font-weight: bold;
+            color: #0f172a;
+        }
+
+        .employee-designation-text {
+            display: block;
+            font-size: 7.5px;
+            color: #64748b;
+            font-weight: normal;
+            margin-top: 2px;
+        }
+
         .data-table td.shift-type-col {
             white-space: nowrap;
         }
@@ -433,7 +450,12 @@
             <tbody>
                 @foreach($department['rows'] as $row)
                     <tr class="{{ !empty($row['is_deleted']) ? 'row-deleted' : '' }}">
-                        <td>{{ $row['employee'] }}</td>
+                        <td class="employee-name-cell">
+                            <span class="employee-name-text">{{ $row['employee'] }}</span>
+                            @if(!empty($row['designation']))
+                                <span class="employee-designation-text">{{ $row['designation'] }}</span>
+                            @endif
+                        </td>
                         <td>{{ $row['date'] }}</td>
                         <td>{{ $row['day'] }}</td>
                         @if($include_shift_times)

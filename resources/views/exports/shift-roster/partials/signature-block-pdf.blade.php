@@ -11,7 +11,7 @@
     <table class="signature-table">
         <tr>
             <td class="signature-cell signature-cell-left">
-                <div class="signature-heading">Applied By</div>
+                <div class="signature-heading">Prepared By</div>
                 <div class="signature-line"></div>
                 <div class="signature-meta">
                     <span class="signature-meta-label">Name:</span>

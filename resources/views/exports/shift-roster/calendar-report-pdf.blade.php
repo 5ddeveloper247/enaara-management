@@ -140,32 +140,61 @@
             padding: 4px 1px;
         }
 
-        .calendar-grid col.col-employee {
-            width: 13%;
+        .calendar-grid col.col-employee-name {
+            width: 4%;
+        }
+
+        .calendar-grid col.col-employee-designation {
+            width: 11%;
         }
 
         .calendar-grid col.col-day {
-            width: {{ count($days) > 0 ? round(87 / count($days), 3) : 2.8 }}%;
+            width: {{ count($days) > 0 ? round(85 / count($days), 3) : 2.8 }}%;
         }
 
-        .col-employee {
-            text-align: left;
+        .calendar-grid th.col-employee-name,
+        .calendar-grid th.col-employee-designation,
+        .calendar-grid td.col-employee-name,
+        .calendar-grid td.col-employee-designation {
+            text-align: left !important;
             vertical-align: middle;
-            padding: 4px 6px !important;
-            font-size: 7px;
-            font-weight: bold;
-            color: #1a2b3c;
             background: #ffffff;
-            white-space: nowrap;
+            white-space: normal;
+            line-height: 1.3;
         }
 
-        .calendar-grid thead th.col-employee {
-            text-align: left;
-            font-size: 6.5px;
+        .calendar-grid td.col-employee-name,
+        .calendar-grid th.col-employee-name {
+            padding: 4px 5px !important;
+            font-size: 8px;
+            font-weight: bold;
+            color: #0f172a;
+            width: 4%;
+        }
+
+        .calendar-grid td.col-employee-designation,
+        .calendar-grid th.col-employee-designation {
+            padding: 4px 5px !important;
+            font-size: 7px;
+            font-weight: normal;
+            color: #64748b;
+            width: 11%;
+        }
+
+        .calendar-grid thead th.col-employee-name,
+        .calendar-grid thead th.col-employee-designation {
+            font-size: 7px;
             text-transform: uppercase;
             color: #64748b;
             letter-spacing: 0.03em;
-            padding: 4px 6px !important;
+        }
+
+        .calendar-grid thead th.col-day-head,
+        .calendar-grid td.day-cell {
+            width: {{ count($days) > 0 ? round(85 / count($days), 3) : 2.8 }}%;
+            max-width: {{ count($days) > 0 ? round(85 / count($days), 3) : 2.8 }}%;
+            padding: 2px 1px !important;
+            overflow: hidden;
         }
 
         .day-head-num {
@@ -184,7 +213,6 @@
 
         .day-cell {
             height: 36px;
-            padding: 2px 1px !important;
             background: #ffffff;
         }
 
@@ -298,20 +326,28 @@
         }
 
         .signature-cell {
-            width: 42%;
             vertical-align: top;
         }
 
         .signature-cell-left {
+            width: 32%;
             padding-right: 8px;
+            text-align: left;
         }
 
         .signature-cell-right {
-            padding-left: 8px;
+            width: 32%;
+            padding-left: 0;
+            padding-right: 0;
+            text-align: right;
         }
 
         .signature-gap {
-            width: 16%;
+            width: 36%;
+        }
+
+        .signature-cell-right .signature-line {
+            margin-left: auto;
         }
 
         .signature-heading {
@@ -420,16 +456,18 @@
 
         <table class="calendar-grid">
             <colgroup>
-                <col class="col-employee">
+                <col class="col-employee-name">
+                <col class="col-employee-designation">
                 @foreach($days as $day)
                     <col class="col-day">
                 @endforeach
             </colgroup>
             <thead>
                 <tr>
-                    <th class="col-employee">Employee</th>
+                    <th class="col-employee-name">Employee</th>
+                    <th class="col-employee-designation">Designation</th>
                     @foreach($days as $day)
-                        <th>
+                        <th class="col-day-head">
                             <div class="day-head-num">{{ $day['day'] }}</div>
                             <div class="day-head-dow">{{ $day['dow'] }}</div>
                         </th>
@@ -439,7 +477,8 @@
             <tbody>
                 @foreach($department['employees'] as $employee)
                     <tr>
-                        <td class="col-employee">{{ $employee['name'] }}</td>
+                        <td class="col-employee-name">{{ $employee['name'] }}</td>
+                        <td class="col-employee-designation">{{ $employee['designation'] ?? '—' }}</td>
                         @foreach($employee['cells'] as $cell)
                             @php
                                 $shiftType = is_array($cell) ? ($cell['shift_type'] ?? 'general') : null;
