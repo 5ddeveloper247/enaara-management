@@ -76,7 +76,8 @@
                 <!-- Leave Type -->
                 <div class="mb-3">
                     <label for="leaveType" class="form-label fw-semibold small text-white">Leave Type <span class="text-danger">*</span></label>
-                    <select class="form-select" id="leaveType" name="leave_type_id" required>
+                    <select class="form-select" id="leaveType" name="leave_type_id" required
+                        data-preloaded="{{ request()->routeIs('admin.my.leaves.index') ? '1' : '0' }}">
                         <option value="">Select Leave Type</option>
                         @isset($leaveTypes)
                         @foreach($leaveTypes as $leaveType)
@@ -173,7 +174,7 @@
 @endpush
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="{{ asset('js/leave-request.js') }}"></script>
+<script src="{{ asset('js/leave-request.js') }}?v={{ filemtime(public_path('js/leave-request.js')) }}"></script>
 <script>
     $(document).ready(function() {
         if ($('select#leaveEmployee').length) {

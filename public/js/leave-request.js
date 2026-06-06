@@ -4,6 +4,10 @@
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
   }
 
+  function isPreloadedLeaveTypeSelect(selectEl) {
+    return !!(selectEl && selectEl.dataset && selectEl.dataset.preloaded === '1');
+  }
+
   function calculateDays(startDateInput, endDateInput, calculatedDaysEl) {
     if (!startDateInput.value || !endDateInput.value) {
       calculatedDaysEl.textContent = '0';
@@ -19,7 +23,7 @@
     }
 
     var diffTime = end.getTime() - start.getTime();
-    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // include both days
+    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     calculatedDaysEl.textContent = String(diffDays);
 
     var employeeSelect = document.getElementById('leaveEmployee');
@@ -116,7 +120,6 @@
       if (!firstField) firstField = field;
 
       var fb = document.createElement('div');
-      // dark canvas => use high contrast
       fb.className = 'invalid-feedback d-block text-warning';
       fb.setAttribute('data-field-error', '1');
       fb.textContent = message;
@@ -139,8 +142,13 @@
     selectEl.disabled = !!isLoading;
   }
 
-  function populateLeaveTypes(selectEl, items) {
+  function populateLeaveTypes(selectEl, items, selectedId) {
     if (!selectEl) return;
+
+    var keepSelected = selectedId !== undefined && selectedId !== null
+      ? String(selectedId)
+      : (selectEl.value || '');
+
     selectEl.innerHTML = '<option value="">Select Leave Type</option>';
 
     (items || []).forEach(function (it) {
@@ -152,9 +160,29 @@
       }
       selectEl.appendChild(opt);
     });
+
+    if (keepSelected && selectEl.querySelector('option[value="' + keepSelected + '"]')) {
+      selectEl.value = keepSelected;
+    }
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  function renderQuotaSummary(container, quotaSummary) {
+    if (!container) return;
+
+    container.innerHTML = '';
+    (quotaSummary || []).forEach(function (q) {
+      var div = document.createElement('div');
+      div.className = 'col-6';
+      div.innerHTML = '<div class="small">' + q.type + ': <strong>' + q.remaining + '</strong> days</div>';
+      container.appendChild(div);
+    });
+
+    if (!quotaSummary || quotaSummary.length === 0) {
+      container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">No leave quotas assigned</div>';
+    }
+  }
+
+  function initLeaveRequestForm() {
     var form = document.getElementById('addLeaveRequestForm');
     if (!form) return;
 
@@ -167,6 +195,9 @@
     var medicalReportInput = document.getElementById('medical_report');
     var submitBtn = document.getElementById('submitLeaveRequestBtn');
     var canvasEl = document.getElementById('addLeaveRequestCanvas');
+    var keepPreloadedLeaveTypes = isPreloadedLeaveTypeSelect(leaveTypeSelect);
+    var lastLoadedEmployeeId = null;
+    var leaveTypesRequest = null;
 
     if (startDateInput && endDateInput && calculatedDaysEl) {
       var onDateChange = function () {
@@ -190,25 +221,96 @@
       });
     }
 
-    if (canvasEl) {
-      canvasEl.addEventListener('show.bs.offcanvas', function () {
-        // If employee is pre-selected (like on My Leaves), trigger data load
-        if (employeeSelect && employeeSelect.value) {
-            employeeSelect.dispatchEvent(new Event('change'));
+    function loadEmployeeLeaveData(employeeId, options) {
+      options = options || {};
+      var reloadLeaveTypes = options.reloadLeaveTypes !== false;
+      var balanceContainer = document.getElementById('leaveBalanceContainer');
+      var selectedLeaveTypeId = leaveTypeSelect ? leaveTypeSelect.value : '';
+
+      if (!employeeId) {
+        if (reloadLeaveTypes && !keepPreloadedLeaveTypes && leaveTypeSelect) {
+          populateLeaveTypes(leaveTypeSelect, []);
+        }
+        if (balanceContainer) {
+          balanceContainer.innerHTML =
+            '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
+        }
+        lastLoadedEmployeeId = null;
+        return;
+      }
+
+      if (leaveTypesRequest && leaveTypesRequest.readyState !== 4) {
+        leaveTypesRequest.abort();
+      }
+
+      if (reloadLeaveTypes && !keepPreloadedLeaveTypes && leaveTypeSelect) {
+        populateLeaveTypes(leaveTypeSelect, []);
+      }
+
+      setLeaveTypesLoading(leaveTypeSelect, true);
+
+      leaveTypesRequest = $.ajax({
+        url: '/admin/leave-request/leave-types',
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        data: { employee_id: employeeId },
+        success: function (resp) {
+          if (reloadLeaveTypes && !keepPreloadedLeaveTypes && leaveTypeSelect) {
+            populateLeaveTypes(
+              leaveTypeSelect,
+              resp && resp.leaveTypes ? resp.leaveTypes : [],
+              selectedLeaveTypeId
+            );
+          }
+
+          showDocumentSectionIfRequired(leaveTypeSelect, medicalCertSection, medicalReportInput);
+          renderQuotaSummary(balanceContainer, resp && resp.quotaSummary ? resp.quotaSummary : []);
+          lastLoadedEmployeeId = employeeId;
+        },
+        error: function (xhr, status) {
+          if (status === 'abort') {
+            return;
+          }
+          if (!keepPreloadedLeaveTypes) {
+            showFormError(form, 'Failed to load leave types for selected employee.');
+          }
+        },
+        complete: function () {
+          setLeaveTypesLoading(leaveTypeSelect, false);
+          leaveTypesRequest = null;
         }
       });
+    }
+
+    if (canvasEl) {
+      canvasEl.addEventListener('shown.bs.offcanvas', function () {
+        if (employeeSelect && employeeSelect.value) {
+          var employeeId = employeeSelect.value;
+          var employeeChanged = lastLoadedEmployeeId !== employeeId;
+          loadEmployeeLeaveData(employeeId, {
+            reloadLeaveTypes: employeeChanged && !keepPreloadedLeaveTypes
+          });
+        }
+      });
+
       canvasEl.addEventListener('hidden.bs.offcanvas', function () {
+        if (leaveTypesRequest && leaveTypesRequest.readyState !== 4) {
+          leaveTypesRequest.abort();
+        }
         form.reset();
         clearFormError(form);
         clearFieldErrors(form);
         if (calculatedDaysEl) calculatedDaysEl.textContent = '0';
-        const container = document.getElementById('leaveBalanceContainer');
-        if (container) container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
+        var container = document.getElementById('leaveBalanceContainer');
+        if (container) {
+          container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
+        }
         if (medicalCertSection) medicalCertSection.style.display = 'none';
         if (medicalReportInput) {
           medicalReportInput.required = false;
           medicalReportInput.value = '';
         }
+        lastLoadedEmployeeId = null;
         setSubmitting(submitBtn, false);
       });
     }
@@ -218,51 +320,12 @@
         clearFieldErrors(form);
 
         var employeeId = employeeSelect.value;
-        populateLeaveTypes(leaveTypeSelect, []);
-        var balanceContainer = document.getElementById('leaveBalanceContainer');
-        if (!employeeId) {
-          if (balanceContainer) {
-            balanceContainer.innerHTML =
-              '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
-          }
-          return;
-        }
+        var employeeChanged = lastLoadedEmployeeId !== employeeId;
 
         calculateDays(startDateInput, endDateInput, calculatedDaysEl);
 
-        setLeaveTypesLoading(leaveTypeSelect, true);
-
-        $.ajax({
-          url: '/admin/leave-request/leave-types',
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          data: { employee_id: employeeId },
-          success: function (resp) {
-            populateLeaveTypes(leaveTypeSelect, resp && resp.leaveTypes ? resp.leaveTypes : []);
-            showDocumentSectionIfRequired(leaveTypeSelect, medicalCertSection, medicalReportInput);
-
-            if (resp && resp.quotaSummary) {
-                const container = document.getElementById('leaveBalanceContainer');
-                if (container) {
-                    container.innerHTML = '';
-                    resp.quotaSummary.forEach(function (q) {
-                        const div = document.createElement('div');
-                        div.className = 'col-6';
-                        div.innerHTML = `<div class="small">${q.type}: <strong>${q.remaining}</strong> days</div>`;
-                        container.appendChild(div);
-                    });
-                    if (resp.quotaSummary.length === 0) {
-                        container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">No leave quotas assigned</div>';
-                    }
-                }
-            }
-          },
-          error: function () {
-            showFormError(form, 'Failed to load leave types for selected employee.');
-          },
-          complete: function () {
-            setLeaveTypesLoading(leaveTypeSelect, false);
-          },
+        loadEmployeeLeaveData(employeeId, {
+          reloadLeaveTypes: employeeChanged && !keepPreloadedLeaveTypes
         });
       });
     }
@@ -277,7 +340,7 @@
       if (selectedLeaveCondition(leaveTypeSelect) === 'conditional' && medicalReportInput && !medicalReportInput.files.length) {
         medicalReportInput.classList.add('is-invalid');
         showFieldErrors(form, {
-          medical_report: ['A supporting document is required for this leave type.'],
+          medical_report: ['A supporting document is required for this leave type.']
         });
         showFormError(form, 'A supporting document is required for this leave type.');
         return;
@@ -309,7 +372,7 @@
         },
         error: function (xhr) {
           setSubmitting(submitBtn, false);
-      
+
           if (xhr && xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
             var errors = xhr.responseJSON.errors;
             showFieldErrors(form, errors);
@@ -318,11 +381,16 @@
             showFormError(form, firstMsg);
             return;
           }
-      
+
           showFormError(form, 'Failed to submit leave request. Please try again.');
-        },
+        }
       });
     });
-  });
-})();
+  }
 
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLeaveRequestForm);
+  } else {
+    initLeaveRequestForm();
+  }
+})();
