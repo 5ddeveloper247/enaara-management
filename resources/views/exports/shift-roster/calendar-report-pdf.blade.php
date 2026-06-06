@@ -112,10 +112,38 @@
             color: #ffffff;
             font-size: 8px;
             font-weight: bold;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.04em;
             padding: 5px 8px;
             margin-top: 6px;
             text-transform: uppercase;
+        }
+
+        .dept-header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dept-header-table td {
+            vertical-align: middle;
+            color: #ffffff;
+            font-size: 8px;
+            font-weight: bold;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .dept-header-left {
+            width: 33%;
+            text-align: left;
+        }
+
+        .dept-header-center {
+            width: 34%;
+            text-align: center;
+        }
+
+        .dept-header-right {
+            width: 33%;
         }
 
         .calendar-grid {
@@ -451,9 +479,15 @@
     </table>
 
     @foreach($departments as $department)
-        @if(!empty($department['name']))
-            <div class="dept-header">{{ $department['name'] }}</div>
-        @endif
+        <div class="dept-header">
+            <table class="dept-header-table">
+                <tr>
+                    <td class="dept-header-left">{{ $department['name'] ?? '' }}</td>
+                    <td class="dept-header-center">{{ $duty_roster_header_title }}</td>
+                    <td class="dept-header-right"></td>
+                </tr>
+            </table>
+        </div>
 
         <table class="calendar-grid">
             <colgroup>

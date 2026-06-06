@@ -285,7 +285,26 @@ class ShiftRosterExportReportService
             'include_deleted' => $context['include_deleted'],
             'signatures' => $this->buildSignatureBlock($context),
             'print_info' => $this->buildPrintInfo(),
+            'duty_roster_header_title' => $this->buildDutyRosterHeaderTitle($context),
         ];
+    }
+
+    private function buildDutyRosterHeaderTitle(array $context): string
+    {
+        $start = Carbon::parse($context['date_range'][0]);
+        $end = Carbon::parse($context['date_range'][1]);
+
+        $monthLabel = $start->format('F Y');
+        if ($start->format('Y-m') !== $end->format('Y-m')) {
+            $monthLabel = $start->format('F Y') . ' – ' . $end->format('F Y');
+        }
+
+        return sprintf(
+            'Duty Roster %s, %s to %s',
+            $monthLabel,
+            $start->format('d M Y'),
+            $end->format('d M Y')
+        );
     }
 
     private function buildPrintInfo(): array
