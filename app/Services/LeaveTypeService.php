@@ -20,13 +20,13 @@ class LeaveTypeService
     public function getCounts(): array
     {
         $total = LeaveType::count();
-        $active = LeaveType::where('is_active', true)->count();
-        $inactive = LeaveType::where('is_active', false)->count();
+        $conditionalTotal = LeaveType::where('leave_condition', 'conditional')->count();
+        $unconditionalQuotaSum = (float) LeaveType::where('leave_condition', 'unconditional')->sum('annual_quota');
 
         return [
             'total' => $total,
-            'active' => $active,
-            'inactive' => $inactive,
+            'conditional_total' => $conditionalTotal,
+            'unconditional_quota_sum' => $unconditionalQuotaSum,
         ];
     }
 

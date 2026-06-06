@@ -79,12 +79,12 @@
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
                                     <h6 class="text-muted mb-1 small fw-normal text-uppercase">
-                                        <i class="bi bi-check-circle me-1"></i>Active
+                                        <i class="bi bi-file-earmark-medical me-1"></i>Total Conditional Leaves
                                     </h6>
-                                    <div class="h4 mb-0 fw-bold text-success">{{ $active ?? 0 }}</div>
+                                    <div class="h4 mb-0 fw-bold text-info">{{ $conditionalTotal ?? 0 }}</div>
                                 </div>
-                                <div class="text-success opacity-25">
-                                    <i class="bi bi-check-circle fs-1"></i>
+                                <div class="text-info opacity-25">
+                                    <i class="bi bi-file-earmark-medical fs-1"></i>
                                 </div>
                             </div>
                         </div>
@@ -96,12 +96,12 @@
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
                                     <h6 class="text-muted mb-1 small fw-normal text-uppercase">
-                                        <i class="bi bi-x-circle me-1"></i>Inactive
+                                        <i class="bi bi-calculator me-1"></i>Non-Conditional Leaves Quota
                                     </h6>
-                                    <div class="h4 mb-0 fw-bold text-secondary">{{ $inactive ?? 0 }}</div>
+                                    <div class="h4 mb-0 fw-bold text-warning">{{ number_format((float) ($unconditionalQuotaSum ?? 0), 2) }}</div>
                                 </div>
-                                <div class="text-secondary opacity-25">
-                                    <i class="bi bi-x-circle fs-1"></i>
+                                <div class="text-warning opacity-25">
+                                    <i class="bi bi-calculator fs-1"></i>
                                 </div>
                             </div>
                         </div>

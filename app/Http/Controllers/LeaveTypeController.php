@@ -27,8 +27,8 @@ class LeaveTypeController extends Controller
             'leaveTypes' => $leaveTypes,
             'organizations' => $organizations,
             'total' => $counts['total'],
-            'active' => $counts['active'],
-            'inactive' => $counts['inactive'],
+            'conditionalTotal' => $counts['conditional_total'],
+            'unconditionalQuotaSum' => $counts['unconditional_quota_sum'],
         ]);
     }
 
