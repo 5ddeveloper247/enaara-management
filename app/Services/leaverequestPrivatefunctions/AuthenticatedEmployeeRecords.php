@@ -46,7 +46,7 @@ class AuthenticatedEmployeeRecords
             ->pluck('leave_type_id');
 
         return LeaveType::query()
-            ->select(['id', 'name', 'code', 'annual_quota', 'organization_id', 'sbu_id', 'is_active'])
+            ->select(['id', 'name', 'code', 'leave_condition', 'annual_quota', 'organization_id', 'sbu_id', 'is_active'])
             ->where('is_active', true)
             ->where('organization_id', $organizationId)
             ->where(function ($query) use ($sbuId, $leaveTypeIdsForSbu) {
@@ -77,7 +77,7 @@ class AuthenticatedEmployeeRecords
         $departmentId = $employee->department_id;
 
         return LeaveType::query()
-            ->select(['id', 'name', 'code', 'annual_quota', 'organization_id', 'sbu_id', 'is_active'])
+            ->select(['id', 'name', 'code', 'leave_condition', 'annual_quota', 'organization_id', 'sbu_id', 'is_active'])
             ->where('is_active', true)
             ->when($organizationId, fn ($q) => $q->where(function ($qq) use ($organizationId) {
                 $qq->whereNull('organization_id')->orWhere('organization_id', $organizationId);

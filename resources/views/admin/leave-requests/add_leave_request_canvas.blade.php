@@ -80,7 +80,7 @@
                         <option value="">Select Leave Type</option>
                         @isset($leaveTypes)
                         @foreach($leaveTypes as $leaveType)
-                        <option value="{{ $leaveType->id }}">{{ $leaveType->name }}</option>
+                        <option value="{{ $leaveType->id }}" data-leave-condition="{{ $leaveType->leave_condition ?? '' }}">{{ $leaveType->name }}</option>
                         @endforeach
                         @endisset
                     </select>
@@ -112,10 +112,10 @@
                     <textarea class="form-control" id="leaveReason" name="reason" rows="3" maxlength="600" placeholder="Enter reason for leave" required></textarea>
                 </div>
 
-                <!-- Medical Certificate (for Sick Leave) -->
+                <!-- Supporting document (required for conditional leave types) -->
                 <div class="mb-3" id="medicalCertSection" style="display: none;">
                     <label for="medical_report" class="form-label fw-semibold small text-white">
-                        Medical Certificate
+                        Supporting Document <span class="text-danger document-required-mark" style="display: none;">*</span>
                     </label>
                     <input
                         type="file"
@@ -124,7 +124,7 @@
                         name="medical_report"
                         accept=".pdf,.jpg,.jpeg,.png">
                     <small class="opacity-75 text-white">
-                        Required for sick leave exceeding 2 days
+                        Required for conditional leave types (PDF, JPG, JPEG, or PNG)
                     </small>
                 </div>
             </div>

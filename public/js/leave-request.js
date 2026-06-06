@@ -43,9 +43,33 @@
     }
   }
 
-  function showMedicalSectionIfSick(leaveTypeSelect, medicalCertSection) {
-    var selectedText = (leaveTypeSelect.options[leaveTypeSelect.selectedIndex]?.text || '').toLowerCase();
-    medicalCertSection.style.display = selectedText.includes('sick') ? 'block' : 'none';
+  function selectedLeaveCondition(leaveTypeSelect) {
+    if (!leaveTypeSelect || leaveTypeSelect.selectedIndex < 0) {
+      return '';
+    }
+
+    var selected = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+    return (selected.getAttribute('data-leave-condition') || '').toLowerCase();
+  }
+
+  function showDocumentSectionIfRequired(leaveTypeSelect, documentSection, fileInput) {
+    var isConditional = selectedLeaveCondition(leaveTypeSelect) === 'conditional';
+    var requiredMark = documentSection ? documentSection.querySelector('.document-required-mark') : null;
+
+    if (documentSection) {
+      documentSection.style.display = isConditional ? 'block' : 'none';
+    }
+
+    if (requiredMark) {
+      requiredMark.style.display = isConditional ? 'inline' : 'none';
+    }
+
+    if (fileInput) {
+      fileInput.required = isConditional;
+      if (!isConditional) {
+        fileInput.value = '';
+      }
+    }
   }
 
   function setSubmitting(btn, isSubmitting) {
@@ -123,6 +147,9 @@
       var opt = document.createElement('option');
       opt.value = it.id;
       opt.textContent = it.name;
+      if (it.leave_condition) {
+        opt.setAttribute('data-leave-condition', it.leave_condition);
+      }
       selectEl.appendChild(opt);
     });
   }
@@ -137,6 +164,7 @@
     var leaveTypeSelect = document.getElementById('leaveType');
     var calculatedDaysEl = document.getElementById('calculatedDays');
     var medicalCertSection = document.getElementById('medicalCertSection');
+    var medicalReportInput = document.getElementById('medical_report');
     var submitBtn = document.getElementById('submitLeaveRequestBtn');
     var canvasEl = document.getElementById('addLeaveRequestCanvas');
 
@@ -158,7 +186,7 @@
 
     if (leaveTypeSelect && medicalCertSection) {
       leaveTypeSelect.addEventListener('change', function () {
-        showMedicalSectionIfSick(leaveTypeSelect, medicalCertSection);
+        showDocumentSectionIfRequired(leaveTypeSelect, medicalCertSection, medicalReportInput);
       });
     }
 
@@ -177,6 +205,10 @@
         const container = document.getElementById('leaveBalanceContainer');
         if (container) container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
         if (medicalCertSection) medicalCertSection.style.display = 'none';
+        if (medicalReportInput) {
+          medicalReportInput.required = false;
+          medicalReportInput.value = '';
+        }
         setSubmitting(submitBtn, false);
       });
     }
@@ -207,6 +239,7 @@
           data: { employee_id: employeeId },
           success: function (resp) {
             populateLeaveTypes(leaveTypeSelect, resp && resp.leaveTypes ? resp.leaveTypes : []);
+            showDocumentSectionIfRequired(leaveTypeSelect, medicalCertSection, medicalReportInput);
 
             if (resp && resp.quotaSummary) {
                 const container = document.getElementById('leaveBalanceContainer');
@@ -238,6 +271,17 @@
       e.preventDefault();
       clearFormError(form);
       clearFieldErrors(form);
+
+      showDocumentSectionIfRequired(leaveTypeSelect, medicalCertSection, medicalReportInput);
+
+      if (selectedLeaveCondition(leaveTypeSelect) === 'conditional' && medicalReportInput && !medicalReportInput.files.length) {
+        medicalReportInput.classList.add('is-invalid');
+        showFieldErrors(form, {
+          medical_report: ['A supporting document is required for this leave type.'],
+        });
+        showFormError(form, 'A supporting document is required for this leave type.');
+        return;
+      }
 
       if (!form.checkValidity()) {
         form.reportValidity();

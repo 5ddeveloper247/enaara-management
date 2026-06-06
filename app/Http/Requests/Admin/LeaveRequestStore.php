@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\Employee;
+use App\Models\LeaveType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -54,29 +55,36 @@ class LeaveRequestStore extends FormRequest
                     }
                 },
             ],
-            // ✅ Medical report validation
             'medical_report' => [
+                Rule::requiredIf(fn () => $this->requiresSupportingDocument()),
                 'nullable',
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
-                // 'max:2048', 
-                // Rule::requiredIf(function () use ($duration) {
-                //     return $this->isSickLeave() && $duration > 2;
-                // }),
+                'max:5120',
             ],
         ];
     }
 
-    // private function isSickLeave(): bool
-    // {
-    //     $leaveTypeId = $this->input('leave_type_id');
+    public function messages(): array
+    {
+        return [
+            'medical_report.required' => 'A supporting document is required for this leave type.',
+            'medical_report.mimes' => 'Supporting document must be a PDF, JPG, JPEG, or PNG file.',
+            'medical_report.max' => 'Supporting document must not exceed 5 MB.',
+        ];
+    }
 
-    //     if (!$leaveTypeId) {
-    //         return false;
-    //     }
+    private function requiresSupportingDocument(): bool
+    {
+        $leaveTypeId = $this->input('leave_type_id');
 
-    //     $leaveType = \App\Models\LeaveType::find($leaveTypeId);
+        if (! $leaveTypeId) {
+            return false;
+        }
 
-    //     return $leaveType && strtolower($leaveType->name) === 'sick leave';
-    // }
+        return LeaveType::query()
+            ->whereKey($leaveTypeId)
+            ->where('leave_condition', 'conditional')
+            ->exists();
+    }
 }

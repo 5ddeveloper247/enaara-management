@@ -213,7 +213,7 @@ class LeaveRequestService
                 $this->authenticatedEmployeeRecords->getLeaveTypesForQuotaSummary($employee),
                 $employee->id
             )
-            ->map(fn ($type) => $type->only(['id', 'name']))
+            ->map(fn ($type) => $type->only(['id', 'name', 'leave_condition']))
             ->values();
 
         $quotaSummary = $this->leaveRequestLeaveTypeFilter->filterQuotaSummary(
