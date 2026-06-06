@@ -21,6 +21,7 @@ class LeaveRequestApplicationChecks
         float $durationDays
     ): void {
         $this->leaveRequestLeaveTypeFilter->assertCompensatoryLeaveAllowed($employee, $leaveType, $startDate);
+        $this->leaveRequestLeaveTypeFilter->assertMaternityLeaveAllowed($employee, $leaveType);
 
         $leaveType->loadMissing('setting');
         $setting = $leaveType->setting;

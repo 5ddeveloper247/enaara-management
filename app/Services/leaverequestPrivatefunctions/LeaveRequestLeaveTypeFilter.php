@@ -20,9 +20,11 @@ class LeaveRequestLeaveTypeFilter
     public function filterForEmployee(Collection $leaveTypes, int $employeeId, ?int $year = null): Collection
     {
         $year = $year ?? (int) now()->year;
+        $employee = Employee::query()->find($employeeId);
 
         return $leaveTypes
             ->reject(fn ($type) => $this->shouldHideCompensatoryType($type, $employeeId, $year))
+            ->reject(fn ($type) => $this->shouldHideMaternityLeaveType($type, $employee))
             ->values();
     }
 
@@ -36,11 +38,20 @@ class LeaveRequestLeaveTypeFilter
     public function filterQuotaSummary(array $quotaSummary, ?int $employeeId = null, ?int $year = null): array
     {
         $year = $year ?? (int) now()->year;
+        $employee = $employeeId ? Employee::query()->find($employeeId) : null;
 
-        return array_values(array_filter($quotaSummary, function (array $row) use ($employeeId, $year) {
-            $leaveType = LeaveType::query()->find((int) ($row['id'] ?? 0));
+        return array_values(array_filter($quotaSummary, function (array $row) use ($employee, $employeeId, $year) {
+            $leaveType = LeaveType::query()->with('setting')->find((int) ($row['id'] ?? 0));
 
-            if ($leaveType === null || ! $this->isCompensatoryLeaveType($leaveType)) {
+            if ($leaveType === null) {
+                return false;
+            }
+
+            if ($this->isMaternityLeaveType($leaveType)) {
+                return $employee !== null && $this->isEmployeeEligibleForMaternityLeave($employee);
+            }
+
+            if (! $this->isCompensatoryLeaveType($leaveType)) {
                 return true;
             }
 
@@ -79,6 +90,37 @@ class LeaveRequestLeaveTypeFilter
         }
     }
 
+    public function assertMaternityLeaveAllowed(Employee $employee, LeaveType $leaveType): void
+    {
+        if (! $this->isMaternityLeaveType($leaveType)) {
+            return;
+        }
+
+        if ($this->isEmployeeEligibleForMaternityLeave($employee)) {
+            return;
+        }
+
+        $gender = strtolower(trim((string) ($employee->gender ?? '')));
+
+        if ($gender !== 'female') {
+            throw ValidationException::withMessages([
+                'leave_type_id' => 'Maternity leave is only available for female employees.',
+            ]);
+        }
+
+        throw ValidationException::withMessages([
+            'leave_type_id' => 'Maternity leave is only available for married female employees.',
+        ]);
+    }
+
+    public function isEmployeeEligibleForMaternityLeave(Employee $employee): bool
+    {
+        $gender = strtolower(trim((string) ($employee->gender ?? '')));
+        $maritalStatus = trim((string) ($employee->marital_status ?? ''));
+
+        return $gender === 'female' && strcasecmp($maritalStatus, 'Married') === 0;
+    }
+
     private function shouldHideCompensatoryType($type, int $employeeId, int $year): bool
     {
         if (! $this->isCompensatoryLeaveType($type)) {
@@ -86,6 +128,40 @@ class LeaveRequestLeaveTypeFilter
         }
 
         return $this->compensatoryRemainingDays($employeeId, $year) <= 0;
+    }
+
+    private function shouldHideMaternityLeaveType($type, ?Employee $employee): bool
+    {
+        if (! $this->isMaternityLeaveType($type)) {
+            return false;
+        }
+
+        if ($employee === null) {
+            return true;
+        }
+
+        return ! $this->isEmployeeEligibleForMaternityLeave($employee);
+    }
+
+    private function isMaternityLeaveType($type): bool
+    {
+        $code = strtoupper(trim((string) ($type->code ?? '')));
+
+        if ($code === 'ML') {
+            return true;
+        }
+
+        $name = strtolower(trim((string) ($type->name ?? '')));
+
+        if (! str_contains($name, 'maternity')) {
+            return false;
+        }
+
+        if ($type instanceof LeaveType && ! $type->relationLoaded('setting')) {
+            $type->loadMissing('setting');
+        }
+
+        return strtolower(trim((string) ($type->setting?->gender ?? ''))) === 'female';
     }
 
     private function isCompensatoryLeaveType($type): bool
