@@ -232,9 +232,9 @@
 
         .shift-short-label {
             display: block;
-            font-size: 6.5px;
+            font-size: 7px;
             font-weight: bold;
-            line-height: 1.15;
+            line-height: 1.2;
             margin: 0;
         }
 
@@ -245,11 +245,12 @@
 
         .shift-time-stack {
             display: block;
-            font-size: 5px;
-            line-height: 1.2;
+            font-size: 6px;
+            line-height: 1.25;
             color: #475569;
             margin: 0;
             white-space: nowrap;
+            font-weight: 600;
         }
 
         .legend-wrap {

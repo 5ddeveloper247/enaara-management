@@ -584,11 +584,9 @@ class ShiftRosterExportReportService
         }
 
         try {
-            $parsed = Carbon::parse($displayTime);
-
-            return strtolower($parsed->format($parsed->minute === 0 ? 'ga' : 'g:ia'));
+            return Carbon::parse($displayTime)->format('H:i');
         } catch (\Throwable) {
-            return str_replace([':00 ', ' AM', ' PM'], ['', 'a', 'p'], $displayTime);
+            return $displayTime;
         }
     }
 
