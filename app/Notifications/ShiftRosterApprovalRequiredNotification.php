@@ -51,7 +51,7 @@ class ShiftRosterApprovalRequiredNotification extends Notification implements Sh
                 'shiftCount' => (int) $request->shift_count,
                 'offDayCount' => (int) $request->off_day_count,
                 'shiftLabel' => $request->shift_label ?? 'Shift roster',
-                'actionUrl' => url('/admin/shift-planner?roster_approval=' . $request->id),
+                'actionUrl' => url('/admin/dashboard?roster_approval=' . $request->id),
             ]);
     }
 
@@ -71,7 +71,7 @@ class ShiftRosterApprovalRequiredNotification extends Notification implements Sh
             'assignee_name' => $assigneeName,
             'start_date' => $request->start_date?->toDateString(),
             'end_date' => $request->end_date?->toDateString(),
-            'url' => '/admin/shift-planner?roster_approval=' . $request->id,
+            'url' => '/admin/dashboard?roster_approval=' . $request->id,
         ];
     }
 

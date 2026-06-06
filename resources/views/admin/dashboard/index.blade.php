@@ -102,6 +102,7 @@
 <script src="{{ asset('js/dummy-data.js') }}"></script>
 <script>
     window._dashRoutes = {
+        dashboardUrl:       '{{ route('admin.dashboard.index') }}',
         attendanceChart:    '{{ route('admin.dashboard.attendance-chart') }}',
         pendingApprovals:   '{{ route('admin.dashboard.pending-approvals') }}',
         pendingRosterApprovals: '{{ route('admin.dashboard.pending-roster-approvals') }}',
