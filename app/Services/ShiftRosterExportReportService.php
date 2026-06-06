@@ -94,6 +94,7 @@ class ShiftRosterExportReportService
         }
 
         return array_merge($this->buildReportShell($context), [
+            'organization_name' => $this->resolveExportSbuName($entries),
             'report_title' => 'Shift Planner — Shift Roster Export',
             'days' => $days,
             'departments' => $departments,
@@ -201,7 +202,9 @@ class ShiftRosterExportReportService
             'employee.department',
             'employee.assignedDesignation',
             'employee.role',
+            'employee.sbu',
             'outsourcedEmployee.contractorCompany',
+            'outsourcedEmployee.sbu',
         ];
 
         $entriesQuery = ShiftRosterEntry::with($entryRelations)
@@ -287,6 +290,31 @@ class ShiftRosterExportReportService
             'print_info' => $this->buildPrintInfo(),
             'duty_roster_header_title' => $this->buildDutyRosterHeaderTitle($context),
         ];
+    }
+
+    private function resolveExportSbuName(Collection $entries): string
+    {
+        $sbuNames = $entries
+            ->map(function (ShiftRosterEntry $entry) {
+                if ($entry->employee_id && $entry->employee?->sbu) {
+                    return trim((string) $entry->employee->sbu->name);
+                }
+
+                if ($entry->outsourced_employee_id && $entry->outsourcedEmployee?->sbu) {
+                    return trim((string) $entry->outsourcedEmployee->sbu->name);
+                }
+
+                return null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($sbuNames->isEmpty()) {
+            return config('app.name', 'Enaara Systems');
+        }
+
+        return $sbuNames->implode(', ');
     }
 
     private function buildDutyRosterHeaderTitle(array $context): string
