@@ -140,6 +140,8 @@
         .dept-header-center {
             width: 34%;
             text-align: center;
+            text-transform: none;
+            letter-spacing: 0.02em;
         }
 
         .dept-header-right {

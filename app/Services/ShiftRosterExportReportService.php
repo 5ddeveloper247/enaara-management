@@ -325,17 +325,20 @@ class ShiftRosterExportReportService
         $start = Carbon::parse($context['date_range'][0]);
         $end = Carbon::parse($context['date_range'][1]);
 
-        $monthLabel = $start->format('F Y');
-        if ($start->format('Y-m') !== $end->format('Y-m')) {
-            $monthLabel = $start->format('F Y') . ' – ' . $end->format('F Y');
+        $monthName = $start->format('F');
+        $year = $start->format('Y');
+
+        if ($start->format('Y-m') === $end->format('Y-m')) {
+            $dateRange = $start->format('d') . '-' . $end->format('d');
+        } elseif ($start->format('Y') === $end->format('Y')) {
+            $dateRange = $start->format('d') . '-' . $end->format('F') . ' ' . $end->format('d');
+        } else {
+            $dateRange = $start->format('d M Y') . '-' . $end->format('d M Y');
+
+            return 'Duty Roster-' . $dateRange;
         }
 
-        return sprintf(
-            'Duty Roster %s, %s to %s',
-            $monthLabel,
-            $start->format('d M Y'),
-            $end->format('d M Y')
-        );
+        return sprintf('Duty Roster-%s %s, %s', $monthName, $dateRange, $year);
     }
 
     private function buildPrintInfo(): array
