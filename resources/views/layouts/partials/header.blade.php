@@ -8,14 +8,14 @@
             {{-- <h5 class="mb-0 fw-semibold">@yield('page-title', 'Dashboard')</h5> --}}
         </div>
 
-        <div class="header-center flex-fill d-flex justify-content-center px-4">
+        <!-- <div class="header-center flex-fill d-flex justify-content-center px-4">
             <div class="position-relative" style="max-width: 300px; width: 100%;">
                 <input type="text" class="form-control rounded-pill border-0 bg-white text-dark" placeholder="Search..." id="globalSearch" style="height: 40px; padding-right: 70px; background: rgba(255, 255, 255, 0.1); color: var(--light-color);">
                 <button class="btn btn-link text-decoration-none text-white bg-main position-absolute top-50 translate-middle-y rounded-circle d-flex align-items-center justify-content-center border-0" type="button" id="searchButton" style="right: 0px; width: 50px; height: 50px;">
                     <i class="bi bi-search"></i>
                 </button>
             </div>
-        </div>
+        </div> -->
 
         <div class="header-right d-flex align-items-center gap-3">
             <!-- Tenant Switcher -->
