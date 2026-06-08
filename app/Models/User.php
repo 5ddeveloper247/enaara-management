@@ -46,6 +46,19 @@ class User extends Authenticatable
         return $this->belongsTo(Employee::class, 'employee_id');
     }
 
+    public function routeNotificationForMail(): ?string
+    {
+        $email = trim((string) ($this->email ?? ''));
+
+        if ($email !== '') {
+            return $email;
+        }
+
+        $this->loadMissing('employee');
+
+        return $this->employee?->routeNotificationForMail();
+    }
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id')
