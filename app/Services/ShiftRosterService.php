@@ -1761,7 +1761,8 @@ class ShiftRosterService
         }
 
         if ($this->hasPendingPublishedChange($entry)) {
-            return $this->viewerSeesPendingChange($entry, $viewerUserId, $viewerEmployeeId);
+            // Everyone keeps seeing this day; non-editors get the last approved snapshot in the grid.
+            return true;
         }
 
         if ($entry->shift_roster_approval_request_id && $this->isEntryInPendingApproval($entry)) {
