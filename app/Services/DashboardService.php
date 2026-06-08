@@ -325,7 +325,25 @@ class DashboardService
 
     public function getAttendanceChartData(int $days): array
     {
-        $totalEmployees = Employee::where('is_active', true)->whereNull('deleted_at')->count();
+        $viewer = Auth::user();
+        $viewerEmployee = $viewer?->employee;
+
+        if (! $viewerEmployee && ! $viewer?->isSystemAdminUser()) {
+            return ['labels' => [], 'present' => [], 'absent' => [], 'onLeave' => []];
+        }
+
+        $departmentIds = $this->resolveDepartmentIdsForDistribution($viewerEmployee, $viewer);
+
+        if ($departmentIds === []) {
+            return ['labels' => [], 'present' => [], 'absent' => [], 'onLeave' => []];
+        }
+
+        $totalEmployees = Employee::query()
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->whereIn('department_id', $departmentIds)
+            ->count();
+
         $labels  = [];
         $present = [];
         $absent  = [];
@@ -347,23 +365,36 @@ class DashboardService
                 $label = $currentDate->format('D');
             }
 
-            $onLeaveCount = EmployeLeaveRequest::where('status', 3)
+            $onLeaveCount = EmployeLeaveRequest::query()
+                ->where('status', 3)
                 ->whereIn('action_type', [0, 2])
                 ->where('start_date', '<=', $date)
                 ->where('end_date', '>=', $date)
-                ->distinct('from_employee_id')
+                ->whereHas('fromEmployee', fn ($query) => $query
+                    ->whereIn('department_id', $departmentIds)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at'))
+                ->distinct()
                 ->count('from_employee_id');
 
-            $presentCount = DB::table('shift_rosters')
-                ->whereDate('roster_date', $date)
-                ->where('status', 1)
-                ->whereNull('deleted_at')
+            $presentCount = DB::table('shift_rosters as sr')
+                ->join('employees as e', 'e.id', '=', 'sr.employee_id')
+                ->whereDate('sr.roster_date', $date)
+                ->where('sr.status', 1)
+                ->whereNull('sr.deleted_at')
+                ->whereNull('e.deleted_at')
+                ->where('e.is_active', true)
+                ->whereIn('e.department_id', $departmentIds)
                 ->count();
 
-            $absentCount = DB::table('shift_rosters')
-                ->whereDate('roster_date', $date)
-                ->where('status', 3)
-                ->whereNull('deleted_at')
+            $absentCount = DB::table('shift_rosters as sr')
+                ->join('employees as e', 'e.id', '=', 'sr.employee_id')
+                ->whereDate('sr.roster_date', $date)
+                ->where('sr.status', 3)
+                ->whereNull('sr.deleted_at')
+                ->whereNull('e.deleted_at')
+                ->where('e.is_active', true)
+                ->whereIn('e.department_id', $departmentIds)
                 ->count();
 
             if ($presentCount === 0 && $absentCount === 0) {
