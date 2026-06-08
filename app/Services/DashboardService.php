@@ -254,6 +254,75 @@ class DashboardService
         })->values()->all();
     }
 
+    public function getDepartmentDistributionData(): array
+    {
+        $viewer = Auth::user();
+        $viewerEmployee = $viewer?->employee;
+
+        if (! $viewerEmployee && ! $viewer?->isSystemAdminUser()) {
+            return ['labels' => [], 'datasets' => []];
+        }
+
+        $departmentIds = $this->resolveDepartmentIdsForDistribution($viewerEmployee, $viewer);
+
+        if ($departmentIds === []) {
+            return ['labels' => [], 'datasets' => []];
+        }
+
+        $departments = Department::query()
+            ->whereIn('id', $departmentIds)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $deptTotals = Employee::query()
+            ->whereIn('department_id', $departmentIds)
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->groupBy('department_id')
+            ->selectRaw('department_id, COUNT(*) as total')
+            ->pluck('total', 'department_id');
+
+        $labels = [''];
+        $weekStarts = [];
+
+        for ($weekOffset = 5; $weekOffset >= 0; $weekOffset--) {
+            $weekStarts[] = now()->startOfWeek(Carbon::MONDAY)->subWeeks($weekOffset);
+            $labels[] = 'Week ' . (6 - $weekOffset);
+        }
+
+        $datasets = [];
+
+        foreach ($departments as $department) {
+            $departmentId = (int) $department->id;
+            $deptTotal = (int) $deptTotals->get($departmentId, 0);
+
+            if ($deptTotal === 0) {
+                continue;
+            }
+
+            $series = [0];
+
+            foreach ($weekStarts as $weekStart) {
+                $series[] = $this->averageOnLeavePercentForDepartmentWeek(
+                    $departmentId,
+                    $deptTotal,
+                    $weekStart
+                );
+            }
+
+            $datasets[] = [
+                'label' => $department->name,
+                'data' => $series,
+            ];
+        }
+
+        return [
+            'labels' => $labels,
+            'datasets' => $datasets,
+        ];
+    }
+
     public function getAttendanceChartData(int $days): array
     {
         $totalEmployees = Employee::where('is_active', true)->whereNull('deleted_at')->count();
@@ -521,6 +590,72 @@ class DashboardService
         return $viewerDepartmentId
             && $applicantDepartmentId
             && $viewerDepartmentId === $applicantDepartmentId;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function resolveDepartmentIdsForDistribution(?Employee $viewerEmployee, $viewer): array
+    {
+        if ($viewer?->isSystemAdminUser()) {
+            return Employee::query()
+                ->where('is_active', true)
+                ->whereNull('deleted_at')
+                ->whereNotNull('department_id')
+                ->distinct()
+                ->pluck('department_id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+        }
+
+        if (! $viewerEmployee) {
+            return [];
+        }
+
+        return $this->resolveViewerApplicantDepartmentIds($viewerEmployee);
+    }
+
+    private function averageOnLeavePercentForDepartmentWeek(
+        int $departmentId,
+        int $deptTotal,
+        Carbon $weekStart
+    ): int {
+        if ($deptTotal === 0) {
+            return 0;
+        }
+
+        $today = Carbon::today();
+        $dailyPercents = [];
+
+        for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
+            $day = $weekStart->copy()->addDays($dayOffset);
+
+            if ($day->gt($today)) {
+                continue;
+            }
+
+            $date = $day->toDateString();
+            $onLeave = EmployeLeaveRequest::query()
+                ->where('status', 3)
+                ->whereIn('action_type', [0, 2])
+                ->where('start_date', '<=', $date)
+                ->where('end_date', '>=', $date)
+                ->whereHas('fromEmployee', fn ($query) => $query
+                    ->where('department_id', $departmentId)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at'))
+                ->distinct()
+                ->count('from_employee_id');
+
+            $dailyPercents[] = ($onLeave / $deptTotal) * 100;
+        }
+
+        if ($dailyPercents === []) {
+            return 0;
+        }
+
+        return (int) round(array_sum($dailyPercents) / count($dailyPercents));
     }
 
     private function scopePendingApprovalsByApplicantDepartment($query, Employee $viewerEmployee): void

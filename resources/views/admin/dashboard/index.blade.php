@@ -104,6 +104,7 @@
     window._dashRoutes = {
         dashboardUrl:       '{{ route('admin.dashboard.index') }}',
         attendanceChart:    '{{ route('admin.dashboard.attendance-chart') }}',
+        departmentDistribution: '{{ route('admin.dashboard.department-distribution') }}',
         pendingApprovals:   '{{ route('admin.dashboard.pending-approvals') }}',
         pendingRosterApprovals: '{{ route('admin.dashboard.pending-roster-approvals') }}',
         rosterApprovalShow: '{{ url('/admin/shift-roster/approvals') }}',

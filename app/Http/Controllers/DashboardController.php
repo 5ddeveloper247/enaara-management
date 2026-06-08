@@ -77,4 +77,15 @@ class DashboardController extends Controller
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function departmentDistribution(): JsonResponse
+    {
+        try {
+            $data = $this->dashboardService->getDepartmentDistributionData();
+
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
 }

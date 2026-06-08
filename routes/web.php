@@ -65,6 +65,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
     Route::get('/dashboard/attendance-chart', [DashboardController::class, 'attendanceChart'])->name('admin.dashboard.attendance-chart');
+    Route::get('/dashboard/department-distribution', [DashboardController::class, 'departmentDistribution'])->name('admin.dashboard.department-distribution');
     Route::get('/dashboard/pending-approvals', [DashboardController::class, 'pendingApprovals'])->name('admin.dashboard.pending-approvals');
     Route::get('/dashboard/pending-roster-approvals', [DashboardController::class, 'pendingRosterApprovals'])->name('admin.dashboard.pending-roster-approvals');
     Route::get('/dashboard/upcoming-holidays', [DashboardController::class, 'upcomingHolidays'])->name('admin.dashboard.upcoming-holidays');

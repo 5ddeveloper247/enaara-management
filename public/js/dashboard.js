@@ -2,11 +2,6 @@
     'use strict';
 
     // ============================================
-    // DATA (using common ProjectData)
-    // ============================================
-    const DashboardData = ProjectData.dashboard;
-
-    // ============================================
     // UTILITIES
     // ============================================
     const DashboardUtils = {
@@ -241,6 +236,68 @@
             });
         },
 
+        buildDepartmentColorVariations(count) {
+            const colors = DashboardUtils.getThemeColors();
+            const baseColor = colors.primaryColor || '#012445';
+            const variations = [];
+
+            for (let i = 0; i < count; i++) {
+                variations.push(DashboardUtils.lightenColor(baseColor, Math.min(i * 0.12, 0.65)));
+            }
+
+            return variations.length ? variations : [baseColor];
+        },
+
+        mapDepartmentDatasets(datasets) {
+            const colorVariations = this.buildDepartmentColorVariations(datasets.length);
+
+            return datasets.map(function (dataset, index) {
+                const color = colorVariations[index % colorVariations.length];
+
+                return {
+                    label: dataset.label,
+                    data: dataset.data,
+                    borderColor: color,
+                    backgroundColor: DashboardUtils.hexToRgba(color, 0.3),
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.5,
+                    pointRadius: 0,
+                    pointHoverRadius: 0
+                };
+            });
+        },
+
+        loadDepartmentDistributionData() {
+            if (!this.departmentChart) return;
+
+            const url = (window._dashRoutes && window._dashRoutes.departmentDistribution) ?
+                window._dashRoutes.departmentDistribution :
+                '/admin/dashboard/department-distribution';
+
+            fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function (res) {
+                    return res.json();
+                })
+                .then(function (json) {
+                    if (!json.success) return;
+
+                    const data = json.data || {};
+                    DashboardCharts.departmentChart.data.labels = data.labels || [];
+                    DashboardCharts.departmentChart.data.datasets = DashboardCharts.mapDepartmentDatasets(data.datasets || []);
+                    DashboardCharts.departmentChart.update();
+                    DashboardCharts.createCustomLegend();
+                })
+                .catch(function (err) {
+                    console.error('Department distribution load failed:', err);
+                });
+        },
+
         /**
          * Initialize Department Distribution Chart
          */
@@ -249,30 +306,12 @@
             if (!ctx) return;
 
             const colors = DashboardUtils.getThemeColors();
-            const baseColor = colors.primaryColor || '#012445';
-
-            const colorVariations = [
-                baseColor,
-                DashboardUtils.lightenColor(baseColor, 0.15),
-                DashboardUtils.lightenColor(baseColor, 0.30),
-                DashboardUtils.lightenColor(baseColor, 0.50)
-            ];
 
             this.departmentChart = new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels: DashboardData.department.labels,
-                    datasets: DashboardData.department.datasets.map((dataset, index) => ({
-                        label: dataset.label,
-                        data: dataset.data,
-                        borderColor: colorVariations[index],
-                        backgroundColor: DashboardUtils.hexToRgba(colorVariations[index], 0.3),
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.5,
-                        pointRadius: 0,
-                        pointHoverRadius: 0
-                    }))
+                    labels: [],
+                    datasets: []
                 },
                 options: {
                     responsive: true,
@@ -362,7 +401,7 @@
                 }
             });
 
-            this.createCustomLegend();
+            this.loadDepartmentDistributionData();
         },
 
         /**
