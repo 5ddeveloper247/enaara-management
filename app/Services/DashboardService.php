@@ -63,7 +63,7 @@ class DashboardService
 
         $viewerEmployee->loadMissing('department');
         $isHumanResource = $this->isHumanResourceDepartment($viewerEmployee->department);
-        $canAct = ! $isHumanResource || $viewer->isSystemAdminUser();
+        $isSystemAdmin = $viewer->isSystemAdminUser();
 
         $query = EmployeLeaveRequest::with([
                 'fromEmployee:id,full_name,department_id',
@@ -72,19 +72,19 @@ class DashboardService
             ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
             ->where('status', 0);
 
-        if ($isHumanResource && ! $viewer->isSystemAdminUser()) {
+        if ($isHumanResource && ! $isSystemAdmin) {
             $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee);
         } else {
             $query->where('to_employee_id', $viewerEmployee->id);
 
-            if (! $viewer->isSystemAdminUser()) {
+            if (! $isSystemAdmin) {
                 $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee);
             }
         }
 
         $requests = $query->orderByDesc('created_at')->get();
 
-        $items = $requests->map(function ($r) {
+        $items = $requests->map(function ($r) use ($viewerEmployee, $isHumanResource, $isSystemAdmin) {
             $name     = optional($r->fromEmployee)->full_name ?? 'Unknown';
             $words    = explode(' ', trim($name));
             $initials = strtoupper(
@@ -100,8 +100,16 @@ class DashboardService
                 'start_date'   => \Carbon\Carbon::parse($r->start_date)->format('M d, Y'),
                 'end_date'     => \Carbon\Carbon::parse($r->end_date)->format('M d, Y'),
                 'reason'       => $r->reason ?? '',
+                'can_act'      => $this->canActOnPendingApproval(
+                    $r,
+                    $viewerEmployee,
+                    $isHumanResource,
+                    $isSystemAdmin
+                ),
             ];
         })->values()->all();
+
+        $canAct = collect($items)->contains(fn (array $item) => $item['can_act']);
 
         return [
             'items' => $items,
@@ -473,6 +481,32 @@ class DashboardService
         usort($warnings, fn($a, $b) => $b['percent'] <=> $a['percent']);
 
         return array_slice($warnings, 0, 10);
+    }
+
+    private function canActOnPendingApproval(
+        EmployeLeaveRequest $request,
+        Employee $viewerEmployee,
+        bool $isHumanResourceViewer,
+        bool $isSystemAdmin
+    ): bool {
+        $isAssignedApprover = (int) $request->to_employee_id === (int) $viewerEmployee->id;
+
+        if (! $isAssignedApprover) {
+            return false;
+        }
+
+        if ($isSystemAdmin || ! $isHumanResourceViewer) {
+            return true;
+        }
+
+        $viewerDepartmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
+        $applicantDepartmentId = $request->fromEmployee?->department_id
+            ? (int) $request->fromEmployee->department_id
+            : null;
+
+        return $viewerDepartmentId
+            && $applicantDepartmentId
+            && $viewerDepartmentId === $applicantDepartmentId;
     }
 
     private function scopePendingApprovalsByApplicantDepartment($query, Employee $viewerEmployee): void

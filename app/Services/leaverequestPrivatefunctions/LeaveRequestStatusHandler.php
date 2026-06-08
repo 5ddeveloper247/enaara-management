@@ -85,10 +85,11 @@ class LeaveRequestStatusHandler
             $this->isHumanResourceViewer($currentUser)
             && ! $currentUser->isSystemAdminUser()
             && in_array($newStatus, [1, 2, 3, 4], true)
+            && ! $this->canHumanResourceActOnLeaveRequest($currentUser, $leaveRequest)
         ) {
             return $this->deny(
                 $request,
-                'As a Human Resource team member, you can view leave requests but cannot approve, reject, or recommend them. Please contact the assigned manager or HOD.'
+                'As a Human Resource team member, you can view leave requests from other departments but cannot approve or reject them. Please contact the assigned manager or HOD.'
             );
         }
 
@@ -353,5 +354,30 @@ class LeaveRequestStatusHandler
         $normalized = strtolower(trim((string) $department->name));
 
         return in_array($normalized, ['human resource', 'human resources'], true);
+    }
+
+    private function canHumanResourceActOnLeaveRequest(?User $user, EmployeLeaveRequest $leaveRequest): bool
+    {
+        $viewerEmployee = $user?->employee;
+
+        if (! $viewerEmployee) {
+            return false;
+        }
+
+        $isAssignedApprover = (int) $leaveRequest->to_employee_id === (int) $viewerEmployee->id;
+
+        if (! $isAssignedApprover) {
+            return false;
+        }
+
+        $leaveRequest->loadMissing('fromEmployee');
+        $viewerDepartmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
+        $applicantDepartmentId = $leaveRequest->fromEmployee?->department_id
+            ? (int) $leaveRequest->fromEmployee->department_id
+            : null;
+
+        return $viewerDepartmentId
+            && $applicantDepartmentId
+            && $viewerDepartmentId === $applicantDepartmentId;
     }
 }

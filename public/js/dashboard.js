@@ -422,6 +422,7 @@
     // ============================================
     const DashboardApprovals = {
         currentLeaveId: null,
+        currentLeaveCanAct: false,
         canActOnApprovals: true,
         isHumanResourceViewer: false,
 
@@ -450,8 +451,8 @@
             alert('As a Human Resource team member, you can view leave requests but cannot approve or reject them.');
         },
 
-        guardLeaveAction() {
-            if (this.canActOnApprovals) {
+        guardLeaveAction(canAct) {
+            if (canAct !== false) {
                 return true;
             }
 
@@ -482,8 +483,8 @@
             alert(message);
         },
 
-        confirmApprove(id, onConfirmed) {
-            if (!this.guardLeaveAction()) {
+        confirmApprove(id, onConfirmed, canAct) {
+            if (!this.guardLeaveAction(canAct)) {
                 return;
             }
 
@@ -511,8 +512,8 @@
             });
         },
 
-        confirmReject(id, onConfirmed) {
-            if (!this.guardLeaveAction()) {
+        confirmReject(id, onConfirmed, canAct) {
+            if (!this.guardLeaveAction(canAct)) {
                 return;
             }
 
@@ -617,25 +618,27 @@
             }
 
             items.forEach(function (item) {
+                const itemCanAct = item.can_act === true;
                 const div = document.createElement('div');
                 div.className = 'approval-item';
                 div.setAttribute('data-approval-id', item.id);
+                div.setAttribute('data-can-act', itemCanAct ? '1' : '0');
 
-                const rowCheckboxHtml = DashboardApprovals.canActOnApprovals
+                const rowCheckboxHtml = itemCanAct
                     ? '<input type="checkbox" class="form-check-input approval-checkbox approval-item-checkbox" value="' + item.id + '">'
                     : '';
 
-                const actionButtonsHtml = DashboardApprovals.canActOnApprovals
-                    ? '<button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn" data-id="' + item.id + '" title="Approve">' +
+                const actionButtonsHtml = itemCanAct
+                    ? '<button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn" data-id="' + item.id + '" data-can-act="1" title="Approve">' +
                     '<i class="bi bi-check-lg"></i>' +
                     '</button>' +
-                    '<button class="btn btn-sm btn-danger border-0 bg-main rounded-3 reject-btn" data-id="' + item.id + '" title="Reject">' +
+                    '<button class="btn btn-sm btn-danger border-0 bg-main rounded-3 reject-btn" data-id="' + item.id + '" data-can-act="1" title="Reject">' +
                     '<i class="bi bi-x-lg"></i>' +
                     '</button>'
-                    : '<button class="btn btn-sm btn-outline-success rounded-3 border approve-btn" data-id="' + item.id + '" title="Approve">' +
+                    : '<button class="btn btn-sm btn-outline-success rounded-3 border approve-btn" data-id="' + item.id + '" data-can-act="0" title="Approve">' +
                     '<i class="bi bi-check-lg"></i>' +
                     '</button>' +
-                    '<button class="btn btn-sm btn-outline-danger rounded-3 border reject-btn" data-id="' + item.id + '" title="Reject">' +
+                    '<button class="btn btn-sm btn-outline-danger rounded-3 border reject-btn" data-id="' + item.id + '" data-can-act="0" title="Reject">' +
                     '<i class="bi bi-x-lg"></i>' +
                     '</button>';
 
@@ -648,7 +651,7 @@
                     '<h6 class="mb-0 small">' + DashboardApprovals.esc(item.name) + '</h6>' +
                     '<small class="text-muted">' + DashboardApprovals.esc(item.leave_type) + '</small>' +
                     '<div class="small text-muted">Requested: ' + DashboardApprovals.esc(item.request_date) + '</div>' +
-                    (DashboardApprovals.isHumanResourceViewer
+                    (DashboardApprovals.isHumanResourceViewer && !itemCanAct
                         ? '<div class="small text-info"><i class="bi bi-eye me-1"></i>View only</div>'
                         : '') +
                     '</div>' +
@@ -750,23 +753,27 @@
             document.querySelectorAll('.approve-btn').forEach(function (btn) {
                 btn.onclick = function () {
                     const id = this.getAttribute('data-id');
+                    const canAct = this.getAttribute('data-can-act') === '1';
                     DashboardApprovals.confirmApprove(id, function () {
-                        DashboardApprovals.performStatusUpdate(id, 3);
-                    });
+                        DashboardApprovals.performStatusUpdate(id, 3, { canAct: true });
+                    }, canAct);
                 };
             });
 
             document.querySelectorAll('.reject-btn').forEach(function (btn) {
                 btn.onclick = function () {
                     const id = this.getAttribute('data-id');
+                    const canAct = this.getAttribute('data-can-act') === '1';
                     DashboardApprovals.confirmReject(id, function () {
-                        DashboardApprovals.performStatusUpdate(id, 4);
-                    });
+                        DashboardApprovals.performStatusUpdate(id, 4, { canAct: true });
+                    }, canAct);
                 };
             });
 
             document.querySelectorAll('.view-btn').forEach(function (btn) {
                 btn.onclick = function () {
+                    const itemEl = this.closest('.approval-item');
+                    const canAct = itemEl ? itemEl.getAttribute('data-can-act') === '1' : false;
                     DashboardApprovals.viewLeaveReason(
                         this.getAttribute('data-id'),
                         this.getAttribute('data-name'),
@@ -775,7 +782,8 @@
                         this.getAttribute('data-request-date'),
                         this.getAttribute('data-start-date'),
                         this.getAttribute('data-end-date'),
-                        this.getAttribute('data-reason')
+                        this.getAttribute('data-reason'),
+                        canAct
                     );
                 };
             });
@@ -791,7 +799,7 @@
         performStatusUpdate(id, status, options) {
             options = options || {};
 
-            if (!this.canActOnApprovals) {
+            if (options.canAct === false) {
                 this.showHrViewOnlyAlert();
                 return Promise.resolve({ success: false, message: 'View only access.' });
             }
@@ -908,12 +916,15 @@
                 if (header) header.style.display = 'none';
             } else {
                 if (empty) empty.classList.add('d-none');
-                if (header) header.style.display = '';
+                if (header) {
+                    header.style.display = DashboardApprovals.canActOnApprovals ? '' : 'none';
+                }
             }
         },
 
-        viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason) {
+        viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason, canAct) {
             this.currentLeaveId = id;
+            this.currentLeaveCanAct = canAct === true;
             var avatarEl = document.getElementById('slideEmployeeAvatar');
             var nameEl = document.getElementById('slideEmployeeName');
             var typeEl = document.getElementById('slideLeaveType');
@@ -932,6 +943,11 @@
 
             var backdrop = document.getElementById('slideOverBackdrop');
             var panel = document.getElementById('slideOverPanel');
+            var slideApproveBtn = document.getElementById('slideApproveBtn');
+            var slideRejectBtn = document.getElementById('slideRejectBtn');
+            if (slideApproveBtn) slideApproveBtn.style.display = this.currentLeaveCanAct ? '' : 'none';
+            if (slideRejectBtn) slideRejectBtn.style.display = this.currentLeaveCanAct ? '' : 'none';
+
             if (backdrop) backdrop.classList.add('show');
             if (panel) panel.classList.add('show');
             document.body.style.overflow = '';
@@ -944,30 +960,33 @@
             if (panel) panel.classList.remove('show');
             document.body.style.overflow = '';
             this.currentLeaveId = null;
+            this.currentLeaveCanAct = false;
         },
 
         approveFromSlide() {
             if (!this.currentLeaveId) return;
             const leaveId = this.currentLeaveId;
+            const canAct = this.currentLeaveCanAct;
             this.confirmApprove(leaveId, function () {
-                DashboardApprovals.performStatusUpdate(leaveId, 3).then(function (result) {
+                DashboardApprovals.performStatusUpdate(leaveId, 3, { canAct: true }).then(function (result) {
                     if (result.success) {
                         DashboardApprovals.closeSlideOver();
                     }
                 });
-            });
+            }, canAct);
         },
 
         rejectFromSlide() {
             if (!this.currentLeaveId) return;
             const leaveId = this.currentLeaveId;
+            const canAct = this.currentLeaveCanAct;
             this.confirmReject(leaveId, function () {
-                DashboardApprovals.performStatusUpdate(leaveId, 4).then(function (result) {
+                DashboardApprovals.performStatusUpdate(leaveId, 4, { canAct: true }).then(function (result) {
                     if (result.success) {
                         DashboardApprovals.closeSlideOver();
                     }
                 });
-            });
+            }, canAct);
         },
 
         initSlideOverKeyboard() {
