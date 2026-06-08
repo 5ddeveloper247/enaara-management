@@ -483,6 +483,19 @@ class DashboardService
 
     public function getDepartmentalQuotaWarnings(int $days = 14, int $threshold = 20): array
     {
+        $viewer = Auth::user();
+        $viewerEmployee = $viewer?->employee;
+
+        if (! $viewerEmployee && ! $viewer?->isSystemAdminUser()) {
+            return [];
+        }
+
+        $departmentIds = $this->resolveDepartmentIdsForDistribution($viewerEmployee, $viewer);
+
+        if ($departmentIds === []) {
+            return [];
+        }
+
         $today = Carbon::today();
         $warnings = [];
 
@@ -490,6 +503,7 @@ class DashboardService
             ->whereNull('deleted_at')
             ->where('is_active', true)
             ->whereNotNull('department_id')
+            ->whereIn('department_id', $departmentIds)
             ->select('department_id', DB::raw('COUNT(*) as total'))
             ->groupBy('department_id')
             ->pluck('total', 'department_id');
@@ -511,7 +525,7 @@ class DashboardService
                 ->where('lr.start_date', '<=', $dateStr)
                 ->where('lr.end_date', '>=', $dateStr)
                 ->whereNull('e.deleted_at')
-                ->whereNotNull('e.department_id')
+                ->whereIn('e.department_id', $departmentIds)
                 ->select('e.department_id', DB::raw('COUNT(DISTINCT lr.from_employee_id) as on_leave'))
                 ->groupBy('e.department_id')
                 ->pluck('on_leave', 'department_id');
