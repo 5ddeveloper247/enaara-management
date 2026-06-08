@@ -585,6 +585,29 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     cursor: pointer;
 }
 
+.shift-pill.shift-half-leave {
+    background: linear-gradient(135deg, #fef9c3, #fde68a);
+    color: #92400e;
+    border: 1px dashed rgba(202, 138, 4, 0.65);
+    cursor: default;
+}
+
+.shift-pill.shift-half-leave .shift-pill-icon {
+    color: #b45309;
+}
+
+.shift-half-session {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #92400e;
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
 .roster-day-add-inline {
     margin-top: 2px;
     min-height: 18px;

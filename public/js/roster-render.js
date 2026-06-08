@@ -206,17 +206,39 @@
 
         if (s.isLeave || (s.status && String(s.status).toLowerCase() === 'leave')) {
             var rawName = s.leaveName ? String(s.leaveName).trim() : 'leave';
-            // Strip trailing "leave" or "leaves" (case-insensitive) to avoid "On Leave (Sick leave)"
             var typeName = rawName.replace(/\s*leaves?\s*$/i, '').trim() || rawName;
             if (typeName.length > 16) {
                 typeName = typeName.substring(0, 14) + '…';
             }
-            var leaveDisplayText = 'On ' + typeName + ' leave';
-            return '<div class="shift-pill shift-holiday" style="background-color: #fef08a; border-color: #facc15; color: #854d0e;" title="' + escapeHtml(rawName) + '">' +
-                '<span class="shift-pill-icon" aria-hidden="true" style="color: #ca8a04;"><i class="bi bi-person-dash"></i></span>' +
+            var isHalfDayLeave = !!(s.isHalfDayLeave || (s.leaveDuration && parseFloat(s.leaveDuration) < 1));
+            var session = s.halfDaySession ? String(s.halfDaySession).toLowerCase() : '';
+            var sessionLabel = session === 'morning'
+                ? 'Morning'
+                : (session === 'afternoon' ? 'Afternoon' : '');
+            var leaveDisplayText = isHalfDayLeave
+                ? ('Half ' + typeName + ' leave')
+                : ('On ' + typeName + ' leave');
+            var sessionMetaHtml = isHalfDayLeave && sessionLabel
+                ? '<div class="shift-pill-meta"><span class="shift-half-session">' + escapeHtml(sessionLabel) + '</span></div>'
+                : '';
+            var pillClass = isHalfDayLeave ? 'shift-pill shift-half-leave' : 'shift-pill shift-holiday';
+            var pillStyle = isHalfDayLeave
+                ? ''
+                : 'background-color: #fef08a; border-color: #facc15; color: #854d0e;';
+            var iconStyle = isHalfDayLeave ? '' : 'color: #ca8a04;';
+            var titleText = isHalfDayLeave
+                ? (rawName + ' — Half day' + (sessionLabel ? ' (' + sessionLabel + ')' : ''))
+                : rawName;
+            return '<div class="' + pillClass + '"' +
+                (pillStyle ? ' style="' + pillStyle + '"' : '') +
+                ' title="' + escapeHtml(titleText) + '">' +
+                '<span class="shift-pill-icon" aria-hidden="true"' +
+                (iconStyle ? ' style="' + iconStyle + '"' : '') +
+                '><i class="bi bi-' + (isHalfDayLeave ? 'clock-history' : 'person-dash') + '"></i></span>' +
                 '<div class="shift-pill-top">' +
                 '<span class="shift-time">' + escapeHtml(leaveDisplayText) + '</span>' +
                 '</div>' +
+                sessionMetaHtml +
                 '</div>';
         }
 
@@ -1168,6 +1190,9 @@
 
     function isRosterOffDayShift(shift) {
         if (!shift) {
+            return false;
+        }
+        if (shift.isLeave && shift.isHalfDayLeave) {
             return false;
         }
         if (shift.isOffDay) {

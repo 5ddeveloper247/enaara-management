@@ -614,6 +614,9 @@ class ShiftRosterService
             $dateString = $entity->leave_date->toDateString();
             $employeeKey = 'employee:' . $entity->employee_id;
             $leaveName = $entity->leaveRequest?->leaveType?->name ?? 'Leave';
+            $isHalfDayLeave = (float) $entity->duration < 1.0
+                || (bool) ($entity->leaveRequest?->is_half_day ?? false);
+            $halfDaySession = $entity->half_day_session ?? $entity->leaveRequest?->half_day_session;
 
             return [
                 'rosterId' => null,
@@ -624,7 +627,7 @@ class ShiftRosterService
                 'day' => (int) $entity->leave_date->format('d'),
                 'shiftPlannerId' => null,
                 'isCustomTime' => false,
-                'shiftType' => 'leave',
+                'shiftType' => $isHalfDayLeave ? 'half_leave' : 'leave',
                 'timeStart' => null,
                 'timeEnd' => null,
                 'floor' => null,
@@ -632,9 +635,12 @@ class ShiftRosterService
                 'notes' => null,
                 'sbuFloorId' => null,
                 'status' => 'leave',
-                'isOffDay' => true, // Treated as off day for calculation
+                'isOffDay' => ! $isHalfDayLeave,
                 'isPublicHoliday' => false,
                 'isLeave' => true,
+                'isHalfDayLeave' => $isHalfDayLeave,
+                'leaveDuration' => (float) $entity->duration,
+                'halfDaySession' => $halfDaySession,
                 'leaveName' => $leaveName,
                 'isCompensatory' => false,
                 'deletedAt' => null,
