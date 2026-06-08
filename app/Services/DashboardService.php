@@ -207,16 +207,28 @@ class DashboardService
 
     public function getWhoIsOutToday(): array
     {
+        $viewer = Auth::user();
+        $viewerEmployee = $viewer?->employee;
+
+        if (! $viewerEmployee) {
+            return [];
+        }
+
         $today = now()->toDateString();
         $requests = EmployeLeaveRequest::with([
-                'fromEmployee:id,full_name',
+                'fromEmployee:id,full_name,department_id',
                 'leaveType:id,name',
             ])
-            ->where('status', 3) // Approved
-            ->whereIn('action_type', [0, 2]) // Leave or Duty Off
+            ->where('status', 3)
+            ->whereIn('action_type', [0, 2])
             ->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today)
-            ->get();
+            ->when(
+                ! $viewer->isSystemAdminUser(),
+                fn ($query) => $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee)
+            )
+            ->get()
+            ->unique(fn (EmployeLeaveRequest $request) => (int) $request->from_employee_id);
 
         return $requests->map(function ($r) {
             $name     = optional($r->fromEmployee)->full_name ?? 'Unknown';
