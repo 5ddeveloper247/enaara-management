@@ -121,12 +121,14 @@ class DashboardService
     public function getPendingRosterApprovals(): array
     {
         $user = Auth::user();
-        if (! $user || ! $user->employee_id) {
+        $viewerEmployee = $user?->employee;
+
+        if (! $viewerEmployee) {
             return [];
         }
 
         return $this->shiftRosterApprovalService
-            ->getPendingForApprover((int) $user->employee_id)
+            ->getPendingForDashboardViewer($viewerEmployee, $user)
             ->map(fn (array $item) => $this->shiftRosterApprovalService->formatPendingListItem(
                 $item['request'],
                 $item['segment'] ?? null

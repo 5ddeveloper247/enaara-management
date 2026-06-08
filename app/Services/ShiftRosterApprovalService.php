@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftPlanner;
@@ -394,6 +395,20 @@ class ShiftRosterApprovalService
         return $legacyRequests->concat($rosterSegments)->values();
     }
 
+    public function getPendingForDashboardViewer(Employee $viewerEmployee, User $viewer): Collection
+    {
+        $viewerEmployee->loadMissing('department');
+
+        if (
+            $this->isHumanResourceDepartment($viewerEmployee->department)
+            && ! $viewer->isSystemAdminUser()
+        ) {
+            return $this->getPendingForHumanResourceDashboard($viewerEmployee);
+        }
+
+        return $this->getPendingForApprover((int) $viewerEmployee->id);
+    }
+
     public function formatPendingListItem(ShiftRosterApprovalRequest $request, ?ShiftRosterApprovalSegment $segment = null): array
     {
         $assigneeName = $this->resolveAssigneeDisplayName($request, $segment);
@@ -475,6 +490,21 @@ class ShiftRosterApprovalService
 
         $pendingSegments = $request->segments->where('approval_status', 'pending')->count();
         $approvedSegments = $request->segments->where('approval_status', 'approved')->count();
+        $viewerEmployee = $viewerEmployeeId
+            ? Employee::query()->with('department')->find($viewerEmployeeId)
+            : null;
+        $canApproveBase = $viewerSegment?->isPending() ?? (
+            $request->request_type !== 'roster' && $request->isPending()
+        );
+
+        if (
+            $viewerEmployee
+            && $this->isHumanResourceDepartment($viewerEmployee->department)
+            && ! Auth::user()?->isSystemAdminUser()
+        ) {
+            $canApproveBase = $canApproveBase
+                && $this->canHumanResourceApproveRequest($request, $viewerSegment, $viewerEmployee);
+        }
 
         return [
             'id' => $request->id,
@@ -511,9 +541,7 @@ class ShiftRosterApprovalService
             'segment_scope_label' => $viewerSegment
                 ? $this->buildSegmentScopeLabel($request, $viewerSegment)
                 : null,
-            'can_approve' => $viewerSegment?->isPending() ?? (
-                $request->request_type !== 'roster' && $request->isPending()
-            ),
+            'can_approve' => $canApproveBase,
             'pending_segments' => $pendingSegments,
             'approved_segments' => $approvedSegments,
             'first_review_week' => $this->resolveFirstReviewWeek($request, $viewerSegment),
@@ -877,10 +905,13 @@ class ShiftRosterApprovalService
         }
 
         if ($request->request_type === 'roster') {
-            $this->resolveActingSegment($request, $userId);
+            $segment = $this->resolveActingSegment($request, $userId);
+            $this->assertHumanResourceCanApprove($request, $segment, $user);
 
             return;
         }
+
+        $this->assertHumanResourceCanApprove($request, null, $user);
 
         if ((int) $user->employee_id !== (int) $request->approver_employee_id) {
             throw ValidationException::withMessages([
@@ -943,13 +974,248 @@ class ShiftRosterApprovalService
 
     private function viewerCanAccessRequest(ShiftRosterApprovalRequest $request, int $viewerEmployeeId): bool
     {
+        if ($this->viewerIsAssignedApproverOnRequest($request, $viewerEmployeeId)) {
+            return true;
+        }
+
+        $viewer = Employee::query()->with('department')->find($viewerEmployeeId);
+
+        if ($viewer && $this->isHumanResourceDepartment($viewer->department)) {
+            return $this->requestIsVisibleToHumanResourceViewer($request, $viewer);
+        }
+
+        return false;
+    }
+
+    private function getPendingForHumanResourceDashboard(Employee $viewerEmployee): Collection
+    {
+        return $this->collectSbuPendingRosterItems($viewerEmployee)
+            ->filter(fn (array $item) => $this->shouldShowPendingItemToHumanResourceViewer(
+                $item['request'],
+                $item['segment'] ?? null,
+                $viewerEmployee
+            ))
+            ->values();
+    }
+
+    private function collectSbuPendingRosterItems(Employee $viewerEmployee): Collection
+    {
+        $departmentIds = $this->resolveSbuDepartmentIds($viewerEmployee);
+        $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
+
+        if ($departmentIds === [] && ! $sbuId) {
+            return collect();
+        }
+
+        $legacyRequests = ShiftRosterApprovalRequest::query()
+            ->with(['employee.department', 'outsourcedEmployee', 'requestedByUser'])
+            ->where('approval_status', 'pending')
+            ->where('request_type', '!=', 'roster')
+            ->where(function ($query) use ($departmentIds, $sbuId) {
+                if ($departmentIds !== []) {
+                    $query->whereHas(
+                        'employee',
+                        fn ($employeeQuery) => $employeeQuery->whereIn('department_id', $departmentIds)
+                    );
+                }
+
+                if ($sbuId) {
+                    $method = $departmentIds !== [] ? 'orWhereHas' : 'whereHas';
+                    $query->{$method}(
+                        'outsourcedEmployee',
+                        fn ($outsourcedQuery) => $outsourcedQuery->where('sbu_id', $sbuId)
+                    );
+                }
+            })
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (ShiftRosterApprovalRequest $request) => [
+                'request' => $request,
+                'segment' => null,
+            ]);
+
+        $rosterSegments = collect();
+
+        if ($departmentIds !== []) {
+            $rosterSegments = ShiftRosterApprovalSegment::query()
+                ->with(['request.requestedByUser', 'department'])
+                ->where('approval_status', 'pending')
+                ->whereIn('department_id', $departmentIds)
+                ->whereHas('request', fn ($query) => $query
+                    ->where('approval_status', 'pending')
+                    ->where('request_type', 'roster'))
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn (ShiftRosterApprovalSegment $segment) => [
+                    'request' => $segment->request,
+                    'segment' => $segment,
+                ]);
+        }
+
+        return $legacyRequests->concat($rosterSegments)->values();
+    }
+
+    private function shouldShowPendingItemToHumanResourceViewer(
+        ShiftRosterApprovalRequest $request,
+        ?ShiftRosterApprovalSegment $segment,
+        Employee $viewerEmployee
+    ): bool {
+        $viewerId = (int) $viewerEmployee->id;
+        $viewerDepartmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
+
+        if (! $this->viewerIsAssignedApproverOnItem($request, $segment, $viewerId)) {
+            return true;
+        }
+
+        $itemDepartmentId = $this->resolveItemDepartmentId($request, $segment);
+
+        return $viewerDepartmentId
+            && $itemDepartmentId
+            && $viewerDepartmentId === $itemDepartmentId;
+    }
+
+    private function viewerIsAssignedApproverOnRequest(
+        ShiftRosterApprovalRequest $request,
+        int $viewerEmployeeId
+    ): bool {
         if ($request->request_type === 'roster') {
+            $request->loadMissing('segments');
+
             return $request->segments->contains(
                 fn (ShiftRosterApprovalSegment $segment) => (int) $segment->approver_employee_id === $viewerEmployeeId
             );
         }
 
         return (int) $request->approver_employee_id === $viewerEmployeeId;
+    }
+
+    private function viewerIsAssignedApproverOnItem(
+        ShiftRosterApprovalRequest $request,
+        ?ShiftRosterApprovalSegment $segment,
+        int $viewerEmployeeId
+    ): bool {
+        if ($request->request_type === 'roster') {
+            return $segment !== null
+                && (int) $segment->approver_employee_id === $viewerEmployeeId;
+        }
+
+        return (int) $request->approver_employee_id === $viewerEmployeeId;
+    }
+
+    private function resolveItemDepartmentId(
+        ShiftRosterApprovalRequest $request,
+        ?ShiftRosterApprovalSegment $segment
+    ): ?int {
+        if ($request->request_type === 'roster') {
+            return $segment?->department_id ? (int) $segment->department_id : null;
+        }
+
+        $request->loadMissing('employee');
+
+        return $request->employee?->department_id ? (int) $request->employee->department_id : null;
+    }
+
+    private function requestIsVisibleToHumanResourceViewer(
+        ShiftRosterApprovalRequest $request,
+        Employee $viewerEmployee
+    ): bool {
+        $departmentIds = $this->resolveSbuDepartmentIds($viewerEmployee);
+        $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
+
+        if ($request->request_type === 'roster') {
+            $request->loadMissing('segments');
+
+            if ($departmentIds === []) {
+                return false;
+            }
+
+            return $request->segments->contains(
+                fn (ShiftRosterApprovalSegment $segment) => in_array((int) $segment->department_id, $departmentIds, true)
+            );
+        }
+
+        $request->loadMissing(['employee', 'outsourcedEmployee']);
+
+        if ($request->employee_id) {
+            return $departmentIds !== []
+                && in_array((int) $request->employee->department_id, $departmentIds, true);
+        }
+
+        if ($request->outsourced_employee_id && $sbuId) {
+            return (int) $request->outsourcedEmployee?->sbu_id === $sbuId;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function resolveSbuDepartmentIds(Employee $viewerEmployee): array
+    {
+        $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
+
+        if (! $sbuId) {
+            return [];
+        }
+
+        return Department::query()
+            ->where('sbu_id', $sbuId)
+            ->where('is_active', true)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    private function canHumanResourceApproveRequest(
+        ShiftRosterApprovalRequest $request,
+        ?ShiftRosterApprovalSegment $segment,
+        Employee $viewerEmployee
+    ): bool {
+        if (! $this->viewerIsAssignedApproverOnItem($request, $segment, (int) $viewerEmployee->id)) {
+            return false;
+        }
+
+        $viewerDepartmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
+        $itemDepartmentId = $this->resolveItemDepartmentId($request, $segment);
+
+        return $viewerDepartmentId
+            && $itemDepartmentId
+            && $viewerDepartmentId === $itemDepartmentId;
+    }
+
+    private function assertHumanResourceCanApprove(
+        ShiftRosterApprovalRequest $request,
+        ?ShiftRosterApprovalSegment $segment,
+        User $user
+    ): void {
+        $viewerEmployee = $user->employee;
+
+        if (
+            ! $viewerEmployee
+            || ! $this->isHumanResourceDepartment($viewerEmployee->department)
+            || $user->isSystemAdminUser()
+        ) {
+            return;
+        }
+
+        if (! $this->canHumanResourceApproveRequest($request, $segment, $viewerEmployee)) {
+            throw ValidationException::withMessages([
+                'approval' => 'As a Human Resource team member, you can view roster requests from other departments but cannot approve or reject them.',
+            ]);
+        }
+    }
+
+    private function isHumanResourceDepartment(?Department $department): bool
+    {
+        if (! $department) {
+            return false;
+        }
+
+        $normalized = strtolower(trim((string) $department->name));
+
+        return in_array($normalized, ['human resource', 'human resources'], true);
     }
 
     private function assertNoPendingApprovalForAssigneeDate(string $assigneeType, int $assigneeId, string $rosterDate): void
