@@ -423,6 +423,114 @@
     const DashboardApprovals = {
         currentLeaveId: null,
 
+        ensureSwalModalFocusFix() {
+            if (this._swalFocusFixBound) return;
+            this._swalFocusFixBound = true;
+            document.addEventListener('focusin', function (e) {
+                if (e.target.closest && e.target.closest('.swal2-container')) {
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+        },
+
+        showLeaveAlert(message, type) {
+            if (type === 'success' && typeof window.showSuccess === 'function') {
+                window.showSuccess(message, 'Success');
+                return;
+            }
+            if (type === 'error' && typeof window.showError === 'function') {
+                window.showError(message);
+                return;
+            }
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: type === 'success' ? 'success' : (type === 'error' ? 'error' : 'info'),
+                    title: type === 'success' ? 'Success' : (type === 'error' ? 'Error' : 'Notice'),
+                    text: message,
+                    timer: type === 'success' ? 1800 : undefined,
+                    showConfirmButton: type !== 'success',
+                    confirmButtonColor: '#1a237e'
+                });
+                return;
+            }
+            alert(message);
+        },
+
+        confirmApprove(id, onConfirmed) {
+            if (typeof Swal === 'undefined') {
+                if (confirm('Approve this leave request?')) {
+                    onConfirmed();
+                }
+                return;
+            }
+
+            Swal.fire({
+                icon: 'question',
+                title: 'Approve Leave Request?',
+                text: 'Are you sure you want to approve this leave request?',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Approve',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    onConfirmed();
+                }
+            });
+        },
+
+        confirmReject(id, onConfirmed) {
+            if (typeof Swal === 'undefined') {
+                if (confirm('Reject this leave request?')) {
+                    onConfirmed();
+                }
+                return;
+            }
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Reject Leave Request?',
+                text: 'Are you sure you want to reject this leave request?',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Reject',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    onConfirmed();
+                }
+            });
+        },
+
+        confirmBulkApprove(count, onConfirmed) {
+            if (typeof Swal === 'undefined') {
+                if (confirm('Approve ' + count + ' leave request(s)?')) {
+                    onConfirmed();
+                }
+                return;
+            }
+
+            Swal.fire({
+                icon: 'question',
+                title: 'Bulk Approve Leave Requests?',
+                text: 'Approve ' + count + ' selected leave request(s)?',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Approve All',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    onConfirmed();
+                }
+            });
+        },
+
         loadPendingApprovals() {
             const url = (window._dashRoutes && window._dashRoutes.pendingApprovals) ?
                 window._dashRoutes.pendingApprovals :
@@ -534,12 +642,12 @@
                     });
                     if (ids.length === 0) return;
                     if (ids.length > 10) {
-                        DashboardUtils.showAlert('You can only approve up to 10 requests at once.');
+                        DashboardApprovals.showLeaveAlert('You can only approve up to 10 requests at once.', 'error');
                         return;
                     }
-                    if (DashboardUtils.confirmAction('Approve ' + ids.length + ' leave request(s)?')) {
+                    DashboardApprovals.confirmBulkApprove(ids.length, function () {
                         DashboardApprovals.bulkApproveApi(ids);
-                    }
+                    });
                 };
             }
         },
@@ -582,18 +690,18 @@
             document.querySelectorAll('.approve-btn').forEach(function (btn) {
                 btn.onclick = function () {
                     const id = this.getAttribute('data-id');
-                    if (DashboardUtils.confirmAction('Approve this leave request?')) {
-                        DashboardApprovals.updateStatusApi(id, 3);
-                    }
+                    DashboardApprovals.confirmApprove(id, function () {
+                        DashboardApprovals.performStatusUpdate(id, 3);
+                    });
                 };
             });
 
             document.querySelectorAll('.reject-btn').forEach(function (btn) {
                 btn.onclick = function () {
                     const id = this.getAttribute('data-id');
-                    if (DashboardUtils.confirmAction('Reject this leave request?')) {
-                        DashboardApprovals.updateStatusApi(id, 4);
-                    }
+                    DashboardApprovals.confirmReject(id, function () {
+                        DashboardApprovals.performStatusUpdate(id, 4);
+                    });
                 };
             });
 
@@ -620,14 +728,15 @@
             });
         },
 
-        updateStatusApi(id, status) {
+        performStatusUpdate(id, status, options) {
+            options = options || {};
             const baseUrl = (window._dashRoutes && window._dashRoutes.leaveRequestStatus) ?
                 window._dashRoutes.leaveRequestStatus :
                 '/admin/leave-request/{id}/status';
             const url = baseUrl.replace('{id}', id);
             const csrf = window._csrfToken || '';
 
-            fetch(url, {
+            return fetch(url, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -640,31 +749,72 @@
                     })
                 })
                 .then(function (res) {
-                    return res.json();
+                    return res.json().then(function (json) {
+                        return { ok: res.ok, json: json };
+                    });
                 })
-                .then(function (json) {
-                    if (json.success !== false) {
+                .then(function (result) {
+                    const json = result.json || {};
+                    if (result.ok && json.success !== false) {
                         DashboardApprovals.removeItem(id);
-                        DashboardUtils.showAlert(status === 3 ? 'Leave request approved!' : 'Leave request rejected.');
-                    } else {
-                        DashboardUtils.showAlert(json.message || 'Action failed.');
+                        if (!options.silent) {
+                            DashboardApprovals.showLeaveAlert(
+                                json.message || (status === 3
+                                    ? 'Leave request approved successfully.'
+                                    : 'Leave request rejected successfully.'),
+                                'success'
+                            );
+                        }
+                        return { success: true, message: json.message || '' };
                     }
+
+                    const message = json.message || 'Action failed.';
+                    if (!options.silent) {
+                        DashboardApprovals.showLeaveAlert(message, 'error');
+                    }
+                    return { success: false, message: message };
                 })
                 .catch(function (err) {
                     console.error('Status update failed:', err);
-                    DashboardUtils.showAlert('Action failed. Please try again.');
+                    const message = 'Action failed. Please try again.';
+                    if (!options.silent) {
+                        DashboardApprovals.showLeaveAlert(message, 'error');
+                    }
+                    return { success: false, message: message };
                 });
         },
 
         bulkApproveApi(ids) {
-            let done = 0;
-            ids.forEach(function (id) {
-                DashboardApprovals.updateStatusApi(id, 3);
-                done++;
+            const bulkApproveBtn = document.getElementById('bulkApproveBtn');
+            if (bulkApproveBtn) bulkApproveBtn.disabled = true;
+
+            Promise.all(ids.map(function (id) {
+                return DashboardApprovals.performStatusUpdate(id, 3, { silent: true });
+            })).then(function (results) {
+                const succeeded = results.filter(function (result) { return result.success; }).length;
+                const failed = results.length - succeeded;
+
+                if (failed === 0) {
+                    DashboardApprovals.showLeaveAlert(
+                        succeeded === 1
+                            ? 'Leave request approved successfully.'
+                            : succeeded + ' leave requests approved successfully.',
+                        'success'
+                    );
+                } else if (succeeded === 0) {
+                    DashboardApprovals.showLeaveAlert('Failed to approve leave requests.', 'error');
+                } else {
+                    DashboardApprovals.showLeaveAlert(
+                        succeeded + ' approved, ' + failed + ' failed.',
+                        'error'
+                    );
+                }
+            }).finally(function () {
+                const bulkApproveAll = document.getElementById('bulkApproveAll');
+                if (bulkApproveAll) bulkApproveAll.checked = false;
+                DashboardApprovals.updateBulkApproveButton();
+                if (bulkApproveBtn) bulkApproveBtn.disabled = false;
             });
-            const bulkApproveAll = document.getElementById('bulkApproveAll');
-            if (bulkApproveAll) bulkApproveAll.checked = false;
-            DashboardApprovals.updateBulkApproveButton();
         },
 
         removeItem(id) {
@@ -732,18 +882,26 @@
 
         approveFromSlide() {
             if (!this.currentLeaveId) return;
-            if (DashboardUtils.confirmAction('Approve this leave request?')) {
-                this.updateStatusApi(this.currentLeaveId, 3);
-                this.closeSlideOver();
-            }
+            const leaveId = this.currentLeaveId;
+            this.confirmApprove(leaveId, function () {
+                DashboardApprovals.performStatusUpdate(leaveId, 3).then(function (result) {
+                    if (result.success) {
+                        DashboardApprovals.closeSlideOver();
+                    }
+                });
+            });
         },
 
         rejectFromSlide() {
             if (!this.currentLeaveId) return;
-            if (DashboardUtils.confirmAction('Reject this leave request?')) {
-                this.updateStatusApi(this.currentLeaveId, 4);
-                this.closeSlideOver();
-            }
+            const leaveId = this.currentLeaveId;
+            this.confirmReject(leaveId, function () {
+                DashboardApprovals.performStatusUpdate(leaveId, 4).then(function (result) {
+                    if (result.success) {
+                        DashboardApprovals.closeSlideOver();
+                    }
+                });
+            });
         },
 
         initSlideOverKeyboard() {
@@ -1490,6 +1648,7 @@
         DashboardCharts.updateWorkforceStrength();
 
         // Initialize approval management
+        DashboardApprovals.ensureSwalModalFocusFix();
         DashboardApprovals.loadPendingApprovals();
         DashboardApprovals.initSlideOverKeyboard();
         DashboardRosterApprovals.loadPendingRosterApprovals();

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeLeaveRequest;
 use App\Models\Geofence;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 
 class DashboardService
 {
+    private const FINAL_APPROVAL_ACTION_TYPE = 2;
+
     public function __construct(
         private readonly ShiftRosterApprovalService $shiftRosterApprovalService
     ) {
@@ -44,11 +47,24 @@ class DashboardService
 
     public function getPendingApprovals(): array
     {
+        $viewer = Auth::user();
+        $viewerEmployee = $viewer?->employee;
+
+        if (! $viewerEmployee) {
+            return [];
+        }
+
         $requests = EmployeLeaveRequest::with([
-                'fromEmployee:id,full_name',
+                'fromEmployee:id,full_name,department_id',
                 'leaveType:id,name',
             ])
+            ->where('to_employee_id', $viewerEmployee->id)
+            ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
             ->where('status', 0)
+            ->when(
+                ! $viewer->isSystemAdminUser(),
+                fn ($query) => $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee)
+            )
             ->orderByDesc('created_at')
             ->get();
 
@@ -435,5 +451,58 @@ class DashboardService
         usort($warnings, fn($a, $b) => $b['percent'] <=> $a['percent']);
 
         return array_slice($warnings, 0, 10);
+    }
+
+    private function scopePendingApprovalsByApplicantDepartment($query, Employee $viewerEmployee): void
+    {
+        $viewerEmployee->loadMissing('department');
+        $departmentIds = $this->resolveViewerApplicantDepartmentIds($viewerEmployee);
+
+        if ($departmentIds === []) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->whereHas(
+            'fromEmployee',
+            fn ($employeeQuery) => $employeeQuery->whereIn('department_id', $departmentIds)
+        );
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function resolveViewerApplicantDepartmentIds(Employee $viewerEmployee): array
+    {
+        if ($this->isHumanResourceDepartment($viewerEmployee->department)) {
+            $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
+            if (! $sbuId) {
+                return [];
+            }
+
+            return Department::query()
+                ->where('sbu_id', $sbuId)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+        }
+
+        $departmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
+
+        return $departmentId ? [$departmentId] : [];
+    }
+
+    private function isHumanResourceDepartment(?Department $department): bool
+    {
+        if (! $department) {
+            return false;
+        }
+
+        $normalized = strtolower(trim((string) $department->name));
+
+        return in_array($normalized, ['human resource', 'human resources'], true);
     }
 }
