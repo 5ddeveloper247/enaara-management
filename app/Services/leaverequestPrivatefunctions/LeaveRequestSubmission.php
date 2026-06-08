@@ -33,7 +33,9 @@ class LeaveRequestSubmission
         Carbon $endDate,
         float $duration
     ): EmployeLeaveRequest {
-        $this->assertNoDateConflict($fromEmployee->id, $startDate, $endDate);
+        $isHalfDay = (bool) ($validated['is_half_day'] ?? false);
+
+        $this->assertNoDateConflict($fromEmployee->id, $startDate, $endDate, $isHalfDay);
 
         $medicalReportPath = $this->storeMedicalReport($request);
         $basePayload = $this->buildBasePayload($validated, $fromEmployee, $startDate, $endDate, $duration, $medicalReportPath);
@@ -54,20 +56,48 @@ class LeaveRequestSubmission
             ?? new EmployeLeaveRequest();
     }
 
-    private function assertNoDateConflict(int $employeeId, Carbon $startDate, Carbon $endDate): void
+    private function assertNoDateConflict(int $employeeId, Carbon $startDate, Carbon $endDate, bool $isHalfDay): void
     {
-        $hasConflict = EmployeLeaveRequest::where('from_employee_id', $employeeId)
+        $overlapping = EmployeLeaveRequest::query()
+            ->where('from_employee_id', $employeeId)
             ->whereIn('status', [0, 1, 3])
             ->whereIn('action_type', self::MASTER_ACTION_TYPES)
             ->where('start_date', '<=', $endDate->toDateString())
             ->where('end_date', '>=', $startDate->toDateString())
-            ->exists();
+            ->get(['id', 'is_half_day', 'start_date', 'end_date']);
 
-        if ($hasConflict) {
-            throw ValidationException::withMessages([
-                'start_date' => 'You already have a pending or approved leave request during this date range.',
-            ]);
+        foreach ($overlapping as $existing) {
+            if ($this->hasLeaveConflict($startDate, $endDate, $isHalfDay, $existing)) {
+                throw ValidationException::withMessages([
+                    'start_date' => 'You already have a pending or approved leave request during this date range.',
+                ]);
+            }
         }
+    }
+
+    private function hasLeaveConflict(
+        Carbon $startDate,
+        Carbon $endDate,
+        bool $isHalfDay,
+        EmployeLeaveRequest $existing
+    ): bool {
+        $existingStart = Carbon::parse($existing->start_date)->startOfDay();
+        $existingEnd = Carbon::parse($existing->end_date)->startOfDay();
+
+        $overlapStart = $startDate->copy()->startOfDay()->max($existingStart);
+        $overlapEnd = $endDate->copy()->startOfDay()->min($existingEnd);
+
+        if ($overlapStart->gt($overlapEnd)) {
+            return false;
+        }
+
+        $existingIsHalfDay = (bool) $existing->is_half_day;
+
+        if (! $isHalfDay || ! $existingIsHalfDay) {
+            return true;
+        }
+
+        return true;
     }
 
     private function storeMedicalReport(Request $request): ?string
@@ -95,6 +125,10 @@ class LeaveRequestSubmission
             'start_date' => $startDate->format('Y-m-d'),
             'end_date' => $endDate->format('Y-m-d'),
             'duration' => $duration,
+            'is_half_day' => (bool) ($validated['is_half_day'] ?? false),
+            'half_day_session' => ($validated['is_half_day'] ?? false)
+                ? ($validated['half_day_session'] ?? null)
+                : null,
             'reason' => $validated['reason'] ?? null,
             'medical_report' => $medicalReportPath,
             'status' => 0,

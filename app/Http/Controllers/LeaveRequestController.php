@@ -83,13 +83,20 @@ class LeaveRequestController extends Controller
             'employee_id' => 'required|exists:employees,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'is_half_day' => 'sometimes|boolean',
         ]);
 
         $employee = Employee::findOrFail((int) $request->input('employee_id'));
         $startDate = \Carbon\Carbon::parse($request->input('start_date'))->startOfDay();
         $endDate = \Carbon\Carbon::parse($request->input('end_date'))->startOfDay();
+        $isHalfDay = $request->boolean('is_half_day');
 
-        $duration = $this->leaveRequestService->calculateActualLeaveDuration($employee, $startDate, $endDate);
+        $duration = $this->leaveRequestService->calculateActualLeaveDuration(
+            $employee,
+            $startDate,
+            $endDate,
+            $isHalfDay
+        );
 
         return response()->json([
             'success' => true,

@@ -98,7 +98,7 @@ class LeaveRequestService
         $grouped = $history->groupBy(function (EmployeLeaveRequest $h) {
             $submittedMinute = Carbon::parse($h->created_at)->format('Y-m-d H:i');
 
-            return (int) $h->leave_type_id.'|'.$h->start_date.'|'.$h->end_date.'|'.$submittedMinute;
+            return (int) $h->leave_type_id.'|'.$h->start_date.'|'.$h->end_date.'|'.((bool) $h->is_half_day ? '1' : '0').'|'.($h->half_day_session ?? '').'|'.$submittedMinute;
         });
 
         return $grouped->map(function (Collection $rows) use ($statusMap, $statusLabelMap) {
@@ -123,6 +123,8 @@ class LeaveRequestService
                 'startDate' => $representative->start_date,
                 'endDate' => $representative->end_date,
                 'days' => (float) $rows->max('duration'),
+                'isHalfDay' => (bool) $representative->is_half_day,
+                'halfDaySession' => $representative->half_day_session,
                 'reason' => $representative->reason,
                 'status' => $statusMap[$aggregatedStatus] ?? 'pending',
                 'statusCode' => $aggregatedStatus,
@@ -165,11 +167,15 @@ class LeaveRequestService
             ]);
         }
 
-        $duration = $this->calculateActualLeaveDuration($fromEmployee, $startDate, $endDate);
+        $isHalfDay = (bool) ($validated['is_half_day'] ?? false);
+
+        $duration = $this->calculateActualLeaveDuration($fromEmployee, $startDate, $endDate, $isHalfDay);
 
         if ($duration <= 0) {
             throw ValidationException::withMessages([
-                'start_date' => 'The selected leave duration only consists of holidays, Sundays, or off days.',
+                'start_date' => $isHalfDay
+                    ? 'The selected date is not a working day for half-day leave.'
+                    : 'The selected leave duration only consists of holidays, Sundays, or off days.',
             ]);
         }
 
@@ -180,7 +186,8 @@ class LeaveRequestService
             $leaveType,
             $startDate,
             $endDate,
-            (float) $duration
+            (float) $duration,
+            $isHalfDay
         );
 
         $this->employeeLeaveQuotaRecords->assertCanRequestDays(
@@ -213,7 +220,16 @@ class LeaveRequestService
                 $this->authenticatedEmployeeRecords->getLeaveTypesForQuotaSummary($employee),
                 $employee->id
             )
-            ->map(fn ($type) => $type->only(['id', 'name', 'leave_condition']))
+            ->map(function ($type) {
+                $type->loadMissing('setting');
+
+                return [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                    'leave_condition' => $type->leave_condition,
+                    'half_day_applicable' => (bool) ($type->setting?->half_day_applicable ?? false),
+                ];
+            })
             ->values();
 
         $quotaSummary = $this->leaveRequestLeaveTypeFilter->filterQuotaSummary(
@@ -294,8 +310,22 @@ class LeaveRequestService
         return $activeDates;
     }
 
-    public function calculateActualLeaveDuration(Employee $employee, Carbon $startDate, Carbon $endDate): float
-    {
-        return (float) count($this->getActiveLeaveDates($employee, $startDate, $endDate));
+    public function calculateActualLeaveDuration(
+        Employee $employee,
+        Carbon $startDate,
+        Carbon $endDate,
+        bool $isHalfDay = false
+    ): float {
+        $activeCount = count($this->getActiveLeaveDates($employee, $startDate, $endDate));
+
+        if ($activeCount <= 0) {
+            return 0.0;
+        }
+
+        if ($isHalfDay) {
+            return $activeCount === 1 ? 0.5 : 0.0;
+        }
+
+        return (float) $activeCount;
     }
 }

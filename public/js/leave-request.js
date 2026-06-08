@@ -8,7 +8,7 @@
     return !!(selectEl && selectEl.dataset && selectEl.dataset.preloaded === '1');
   }
 
-  function calculateDays(startDateInput, endDateInput, calculatedDaysEl) {
+  function calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput) {
     if (!startDateInput.value || !endDateInput.value) {
       calculatedDaysEl.textContent = '0';
       return;
@@ -22,9 +22,10 @@
       return;
     }
 
+    var isHalfDay = !!(isHalfDayInput && isHalfDayInput.checked);
     var diffTime = end.getTime() - start.getTime();
     var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    calculatedDaysEl.textContent = String(diffDays);
+    calculatedDaysEl.textContent = isHalfDay ? '0.5' : String(diffDays);
 
     var employeeSelect = document.getElementById('leaveEmployee');
     var employeeId = employeeSelect ? employeeSelect.value : null;
@@ -36,7 +37,8 @@
         data: {
           employee_id: employeeId,
           start_date: startDateInput.value,
-          end_date: endDateInput.value
+          end_date: endDateInput.value,
+          is_half_day: isHalfDay ? 1 : 0
         },
         success: function (resp) {
           if (resp && resp.success && resp.duration !== undefined) {
@@ -44,6 +46,60 @@
           }
         }
       });
+    }
+  }
+
+  function isLeaveTypeSelected(leaveTypeSelect) {
+    return !!(leaveTypeSelect && leaveTypeSelect.value);
+  }
+
+  function syncHalfDayUi(leaveTypeSelect, halfDaySection, isHalfDayInput, halfDaySessionSection, halfDaySessionInput, startDateInput, endDateInput) {
+    var allowed = isLeaveTypeSelected(leaveTypeSelect);
+
+    if (halfDaySection) {
+      halfDaySection.style.display = allowed ? 'block' : 'none';
+    }
+
+    if (!allowed) {
+      if (isHalfDayInput) {
+        isHalfDayInput.checked = false;
+      }
+      if (halfDaySessionSection) {
+        halfDaySessionSection.style.display = 'none';
+      }
+      if (halfDaySessionInput) {
+        halfDaySessionInput.value = '';
+        halfDaySessionInput.required = false;
+      }
+      if (endDateInput) {
+        endDateInput.readOnly = false;
+        endDateInput.classList.remove('opacity-75');
+      }
+      return;
+    }
+
+    var isHalfDay = !!(isHalfDayInput && isHalfDayInput.checked);
+
+    if (halfDaySessionSection) {
+      halfDaySessionSection.style.display = isHalfDay ? 'block' : 'none';
+    }
+
+    if (halfDaySessionInput) {
+      halfDaySessionInput.required = isHalfDay;
+      if (!isHalfDay) {
+        halfDaySessionInput.value = '';
+      }
+    }
+
+    if (endDateInput) {
+      if (isHalfDay && startDateInput && startDateInput.value) {
+        endDateInput.value = startDateInput.value;
+        endDateInput.readOnly = true;
+        endDateInput.classList.add('opacity-75');
+      } else {
+        endDateInput.readOnly = false;
+        endDateInput.classList.remove('opacity-75');
+      }
     }
   }
 
@@ -158,6 +214,10 @@
       if (it.leave_condition) {
         opt.setAttribute('data-leave-condition', it.leave_condition);
       }
+      opt.setAttribute(
+        'data-half-day-applicable',
+        it.half_day_applicable ? '1' : '0'
+      );
       selectEl.appendChild(opt);
     });
 
@@ -193,11 +253,28 @@
     var calculatedDaysEl = document.getElementById('calculatedDays');
     var medicalCertSection = document.getElementById('medicalCertSection');
     var medicalReportInput = document.getElementById('medical_report');
+    var halfDaySection = document.getElementById('halfDaySection');
+    var isHalfDayInput = document.getElementById('leaveIsHalfDay');
+    var halfDaySessionSection = document.getElementById('halfDaySessionSection');
+    var halfDaySessionInput = document.getElementById('leaveHalfDaySession');
     var submitBtn = document.getElementById('submitLeaveRequestBtn');
     var canvasEl = document.getElementById('addLeaveRequestCanvas');
     var keepPreloadedLeaveTypes = isPreloadedLeaveTypeSelect(leaveTypeSelect);
     var lastLoadedEmployeeId = null;
     var leaveTypesRequest = null;
+
+    function refreshDurationAndHalfDayUi() {
+      syncHalfDayUi(
+        leaveTypeSelect,
+        halfDaySection,
+        isHalfDayInput,
+        halfDaySessionSection,
+        halfDaySessionInput,
+        startDateInput,
+        endDateInput
+      );
+      calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput);
+    }
 
     if (startDateInput && endDateInput && calculatedDaysEl) {
       var onDateChange = function () {
@@ -209,16 +286,21 @@
         } else {
           endDateInput.min = '';
         }
-        calculateDays(startDateInput, endDateInput, calculatedDaysEl);
+        refreshDurationAndHalfDayUi();
       };
       startDateInput.addEventListener('change', onDateChange);
       endDateInput.addEventListener('change', onDateChange);
     }
 
-    if (leaveTypeSelect && medicalCertSection) {
+    if (leaveTypeSelect) {
       leaveTypeSelect.addEventListener('change', function () {
         showDocumentSectionIfRequired(leaveTypeSelect, medicalCertSection, medicalReportInput);
+        refreshDurationAndHalfDayUi();
       });
+    }
+
+    if (isHalfDayInput) {
+      isHalfDayInput.addEventListener('change', refreshDurationAndHalfDayUi);
     }
 
     function loadEmployeeLeaveData(employeeId, options) {
@@ -264,6 +346,7 @@
           }
 
           showDocumentSectionIfRequired(leaveTypeSelect, medicalCertSection, medicalReportInput);
+          refreshDurationAndHalfDayUi();
           renderQuotaSummary(balanceContainer, resp && resp.quotaSummary ? resp.quotaSummary : []);
           lastLoadedEmployeeId = employeeId;
         },
@@ -291,6 +374,7 @@
             reloadLeaveTypes: employeeChanged && !keepPreloadedLeaveTypes
           });
         }
+        refreshDurationAndHalfDayUi();
       });
 
       canvasEl.addEventListener('hidden.bs.offcanvas', function () {
@@ -301,6 +385,17 @@
         clearFormError(form);
         clearFieldErrors(form);
         if (calculatedDaysEl) calculatedDaysEl.textContent = '0';
+        if (halfDaySection) halfDaySection.style.display = 'none';
+        if (isHalfDayInput) isHalfDayInput.checked = false;
+        if (halfDaySessionSection) halfDaySessionSection.style.display = 'none';
+        if (halfDaySessionInput) {
+          halfDaySessionInput.value = '';
+          halfDaySessionInput.required = false;
+        }
+        if (endDateInput) {
+          endDateInput.readOnly = false;
+          endDateInput.classList.remove('opacity-75');
+        }
         var container = document.getElementById('leaveBalanceContainer');
         if (container) {
           container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
@@ -322,7 +417,7 @@
         var employeeId = employeeSelect.value;
         var employeeChanged = lastLoadedEmployeeId !== employeeId;
 
-        calculateDays(startDateInput, endDateInput, calculatedDaysEl);
+        calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput);
 
         loadEmployeeLeaveData(employeeId, {
           reloadLeaveTypes: employeeChanged && !keepPreloadedLeaveTypes
@@ -336,6 +431,24 @@
       clearFieldErrors(form);
 
       showDocumentSectionIfRequired(leaveTypeSelect, medicalCertSection, medicalReportInput);
+      syncHalfDayUi(
+        leaveTypeSelect,
+        halfDaySection,
+        isHalfDayInput,
+        halfDaySessionSection,
+        halfDaySessionInput,
+        startDateInput,
+        endDateInput
+      );
+
+      if (isHalfDayInput && isHalfDayInput.checked && halfDaySessionInput && !halfDaySessionInput.value) {
+        halfDaySessionInput.classList.add('is-invalid');
+        showFieldErrors(form, {
+          half_day_session: ['Please select a session (morning or afternoon) for half-day leave.']
+        });
+        showFormError(form, 'Please select a session for half-day leave.');
+        return;
+      }
 
       if (selectedLeaveCondition(leaveTypeSelect) === 'conditional' && medicalReportInput && !medicalReportInput.files.length) {
         medicalReportInput.classList.add('is-invalid');

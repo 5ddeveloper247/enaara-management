@@ -422,6 +422,15 @@
         });
     }
 
+    function formatLeaveDays(request) {
+        const days = request.days;
+        if (request.isHalfDay && request.halfDaySession) {
+            const session = request.halfDaySession.charAt(0).toUpperCase() + request.halfDaySession.slice(1);
+            return `${days} (${session})`;
+        }
+        return days;
+    }
+
     function getActionMeta(actionCode) {
         const action = Number(actionCode);
         const actionMap = {
@@ -538,7 +547,7 @@
         $('#detailLeaveType').html(getLeaveTypeBadge(request.leaveType, request.leaveTypeLabel));
         $('#detailStartDate').text(formatDate(request.startDate));
         $('#detailEndDate').text(formatDate(request.endDate));
-        $('#detailDays').text(request.days);
+        $('#detailDays').text(formatLeaveDays(request));
         $('#detailReason').text(request.reason);
         $('#detailBalance').text(request.balance);
         $('#detailStatus').html(getStatusBadge(request.statusCode));

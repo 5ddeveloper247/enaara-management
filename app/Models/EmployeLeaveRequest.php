@@ -25,6 +25,8 @@ class EmployeLeaveRequest extends Model
         'reason',
         'status',
         'duration',
+        'is_half_day',
+        'half_day_session',
         'department_id',
         'action_type',
         'medical_report',
@@ -34,6 +36,7 @@ class EmployeLeaveRequest extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'duration' => 'decimal:2',
+        'is_half_day' => 'boolean',
         'status' => 'integer',
         'action_type' => 'integer',
     ];
@@ -121,6 +124,9 @@ class EmployeLeaveRequest extends Model
                         $deptId = Employee::where('id', $leaveRequest->from_employee_id)->value('department_id');
                     }
 
+                    $entityDuration = (bool) $leaveRequest->is_half_day ? 0.5 : 1.0;
+                    $halfDaySession = $leaveRequest->is_half_day ? $leaveRequest->half_day_session : null;
+
                     foreach ($activeDates as $dateStr) {
                         $rows[] = [
                             'leave_request_id' => $leaveRequest->id,
@@ -130,7 +136,8 @@ class EmployeLeaveRequest extends Model
                             'leave_date' => $dateStr,
                             'start_date' => $dateStr,
                             'end_date' => $dateStr,
-                            'duration' => 1,
+                            'duration' => $entityDuration,
+                            'half_day_session' => $halfDaySession,
                             'status' => 0,
                             'created_at' => now(),
                             'updated_at' => now(),

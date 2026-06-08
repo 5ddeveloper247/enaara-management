@@ -18,7 +18,8 @@ class LeaveRequestApplicationChecks
         LeaveType $leaveType,
         Carbon $startDate,
         Carbon $endDate,
-        float $durationDays
+        float $durationDays,
+        bool $isHalfDay = false
     ): void {
         $this->leaveRequestLeaveTypeFilter->assertCompensatoryLeaveAllowed($employee, $leaveType, $startDate);
         $this->leaveRequestLeaveTypeFilter->assertMaternityLeaveAllowed($employee, $leaveType);
@@ -35,6 +36,12 @@ class LeaveRequestApplicationChecks
 
         if ($setting === null) {
             return;
+        }
+
+        if ($isHalfDay && ($setting->unit_of_leave ?? 'days') === 'hours') {
+            throw ValidationException::withMessages([
+                'is_half_day' => 'Half-day leave is not supported for hourly leave types.',
+            ]);
         }
 
         if (($setting->unit_of_leave ?? 'days') === 'hours') {

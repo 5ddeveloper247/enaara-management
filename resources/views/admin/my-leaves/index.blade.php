@@ -317,12 +317,15 @@
             const statusBadge = getStatusBadge(leave.status);
             const typeBadge = getLeaveTypeBadge(leave.type, leave.typeLabel);
 
+            const daysText = formatLeaveDays(leave);
+            const daySuffix = (leave.isHalfDay || Number(leave.days) <= 1) ? 'day' : 'days';
+
             item.innerHTML = `
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
                         ${typeBadge}
                         <div class="fw-semibold small mt-2">${formatDate(leave.startDate)} - ${formatDate(leave.endDate)}</div>
-                        <div class="small text-muted">${leave.days} day${leave.days > 1 ? 's' : ''}</div>
+                        <div class="small text-muted">${daysText} ${daySuffix}</div>
                     </div>
                     ${statusBadge}
                 </div>
@@ -409,12 +412,20 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
 
+        function formatLeaveDays(leave) {
+            if (leave.isHalfDay && leave.halfDaySession) {
+                const session = leave.halfDaySession.charAt(0).toUpperCase() + leave.halfDaySession.slice(1);
+                return leave.days + ' (' + session + ')';
+            }
+            return leave.days;
+        }
+
         function showLeaveDetails(leave) {
             // Populate detail canvas
             document.getElementById('detailLeaveType').innerHTML = getLeaveTypeBadge(leave.type, leave.typeLabel);
             document.getElementById('detailStartDate').textContent = formatDate(leave.startDate);
             document.getElementById('detailEndDate').textContent = formatDate(leave.endDate);
-            document.getElementById('detailDays').textContent = leave.days;
+            document.getElementById('detailDays').textContent = formatLeaveDays(leave);
             document.getElementById('detailReason').textContent = leave.reason;
             document.getElementById('detailStatus').innerHTML = getStatusBadge(leave.status);
 

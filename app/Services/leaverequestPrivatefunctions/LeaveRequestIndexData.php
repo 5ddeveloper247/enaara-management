@@ -43,9 +43,10 @@ class LeaveRequestIndexData
                 ->get(['id', 'full_name', 'employee_code']),
             'leaveTypes' => $this->leaveRequestLeaveTypeFilter->excludeCompensatoryFromList(
                 LeaveType::query()
+                    ->with('setting:id,leave_type_id,half_day_applicable')
                     ->where('is_active', true)
                     ->orderBy('name')
-                    ->get(['id', 'name'])
+                    ->get(['id', 'name', 'leave_condition'])
             ),
             'leaveRequests' => $leaveRequests,
             'mappedLeaveRequests' => $this->mapLeaveRequestsForTable(
@@ -118,6 +119,8 @@ class LeaveRequestIndexData
                 'startDate' => $request->start_date,
                 'endDate' => $request->end_date,
                 'days' => $request->duration,
+                'isHalfDay' => (bool) $request->is_half_day,
+                'halfDaySession' => $request->half_day_session,
                 'reason' => $request->reason ?? '-',
                 'status' => $statusMap[$request->status] ?? 'pending',
                 'statusCode' => $request->status,

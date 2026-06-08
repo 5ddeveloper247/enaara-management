@@ -108,6 +108,7 @@ class LeaveTypeService
                 'advance_notice_days' => $setting->advance_notice_days,
                 'short_leave_applicable' => $setting->short_leave_applicable,
                 'short_leave_max_hours' => $setting->short_leave_max_hours,
+                'half_day_applicable' => $setting->half_day_applicable,
             ]);
         }
 
@@ -165,6 +166,7 @@ class LeaveTypeService
             'short_leave_max_hours' => filled($data['short_leave_max_hours'] ?? null)
                 ? (int) $data['short_leave_max_hours']
                 : null,
+            'half_day_applicable' => (bool) ($data['half_day_applicable'] ?? false),
         ];
     }
 

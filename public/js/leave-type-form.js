@@ -184,6 +184,7 @@
             setFormFieldValue('advance_notice_days', data.advance_notice_days ?? 0);
             setFormFieldValue('short_leave_applicable', data.short_leave_applicable);
             setFormFieldValue('short_leave_max_hours', data.short_leave_max_hours || '');
+            setFormFieldValue('half_day_applicable', data.half_day_applicable);
 
             if (desc && data.description) {
                 const countEl = document.getElementById('lt_description_count');
@@ -218,6 +219,7 @@
             advance_notice_days: 'lt_advance_notice',
             short_leave_max_hours: 'lt_short_leave_max',
             short_leave_applicable: 'lt_short_leave',
+            half_day_applicable: 'lt_half_day',
             accrual_start_month: 'lt_accrual_start_month',
             accrual_frequency: 'lt_accrual_frequency',
             encashment_allowed: 'lt_encashment_allowed',
@@ -398,6 +400,9 @@
             }
             if (!formData.has('short_leave_applicable')) {
                 formData.append('short_leave_applicable', '0');
+            }
+            if (!formData.has('half_day_applicable')) {
+                formData.append('half_day_applicable', '0');
             }
 
             let submitSucceeded = false;

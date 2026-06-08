@@ -27,6 +27,7 @@ class LeaveTypeSetting extends Model
         'advance_notice_days',
         'short_leave_applicable',
         'short_leave_max_hours',
+        'half_day_applicable',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class LeaveTypeSetting extends Model
         'advance_notice_days' => 'integer',
         'short_leave_applicable' => 'boolean',
         'short_leave_max_hours' => 'integer',
+        'half_day_applicable' => 'boolean',
     ];
 
     public function leaveType(): BelongsTo

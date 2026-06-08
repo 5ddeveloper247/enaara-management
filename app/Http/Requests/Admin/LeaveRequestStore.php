@@ -17,6 +17,13 @@ class LeaveRequestStore extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'is_half_day' => $this->boolean('is_half_day'),
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -45,6 +52,12 @@ class LeaveRequestStore extends FormRequest
             ],
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'is_half_day' => ['sometimes', 'boolean'],
+            'half_day_session' => [
+                'nullable',
+                'required_if:is_half_day,true',
+                Rule::in(['morning', 'afternoon']),
+            ],
             'reason' => [
                 'required',
                 'string',
@@ -65,12 +78,27 @@ class LeaveRequestStore extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if (! $this->boolean('is_half_day')) {
+                return;
+            }
+
+            if ($this->input('start_date') !== $this->input('end_date')) {
+                $validator->errors()->add('end_date', 'End date must match start date for half-day leave.');
+            }
+        });
+    }
+
     public function messages(): array
     {
         return [
             'medical_report.required' => 'A supporting document is required for this leave type.',
             'medical_report.mimes' => 'Supporting document must be a PDF, JPG, JPEG, or PNG file.',
             'medical_report.max' => 'Supporting document must not exceed 5 MB.',
+            'half_day_session.required_if' => 'Please select a session (morning or afternoon) for half-day leave.',
+            'half_day_session.in' => 'Half-day session must be morning or afternoon.',
         ];
     }
 

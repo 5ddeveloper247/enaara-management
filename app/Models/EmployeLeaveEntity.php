@@ -18,6 +18,7 @@ class EmployeLeaveEntity extends Model
         'start_date',
         'end_date',
         'duration',
+        'half_day_session',
         'status',
     ];
 

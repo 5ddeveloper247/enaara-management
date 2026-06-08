@@ -81,7 +81,9 @@
                         <option value="">Select Leave Type</option>
                         @isset($leaveTypes)
                         @foreach($leaveTypes as $leaveType)
-                        <option value="{{ $leaveType->id }}" data-leave-condition="{{ $leaveType->leave_condition ?? '' }}">{{ $leaveType->name }}</option>
+                        <option value="{{ $leaveType->id }}"
+                            data-leave-condition="{{ $leaveType->leave_condition ?? '' }}"
+                            data-half-day-applicable="{{ ($leaveType->setting?->half_day_applicable ?? false) ? '1' : '0' }}">{{ $leaveType->name }}</option>
                         @endforeach
                         @endisset
                     </select>
@@ -96,6 +98,22 @@
                     <div class="col-6">
                         <label for="leaveEndDate" class="form-label fw-semibold small text-white">End Date <span class="text-danger">*</span></label>
                         <input type="date" class="form-control" id="leaveEndDate" name="end_date" required>
+                    </div>
+                </div>
+
+                <!-- Half Day -->
+                <div class="mb-3" id="halfDaySection" style="display: none;">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="leaveIsHalfDay" name="is_half_day" value="1">
+                        <label class="form-check-label small text-white" for="leaveIsHalfDay">Half Day Leave</label>
+                    </div>
+                    <div id="halfDaySessionSection" style="display: none;">
+                        <label for="leaveHalfDaySession" class="form-label fw-semibold small text-white">Session <span class="text-danger">*</span></label>
+                        <select class="form-select" id="leaveHalfDaySession" name="half_day_session">
+                            <option value="">Select session</option>
+                            <option value="morning">Morning</option>
+                            <option value="afternoon">Afternoon</option>
+                        </select>
                     </div>
                 </div>
 
