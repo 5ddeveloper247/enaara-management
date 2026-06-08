@@ -1692,7 +1692,22 @@ class ShiftRosterService
             return (int) $entry->approvalRequest?->requested_by === (int) $viewerUserId;
         }
 
-        return (int) $entry->created_by === (int) $viewerUserId;
+        return $this->viewerIsDraftApplier($entry, $viewerUserId);
+    }
+
+    private function viewerIsDraftApplier(ShiftRosterEntry $entry, ?int $viewerUserId): bool
+    {
+        if (! $viewerUserId) {
+            return false;
+        }
+
+        foreach (['created_by', 'assigned_by', 'updated_by'] as $field) {
+            if ($entry->{$field} && (int) $entry->{$field} === (int) $viewerUserId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function viewerSeesPendingChange(
@@ -1730,7 +1745,7 @@ class ShiftRosterService
         }
 
         if ($this->isDraftPendingEntry($entry)) {
-            return (int) $entry->created_by === (int) $viewerUserId;
+            return $this->viewerIsDraftApplier($entry, $viewerUserId);
         }
 
         return false;
@@ -1741,7 +1756,12 @@ class ShiftRosterService
         ?int $viewerUserId,
         ?int $viewerEmployeeId
     ): bool {
-        if ($this->hasPendingPublishedChange($entry)) {
+        if (! $viewerUserId) {
+            return false;
+        }
+
+        $viewer = Auth::user();
+        if ($viewer?->isSystemAdminUser()) {
             return true;
         }
 
@@ -1749,12 +1769,7 @@ class ShiftRosterService
             return true;
         }
 
-        if (! $viewerUserId) {
-            return false;
-        }
-
-        $viewer = Auth::user();
-        if ($viewer?->isSystemAdminUser()) {
+        if ($this->hasPendingPublishedChange($entry)) {
             return true;
         }
 
@@ -1779,10 +1794,10 @@ class ShiftRosterService
         }
 
         if ($this->isDraftPendingEntry($entry)) {
-            return (int) $entry->created_by === (int) $viewerUserId;
+            return $this->viewerIsDraftApplier($entry, $viewerUserId);
         }
 
-        return true;
+        return false;
     }
 
 }
