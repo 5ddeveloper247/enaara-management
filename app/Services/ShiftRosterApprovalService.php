@@ -129,7 +129,14 @@ class ShiftRosterApprovalService
             $entriesQuery->whereNotNull('employee_id');
         }
 
-        $entries = $entriesQuery->get();
+        $entries = $entriesQuery
+            ->get()
+            ->filter(fn (ShiftRosterEntry $entry) => $this->shiftRosterService->isDraftEntryOwnedByUser(
+                $entry,
+                Auth::id()
+            ))
+            ->values();
+
         if ($entries->isEmpty()) {
             throw ValidationException::withMessages([
                 'approval' => 'No draft roster entries found to submit for approval.',

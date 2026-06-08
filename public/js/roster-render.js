@@ -1802,6 +1802,7 @@
         var gmBar = document.getElementById('rosterGmApprovalBar');
         var summaryEl = document.getElementById('rosterDraftPendingSummary');
         var draftCount = meta && meta.draftPendingCount ? parseInt(meta.draftPendingCount, 10) : 0;
+        var canApply = !!(meta && meta.canApplyForApproval);
 
         if (rosterGmApprovalContext) {
             if (applyBar) applyBar.classList.add('d-none');
@@ -1812,7 +1813,7 @@
         if (gmBar) gmBar.classList.add('d-none');
         if (!applyBar) return;
 
-        if (draftCount > 0) {
+        if (canApply && draftCount > 0) {
             applyBar.classList.remove('d-none');
             if (summaryEl) {
                 summaryEl.textContent = draftCount + ' pending shift' + (draftCount === 1 ? '' : 's') + ' ready to submit for GM approval.';

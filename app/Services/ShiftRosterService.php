@@ -46,6 +46,11 @@ class ShiftRosterService
         );
     }
 
+    public function isDraftEntryOwnedByUser(ShiftRosterEntry $entry, ?int $userId): bool
+    {
+        return $this->viewerIsDraftApplier($entry, $userId);
+    }
+
     public function resolveFloorLabelFromData(array $data): ?string
     {
         if (! array_key_exists('sbu_floor_id', $data) || $data['sbu_floor_id'] === null || $data['sbu_floor_id'] === '') {
@@ -707,11 +712,7 @@ class ShiftRosterService
             ->whereNull('shift_roster_approval_request_id')
             ->whereIn('status', ['pending', 'off'])
             ->get()
-            ->filter(fn (ShiftRosterEntry $entry) => $this->entryVisibleToViewer(
-                $entry,
-                $viewerUserId,
-                $viewerEmployeeId
-            ))
+            ->filter(fn (ShiftRosterEntry $entry) => $this->viewerIsDraftApplier($entry, $viewerUserId))
             ->count();
 
         return [
