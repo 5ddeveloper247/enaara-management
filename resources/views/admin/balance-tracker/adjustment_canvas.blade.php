@@ -67,7 +67,8 @@
                 <!-- Number of Days -->
                 <div class="mb-3">
                     <label for="adjustDays" class="form-label fw-semibold small text-white">Number of Days <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="adjustDays" min="0.5" step="0.5" placeholder="e.g., 1, 2.5" required>
+                    <input type="text" class="form-control" id="adjustDays" inputmode="decimal" autocomplete="off" placeholder="e.g., 1, 2.5, 5" required>
+                    <small class="opacity-75 text-white">Minimum 0.5 day. Half-day increments (0.5) are supported.</small>
                 </div>
 
                 <!-- Reason -->
@@ -150,6 +151,42 @@
             canvas.show();
         }
 
+        function parseAdjustmentDaysInput(rawValue) {
+            const cleaned = String(rawValue ?? '').trim().replace(',', '.');
+
+            if (cleaned === '' || !/^\d+(\.\d+)?$/.test(cleaned)) {
+                return null;
+            }
+
+            const days = Number(cleaned);
+
+            return Number.isFinite(days) ? days : null;
+        }
+
+        function normalizeAdjustmentDays(rawValue) {
+            const days = parseAdjustmentDaysInput(rawValue);
+
+            if (days === null || days < 0.5) {
+                return null;
+            }
+
+            return Math.round((days + Number.EPSILON) * 2) / 2;
+        }
+
+        function formatAdjustmentDays(days) {
+            const normalized = Math.round((days + Number.EPSILON) * 2) / 2;
+
+            if (Math.abs(normalized - Math.round(normalized)) < 0.001) {
+                return String(Math.round(normalized));
+            }
+
+            return normalized.toFixed(1);
+        }
+
+        function isHalfDayIncrement(days) {
+            return Math.abs((days * 2) - Math.round(days * 2)) < 0.001;
+        }
+
         function updatePreview() {
             if (!adjustLeaveType.value || !adjustDays.value || !currentEmployee) {
                 previewText.textContent = 'Select adjustment type and leave type to see preview';
@@ -160,9 +197,9 @@
             const selectedOption = $(adjustLeaveType).find(':selected');
             const leaveTypeId = selectedOption.data('id');
             const leaveTypeName = selectedOption.text();
-            const days = parseFloat(adjustDays.value);
+            const days = normalizeAdjustmentDays(adjustDays.value);
             
-            if (!leaveTypeId || isNaN(days) || !currentEmployee) {
+            if (!leaveTypeId || days === null || days < 0.5 || !currentEmployee) {
                 previewText.textContent = 'Select adjustment type and leave type to see preview';
                 return;
             }
@@ -173,24 +210,66 @@
             const action = type === 'add' ? 'Adding to' : 'Subtracting from';
 
             previewText.innerHTML = `
-                <div class="mb-1">${action} <strong>${leaveTypeName}</strong> quota: <strong>${days} days</strong></div>
+                <div class="mb-1">${action} <strong>${leaveTypeName}</strong> quota: <strong>${formatAdjustmentDays(days)} day${days === 1 ? '' : 's'}</strong></div>
                 <div>New balance will be: <strong class="${newBalance < 0 ? 'text-danger' : 'text-success'}">${newBalance.toFixed(1)} days</strong></div>
             `;
         }
 
+        adjustDays.addEventListener('blur', function() {
+            const normalized = normalizeAdjustmentDays(adjustDays.value);
+
+            if (normalized !== null) {
+                adjustDays.value = formatAdjustmentDays(normalized);
+            }
+        });
+
+        adjustDays.addEventListener('input', function() {
+            adjustDays.value = adjustDays.value.replace(/[^\d.,]/g, '').replace(',', '.');
+            updatePreview();
+        });
+
         adjustmentType.addEventListener('change', updatePreview);
         adjustLeaveType.addEventListener('change', updatePreview);
-        adjustDays.addEventListener('input', updatePreview);
 
         if (saveBtn) {
             saveBtn.addEventListener('click', function() {
                 const form = document.getElementById('adjustmentForm');
-                if (form.checkValidity()) {
+                const reason = $('#adjustReason').val().trim();
+
+                if (!$('#adjustLeaveType').val()) {
+                    showError('Please select a leave type.');
+                    return;
+                }
+
+                const normalizedDays = normalizeAdjustmentDays($('#adjustDays').val());
+
+                if (normalizedDays === null || normalizedDays < 0.5) {
+                    showError('Please enter a valid number of days (minimum 0.5).');
+                    return;
+                }
+
+                if (!isHalfDayIncrement(normalizedDays)) {
+                    showError('Days must be in 0.5 increments (e.g., 1, 1.5, 2, 5).');
+                    return;
+                }
+
+                if (reason.length < 5) {
+                    showError('Reason must be at least 5 characters.');
+                    return;
+                }
+
+                $('#adjustDays').val(formatAdjustmentDays(normalizedDays));
+
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
                     const formData = {
                         employee_id: $('#adjustEmployeeIdHidden').val(),
                         leave_type: $('#adjustLeaveType').val(),
                         increment_type: $('#adjustmentType').val(),
-                        days: $('#adjustDays').val(),
+                        days: formatAdjustmentDays(normalizedDays),
                         reason: $('#adjustReason').val(),
                         _token: '{{ csrf_token() }}'
                     };
@@ -214,9 +293,6 @@
                             showError(getAjaxErrorMessage(xhr, 'Adjustment failed. Please try again.'));
                         }
                     });
-                } else {
-                    form.reportValidity();
-                }
             });
         }
     });

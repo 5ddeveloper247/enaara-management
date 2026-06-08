@@ -7,6 +7,7 @@ use App\Models\EmployeeLeaveQuota;
 use App\Models\LeaveType;
 use App\Models\LeaveBalanceAdjustment;
 use App\Notifications\LeaveBalanceAdjustmentNotification;
+use App\Services\leaverequestPrivatefunctions\EmployeeLeaveQuotaRecords;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestLeaveTypeFilter;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestNotifier;
 use Carbon\Carbon;
@@ -18,6 +19,7 @@ class BalanceTrackerService
     public function __construct(
         private LeaveRequestNotifier $leaveRequestNotifier,
         private LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
+        private EmployeeLeaveQuotaRecords $employeeLeaveQuotaRecords,
     ) {}
 
     public function getBalances($organization = null, $department = null)
@@ -72,6 +74,24 @@ class BalanceTrackerService
 
             $balances = $employees->map(function ($employee) use ($quotas, $leaveTypes, $currentYear) {
                 $employeeQuotas = $quotas->get($employee->id, collect());
+                $eligibleTypes = $leaveTypes->filter(function ($type) use ($employee, $employeeQuotas, $currentYear) {
+                    $quota = $employeeQuotas->where('leave_type_id', $type->id)->first();
+
+                    return $this->leaveRequestLeaveTypeFilter->isEmployeeEligibleForQuotaDisplay(
+                        $employee,
+                        $type,
+                        $currentYear,
+                        $quota
+                    );
+                });
+
+                $summaryByTypeId = collect(
+                    $this->employeeLeaveQuotaRecords->buildSummaryForEmployee(
+                        $employee->id,
+                        $eligibleTypes,
+                        $currentYear
+                    )
+                )->keyBy('id');
 
                 $quotaData = [];
 
@@ -84,7 +104,8 @@ class BalanceTrackerService
                             'eligibilityMessage' => $this->leaveRequestLeaveTypeFilter->quotaDisplayEligibilityMessage(
                                 $employee,
                                 $type,
-                                $currentYear
+                                $currentYear,
+                                $quota
                             ) ?? 'Not eligible for this leave type.',
                             'earned' => 0,
                             'used' => 0,
@@ -111,13 +132,13 @@ class BalanceTrackerService
                         continue;
                     }
 
-                    $defaultEarned = (float) $type->annual_quota;
+                    $summaryRow = $summaryByTypeId->get($type->id);
 
                     $quotaData[$type->id] = [
                         'eligible' => true,
-                        'earned' => $quota ? (float) $quota->adjusted_quota : $defaultEarned,
-                        'used' => $quota ? (float) $quota->used : 0,
-                        'remaining' => $quota ? (float) $quota->remaining_balance : $defaultEarned,
+                        'earned' => (float) ($summaryRow['total'] ?? $type->annual_quota),
+                        'used' => (float) ($summaryRow['used'] ?? 0),
+                        'remaining' => (float) ($summaryRow['remaining'] ?? $type->annual_quota),
                     ];
                 }
 
@@ -166,7 +187,7 @@ class BalanceTrackerService
             try {
                 $employeeId = $data['employee_id'];
                 $adjustmentType = $data['increment_type'];
-                $days = (float) $data['days'];
+                $days = round((float) $data['days'], 2);
                 $reason = $data['reason'];
                 $leaveTypeSearch = $data['leave_type'];
                 $currentYear = Carbon::now()->year;
@@ -220,24 +241,26 @@ class BalanceTrackerService
                     ]
                 );
 
-                $currentEarned = (float) $targetQuota->adjusted_quota;
-                $currentUsed = (float) $targetQuota->used;
-                $currentRemaining = (float) $targetQuota->remaining_balance;
+                $snapshot = $this->resolveQuotaSnapshot(
+                    $employeeId,
+                    $leaveType,
+                    $currentYear,
+                    $targetQuota
+                );
 
-                // Validation based on adjustment type
-                if ($adjustmentType === 'add') {
-                    // Adding to Quota (Always allowed)
-                } elseif ($adjustmentType === 'subtract') {
-                    // Subtracting from Quota - Ensure remaining doesn't go below zero
-                    if (($currentRemaining - $days) < 0) {
-                        throw new \Exception("Cannot subtract more from quota. Remaining balance cannot be less than zero. (Current remaining: {$currentRemaining} days).");
-                    }
+                $currentRemaining = $snapshot['remaining'];
+
+                if ($adjustmentType === 'subtract' && ($currentRemaining - $days) < 0) {
+                    throw new \Exception(
+                        'Cannot subtract more from quota. Remaining balance cannot be less than zero.'
+                        ." (Current remaining: {$currentRemaining} days)."
+                    );
                 }
 
                 $previousRemaining = $currentRemaining;
                 $newRemaining = $adjustmentType === 'add'
-                    ? $previousRemaining + $days
-                    : $previousRemaining - $days;
+                    ? round($previousRemaining + $days, 2)
+                    : round($previousRemaining - $days, 2);
 
                 $adjustment = LeaveBalanceAdjustment::create([
                     'employee_id' => $employeeId,
@@ -274,5 +297,33 @@ class BalanceTrackerService
                 throw $e; // Re-throw to be caught by Controller
             }
         });
+    }
+
+    /**
+     * @return array{earned: float, used: float, remaining: float}
+     */
+    private function resolveQuotaSnapshot(
+        int $employeeId,
+        LeaveType $leaveType,
+        int $year,
+        ?EmployeeLeaveQuota $quota = null,
+    ): array {
+        if ($this->leaveRequestLeaveTypeFilter->isCompensatoryLeaveTypeId($leaveType->id)) {
+            return $this->leaveRequestLeaveTypeFilter->buildCompensatoryQuotaSnapshot($employeeId, $year, $quota);
+        }
+
+        $summary = $this->employeeLeaveQuotaRecords->buildSummaryForEmployee(
+            $employeeId,
+            collect([$leaveType]),
+            $year
+        );
+
+        $row = $summary[0] ?? null;
+
+        return [
+            'earned' => (float) ($row['total'] ?? $leaveType->annual_quota),
+            'used' => (float) ($row['used'] ?? 0),
+            'remaining' => (float) ($row['remaining'] ?? $leaveType->annual_quota),
+        ];
     }
 }

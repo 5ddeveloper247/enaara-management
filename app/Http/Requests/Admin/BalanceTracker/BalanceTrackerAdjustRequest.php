@@ -17,7 +17,11 @@ class BalanceTrackerAdjustRequest extends FormRequest
             'employee_id'    => 'required|exists:employees,id',
             'leave_type'     => 'required|string',
             'increment_type' => 'required|in:add,subtract',
-            'days'           => 'required|numeric|min:0.5',
+            'days'           => ['required', 'numeric', 'min:0.5', function ($attribute, $value, $fail) {
+                if (abs(fmod(((float) $value) * 2, 1.0)) > 0.00001) {
+                    $fail('Number of days must be in 0.5 increments (e.g., 1, 1.5, 2, 5).');
+                }
+            }],
             'reason'         => 'required|string|min:5|max:255',
         ];
     }
