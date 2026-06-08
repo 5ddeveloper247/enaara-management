@@ -78,6 +78,16 @@
                     </div>
                 </div>
             </section>
+            <section class="roster-shift-section mb-2 roster-shift-off-day-panel" id="rosterShiftPendingSyncPanel" style="display: none;" aria-label="Pending approval sync">
+                <div class="roster-shift-section-label mb-3">Pending GM approval</div>
+                <div class="roster-shift-off-day-card">
+                    <span class="roster-shift-off-day-icon" aria-hidden="true"><i class="bi bi-arrow-repeat"></i></span>
+                    <div>
+                        <div class="roster-shift-off-day-title">Changes sync to GM</div>
+                        <p class="roster-shift-off-day-text mb-0">This shift is part of a pending approval request. Any update, off mark, or removal will refresh the request before it is approved.</p>
+                    </div>
+                </div>
+            </section>
             <section class="roster-shift-section mb-2" id="rosterShiftAssignmentSection" aria-label="Edit assignment">
                 <div class="roster-shift-section-label mb-3">Assignment</div>
                 <div class="mb-3">
@@ -133,10 +143,17 @@
         </form>
     </div>
     <div class="offcanvas-footer border-top p-3 d-flex justify-content-between flex-wrap gap-2 roster-shift-footer">
-        <div id="rosterShiftDeleteWrap" style="display: none;">
-            <button type="button" class="btn btn-outline-danger border-danger text-danger" id="rosterShiftDeleteBtn">
-                <i class="bi bi-trash me-1"></i>Remove
-            </button>
+        <div class="d-flex flex-wrap gap-2">
+            <div id="rosterShiftDeleteWrap" style="display: none;">
+                <button type="button" class="btn btn-outline-danger border-danger text-danger" id="rosterShiftDeleteBtn">
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
+            </div>
+            <div id="rosterShiftMarkOffWrap" style="display: none;">
+                <button type="button" class="btn btn-outline-warning border-warning text-warning" id="rosterShiftMarkOffBtn">
+                    <i class="bi bi-calendar-x me-1"></i>Mark as Off
+                </button>
+            </div>
         </div>
         <div class="d-flex gap-2 ms-auto">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>

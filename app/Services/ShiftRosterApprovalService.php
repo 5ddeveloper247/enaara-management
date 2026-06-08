@@ -136,17 +136,20 @@ class ShiftRosterApprovalService
             ]);
         }
 
-        $this->assertNoPendingRosterForPeriod($periodStart, $employeeGroup);
+        $shiftLabel = $periodStart->format('F Y') . ' Roster';
+        if ($employeeGroup === 'third_party') {
+            $shiftLabel .= ' (Third-party)';
+        }
+
+        $existingRequest = $this->findPendingRosterRequestForPeriod($periodStart, $employeeGroup);
+        if ($existingRequest) {
+            return $this->appendDraftsToPendingRosterRequest($existingRequest, $entries);
+        }
 
         $items = $entries
             ->map(fn (ShiftRosterEntry $entry) => $this->buildItemFromEntry($entry))
             ->values()
             ->all();
-
-        $shiftLabel = $periodStart->format('F Y') . ' Roster';
-        if ($employeeGroup === 'third_party') {
-            $shiftLabel .= ' (Third-party)';
-        }
 
         return $this->createRosterRequest($items, $shiftLabel, $entries);
     }
@@ -272,6 +275,80 @@ class ShiftRosterApprovalService
             $this->notifyRequesterRejected($request);
 
             return $request->fresh();
+        });
+    }
+
+    /**
+     * Rebuild a pending roster approval request from its linked entries after the requester edits a shift.
+     */
+    public function syncPendingRosterRequest(int $requestId, ?int $changedSegmentId = null): void
+    {
+        DB::transaction(function () use ($requestId, $changedSegmentId) {
+            $request = ShiftRosterApprovalRequest::query()
+                ->with(['segments.department', 'segments.approverEmployee'])
+                ->find($requestId);
+
+            if (! $request || ! $request->isPending()) {
+                return;
+            }
+
+            $entries = ShiftRosterEntry::query()
+                ->where('shift_roster_approval_request_id', $request->id)
+                ->orderBy('roster_date')
+                ->orderBy('id')
+                ->get();
+
+            $itemPayloads = $entries
+                ->map(fn (ShiftRosterEntry $entry) => $this->buildItemFromEntry($entry))
+                ->values();
+
+            $request->items()->delete();
+
+            foreach ($itemPayloads as $item) {
+                $request->items()->create($item);
+            }
+
+            $request->update([
+                'shift_count' => $itemPayloads->where('entry_type', 'shift')->count(),
+                'off_day_count' => $itemPayloads->where('entry_type', 'off')->count(),
+                'start_date' => $entries->min(fn (ShiftRosterEntry $entry) => $entry->roster_date?->toDateString())
+                    ?? $request->start_date,
+                'end_date' => $entries->max(fn (ShiftRosterEntry $entry) => $entry->roster_date?->toDateString())
+                    ?? $request->end_date,
+            ]);
+
+            foreach ($request->segments as $segment) {
+                $segmentEntries = $entries->where('shift_roster_approval_segment_id', $segment->id);
+                $segmentItems = $segmentEntries
+                    ->map(fn (ShiftRosterEntry $entry) => $this->buildItemFromEntry($entry))
+                    ->values();
+
+                $segment->update([
+                    'shift_count' => $segmentItems->where('entry_type', 'shift')->count(),
+                    'off_day_count' => $segmentItems->where('entry_type', 'off')->count(),
+                    'employee_count' => $segmentEntries
+                        ->groupBy(fn (ShiftRosterEntry $entry) => $entry->employee_id
+                            ? 'employee:' . $entry->employee_id
+                            : 'outsourced:' . $entry->outsourced_employee_id)
+                        ->count(),
+                ]);
+            }
+
+            $segmentToNotify = $changedSegmentId
+                ? $request->segments->firstWhere('id', $changedSegmentId)
+                : null;
+
+            if ($segmentToNotify?->approverEmployee) {
+                $this->notifier->notifyApprover(
+                    $segmentToNotify->approverEmployee,
+                    new ShiftRosterApprovalRequiredNotification($request, $segmentToNotify)
+                );
+            } elseif ($request->request_type !== 'roster' && $request->approverEmployee) {
+                $this->notifier->notifyApprover(
+                    $request->approverEmployee,
+                    new ShiftRosterApprovalRequiredNotification($request)
+                );
+            }
         });
     }
 
@@ -974,24 +1051,96 @@ class ShiftRosterApprovalService
             ->count();
     }
 
-    private function assertNoPendingRosterForPeriod(Carbon $periodStart, string $employeeGroup): void
+    private function findPendingRosterRequestForPeriod(Carbon $periodStart, string $employeeGroup): ?ShiftRosterApprovalRequest
     {
         $shiftLabel = $periodStart->format('F Y') . ' Roster';
         if ($employeeGroup === 'third_party') {
             $shiftLabel .= ' (Third-party)';
         }
 
-        $exists = ShiftRosterApprovalRequest::query()
+        return ShiftRosterApprovalRequest::query()
             ->where('approval_status', 'pending')
             ->where('request_type', 'roster')
             ->where('shift_label', $shiftLabel)
-            ->exists();
+            ->first();
+    }
 
-        if ($exists) {
-            throw ValidationException::withMessages([
-                'approval' => 'A roster approval request for this period is already pending.',
-            ]);
-        }
+    /**
+     * @param Collection<int, ShiftRosterEntry> $entries
+     */
+    private function appendDraftsToPendingRosterRequest(
+        ShiftRosterApprovalRequest $request,
+        Collection $entries
+    ): ShiftRosterApprovalRequest {
+        return DB::transaction(function () use ($request, $entries) {
+            $entries->load(['employee.department', 'outsourcedEmployee']);
+            $request->load(['segments.department', 'segments.approverEmployee']);
+
+            $departmentGroups = $entries->groupBy(function (ShiftRosterEntry $entry) {
+                if ($entry->employee_id) {
+                    return 'department:' . (int) ($entry->employee?->department_id ?? 0);
+                }
+
+                return 'outsourced:' . (int) ($entry->outsourcedEmployee?->sbu_id ?? 0);
+            });
+
+            $notifiedApprovers = [];
+
+            foreach ($departmentGroups as $groupEntries) {
+                $firstEntry = $groupEntries->first();
+                $departmentId = $firstEntry->employee_id
+                    ? ($firstEntry->employee?->department_id ? (int) $firstEntry->employee->department_id : null)
+                    : null;
+
+                $gm = $firstEntry->employee_id
+                    ? $this->approverResolver->resolveGmForEmployee($firstEntry->employee)
+                    : $this->approverResolver->resolveGmForOutsourcedEmployee($firstEntry->outsourcedEmployee);
+
+                if ($gm === null) {
+                    $departmentName = $firstEntry->employee?->department?->name ?? 'Third-party';
+                    throw ValidationException::withMessages([
+                        'approval' => 'No department head was found for ' . $departmentName . '. Roster cannot be submitted.',
+                    ]);
+                }
+
+                $segment = $request->segments->first(function (ShiftRosterApprovalSegment $segment) use ($departmentId, $gm) {
+                    return $segment->approval_status === 'pending'
+                        && (int) ($segment->department_id ?? 0) === (int) ($departmentId ?? 0)
+                        && (int) $segment->approver_employee_id === (int) $gm->id;
+                });
+
+                if (! $segment) {
+                    $segment = $request->segments()->create([
+                        'department_id' => $departmentId,
+                        'approver_employee_id' => $gm->id,
+                        'shift_count' => 0,
+                        'off_day_count' => 0,
+                        'employee_count' => 0,
+                        'approval_status' => 'pending',
+                    ]);
+                }
+
+                ShiftRosterEntry::query()
+                    ->whereIn('id', $groupEntries->pluck('id')->all())
+                    ->update([
+                        'shift_roster_approval_request_id' => $request->id,
+                        'shift_roster_approval_segment_id' => $segment->id,
+                    ]);
+
+                if (! in_array($gm->id, $notifiedApprovers, true)) {
+                    $segment->load('department');
+                    $this->notifier->notifyApprover(
+                        $gm,
+                        new ShiftRosterApprovalRequiredNotification($request, $segment)
+                    );
+                    $notifiedApprovers[] = $gm->id;
+                }
+            }
+
+            $this->syncPendingRosterRequest($request->id);
+
+            return $request->fresh(['segments.department', 'requestedByUser']);
+        });
     }
 
     private function buildDurationLabel(ShiftRosterApprovalRequest $request): string

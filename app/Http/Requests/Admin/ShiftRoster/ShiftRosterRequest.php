@@ -41,6 +41,7 @@ class ShiftRosterRequest extends FormRequest
             'late_check_in' => ['nullable', 'boolean'],
 
             'status' => ['nullable', 'integer', 'in:0,1'],
+            'mark_as_off' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -94,6 +95,11 @@ class ShiftRosterRequest extends FormRequest
                 if (! in_array((int) $floorId, $allowedIds, true)) {
                     $v->errors()->add('sbu_floor_id', 'Selected floor is not available for this employee.');
                 }
+            }
+
+            $markAsOff = filter_var($this->input('mark_as_off'), FILTER_VALIDATE_BOOLEAN);
+            if ($markAsOff) {
+                return;
             }
 
             $isCustomTime = filter_var($this->input('is_custom_time'), FILTER_VALIDATE_BOOLEAN);
@@ -158,6 +164,7 @@ class ShiftRosterRequest extends FormRequest
         $merge = [
             'employee_type' => $this->input('employee_type', 'employee'),
             'status' => $this->has('status') ? $this->status : 1,
+            'mark_as_off' => filter_var($this->input('mark_as_off'), FILTER_VALIDATE_BOOLEAN),
             'late_check_in' => $this->has('late_check_in') ? true : false,
             'sbu_floor_id' => $floorId === '' || $floorId === null ? null : (int) $floorId,
             'is_custom_time' => $isCustomTime,

@@ -181,7 +181,7 @@
         window.rosterApprovalRejectUrl = @json(url('/admin/shift-roster/approvals'));
         window.shiftPlannerUrl = @json(route('admin.shift-planner.index'));
     </script>
-    <script src="{{ asset('js/roster-render.js') }}"></script>
+    <script src="{{ asset('js/roster-render.js') }}?v={{ filemtime(public_path('js/roster-render.js')) }}"></script>
     <script src="{{ asset('js/roster-export-pdf.js') }}"></script>
     @include('admin.shift-planner.roster_export_excel_scripts')
 

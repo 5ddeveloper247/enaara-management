@@ -1212,6 +1212,7 @@
     function setRosterShiftCanvasViewMode(mode) {
         var assignmentSection = document.getElementById('rosterShiftAssignmentSection');
         var offDayPanel = document.getElementById('rosterShiftOffDayPanel');
+        var pendingSyncPanel = document.getElementById('rosterShiftPendingSyncPanel');
         var saveBtn = document.getElementById('rosterShiftSaveBtn');
         var saveBtnText = document.getElementById('rosterShiftSaveBtnText');
         var shiftSelect = document.getElementById('rosterShiftPlannerId');
@@ -1231,6 +1232,9 @@
         }
         if (offDayPanel) {
             offDayPanel.style.display = isOffConvert ? '' : 'none';
+        }
+        if (pendingSyncPanel) {
+            pendingSyncPanel.style.display = 'none';
         }
         if (saveBtn) {
             saveBtn.style.display = (isDeleted || isReview) ? 'none' : 'inline-block';
@@ -1257,6 +1261,7 @@
         var canvas = document.getElementById('rosterShiftCanvas');
         var titleEl = document.getElementById('rosterShiftCanvasTitle');
         var deleteWrap = document.getElementById('rosterShiftDeleteWrap');
+        var markOffWrap = document.getElementById('rosterShiftMarkOffWrap');
         var saveBtnText = document.getElementById('rosterShiftSaveBtnText');
         var rosterIdEl = document.getElementById('rosterShiftRosterId');
         var shiftSelect = document.getElementById('rosterShiftPlannerId');
@@ -1299,6 +1304,7 @@
         }
         var iconEl = document.getElementById('rosterShiftCanvasIcon');
         var isOffDayEntry = isRosterOffDayShift(shift);
+        var isAwaitingGmApproval = !!(shift && shift.isAwaitingGmApproval);
         if (shift) {
             if (rosterIdEl) rosterIdEl.value = shift.rosterId || '';
             if (isOffDayEntry) {
@@ -1310,6 +1316,7 @@
             }
             if (saveBtnText && !isOffDayEntry) saveBtnText.textContent = 'Update';
             if (deleteWrap) deleteWrap.style.display = 'block';
+            if (markOffWrap) markOffWrap.style.display = isOffDayEntry ? 'none' : 'block';
             var isCustomEntry = !!(shift.isCustomTime || shift.is_custom_time);
             if (shiftSelect) {
                 if (isCustomEntry || isOffDayEntry) {
@@ -1337,6 +1344,7 @@
             if (titleEl) titleEl.textContent = 'Add Shift';
             if (saveBtnText) saveBtnText.textContent = 'Save';
             if (deleteWrap) deleteWrap.style.display = 'none';
+            if (markOffWrap) markOffWrap.style.display = 'none';
             if (shiftSelect) shiftSelect.value = '';
             if (startTimeEl) startTimeEl.value = '';
             if (endTimeEl) endTimeEl.value = '';
@@ -1357,20 +1365,40 @@
         toggleRosterCustomTimeUi();
 
         if (rosterGmApprovalContext && shift) {
-            if (titleEl) titleEl.textContent = isOffDayEntry ? 'Off Day' : 'View Shift';
-            if (iconEl && !isOffDayEntry) iconEl.innerHTML = '<i class="bi bi-eye me-2"></i>';
-            setRosterShiftCanvasViewMode('review');
-            if (deleteWrap) deleteWrap.style.display = 'none';
+            if (isOffDayEntry) {
+                if (titleEl) titleEl.textContent = 'Off Day';
+                setRosterShiftCanvasViewMode('off-convert');
+                if (markOffWrap) markOffWrap.style.display = 'none';
+            } else {
+                if (titleEl) titleEl.textContent = 'Edit Shift';
+                if (iconEl) iconEl.innerHTML = '<i class="bi bi-pencil-square me-2"></i>';
+                setRosterShiftCanvasViewMode('edit');
+                if (deleteWrap) deleteWrap.style.display = 'block';
+                if (markOffWrap) markOffWrap.style.display = 'block';
+            }
+            var gmPendingSyncPanel = document.getElementById('rosterShiftPendingSyncPanel');
+            if (gmPendingSyncPanel) {
+                gmPendingSyncPanel.style.display = '';
+            }
         } else if (shift && shift.deletedAt) {
             if (titleEl) titleEl.textContent = 'View Deleted Shift';
             setRosterShiftCanvasViewMode('deleted');
             if (deleteWrap) deleteWrap.style.display = 'none';
+            if (markOffWrap) markOffWrap.style.display = 'none';
         } else if (isOffDayEntry) {
             setRosterShiftCanvasViewMode('off-convert');
+            if (markOffWrap) markOffWrap.style.display = 'none';
         } else {
             setRosterShiftCanvasViewMode(shift ? 'edit' : 'create');
             if (deleteWrap && shift) {
                 deleteWrap.style.display = 'block';
+            }
+            if (markOffWrap) {
+                markOffWrap.style.display = shift ? 'block' : 'none';
+            }
+            var pendingSyncPanel = document.getElementById('rosterShiftPendingSyncPanel');
+            if (pendingSyncPanel) {
+                pendingSyncPanel.style.display = isAwaitingGmApproval ? '' : 'none';
             }
         }
 
@@ -1513,6 +1541,69 @@
             });
     }
 
+    function markRosterAsOff() {
+        var base = window.rosterUpdateUrlBase || '';
+        var rosterId = document.getElementById('rosterShiftRosterId').value;
+        if (!base || !rosterId) return;
+
+        var employeeId = document.getElementById('rosterShiftEmployeeId').value;
+        var employeeType = document.getElementById('rosterShiftEmployeeType')?.value || 'employee';
+        var rosterDate = document.getElementById('rosterShiftDay').value;
+        var parsedEmployeeId = parseInt(employeeId, 10);
+
+        if (!employeeId || !rosterDate || !Number.isFinite(parsedEmployeeId) || parsedEmployeeId <= 0) {
+            showError('Employee is required.');
+            return;
+        }
+
+        var url = base + '/' + rosterId;
+        var markOffBtn = document.getElementById('rosterShiftMarkOffBtn');
+        if (markOffBtn) markOffBtn.disabled = true;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                employee_id: parsedEmployeeId,
+                employee_type: employeeType,
+                roster_date: rosterDate,
+                mark_as_off: 1
+            }),
+            credentials: 'same-origin'
+        })
+            .then(function(r) {
+                return r.text().then(function(t) {
+                    var j = {};
+                    try { j = JSON.parse(t || '{}'); } catch (ex) { j = {}; }
+                    return { ok: r.ok, status: r.status, body: j };
+                });
+            })
+            .then(function(res) {
+                if (markOffBtn) markOffBtn.disabled = false;
+                if (res.ok && res.body.success) {
+                    showSuccess(res.body.message || 'Day marked as off.');
+                    var canvas = document.getElementById('rosterShiftCanvas');
+                    if (canvas) {
+                        var o = bootstrap.Offcanvas.getInstance(canvas);
+                        if (o) o.hide();
+                    }
+                    loadRosterGrid();
+                } else {
+                    var msg = (res.body && res.body.message) ? res.body.message : 'Could not mark day as off.';
+                    showError(msg);
+                }
+            })
+            .catch(function() {
+                if (markOffBtn) markOffBtn.disabled = false;
+                showError('Could not mark day as off.');
+            });
+    }
+
     function deleteRosterAssignment() {
         var base = window.rosterUpdateUrlBase || '';
         var rosterId = document.getElementById('rosterShiftRosterId').value;
@@ -1652,6 +1743,31 @@
                 }).then(function(result) {
                     if (result.isConfirmed) {
                         deleteRosterAssignment();
+                    }
+                });
+            });
+        }
+        var markOffBtn = document.getElementById('rosterShiftMarkOffBtn');
+        if (markOffBtn && !markOffBtn._rosterBound) {
+            markOffBtn._rosterBound = true;
+            markOffBtn.addEventListener('click', function() {
+                var dateLabel = document.getElementById('rosterShiftDateLabel');
+                var employeeName = document.getElementById('rosterShiftEmployeeName');
+                var dateText = dateLabel ? dateLabel.textContent.trim() : 'this date';
+                var nameText = employeeName ? employeeName.textContent.trim() : 'this employee';
+                Swal.fire({
+                    title: 'Mark as off?',
+                    text: 'Mark ' + dateText + ' as off for ' + nameText + '? The shift assignment will be replaced with an off day.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ffc107',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, mark as off',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        markRosterAsOff();
                     }
                 });
             });

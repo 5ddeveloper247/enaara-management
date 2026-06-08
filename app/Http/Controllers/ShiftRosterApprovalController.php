@@ -93,15 +93,27 @@ class ShiftRosterApprovalController extends Controller
                 'employee_group' => ['nullable', 'in:internal,third_party'],
             ]);
 
+            $year = (int) $validated['year'];
+            $month = (int) $validated['month'];
+            $employeeGroup = $validated['employee_group'] ?? 'internal';
+            $hadPendingRequest = \App\Models\ShiftRosterApprovalRequest::query()
+                ->where('approval_status', 'pending')
+                ->where('request_type', 'roster')
+                ->where('shift_label', \Carbon\Carbon::createFromDate($year, $month, 1)->format('F Y') . ' Roster'
+                    . ($employeeGroup === 'third_party' ? ' (Third-party)' : ''))
+                ->exists();
+
             $approvalRequest = $this->approvalService->submitPendingEntriesForApproval(
-                (int) $validated['year'],
-                (int) $validated['month'],
-                $validated['employee_group'] ?? 'internal'
+                $year,
+                $month,
+                $employeeGroup
             );
 
             return response()->json([
                 'success' => true,
-                'message' => 'Roster submitted to GM for approval.',
+                'message' => $hadPendingRequest
+                    ? 'Additional shifts were added to the pending GM approval request.'
+                    : 'Roster submitted to GM for approval.',
                 'data' => [
                     'request_count' => 1,
                     'request_ids' => [$approvalRequest->id],

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ShiftRosterEntry;
+use App\Models\ShiftRosterApprovalRequest;
 use App\Models\ShiftRosterAssignment;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
@@ -272,11 +273,29 @@ class ShiftRosterController extends Controller
         }
 
         try {
-            $this->shiftRosterService->update($request->validated(), $id);
+            $validated = $request->validated();
+            $entryBefore = ShiftRosterEntry::query()->find((int) $id);
+            $wasPendingApproval = $entryBefore
+                && $entryBefore->shift_roster_approval_request_id
+                && ShiftRosterApprovalRequest::query()
+                    ->whereKey($entryBefore->shift_roster_approval_request_id)
+                    ->where('approval_status', 'pending')
+                    ->exists();
+            $markAsOff = filter_var($validated['mark_as_off'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $wasAlreadyOff = $markAsOff
+                && $entryBefore
+                && strtolower((string) $entryBefore->status) === 'off';
+
+            $this->shiftRosterService->update($validated, $id);
+            $pendingSuffix = $wasPendingApproval ? ' The pending GM approval request has been updated.' : '';
 
             return response()->json([
                 'success' => true,
-                'message' => 'Shift updated and saved as pending.',
+                'message' => $markAsOff
+                    ? ($wasAlreadyOff
+                        ? 'This day is already marked as off.' . $pendingSuffix
+                        : 'Day marked as off.' . $pendingSuffix)
+                    : 'Shift updated.' . ($wasPendingApproval ? $pendingSuffix : ' Saved as pending.'),
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
