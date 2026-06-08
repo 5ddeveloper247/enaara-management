@@ -1746,6 +1746,15 @@ class ShiftRosterService
         return false;
     }
 
+    private function isHistoricalRosterEntry(ShiftRosterEntry $entry): bool
+    {
+        if (! $entry->roster_date) {
+            return false;
+        }
+
+        return Carbon::parse($entry->roster_date)->startOfDay()->lt(Carbon::today());
+    }
+
     private function entryVisibleToViewer(
         ShiftRosterEntry $entry,
         ?int $viewerUserId,
@@ -1753,6 +1762,10 @@ class ShiftRosterService
     ): bool {
         if (! $viewerUserId) {
             return false;
+        }
+
+        if ($this->isHistoricalRosterEntry($entry)) {
+            return strtolower((string) $entry->status) !== 'cancelled';
         }
 
         $viewer = Auth::user();
