@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\SbuFloor;
@@ -467,6 +468,12 @@ class ShiftRosterService
             ->whereNull('deleted_at')
             ->orderBy('full_name')
             ->get();
+
+        [$employees, $outsourcedEmployees] = $this->scopeRosterAssigneesForViewer(
+            $employees,
+            $outsourcedEmployees,
+            $viewerUserId
+        );
 
         if ($approvalReviewScope) {
             $scopedEmployeeIds = $approvalReviewScope['employee_ids'];
@@ -1753,6 +1760,109 @@ class ShiftRosterService
         }
 
         return Carbon::parse($entry->roster_date)->startOfDay()->lt(Carbon::today());
+    }
+
+    /**
+     * @return array{department_ids: array<int, int>, sbu_id: ?int, is_human_resource: bool}|null
+     *         null = no department restriction (system admin).
+     */
+    private function resolveViewerRosterDepartmentScope(?int $viewerUserId): ?array
+    {
+        $viewer = Auth::user();
+
+        if ($viewer?->isSystemAdminUser()) {
+            return null;
+        }
+
+        $viewerEmployee = $viewer?->employee;
+        if (! $viewerEmployee) {
+            return [
+                'department_ids' => [],
+                'sbu_id' => null,
+                'is_human_resource' => false,
+            ];
+        }
+
+        $viewerEmployee->loadMissing('department');
+        $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
+        $isHumanResource = $this->isHumanResourceDepartment($viewerEmployee->department);
+
+        if ($isHumanResource) {
+            if (! $sbuId) {
+                return [
+                    'department_ids' => [],
+                    'sbu_id' => null,
+                    'is_human_resource' => true,
+                ];
+            }
+
+            $departmentIds = Department::query()
+                ->where('sbu_id', $sbuId)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+
+            return [
+                'department_ids' => $departmentIds,
+                'sbu_id' => $sbuId,
+                'is_human_resource' => true,
+            ];
+        }
+
+        $departmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
+
+        return [
+            'department_ids' => $departmentId ? [$departmentId] : [],
+            'sbu_id' => $sbuId,
+            'is_human_resource' => false,
+        ];
+    }
+
+    private function isHumanResourceDepartment(?Department $department): bool
+    {
+        if (! $department) {
+            return false;
+        }
+
+        $normalized = strtolower(trim((string) $department->name));
+
+        return in_array($normalized, ['human resource', 'human resources'], true);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, Employee>  $employees
+     * @param  \Illuminate\Support\Collection<int, OutsourcedEmployee>  $outsourcedEmployees
+     * @return array{0: \Illuminate\Support\Collection<int, Employee>, 1: \Illuminate\Support\Collection<int, OutsourcedEmployee>}
+     */
+    private function scopeRosterAssigneesForViewer(
+        $employees,
+        $outsourcedEmployees,
+        ?int $viewerUserId
+    ): array {
+        $scope = $this->resolveViewerRosterDepartmentScope($viewerUserId);
+
+        if ($scope === null) {
+            return [$employees, $outsourcedEmployees];
+        }
+
+        $allowedDepartmentIds = $scope['department_ids'];
+
+        $employees = $employees
+            ->filter(fn (Employee $employee) => in_array((int) $employee->department_id, $allowedDepartmentIds, true))
+            ->values();
+
+        // Third-party roster is visible to every department (not only HR), scoped to viewer SBU.
+        if ($scope['sbu_id']) {
+            $outsourcedEmployees = $outsourcedEmployees
+                ->filter(fn (OutsourcedEmployee $outsourced) => (int) $outsourced->sbu_id === (int) $scope['sbu_id'])
+                ->values();
+        } else {
+            $outsourcedEmployees = collect();
+        }
+
+        return [$employees, $outsourcedEmployees];
     }
 
     private function entryVisibleToViewer(
