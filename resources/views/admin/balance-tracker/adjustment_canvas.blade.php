@@ -183,6 +183,16 @@
             return normalized.toFixed(1);
         }
 
+        function formatBalanceDays(days) {
+            const normalized = Math.round((days + Number.EPSILON) * 2) / 2;
+
+            if (Math.abs(normalized - Math.round(normalized)) < 0.001) {
+                return String(Math.round(normalized));
+            }
+
+            return normalized.toFixed(1);
+        }
+
         function isHalfDayIncrement(days) {
             return Math.abs((days * 2) - Math.round(days * 2)) < 0.001;
         }
@@ -206,12 +216,15 @@
 
             const quota = currentEmployee.quotas[String(leaveTypeId)] || currentEmployee.quotas[leaveTypeId];
             const currentBalance = quota ? (parseFloat(quota.remaining) || 0) : 0;
-            const newBalance = type === 'add' ? currentBalance + days : currentBalance - days;
+            const newBalance = type === 'add'
+                ? Math.round((currentBalance + days + Number.EPSILON) * 2) / 2
+                : Math.round((currentBalance - days + Number.EPSILON) * 2) / 2;
             const action = type === 'add' ? 'Adding to' : 'Subtracting from';
+            const balanceClass = newBalance < 0 ? 'text-danger' : 'text-primary-custom';
 
             previewText.innerHTML = `
-                <div class="mb-1">${action} <strong>${leaveTypeName}</strong> quota: <strong>${formatAdjustmentDays(days)} day${days === 1 ? '' : 's'}</strong></div>
-                <div>New balance will be: <strong class="${newBalance < 0 ? 'text-danger' : 'text-success'}">${newBalance.toFixed(1)} days</strong></div>
+                <div class="mb-1 text-white">${action} <strong>${leaveTypeName}</strong> quota: <strong>${formatAdjustmentDays(days)} day${days === 1 ? '' : 's'}</strong></div>
+                <div class="text-white">New balance will be: <strong class="${balanceClass}">${formatBalanceDays(newBalance)} days</strong></div>
             `;
         }
 
