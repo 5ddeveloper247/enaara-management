@@ -81,6 +81,17 @@ class LeaveRequestStatusHandler
             return $this->deny($request, 'You can only cancel a request that is pending, recommended, or approved.');
         }
 
+        if (
+            $this->isHumanResourceViewer($currentUser)
+            && ! $currentUser->isSystemAdminUser()
+            && in_array($newStatus, [1, 2, 3, 4], true)
+        ) {
+            return $this->deny(
+                $request,
+                'As a Human Resource team member, you can view leave requests but cannot approve, reject, or recommend them. Please contact the assigned manager or HOD.'
+            );
+        }
+
         if (! $isAssigned) {
             return $this->deny($request, 'You do not have permission to act on this request.');
         }
@@ -328,5 +339,19 @@ class LeaveRequestStatusHandler
         }
 
         return redirect()->back()->with('success', $message);
+    }
+
+    private function isHumanResourceViewer(?User $user): bool
+    {
+        $user?->employee?->loadMissing('department');
+        $department = $user?->employee?->department;
+
+        if (! $department) {
+            return false;
+        }
+
+        $normalized = strtolower(trim((string) $department->name));
+
+        return in_array($normalized, ['human resource', 'human resources'], true);
     }
 }

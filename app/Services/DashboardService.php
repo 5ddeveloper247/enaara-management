@@ -45,30 +45,46 @@ class DashboardService
         ));
     }
 
+    /**
+     * @return array{items: array<int, array<string, mixed>>, can_act_on_approvals: bool, is_human_resource_viewer: bool}
+     */
     public function getPendingApprovals(): array
     {
         $viewer = Auth::user();
         $viewerEmployee = $viewer?->employee;
 
         if (! $viewerEmployee) {
-            return [];
+            return [
+                'items' => [],
+                'can_act_on_approvals' => false,
+                'is_human_resource_viewer' => false,
+            ];
         }
 
-        $requests = EmployeLeaveRequest::with([
+        $viewerEmployee->loadMissing('department');
+        $isHumanResource = $this->isHumanResourceDepartment($viewerEmployee->department);
+        $canAct = ! $isHumanResource || $viewer->isSystemAdminUser();
+
+        $query = EmployeLeaveRequest::with([
                 'fromEmployee:id,full_name,department_id',
                 'leaveType:id,name',
             ])
-            ->where('to_employee_id', $viewerEmployee->id)
             ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
-            ->where('status', 0)
-            ->when(
-                ! $viewer->isSystemAdminUser(),
-                fn ($query) => $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee)
-            )
-            ->orderByDesc('created_at')
-            ->get();
+            ->where('status', 0);
 
-        return $requests->map(function ($r) {
+        if ($isHumanResource && ! $viewer->isSystemAdminUser()) {
+            $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee);
+        } else {
+            $query->where('to_employee_id', $viewerEmployee->id);
+
+            if (! $viewer->isSystemAdminUser()) {
+                $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee);
+            }
+        }
+
+        $requests = $query->orderByDesc('created_at')->get();
+
+        $items = $requests->map(function ($r) {
             $name     = optional($r->fromEmployee)->full_name ?? 'Unknown';
             $words    = explode(' ', trim($name));
             $initials = strtoupper(
@@ -86,6 +102,12 @@ class DashboardService
                 'reason'       => $r->reason ?? '',
             ];
         })->values()->all();
+
+        return [
+            'items' => $items,
+            'can_act_on_approvals' => $canAct,
+            'is_human_resource_viewer' => $isHumanResource,
+        ];
     }
 
     public function getPendingRosterApprovals(): array

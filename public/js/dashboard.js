@@ -422,6 +422,8 @@
     // ============================================
     const DashboardApprovals = {
         currentLeaveId: null,
+        canActOnApprovals: true,
+        isHumanResourceViewer: false,
 
         ensureSwalModalFocusFix() {
             if (this._swalFocusFixBound) return;
@@ -431,6 +433,30 @@
                     e.stopImmediatePropagation();
                 }
             }, true);
+        },
+
+        showHrViewOnlyAlert() {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'View Only — Human Resource',
+                    html: 'As a <strong>Human Resource</strong> team member, you can monitor pending leave requests across your SBU.<br><br>Approval and rejection must be handled by the assigned <strong>manager</strong> or <strong>HOD</strong>.',
+                    confirmButtonColor: '#1a237e',
+                    confirmButtonText: 'Understood'
+                });
+                return;
+            }
+
+            alert('As a Human Resource team member, you can view leave requests but cannot approve or reject them.');
+        },
+
+        guardLeaveAction() {
+            if (this.canActOnApprovals) {
+                return true;
+            }
+
+            this.showHrViewOnlyAlert();
+            return false;
         },
 
         showLeaveAlert(message, type) {
@@ -457,6 +483,10 @@
         },
 
         confirmApprove(id, onConfirmed) {
+            if (!this.guardLeaveAction()) {
+                return;
+            }
+
             if (typeof Swal === 'undefined') {
                 if (confirm('Approve this leave request?')) {
                     onConfirmed();
@@ -482,6 +512,10 @@
         },
 
         confirmReject(id, onConfirmed) {
+            if (!this.guardLeaveAction()) {
+                return;
+            }
+
             if (typeof Swal === 'undefined') {
                 if (confirm('Reject this leave request?')) {
                     onConfirmed();
@@ -507,6 +541,10 @@
         },
 
         confirmBulkApprove(count, onConfirmed) {
+            if (!this.guardLeaveAction()) {
+                return;
+            }
+
             if (typeof Swal === 'undefined') {
                 if (confirm('Approve ' + count + ' leave request(s)?')) {
                     onConfirmed();
@@ -549,6 +587,8 @@
                     const loader = document.getElementById('approvalsLoader');
                     if (loader) loader.remove();
                     if (!json.success) return;
+                    DashboardApprovals.canActOnApprovals = json.can_act_on_approvals !== false;
+                    DashboardApprovals.isHumanResourceViewer = json.is_human_resource_viewer === true;
                     DashboardApprovals.renderApprovals(json.data);
                     DashboardApprovals.updatePendingCount();
                     DashboardApprovals.initBulkApprove();
@@ -565,11 +605,14 @@
             if (!list) return;
             list.innerHTML = '';
 
+            const header = document.getElementById('bulkApproveHeader');
+            if (header) {
+                header.style.display = DashboardApprovals.canActOnApprovals ? '' : 'none';
+            }
+
             if (!items || items.length === 0) {
                 const empty = document.getElementById('pendingApprovalsEmpty');
                 if (empty) empty.classList.remove('d-none');
-                const header = document.getElementById('bulkApproveHeader');
-                if (header) header.style.display = 'none';
                 return;
             }
 
@@ -577,15 +620,37 @@
                 const div = document.createElement('div');
                 div.className = 'approval-item';
                 div.setAttribute('data-approval-id', item.id);
+
+                const rowCheckboxHtml = DashboardApprovals.canActOnApprovals
+                    ? '<input type="checkbox" class="form-check-input approval-checkbox approval-item-checkbox" value="' + item.id + '">'
+                    : '';
+
+                const actionButtonsHtml = DashboardApprovals.canActOnApprovals
+                    ? '<button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn" data-id="' + item.id + '" title="Approve">' +
+                    '<i class="bi bi-check-lg"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-sm btn-danger border-0 bg-main rounded-3 reject-btn" data-id="' + item.id + '" title="Reject">' +
+                    '<i class="bi bi-x-lg"></i>' +
+                    '</button>'
+                    : '<button class="btn btn-sm btn-outline-success rounded-3 border approve-btn" data-id="' + item.id + '" title="Approve">' +
+                    '<i class="bi bi-check-lg"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-sm btn-outline-danger rounded-3 border reject-btn" data-id="' + item.id + '" title="Reject">' +
+                    '<i class="bi bi-x-lg"></i>' +
+                    '</button>';
+
                 div.innerHTML =
                     '<div class="d-flex align-items-center justify-content-between">' +
                     '<div class="d-flex align-items-center flex-grow-1">' +
-                    '<input type="checkbox" class="form-check-input approval-checkbox approval-item-checkbox" value="' + item.id + '">' +
+                    rowCheckboxHtml +
                     '<div class="employee-avatar me-2">' + DashboardApprovals.esc(item.initials) + '</div>' +
                     '<div class="flex-grow-1">' +
                     '<h6 class="mb-0 small">' + DashboardApprovals.esc(item.name) + '</h6>' +
                     '<small class="text-muted">' + DashboardApprovals.esc(item.leave_type) + '</small>' +
                     '<div class="small text-muted">Requested: ' + DashboardApprovals.esc(item.request_date) + '</div>' +
+                    (DashboardApprovals.isHumanResourceViewer
+                        ? '<div class="small text-info"><i class="bi bi-eye me-1"></i>View only</div>'
+                        : '') +
                     '</div>' +
                     '</div>' +
                     '<div class="d-flex gap-2">' +
@@ -600,12 +665,7 @@
                     ' data-reason="' + DashboardApprovals.esc(item.reason) + '">' +
                     '<i class="bi bi-eye"></i>' +
                     '</button>' +
-                    '<button class="btn btn-sm btn-success bg-main rounded-3 border-0 approve-btn" data-id="' + item.id + '" title="Approve">' +
-                    '<i class="bi bi-check-lg"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-danger border-0 bg-main rounded-3 reject-btn" data-id="' + item.id + '" title="Reject">' +
-                    '<i class="bi bi-x-lg"></i>' +
-                    '</button>' +
+                    actionButtonsHtml +
                     '</div>' +
                     '</div>';
                 list.appendChild(div);
@@ -730,6 +790,12 @@
 
         performStatusUpdate(id, status, options) {
             options = options || {};
+
+            if (!this.canActOnApprovals) {
+                this.showHrViewOnlyAlert();
+                return Promise.resolve({ success: false, message: 'View only access.' });
+            }
+
             const baseUrl = (window._dashRoutes && window._dashRoutes.leaveRequestStatus) ?
                 window._dashRoutes.leaveRequestStatus :
                 '/admin/leave-request/{id}/status';

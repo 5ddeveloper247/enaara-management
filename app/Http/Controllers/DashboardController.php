@@ -33,8 +33,15 @@ class DashboardController extends Controller
     public function pendingApprovals(): JsonResponse
     {
         try {
-            $data = $this->dashboardService->getPendingApprovals();
-            return response()->json(['success' => true, 'data' => $data, 'count' => count($data)]);
+            $result = $this->dashboardService->getPendingApprovals();
+
+            return response()->json([
+                'success' => true,
+                'data' => $result['items'],
+                'count' => count($result['items']),
+                'can_act_on_approvals' => $result['can_act_on_approvals'],
+                'is_human_resource_viewer' => $result['is_human_resource_viewer'],
+            ]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
