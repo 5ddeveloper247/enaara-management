@@ -39,47 +39,40 @@ class BalanceTrackerService
                 ->get()
                 ->groupBy('employee_id');
 
-            // Identify all applicable leave types:
-            // Either from quotas or defined for the organization/departments
-            $leaveTypes = LeaveType::where('is_active', 1)
-                ->where(function ($query) use ($organization, $department) {
-                    if ($organization) {
-                        $query->whereHas('organization', fn($q) => $q->where('name', $organization));
-                    }
-                    if ($department) {
-                        $query->where(function($q) use ($department) {
-                            $q->whereHas('department', fn($dq) => $dq->where('name', $department))
-                              ->orWhereNull('department_id');
-                        });
-                    }
+            $leaveTypes = LeaveType::query()
+                ->where('is_active', 1)
+                ->when($organization, function ($query) use ($organization) {
+                    $query->whereHas('organization', fn ($q) => $q->where('name', $organization));
                 })
+                ->when($department, function ($query) use ($department) {
+                    $query->where(function ($q) use ($department) {
+                        $q->whereHas('departments', fn ($dq) => $dq->where('name', $department))
+                            ->orWhereDoesntHave('departments');
+                    });
+                })
+                ->orderBy('name')
                 ->get();
 
-            // If no leave types found by filter (e.g. no org/dept selected), 
-            // fallback to types present in quotas to maintain existing visibility
             if ($leaveTypes->isEmpty()) {
-                $leaveTypes = $quotas->flatten()->map(fn($q) => $q->leaveType)->filter()->unique('id')->values();
+                $leaveTypes = LeaveType::query()
+                    ->where('is_active', 1)
+                    ->orderBy('name')
+                    ->get();
             }
 
             $balances = $employees->map(function ($employee) use ($quotas, $leaveTypes) {
                 $employeeQuotas = $quotas->get($employee->id, collect());
-                
+
                 $quotaData = [];
-                $hasActiveQuota = false;
-                
+
                 foreach ($leaveTypes as $type) {
                     $quota = $employeeQuotas->where('leave_type_id', $type->id)->first();
-                    $earned = $quota ? (float) $quota->adjusted_quota : 0;
-                    $used = $quota ? (float) $quota->used : 0;
-                    
-                    if ($earned > 0 || $used > 0) {
-                        $hasActiveQuota = true;
-                    }
+                    $defaultEarned = (float) $type->annual_quota;
 
                     $quotaData[$type->id] = [
-                        'earned' => $earned,
-                        'used' => $used,
-                        'remaining' => $quota ? (float) $quota->remaining_balance : 0
+                        'earned' => $quota ? (float) $quota->adjusted_quota : $defaultEarned,
+                        'used' => $quota ? (float) $quota->used : 0,
+                        'remaining' => $quota ? (float) $quota->remaining_balance : $defaultEarned,
                     ];
                 }
 
@@ -91,10 +84,7 @@ class BalanceTrackerService
                     'organization' => $employee->organization->name ?? 'N/A',
                     'department' => $employee->department->name ?? 'N/A',
                     'quotas' => $quotaData,
-                    'hasActiveQuota' => $hasActiveQuota
                 ];
-            })->filter(function($employeeData) {
-                return $employeeData['hasActiveQuota'];
             })->values();
 
             return [
@@ -137,17 +127,27 @@ class BalanceTrackerService
                 $currentYear = Carbon::now()->year;
                 $employee = Employee::with(['organization', 'department'])->findOrFail($employeeId);
 
-                // Find correct leave type quota
-                $targetQuota = EmployeeLeaveQuota::where('employee_id', $employeeId)
-                    ->whereHas('leaveType', function ($q) use ($leaveTypeSearch) {
-                        $q->where('name', 'like', '%' . $leaveTypeSearch . '%');
-                    })
-                    ->where('year', $currentYear)
+                $leaveType = LeaveType::query()
+                    ->where('is_active', true)
+                    ->where('name', 'like', '%' . $leaveTypeSearch . '%')
                     ->first();
 
-                if (!$targetQuota) {
-                    throw new \Exception("Could not locate active '{$leaveTypeSearch}' leave quota for this employee.");
+                if (! $leaveType) {
+                    throw new \Exception("Could not locate active '{$leaveTypeSearch}' leave type.");
                 }
+
+                $targetQuota = EmployeeLeaveQuota::firstOrCreate(
+                    [
+                        'employee_id' => $employeeId,
+                        'leave_type_id' => $leaveType->id,
+                        'year' => $currentYear,
+                    ],
+                    [
+                        'department_id' => $employee->department_id,
+                        'quota' => $leaveType->annual_quota,
+                        'used' => 0,
+                    ]
+                );
 
                 $currentEarned = (float) $targetQuota->adjusted_quota;
                 $currentUsed = (float) $targetQuota->used;
