@@ -319,6 +319,7 @@ class ShiftRosterService
                 throw new \InvalidArgumentException('Select a shift or enable custom start and end time.');
             }
             $refs = $this->parseAssigneeRefs($data['employee_ids'] ?? []);
+            $this->assertAssigneesAllowedForViewer($refs);
             $days = array_map('strtolower', $data['days'] ?? []);
             $offDays = array_map('strtolower', $data['off_days'] ?? []);
             if ($offDays === []) {
@@ -1760,6 +1761,121 @@ class ShiftRosterService
         }
 
         return Carbon::parse($entry->roster_date)->startOfDay()->lt(Carbon::today());
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, Employee>|\Illuminate\Database\Eloquent\Collection<int, Employee>  $employees
+     * @param  \Illuminate\Support\Collection<int, OutsourcedEmployee>|\Illuminate\Database\Eloquent\Collection<int, OutsourcedEmployee>  $outsourcedEmployees
+     * @return array{0: \Illuminate\Support\Collection<int, Employee>, 1: \Illuminate\Support\Collection<int, OutsourcedEmployee>}
+     */
+    public function scopeAssigneesForViewer($employees, $outsourcedEmployees, ?int $viewerUserId = null): array
+    {
+        return $this->scopeRosterAssigneesForViewer(
+            $employees,
+            $outsourcedEmployees,
+            $viewerUserId ?? Auth::id()
+        );
+    }
+
+    /**
+     * @return array<int, int>|null null = unrestricted viewer (system admin)
+     */
+    public function viewerRosterDepartmentIds(?int $viewerUserId = null): ?array
+    {
+        $scope = $this->resolveViewerRosterDepartmentScope($viewerUserId ?? Auth::id());
+
+        return $scope === null ? null : $scope['department_ids'];
+    }
+
+    public function validateAssigneeIdsInViewerScope(array $employeeIds, array $outsourcedIds): ?string
+    {
+        $employeeIds = array_values(array_unique(array_map('intval', $employeeIds)));
+        $outsourcedIds = array_values(array_unique(array_map('intval', $outsourcedIds)));
+
+        if ($employeeIds !== []) {
+            $allowedEmployeeCount = $this->countScopedEmployeesForViewer($employeeIds);
+
+            if ($allowedEmployeeCount !== count($employeeIds)) {
+                return 'One or more selected employees are outside your department scope.';
+            }
+        }
+
+        if ($outsourcedIds !== []) {
+            $allowedOutsourcedCount = $this->countScopedOutsourcedForViewer($outsourcedIds);
+
+            if ($allowedOutsourcedCount !== count($outsourcedIds)) {
+                return 'One or more selected external employees are outside your scope.';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<int, array{type: string, id: int}>  $refs
+     */
+    private function assertAssigneesAllowedForViewer(array $refs): void
+    {
+        $employeeIds = collect($refs)->where('type', 'employee')->pluck('id')->all();
+        $outsourcedIds = collect($refs)->where('type', 'outsourced')->pluck('id')->all();
+
+        $message = $this->validateAssigneeIdsInViewerScope($employeeIds, $outsourcedIds);
+
+        if ($message !== null) {
+            throw ValidationException::withMessages([
+                'employee_ids' => $message,
+            ]);
+        }
+    }
+
+    private function countScopedEmployeesForViewer(array $employeeIds): int
+    {
+        if ($employeeIds === []) {
+            return 0;
+        }
+
+        $query = Employee::query()
+            ->whereKey($employeeIds)
+            ->where('engagement_mode', 'shifts')
+            ->where('is_active', true)
+            ->whereNull('deleted_at');
+
+        $departmentIds = $this->viewerRosterDepartmentIds();
+
+        if ($departmentIds !== null) {
+            if ($departmentIds === []) {
+                return 0;
+            }
+
+            $query->whereIn('department_id', $departmentIds);
+        }
+
+        return $query->count();
+    }
+
+    private function countScopedOutsourcedForViewer(array $outsourcedIds): int
+    {
+        if ($outsourcedIds === []) {
+            return 0;
+        }
+
+        $query = OutsourcedEmployee::query()
+            ->whereKey($outsourcedIds)
+            ->whereNull('deleted_at');
+
+        $scope = $this->resolveViewerRosterDepartmentScope(Auth::id());
+
+        if ($scope !== null) {
+            $sbuId = $scope['sbu_id'];
+
+            if (! $sbuId) {
+                return 0;
+            }
+
+            $query->where('sbu_id', $sbuId);
+        }
+
+        return $query->count();
     }
 
     /**

@@ -81,7 +81,18 @@ class BulkShiftRosterRequest extends FormRequest
                     ->count();
                 if ($validOutsourcedCount !== count(array_unique($outsourcedIds))) {
                     $v->errors()->add('employee_ids', 'One or more selected outsourced employees are invalid.');
+                    return;
                 }
+            }
+
+            $scopeError = app(ShiftRosterService::class)->validateAssigneeIdsInViewerScope(
+                array_unique($employeeIds),
+                array_unique($outsourcedIds)
+            );
+
+            if ($scopeError !== null) {
+                $v->errors()->add('employee_ids', $scopeError);
+                return;
             }
 
             $days = collect($this->input('days', []))

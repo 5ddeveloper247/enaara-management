@@ -4,18 +4,24 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\ShiftPlannerService;
+use App\Services\ShiftRosterService;
 use App\Http\Requests\Admin\ShiftPlanner\ShiftPlannerRequest;
+use App\Models\Department;
 use App\Models\ShiftPlanner;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftRosterEntry;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+
 class ShiftPlannerController extends Controller
 {
     protected $shiftPlannerService;
 
-    public function __construct(ShiftPlannerService $shiftPlannerService)
-    {
+    public function __construct(
+        ShiftPlannerService $shiftPlannerService,
+        private readonly ShiftRosterService $shiftRosterService
+    ) {
         $this->shiftPlannerService = $shiftPlannerService;
     }
 
@@ -36,6 +42,25 @@ class ShiftPlannerController extends Controller
             ->orderBy('full_name')
             ->get();
 
+        [$employees, $outsourcedEmployees] = $this->shiftRosterService->scopeAssigneesForViewer(
+            $employees,
+            $outsourcedEmployees,
+            Auth::id()
+        );
+
+        $departmentIds = $this->shiftRosterService->viewerRosterDepartmentIds(Auth::id());
+        if ($departmentIds === null) {
+            $departments = Department::query()->orderBy('name')->get();
+        } elseif ($departmentIds === []) {
+            $departments = collect();
+        } else {
+            $departments = Department::query()
+                ->whereIn('id', $departmentIds)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+        }
+
         $shifts = ShiftPlanner::where('is_active', 1)
             ->orderBy('name')
             ->get();
@@ -47,8 +72,6 @@ class ShiftPlannerController extends Controller
             })
             ->orderBy('roster_date', 'asc')
             ->get();
-
-        $departments = \App\Models\Department::orderBy('name')->get();
 
         return view('admin.shift-planner.index', compact('employees', 'outsourcedEmployees', 'shifts', 'rosters', 'departments'));
     }

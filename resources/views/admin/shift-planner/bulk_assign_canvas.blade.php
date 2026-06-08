@@ -158,8 +158,8 @@
                             <div id="deptSelectionWrapper" style="display: none; transition: all 0.3s ease;" class="mb-2 animate__animated animate__fadeIn">
                                 <select class="form-select form-select-sm bg-dark text-white border-secondary" id="deptFilterSelect">
                                     <option value="">-- Select Department --</option>
-                                    @php 
-                                        $depts = $departments ?? \App\Models\Department::orderBy('name')->get();
+                                    @php
+                                        $depts = $departments ?? collect();
                                     @endphp
                                     @foreach($depts as $dept)
                                         <option value="{{ strtolower($dept->name) }}">{{ $dept->name }}</option>
