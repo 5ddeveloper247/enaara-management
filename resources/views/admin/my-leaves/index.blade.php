@@ -314,9 +314,31 @@
             item.style.cursor = 'pointer';
             item.addEventListener('click', () => showLeaveDetails(leave));
 
-            const statusBadge = getStatusBadge(leave.status);
-            const typeBadge = getLeaveTypeBadge(leave.type, leave.typeLabel);
+            const statusBadge = getStatusBadge(leave.status, leave.statusLabel);
 
+            if (leave.recordType === 'balance_adjustment') {
+                const adjustmentBadge = '<span class="badge bg-primary">Balance Adjustment</span>';
+                const leaveTypeBadge = getLeaveTypeBadge(leave.type, leave.typeLabel);
+                const daysText = formatAdjustmentDays(leave);
+                const daySuffix = Number(leave.days) === 1 ? 'day' : 'days';
+
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            ${adjustmentBadge}
+                            <div class="mt-2">${leaveTypeBadge}</div>
+                            <div class="fw-semibold small mt-2">${formatDate(leave.startDate)}</div>
+                            <div class="small text-muted">${daysText} ${daySuffix}</div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    <div class="small mt-2">${leave.reason || ''}</div>
+                `;
+
+                return item;
+            }
+
+            const typeBadge = getLeaveTypeBadge(leave.type, leave.typeLabel);
             const daysText = formatLeaveDays(leave);
             const daySuffix = (leave.isHalfDay || Number(leave.days) <= 1) ? 'day' : 'days';
 
@@ -384,14 +406,15 @@
             }
         }
 
-        function getStatusBadge(status) {
+        function getStatusBadge(status, label) {
             const badges = {
                 'approved': '<span class="badge bg-success">Approved</span>',
                 'pending': '<span class="badge bg-warning text-dark">Pending</span>',
                 'rejected': '<span class="badge bg-danger">Rejected</span>',
                 'recommended': '<span class="badge bg-info text-dark">Recommended</span>',
                 'not_recommended': '<span class="badge bg-danger">Not Recommended</span>',
-                'cancelled': '<span class="badge bg-secondary">Cancelled</span>'
+                'cancelled': '<span class="badge bg-secondary">Cancelled</span>',
+                'adjusted': `<span class="badge bg-success">${label || 'Adjusted'}</span>`
             };
             return badges[status] || badges['pending'];
         }
@@ -420,18 +443,61 @@
             return leave.days;
         }
 
+        function formatAdjustmentDays(leave) {
+            const prefix = leave.adjustmentType === 'add' ? '+' : '-';
+            return prefix + leave.days;
+        }
+
+        function setDetailSectionVisibility(isAdjustment) {
+            const leaveDateFields = document.querySelectorAll('.detail-leave-date-field');
+            const adjustmentDateField = document.getElementById('detailAdjustmentDateField');
+            const adjustmentMetaFields = document.querySelectorAll('.detail-adjustment-field');
+            const canvasTitle = document.getElementById('leaveDetailCanvasLabel');
+
+            leaveDateFields.forEach(el => el.classList.toggle('d-none', isAdjustment));
+            adjustmentDateField?.classList.toggle('d-none', !isAdjustment);
+            adjustmentMetaFields.forEach(el => el.classList.toggle('d-none', !isAdjustment));
+
+            if (canvasTitle) {
+                canvasTitle.innerHTML = isAdjustment
+                    ? '<i class="bi bi-sliders me-2"></i>Balance Adjustment Details'
+                    : '<i class="bi bi-calendar-event me-2"></i>Leave Details';
+            }
+        }
+
         function showLeaveDetails(leave) {
-            // Populate detail canvas
-            document.getElementById('detailLeaveType').innerHTML = getLeaveTypeBadge(leave.type, leave.typeLabel);
-            document.getElementById('detailStartDate').textContent = formatDate(leave.startDate);
-            document.getElementById('detailEndDate').textContent = formatDate(leave.endDate);
-            document.getElementById('detailDays').textContent = formatLeaveDays(leave);
-            document.getElementById('detailReason').textContent = leave.reason;
-            document.getElementById('detailStatus').innerHTML = getStatusBadge(leave.status);
+            const isAdjustment = leave.recordType === 'balance_adjustment';
+            setDetailSectionVisibility(isAdjustment);
+
+            if (isAdjustment) {
+                document.getElementById('detailLeaveType').innerHTML =
+                    '<span class="badge bg-primary me-2">Balance Adjustment</span>' +
+                    getLeaveTypeBadge(leave.type, leave.typeLabel);
+                document.getElementById('detailAdjustmentDate').textContent = formatDate(leave.startDate);
+                document.getElementById('detailDays').textContent = formatAdjustmentDays(leave);
+                document.getElementById('detailReason').textContent = leave.reason || '-';
+                document.getElementById('detailStatus').innerHTML = getStatusBadge(leave.status, leave.statusLabel);
+                document.getElementById('detailPreviousRemaining').textContent =
+                    leave.previousRemaining !== null && leave.previousRemaining !== undefined
+                        ? leave.previousRemaining + ' day' + (Number(leave.previousRemaining) === 1 ? '' : 's')
+                        : '-';
+                document.getElementById('detailNewRemaining').textContent =
+                    leave.newRemaining !== null && leave.newRemaining !== undefined
+                        ? leave.newRemaining + ' day' + (Number(leave.newRemaining) === 1 ? '' : 's')
+                        : '-';
+                document.getElementById('detailAdjustedBy').textContent = leave.adjustedByName || 'Administrator';
+            } else {
+                document.getElementById('detailLeaveType').innerHTML = getLeaveTypeBadge(leave.type, leave.typeLabel);
+                document.getElementById('detailStartDate').textContent = formatDate(leave.startDate);
+                document.getElementById('detailEndDate').textContent = formatDate(leave.endDate);
+                document.getElementById('detailDays').textContent = formatLeaveDays(leave);
+                document.getElementById('detailReason').textContent = leave.reason;
+                document.getElementById('detailStatus').innerHTML = getStatusBadge(leave.status, leave.statusLabel);
+            }
 
             const cancelBtn = document.getElementById('cancelLeaveBtn');
             if (cancelBtn) {
-                if (leave.canCancel) {
+                if (!isAdjustment && leave.canCancel) {
                     cancelBtn.classList.remove('d-none');
                     cancelBtn.onclick = function() {
                         cancelLeaveRequest(leave.id, leave.statusCode);
@@ -441,7 +507,6 @@
                 }
             }
 
-            // Show canvas
             const canvas = new bootstrap.Offcanvas(document.getElementById('leaveDetailCanvas'));
             canvas.show();
         }

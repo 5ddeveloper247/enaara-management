@@ -21,22 +21,46 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6">
+                <div class="col-6 detail-leave-date-field">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Start Date</small>
                         <div class="fw-semibold small" id="detailStartDate">Feb 1, 2024</div>
                     </div>
                 </div>
-                <div class="col-6">
+                <div class="col-6 detail-leave-date-field">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">End Date</small>
                         <div class="fw-semibold small" id="detailEndDate">Feb 5, 2024</div>
+                    </div>
+                </div>
+                <div class="col-12 d-none" id="detailAdjustmentDateField">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Adjustment Date</small>
+                        <div class="fw-semibold small" id="detailAdjustmentDate">Jun 8, 2026</div>
                     </div>
                 </div>
                 <div class="col-12">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Total Days</small>
                         <div class="fw-bold fs-5" id="detailDays">5</div>
+                    </div>
+                </div>
+                <div class="col-6 detail-adjustment-field d-none">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Previous Remaining</small>
+                        <div class="fw-semibold small" id="detailPreviousRemaining">-</div>
+                    </div>
+                </div>
+                <div class="col-6 detail-adjustment-field d-none">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">New Remaining</small>
+                        <div class="fw-semibold small" id="detailNewRemaining">-</div>
+                    </div>
+                </div>
+                <div class="col-12 detail-adjustment-field d-none">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Adjusted By</small>
+                        <div class="fw-semibold small" id="detailAdjustedBy">-</div>
                     </div>
                 </div>
                 <div class="col-12">

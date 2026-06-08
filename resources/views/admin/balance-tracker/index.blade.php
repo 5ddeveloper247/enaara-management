@@ -267,6 +267,22 @@
             });
         });
 
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function renderIneligibleQuotaCell(quota) {
+            const message = quota.eligibilityMessage || 'Not eligible for this leave type.';
+
+            return `<td class="text-center align-middle" data-eligible="0" data-bs-toggle="tooltip" data-bs-placement="top" title="${escapeHtml(message)}">
+                <span class="text-muted small">Not eligible</span>
+            </td>`;
+        }
+
         function initializeBalanceTable() {
             const tbody = $('#balanceTableBody');
             tbody.empty();
@@ -290,10 +306,12 @@
 
                 // Add dynamic leave type columns
                 leaveTypes.forEach((type, index) => {
-                    const quota = employee.quotas[type.id] || { earned: 0, used: 0, remaining: 0 };
+                    const quota = employee.quotas[type.id] || { eligible: true, earned: 0, used: 0, remaining: 0 };
                     const progressColor = getProgressColor(type.name);
-                    
-                    if (quota.earned === 0 && quota.used === 0 && quota.remaining === 0) {
+
+                    if (quota.eligible === false) {
+                        columns += renderIneligibleQuotaCell(quota);
+                    } else if (quota.earned === 0 && quota.used === 0 && quota.remaining === 0) {
                         columns += `<td class="text-center align-middle"><span class="text-muted opacity-50">-</span></td>`;
                     } else {
                         columns += `
@@ -341,7 +359,29 @@
                 responsive: {
                     details: {
                         type: 'column',
-                        target: 0
+                        target: 0,
+                        renderer: function (api, rowIdx, columns) {
+                            const rows = columns
+                                .map(function (col) {
+                                    if (!col.hidden) {
+                                        return null;
+                                    }
+
+                                    const cell = api.cell(rowIdx, col.columnIndex).node();
+                                    if (!cell || cell.getAttribute('data-eligible') === '0') {
+                                        return null;
+                                    }
+
+                                    return `<tr><td class="fw-semibold pe-3">${col.title}</td><td>${col.data}</td></tr>`;
+                                })
+                                .filter(Boolean);
+
+                            if (rows.length === 0) {
+                                return false;
+                            }
+
+                            return $('<table class="table table-sm mb-0"/>').append(rows.join(''));
+                        }
                     }
                 },
                 columnDefs: [

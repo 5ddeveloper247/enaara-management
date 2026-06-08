@@ -3,6 +3,7 @@
 namespace App\Services\leaverequestPrivatefunctions;
 
 use App\Models\Employee;
+use App\Models\EmployeeLeaveQuota;
 use App\Models\LeaveType;
 use App\Services\CompensatoryLeaveAwardService;
 use App\Services\CompensatoryLeaveBalanceService;
@@ -36,35 +37,181 @@ class LeaveRequestLeaveTypeFilter
             ->values();
     }
 
+    /**
+     * Whether an employee may have balance for this leave type, based on leave type setting gender only.
+     */
+    public function isEmployeeEligibleByLeaveTypeGender(Employee $employee, LeaveType $leaveType): bool
+    {
+        $leaveType->loadMissing('setting');
+        $required = strtolower(trim((string) ($leaveType->setting?->gender ?? 'all')));
+
+        if ($required === '' || $required === 'all') {
+            return true;
+        }
+
+        $actual = strtolower(trim((string) ($employee->gender ?? '')));
+
+        if ($actual === '') {
+            return false;
+        }
+
+        return $actual === $required;
+    }
+
+    public function leaveTypeGenderEligibilityMessage(Employee $employee, LeaveType $leaveType): ?string
+    {
+        if ($this->isEmployeeEligibleByLeaveTypeGender($employee, $leaveType)) {
+            return null;
+        }
+
+        $leaveType->loadMissing('setting');
+        $required = strtolower(trim((string) ($leaveType->setting?->gender ?? 'all')));
+        $requiredLabel = $this->genderLabelForMessage($required);
+        $actual = strtolower(trim((string) ($employee->gender ?? '')));
+
+        if ($actual === '') {
+            return "This leave type is only for {$requiredLabel} employees. Employee gender is not set on their profile.";
+        }
+
+        return "This leave type is only for {$requiredLabel} employees.";
+    }
+
+    /**
+     * Same eligibility rules as My Leaves quota summary (maternity, paternity, compensatory, etc.).
+     */
+    public function isEmployeeEligibleForQuotaDisplay(
+        Employee $employee,
+        LeaveType $leaveType,
+        ?int $year = null,
+        ?EmployeeLeaveQuota $quota = null,
+    ): bool {
+        $year = $year ?? (int) now()->year;
+        $leaveType->loadMissing('setting');
+
+        if ($this->isMaternityLeaveType($leaveType)) {
+            return $this->isEmployeeEligibleForMaternityLeave($employee);
+        }
+
+        if ($this->isPaternityLeaveType($leaveType)) {
+            return $this->isEmployeeEligibleForPaternityLeave($employee, $leaveType);
+        }
+
+        if ($this->isCompensatoryLeaveType($leaveType)) {
+            return $this->isEmployeeEligibleForCompensatoryDisplay($employee->id, $year, $quota);
+        }
+
+        return true;
+    }
+
+    public function isEmployeeEligibleForCompensatoryDisplay(
+        int $employeeId,
+        ?int $year = null,
+        ?EmployeeLeaveQuota $quota = null,
+    ): bool {
+        if ($this->compensatoryLeaveBalanceService->validEarnedDays($employeeId) > 0) {
+            return true;
+        }
+
+        if ($this->compensatoryRemainingDays($employeeId, $year) > 0) {
+            return true;
+        }
+
+        if ($quota !== null && ((float) $quota->adjusted_quota > 0 || (float) $quota->used > 0)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array{earned: float, used: float, remaining: float}
+     */
+    public function buildCompensatoryQuotaSnapshot(
+        int $employeeId,
+        ?int $year = null,
+        ?EmployeeLeaveQuota $quota = null,
+    ): array {
+        $year = $year ?? (int) now()->year;
+        $validEarned = $this->compensatoryLeaveBalanceService->validEarnedDays($employeeId);
+        $remainingFromEarned = $this->compensatoryLeaveBalanceService->remainingDays($employeeId, $year);
+        $reserved = max(0.0, $validEarned - $remainingFromEarned);
+
+        $earned = max($validEarned, $quota ? (float) $quota->adjusted_quota : 0.0);
+        $used = max($reserved, $quota ? (float) $quota->used : 0.0);
+        $remaining = max(0.0, $earned - $used);
+
+        return [
+            'earned' => $earned,
+            'used' => $used,
+            'remaining' => $remaining,
+        ];
+    }
+
+    public function isCompensatoryLeaveTypeId(int $leaveTypeId): bool
+    {
+        return $this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId);
+    }
+
+    public function quotaDisplayEligibilityMessage(
+        Employee $employee,
+        LeaveType $leaveType,
+        ?int $year = null,
+        ?EmployeeLeaveQuota $quota = null,
+    ): ?string {
+        if ($this->isEmployeeEligibleForQuotaDisplay($employee, $leaveType, $year, $quota)) {
+            return null;
+        }
+
+        $leaveType->loadMissing('setting');
+
+        if ($this->isMaternityLeaveType($leaveType)) {
+            $gender = strtolower(trim((string) ($employee->gender ?? '')));
+
+            if ($gender !== 'female') {
+                return 'Maternity leave is only available for female employees.';
+            }
+
+            return 'Maternity leave is only available for married female employees.';
+        }
+
+        if ($this->isPaternityLeaveType($leaveType)) {
+            $requiredGender = $this->requiredGenderForPaternityLeave($leaveType);
+            $requiredLabel = $this->genderLabelForMessage($requiredGender ?? 'male');
+            $actualGender = strtolower(trim((string) ($employee->gender ?? '')));
+
+            if ($requiredGender !== null && $actualGender !== $requiredGender) {
+                return "Paternity leave is only available for {$requiredLabel} employees.";
+            }
+
+            return "Paternity leave is only available for married {$requiredLabel} employees.";
+        }
+
+        if ($this->isCompensatoryLeaveType($leaveType)) {
+            return 'Compensatory leave is not available. The employee has no earned or assigned compensatory quota.';
+        }
+
+        return 'This employee is not eligible for this leave type.';
+    }
+
     public function filterQuotaSummary(array $quotaSummary, ?int $employeeId = null, ?int $year = null): array
     {
         $year = $year ?? (int) now()->year;
         $employee = $employeeId ? Employee::query()->find($employeeId) : null;
 
-        return array_values(array_filter($quotaSummary, function (array $row) use ($employee, $employeeId, $year) {
+        return array_values(array_filter($quotaSummary, function (array $row) use ($employee, $year) {
             $leaveType = LeaveType::query()->with('setting')->find((int) ($row['id'] ?? 0));
 
-            if ($leaveType === null) {
+            if ($leaveType === null || $employee === null) {
                 return false;
             }
 
-            if ($this->isMaternityLeaveType($leaveType)) {
-                return $employee !== null && $this->isEmployeeEligibleForMaternityLeave($employee);
-            }
+            $quota = EmployeeLeaveQuota::query()
+                ->where('employee_id', $employee->id)
+                ->where('leave_type_id', $leaveType->id)
+                ->where('year', $year)
+                ->first();
 
-            if ($this->isPaternityLeaveType($leaveType)) {
-                return $employee !== null && $this->isEmployeeEligibleForPaternityLeave($employee, $leaveType);
-            }
-
-            if (! $this->isCompensatoryLeaveType($leaveType)) {
-                return true;
-            }
-
-            if ($employeeId === null) {
-                return ((float) ($row['remaining'] ?? 0)) > 0;
-            }
-
-            return $this->compensatoryRemainingDays($employeeId, $year) > 0;
+            return $this->isEmployeeEligibleForQuotaDisplay($employee, $leaveType, $year, $quota);
         }));
     }
 
@@ -171,7 +318,13 @@ class LeaveRequestLeaveTypeFilter
             return false;
         }
 
-        return $this->compensatoryRemainingDays($employeeId, $year) <= 0;
+        $quota = EmployeeLeaveQuota::query()
+            ->where('employee_id', $employeeId)
+            ->where('leave_type_id', $type->id)
+            ->where('year', $year)
+            ->first();
+
+        return ! $this->isEmployeeEligibleForCompensatoryDisplay($employeeId, $year, $quota);
     }
 
     private function shouldHideMaternityLeaveType($type, ?Employee $employee): bool

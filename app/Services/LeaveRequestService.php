@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\EmployeLeaveRequest;
+use App\Models\LeaveBalanceAdjustment;
 use App\Models\LeaveType;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -101,7 +102,7 @@ class LeaveRequestService
             return (int) $h->leave_type_id.'|'.$h->start_date.'|'.$h->end_date.'|'.((bool) $h->is_half_day ? '1' : '0').'|'.($h->half_day_session ?? '').'|'.$submittedMinute;
         });
 
-        return $grouped->map(function (Collection $rows) use ($statusMap, $statusLabelMap) {
+        $leaveItems = $grouped->map(function (Collection $rows) use ($statusMap, $statusLabelMap) {
             $representative = $rows->sortByDesc('id')->first();
             $aggregatedStatus = $this->aggregatePersonalLeaveStatuses($rows->pluck('status'));
 
@@ -118,6 +119,7 @@ class LeaveRequestService
 
             return [
                 'id' => (int) $representative->id,
+                'recordType' => 'leave_request',
                 'type' => $representative->leaveType ? strtolower(str_replace(' ', '-', $representative->leaveType->name)) : 'other',
                 'typeLabel' => $representative->leaveType ? $representative->leaveType->name : 'Other',
                 'startDate' => $representative->start_date,
@@ -130,13 +132,47 @@ class LeaveRequestService
                 'statusCode' => $aggregatedStatus,
                 'statusLabel' => $statusLabelMap[$aggregatedStatus] ?? 'Pending',
                 'category' => $category,
-                // 0=pending (will delete permanently), 1=recommended, 2=not-recommended, 3=approved (all cancellable)
                 'canCancel' => in_array($aggregatedStatus, [0, 1, 2, 3], true),
             ];
-        })
-            ->values()
+        })->values();
+
+        $adjustmentItems = LeaveBalanceAdjustment::with(['leaveType', 'adjustedBy'])
+            ->where('employee_id', $employeeId)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map(function (LeaveBalanceAdjustment $adjustment) {
+                $adjustedAt = Carbon::parse($adjustment->created_at);
+                $currentYear = Carbon::now()->year;
+
+                return [
+                    'id' => (int) $adjustment->id,
+                    'recordType' => 'balance_adjustment',
+                    'type' => $adjustment->leaveType ? strtolower(str_replace(' ', '-', $adjustment->leaveType->name)) : 'other',
+                    'typeLabel' => $adjustment->leaveType ? $adjustment->leaveType->name : 'Other',
+                    'adjustmentLabel' => 'Balance Adjustment',
+                    'adjustmentType' => $adjustment->adjustment_type,
+                    'startDate' => $adjustedAt->toDateString(),
+                    'endDate' => $adjustedAt->toDateString(),
+                    'days' => (float) $adjustment->days,
+                    'previousRemaining' => $adjustment->previous_remaining !== null ? (float) $adjustment->previous_remaining : null,
+                    'newRemaining' => $adjustment->new_remaining !== null ? (float) $adjustment->new_remaining : null,
+                    'reason' => $adjustment->reason,
+                    'adjustedByName' => $adjustment->adjustedBy?->name ?? 'Administrator',
+                    'adjustedAt' => $adjustedAt->toDateTimeString(),
+                    'status' => 'adjusted',
+                    'statusLabel' => $adjustment->adjustment_type === 'add' ? 'Added' : 'Subtracted',
+                    'category' => $adjustedAt->year === $currentYear ? 'active' : 'past',
+                    'canCancel' => false,
+                    'isHalfDay' => false,
+                    'halfDaySession' => null,
+                ];
+            });
+
+        return $adjustmentItems
+            ->concat($leaveItems)
             ->sortByDesc(function (array $item) {
-                return $item['startDate'].' '.$item['endDate'].' '.str_pad((string) $item['id'], 10, '0', STR_PAD_LEFT);
+                return $item['startDate'].' '.str_pad((string) $item['id'], 10, '0', STR_PAD_LEFT);
             })
             ->values();
     }

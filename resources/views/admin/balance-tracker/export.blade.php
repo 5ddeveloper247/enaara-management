@@ -64,9 +64,18 @@
                     <td style="border: 1px solid #dee2e6;">{{ $employee['department'] }}</td>
                     
                     @foreach($leaveTypes as $type)
-                        <td style="border: 1px solid #dee2e6;">{{ $employee['quotas'][$type->id]['earned'] }}</td>
-                        <td style="border: 1px solid #dee2e6;">{{ $employee['quotas'][$type->id]['used'] }}</td>
-                        <td style="border: 1px solid #dee2e6; color: #198754; font-weight: bold;">{{ $employee['quotas'][$type->id]['remaining'] }}</td>
+                        @php
+                            $quota = $employee['quotas'][$type->id] ?? ['eligible' => true, 'earned' => 0, 'used' => 0, 'remaining' => 0];
+                        @endphp
+                        @if(($quota['eligible'] ?? true) === false)
+                            <td style="border: 1px solid #dee2e6;" colspan="3" class="text-center text-muted">
+                                {{ $quota['eligibilityMessage'] ?? 'Not eligible for this leave type.' }}
+                            </td>
+                        @else
+                            <td style="border: 1px solid #dee2e6;">{{ $quota['earned'] }}</td>
+                            <td style="border: 1px solid #dee2e6;">{{ $quota['used'] }}</td>
+                            <td style="border: 1px solid #dee2e6; color: #198754; font-weight: bold;">{{ $quota['remaining'] }}</td>
+                        @endif
                     @endforeach
                 </tr>
             @endforeach

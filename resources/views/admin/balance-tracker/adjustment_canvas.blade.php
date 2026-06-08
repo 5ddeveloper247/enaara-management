@@ -73,7 +73,8 @@
                 <!-- Reason -->
                 <div class="mb-3">
                     <label for="adjustReason" class="form-label fw-semibold small text-white">Reason <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="adjustReason" rows="3" placeholder="Enter reason for adjustment" required></textarea>
+                    <textarea class="form-control" id="adjustReason" rows="3" minlength="5" maxlength="255" placeholder="Enter reason for adjustment (min. 5 characters)" required></textarea>
+                    <small class="opacity-75 text-white">Minimum 5 characters required for audit purposes.</small>
                 </div>
             </div>
 
@@ -122,8 +123,12 @@
             typeSelect.html('<option value="">Select Leave Type</option>');
 
             leaveTypes.forEach(type => {
-                const quota = employee.quotas[type.id] || { remaining: 0, earned: 0, used: 0 };
-                
+                const quota = employee.quotas[type.id] || { eligible: true, remaining: 0, earned: 0, used: 0 };
+
+                if (quota.eligible === false) {
+                    return;
+                }
+
                 if (quota.earned > 0 || quota.used > 0) {
                     container.append(`
                         <div class="col-4">
@@ -162,7 +167,8 @@
                 return;
             }
 
-            const currentBalance = currentEmployee.quotas[leaveTypeId] ? parseFloat(currentEmployee.quotas[leaveTypeId].remaining) : 0;
+            const quota = currentEmployee.quotas[String(leaveTypeId)] || currentEmployee.quotas[leaveTypeId];
+            const currentBalance = quota ? (parseFloat(quota.remaining) || 0) : 0;
             const newBalance = type === 'add' ? currentBalance + days : currentBalance - days;
             const action = type === 'add' ? 'Adding to' : 'Subtracting from';
 
@@ -193,15 +199,19 @@
                         url: "{{ route('admin.balance-tracker.adjust') }}",
                         method: "POST",
                         data: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
                         success: function(response) {
                             if (response.success) {
                                 showSuccess(response.message).then(() => location.reload());
                             } else {
-                                showError(response.message);
+                                showError(response.message || 'Adjustment failed. Please try again.');
                             }
                         },
                         error: function(xhr) {
-                            showError('Adjustment failed. Please try again.');
+                            showError(getAjaxErrorMessage(xhr, 'Adjustment failed. Please try again.'));
                         }
                     });
                 } else {

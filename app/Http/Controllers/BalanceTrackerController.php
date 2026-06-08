@@ -61,8 +61,8 @@ class BalanceTrackerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'An unexpected error occurred: ' . $e->getMessage()
-            ], 500);
+                'message' => $e->getMessage(),
+            ], 422);
         }
     }
 

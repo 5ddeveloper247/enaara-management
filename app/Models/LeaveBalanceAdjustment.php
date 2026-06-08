@@ -12,6 +12,12 @@ class LeaveBalanceAdjustment extends Model
     use LogsActivity;
     use HasFactory;
 
+    protected $casts = [
+        'days' => 'decimal:2',
+        'previous_remaining' => 'decimal:2',
+        'new_remaining' => 'decimal:2',
+    ];
+
     protected $fillable = [
         'employee_id',
         'organization_id',
@@ -19,6 +25,8 @@ class LeaveBalanceAdjustment extends Model
         'leave_type_id',
         'adjustment_type',
         'days',
+        'previous_remaining',
+        'new_remaining',
         'reason',
         'adjusted_by',
         'leave_quota_id',

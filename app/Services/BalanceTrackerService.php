@@ -7,6 +7,7 @@ use App\Models\EmployeeLeaveQuota;
 use App\Models\LeaveType;
 use App\Models\LeaveBalanceAdjustment;
 use App\Notifications\LeaveBalanceAdjustmentNotification;
+use App\Services\leaverequestPrivatefunctions\LeaveRequestLeaveTypeFilter;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ class BalanceTrackerService
 {
     public function __construct(
         private LeaveRequestNotifier $leaveRequestNotifier,
+        private LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
     ) {}
 
     public function getBalances($organization = null, $department = null)
@@ -46,6 +48,7 @@ class BalanceTrackerService
                 ->groupBy('employee_id');
 
             $leaveTypes = LeaveType::query()
+                ->with('setting')
                 ->where('is_active', 1)
                 ->when($organization, function ($query) use ($organization) {
                     $query->whereHas('organization', fn ($q) => $q->where('name', $organization));
@@ -61,21 +64,57 @@ class BalanceTrackerService
 
             if ($leaveTypes->isEmpty()) {
                 $leaveTypes = LeaveType::query()
+                    ->with('setting')
                     ->where('is_active', 1)
                     ->orderBy('name')
                     ->get();
             }
 
-            $balances = $employees->map(function ($employee) use ($quotas, $leaveTypes) {
+            $balances = $employees->map(function ($employee) use ($quotas, $leaveTypes, $currentYear) {
                 $employeeQuotas = $quotas->get($employee->id, collect());
 
                 $quotaData = [];
 
                 foreach ($leaveTypes as $type) {
                     $quota = $employeeQuotas->where('leave_type_id', $type->id)->first();
+
+                    if (! $this->leaveRequestLeaveTypeFilter->isEmployeeEligibleForQuotaDisplay($employee, $type, $currentYear, $quota)) {
+                        $quotaData[$type->id] = [
+                            'eligible' => false,
+                            'eligibilityMessage' => $this->leaveRequestLeaveTypeFilter->quotaDisplayEligibilityMessage(
+                                $employee,
+                                $type,
+                                $currentYear
+                            ) ?? 'Not eligible for this leave type.',
+                            'earned' => 0,
+                            'used' => 0,
+                            'remaining' => 0,
+                        ];
+
+                        continue;
+                    }
+
+                    if ($this->leaveRequestLeaveTypeFilter->isCompensatoryLeaveTypeId($type->id)) {
+                        $cplSnapshot = $this->leaveRequestLeaveTypeFilter->buildCompensatoryQuotaSnapshot(
+                            $employee->id,
+                            $currentYear,
+                            $quota
+                        );
+
+                        $quotaData[$type->id] = [
+                            'eligible' => true,
+                            'earned' => $cplSnapshot['earned'],
+                            'used' => $cplSnapshot['used'],
+                            'remaining' => $cplSnapshot['remaining'],
+                        ];
+
+                        continue;
+                    }
+
                     $defaultEarned = (float) $type->annual_quota;
 
                     $quotaData[$type->id] = [
+                        'eligible' => true,
                         'earned' => $quota ? (float) $quota->adjusted_quota : $defaultEarned,
                         'used' => $quota ? (float) $quota->used : 0,
                         'remaining' => $quota ? (float) $quota->remaining_balance : $defaultEarned,
@@ -133,13 +172,39 @@ class BalanceTrackerService
                 $currentYear = Carbon::now()->year;
                 $employee = Employee::with(['organization', 'department'])->findOrFail($employeeId);
 
+                if (! $employee->organization_id) {
+                    throw new \Exception('This employee does not have an organization assigned. Please update the employee profile first.');
+                }
+
+                if (! $employee->department_id) {
+                    throw new \Exception('This employee does not have a department assigned. Please update the employee profile first.');
+                }
+
                 $leaveType = LeaveType::query()
+                    ->with('setting')
                     ->where('is_active', true)
                     ->where('name', 'like', '%' . $leaveTypeSearch . '%')
                     ->first();
 
                 if (! $leaveType) {
                     throw new \Exception("Could not locate active '{$leaveTypeSearch}' leave type.");
+                }
+
+                $existingQuota = EmployeeLeaveQuota::query()
+                    ->where('employee_id', $employeeId)
+                    ->where('leave_type_id', $leaveType->id)
+                    ->where('year', $currentYear)
+                    ->first();
+
+                $eligibilityMessage = $this->leaveRequestLeaveTypeFilter->quotaDisplayEligibilityMessage(
+                    $employee,
+                    $leaveType,
+                    $currentYear,
+                    $existingQuota
+                );
+
+                if ($eligibilityMessage !== null) {
+                    throw new \Exception($eligibilityMessage);
                 }
 
                 $targetQuota = EmployeeLeaveQuota::firstOrCreate(
@@ -170,6 +235,9 @@ class BalanceTrackerService
                 }
 
                 $previousRemaining = $currentRemaining;
+                $newRemaining = $adjustmentType === 'add'
+                    ? $previousRemaining + $days
+                    : $previousRemaining - $days;
 
                 $adjustment = LeaveBalanceAdjustment::create([
                     'employee_id' => $employeeId,
@@ -179,11 +247,11 @@ class BalanceTrackerService
                     'leave_type_id' => $targetQuota->leave_type_id,
                     'adjustment_type' => $adjustmentType,
                     'days' => $days,
+                    'previous_remaining' => $previousRemaining,
+                    'new_remaining' => $newRemaining,
                     'reason' => $reason,
                     'adjusted_by' => auth()->id(),
                 ]);
-
-                $targetQuota->refresh();
 
                 $actorName = auth()->user()?->name ?? 'Administrator';
                 $this->leaveRequestNotifier->notifyEmployeeById(

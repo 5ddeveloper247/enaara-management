@@ -65,5 +65,34 @@ function getHiddenColumnsForRow(table, rowNode) {
     return hiddenColumns;
 }
 
+/**
+ * Extract a user-facing error message from a jQuery AJAX error response.
+ */
+function getAjaxErrorMessage(xhr, fallback = 'Something went wrong. Please try again.') {
+    const data = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+
+    if (!data) {
+        if (xhr && xhr.status === 419) {
+            return 'Your session has expired. Please refresh the page and try again.';
+        }
+        if (xhr && xhr.status === 403) {
+            return 'You are not authorized to perform this action.';
+        }
+        return fallback;
+    }
+
+    if (data.errors && typeof data.errors === 'object') {
+        const messages = Object.values(data.errors).flat().filter(Boolean);
+        if (messages.length > 0) {
+            return messages.join('\n');
+        }
+    }
+
+    if (data.message) {
+        return data.message;
+    }
+
+    return fallback;
+}
 
 
