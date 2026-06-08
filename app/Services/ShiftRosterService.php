@@ -584,15 +584,13 @@ class ShiftRosterService
 
         $entries = $entriesQuery->get();
 
-        if (! $approvalReviewScope) {
-            $entries = $entries
-                ->filter(fn (ShiftRosterEntry $entry) => $this->entryVisibleToViewer(
-                    $entry,
-                    $viewerUserId,
-                    $viewerEmployeeId
-                ))
-                ->values();
-        }
+        $entries = $entries
+            ->filter(fn (ShiftRosterEntry $entry) => $this->entryVisibleToViewer(
+                $entry,
+                $viewerUserId,
+                $viewerEmployeeId
+            ))
+            ->values();
 
         if ($includeDeleted) {
             $trashedQuery = ShiftRosterEntry::onlyTrashed()
@@ -1384,11 +1382,7 @@ class ShiftRosterService
             return true;
         }
 
-        if ($this->userIsPendingApprovalGmApprover($entry, $viewer)) {
-            return true;
-        }
-
-        return validatePermissions('admin/shift-planner') || validatePermissions('admin/shift-roster');
+        return $this->userIsPendingApprovalGmApprover($entry, $viewer);
     }
 
     private function userIsPendingApprovalGmApprover(ShiftRosterEntry $entry, $viewer): bool
@@ -1761,33 +1755,22 @@ class ShiftRosterService
         }
 
         $viewer = Auth::user();
-        if ($viewer?->isSystemAdminUser()) {
-            return true;
-        }
 
-        if ($this->isGmApprovedEntry($entry)) {
+        if ($this->isGmApprovedEntry($entry) && ! $this->hasPendingPublishedChange($entry)) {
             return true;
         }
 
         if ($this->hasPendingPublishedChange($entry)) {
-            return true;
+            return $this->viewerSeesPendingChange($entry, $viewerUserId, $viewerEmployeeId);
         }
 
-        if ($entry->shift_roster_approval_request_id) {
+        if ($entry->shift_roster_approval_request_id && $this->isEntryInPendingApproval($entry)) {
             if ((int) $entry->approvalRequest?->requested_by === (int) $viewerUserId) {
                 return true;
             }
 
-            if ($viewerEmployeeId) {
-                if ($entry->approvalRequest?->request_type === 'roster') {
-                    if ((int) $entry->approvalSegment?->approver_employee_id === (int) $viewerEmployeeId
-                        && $entry->approvalSegment?->approval_status === 'pending') {
-                        return true;
-                    }
-                } elseif ((int) $entry->approvalRequest?->approver_employee_id === (int) $viewerEmployeeId
-                    && $entry->approvalRequest?->approval_status === 'pending') {
-                    return true;
-                }
+            if ($viewer && $this->userIsPendingApprovalGmApprover($entry, $viewer)) {
+                return true;
             }
 
             return false;
