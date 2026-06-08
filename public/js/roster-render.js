@@ -216,7 +216,7 @@
                 ? 'Morning'
                 : (session === 'afternoon' ? 'Afternoon' : '');
             var leaveDisplayText = isHalfDayLeave
-                ? ('Half ' + typeName + ' leave')
+                ? 'Short Leave'
                 : ('On ' + typeName + ' leave');
             var sessionMetaHtml = isHalfDayLeave && sessionLabel
                 ? '<div class="shift-pill-meta"><span class="shift-half-session">' + escapeHtml(sessionLabel) + '</span></div>'
@@ -227,7 +227,7 @@
                 : 'background-color: #fef08a; border-color: #facc15; color: #854d0e;';
             var iconStyle = isHalfDayLeave ? '' : 'color: #ca8a04;';
             var titleText = isHalfDayLeave
-                ? (rawName + ' — Half day' + (sessionLabel ? ' (' + sessionLabel + ')' : ''))
+                ? ('Short Leave' + (sessionLabel ? ' — ' + sessionLabel : '') + (rawName ? ' (' + rawName + ')' : ''))
                 : rawName;
             return '<div class="' + pillClass + '"' +
                 (pillStyle ? ' style="' + pillStyle + '"' : '') +

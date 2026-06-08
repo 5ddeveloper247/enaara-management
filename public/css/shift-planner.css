@@ -599,9 +599,9 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
 .shift-half-session {
     display: inline-block;
     font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
     color: #92400e;
     background: rgba(255, 255, 255, 0.55);
     border-radius: 4px;
