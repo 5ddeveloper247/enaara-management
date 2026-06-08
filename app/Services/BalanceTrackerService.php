@@ -6,12 +6,18 @@ use App\Models\Employee;
 use App\Models\EmployeeLeaveQuota;
 use App\Models\LeaveType;
 use App\Models\LeaveBalanceAdjustment;
+use App\Notifications\LeaveBalanceAdjustmentNotification;
+use App\Services\leaverequestPrivatefunctions\LeaveRequestNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class BalanceTrackerService
 {
+    public function __construct(
+        private LeaveRequestNotifier $leaveRequestNotifier,
+    ) {}
+
     public function getBalances($organization = null, $department = null)
     {
         try {
@@ -163,7 +169,9 @@ class BalanceTrackerService
                     }
                 }
 
-                LeaveBalanceAdjustment::create([
+                $previousRemaining = $currentRemaining;
+
+                $adjustment = LeaveBalanceAdjustment::create([
                     'employee_id' => $employeeId,
                     'organization_id' => $employee->organization_id,
                     'leave_quota_id' => $targetQuota->id,
@@ -174,6 +182,20 @@ class BalanceTrackerService
                     'reason' => $reason,
                     'adjusted_by' => auth()->id(),
                 ]);
+
+                $targetQuota->refresh();
+
+                $actorName = auth()->user()?->name ?? 'Administrator';
+                $this->leaveRequestNotifier->notifyEmployeeById(
+                    $employeeId,
+                    new LeaveBalanceAdjustmentNotification(
+                        $adjustment,
+                        $targetQuota,
+                        $previousRemaining,
+                        $actorName
+                    ),
+                    true
+                );
 
                 return true;
             } catch (\Exception $e) {
