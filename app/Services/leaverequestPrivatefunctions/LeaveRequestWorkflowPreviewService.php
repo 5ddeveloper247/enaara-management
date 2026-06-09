@@ -92,7 +92,7 @@ class LeaveRequestWorkflowPreviewService
         }
 
         if ($firstRecommender === null && $firstApprover !== null) {
-            return 'No line manager found — this request will go directly to final approval.';
+            return 'No recommendation step — this request will go directly to the department head for approval.';
         }
 
         return null;

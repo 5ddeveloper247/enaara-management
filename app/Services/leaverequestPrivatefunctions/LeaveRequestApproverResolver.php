@@ -141,16 +141,21 @@ class LeaveRequestApproverResolver
             return collect();
         }
 
-        $recommenderLevel = (clone $base)
-            ->where('rl.level', '>', (int) $hodLevel)
-            ->max('rl.level');
+        $immediateUpperLevel = (clone $base)->max('rl.level');
+        if ($immediateUpperLevel !== null && (int) $immediateUpperLevel <= (int) $hodLevel) {
+            // Applicant sits directly under the department head — approval only, no recommendation.
+            return collect();
+        }
 
-        if ($recommenderLevel === null) {
+        // One level below the department head (e.g. head at 3 → recommenders at 4).
+        $recommenderLevel = (int) $hodLevel + 1;
+
+        if ($recommenderLevel >= $currentLevel) {
             return collect();
         }
 
         return $base
-            ->where('rl.level', (int) $recommenderLevel)
+            ->where('rl.level', $recommenderLevel)
             ->orderBy('employees.id')
             ->get()
             ->unique('id')
