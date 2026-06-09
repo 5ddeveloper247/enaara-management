@@ -53,8 +53,17 @@
     return !!(leaveTypeSelect && leaveTypeSelect.value);
   }
 
+  function isShortLeaveApplicable(leaveTypeSelect) {
+    if (!leaveTypeSelect || leaveTypeSelect.selectedIndex < 0) {
+      return false;
+    }
+
+    var selected = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+    return selected.getAttribute('data-short-leave-applicable') === '1';
+  }
+
   function syncHalfDayUi(leaveTypeSelect, halfDaySection, isHalfDayInput, halfDaySessionSection, halfDaySessionInput, startDateInput, endDateInput) {
-    var allowed = isLeaveTypeSelected(leaveTypeSelect);
+    var allowed = isLeaveTypeSelected(leaveTypeSelect) && isShortLeaveApplicable(leaveTypeSelect);
 
     if (halfDaySection) {
       halfDaySection.style.display = allowed ? 'block' : 'none';
@@ -215,8 +224,8 @@
         opt.setAttribute('data-leave-condition', it.leave_condition);
       }
       opt.setAttribute(
-        'data-half-day-applicable',
-        it.half_day_applicable ? '1' : '0'
+        'data-short-leave-applicable',
+        it.short_leave_applicable ? '1' : '0'
       );
       selectEl.appendChild(opt);
     });

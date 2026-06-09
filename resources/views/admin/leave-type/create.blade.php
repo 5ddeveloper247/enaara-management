@@ -268,14 +268,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="lt-inline-switch">
-                                            <div class="form-check form-switch mb-0">
-                                                <input class="form-check-input" type="checkbox" id="lt_half_day" name="half_day_applicable" value="1">
-                                                <label class="form-check-label" for="lt_half_day">Half Day Applicable</label>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </section>
 

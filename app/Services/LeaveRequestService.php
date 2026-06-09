@@ -267,7 +267,7 @@ class LeaveRequestService
                     'id' => $type->id,
                     'name' => $type->name,
                     'leave_condition' => $type->leave_condition,
-                    'half_day_applicable' => (bool) ($type->setting?->half_day_applicable ?? false),
+                    'short_leave_applicable' => (bool) ($type->setting?->short_leave_applicable ?? false),
                 ];
             })
             ->values();

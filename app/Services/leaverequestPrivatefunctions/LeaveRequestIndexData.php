@@ -43,7 +43,7 @@ class LeaveRequestIndexData
                 ->get(['id', 'full_name', 'employee_code']),
             'leaveTypes' => $this->leaveRequestLeaveTypeFilter->excludeCompensatoryFromList(
                 LeaveType::query()
-                    ->with('setting:id,leave_type_id,half_day_applicable')
+                    ->with('setting:id,leave_type_id,short_leave_applicable')
                     ->where('is_active', true)
                     ->orderBy('name')
                     ->get(['id', 'name', 'leave_condition'])

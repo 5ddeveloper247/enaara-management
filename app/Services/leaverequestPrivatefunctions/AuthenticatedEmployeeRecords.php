@@ -47,7 +47,7 @@ class AuthenticatedEmployeeRecords
 
         return LeaveType::query()
             ->select(['id', 'name', 'code', 'leave_condition', 'annual_quota', 'organization_id', 'sbu_id', 'is_active'])
-            ->with('setting:id,leave_type_id,half_day_applicable')
+            ->with('setting:id,leave_type_id,short_leave_applicable')
             ->where('is_active', true)
             ->where('organization_id', $organizationId)
             ->where(function ($query) use ($sbuId, $leaveTypeIdsForSbu) {
@@ -79,7 +79,7 @@ class AuthenticatedEmployeeRecords
 
         return LeaveType::query()
             ->select(['id', 'name', 'code', 'leave_condition', 'annual_quota', 'organization_id', 'sbu_id', 'is_active'])
-            ->with('setting:id,leave_type_id,half_day_applicable')
+            ->with('setting:id,leave_type_id,short_leave_applicable')
             ->where('is_active', true)
             ->when($organizationId, fn ($q) => $q->where(function ($qq) use ($organizationId) {
                 $qq->whereNull('organization_id')->orWhere('organization_id', $organizationId);

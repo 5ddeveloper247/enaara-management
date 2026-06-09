@@ -83,7 +83,7 @@
                         @foreach($leaveTypes as $leaveType)
                         <option value="{{ $leaveType->id }}"
                             data-leave-condition="{{ $leaveType->leave_condition ?? '' }}"
-                            data-half-day-applicable="{{ ($leaveType->setting?->half_day_applicable ?? false) ? '1' : '0' }}">{{ $leaveType->name }}</option>
+                            data-short-leave-applicable="{{ ($leaveType->setting?->short_leave_applicable ?? false) ? '1' : '0' }}">{{ $leaveType->name }}</option>
                         @endforeach
                         @endisset
                     </select>
@@ -101,11 +101,11 @@
                     </div>
                 </div>
 
-                <!-- Half Day -->
+                <!-- Short Leave -->
                 <div class="mb-3" id="halfDaySection" style="display: none;">
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" id="leaveIsHalfDay" name="is_half_day" value="1">
-                        <label class="form-check-label small text-white" for="leaveIsHalfDay">Half Day Leave</label>
+                        <label class="form-check-label small text-white" for="leaveIsHalfDay">Short Leave (Half Day)</label>
                     </div>
                     <div id="halfDaySessionSection" style="display: none;">
                         <label for="leaveHalfDaySession" class="form-label fw-semibold small text-white">Session <span class="text-danger">*</span></label>

@@ -59,7 +59,6 @@ trait ValidatesLeaveTypeInput
             'advance_notice_days' => ['required', 'integer', 'min:0', 'max:365'],
             'short_leave_applicable' => ['boolean'],
             'short_leave_max_hours' => ['nullable', 'integer', 'in:2,4,6'],
-            'half_day_applicable' => ['boolean'],
         ];
     }
 
@@ -101,7 +100,6 @@ trait ValidatesLeaveTypeInput
             'is_active' => $this->boolean('is_active'),
             'probation_eligible' => $this->boolean('probation_eligible'),
             'short_leave_applicable' => $this->boolean('short_leave_applicable'),
-            'half_day_applicable' => $this->boolean('half_day_applicable'),
             'accrual_frequency' => $this->filled('accrual_frequency') ? $this->input('accrual_frequency') : null,
         ];
 
