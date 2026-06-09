@@ -166,6 +166,13 @@
                                     @endforeach
                                 </select>
                             </div>
+
+                            <input type="search"
+                                   class="form-control form-control-sm border-secondary"
+                                   id="internalEmployeeSearch"
+                                   placeholder="Search by name"
+                                   autocomplete="off"
+                                   style="color: #000 !important; background-color: #fff !important;">
                         </div>
 
                         <div class="border rounded p-3 bg-dark" style="max-height: 250px; overflow-y: auto; border-color: #ffffff1a !important;">
@@ -658,19 +665,24 @@ $(document).ready(function() {
     });
 
     // Tab specific Select All / Clear
-    $('#selectAllInternalBtn').on('click', function() {
-        $('#internalEmployeeList .internal-item:visible input').prop('checked', true);
+    function toggleSelectAllVisible($inputs) {
+        var allChecked = $inputs.length > 0 && $inputs.filter(':checked').length === $inputs.length;
+        $inputs.prop('checked', !allChecked);
         updateSelectedCount();
+    }
+
+    $('#selectAllInternalBtn').on('click', function() {
+        toggleSelectAllVisible($('#internalEmployeeList .internal-item:visible input'));
     });
 
     $('#selectAllExternalBtn').on('click', function() {
-        $('#externalEmployeeList .external-item:visible input').prop('checked', true);
-        updateSelectedCount();
+        toggleSelectAllVisible($('#externalEmployeeList .external-item:visible input'));
     });
 
     $('#clearInternalBtn').on('click', function() {
         $('#internalEmployeeList input').prop('checked', false);
         $('#deptFilterSelect').val('');
+        $('#internalEmployeeSearch').val('');
         $('.internal-item').show();
         $('#noInternalRecord').hide();
         updateSelectedCount();
@@ -685,26 +697,28 @@ $(document).ready(function() {
     });
 
     // Filtering Logic
-    $('#deptFilterSelect').on('change', function() {
-        var dept = $(this).val();
-        if(!dept) {
-            $('.internal-item').show();
-            $('#noInternalRecord').hide();
-            return;
-        }
+    function applyInternalEmployeeFilters() {
+        var dept = $('#deptFilterSelect').val();
+        var search = ($('#internalEmployeeSearch').val() || '').toLowerCase().trim();
         var visibleCount = 0;
+
         $('.internal-item').each(function() {
             var $item = $(this);
-            var isMatch = (String($item.data('department')).toLowerCase().trim() === dept.toLowerCase().trim());
-            $item.toggle(isMatch);
-            if(isMatch) {
-                $item.find('input').prop('checked', true);
+            var deptMatch = !dept || (String($item.data('department')).toLowerCase().trim() === dept.toLowerCase().trim());
+            var nameText = $item.find('label').text().toLowerCase();
+            var searchMatch = !search || nameText.indexOf(search) !== -1;
+            var show = deptMatch && searchMatch;
+
+            $item.toggle(show);
+            if (show) {
                 visibleCount++;
             }
         });
+
         $('#noInternalRecord').toggle(visibleCount === 0);
-        updateSelectedCount();
-    });
+    }
+
+    $('#deptFilterSelect, #internalEmployeeSearch').on('change input', applyInternalEmployeeFilters);
 
     $('#vendorFilterSelect').on('change', function() {
         var vendor = $(this).val();
@@ -878,7 +892,13 @@ $(document).ready(function() {
         });
     });
 
-    $('#selectByDeptBtn').on('click', function() { $('#deptSelectionWrapper').slideToggle(); });
+    $('#selectByDeptBtn').on('click', function() {
+        $('#deptSelectionWrapper').slideToggle(function() {
+            if ($('#deptSelectionWrapper').is(':visible')) {
+                $('#deptFilterSelect').trigger('focus');
+            }
+        });
+    });
     $('#selectByVendorBtn').on('click', function() { $('#vendorSelectionWrapper').slideToggle(); });
 
     var bulkCanvasEl = document.getElementById('bulkAssignCanvas');
@@ -887,6 +907,11 @@ $(document).ready(function() {
             resetRepeatDays();
             resetBulkPlacementFields();
             toggleShiftAssignmentUi();
+            $('#deptFilterSelect').val('');
+            $('#internalEmployeeSearch').val('');
+            $('#deptSelectionWrapper').hide();
+            $('.internal-item').show();
+            $('#noInternalRecord').hide();
         });
     }
 
