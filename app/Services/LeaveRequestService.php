@@ -17,6 +17,7 @@ use App\Services\leaverequestPrivatefunctions\LeaveRequestIndexData;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestStatusHandler;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestApplicationChecks;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestLeaveTypeFilter;
+use App\Services\leaverequestPrivatefunctions\LeaveRequestWorkflowPreviewService;
 
 class LeaveRequestService
 {
@@ -28,6 +29,7 @@ class LeaveRequestService
         protected LeaveRequestIndexData $leaveRequestIndexData,
         protected LeaveRequestApplicationChecks $leaveRequestApplicationChecks,
         protected LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
+        protected LeaveRequestWorkflowPreviewService $leaveRequestWorkflowPreviewService,
     ) {}
 
     public function index()
@@ -232,6 +234,8 @@ class LeaveRequestService
             $startDate,
             (float) $duration
         );
+
+        $this->leaveRequestWorkflowPreviewService->assertEmployeeCanSubmitLeave($fromEmployee);
 
         return $this->leaveRequestSubmission->create(
             $validated,

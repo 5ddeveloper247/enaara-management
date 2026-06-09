@@ -157,24 +157,34 @@
                 </h6>
 
                 <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
-                    <div class="small opacity-75 text-white mb-2">This request will be routed through:</div>
+                    <div class="small opacity-75 text-white mb-2" id="leaveApprovalWorkflowIntro">This request will be routed through:</div>
                     <div class="small" id="leaveApprovalWorkflowSteps">
                         @if(request()->routeIs('admin.my.leaves.index') && !empty($approvalWorkflowPreview))
-                            @forelse($approvalWorkflowPreview['steps'] ?? [] as $step)
-                                <div class="mb-1">
-                                    {{ $step['level'] }}.
-                                    {{ $step['approver']['full_name'] ?? 'Unknown' }}
-                                    ({{ $step['role_label'] ?? 'Approver' }})
-                                    &rarr; {{ $step['action'] }}
+                            @if(!empty($approvalWorkflowPreview['is_top_level']))
+                                <div class="d-flex align-items-start gap-2 p-2 rounded-3 border border-warning border-opacity-50 bg-warning bg-opacity-10">
+                                    <i class="bi bi-shield-exclamation text-warning fs-5 flex-shrink-0"></i>
+                                    <div>
+                                        <div class="fw-semibold text-warning mb-1">Top-Level Role — No Approval Route</div>
+                                        <div class="opacity-90 text-white">{{ $approvalWorkflowPreview['top_level_message'] ?? \App\Services\leaverequestPrivatefunctions\LeaveRequestWorkflowPreviewService::TOP_LEVEL_MESSAGE }}</div>
+                                    </div>
                                 </div>
-                            @empty
-                                <div class="opacity-50">No approval workflow could be resolved for this employee.</div>
-                            @endforelse
+                            @else
+                                @forelse($approvalWorkflowPreview['steps'] ?? [] as $step)
+                                    <div class="mb-1">
+                                        {{ $step['level'] }}.
+                                        {{ $step['approver']['full_name'] ?? 'Unknown' }}
+                                        ({{ $step['role_label'] ?? 'Approver' }})
+                                        &rarr; {{ $step['action'] }}
+                                    </div>
+                                @empty
+                                    <div class="opacity-50">No approval workflow could be resolved for this employee.</div>
+                                @endforelse
+                            @endif
                         @else
                             <div class="opacity-50">Select an employee to see approval workflow.</div>
                         @endif
                     </div>
-                    @if(request()->routeIs('admin.my.leaves.index') && !empty($approvalWorkflowPreview['warning']))
+                    @if(request()->routeIs('admin.my.leaves.index') && !empty($approvalWorkflowPreview['warning']) && empty($approvalWorkflowPreview['is_top_level']))
                         <div class="small text-warning mt-2" id="leaveApprovalWorkflowWarning">{{ $approvalWorkflowPreview['warning'] }}</div>
                     @else
                         <div class="small text-warning mt-2 d-none" id="leaveApprovalWorkflowWarning"></div>
@@ -186,7 +196,8 @@
     <div class="offcanvas-footer border-top p-3" style="border-color: #ffffffab !important">
         <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
-            <button type="submit" form="addLeaveRequestForm" class="btn btn-light text-dark border-0" id="submitLeaveRequestBtn">
+            <button type="submit" form="addLeaveRequestForm" class="btn btn-light text-dark border-0" id="submitLeaveRequestBtn"
+                @if(request()->routeIs('admin.my.leaves.index') && !empty($approvalWorkflowPreview['is_top_level'])) disabled @endif>
                 <i class="bi bi-check-lg me-1"></i>Submit Request
             </button>
         </div>

@@ -255,15 +255,56 @@
     return label;
   }
 
+  function syncLeaveSubmitState(preview) {
+    var submitBtn = document.getElementById('submitLeaveRequestBtn');
+    if (!submitBtn) {
+      return;
+    }
+
+    var canSubmit = !!(preview && preview.can_submit);
+    submitBtn.disabled = !canSubmit;
+    submitBtn.title = canSubmit ? '' : (preview && preview.top_level_message ? preview.top_level_message : 'Leave cannot be submitted for this employee.');
+  }
+
   function renderApprovalWorkflow(preview) {
     var stepsEl = document.getElementById('leaveApprovalWorkflowSteps');
     var warningEl = document.getElementById('leaveApprovalWorkflowWarning');
+    var introEl = document.getElementById('leaveApprovalWorkflowIntro');
 
     if (!stepsEl) {
       return;
     }
 
     stepsEl.innerHTML = '';
+
+    if (preview && preview.is_top_level) {
+      if (introEl) {
+        introEl.classList.add('d-none');
+      }
+
+      var alertBox = document.createElement('div');
+      alertBox.className = 'd-flex align-items-start gap-2 p-2 rounded-3 border border-warning border-opacity-50 bg-warning bg-opacity-10';
+      alertBox.innerHTML =
+        '<i class="bi bi-shield-exclamation text-warning fs-5 flex-shrink-0"></i>' +
+        '<div>' +
+        '<div class="fw-semibold text-warning mb-1">Top-Level Role — No Approval Route</div>' +
+        '<div class="opacity-90 text-white">' + (preview.top_level_message || 'No line manager or approver is configured for this employee.') + '</div>' +
+        '</div>';
+      stepsEl.appendChild(alertBox);
+
+      if (warningEl) {
+        warningEl.textContent = '';
+        warningEl.classList.add('d-none');
+      }
+
+      syncLeaveSubmitState(preview);
+      window.lastLeaveWorkflowPreview = preview || null;
+      return;
+    }
+
+    if (introEl) {
+      introEl.classList.remove('d-none');
+    }
 
     var steps = preview && preview.steps ? preview.steps : [];
     if (!steps.length) {
@@ -289,20 +330,31 @@
         warningEl.classList.add('d-none');
       }
     }
+
+    syncLeaveSubmitState(preview);
+    window.lastLeaveWorkflowPreview = preview || null;
   }
 
   function renderApprovalWorkflowPlaceholder(message) {
     var stepsEl = document.getElementById('leaveApprovalWorkflowSteps');
     var warningEl = document.getElementById('leaveApprovalWorkflowWarning');
+    var introEl = document.getElementById('leaveApprovalWorkflowIntro');
 
     if (stepsEl) {
       stepsEl.innerHTML = '<div class="opacity-50">' + message + '</div>';
+    }
+
+    if (introEl) {
+      introEl.classList.remove('d-none');
     }
 
     if (warningEl) {
       warningEl.textContent = '';
       warningEl.classList.add('d-none');
     }
+
+    syncLeaveSubmitState(null);
+    window.lastLeaveWorkflowPreview = null;
   }
 
   function loadApprovalWorkflow(employeeId) {
@@ -570,6 +622,15 @@
 
       if (!form.checkValidity()) {
         form.reportValidity();
+        return;
+      }
+
+      if (window.lastLeaveWorkflowPreview && window.lastLeaveWorkflowPreview.can_submit === false) {
+        showFormError(
+          form,
+          window.lastLeaveWorkflowPreview.top_level_message
+            || 'Leave cannot be submitted because no approver is configured for this employee.'
+        );
         return;
       }
 

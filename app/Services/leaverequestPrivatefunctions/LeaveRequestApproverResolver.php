@@ -162,7 +162,7 @@ class LeaveRequestApproverResolver
             ->values();
     }
 
-    private function resolveEmployeeRoleLevel(Employee $employee): ?int
+    public function resolveEmployeeRoleLevel(Employee $employee): ?int
     {
         $roleId = (int) ($employee->role_id ?? 0);
 
