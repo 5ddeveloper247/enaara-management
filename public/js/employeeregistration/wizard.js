@@ -4274,14 +4274,61 @@
         }
     }
 
-    if (lineManagerCheckbox) {
+    function bindLineManagerConfirmation() {
+        if (!lineManagerCheckbox || lineManagerCheckbox.dataset.lineManagerConfirmBound === '1') {
+            return;
+        }
+        lineManagerCheckbox.dataset.lineManagerConfirmBound = '1';
+
         lineManagerCheckbox.addEventListener('change', function () {
-            if (!this.checked) {
+            if (this.dataset.skipLineManagerConfirm === '1') {
+                this.dataset.skipLineManagerConfirm = '';
                 return;
             }
-            validateLineManagerSelection(true);
+
+            const nextCheckedValue = !!this.checked;
+            this.checked = !nextCheckedValue;
+
+            const message = nextCheckedValue
+                ? 'Do you want to mark this employee as Line Manager? Only one active line manager is allowed per department.'
+                : 'Do you want to remove Line Manager status from this employee?';
+
+            const applyCheckedState = async function () {
+                lineManagerCheckbox.checked = nextCheckedValue;
+                lineManagerCheckbox.dataset.skipLineManagerConfirm = '1';
+
+                if (nextCheckedValue) {
+                    await validateLineManagerSelection(true);
+                }
+
+                lineManagerCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                Swal.fire({
+                    title: 'Please Confirm',
+                    text: message,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#1a237e',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes',
+                    cancelButtonText: 'No',
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        applyCheckedState();
+                    }
+                });
+                return;
+            }
+
+            if (window.confirm(message)) {
+                applyCheckedState();
+            }
         });
     }
+
+    bindLineManagerConfirmation();
 
     window.validateEmploymentLineManager = validateLineManagerSelection;
 
