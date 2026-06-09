@@ -43,6 +43,7 @@ class EmployeeEmploymentInformationService
             'suspension_end_date',
             'probation_start_date',
             'probation_end_date',
+            'is_manager',
         ];
     }
 
@@ -64,6 +65,13 @@ class EmployeeEmploymentInformationService
                     ? $data['contract_end_date']
                     : (! empty($data['employee_contract_end_date']) ? $data['employee_contract_end_date'] : null);
                 $payload['contract_end_date'] = $val === '' || $val === null ? null : $val;
+                continue;
+            }
+            if ($field === 'is_manager') {
+                if (array_key_exists($field, $data)) {
+                    $payload['is_manager'] = (bool) $data[$field];
+                }
+
                 continue;
             }
             if (! array_key_exists($field, $data)) {

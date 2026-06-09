@@ -303,6 +303,19 @@
                                                             @endif
                                                         </select>
                                                     </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Line Manager</label>
+                                                        <div class="d-flex flex-wrap gap-2">
+                                                            <input class="btn-check" type="checkbox" name="is_manager"
+                                                                id="employmentIsLineManager" value="1"
+                                                                {{ !empty($employee) && $employee->is_manager ? 'checked' : '' }}>
+                                                            <label class="btn btn-outline-secondary rounded-pill px-3 py-1"
+                                                                for="employmentIsLineManager">Is a Line Manager</label>
+                                                        </div>
+                                                        <small class="text-muted d-block mt-1" id="employmentLineManagerHint">
+                                                            Only one active line manager is allowed per department.
+                                                        </small>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

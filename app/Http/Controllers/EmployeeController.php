@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Models\Department;
 use App\Models\Employee;
 
 class EmployeeController extends Controller
@@ -220,6 +221,34 @@ class EmployeeController extends Controller
             Log::error('Employee stats failed', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'stats' => []], 500);
         }
+    }
+
+    public function checkLineManagerAvailability(Request $request): JsonResponse
+    {
+        if (! validatePermissions('admin/employees')) {
+            return response()->json(['success' => false, 'message' => 'You do not have permission to perform this action.'], 403);
+        }
+
+        $validated = $request->validate([
+            'department_id' => ['required', 'integer', 'exists:departments,id'],
+            'employee_id'   => ['nullable', 'integer', 'exists:employees,id'],
+        ]);
+
+        $departmentId = (int) $validated['department_id'];
+        $excludeId = isset($validated['employee_id']) ? (int) $validated['employee_id'] : null;
+
+        $existing = $this->employeeService->findDepartmentLineManager($departmentId, $excludeId);
+
+        return response()->json([
+            'success' => true,
+            'available' => $existing === null,
+            'existing_manager' => $existing ? [
+                'id' => $existing->id,
+                'full_name' => $existing->full_name,
+                'employee_code' => $existing->employee_code,
+            ] : null,
+            'department_name' => Department::query()->where('id', $departmentId)->value('name'),
+        ]);
     }
 
     public function previewEmployeeCode(Request $request): JsonResponse

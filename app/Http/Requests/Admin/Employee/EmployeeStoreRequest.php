@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin\Employee;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeDesignationId;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesBankRowsFromRequest;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeLineManager;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeRoleScope;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueBankIdentifiers;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueContactNumbers;
@@ -17,6 +18,7 @@ class EmployeeStoreRequest extends FormRequest
     use NormalizesBankRowsFromRequest;
     use ValidatesEmployeeDesignationId;
     use ValidatesExactlyOneSalaryBank;
+    use ValidatesEmployeeLineManager;
     use ValidatesEmployeeRoleScope;
     use ValidatesUniqueBankIdentifiers;
     use ValidatesUniqueContactNumbers;
@@ -33,6 +35,7 @@ class EmployeeStoreRequest extends FormRequest
             }
             $this->assertUniqueBankIdentifiers($v);
             $this->assertUniqueContactNumbers($v);
+            $this->assertUniqueDepartmentLineManager($v);
         });
     }
 
@@ -80,6 +83,8 @@ class EmployeeStoreRequest extends FormRequest
         if ($this->has('designation_id') && $this->input('designation_id') !== null && $this->input('designation_id') !== '') {
             $this->merge(['designation_id' => (int) $this->input('designation_id')]);
         }
+
+        $this->mergeLineManagerBoolean();
 
         $cnicFields = ['cnic', 'father_cnic', 'nok_cnic', 'spouse_cnic'];
         foreach ($cnicFields as $field) {
@@ -298,6 +303,7 @@ class EmployeeStoreRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->input('employment_category') === 'employee'),
             ],
             ...$this->designationIdRules(),
+            ...$this->lineManagerRules(),
             'grade'                  => ['nullable', 'string', 'max:10', 'regex:' . $this->alphaNumericTextRegex()],
             'branch'                 => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'location'               => ['nullable', 'string', 'max:255'],

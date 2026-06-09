@@ -61,6 +61,7 @@
         window.employeeDesignationId = @json(optional($employee)->designation_id);
         window.employeeDepartmentId = @json(optional($employee)->department_id);
         window.previewEmployeeCodeUrl = @json(route('admin.employee.preview_code'));
+        window.checkLineManagerUrl = @json(route('admin.employee.check_line_manager'));
         window.employeeDesignationsUrl = @json(route('admin.employee.designations_for_employment'));
         window.universitiesDirectoryUrl = @json(route('admin.employee.universities'));
         window.employeeAttachmentsFetchUrl = @json(isset($employee) && $employee?->id ? url('/admin/employees/' . $employee->id . '/attachments') : null);

@@ -96,6 +96,7 @@
     const floorPh = document.getElementById('employmentFloorPh');
     const floorHint = document.getElementById('employmentFloorHint');
     const designationSelect = document.getElementById('employmentDesignationSelect');
+    const lineManagerCheckbox = document.getElementById('employmentIsLineManager');
     const gradeInput = document.getElementById('grade');
     const gradeDisplayInput = document.getElementById('gradeDisplay');
     const joinDateInput = document.getElementById('employmentJoinDateInput');
@@ -2255,6 +2256,13 @@
         const form = document.getElementById('employeeForm');
         if (!form) return;
 
+        if (step === 2 && lineManagerCheckbox && lineManagerCheckbox.checked) {
+            const lineManagerOk = await validateLineManagerSelection(true);
+            if (!lineManagerOk) {
+                return;
+            }
+        }
+
         const designationSelect = document.getElementById('employmentDesignationSelect');
         const designationWasDisabled = designationSelect && designationSelect.disabled;
         if (designationWasDisabled) {
@@ -4168,6 +4176,115 @@
         }
     }
 
+    function getPrimaryEmploymentDepartmentId() {
+        if (!deptSelect) return null;
+        const selected = Array.from(deptSelect.options).filter(function (o) {
+            return o.selected && o.value;
+        });
+        if (!selected.length) return null;
+        return parseInt(selected[0].value, 10) || null;
+    }
+
+    function getCurrentEmployeeIdForLineManagerCheck() {
+        const savedId = document.getElementById('saved_employee_id');
+        if (savedId && savedId.value) {
+            return parseInt(savedId.value, 10) || null;
+        }
+        if (window.employeeId) {
+            return parseInt(window.employeeId, 10) || null;
+        }
+        return null;
+    }
+
+    async function checkLineManagerAvailability(departmentId) {
+        if (!window.checkLineManagerUrl || !departmentId) {
+            return { available: true, existing_manager: null, department_name: null };
+        }
+
+        const params = new URLSearchParams({ department_id: String(departmentId) });
+        const employeeId = getCurrentEmployeeIdForLineManagerCheck();
+        if (employeeId) {
+            params.append('employee_id', String(employeeId));
+        }
+
+        const response = await fetch(window.checkLineManagerUrl + '?' + params.toString(), {
+            headers: { 'Accept': 'application/json' },
+        });
+
+        if (!response.ok) {
+            throw new Error('Unable to verify line manager availability.');
+        }
+
+        return response.json();
+    }
+
+    async function validateLineManagerSelection(showAlert) {
+        if (!lineManagerCheckbox || !lineManagerCheckbox.checked) {
+            return true;
+        }
+
+        const departmentId = getPrimaryEmploymentDepartmentId();
+        if (!departmentId) {
+            if (showAlert && window.Swal) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Department Required',
+                    text: 'Please select a department before marking this employee as line manager.',
+                    confirmButtonColor: '#1a237e',
+                });
+            }
+            lineManagerCheckbox.checked = false;
+            return false;
+        }
+
+        try {
+            const payload = await checkLineManagerAvailability(departmentId);
+            if (payload.available) {
+                return true;
+            }
+
+            const existing = payload.existing_manager || {};
+            const deptName = payload.department_name || 'this department';
+            const managerName = existing.full_name || 'Another employee';
+            const message = managerName + ' is already the line manager for ' + deptName
+                + '. Please remove that assignment first before assigning another employee.';
+
+            if (showAlert && window.Swal) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Line Manager Already Assigned',
+                    text: message,
+                    confirmButtonColor: '#1a237e',
+                });
+            }
+
+            lineManagerCheckbox.checked = false;
+            return false;
+        } catch (err) {
+            if (showAlert && window.Swal) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Failed',
+                    text: err.message || 'Unable to verify line manager availability.',
+                    confirmButtonColor: '#1a237e',
+                });
+            }
+            lineManagerCheckbox.checked = false;
+            return false;
+        }
+    }
+
+    if (lineManagerCheckbox) {
+        lineManagerCheckbox.addEventListener('change', function () {
+            if (!this.checked) {
+                return;
+            }
+            validateLineManagerSelection(true);
+        });
+    }
+
+    window.validateEmploymentLineManager = validateLineManagerSelection;
+
     // Custom Multi-Select logic for Departments
 
 
@@ -4269,6 +4386,9 @@
                     renderDeptChips();
                     syncDeptDropdownState();
                     refreshDesignationsForEmployment(null);
+                    if (lineManagerCheckbox && lineManagerCheckbox.checked) {
+                        validateLineManagerSelection(true);
+                    }
                 });
 
                 deptList.appendChild(div);
@@ -4331,6 +4451,9 @@
                 renderDeptChips();
                 syncDeptDropdownState();
                 refreshDesignationsForEmployment(null);
+                if (lineManagerCheckbox && lineManagerCheckbox.checked) {
+                    validateLineManagerSelection(true);
+                }
                 return;
             }
             if (deptDd) {

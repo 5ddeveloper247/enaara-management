@@ -480,6 +480,7 @@ class EmployeeService
                 'opening_grace_period' => $scheduleAttrs['opening_grace_period'] ?? null,
                 'closing_grace_period' => $scheduleAttrs['closing_grace_period'] ?? null,
                 'sync_with_biometric' => isset($data['sync_with_biometric']) ? (bool) $data['sync_with_biometric'] : false,
+                'is_manager'          => ! empty($data['is_manager']),
                 'is_active'           => true,
             ]);
 
@@ -1947,6 +1948,21 @@ class EmployeeService
             ])
             ->values()
             ->all();
+    }
+
+    public function findDepartmentLineManager(int $departmentId, ?int $excludeEmployeeId = null): ?Employee
+    {
+        if ($departmentId <= 0) {
+            return null;
+        }
+
+        return Employee::query()
+            ->where('is_manager', true)
+            ->where('is_active', true)
+            ->where('department_id', $departmentId)
+            ->when($excludeEmployeeId, fn ($query) => $query->where('id', '!=', $excludeEmployeeId))
+            ->with('department:id,name')
+            ->first(['id', 'full_name', 'employee_code', 'department_id']);
     }
 
     public function edit(int $id): View

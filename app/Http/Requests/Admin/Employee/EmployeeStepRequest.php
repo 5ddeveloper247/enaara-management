@@ -6,6 +6,7 @@ use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeDesignationId;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesBankRowsFromRequest;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesNokRelationFields;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeLineManager;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeRoleScope;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueBankIdentifiers;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesUniqueContactNumbers;
@@ -18,6 +19,7 @@ class EmployeeStepRequest extends FormRequest
     use NormalizesNokRelationFields;
     use ValidatesEmployeeDesignationId;
     use ValidatesExactlyOneSalaryBank;
+    use ValidatesEmployeeLineManager;
     use ValidatesEmployeeRoleScope;
     use ValidatesUniqueBankIdentifiers;
     use ValidatesUniqueContactNumbers;
@@ -39,6 +41,9 @@ class EmployeeStepRequest extends FormRequest
             }
             if ((string) $this->input('subsection') === 'family_row') {
                 $this->assertFamilyRowNextOfKinRules($v);
+            }
+            if ((int) $this->input('step') === 2) {
+                $this->assertUniqueDepartmentLineManager($v);
             }
         });
     }
@@ -82,6 +87,7 @@ class EmployeeStepRequest extends FormRequest
                 'department_id'  => $deptIds[0] ?? null,
                 'assigned_floor_ids' => $floorIds,
             ]);
+            $this->mergeLineManagerBoolean();
         }
 
         $cnicFields = ['cnic', 'father_cnic', 'nok_cnic', 'spouse_cnic'];
@@ -410,6 +416,7 @@ class EmployeeStepRequest extends FormRequest
                 'department_ids.*' => ['integer', 'exists:departments,id'],
                 'employee_type' => ['nullable', 'string', 'max:100', 'regex:' . $this->alphaTextRegex()],
                 ...$this->designationIdRules(),
+                ...$this->lineManagerRules(),
                 'grade' => ['nullable', 'string', 'max:10', 'regex:' . $this->alphaNumericTextRegex()],
                 'branch' => ['nullable', 'string', 'max:50', 'regex:' . $this->alphaNumericTextRegex()],
                 'location' => ['nullable', 'string', 'max:255', 'regex:' . $this->bankInstitutionNameRegex()],

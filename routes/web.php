@@ -217,6 +217,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::post('/outsourced-employees/store', [OutsourcedEmployeeController::class, 'store'])->name('admin.outsourced_employee.store');
     Route::post('/outsourced-employees/{id}/update', [OutsourcedEmployeeController::class, 'update'])->name('admin.outsourced_employee.update');
     Route::get('/employees/preview-employee-code', [EmployeeController::class, 'previewEmployeeCode'])->name('admin.employee.preview_code');
+    Route::get('/employees/check-line-manager', [EmployeeController::class, 'checkLineManagerAvailability'])->name('admin.employee.check_line_manager');
     Route::get('/employees/designations-for-employment', [EmployeeController::class, 'designationsForEmployment'])->name('admin.employee.designations_for_employment');
     Route::post('/employees/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
     Route::post('/employees/save-step', [EmployeeController::class, 'saveStep'])->name('admin.employee.save_step');
