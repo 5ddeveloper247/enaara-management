@@ -160,6 +160,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     Route::get('/leave-request/add', [LeaveRequestController::class, 'create'])->name('admin.leave.request.add');
     Route::post('/leave-request/add', [LeaveRequestController::class, 'store'])->name('admin.leave.request.store');
     Route::get('/leave-request/leave-types', [LeaveRequestController::class, 'leaveTypesForEmployee'])->name('admin.leave.request.leave-types');
+    Route::get('/leave-request/approval-workflow', [LeaveRequestController::class, 'approvalWorkflowPreview'])->name('admin.leave.request.approval-workflow');
     Route::get('/leave-request/calculate-duration', [LeaveRequestController::class, 'calculateDuration'])->name('admin.leave.request.calculate-duration');
     Route::patch('/leave-request/{id}/status', [LeaveRequestController::class, 'updateStatus'])->name('admin.leave.request.status');
     // role categories

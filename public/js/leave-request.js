@@ -242,6 +242,96 @@
     }
   }
 
+  function formatWorkflowApproverLabel(approver) {
+    if (!approver) {
+      return 'Unknown';
+    }
+
+    var label = approver.full_name || 'Unknown';
+    if (approver.employee_code) {
+      label += ' (' + approver.employee_code + ')';
+    }
+
+    return label;
+  }
+
+  function renderApprovalWorkflow(preview) {
+    var stepsEl = document.getElementById('leaveApprovalWorkflowSteps');
+    var warningEl = document.getElementById('leaveApprovalWorkflowWarning');
+
+    if (!stepsEl) {
+      return;
+    }
+
+    stepsEl.innerHTML = '';
+
+    var steps = preview && preview.steps ? preview.steps : [];
+    if (!steps.length) {
+      stepsEl.innerHTML = '<div class="opacity-50">No approval workflow could be resolved for this employee.</div>';
+    } else {
+      steps.forEach(function (step) {
+        var row = document.createElement('div');
+        row.className = 'mb-1';
+        var approverLabel = formatWorkflowApproverLabel(step.approver);
+        var roleLabel = step.role_label || 'Approver';
+        var action = step.action || '';
+        row.textContent = step.level + '. ' + approverLabel + ' (' + roleLabel + ') \u2192 ' + action;
+        stepsEl.appendChild(row);
+      });
+    }
+
+    if (warningEl) {
+      if (preview && preview.warning) {
+        warningEl.textContent = preview.warning;
+        warningEl.classList.remove('d-none');
+      } else {
+        warningEl.textContent = '';
+        warningEl.classList.add('d-none');
+      }
+    }
+  }
+
+  function renderApprovalWorkflowPlaceholder(message) {
+    var stepsEl = document.getElementById('leaveApprovalWorkflowSteps');
+    var warningEl = document.getElementById('leaveApprovalWorkflowWarning');
+
+    if (stepsEl) {
+      stepsEl.innerHTML = '<div class="opacity-50">' + message + '</div>';
+    }
+
+    if (warningEl) {
+      warningEl.textContent = '';
+      warningEl.classList.add('d-none');
+    }
+  }
+
+  function loadApprovalWorkflow(employeeId) {
+    if (!employeeId) {
+      renderApprovalWorkflowPlaceholder('Select an employee to see approval workflow.');
+      return null;
+    }
+
+    var workflowUrl = window.leaveApprovalWorkflowUrl || '/admin/leave-request/approval-workflow';
+    renderApprovalWorkflowPlaceholder('Loading approval workflow...');
+
+    return $.ajax({
+      url: workflowUrl,
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      data: { employee_id: employeeId },
+      success: function (resp) {
+        if (resp && resp.success) {
+          renderApprovalWorkflow(resp);
+        } else {
+          renderApprovalWorkflowPlaceholder('Unable to load approval workflow.');
+        }
+      },
+      error: function () {
+        renderApprovalWorkflowPlaceholder('Failed to load approval workflow.');
+      }
+    });
+  }
+
   function initLeaveRequestForm() {
     var form = document.getElementById('addLeaveRequestForm');
     if (!form) return;
@@ -262,6 +352,11 @@
     var keepPreloadedLeaveTypes = isPreloadedLeaveTypeSelect(leaveTypeSelect);
     var lastLoadedEmployeeId = null;
     var leaveTypesRequest = null;
+    var workflowRequest = null;
+
+    if (window.initialLeaveWorkflowPreview) {
+      renderApprovalWorkflow(window.initialLeaveWorkflowPreview);
+    }
 
     function refreshDurationAndHalfDayUi() {
       syncHalfDayUi(
@@ -317,9 +412,15 @@
           balanceContainer.innerHTML =
             '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
         }
+        renderApprovalWorkflowPlaceholder('Select an employee to see approval workflow.');
         lastLoadedEmployeeId = null;
         return;
       }
+
+      if (workflowRequest && workflowRequest.readyState !== 4) {
+        workflowRequest.abort();
+      }
+      workflowRequest = loadApprovalWorkflow(employeeId);
 
       if (leaveTypesRequest && leaveTypesRequest.readyState !== 4) {
         leaveTypesRequest.abort();
@@ -381,6 +482,9 @@
         if (leaveTypesRequest && leaveTypesRequest.readyState !== 4) {
           leaveTypesRequest.abort();
         }
+        if (workflowRequest && workflowRequest.readyState !== 4) {
+          workflowRequest.abort();
+        }
         form.reset();
         clearFormError(form);
         clearFieldErrors(form);
@@ -399,6 +503,11 @@
         var container = document.getElementById('leaveBalanceContainer');
         if (container) {
           container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
+        }
+        if (window.initialLeaveWorkflowPreview) {
+          renderApprovalWorkflow(window.initialLeaveWorkflowPreview);
+        } else {
+          renderApprovalWorkflowPlaceholder('Select an employee to see approval workflow.');
         }
         if (medicalCertSection) medicalCertSection.style.display = 'none';
         if (medicalReportInput) {

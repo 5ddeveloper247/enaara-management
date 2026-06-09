@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Requests\Admin\LeaveRequestStore;
 use App\Services\LeaveRequestService;
+use App\Services\leaverequestPrivatefunctions\LeaveRequestWorkflowPreviewService;
 use Illuminate\Http\RedirectResponse;
 use App\Models\Employee;
 use Auth;
@@ -21,7 +22,7 @@ class LeaveRequestController extends Controller
         return $this->leaveRequestService->index();
     }
 
-    public function myLeaves()
+    public function myLeaves(LeaveRequestWorkflowPreviewService $workflowPreviewService)
     {
         $currentUser = Auth::user();
         if (!$currentUser || !$currentUser->employee) {
@@ -37,6 +38,7 @@ class LeaveRequestController extends Controller
             'personalHistory' => $personalHistory,
             'employees' => Employee::where('is_active', true)->orderBy('full_name')->get(),
             'leaveTypes' => $this->leaveRequestService->getMyLeavesLeaveTypes(),
+            'approvalWorkflowPreview' => $workflowPreviewService->previewForEmployee($currentUser->employee),
         ]);
     }
 
@@ -71,6 +73,35 @@ class LeaveRequestController extends Controller
         }
 
        return $this->leaveRequestService->leaveTypesForEmployee($request);
+    }
+
+    public function approvalWorkflowPreview(
+        Request $request,
+        LeaveRequestWorkflowPreviewService $workflowPreviewService
+    ) {
+        $currentUser = Auth::user();
+        if (! $currentUser) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'employee_id' => ['required', 'integer', 'exists:employees,id'],
+        ]);
+
+        $employeeId = (int) $validated['employee_id'];
+        $canView = validatePermissions('admin/leave-request/add')
+            || ($currentUser->employee_id && (int) $currentUser->employee_id === $employeeId);
+
+        if (! $canView) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $employee = Employee::query()->findOrFail($employeeId);
+
+        return response()->json([
+            'success' => true,
+            ...$workflowPreviewService->previewForEmployee($employee),
+        ]);
     }
 
     public function calculateDuration(Request $request)

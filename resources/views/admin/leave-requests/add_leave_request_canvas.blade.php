@@ -158,10 +158,27 @@
 
                 <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                     <div class="small opacity-75 text-white mb-2">This request will be routed through:</div>
-                    <div class="small">
-                        <div class="mb-1">1. Supervisor → Leave Recommendation</div>
-                        <div class="mb-1">2. Dept Head → Leave Approval</div>
+                    <div class="small" id="leaveApprovalWorkflowSteps">
+                        @if(request()->routeIs('admin.my.leaves.index') && !empty($approvalWorkflowPreview))
+                            @forelse($approvalWorkflowPreview['steps'] ?? [] as $step)
+                                <div class="mb-1">
+                                    {{ $step['level'] }}.
+                                    {{ $step['approver']['full_name'] ?? 'Unknown' }}
+                                    ({{ $step['role_label'] ?? 'Approver' }})
+                                    &rarr; {{ $step['action'] }}
+                                </div>
+                            @empty
+                                <div class="opacity-50">No approval workflow could be resolved for this employee.</div>
+                            @endforelse
+                        @else
+                            <div class="opacity-50">Select an employee to see approval workflow.</div>
+                        @endif
                     </div>
+                    @if(request()->routeIs('admin.my.leaves.index') && !empty($approvalWorkflowPreview['warning']))
+                        <div class="small text-warning mt-2" id="leaveApprovalWorkflowWarning">{{ $approvalWorkflowPreview['warning'] }}</div>
+                    @else
+                        <div class="small text-warning mt-2 d-none" id="leaveApprovalWorkflowWarning"></div>
+                    @endif
                 </div>
             </div>
         </form>
@@ -192,6 +209,12 @@
 @endpush
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    window.leaveApprovalWorkflowUrl = @json(route('admin.leave.request.approval-workflow'));
+    @if(request()->routeIs('admin.my.leaves.index') && !empty($approvalWorkflowPreview))
+    window.initialLeaveWorkflowPreview = @json($approvalWorkflowPreview);
+    @endif
+</script>
 <script src="{{ asset('js/leave-request.js') }}?v={{ filemtime(public_path('js/leave-request.js')) }}"></script>
 <script>
     $(document).ready(function() {
