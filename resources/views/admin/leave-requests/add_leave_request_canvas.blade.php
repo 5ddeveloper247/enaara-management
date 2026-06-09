@@ -116,11 +116,34 @@
                     </div>
                 </div>
 
+                <!-- Outstation Leave -->
+                <div class="mb-3">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="leaveIsOutstation" name="is_outstation_leave" value="1">
+                        <label class="form-check-label small text-white" for="leaveIsOutstation">Availing leave for outstation</label>
+                    </div>
+                    <div id="outstationSection" class="p-3 rounded-3 border d-none" style="border-color: #ffffff1a !important;">
+                        <div class="small fw-semibold text-white mb-2">Where do you want to go?</div>
+                        <div id="outstationDestinationOptions" class="d-flex flex-column gap-2 mb-2"></div>
+                        <div id="outstationNoAddressMessage" class="small text-warning d-none">
+                            No addresses found on employee profile. Please update employee registration first.
+                        </div>
+                        <div id="outstationExemptNotice" class="small text-info d-none mt-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            1 travel day will not be deducted from your leave balance (destination is outside Rawalpindi).
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Calculated Days -->
                 <div class="mb-3 p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
                         <span class="small opacity-75 text-white">Total Days:</span>
                         <strong class="fs-5" id="calculatedDays">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center d-none" id="billableDaysRow">
+                        <span class="small opacity-75 text-white">Billable Days:</span>
+                        <strong class="fs-6" id="billableDays">0</strong>
                     </div>
                 </div>
 
@@ -221,8 +244,12 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     window.leaveApprovalWorkflowUrl = @json(route('admin.leave.request.approval-workflow'));
+    window.leaveEmployeeAddressesUrl = @json(route('admin.leave.request.employee-addresses'));
     @if(request()->routeIs('admin.my.leaves.index') && !empty($approvalWorkflowPreview))
     window.initialLeaveWorkflowPreview = @json($approvalWorkflowPreview);
+    @endif
+    @if(request()->routeIs('admin.my.leaves.index') && !empty($employeeOutstationAddresses))
+    window.initialEmployeeOutstationAddresses = @json($employeeOutstationAddresses);
     @endif
 </script>
 <script src="{{ asset('js/leave-request.js') }}?v={{ filemtime(public_path('js/leave-request.js')) }}"></script>

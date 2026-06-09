@@ -121,6 +121,12 @@ class LeaveRequestIndexData
                 'days' => $request->duration,
                 'isHalfDay' => (bool) $request->is_half_day,
                 'halfDaySession' => $request->half_day_session,
+                'isOutstationLeave' => (bool) $request->is_outstation_leave,
+                'outstationDestination' => $request->outstation_destination,
+                'outstationDestinationLabel' => app(LeaveRequestOutstationService::class)
+                    ->destinationLabel($request->outstation_destination),
+                'exemptDays' => (float) ($request->exempt_days ?? 0),
+                'billableDays' => max(0.0, (float) $request->duration - (float) ($request->exempt_days ?? 0)),
                 'reason' => $request->reason ?? '-',
                 'status' => $statusMap[$request->status] ?? 'pending',
                 'statusCode' => $request->status,

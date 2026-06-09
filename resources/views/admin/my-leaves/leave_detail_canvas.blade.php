@@ -45,6 +45,20 @@
                         <div class="fw-bold fs-5" id="detailDays">5</div>
                     </div>
                 </div>
+                <div class="col-12 d-none" id="detailOutstationSection">
+                    <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
+                        <small class="opacity-75 text-white d-block mb-2">Outstation Leave</small>
+                        <div class="small mb-2" id="detailOutstationDestination">-</div>
+                        <div class="small text-info d-none" id="detailOutstationExempt">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <span id="detailOutstationExemptText"></span>
+                        </div>
+                        <div class="small mt-2 d-none" id="detailBillableDaysRow">
+                            <span class="opacity-75">Billable Days:</span>
+                            <strong id="detailBillableDays">0</strong>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-6 detail-adjustment-field d-none">
                     <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                         <small class="opacity-75 text-white d-block mb-2">Previous Remaining</small>

@@ -21,6 +21,7 @@ class LeaveRequestStore extends FormRequest
     {
         $this->merge([
             'is_half_day' => $this->boolean('is_half_day'),
+            'is_outstation_leave' => $this->boolean('is_outstation_leave'),
         ]);
     }
 
@@ -58,6 +59,12 @@ class LeaveRequestStore extends FormRequest
                 'required_if:is_half_day,true',
                 Rule::in(['morning', 'afternoon']),
             ],
+            'is_outstation_leave' => ['sometimes', 'boolean'],
+            'outstation_destination' => [
+                'nullable',
+                'required_if:is_outstation_leave,true',
+                Rule::in(['present', 'permanent']),
+            ],
             'reason' => [
                 'required',
                 'string',
@@ -81,6 +88,13 @@ class LeaveRequestStore extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            if ($this->boolean('is_half_day') && $this->boolean('is_outstation_leave')) {
+                $validator->errors()->add(
+                    'is_outstation_leave',
+                    'Outstation leave cannot be combined with short leave (half day).'
+                );
+            }
+
             if (! $this->boolean('is_half_day')) {
                 return;
             }
@@ -99,6 +113,8 @@ class LeaveRequestStore extends FormRequest
             'medical_report.max' => 'Supporting document must not exceed 5 MB.',
             'half_day_session.required_if' => 'Please select a session (morning or afternoon) for half-day leave.',
             'half_day_session.in' => 'Half-day session must be morning or afternoon.',
+            'outstation_destination.required_if' => 'Please select where you want to go for outstation leave.',
+            'outstation_destination.in' => 'Please select a valid outstation destination.',
         ];
     }
 

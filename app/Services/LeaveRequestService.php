@@ -17,6 +17,7 @@ use App\Services\leaverequestPrivatefunctions\LeaveRequestIndexData;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestStatusHandler;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestApplicationChecks;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestLeaveTypeFilter;
+use App\Services\leaverequestPrivatefunctions\LeaveRequestOutstationService;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestWorkflowPreviewService;
 
 class LeaveRequestService
@@ -30,6 +31,7 @@ class LeaveRequestService
         protected LeaveRequestApplicationChecks $leaveRequestApplicationChecks,
         protected LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
         protected LeaveRequestWorkflowPreviewService $leaveRequestWorkflowPreviewService,
+        protected LeaveRequestOutstationService $leaveRequestOutstationService,
     ) {}
 
     public function index()
@@ -129,6 +131,12 @@ class LeaveRequestService
                 'days' => (float) $rows->max('duration'),
                 'isHalfDay' => (bool) $representative->is_half_day,
                 'halfDaySession' => $representative->half_day_session,
+                'isOutstationLeave' => (bool) $representative->is_outstation_leave,
+                'outstationDestination' => $representative->outstation_destination,
+                'outstationDestinationLabel' => app(LeaveRequestOutstationService::class)
+                    ->destinationLabel($representative->outstation_destination),
+                'exemptDays' => (float) ($representative->exempt_days ?? 0),
+                'billableDays' => max(0.0, (float) $rows->max('duration') - (float) ($representative->exempt_days ?? 0)),
                 'reason' => $representative->reason,
                 'status' => $statusMap[$aggregatedStatus] ?? 'pending',
                 'statusCode' => $aggregatedStatus,
@@ -206,6 +214,15 @@ class LeaveRequestService
         }
 
         $isHalfDay = (bool) ($validated['is_half_day'] ?? false);
+        $isOutstation = (bool) ($validated['is_outstation_leave'] ?? false);
+        $outstationDestination = $isOutstation ? ($validated['outstation_destination'] ?? null) : null;
+
+        $this->leaveRequestOutstationService->assertOutstationSelectionValid(
+            $fromEmployee,
+            $isOutstation,
+            $outstationDestination,
+            $isHalfDay
+        );
 
         $duration = $this->calculateActualLeaveDuration($fromEmployee, $startDate, $endDate, $isHalfDay);
 
@@ -217,6 +234,13 @@ class LeaveRequestService
             ]);
         }
 
+        $exemptDays = $this->leaveRequestOutstationService->resolveExemptDays(
+            $fromEmployee,
+            $isOutstation,
+            $outstationDestination
+        );
+        $billableDuration = $this->leaveRequestOutstationService->billableDuration((float) $duration, $exemptDays);
+
         $leaveType = LeaveType::with('setting')->findOrFail((int) $validated['leave_type_id']);
 
         $this->leaveRequestApplicationChecks->assertEligibleForApplication(
@@ -224,7 +248,7 @@ class LeaveRequestService
             $leaveType,
             $startDate,
             $endDate,
-            (float) $duration,
+            $billableDuration,
             $isHalfDay
         );
 
@@ -232,10 +256,12 @@ class LeaveRequestService
             $fromEmployee,
             (int) $validated['leave_type_id'],
             $startDate,
-            (float) $duration
+            $billableDuration
         );
 
         $this->leaveRequestWorkflowPreviewService->assertEmployeeCanSubmitLeave($fromEmployee);
+
+        $validated['exempt_days'] = $exemptDays;
 
         return $this->leaveRequestSubmission->create(
             $validated,
@@ -245,6 +271,32 @@ class LeaveRequestService
             $endDate,
             (float) $duration
         );
+    }
+
+    public function getEmployeeOutstationAddresses(Employee $employee): array
+    {
+        return $this->leaveRequestOutstationService->getEmployeeDestinationAddresses($employee);
+    }
+
+    public function calculateLeaveDurationSummary(
+        Employee $employee,
+        Carbon $startDate,
+        Carbon $endDate,
+        bool $isHalfDay = false,
+        bool $isOutstation = false,
+        ?string $outstationDestination = null
+    ): array {
+        $duration = $this->calculateActualLeaveDuration($employee, $startDate, $endDate, $isHalfDay);
+        $exemptDays = $isHalfDay
+            ? 0.0
+            : $this->leaveRequestOutstationService->resolveExemptDays($employee, $isOutstation, $outstationDestination);
+        $billableDuration = $this->leaveRequestOutstationService->billableDuration((float) $duration, $exemptDays);
+
+        return [
+            'duration' => $duration,
+            'exempt_days' => $exemptDays,
+            'billable_duration' => $billableDuration,
+        ];
     }
 
     public function leaveTypesForEmployee(Request $request)

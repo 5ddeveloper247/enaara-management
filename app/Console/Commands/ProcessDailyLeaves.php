@@ -69,8 +69,10 @@ class ProcessDailyLeaves extends Command
                     ]
                 );
 
-                // 4. Increment the used amount
-                $quota->used += $entity->duration;
+                // 4. Increment the used amount for billable leave only
+                if ((float) $entity->duration > 0 && ($entity->counts_against_quota ?? true)) {
+                    $quota->used += $entity->duration;
+                }
                 
                 // Ensure department_id is synced if it was previously 0/null
                 if (!$quota->department_id && $entity->department_id) {

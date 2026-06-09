@@ -443,6 +443,45 @@
             return leave.days;
         }
 
+        function renderOutstationDetail(leave) {
+            const section = document.getElementById('detailOutstationSection');
+            const exemptRow = document.getElementById('detailOutstationExempt');
+            const billableRow = document.getElementById('detailBillableDaysRow');
+
+            if (!section) {
+                return;
+            }
+
+            if (!leave.isOutstationLeave) {
+                section.classList.add('d-none');
+                return;
+            }
+
+            section.classList.remove('d-none');
+            const destinationEl = document.getElementById('detailOutstationDestination');
+            if (destinationEl) {
+                destinationEl.textContent = leave.outstationDestinationLabel || 'Outstation leave';
+            }
+
+            const exemptDays = parseFloat(leave.exemptDays || 0);
+            if (exemptDays > 0) {
+                exemptRow?.classList.remove('d-none');
+                const exemptText = document.getElementById('detailOutstationExemptText');
+                if (exemptText) {
+                    exemptText.textContent = exemptDays + ' travel day' + (exemptDays === 1 ? '' : 's')
+                        + ' exempt from balance deduction (destination outside Rawalpindi).';
+                }
+                billableRow?.classList.remove('d-none');
+                const billableEl = document.getElementById('detailBillableDays');
+                if (billableEl) {
+                    billableEl.textContent = leave.billableDays ?? Math.max(0, parseFloat(leave.days || 0) - exemptDays);
+                }
+            } else {
+                exemptRow?.classList.add('d-none');
+                billableRow?.classList.add('d-none');
+            }
+        }
+
         function formatAdjustmentDays(leave) {
             const prefix = leave.adjustmentType === 'add' ? '+' : '-';
             return prefix + leave.days;
@@ -491,6 +530,7 @@
                 document.getElementById('detailStartDate').textContent = formatDate(leave.startDate);
                 document.getElementById('detailEndDate').textContent = formatDate(leave.endDate);
                 document.getElementById('detailDays').textContent = formatLeaveDays(leave);
+                renderOutstationDetail(leave);
                 document.getElementById('detailReason').textContent = leave.reason;
                 document.getElementById('detailStatus').innerHTML = getStatusBadge(leave.status, leave.statusLabel);
             }

@@ -8,9 +8,27 @@
     return !!(selectEl && selectEl.dataset && selectEl.dataset.preloaded === '1');
   }
 
-  function calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput) {
+  function updateBillableDaysDisplay(exemptDays, billableDuration) {
+    var billableRow = document.getElementById('billableDaysRow');
+    var billableEl = document.getElementById('billableDays');
+
+    if (!billableRow || !billableEl) {
+      return;
+    }
+
+    if (exemptDays > 0) {
+      billableRow.classList.remove('d-none');
+      billableEl.textContent = String(billableDuration);
+    } else {
+      billableRow.classList.add('d-none');
+      billableEl.textContent = '0';
+    }
+  }
+
+  function calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput, outstationState) {
     if (!startDateInput.value || !endDateInput.value) {
       calculatedDaysEl.textContent = '0';
+      updateBillableDaysDisplay(0, 0);
       return;
     }
 
@@ -19,6 +37,7 @@
 
     if (end < start) {
       calculatedDaysEl.textContent = '0';
+      updateBillableDaysDisplay(0, 0);
       return;
     }
 
@@ -26,9 +45,17 @@
     var diffTime = end.getTime() - start.getTime();
     var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     calculatedDaysEl.textContent = isHalfDay ? '0.5' : String(diffDays);
+    updateBillableDaysDisplay(0, isHalfDay ? 0.5 : diffDays);
 
     var employeeSelect = document.getElementById('leaveEmployee');
     var employeeId = employeeSelect ? employeeSelect.value : null;
+    var isOutstation = !!(outstationState && outstationState.isOutstationInput && outstationState.isOutstationInput.checked);
+    var destination = null;
+
+    if (isOutstation && outstationState && outstationState.getSelectedDestination) {
+      destination = outstationState.getSelectedDestination();
+    }
+
     if (employeeId && startDateInput.value && endDateInput.value) {
       $.ajax({
         url: '/admin/leave-request/calculate-duration',
@@ -38,15 +65,150 @@
           employee_id: employeeId,
           start_date: startDateInput.value,
           end_date: endDateInput.value,
-          is_half_day: isHalfDay ? 1 : 0
+          is_half_day: isHalfDay ? 1 : 0,
+          is_outstation_leave: isOutstation ? 1 : 0,
+          outstation_destination: destination || ''
         },
         success: function (resp) {
           if (resp && resp.success && resp.duration !== undefined) {
             calculatedDaysEl.textContent = String(resp.duration);
+            updateBillableDaysDisplay(
+              parseFloat(resp.exempt_days || 0),
+              parseFloat(resp.billable_duration !== undefined ? resp.billable_duration : resp.duration)
+            );
           }
         }
       });
     }
+  }
+
+  function renderOutstationDestinations(payload, optionsContainer, noAddressMessage, exemptNotice) {
+    if (!optionsContainer) {
+      return;
+    }
+
+    optionsContainer.innerHTML = '';
+    var destinations = payload && payload.destinations ? payload.destinations : [];
+
+    if (!destinations.length) {
+      if (noAddressMessage) {
+        noAddressMessage.classList.remove('d-none');
+      }
+      if (exemptNotice) {
+        exemptNotice.classList.add('d-none');
+      }
+      return;
+    }
+
+    if (noAddressMessage) {
+      noAddressMessage.classList.add('d-none');
+    }
+
+    destinations.forEach(function (destination, index) {
+      var wrapper = document.createElement('label');
+      wrapper.className = 'd-flex align-items-start gap-2 p-2 rounded-3 border mb-0';
+      wrapper.style.borderColor = '#ffffff1a';
+      wrapper.style.cursor = 'pointer';
+
+      var input = document.createElement('input');
+      input.type = 'radio';
+      input.className = 'form-check-input mt-1';
+      input.name = 'outstation_destination';
+      input.value = destination.key;
+      input.required = true;
+      if (index === 0) {
+        input.checked = true;
+      }
+
+      var content = document.createElement('div');
+      content.innerHTML =
+        '<div class="small fw-semibold text-white">' + destination.label + '</div>' +
+        '<div class="small opacity-75 text-white">' + destination.address + '</div>';
+
+      wrapper.appendChild(input);
+      wrapper.appendChild(content);
+      optionsContainer.appendChild(wrapper);
+    });
+
+    syncOutstationExemptNotice(optionsContainer, exemptNotice);
+    optionsContainer.querySelectorAll('input[name="outstation_destination"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        syncOutstationExemptNotice(optionsContainer, exemptNotice);
+        var startDateInput = document.getElementById('leaveStartDate');
+        var endDateInput = document.getElementById('leaveEndDate');
+        var calculatedDaysEl = document.getElementById('calculatedDays');
+        var isHalfDayInput = document.getElementById('leaveIsHalfDay');
+        var isOutstationInput = document.getElementById('leaveIsOutstation');
+        if (startDateInput && endDateInput && calculatedDaysEl) {
+          calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput, {
+            isOutstationInput: isOutstationInput,
+            getSelectedDestination: function () {
+              var selected = optionsContainer.querySelector('input[name="outstation_destination"]:checked');
+              return selected ? selected.value : null;
+            }
+          });
+        }
+      });
+    });
+  }
+
+  function syncOutstationExemptNotice(optionsContainer, exemptNotice) {
+    if (!exemptNotice || !optionsContainer) {
+      return;
+    }
+
+    var selected = optionsContainer.querySelector('input[name="outstation_destination"]:checked');
+    if (!selected) {
+      exemptNotice.classList.add('d-none');
+      return;
+    }
+
+    var wrapper = selected.closest('label');
+    var addressText = wrapper ? wrapper.querySelector('.opacity-75') : null;
+    var address = addressText ? addressText.textContent : '';
+    var normalized = address.toLowerCase();
+    var outside = normalized.indexOf('rawalpindi') === -1 && normalized.indexOf('rwp') === -1;
+
+    if (outside && address.trim() !== '') {
+      exemptNotice.classList.remove('d-none');
+    } else {
+      exemptNotice.classList.add('d-none');
+    }
+  }
+
+  function loadEmployeeAddresses(employeeId, callbacks) {
+    if (!employeeId) {
+      if (callbacks && callbacks.onEmpty) {
+        callbacks.onEmpty();
+      }
+      return null;
+    }
+
+    if (window.initialEmployeeOutstationAddresses && callbacks && callbacks.useInitial) {
+      if (callbacks.onSuccess) {
+        callbacks.onSuccess(window.initialEmployeeOutstationAddresses);
+      }
+      return null;
+    }
+
+    var url = window.leaveEmployeeAddressesUrl || '/admin/leave-request/employee-addresses';
+
+    return $.ajax({
+      url: url,
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      data: { employee_id: employeeId },
+      success: function (resp) {
+        if (resp && resp.success && callbacks && callbacks.onSuccess) {
+          callbacks.onSuccess(resp);
+        }
+      },
+      error: function () {
+        if (callbacks && callbacks.onError) {
+          callbacks.onError();
+        }
+      }
+    });
   }
 
   function isLeaveTypeSelected(leaveTypeSelect) {
@@ -450,18 +612,114 @@
     var isHalfDayInput = document.getElementById('leaveIsHalfDay');
     var halfDaySessionSection = document.getElementById('halfDaySessionSection');
     var halfDaySessionInput = document.getElementById('leaveHalfDaySession');
+    var isOutstationInput = document.getElementById('leaveIsOutstation');
+    var outstationSection = document.getElementById('outstationSection');
+    var outstationDestinationOptions = document.getElementById('outstationDestinationOptions');
+    var outstationNoAddressMessage = document.getElementById('outstationNoAddressMessage');
+    var outstationExemptNotice = document.getElementById('outstationExemptNotice');
     var submitBtn = document.getElementById('submitLeaveRequestBtn');
     var canvasEl = document.getElementById('addLeaveRequestCanvas');
     var keepPreloadedLeaveTypes = isPreloadedLeaveTypeSelect(leaveTypeSelect);
     var lastLoadedEmployeeId = null;
     var leaveTypesRequest = null;
     var workflowRequest = null;
+    var addressesRequest = null;
+
+    function getSelectedOutstationDestination() {
+      if (!outstationDestinationOptions) {
+        return null;
+      }
+      var selected = outstationDestinationOptions.querySelector('input[name="outstation_destination"]:checked');
+      return selected ? selected.value : null;
+    }
+
+    function getOutstationState() {
+      return {
+        isOutstationInput: isOutstationInput,
+        getSelectedDestination: getSelectedOutstationDestination
+      };
+    }
+
+    function syncOutstationSection() {
+      var enabled = !!(isOutstationInput && isOutstationInput.checked);
+
+      if (outstationSection) {
+        outstationSection.classList.toggle('d-none', !enabled);
+      }
+
+      if (enabled && isHalfDayInput && isHalfDayInput.checked) {
+        isHalfDayInput.checked = false;
+      }
+
+      if (!enabled && outstationDestinationOptions) {
+        outstationDestinationOptions.querySelectorAll('input[name="outstation_destination"]').forEach(function (radio) {
+          radio.checked = false;
+        });
+        if (outstationExemptNotice) {
+          outstationExemptNotice.classList.add('d-none');
+        }
+      }
+
+      refreshDurationAndHalfDayUi();
+    }
+
+    function loadOutstationAddresses(employeeId, useInitial) {
+      if (!outstationDestinationOptions) {
+        return;
+      }
+
+      if (addressesRequest && addressesRequest.readyState !== 4) {
+        addressesRequest.abort();
+      }
+
+      addressesRequest = loadEmployeeAddresses(employeeId, {
+        useInitial: useInitial,
+        onSuccess: function (payload) {
+          renderOutstationDestinations(
+            payload,
+            outstationDestinationOptions,
+            outstationNoAddressMessage,
+            outstationExemptNotice
+          );
+        },
+        onEmpty: function () {
+          renderOutstationDestinations(
+            { destinations: [] },
+            outstationDestinationOptions,
+            outstationNoAddressMessage,
+            outstationExemptNotice
+          );
+        },
+        onError: function () {
+          if (outstationNoAddressMessage) {
+            outstationNoAddressMessage.classList.remove('d-none');
+            outstationNoAddressMessage.textContent = 'Unable to load employee addresses.';
+          }
+        }
+      });
+    }
 
     if (window.initialLeaveWorkflowPreview) {
       renderApprovalWorkflow(window.initialLeaveWorkflowPreview);
     }
 
+    if (window.initialEmployeeOutstationAddresses && outstationDestinationOptions) {
+      renderOutstationDestinations(
+        window.initialEmployeeOutstationAddresses,
+        outstationDestinationOptions,
+        outstationNoAddressMessage,
+        outstationExemptNotice
+      );
+    }
+
     function refreshDurationAndHalfDayUi() {
+      if (isHalfDayInput && isHalfDayInput.checked && isOutstationInput) {
+        isOutstationInput.checked = false;
+        if (outstationSection) {
+          outstationSection.classList.add('d-none');
+        }
+      }
+
       syncHalfDayUi(
         leaveTypeSelect,
         halfDaySection,
@@ -471,7 +729,7 @@
         startDateInput,
         endDateInput
       );
-      calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput);
+      calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput, getOutstationState());
     }
 
     if (startDateInput && endDateInput && calculatedDaysEl) {
@@ -501,6 +759,10 @@
       isHalfDayInput.addEventListener('change', refreshDurationAndHalfDayUi);
     }
 
+    if (isOutstationInput) {
+      isOutstationInput.addEventListener('change', syncOutstationSection);
+    }
+
     function loadEmployeeLeaveData(employeeId, options) {
       options = options || {};
       var reloadLeaveTypes = options.reloadLeaveTypes !== false;
@@ -516,6 +778,12 @@
             '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
         }
         renderApprovalWorkflowPlaceholder('Select an employee to see approval workflow.');
+        renderOutstationDestinations(
+          { destinations: [] },
+          outstationDestinationOptions,
+          outstationNoAddressMessage,
+          outstationExemptNotice
+        );
         lastLoadedEmployeeId = null;
         return;
       }
@@ -524,6 +792,7 @@
         workflowRequest.abort();
       }
       workflowRequest = loadApprovalWorkflow(employeeId);
+      loadOutstationAddresses(employeeId, keepPreloadedLeaveTypes && !!window.initialEmployeeOutstationAddresses);
 
       if (leaveTypesRequest && leaveTypesRequest.readyState !== 4) {
         leaveTypesRequest.abort();
@@ -592,8 +861,17 @@
         clearFormError(form);
         clearFieldErrors(form);
         if (calculatedDaysEl) calculatedDaysEl.textContent = '0';
+        updateBillableDaysDisplay(0, 0);
         if (halfDaySection) halfDaySection.style.display = 'none';
         if (isHalfDayInput) isHalfDayInput.checked = false;
+        if (isOutstationInput) isOutstationInput.checked = false;
+        if (outstationSection) outstationSection.classList.add('d-none');
+        renderOutstationDestinations(
+          { destinations: [] },
+          outstationDestinationOptions,
+          outstationNoAddressMessage,
+          outstationExemptNotice
+        );
         if (halfDaySessionSection) halfDaySessionSection.style.display = 'none';
         if (halfDaySessionInput) {
           halfDaySessionInput.value = '';
@@ -682,6 +960,11 @@
           window.lastLeaveWorkflowPreview.top_level_message
             || 'Leave cannot be submitted because no approver is configured for this employee.'
         );
+        return;
+      }
+
+      if (isOutstationInput && isOutstationInput.checked && !getSelectedOutstationDestination()) {
+        showFormError(form, 'Please select where you want to go for outstation leave.');
         return;
       }
 

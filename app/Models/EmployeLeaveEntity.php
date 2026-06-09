@@ -19,6 +19,7 @@ class EmployeLeaveEntity extends Model
         'end_date',
         'duration',
         'half_day_session',
+        'counts_against_quota',
         'status',
     ];
 
@@ -27,6 +28,7 @@ class EmployeLeaveEntity extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'duration' => 'decimal:2',
+        'counts_against_quota' => 'boolean',
         'status' => 'integer',
     ];
 

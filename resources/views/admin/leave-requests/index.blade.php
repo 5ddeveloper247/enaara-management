@@ -431,6 +431,35 @@
         return days;
     }
 
+    function renderOutstationDetail(request) {
+        const section = $('#detailOutstationSection');
+        const exemptRow = $('#detailOutstationExempt');
+        const billableRow = $('#detailBillableDaysRow');
+
+        if (!request.isOutstationLeave) {
+            section.addClass('d-none');
+            return;
+        }
+
+        section.removeClass('d-none');
+        $('#detailOutstationDestination').text(
+            request.outstationDestinationLabel || 'Outstation leave'
+        );
+
+        const exemptDays = parseFloat(request.exemptDays || 0);
+        if (exemptDays > 0) {
+            exemptRow.removeClass('d-none');
+            $('#detailOutstationExemptText').text(
+                `${exemptDays} travel day${exemptDays === 1 ? '' : 's'} exempt from balance deduction (destination outside Rawalpindi).`
+            );
+            billableRow.removeClass('d-none');
+            $('#detailBillableDays').text(request.billableDays ?? Math.max(0, parseFloat(request.days || 0) - exemptDays));
+        } else {
+            exemptRow.addClass('d-none');
+            billableRow.addClass('d-none');
+        }
+    }
+
     function getActionMeta(actionCode) {
         const action = Number(actionCode);
         const actionMap = {
@@ -548,6 +577,7 @@
         $('#detailStartDate').text(formatDate(request.startDate));
         $('#detailEndDate').text(formatDate(request.endDate));
         $('#detailDays').text(formatLeaveDays(request));
+        renderOutstationDetail(request);
         $('#detailReason').text(request.reason);
         $('#detailBalance').text(request.balance);
         $('#detailStatus').html(getStatusBadge(request.statusCode));

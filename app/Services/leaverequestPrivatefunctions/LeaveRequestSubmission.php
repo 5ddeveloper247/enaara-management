@@ -131,6 +131,11 @@ class LeaveRequestSubmission
                 : null,
             'reason' => $validated['reason'] ?? null,
             'medical_report' => $medicalReportPath,
+            'is_outstation_leave' => (bool) ($validated['is_outstation_leave'] ?? false),
+            'outstation_destination' => ($validated['is_outstation_leave'] ?? false)
+                ? ($validated['outstation_destination'] ?? null)
+                : null,
+            'exempt_days' => (float) ($validated['exempt_days'] ?? 0),
             'status' => 0,
         ];
     }

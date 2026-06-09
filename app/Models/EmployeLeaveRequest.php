@@ -27,6 +27,9 @@ class EmployeLeaveRequest extends Model
         'duration',
         'is_half_day',
         'half_day_session',
+        'is_outstation_leave',
+        'outstation_destination',
+        'exempt_days',
         'department_id',
         'action_type',
         'medical_report',
@@ -37,6 +40,8 @@ class EmployeLeaveRequest extends Model
         'end_date' => 'date',
         'duration' => 'decimal:2',
         'is_half_day' => 'boolean',
+        'is_outstation_leave' => 'boolean',
+        'exempt_days' => 'decimal:2',
         'status' => 'integer',
         'action_type' => 'integer',
     ];
@@ -126,8 +131,16 @@ class EmployeLeaveRequest extends Model
 
                     $entityDuration = (bool) $leaveRequest->is_half_day ? 0.5 : 1.0;
                     $halfDaySession = $leaveRequest->is_half_day ? $leaveRequest->half_day_session : null;
+                    $exemptDaysRemaining = (float) ($leaveRequest->exempt_days ?? 0);
 
                     foreach ($activeDates as $dateStr) {
+                        $isExemptDay = $exemptDaysRemaining > 0 && ! $leaveRequest->is_half_day;
+                        $dayDuration = $isExemptDay ? 0.0 : $entityDuration;
+
+                        if ($isExemptDay) {
+                            $exemptDaysRemaining = max(0.0, $exemptDaysRemaining - 1.0);
+                        }
+
                         $rows[] = [
                             'leave_request_id' => $leaveRequest->id,
                             'employee_id' => $leaveRequest->from_employee_id,
@@ -136,7 +149,8 @@ class EmployeLeaveRequest extends Model
                             'leave_date' => $dateStr,
                             'start_date' => $dateStr,
                             'end_date' => $dateStr,
-                            'duration' => $entityDuration,
+                            'duration' => $dayDuration,
+                            'counts_against_quota' => $dayDuration > 0,
                             'half_day_session' => $halfDaySession,
                             'status' => 0,
                             'created_at' => now(),

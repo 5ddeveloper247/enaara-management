@@ -127,7 +127,7 @@ class EmployeeLeaveQuotaRecords
         }
 
         $sub = (clone $base)
-            ->selectRaw('MAX(duration) as block_days')
+            ->selectRaw('MAX(GREATEST(duration - COALESCE(exempt_days, 0), 0)) as block_days')
             ->groupBy('start_date', 'end_date');
 
         return (float) DB::query()->fromSub($sub, 'deduped_blocks')->sum('block_days');
