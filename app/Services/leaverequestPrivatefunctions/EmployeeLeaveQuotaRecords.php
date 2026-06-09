@@ -57,6 +57,7 @@ class EmployeeLeaveQuotaRecords
             $summary[] = [
                 'id' => $type->id,
                 'type' => $type->name,
+                'leave_condition' => $type->leave_condition ?? 'unconditional',
                 'total' => $maxAllowed,
                 'applied' => $applied,
                 'approved' => $approved,

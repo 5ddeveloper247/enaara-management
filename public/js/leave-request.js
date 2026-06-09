@@ -235,18 +235,60 @@
     }
   }
 
+  function appendQuotaBalanceRow(parentRow, quota) {
+    var col = document.createElement('div');
+    col.className = 'col-6';
+    col.innerHTML = '<div class="small">' + quota.type + ': <strong>' + quota.remaining + '</strong> days</div>';
+    parentRow.appendChild(col);
+  }
+
+  function appendQuotaBalanceGroup(container, title, quotas, addTopMargin) {
+    if (!quotas.length) {
+      return;
+    }
+
+    var section = document.createElement('div');
+    section.className = 'col-12' + (addTopMargin ? ' mt-3' : '');
+
+    var heading = document.createElement('div');
+    heading.className = 'small fw-semibold text-white-50 mb-2';
+    heading.textContent = title;
+    section.appendChild(heading);
+
+    var row = document.createElement('div');
+    row.className = 'row g-2';
+    quotas.forEach(function (quota) {
+      appendQuotaBalanceRow(row, quota);
+    });
+    section.appendChild(row);
+    container.appendChild(section);
+  }
+
   function renderQuotaSummary(container, quotaSummary) {
     if (!container) return;
 
     container.innerHTML = '';
-    (quotaSummary || []).forEach(function (q) {
-      var div = document.createElement('div');
-      div.className = 'col-6';
-      div.innerHTML = '<div class="small">' + q.type + ': <strong>' + q.remaining + '</strong> days</div>';
-      container.appendChild(div);
-    });
 
     if (!quotaSummary || quotaSummary.length === 0) {
+      container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">No leave quotas assigned</div>';
+      return;
+    }
+
+    var unconditional = [];
+    var conditional = [];
+
+    quotaSummary.forEach(function (q) {
+      if (q.leave_condition === 'conditional') {
+        conditional.push(q);
+      } else {
+        unconditional.push(q);
+      }
+    });
+
+    appendQuotaBalanceGroup(container, 'Unconditional Leaves', unconditional, false);
+    appendQuotaBalanceGroup(container, 'Conditional Leaves', conditional, unconditional.length > 0);
+
+    if (!unconditional.length && !conditional.length) {
       container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">No leave quotas assigned</div>';
     }
   }

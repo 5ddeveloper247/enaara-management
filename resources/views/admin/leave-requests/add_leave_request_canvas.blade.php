@@ -50,11 +50,10 @@
                     <div class="row g-2" id="leaveBalanceContainer">
                         @if(request()->routeIs('admin.my.leaves.index'))
                             @isset($personalQuota)
-                                @foreach($personalQuota as $quota)
-                                    <div class="col-6">
-                                        <div class="small">{{ $quota['type'] }}: <strong>{{ $quota['remaining'] }}</strong> days</div>
-                                    </div>
-                                @endforeach
+                                @include('admin.leave-requests.partials.leave_balance_groups', [
+                                    'quotas' => $personalQuota,
+                                    'emptyMessage' => 'No leave balances available',
+                                ])
                             @else
                                 <div class="col-12 text-center py-2 opacity-50 small">No leave balances available</div>
                             @endisset
