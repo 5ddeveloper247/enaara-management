@@ -3909,30 +3909,16 @@
             }
             designationSelect.innerHTML = '';
 
-            const selectedRoleId = roleSelect ? roleSelect.value : null;
-            const selectedRole = rolesData.find(r => String(r.id) === String(selectedRoleId));
-            const isGm = selectedRole && parseInt(selectedRole.level) === 3;
-
-            if (isGm) {
-                payload.data.forEach(function (row) {
-                    designationSelect.add(new Option(row.name, String(row.id)));
-                });
-                if (payload.data.length > 0) {
-                    designationSelect.value = String(payload.data[0].id);
-                }
-                designationSelect.disabled = true;
+            designationSelect.add(new Option('— Optional —', ''));
+            payload.data.forEach(function (row) {
+                designationSelect.add(new Option(row.name, String(row.id)));
+            });
+            designationSelect.disabled = false;
+            const pref = preferredId !== null && preferredId !== undefined && preferredId !== '' ? String(preferredId) : '';
+            if (pref && Array.from(designationSelect.options).some(function (o) { return o.value === pref; })) {
+                designationSelect.value = pref;
             } else {
-                designationSelect.add(new Option('— Optional —', ''));
-                payload.data.forEach(function (row) {
-                    designationSelect.add(new Option(row.name, String(row.id)));
-                });
-                designationSelect.disabled = false;
-                const pref = preferredId !== null && preferredId !== undefined && preferredId !== '' ? String(preferredId) : '';
-                if (pref && Array.from(designationSelect.options).some(function (o) { return o.value === pref; })) {
-                    designationSelect.value = pref;
-                } else {
-                    designationSelect.value = '';
-                }
+                designationSelect.value = '';
             }
 
             if (window.employeeDesignationId && designationSelect.value === String(window.employeeDesignationId)) {

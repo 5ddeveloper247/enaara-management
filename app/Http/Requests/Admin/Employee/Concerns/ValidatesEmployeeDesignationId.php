@@ -24,33 +24,6 @@ trait ValidatesEmployeeDesignationId
                         }
                     }
 
-                    $roleId = $this->input('role_id');
-                    $role = $roleId ? \App\Models\Role::with('roleLevel')->find($roleId) : null;
-                    if ($role && $role->resolvedNumericLevel() === 3) {
-                        if ($orgId > 0 && $sbuId > 0 && $departmentId > 0) {
-                            $department = \App\Models\Department::find($departmentId);
-                            if ($department) {
-                                $designationName = trim($role->name . ' ' . $department->name);
-                                $designation = Designation::firstOrCreate([
-                                    'organization_id'     => $orgId,
-                                    'sbu_id'              => $sbuId,
-                                    'department_id'       => $departmentId,
-                                    'name'                => $designationName,
-                                    'is_system_generated' => true,
-                                ], [
-                                    'description'         => "Automatically generated designation for level 4 role: {$role->name}",
-                                    'is_active'           => true,
-                                ]);
-                                if (!$designation->is_active) {
-                                    $designation->is_active = true;
-                                    $designation->save();
-                                }
-                                $value = (int) $designation->id;
-                                $this->merge(['designation_id' => $value]);
-                            }
-                        }
-                    }
-
                     if ($value === null || $value === '' || (int) $value === 0) {
                         return;
                     }
