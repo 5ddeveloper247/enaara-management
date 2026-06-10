@@ -342,8 +342,8 @@ class EmployeeStepRequest extends FormRequest
         if ($step === 1) {
             $stepRules = array_merge([
                 'first_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
-                'middle_name' => ['nullable', 'string', 'max:50', 'regex:' . $this->localePersonNameRegex()],
-                'last_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+                'middle_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+                'last_name' => ['nullable', 'string', 'max:50', 'regex:' . $this->localePersonNameRegex()],
                 'father_name' => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
                 'email' => [
                     'nullable',

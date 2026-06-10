@@ -249,8 +249,8 @@ class EmployeeStoreRequest extends FormRequest
         return [
             // Section A — General Information
             'first_name'             => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
-            'middle_name'            => ['nullable', 'string', 'max:50', 'regex:' . $this->localePersonNameRegex()],
-            'last_name'              => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+            'middle_name'            => ['required', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
+            'last_name'              => ['nullable', 'string', 'max:50', 'regex:' . $this->localePersonNameRegex()],
             'father_name'            => ['nullable', 'string', 'min:3', 'max:50', 'regex:' . $this->localePersonNameRegex()],
             'email'                  => ['nullable', 'email:rfc,dns', 'max:50', Rule::unique('employees', 'email')],
             'phone'                  => ['nullable', 'string', 'regex:' . $this->contactRegex()],
