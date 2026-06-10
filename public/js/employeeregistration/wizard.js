@@ -50,6 +50,111 @@
         return Math.max(1, step - 1);
     }
 
+    function getVisibleWizardSteps() {
+        const steps = [1, 2, 3];
+        if (isExArmedForceChecked()) {
+            steps.push(4);
+        }
+        steps.push(5, 6);
+        return steps;
+    }
+
+    function getEmployeeInitials(name) {
+        if (!name || !String(name).trim()) {
+            return '?';
+        }
+        return String(name)
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((part) => part.charAt(0))
+            .slice(0, 2)
+            .join('')
+            .toUpperCase();
+    }
+
+    function composeEmployeeDisplayName() {
+        return [
+            document.querySelector('input[name="first_name"]')?.value,
+            document.querySelector('input[name="middle_name"]')?.value,
+            document.querySelector('input[name="last_name"]')?.value,
+        ]
+            .map((part) => (part || '').trim())
+            .filter(Boolean)
+            .join(' ');
+    }
+
+    function getContextEmployeeCode() {
+        const codeInput = document.getElementById('employmentEmployeeNumberInput');
+        return codeInput?.value?.trim() || '';
+    }
+
+    function updateEmployeeContextHeader() {
+        const header = document.getElementById('employeeContextHeader');
+        if (!header) {
+            return;
+        }
+
+        const savedId = document.getElementById('saved_employee_id')?.value?.trim();
+        const showHeader = currentStep > 1 && !!savedId;
+        header.classList.toggle('d-none', !showHeader);
+        if (!showHeader) {
+            return;
+        }
+
+        const name = composeEmployeeDisplayName();
+        const nameEl = document.getElementById('contextEmployeeName');
+        if (nameEl) {
+            nameEl.textContent = name || 'New Employee';
+        }
+
+        const initialsEl = document.getElementById('contextEmployeeInitials');
+        const avatarImg = document.getElementById('contextEmployeeAvatar');
+        const avatarInitialsWrap = document.getElementById('contextEmployeeInitialsWrap');
+        const step1Img = document.getElementById('avatarPreviewImage');
+        const hasPhoto = step1Img && !step1Img.classList.contains('d-none') && step1Img.src;
+
+        if (hasPhoto && avatarImg && avatarInitialsWrap) {
+            avatarImg.src = step1Img.src;
+            avatarImg.classList.remove('d-none');
+            avatarInitialsWrap.classList.add('d-none');
+        } else if (avatarImg && avatarInitialsWrap) {
+            avatarImg.classList.add('d-none');
+            avatarInitialsWrap.classList.remove('d-none');
+            if (initialsEl) {
+                initialsEl.textContent = getEmployeeInitials(name);
+            }
+        }
+
+        const codeEl = document.getElementById('contextEmployeeCode');
+        if (codeEl) {
+            const code = getContextEmployeeCode();
+            codeEl.textContent = code || 'Pending';
+        }
+
+        const visibleSteps = getVisibleWizardSteps();
+        const displayIndex = Math.max(1, visibleSteps.indexOf(currentStep) + 1);
+        const stepLabel = document.getElementById('contextStepLabel');
+        if (stepLabel) {
+            stepLabel.textContent = `Step ${displayIndex} of ${visibleSteps.length}`;
+        }
+
+        const dotsContainer = document.getElementById('contextStepDots');
+        if (dotsContainer) {
+            dotsContainer.innerHTML = '';
+            visibleSteps.forEach((step) => {
+                const dot = document.createElement('span');
+                dot.className = 'employee-context-dot';
+                if (step < currentStep) {
+                    dot.classList.add('completed');
+                } else if (step === currentStep) {
+                    dot.classList.add('active');
+                }
+                dotsContainer.appendChild(dot);
+            });
+        }
+    }
+
     function isStepUnsaved() {
         const editBtn = document.getElementById('editBtn');
         return window.isEditMode && editBtn && (editBtn.innerText.trim() === 'Save' || editBtn.innerText.trim() === 'Saving...');
@@ -1675,6 +1780,7 @@
                 }
             });
         }
+        updateEmployeeContextHeader();
     }
 
     function togglePoliceVerificationFields() {
@@ -2047,6 +2153,8 @@
                 nextBtn.textContent = 'Next Step';
             }
         }
+
+        updateEmployeeContextHeader();
     }
 
     function toggleInputs(container, disabled) {
@@ -2235,6 +2343,7 @@
         .then((res) => {
             if (res && res.success && res.code && employmentCodeInput) {
                 employmentCodeInput.value = res.code;
+                updateEmployeeContextHeader();
             }
         })
         .catch(() => {});
@@ -3275,6 +3384,7 @@
                     avatarPreviewImage.classList.remove('d-none');
                     avatarPlaceholderIcon.classList.add('d-none');
                 }
+                updateEmployeeContextHeader();
 
                 const removeBtn = document.getElementById('removePhotoBtn');
                 if (removeBtn) {
@@ -3711,6 +3821,7 @@
 
     // Dynamic Sidebar Updates
     function updateSidebarSummary() {
+        updateEmployeeContextHeader();
         if (!document.getElementById('summaryName')) {
             return;
         }
@@ -3816,6 +3927,7 @@
         if (rBtn) rBtn.classList.add('d-none');
         if (inp) inp.value = '';
         window.profilePhotoUploadName = '';
+        updateEmployeeContextHeader();
     }
 
     // Organization -> SBU -> Roles dependent dropdowns

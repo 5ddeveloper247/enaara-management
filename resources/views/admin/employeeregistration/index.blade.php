@@ -18,6 +18,7 @@
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                     @include('admin.employeeregistration.partials.wizard-tabs')
+                    @include('admin.employeeregistration.partials.employee-context-header')
 
                     <div class="card-body p-3">
                         <form id="employeeForm" enctype="multipart/form-data">

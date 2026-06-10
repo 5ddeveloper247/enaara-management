@@ -827,4 +827,101 @@
             background: #fee2e2;
             color: #b91c1c;
         }
+
+        .employee-context-header {
+            background: #fff;
+            border-bottom: 1px solid #e8edf3;
+        }
+
+        .employee-context-avatar {
+            width: 48px;
+            height: 48px;
+        }
+
+        .employee-context-avatar-img,
+        .employee-context-avatar-initials {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+        }
+
+        .employee-context-avatar-img {
+            object-fit: cover;
+            display: block;
+        }
+
+        .employee-context-avatar-initials {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e8f1fb;
+            color: #185fa5;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+        }
+
+        .employee-context-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .employee-context-meta {
+            font-size: 0.82rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .employee-context-meta i {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .employee-context-draft-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.65rem;
+            border-radius: 999px;
+            background: #e8f7ee;
+            color: #15803d;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .employee-context-draft-badge i {
+            font-size: 0.8rem;
+        }
+
+        .employee-context-dots {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .employee-context-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            flex-shrink: 0;
+        }
+
+        .employee-context-dot.completed {
+            background: #22c55e;
+        }
+
+        .employee-context-dot.active {
+            background: #012445;
+        }
+
+        .employee-context-step-label {
+            font-size: 0.82rem;
+            color: #64748b;
+            font-weight: 500;
+            white-space: nowrap;
+        }
     </style>
