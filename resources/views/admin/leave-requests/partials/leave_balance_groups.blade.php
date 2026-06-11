@@ -1,7 +1,10 @@
 @php
     $quotas = collect($quotas ?? []);
     $unconditional = $quotas->filter(
-        fn ($q) => ($q['leave_condition'] ?? 'unconditional') !== 'conditional'
+        fn ($q) => ($q['leave_condition'] ?? 'unconditional') === 'unconditional'
+    );
+    $general = $quotas->filter(
+        fn ($q) => ($q['leave_condition'] ?? '') === 'general'
     );
     $conditional = $quotas->filter(
         fn ($q) => ($q['leave_condition'] ?? '') === 'conditional'
@@ -24,8 +27,21 @@
         </div>
     @endif
 
-    @if($conditional->isNotEmpty())
+    @if($general->isNotEmpty())
         <div class="col-12 {{ $unconditional->isNotEmpty() ? 'mt-3' : '' }}">
+            <div class="small fw-semibold text-white-50 mb-2">General Leaves</div>
+            <div class="row g-2">
+                @foreach($general as $quota)
+                    <div class="col-6">
+                        <div class="small">{{ $quota['type'] }}: <strong>{{ $quota['remaining'] }}</strong> days</div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    @if($conditional->isNotEmpty())
+        <div class="col-12 {{ ($unconditional->isNotEmpty() || $general->isNotEmpty()) ? 'mt-3' : '' }}">
             <div class="small fw-semibold text-white-50 mb-2">Conditional Leaves</div>
             <div class="row g-2">
                 @foreach($conditional as $quota)

@@ -58,6 +58,7 @@
                                             <option value="">Select leave type</option>
                                             <option value="conditional">Conditional leave</option>
                                             <option value="unconditional">Unconditional leave</option>
+                                            <option value="general">General</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4">

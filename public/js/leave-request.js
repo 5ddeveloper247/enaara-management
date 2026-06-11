@@ -437,20 +437,33 @@
     }
 
     var unconditional = [];
+    var general = [];
     var conditional = [];
 
     quotaSummary.forEach(function (q) {
       if (q.leave_condition === 'conditional') {
         conditional.push(q);
+      } else if (q.leave_condition === 'general') {
+        general.push(q);
       } else {
         unconditional.push(q);
       }
     });
 
-    appendQuotaBalanceGroup(container, 'Unconditional Leaves', unconditional, false);
-    appendQuotaBalanceGroup(container, 'Conditional Leaves', conditional, unconditional.length > 0);
+    var hasPriorGroup = false;
+    if (unconditional.length) {
+      appendQuotaBalanceGroup(container, 'Unconditional Leaves', unconditional, false);
+      hasPriorGroup = true;
+    }
+    if (general.length) {
+      appendQuotaBalanceGroup(container, 'General Leaves', general, hasPriorGroup);
+      hasPriorGroup = true;
+    }
+    if (conditional.length) {
+      appendQuotaBalanceGroup(container, 'Conditional Leaves', conditional, hasPriorGroup);
+    }
 
-    if (!unconditional.length && !conditional.length) {
+    if (!unconditional.length && !general.length && !conditional.length) {
       container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">No leave quotas assigned</div>';
     }
   }
