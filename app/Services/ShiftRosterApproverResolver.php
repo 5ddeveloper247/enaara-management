@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftRosterEntry;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 class ShiftRosterApproverResolver
 {
@@ -96,7 +97,7 @@ class ShiftRosterApproverResolver
         }
 
         if (! empty($scope['department_id'])) {
-            $query->where('employees.department_id', (int) $scope['department_id']);
+            $this->applyDepartmentScope($query, (int) $scope['department_id']);
         }
 
         if ($excludeEmployeeId) {
@@ -104,6 +105,15 @@ class ShiftRosterApproverResolver
         }
 
         return $query->orderBy('employees.id')->first();
+    }
+
+    private function applyDepartmentScope(Builder $query, int $departmentId): void
+    {
+        $query->where(function (Builder $deptQuery) use ($departmentId) {
+            $deptQuery->where('employees.department_id', $departmentId)
+                ->orWhereJsonContains('employees.department_ids', $departmentId)
+                ->orWhereJsonContains('employees.department_ids', (string) $departmentId);
+        });
     }
 
     public function resolveGmForAssignee(string $assigneeType, int $assigneeId): ?Employee

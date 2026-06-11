@@ -10,6 +10,7 @@ use App\Models\ShiftPlanner;
 use App\Models\ShiftRosterApprovalRequest;
 use App\Models\ShiftRosterApprovalSegment;
 use App\Models\ShiftRosterEntry;
+use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
@@ -1847,7 +1848,7 @@ class ShiftRosterService
                 return 0;
             }
 
-            $query->whereIn('department_id', $departmentIds);
+            $this->applyEmployeeDepartmentScope($query, $departmentIds);
         }
 
         return $query->count();
@@ -1884,7 +1885,13 @@ class ShiftRosterService
      */
     private function resolveViewerRosterDepartmentScope(?int $viewerUserId): ?array
     {
-        $viewer = Auth::user();
+        $viewer = $viewerUserId
+            ? User::query()->with('employee.department')->find($viewerUserId)
+            : Auth::user();
+
+        if ($viewer && ! $viewer->relationLoaded('employee')) {
+            $viewer->loadMissing('employee.department');
+        }
 
         if ($viewer?->isSystemAdminUser()) {
             return null;
@@ -1927,13 +1934,66 @@ class ShiftRosterService
             ];
         }
 
-        $departmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
-
         return [
-            'department_ids' => $departmentId ? [$departmentId] : [],
+            'department_ids' => $this->resolveEmployeeAssignedDepartmentIds($viewerEmployee),
             'sbu_id' => $sbuId,
             'is_human_resource' => false,
         ];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function resolveEmployeeAssignedDepartmentIds(Employee $employee): array
+    {
+        $departmentIds = [];
+
+        if ($employee->department_id) {
+            $departmentIds[] = (int) $employee->department_id;
+        }
+
+        if (is_array($employee->department_ids)) {
+            foreach ($employee->department_ids as $departmentId) {
+                if ($departmentId !== null && $departmentId !== '') {
+                    $departmentIds[] = (int) $departmentId;
+                }
+            }
+        }
+
+        return array_values(array_unique(array_filter($departmentIds)));
+    }
+
+    /**
+     * @param  array<int, int>  $departmentIds
+     */
+    private function employeeBelongsToAnyDepartment(Employee $employee, array $departmentIds): bool
+    {
+        if ($departmentIds === []) {
+            return false;
+        }
+
+        return count(array_intersect(
+            $this->resolveEmployeeAssignedDepartmentIds($employee),
+            $departmentIds
+        )) > 0;
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<Employee>  $query
+     * @param  array<int, int>  $departmentIds
+     */
+    private function applyEmployeeDepartmentScope($query, array $departmentIds): void
+    {
+        $query->where(function ($departmentQuery) use ($departmentIds) {
+            $departmentQuery->whereIn('department_id', $departmentIds);
+
+            foreach ($departmentIds as $departmentId) {
+                $departmentQuery->orWhere(function ($jsonQuery) use ($departmentId) {
+                    $jsonQuery->whereJsonContains('department_ids', $departmentId)
+                        ->orWhereJsonContains('department_ids', (string) $departmentId);
+                });
+            }
+        });
     }
 
     private function isHumanResourceDepartment(?Department $department): bool
@@ -1966,7 +2026,7 @@ class ShiftRosterService
         $allowedDepartmentIds = $scope['department_ids'];
 
         $employees = $employees
-            ->filter(fn (Employee $employee) => in_array((int) $employee->department_id, $allowedDepartmentIds, true))
+            ->filter(fn (Employee $employee) => $this->employeeBelongsToAnyDepartment($employee, $allowedDepartmentIds))
             ->values();
 
         // Third-party roster is visible to every department (not only HR), scoped to viewer SBU.
