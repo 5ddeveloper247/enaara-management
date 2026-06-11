@@ -419,6 +419,12 @@
     parentRow.appendChild(col);
   }
 
+  var leaveBalanceHeadingClasses = {
+    'Unconditional Leaves': 'leave-balance-heading--unconditional',
+    'General Leaves': 'leave-balance-heading--general',
+    'Conditional Leaves': 'leave-balance-heading--conditional'
+  };
+
   function appendQuotaBalanceGroup(container, title, quotas, addTopMargin) {
     if (!quotas.length) {
       return;
@@ -428,7 +434,7 @@
     section.className = 'col-12' + (addTopMargin ? ' mt-3' : '');
 
     var heading = document.createElement('div');
-    heading.className = 'small fw-semibold text-white-50 mb-2';
+    heading.className = 'small fw-semibold mb-2 ' + (leaveBalanceHeadingClasses[title] || '');
     heading.textContent = title;
     section.appendChild(heading);
 

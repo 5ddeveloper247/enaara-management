@@ -238,6 +238,10 @@
     .select2-container--bootstrap-5 .select2-selection {
         min-height: 38px;
     }
+
+    .leave-balance-heading--unconditional { color: #7dd3ac; }
+    .leave-balance-heading--general { color: #93c5fd; }
+    .leave-balance-heading--conditional { color: #fbbf24; }
 </style>
 @endpush
 @push('scripts')

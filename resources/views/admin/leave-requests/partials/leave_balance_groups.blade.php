@@ -16,7 +16,7 @@
 @else
     @if($unconditional->isNotEmpty())
         <div class="col-12">
-            <div class="small fw-semibold text-white-50 mb-2">Unconditional Leaves</div>
+            <div class="small fw-semibold mb-2 leave-balance-heading--unconditional">Unconditional Leaves</div>
             <div class="row g-2">
                 @foreach($unconditional as $quota)
                     <div class="col-6">
@@ -29,7 +29,7 @@
 
     @if($general->isNotEmpty())
         <div class="col-12 {{ $unconditional->isNotEmpty() ? 'mt-3' : '' }}">
-            <div class="small fw-semibold text-white-50 mb-2">General Leaves</div>
+            <div class="small fw-semibold mb-2 leave-balance-heading--general">General Leaves</div>
             <div class="row g-2">
                 @foreach($general as $quota)
                     <div class="col-6">
@@ -42,7 +42,7 @@
 
     @if($conditional->isNotEmpty())
         <div class="col-12 {{ ($unconditional->isNotEmpty() || $general->isNotEmpty()) ? 'mt-3' : '' }}">
-            <div class="small fw-semibold text-white-50 mb-2">Conditional Leaves</div>
+            <div class="small fw-semibold mb-2 leave-balance-heading--conditional">Conditional Leaves</div>
             <div class="row g-2">
                 @foreach($conditional as $quota)
                     <div class="col-6">
