@@ -11,6 +11,9 @@ use Illuminate\Support\Collection;
 
 class LeaveRequestApproverResolver
 {
+    /** GM tier in role_levels.level — department head for leave approval. */
+    private const DEPARTMENT_HEAD_ROLE_LEVEL = 3;
+
     public function __construct(
         private LeaveRequestNotifier $leaveRequestNotifier,
     ) {}
@@ -159,8 +162,9 @@ class LeaveRequestApproverResolver
 
         $query = Employee::query()
             ->where('is_active', true)
-            ->where('is_manager', true)
-            ->where('department_id', (int) $scope['department_id']);
+            ->where('is_manager', true);
+
+        $this->applyDepartmentScope($query, (int) $scope['department_id']);
 
         if ($excludeEmployeeId !== null) {
             $query->where('id', '!=', $excludeEmployeeId);
@@ -188,7 +192,7 @@ class LeaveRequestApproverResolver
     ): Collection {
         $base = $this->buildApproversBaseQuery($employee, $currentLevel, $scope);
 
-        $hodLevel = (clone $base)->min('rl.level');
+        $hodLevel = $this->resolveDepartmentHeadLevel($base, ! empty($scope['department_id']));
         if ($hodLevel === null) {
             return collect();
         }
@@ -284,10 +288,35 @@ class LeaveRequestApproverResolver
         }
 
         if (! empty($scope['department_id'])) {
-            $base->where('employees.department_id', (int) $scope['department_id']);
+            $this->applyDepartmentScope($base, (int) $scope['department_id']);
         }
 
         return $base;
+    }
+
+    private function applyDepartmentScope(Builder $query, int $departmentId): void
+    {
+        $query->where(function (Builder $deptQuery) use ($departmentId) {
+            $deptQuery->where('employees.department_id', $departmentId)
+                ->orWhereJsonContains('employees.department_ids', $departmentId)
+                ->orWhereJsonContains('employees.department_ids', (string) $departmentId);
+        });
+    }
+
+    private function resolveDepartmentHeadLevel(Builder $base, bool $preferDepartmentHeadTier): ?int
+    {
+        if ($preferDepartmentHeadTier) {
+            $departmentHeadLevel = self::DEPARTMENT_HEAD_ROLE_LEVEL;
+            $hasDepartmentHead = (clone $base)->where('rl.level', $departmentHeadLevel)->exists();
+
+            if ($hasDepartmentHead) {
+                return $departmentHeadLevel;
+            }
+        }
+
+        $minLevel = (clone $base)->min('rl.level');
+
+        return $minLevel === null ? null : (int) $minLevel;
     }
 
     private function findEmployeesInScope(
@@ -298,9 +327,13 @@ class LeaveRequestApproverResolver
     ): Collection {
         $base = $this->buildApproversBaseQuery($employee, $currentLevel, $scope);
 
-        $targetLevel = $levelStrategy === 'min'
-            ? (clone $base)->min('rl.level')
-            : (clone $base)->max('rl.level');
+        if ($levelStrategy === 'min' && ! empty($scope['department_id'])) {
+            $targetLevel = $this->resolveDepartmentHeadLevel($base, true);
+        } else {
+            $targetLevel = $levelStrategy === 'min'
+                ? (clone $base)->min('rl.level')
+                : (clone $base)->max('rl.level');
+        }
 
         if ($targetLevel === null) {
             return collect();
