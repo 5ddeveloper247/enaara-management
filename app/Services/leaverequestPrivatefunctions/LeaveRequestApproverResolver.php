@@ -32,7 +32,11 @@ class LeaveRequestApproverResolver
             return collect();
         }
 
-        $assignedLineManager = $this->resolveAssignedLineManager($employee, $hodIds);
+        if (! empty($employee->department_id) && $this->hasSingleSeniorTierAbove($employee, $currentLevel)) {
+            return collect();
+        }
+
+        $assignedLineManager = $this->resolveAssignedLineManager($employee, $currentLevel, $hodIds);
         if ($assignedLineManager !== null) {
             return collect([$assignedLineManager]);
         }
@@ -55,7 +59,7 @@ class LeaveRequestApproverResolver
         return collect();
     }
 
-    private function resolveAssignedLineManager(Employee $employee, array $hodIds): ?Employee
+    private function resolveAssignedLineManager(Employee $employee, int $applicantLevel, array $hodIds): ?Employee
     {
         if (empty($employee->line_manager_id)) {
             return null;
@@ -71,6 +75,10 @@ class LeaveRequestApproverResolver
             return null;
         }
 
+        if (! $this->isMoreSeniorThan($manager, $applicantLevel)) {
+            return null;
+        }
+
         return $manager;
     }
 
@@ -83,13 +91,16 @@ class LeaveRequestApproverResolver
         ];
 
         $lineManagers = $this->findLineManagersInScope($scope, $employee->id)
-            ->filter(fn (Employee $manager) => ! in_array($manager->id, $hodIds, true));
+            ->filter(fn (Employee $manager) => ! in_array($manager->id, $hodIds, true))
+            ->filter(fn (Employee $manager) => $this->isMoreSeniorThan($manager, $currentLevel));
 
         if ($lineManagers->isNotEmpty()) {
             return $this->wrapPrimaryRecommender($lineManagers->first());
         }
 
-        $belowHod = $this->findRecommendersImmediatelyBelowHodInScope($employee, $currentLevel, $scope);
+        $belowHod = $this->findRecommendersImmediatelyBelowHodInScope($employee, $currentLevel, $scope)
+            ->filter(fn (Employee $manager) => $this->isMoreSeniorThan($manager, $currentLevel));
+
         if ($belowHod->isNotEmpty()) {
             return $this->wrapPrimaryRecommender($belowHod->first());
         }
@@ -216,6 +227,30 @@ class LeaveRequestApproverResolver
             ->get()
             ->unique('id')
             ->values();
+    }
+
+    private function isMoreSeniorThan(Employee $manager, int $applicantLevel): bool
+    {
+        $managerLevel = $this->resolveEmployeeRoleLevel($manager);
+
+        return $managerLevel !== null && $managerLevel < $applicantLevel;
+    }
+
+    private function hasSingleSeniorTierAbove(Employee $employee, int $currentLevel): bool
+    {
+        $scope = [
+            'organization_id' => $employee->organization_id,
+            'sbu_id' => $employee->sbu_id,
+            'department_id' => $employee->department_id,
+        ];
+
+        $seniorLevelCount = $this->buildApproversBaseQuery($employee, $currentLevel, $scope)
+            ->select('rl.level')
+            ->distinct()
+            ->get()
+            ->count();
+
+        return $seniorLevelCount === 1;
     }
 
     public function resolveEmployeeRoleLevel(Employee $employee): ?int
