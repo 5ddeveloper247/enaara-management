@@ -174,7 +174,7 @@
                         </div>
                         <div class="leave-duration-breakdown-row leave-duration-breakdown-total mt-2 pt-2 border-top" style="border-color: #ffffff1a !important;">
                             <span class="leave-duration-breakdown-label fw-semibold text-white">
-                                <i class="bi bi-check-circle me-2"></i>Deducted from balance
+                                <i class="bi bi-check-circle me-2"></i>Deductible from balance
                             </span>
                             <span class="leave-duration-breakdown-value fs-5 fw-bold text-info" id="leaveBillableDays">0</span>
                         </div>
