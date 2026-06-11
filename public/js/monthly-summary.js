@@ -15,6 +15,7 @@
     let selectedMonth = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
     let currentCalendarContext = null;
     let currentCalendarDays = [];
+    let detailViewMonth = null;
 
     // ============================================
     // INITIALIZATION
@@ -33,6 +34,7 @@
         if (queryFloorId && $('#filterFloor option[value="' + queryFloorId + '"]').length) {
             $('#filterFloor').val(queryFloorId);
         }
+        selectedMonth = $('#filterMonth').val() || selectedMonth;
         initializeEventHandlers();
         initializeFloorFilter();
         updateCounters();
@@ -290,6 +292,14 @@
         $('#workAssignmentLocationGrid').on('change', 'input[name="work_type"]', function () {
             setWorkAssignmentSelection($(this).val());
         });
+
+        $('#detailMonthPrevBtn').on('click', function () {
+            navigateDetailMonth(-1);
+        });
+
+        $('#detailMonthNextBtn').on('click', function () {
+            navigateDetailMonth(1);
+        });
     }
 
     // ============================================
@@ -388,8 +398,11 @@
             employeeAvatar: employeeData.employeeAvatar,
         };
 
+        detailViewMonth = $('#filterMonth').val() || selectedMonth;
+        updateDetailMonthHeading(detailViewMonth);
+
         populateDetailCanvas(employeeData);
-        loadMonthlyCalendar(employeeData);
+        loadMonthlyCalendar(employeeData, detailViewMonth);
     }
 
     function populateDetailCanvas(data) {
@@ -420,7 +433,7 @@
         $('#detailRegularization').text(data.regularization);
     }
 
-    async function loadMonthlyCalendar(data) {
+    async function loadMonthlyCalendar(data, monthOverride) {
         const calendarGrid = $('#monthlyCalendarGrid');
         calendarGrid.html(`
             <div class="col-12 text-center py-4">
@@ -430,12 +443,17 @@
             </div>
         `);
 
-        const month = $('#filterMonth').val() || selectedMonth;
+        const month = monthOverride || detailViewMonth || $('#filterMonth').val() || selectedMonth;
+        detailViewMonth = month;
+        updateDetailMonthHeading(month);
+
         const calendarUrlTemplate = window.monthlySummaryCalendarUrl || '';
         const calendarUrl = calendarUrlTemplate.replace('__ID__', String(data.employeeId));
 
         const tokenMeta = document.querySelector('meta[name="csrf-token"]');
         const token = tokenMeta ? tokenMeta.getAttribute('content') : '';
+
+        setDetailMonthNavLoading(true);
 
         try {
             const response = await fetch(`${calendarUrl}?month=${encodeURIComponent(month)}`, {
@@ -452,10 +470,60 @@
             }
 
             renderMonthlyCalendar(payload.data);
-            updateDetailStatsFromCalendar(payload.data.stats || {});
+            updateDetailStatsFromCalendar(payload.data.stats || {}, payload.data.month || month);
         } catch (e) {
             calendarGrid.html('<div class="col-12 text-center text-white-50 py-4">Unable to load calendar.</div>');
+        } finally {
+            setDetailMonthNavLoading(false);
         }
+    }
+
+    function navigateDetailMonth(delta) {
+        if (!currentCalendarContext || !detailViewMonth) {
+            return;
+        }
+
+        const nextMonth = shiftMonth(detailViewMonth, delta);
+        detailViewMonth = nextMonth;
+        updateDetailMonthHeading(nextMonth);
+        loadMonthlyCalendar(currentCalendarContext, nextMonth);
+    }
+
+    function updateDetailMonthHeading(monthStr) {
+        $('#detailMonthLabel').text(formatMonthYear(monthStr));
+    }
+
+    function setDetailMonthNavLoading(isLoading) {
+        $('#detailMonthPrevBtn, #detailMonthNextBtn').prop('disabled', !!isLoading);
+    }
+
+    function formatMonthYear(monthStr) {
+        const parts = String(monthStr || '').split('-').map(Number);
+        if (parts.length !== 2 || !parts[0] || !parts[1]) {
+            return monthStr || '-';
+        }
+
+        const date = new Date(parts[0], parts[1] - 1, 1);
+        return date.toLocaleDateString(undefined, {
+            month: 'long',
+            year: 'numeric',
+        });
+    }
+
+    function shiftMonth(monthStr, delta) {
+        const parts = String(monthStr || '').split('-').map(Number);
+        const date = new Date(parts[0], (parts[1] - 1) + delta, 1);
+
+        return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+    }
+
+    function getDaysInMonth(monthStr) {
+        const parts = String(monthStr || '').split('-').map(Number);
+        if (parts.length !== 2 || !parts[0] || !parts[1]) {
+            return 0;
+        }
+
+        return new Date(parts[0], parts[1], 0).getDate();
     }
 
     function renderMonthlyCalendar(calendarData) {
@@ -501,7 +569,7 @@
     }
 
     function getCalendarDisplayText(dayData, statusClass, label) {
-        if (statusClass === 'leave' || statusClass === 'half-day') {
+        if (statusClass === 'leave' || statusClass === 'half-day' || statusClass === 'holiday') {
             return dayData.detail || label;
         }
 
@@ -512,6 +580,10 @@
         const notes = dayData.notes ? String(dayData.notes).trim() : '';
         if (notes) {
             return `${label} — ${notes}`;
+        }
+
+        if (dayData.status === 'holiday' && dayData.detail) {
+            return dayData.detail;
         }
 
         if ((dayData.status === 'leave' || dayData.status === 'half-day') && dayData.detail) {
@@ -675,7 +747,10 @@
 
             if (payload.data && payload.data.calendar) {
                 renderMonthlyCalendar(payload.data.calendar);
-                updateDetailStatsFromCalendar(payload.data.calendar.stats || {});
+                updateDetailStatsFromCalendar(
+                    payload.data.calendar.stats || {},
+                    payload.data.calendar.month || detailViewMonth,
+                );
             }
 
             const modal = bootstrap.Modal.getInstance(modalEl);
@@ -718,8 +793,11 @@
         });
     }
 
-    function updateDetailStatsFromCalendar(stats) {
+    function updateDetailStatsFromCalendar(stats, monthStr) {
         if (!stats) return;
+
+        const month = monthStr || detailViewMonth || selectedMonth;
+        $('#detailTotalDays').text(getDaysInMonth(month));
         $('#detailPresent').text(stats.present ?? 0);
         $('#detailAbsent').text(stats.absent ?? 0);
         $('#detailHalfDays').text(stats.half_days ?? 0);

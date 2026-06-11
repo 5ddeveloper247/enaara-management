@@ -1,9 +1,20 @@
 <!-- Employee Monthly Detail Canvas -->
 <div class="offcanvas offcanvas-end bg-main text-white" tabindex="-1" id="employeeMonthlyDetailCanvas" aria-labelledby="employeeMonthlyDetailCanvasLabel" style="width: 800px;">
     <div class="offcanvas-header border-bottom" style="border-color: #ffffff42 !important">
-        <h5 class="offcanvas-title" id="employeeMonthlyDetailCanvasLabel">
-            <i class="bi bi-calendar3 me-2"></i>Monthly Calendar Details
-        </h5>
+        <div class="flex-grow-1 me-3">
+            <h5 class="offcanvas-title mb-2" id="employeeMonthlyDetailCanvasLabel">
+                <i class="bi bi-calendar3 me-2"></i>Monthly Calendar Details
+            </h5>
+            <div class="detail-month-nav d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-light detail-month-nav-btn" id="detailMonthPrevBtn" aria-label="Previous month">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <span class="detail-month-label fw-semibold" id="detailMonthLabel">June 2026</span>
+                <button type="button" class="btn btn-sm btn-outline-light detail-month-nav-btn" id="detailMonthNextBtn" aria-label="Next month">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
