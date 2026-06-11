@@ -138,18 +138,37 @@ class EmployeeController extends Controller
                 \Illuminate\Validation\Rule::exists('sbus', 'id')->where(fn ($q) => $q->where('organization_id', $orgId)),
             ],
             'department_id' => [
-                'required',
+                'nullable',
+                'integer',
+                \Illuminate\Validation\Rule::exists('departments', 'id')->where(fn ($q) => $q->where('organization_id', $orgId)->where('sbu_id', $sbuId)),
+            ],
+            'department_ids' => ['nullable', 'array', 'min:1'],
+            'department_ids.*' => [
                 'integer',
                 \Illuminate\Validation\Rule::exists('departments', 'id')->where(fn ($q) => $q->where('organization_id', $orgId)->where('sbu_id', $sbuId)),
             ],
             'role_id' => ['nullable', 'integer', 'exists:roles,id'],
         ]);
 
+        $departmentIds = $validated['department_ids'] ?? [];
+        if (! is_array($departmentIds) || $departmentIds === []) {
+            $singleDepartmentId = (int) ($validated['department_id'] ?? 0);
+            $departmentIds = $singleDepartmentId > 0 ? [$singleDepartmentId] : [];
+        }
+
+        if ($departmentIds === []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'At least one department is required.',
+                'data' => [],
+            ], 422);
+        }
+
         try {
-            $data = $this->designationService->listActiveByOrganizationAndSbu(
+            $data = $this->designationService->listActiveByOrganizationSbuAndDepartments(
                 (int) $validated['organization_id'],
                 (int) $validated['sbu_id'],
-                (int) $validated['department_id']
+                $departmentIds
             );
 
             return response()->json([

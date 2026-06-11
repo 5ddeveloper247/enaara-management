@@ -3952,17 +3952,21 @@
         }
     }
 
-    function getPrimaryDepartmentId() {
+    function getSelectedDepartmentIds() {
         if (!deptSelect) {
-            return null;
+            return [];
         }
-        const selected = Array.from(deptSelect.options).filter(function (o) {
-            return o.selected && o.value;
-        });
+        const selected = Array.from(deptSelect.options)
+            .filter(function (o) {
+                return o.selected && o.value;
+            })
+            .map(function (o) {
+                return String(o.value);
+            });
         if (!selected.length && window.employeeDepartmentId) {
-            return String(window.employeeDepartmentId);
+            return [String(window.employeeDepartmentId)];
         }
-        return selected.length ? String(selected[0].value) : null;
+        return selected;
     }
 
     function resetDesignationSelect(message) {
@@ -3976,9 +3980,9 @@
     function refreshDesignationsForEmployment(preferredId) {
         const orgId = orgSelect ? orgSelect.value : null;
         const sbuId = sbuSelect ? sbuSelect.value : null;
-        const departmentId = getPrimaryDepartmentId();
+        const departmentIds = getSelectedDepartmentIds();
 
-        if (!orgId || !sbuId || !departmentId) {
+        if (!orgId || !sbuId || !departmentIds.length) {
             resetDesignationSelect();
             return;
         }
@@ -3987,12 +3991,12 @@
             ? preferredId
             : (window.employeeDesignationId || (designationSelect ? designationSelect.value : ''));
 
-        loadDesignationsForEmployment(orgId, sbuId, departmentId, pref);
+        loadDesignationsForEmployment(orgId, sbuId, departmentIds, pref);
     }
 
-    async function loadDesignationsForEmployment(orgId, sbuId, departmentId, preferredId) {
+    async function loadDesignationsForEmployment(orgId, sbuId, departmentIds, preferredId) {
         if (!designationSelect) return;
-        if (!orgId || !sbuId || !departmentId || !window.employeeDesignationsUrl) {
+        if (!orgId || !sbuId || !Array.isArray(departmentIds) || !departmentIds.length || !window.employeeDesignationsUrl) {
             resetDesignationSelect();
             return;
         }
@@ -4005,8 +4009,10 @@
         const params = new URLSearchParams({
             organization_id: String(orgId),
             sbu_id: String(sbuId),
-            department_id: String(departmentId),
             role_id: String(roleId),
+        });
+        departmentIds.forEach(function (departmentId) {
+            params.append('department_ids[]', String(departmentId));
         });
         const tokenMeta = document.querySelector('meta[name="csrf-token"]');
         const token = tokenMeta ? tokenMeta.getAttribute('content') : '';

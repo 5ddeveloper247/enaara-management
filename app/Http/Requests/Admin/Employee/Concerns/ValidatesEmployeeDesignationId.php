@@ -7,6 +7,25 @@ use Closure;
 
 trait ValidatesEmployeeDesignationId
 {
+    protected function resolveEmployeeDepartmentIds(): array
+    {
+        $deptIds = $this->input('department_ids', []);
+        if (! is_array($deptIds)) {
+            $deptIds = [];
+        }
+
+        $departmentIds = array_values(array_unique(array_filter(array_map('intval', $deptIds))));
+
+        if ($departmentIds === []) {
+            $departmentId = (int) ($this->input('department_id') ?: 0);
+            if ($departmentId > 0) {
+                $departmentIds = [$departmentId];
+            }
+        }
+
+        return $departmentIds;
+    }
+
     protected function designationIdRules(): array
     {
         return [
@@ -16,13 +35,7 @@ trait ValidatesEmployeeDesignationId
                 function (string $attribute, mixed $value, Closure $fail): void {
                     $orgId = (int) $this->input('organization_id');
                     $sbuId = (int) $this->input('sbu_id');
-                    $departmentId = (int) ($this->input('department_id') ?: 0);
-                    if ($departmentId <= 0) {
-                        $deptIds = $this->input('department_ids', []);
-                        if (is_array($deptIds) && ! empty($deptIds)) {
-                            $departmentId = (int) $deptIds[0];
-                        }
-                    }
+                    $departmentIds = $this->resolveEmployeeDepartmentIds();
 
                     if ($value === null || $value === '' || (int) $value === 0) {
                         return;
@@ -32,7 +45,7 @@ trait ValidatesEmployeeDesignationId
 
                         return;
                     }
-                    if ($departmentId <= 0) {
+                    if ($departmentIds === []) {
                         $fail('Select a department before choosing a designation.');
 
                         return;
@@ -41,11 +54,11 @@ trait ValidatesEmployeeDesignationId
                         ->whereKey((int) $value)
                         ->where('organization_id', $orgId)
                         ->where('sbu_id', $sbuId)
-                        ->where('department_id', $departmentId)
+                        ->whereIn('department_id', $departmentIds)
                         ->where('is_active', true)
                         ->exists();
                     if (! $exists) {
-                        $fail('The selected designation is not valid for this organization, SBU, and department.');
+                        $fail('The selected designation is not valid for the selected organization, SBU, and departments.');
                     }
                 },
             ],

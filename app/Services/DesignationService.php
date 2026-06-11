@@ -163,28 +163,37 @@ class DesignationService
 
     public function listActiveByOrganizationAndSbu(int $organizationId, int $sbuId, ?int $departmentId = null): array
     {
+        $departmentIds = ($departmentId !== null && $departmentId > 0) ? [$departmentId] : [];
+
+        return $this->listActiveByOrganizationSbuAndDepartments($organizationId, $sbuId, $departmentIds);
+    }
+
+    public function listActiveByOrganizationSbuAndDepartments(int $organizationId, int $sbuId, array $departmentIds): array
+    {
         $this->assertSbuBelongsToOrganization($sbuId, $organizationId);
 
-        if ($departmentId === null || $departmentId <= 0) {
+        $departmentIds = array_values(array_unique(array_filter(array_map('intval', $departmentIds))));
+        if ($departmentIds === []) {
             return [];
         }
 
-        $this->assertDepartmentBelongsToSbu($departmentId, $sbuId, $organizationId);
+        foreach ($departmentIds as $departmentId) {
+            $this->assertDepartmentBelongsToSbu($departmentId, $sbuId, $organizationId);
+        }
 
-        $query = Designation::query()
-            ->select(['id', 'name'])
+        return Designation::query()
+            ->select(['id', 'name', 'department_id'])
             ->where('organization_id', $organizationId)
             ->where('sbu_id', $sbuId)
-            ->where('department_id', $departmentId)
+            ->whereIn('department_id', $departmentIds)
             ->where('is_active', true)
-            ->where('is_system_generated', false);
-
-        return $query
-            ->orderByDesc('id')
+            ->where('is_system_generated', false)
+            ->orderBy('name')
             ->get()
             ->map(static fn (Designation $d): array => [
                 'id' => (int) $d->id,
                 'name' => (string) $d->name,
+                'department_id' => (int) $d->department_id,
             ])
             ->values()
             ->all();

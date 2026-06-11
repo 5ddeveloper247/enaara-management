@@ -341,11 +341,17 @@ class EmployeeService
         }
         $orgId = (int) ($data['organization_id'] ?? $employee?->organization_id ?? 0);
         $sbuId = (int) ($data['sbu_id'] ?? $employee?->sbu_id ?? 0);
-        $departmentId = (int) ($data['department_id'] ?? $employee?->department_id ?? 0);
-        if ($departmentId <= 0 && ! empty($data['department_ids']) && is_array($data['department_ids'])) {
-            $departmentId = (int) ($data['department_ids'][0] ?? 0);
+        $departmentIds = [];
+        if (! empty($data['department_ids']) && is_array($data['department_ids'])) {
+            $departmentIds = array_values(array_unique(array_filter(array_map('intval', $data['department_ids']))));
         }
-        if ($departmentId <= 0) {
+        if ($departmentIds === []) {
+            $departmentId = (int) ($data['department_id'] ?? $employee?->department_id ?? 0);
+            if ($departmentId > 0) {
+                $departmentIds = [$departmentId];
+            }
+        }
+        if ($departmentIds === []) {
             throw ValidationException::withMessages([
                 'designation_id' => ['Select a department before choosing a designation.'],
             ]);
@@ -354,12 +360,12 @@ class EmployeeService
             ->whereKey((int) $raw)
             ->where('organization_id', $orgId)
             ->where('sbu_id', $sbuId)
-            ->where('department_id', $departmentId)
+            ->whereIn('department_id', $departmentIds)
             ->where('is_active', true)
             ->first();
         if (! $designation) {
             throw ValidationException::withMessages([
-                'designation_id' => ['The selected designation is not valid for this organization, SBU, and department.'],
+                'designation_id' => ['The selected designation is not valid for the selected organization, SBU, and departments.'],
             ]);
         }
         $data['designation_id'] = (int) $designation->id;
