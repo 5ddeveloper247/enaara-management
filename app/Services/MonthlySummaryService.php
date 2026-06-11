@@ -2,11 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeLeaveEntity;
-use App\Models\Organization;
-use App\Models\Sbu;
 use App\Models\EmployeeWorkAssignment;
 use App\Models\ShiftRosterEntry;
 use Carbon\Carbon;
@@ -17,6 +14,7 @@ class MonthlySummaryService
 {
     public function __construct(
         private readonly PublicHolidayResolver $publicHolidayResolver,
+        private readonly EmployeeWorkingScheduleService $employeeWorkingScheduleService,
     ) {}
 
     public function index(Request $request)
@@ -127,8 +125,8 @@ class MonthlySummaryService
             ->get()
             ->keyBy(static fn (EmployeeWorkAssignment $assignment) => $assignment->assignment_date->toDateString());
 
-        $workingDays = $this->resolveWorkingDays($employee);
-        $isShiftBased = $employee->engagement_mode === 'shifts';
+        $workingDays = $this->employeeWorkingScheduleService->resolveWorkingDays($employee);
+        $isShiftBased = $this->employeeWorkingScheduleService->isShiftBased($employee);
 
         $days = [];
         $stats = [
@@ -253,7 +251,7 @@ class MonthlySummaryService
             ]);
         }
 
-        if ($this->isWeeklyOffDay($date, $workingDays)) {
+        if ($this->employeeWorkingScheduleService->isWeeklyOffDay($date, $workingDays)) {
             return array_merge($base, [
                 'status' => 'off',
                 'label' => 'Off',
@@ -266,17 +264,6 @@ class MonthlySummaryService
             'label' => 'Present',
             'detail' => 'Working day',
         ]);
-    }
-
-    private function isWeeklyOffDay(Carbon $date, ?array $workingDays): bool
-    {
-        $dayKey = strtolower($date->format('l'));
-
-        if ($workingDays) {
-            return ! in_array($dayKey, $workingDays, true);
-        }
-
-        return $date->isSunday();
     }
 
     private function resolveStandardDay(Carbon $date, ?array $workingDays): array
@@ -286,7 +273,7 @@ class MonthlySummaryService
             'day' => (int) $date->day,
         ];
 
-        if ($this->isWeeklyOffDay($date, $workingDays)) {
+        if ($this->employeeWorkingScheduleService->isWeeklyOffDay($date, $workingDays)) {
             return array_merge($base, [
                 'status' => 'off',
                 'label' => 'Off',
@@ -299,36 +286,6 @@ class MonthlySummaryService
             'label' => 'Present',
             'detail' => 'Working day',
         ]);
-    }
-
-    private function resolveWorkingDays(Employee $employee): ?array
-    {
-        if (is_array($employee->working_days) && $employee->working_days !== []) {
-            return array_values(array_map(static fn ($day) => strtolower((string) $day), $employee->working_days));
-        }
-
-        if ($employee->department_id) {
-            $department = Department::query()->find($employee->department_id);
-            if (is_array($department?->working_days) && $department->working_days !== []) {
-                return array_values(array_map(static fn ($day) => strtolower((string) $day), $department->working_days));
-            }
-        }
-
-        if ($employee->sbu_id) {
-            $sbu = Sbu::query()->find($employee->sbu_id);
-            if (is_array($sbu?->working_days) && $sbu->working_days !== []) {
-                return array_values(array_map(static fn ($day) => strtolower((string) $day), $sbu->working_days));
-            }
-        }
-
-        if ($employee->organization_id) {
-            $organization = Organization::query()->find($employee->organization_id);
-            if (is_array($organization?->working_days) && $organization->working_days !== []) {
-                return array_values(array_map(static fn ($day) => strtolower((string) $day), $organization->working_days));
-            }
-        }
-
-        return null;
     }
 
     public function saveEmployeeWorkAssignment(

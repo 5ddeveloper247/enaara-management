@@ -32,6 +32,7 @@ class LeaveRequestService
         protected LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
         protected LeaveRequestWorkflowPreviewService $leaveRequestWorkflowPreviewService,
         protected LeaveRequestOutstationService $leaveRequestOutstationService,
+        protected EmployeeWorkingScheduleService $employeeWorkingScheduleService,
     ) {}
 
     public function index()
@@ -348,18 +349,28 @@ class LeaveRequestService
         $holidayResolver = app(\App\Services\PublicHolidayResolver::class);
         $holidays = $holidayResolver->loadHolidaysForRange($startDate, $endDate);
 
-        $rosterEntries = \App\Models\ShiftRosterEntry::query()
-            ->where('employee_id', $employee->id)
-            ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->get();
+        $isShiftBased = $this->employeeWorkingScheduleService->isShiftBased($employee);
+        $workingDays = $isShiftBased
+            ? null
+            : $this->employeeWorkingScheduleService->resolveWorkingDays($employee);
 
-        $hasAnyRoster = $rosterEntries->isNotEmpty();
+        $rostersByDate = collect();
+        $hasAnyRoster = false;
 
-        $rostersByDate = $rosterEntries->keyBy(function ($item) {
-            return $item->roster_date instanceof Carbon
-                ? $item->roster_date->toDateString()
-                : Carbon::parse($item->roster_date)->toDateString();
-        });
+        if ($isShiftBased) {
+            $rosterEntries = \App\Models\ShiftRosterEntry::query()
+                ->where('employee_id', $employee->id)
+                ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()])
+                ->get();
+
+            $hasAnyRoster = $rosterEntries->isNotEmpty();
+
+            $rostersByDate = $rosterEntries->keyBy(function ($item) {
+                return $item->roster_date instanceof Carbon
+                    ? $item->roster_date->toDateString()
+                    : Carbon::parse($item->roster_date)->toDateString();
+            });
+        }
 
         $current = $startDate->copy()->startOfDay();
         $end = $endDate->copy()->startOfDay();
@@ -367,7 +378,6 @@ class LeaveRequestService
         while ($current->lte($end)) {
             $dateStr = $current->toDateString();
 
-            // Check if public holiday applies
             $isPublicHoliday = $holidayResolver->resolveForAssigneeOnDate(
                 $holidays,
                 $employee->organization_id ? (int) $employee->organization_id : null,
@@ -381,18 +391,20 @@ class LeaveRequestService
                 continue;
             }
 
-            // Check shift roster / weekly off
-            if ($hasAnyRoster) {
-                $roster = $rostersByDate->get($dateStr);
-                if ($roster && strtolower(trim((string) $roster->status)) === 'off') {
+            if ($isShiftBased) {
+                if ($hasAnyRoster) {
+                    $roster = $rostersByDate->get($dateStr);
+                    if ($roster && strtolower(trim((string) $roster->status)) === 'off') {
+                        $current->addDay();
+                        continue;
+                    }
+                } elseif ($this->employeeWorkingScheduleService->isWeeklyOffDay($current, null)) {
                     $current->addDay();
                     continue;
                 }
-            } else {
-                if ($current->isSunday()) {
-                    $current->addDay();
-                    continue;
-                }
+            } elseif ($this->employeeWorkingScheduleService->isWeeklyOffDay($current, $workingDays)) {
+                $current->addDay();
+                continue;
             }
 
             $activeDates[] = $dateStr;
