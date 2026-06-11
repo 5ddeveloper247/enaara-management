@@ -29,22 +29,74 @@ class LeaveRequestApproverResolver
             return collect();
         }
 
-        foreach ($this->buildApprovalScopes($employee) as $scope) {
-            $lineManagers = $this->findLineManagersInScope($scope, $employee->id)
-                ->filter(fn (Employee $manager) => ! in_array($manager->id, $hodIds, true))
-                ->values();
+        $assignedLineManager = $this->resolveAssignedLineManager($employee, $hodIds);
+        if ($assignedLineManager !== null) {
+            return collect([$assignedLineManager]);
+        }
 
-            if ($lineManagers->isNotEmpty()) {
-                return $lineManagers;
+        if (! empty($employee->department_id)) {
+            return $this->resolveDepartmentRecommenders($employee, $currentLevel, $hodIds);
+        }
+
+        foreach ($this->buildApprovalScopes($employee) as $scope) {
+            if (! empty($scope['department_id'])) {
+                continue;
             }
 
             $belowHod = $this->findRecommendersImmediatelyBelowHodInScope($employee, $currentLevel, $scope);
             if ($belowHod->isNotEmpty()) {
-                return $belowHod;
+                return $this->wrapPrimaryRecommender($belowHod->first());
             }
         }
 
         return collect();
+    }
+
+    private function resolveAssignedLineManager(Employee $employee, array $hodIds): ?Employee
+    {
+        if (empty($employee->line_manager_id)) {
+            return null;
+        }
+
+        $manager = Employee::query()
+            ->where('id', (int) $employee->line_manager_id)
+            ->where('is_active', true)
+            ->where('id', '!=', $employee->id)
+            ->first();
+
+        if ($manager === null || in_array($manager->id, $hodIds, true)) {
+            return null;
+        }
+
+        return $manager;
+    }
+
+    private function resolveDepartmentRecommenders(Employee $employee, int $currentLevel, array $hodIds): Collection
+    {
+        $scope = [
+            'organization_id' => $employee->organization_id,
+            'sbu_id' => $employee->sbu_id,
+            'department_id' => $employee->department_id,
+        ];
+
+        $lineManagers = $this->findLineManagersInScope($scope, $employee->id)
+            ->filter(fn (Employee $manager) => ! in_array($manager->id, $hodIds, true));
+
+        if ($lineManagers->isNotEmpty()) {
+            return $this->wrapPrimaryRecommender($lineManagers->first());
+        }
+
+        $belowHod = $this->findRecommendersImmediatelyBelowHodInScope($employee, $currentLevel, $scope);
+        if ($belowHod->isNotEmpty()) {
+            return $this->wrapPrimaryRecommender($belowHod->first());
+        }
+
+        return collect();
+    }
+
+    private function wrapPrimaryRecommender(?Employee $recommender): Collection
+    {
+        return $recommender === null ? collect() : collect([$recommender]);
     }
 
     public function resolveHodForFinalApproval(Employee $employee): Collection
