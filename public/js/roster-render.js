@@ -366,10 +366,36 @@
             '</span>';
     }
 
-    function stripPublicHolidaysFromCellShifts(cellShifts) {
-        return (cellShifts || []).filter(function(s) {
-            return !(s.isPublicHoliday && !s.deletedAt);
+    function buildDisplayCellShifts(rawCellShifts) {
+        var active = (rawCellShifts || []).filter(function(s) {
+            return !s.deletedAt;
         });
+        var holidayShifts = active.filter(function(s) {
+            return s.isPublicHoliday;
+        });
+        var nonHoliday = active.filter(function(s) {
+            return !s.isPublicHoliday;
+        });
+        var workingShifts = nonHoliday.filter(function(s) {
+            return isRosterWorkingShift(s);
+        });
+        var leaveShifts = nonHoliday.filter(function(s) {
+            return !!(s.isLeave || String(s.status || '').toLowerCase() === 'leave');
+        });
+
+        if (workingShifts.length) {
+            return sortShiftsForCell(workingShifts);
+        }
+
+        if (leaveShifts.length) {
+            return sortShiftsForCell(leaveShifts);
+        }
+
+        if (holidayShifts.length) {
+            return sortShiftsForCell(holidayShifts);
+        }
+
+        return sortShiftsForCell(nonHoliday);
     }
 
     function isRosterHolidayDate(iso, holidaysByDate) {
@@ -547,14 +573,14 @@
                         var iso = dateToISO(d);
                         var k = empRef + '-' + iso;
                         var rawCellShifts = shiftsByEmpDay[k] || [];
-                        var cellShifts = stripPublicHolidaysFromCellShifts(rawCellShifts);
-                        var hasActiveShift = cellShifts.some(function(s) {
+                        var displayShifts = buildDisplayCellShifts(rawCellShifts);
+                        var hasActiveShift = displayShifts.some(function(s) {
                             return isRosterWorkingShift(s);
                         });
-                        var hasOffDayEntry = cellShifts.some(function(s) {
+                        var hasOffDayEntry = displayShifts.some(function(s) {
                             return isRosterOffDayShift(s) && !s.deletedAt;
                         });
-                        var hasPublicHoliday = rawCellShifts.some(function(s) {
+                        var hasPublicHoliday = displayShifts.some(function(s) {
                             return !s.deletedAt && s.isPublicHoliday;
                         });
 
@@ -572,22 +598,15 @@
                             td.style.opacity = '0.55';
                         }
 
-                        if (cellShifts.length) {
-                            td.setAttribute('data-shifts', JSON.stringify(cellShifts));
-                            td.innerHTML = renderCellShiftsHtml(cellShifts);
-                        } else if (rawCellShifts.length && hasPublicHoliday) {
-                            td.setAttribute('data-shifts', '[]');
+                        if (displayShifts.length) {
+                            td.setAttribute('data-shifts', JSON.stringify(displayShifts));
+                            td.innerHTML = renderCellShiftsHtml(displayShifts);
                         }
 
-                        if (!hasActiveShift && !hasOffDayEntry) {
+                        if (!hasActiveShift && !hasOffDayEntry && !hasPublicHoliday) {
                             td.classList.add('roster-day-cell-empty');
-                            var addHtml = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add"><i class="bi bi-plus-lg"></i></span>';
-                            if (cellShifts.length) {
-                                td.insertAdjacentHTML('beforeend', addHtml);
-                            } else {
-                                td.innerHTML = addHtml;
-                            }
-                        } else if (hasPublicHoliday && hasActiveShift) {
+                            td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add"><i class="bi bi-plus-lg"></i></span>';
+                        } else if (hasActiveShift || hasOffDayEntry) {
                             td.insertAdjacentHTML('beforeend',
                                 '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add roster-day-add-inline"><i class="bi bi-plus-lg"></i></span>');
                         }
