@@ -369,6 +369,21 @@
     selectEl.disabled = !!isLoading;
   }
 
+  function resetEmployeeSelectControl(selectEl) {
+    if (!selectEl || selectEl.tagName !== 'SELECT') {
+      return;
+    }
+
+    selectEl.value = '';
+
+    if (typeof window.jQuery !== 'undefined') {
+      var $select = window.jQuery(selectEl);
+      if ($select.data('select2')) {
+        $select.val(null).trigger('change.select2');
+      }
+    }
+  }
+
   function populateLeaveTypes(selectEl, items, selectedId) {
     if (!selectEl) return;
 
@@ -853,6 +868,10 @@
 
     if (canvasEl) {
       canvasEl.addEventListener('shown.bs.offcanvas', function () {
+        if (employeeSelect && employeeSelect.tagName === 'SELECT' && !employeeSelect.value) {
+          renderApprovalWorkflowPlaceholder('Select an employee to see approval workflow.');
+        }
+
         if (employeeSelect && employeeSelect.value) {
           var employeeId = employeeSelect.value;
           var employeeChanged = lastLoadedEmployeeId !== employeeId;
@@ -870,9 +889,19 @@
         if (workflowRequest && workflowRequest.readyState !== 4) {
           workflowRequest.abort();
         }
+        if (addressesRequest && addressesRequest.readyState !== 4) {
+          addressesRequest.abort();
+        }
+
         form.reset();
+        resetEmployeeSelectControl(employeeSelect);
         clearFormError(form);
         clearFieldErrors(form);
+
+        if (!keepPreloadedLeaveTypes && leaveTypeSelect) {
+          populateLeaveTypes(leaveTypeSelect, []);
+        }
+
         if (calculatedDaysEl) calculatedDaysEl.textContent = '0';
         updateBillableDaysDisplay(0, 0);
         if (halfDaySection) halfDaySection.style.display = 'none';
@@ -893,15 +922,24 @@
         if (endDateInput) {
           endDateInput.readOnly = false;
           endDateInput.classList.remove('opacity-75');
+          endDateInput.min = '';
+        }
+        if (startDateInput) {
+          startDateInput.value = '';
         }
         var container = document.getElementById('leaveBalanceContainer');
         if (container) {
           container.innerHTML = '<div class="col-12 text-center py-2 opacity-50 small">Select an employee to see balances</div>';
         }
+        window.lastLeaveWorkflowPreview = null;
         if (window.initialLeaveWorkflowPreview) {
           renderApprovalWorkflow(window.initialLeaveWorkflowPreview);
         } else {
           renderApprovalWorkflowPlaceholder('Select an employee to see approval workflow.');
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.title = '';
         }
         if (medicalCertSection) medicalCertSection.style.display = 'none';
         if (medicalReportInput) {
