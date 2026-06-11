@@ -80,6 +80,9 @@
                         <span class="badge bg-info px-2 py-1">Leave</span>
                     </div>
                     <div class="col-auto">
+                        <span class="badge bg-secondary px-2 py-1">Off</span>
+                    </div>
+                    <div class="col-auto">
                         <span class="badge bg-secondary px-2 py-1">Holiday</span>
                     </div>
                     <div class="col-auto">

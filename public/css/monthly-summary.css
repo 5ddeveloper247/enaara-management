@@ -93,6 +93,11 @@
     border-color: rgba(13, 110, 253, 0.5);
 }
 
+.calendar-day.off {
+    background-color: rgba(108, 117, 125, 0.25);
+    border-color: rgba(108, 117, 125, 0.45);
+}
+
 .calendar-day.holiday {
     background-color: rgba(108, 117, 125, 0.3);
     border-color: rgba(108, 117, 125, 0.5);

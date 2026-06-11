@@ -58,6 +58,7 @@
 <script>
     window.monthlySummaryRows = @json($monthlySummary);
     window.monthlySummaryFloors = @json($floorsForFilter ?? []);
+    window.monthlySummaryCalendarUrl = @json(route('admin.monthly-summary.employee_calendar', ['employeeId' => '__ID__']));
 </script>
 <script src="{{ asset('js/monthly-summary.js') }}"></script>
 @endpush

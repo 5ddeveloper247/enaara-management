@@ -375,7 +375,7 @@
         };
 
         populateDetailCanvas(employeeData);
-        generateMonthlyCalendar(employeeData);
+        loadMonthlyCalendar(employeeData);
     }
 
     function populateDetailCanvas(data) {
@@ -406,52 +406,99 @@
         $('#detailRegularization').text(data.regularization);
     }
 
-    function generateMonthlyCalendar(data) {
+    async function loadMonthlyCalendar(data) {
+        const calendarGrid = $('#monthlyCalendarGrid');
+        calendarGrid.html(`
+            <div class="col-12 text-center py-4">
+                <div class="spinner-border spinner-border-sm text-white" role="status">
+                    <span class="visually-hidden">Loading calendar...</span>
+                </div>
+            </div>
+        `);
+
+        const month = $('#filterMonth').val() || selectedMonth;
+        const calendarUrlTemplate = window.monthlySummaryCalendarUrl || '';
+        const calendarUrl = calendarUrlTemplate.replace('__ID__', String(data.employeeId));
+
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const token = tokenMeta ? tokenMeta.getAttribute('content') : '';
+
+        try {
+            const response = await fetch(`${calendarUrl}?month=${encodeURIComponent(month)}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': token,
+                },
+            });
+            const payload = await response.json().catch(function () { return { success: false }; });
+
+            if (!response.ok || !payload.success || !payload.data) {
+                calendarGrid.html('<div class="col-12 text-center text-white-50 py-4">Unable to load calendar.</div>');
+                return;
+            }
+
+            renderMonthlyCalendar(payload.data);
+            updateDetailStatsFromCalendar(payload.data.stats || {});
+        } catch (e) {
+            calendarGrid.html('<div class="col-12 text-center text-white-50 py-4">Unable to load calendar.</div>');
+        }
+    }
+
+    function renderMonthlyCalendar(calendarData) {
         const calendarGrid = $('#monthlyCalendarGrid');
         calendarGrid.empty();
 
-        // Get year and month from selectedMonth
-        const [year, month] = selectedMonth.split('-').map(Number);
+        const days = Array.isArray(calendarData.days) ? calendarData.days : [];
+        if (!days.length) {
+            calendarGrid.html('<div class="col-12 text-center text-white-50 py-4">No calendar data.</div>');
+            return;
+        }
+
+        const [year, month] = (calendarData.month || selectedMonth).split('-').map(Number);
         const firstDay = new Date(year, month - 1, 1);
-        const lastDay = new Date(year, month, 0);
-        const daysInMonth = lastDay.getDate();
         const startDayOfWeek = firstDay.getDay();
 
-        // Day headers
         const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        dayHeaders.forEach(day => {
+        dayHeaders.forEach(function (day) {
             calendarGrid.append(`<div class="calendar-day-header text-center fw-bold small opacity-75">${day}</div>`);
         });
 
-        // Empty cells for days before month starts
         for (let i = 0; i < startDayOfWeek; i++) {
             calendarGrid.append('<div class="calendar-day"></div>');
         }
 
-        // Generate calendar days (simplified for prototype)
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(year, month - 1, day);
-            const dayOfWeek = date.getDay();
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        days.forEach(function (dayData) {
+            const statusClass = dayData.status || 'present';
+            const label = dayData.label || statusClass;
+            const displayText = (statusClass === 'leave' || statusClass === 'half-day')
+                ? (dayData.detail || label)
+                : label;
+            const detail = dayData.detail ? ` — ${dayData.detail}` : '';
+            const title = `${label}${detail}`;
 
-            // Simple status assignment for prototype
-            let statusClass = 'present';
-            let statusText = 'Present';
-
-            if (isWeekend) {
-                statusClass = 'holiday';
-                statusText = 'Holiday';
-            }
-
-            const dayElement = $(`
-                <div class="calendar-day ${statusClass}" title="${statusText}">
-                    <div class="calendar-day-number">${day}</div>
-                    <div class="calendar-day-status">${statusText}</div>
+            calendarGrid.append(`
+                <div class="calendar-day ${escapeHtml(statusClass)}" title="${escapeAttr(title)}">
+                    <div class="calendar-day-number">${dayData.day}</div>
+                    <div class="calendar-day-status">${escapeHtml(displayText)}</div>
                 </div>
             `);
+        });
+    }
 
-            calendarGrid.append(dayElement);
-        }
+    function updateDetailStatsFromCalendar(stats) {
+        if (!stats) return;
+        $('#detailPresent').text(stats.present ?? 0);
+        $('#detailAbsent').text(stats.absent ?? 0);
+        $('#detailHalfDays').text(stats.half_days ?? 0);
+        $('#detailLateArrivals').text(stats.late ?? 0);
+    }
+
+    function escapeAttr(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     // ============================================

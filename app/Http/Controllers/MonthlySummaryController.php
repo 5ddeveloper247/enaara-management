@@ -18,4 +18,28 @@ class MonthlySummaryController extends Controller
     {
         return $this->monthlySummaryService->index($request);
     }
+
+    public function employeeCalendar(Request $request, int $employeeId)
+    {
+        $validated = $request->validate([
+            'month' => ['required', 'date_format:Y-m'],
+        ]);
+
+        try {
+            $calendar = $this->monthlySummaryService->getEmployeeMonthlyCalendar(
+                $employeeId,
+                $validated['month'],
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => $calendar,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to load monthly calendar.',
+            ], 500);
+        }
+    }
 }
