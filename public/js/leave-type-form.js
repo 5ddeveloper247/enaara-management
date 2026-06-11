@@ -137,6 +137,318 @@
             el.addEventListener('input', updatePreview);
             el.addEventListener('change', updatePreview);
         });
+        
+        // Carry Forward + Encashment field visibility
+        const carryForwardEl = document.getElementById('lt_carry_forward');
+        const encashmentAllowedEl = document.getElementById('lt_encashment_allowed');
+        const encashmentRuleEl = document.getElementById('lt_encashment_rule');
+        const encashmentRuleCol = document.getElementById('encashment_rule_col');
+        const encashmentRulesSection = document.getElementById('encashment_rules_section');
+        const addEncashmentRuleBtn = document.getElementById('add_encashment_rule_btn');
+        const encashmentRulesTbody = document.getElementById('encashment_rules_tbody');
+        const noRulesRow = document.getElementById('no_rules_row');
+        let encashmentRuleIndex = 0;
+
+        function toggleCarryForwardFields() {
+            if (!carryForwardEl) return;
+            const showMax = carryForwardEl.value === 'yes';
+            document.querySelectorAll('.carry-forward-dependent').forEach(el => {
+                el.style.display = showMax ? '' : 'none';
+            });
+        }
+
+        function toggleEncashmentFields() {
+            if (!encashmentAllowedEl) return;
+            const allowed = encashmentAllowedEl.value;
+            const isAllowed = allowed !== 'no';
+            const showRuleType = allowed === 'yes';
+            const showRules = allowed === 'as_per_policy'
+                || (allowed === 'yes' && encashmentRuleEl && encashmentRuleEl.value === 'partial');
+
+            if (encashmentRuleCol) {
+                encashmentRuleCol.style.display = showRuleType ? '' : 'none';
+            }
+            if (encashmentRulesSection) {
+                encashmentRulesSection.style.display = showRules ? '' : 'none';
+            }
+            document.querySelectorAll('.encashment-dependent').forEach(el => {
+                if (el.id === 'encashment_rules_section') return;
+                el.style.display = isAllowed ? '' : 'none';
+            });
+        }
+
+        if (carryForwardEl) {
+            carryForwardEl.addEventListener('change', toggleCarryForwardFields);
+            toggleCarryForwardFields();
+        }
+
+        if (encashmentAllowedEl) {
+            encashmentAllowedEl.addEventListener('change', toggleEncashmentFields);
+            toggleEncashmentFields();
+        }
+        if (encashmentRuleEl) {
+            encashmentRuleEl.addEventListener('change', toggleEncashmentFields);
+        }
+
+        function addEncashmentRuleRow(data = {}) {
+            if (noRulesRow) noRulesRow.style.display = 'none';
+
+            const ruleIndex = encashmentRuleIndex;
+            const ruleIndexRef = { current: ruleIndex };
+
+            let savedRoleIds = data.role_level_ids || [];
+            if (!Array.isArray(savedRoleIds)) {
+                savedRoleIds = savedRoleIds ? [savedRoleIds] : [];
+            }
+            savedRoleIds = savedRoleIds.map(id => parseInt(id));
+
+            // Build distinct level options sorted by level number
+            // Group all role_level rows that share the same level number
+            let roleLevelOptions = '';
+            const levelMap = new Map(); // level -> [ids]
+            const sortedLevels = (config.roleLevels && Array.isArray(config.roleLevels))
+                ? [...config.roleLevels].sort((a, b) => a.level - b.level)
+                : [];
+
+            sortedLevels.forEach(rl => {
+                if (!levelMap.has(rl.level)) {
+                    levelMap.set(rl.level, []);
+                }
+                levelMap.get(rl.level).push(parseInt(rl.id));
+            });
+
+            levelMap.forEach((ids, level) => {
+                // A level is "checked" if any of its IDs are in savedRoleIds
+                const isChecked = ids.some(id => savedRoleIds.includes(id)) ? 'checked' : '';
+                // Store all IDs as a JSON data attribute; actual hidden inputs generated on Apply
+                roleLevelOptions += `
+                    <div class="role-item d-flex align-items-center gap-3 px-3 py-2 border-bottom" style="cursor:pointer;" data-level="${level}" data-ids="${ids.join(',')}">
+                        <input class="form-check-input role-level-checkbox flex-shrink-0 mt-0 shadow-none" type="checkbox"
+                            id="rl_${encashmentRuleIndex}_${level}"
+                            data-name="Level ${level}"
+                            data-ids="${ids.join(',')}"
+                            ${isChecked}
+                            style="width:1.1em;height:1.1em;cursor:pointer;">
+                        <label class="flex-grow-1 mb-0 fw-medium" for="rl_${encashmentRuleIndex}_${level}" style="cursor:pointer; font-size:0.875rem;">
+                            Level ${level}
+                        </label>
+                    </div>
+                `;
+            });
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="align-top pt-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="number" class="form-control text-center px-1" name="encashment_rules[${encashmentRuleIndex}][service_years]" min="0" value="${data.service_years || '0'}" style="width:60px;" required>
+                        <span class="text-secondary small">Yrs</span>
+                        <input type="number" class="form-control text-center px-1" name="encashment_rules[${encashmentRuleIndex}][service_months]" min="0" max="11" value="${data.service_months || '0'}" style="width:60px;" required>
+                        <span class="text-secondary small">Mos</span>
+                    </div>
+                </td>
+                <td class="align-top pt-2">
+                    <div class="custom-role-picker position-relative">
+                        <button type="button" class="btn bg-white border w-100 d-flex justify-content-between align-items-center role-dropdown-btn shadow-sm py-2 px-3">
+                            <span class="role-btn-text text-dark" style="font-size:0.9rem;">Select Level(s)</span>
+                            <i class="bi bi-chevron-down text-secondary" style="font-size:0.75rem;"></i>
+                        </button>
+                        <div class="d-flex flex-wrap gap-1 mt-1 role-badges-container"></div>
+                        <div class="rule-hidden-ids"></div>
+                        <div class="role-dropdown-panel border rounded-3 bg-white shadow position-absolute w-100 d-none" style="z-index:9999; top:calc(100% + 4px); left:0; min-width:220px;">
+                            <div class="role-list-container" style="max-height:220px;overflow-y:auto;">
+                                ${roleLevelOptions}
+                            </div>
+                            <div class="p-2 border-top d-flex justify-content-end gap-2 bg-white rounded-bottom-3">
+                                <button type="button" class="btn btn-sm btn-light border role-cancel-btn px-3">Cancel</button>
+                                <button type="button" class="btn btn-sm btn-dark role-apply-btn px-3">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td class="align-top pt-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="number" class="form-control text-center px-1" name="encashment_rules[${encashmentRuleIndex}][max_forward_days]" min="0" step="0.25" value="${data.max_forward_days || ''}" style="width:80px;" required>
+                        <span class="text-secondary small">Days</span>
+                    </div>
+                </td>
+                <td class="align-top pt-2 text-end">
+                    <button type="button" class="btn btn-light border remove-rule-btn px-2 py-1 text-secondary" title="Remove">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+
+            // --- Manual dropdown toggle ---
+            const dropdownBtn  = tr.querySelector('.role-dropdown-btn');
+            const dropdownPanel = tr.querySelector('.role-dropdown-panel');
+            const checkboxes   = tr.querySelectorAll('.role-level-checkbox');
+            const applyBtn     = tr.querySelector('.role-apply-btn');
+            const cancelBtn    = tr.querySelector('.role-cancel-btn');
+            const btnText      = tr.querySelector('.role-btn-text');
+            const badgesContainer = tr.querySelector('.role-badges-container');
+            const roleItems    = tr.querySelectorAll('.role-item');
+
+            let currentlySavedLevels = new Set(
+                Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.closest('.role-item').getAttribute('data-level'))
+            );
+
+            dropdownBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.role-dropdown-panel').forEach(p => {
+                    if (p !== dropdownPanel) p.classList.add('d-none');
+                });
+                dropdownPanel.classList.toggle('d-none');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!tr.contains(e.target)) {
+                    dropdownPanel.classList.add('d-none');
+                }
+            });
+
+            roleItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox' && e.target.tagName !== 'LABEL') {
+                        const cb = item.querySelector('.role-level-checkbox');
+                        if (cb) cb.checked = !cb.checked;
+                    }
+                });
+            });
+
+            function getHiddenInputsContainer() {
+                return tr.querySelector('.rule-hidden-ids');
+            }
+
+            function reindexRuleInputs(newIndex) {
+                ruleIndexRef.current = newIndex;
+                tr.querySelectorAll('input[name^="encashment_rules["]').forEach(function (input) {
+                    input.name = input.name.replace(
+                        /encashment_rules\[\d+\]/,
+                        'encashment_rules[' + newIndex + ']'
+                    );
+                });
+            }
+
+            function applyHiddenInputs() {
+                const container = getHiddenInputsContainer();
+                if (!container) {
+                    return;
+                }
+                container.innerHTML = '';
+                checkboxes.forEach(cb => {
+                    if (currentlySavedLevels.has(cb.closest('.role-item').getAttribute('data-level'))) {
+                        const ids = (cb.getAttribute('data-ids') || '').split(',').filter(Boolean);
+                        ids.forEach(id => {
+                            const inp = document.createElement('input');
+                            inp.type = 'hidden';
+                            inp.name = 'encashment_rules[' + ruleIndexRef.current + '][role_level_ids][]';
+                            inp.value = id.trim();
+                            container.appendChild(inp);
+                        });
+                    }
+                });
+            }
+
+            tr.syncEncashmentRuleRow = function (newIndex) {
+                reindexRuleInputs(newIndex);
+                applyHiddenInputs();
+            };
+
+            function renderBadges() {
+                const savedCheckboxes = Array.from(checkboxes).filter(cb =>
+                    currentlySavedLevels.has(cb.closest('.role-item').getAttribute('data-level'))
+                );
+
+                if (savedCheckboxes.length === 0) {
+                    btnText.textContent = 'Select Level(s)';
+                } else if (savedCheckboxes.length === 1) {
+                    btnText.textContent = savedCheckboxes[0].getAttribute('data-name');
+                } else {
+                    btnText.textContent = savedCheckboxes.length + ' levels selected';
+                }
+
+                badgesContainer.innerHTML = '';
+                savedCheckboxes.forEach(cb => {
+                    const level = cb.closest('.role-item').getAttribute('data-level');
+                    const badge = document.createElement('span');
+                    badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;padding:2px 8px;font-size:0.78rem;font-weight:500;';
+                    const xBtn = document.createElement('i');
+                    xBtn.className = 'bi bi-x';
+                    xBtn.style.cursor = 'pointer';
+                    xBtn.dataset.level = level;
+                    badge.appendChild(xBtn);
+                    badge.append(' ' + cb.getAttribute('data-name'));
+                    badgesContainer.appendChild(badge);
+
+                    xBtn.addEventListener('click', () => {
+                        currentlySavedLevels.delete(xBtn.dataset.level);
+                        const targetCb = Array.from(checkboxes).find(c =>
+                            c.closest('.role-item').getAttribute('data-level') === xBtn.dataset.level
+                        );
+                        if (targetCb) targetCb.checked = false;
+                        applyHiddenInputs();
+                        renderBadges();
+                    });
+                });
+            }
+
+            function syncCheckboxesToSaved() {
+                checkboxes.forEach(cb => {
+                    const lvl = cb.closest('.role-item').getAttribute('data-level');
+                    cb.checked = currentlySavedLevels.has(lvl);
+                });
+            }
+
+            applyBtn.addEventListener('click', () => {
+                currentlySavedLevels = new Set(
+                    Array.from(checkboxes)
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.closest('.role-item').getAttribute('data-level'))
+                );
+                applyHiddenInputs();
+                renderBadges();
+                dropdownPanel.classList.add('d-none');
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                syncCheckboxesToSaved();
+                dropdownPanel.classList.add('d-none');
+            });
+
+            applyHiddenInputs();
+            renderBadges();
+            syncCheckboxesToSaved();
+
+            tr.querySelector('.remove-rule-btn').addEventListener('click', function () {
+                Swal.fire({
+                    title: 'Remove Rule?',
+                    text: 'Are you sure you want to remove this encashment rule?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, remove it',
+                    cancelButtonText: 'Cancel',
+                    buttonsStyling: true,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        tr.remove();
+                        if (encashmentRulesTbody.querySelectorAll('tr:not(#no_rules_row)').length === 0) {
+                            if (noRulesRow) noRulesRow.style.display = '';
+                        }
+                    }
+                });
+            });
+
+            encashmentRulesTbody.appendChild(tr);
+            encashmentRuleIndex++;
+        }
+
+        if (addEncashmentRuleBtn) {
+            addEncashmentRuleBtn.addEventListener('click', () => addEncashmentRuleRow());
+        }
 
         updatePreview();
 
@@ -179,11 +491,20 @@
             setFormFieldValue('carry_forward', data.carry_forward || 'no');
             setFormFieldValue('max_carry_forward_days', data.max_carry_forward_days ?? '');
             setFormFieldValue('encashment_allowed', data.encashment_allowed || 'no');
-            setFormFieldValue('encashment_rule', data.encashment_rule || '');
+            setFormFieldValue('encashment_rule', data.encashment_rule || 'partial');
             setFormFieldValue('max_consecutive_days', data.max_consecutive_days ?? '');
             setFormFieldValue('advance_notice_days', data.advance_notice_days ?? 0);
             setFormFieldValue('short_leave_applicable', data.short_leave_applicable);
             setFormFieldValue('short_leave_max_hours', data.short_leave_max_hours || '');
+            
+            // Populate encashment rules if any
+            if (data.encashment_rules && Array.isArray(data.encashment_rules)) {
+                data.encashment_rules.forEach(rule => {
+                    if (typeof addEncashmentRuleRow === 'function') {
+                        addEncashmentRuleRow(rule);
+                    }
+                });
+            }
 
             if (desc && data.description) {
                 const countEl = document.getElementById('lt_description_count');
@@ -200,6 +521,8 @@
                 });
             }
 
+            toggleCarryForwardFields();
+            toggleEncashmentFields();
             updatePreview();
         }
 
@@ -239,10 +562,33 @@
         };
 
         function resolveFieldElement(fieldName) {
+            const encashmentRoleMatch = fieldName.match(/^encashment_rules\.(\d+)\.role_level_ids$/);
+            if (encashmentRoleMatch && encashmentRulesTbody) {
+                const rows = encashmentRulesTbody.querySelectorAll('tr:not(#no_rules_row)');
+                const row = rows[parseInt(encashmentRoleMatch[1], 10)];
+                if (row) {
+                    return row.querySelector('.role-dropdown-btn');
+                }
+            }
+
             const elId = fieldIdMap[fieldName] || ('lt_' + fieldName);
             let el = document.getElementById(elId);
             if (!el) {
-                el = form.querySelector('[name="' + fieldName + '"]');
+                // Try exact name match (e.g. for array fields like encashment_rules[0][service_years])
+                el = form.querySelector(`[name="${fieldName}"]`);
+            }
+            if (!el) {
+                // Try converting dot notation to bracket notation: encashment_rules.0.service_years -> encashment_rules[0][service_years]
+                const parts = fieldName.split('.');
+                if (parts.length > 1) {
+                    const bracketName = parts[0] + parts.slice(1).map(p => `[${p}]`).join('');
+                    el = form.querySelector(`[name="${bracketName}"]`);
+                }
+            }
+            if (!el) {
+                // Fallback to base field name if available
+                const baseKey = fieldName.split('.')[0];
+                el = form.querySelector(`[name="${baseKey}"]`) || document.getElementById(fieldIdMap[baseKey] || ('lt_' + baseKey));
             }
             return el;
         }
@@ -253,6 +599,9 @@
             }
             if (el.id === 'lt_sbu_box') {
                 return el.closest('.col-md-6') || el.parentElement;
+            }
+            if (el.closest('td')) {
+                return el.closest('td');
             }
             const suffix = el.closest('.lt-suffix-field');
             if (suffix) {
@@ -278,6 +627,10 @@
             if (switchWrap) {
                 switchWrap.classList.add('is-invalid');
             }
+            if (el.closest('.custom-role-picker')) {
+                const btn = el.closest('.custom-role-picker').querySelector('.role-dropdown-btn');
+                if (btn) btn.classList.add('is-invalid', 'border-danger');
+            }
         }
 
         function clearFieldErrorForElement(el) {
@@ -293,6 +646,10 @@
             if (switchWrap) {
                 switchWrap.classList.remove('is-invalid');
             }
+            if (el.closest('.custom-role-picker')) {
+                const btn = el.closest('.custom-role-picker').querySelector('.role-dropdown-btn');
+                if (btn) btn.classList.remove('is-invalid', 'border-danger');
+            }
             const col = getErrorColumn(el);
             if (col) {
                 col.querySelectorAll('.invalid-feedback.lt-field-error').forEach(function (node) {
@@ -302,8 +659,8 @@
         }
 
         function clearFieldErrors() {
-            form.querySelectorAll('.is-invalid').forEach(function (el) {
-                el.classList.remove('is-invalid');
+            form.querySelectorAll('.is-invalid, .border-danger').forEach(function (el) {
+                el.classList.remove('is-invalid', 'border-danger');
             });
             form.querySelectorAll('.invalid-feedback.lt-field-error').forEach(function (el) {
                 el.remove();
@@ -321,29 +678,36 @@
                 return;
             }
 
-            col.querySelectorAll('.invalid-feedback.lt-field-error').forEach(function (node) {
-                node.remove();
-            });
+            // Only remove existing errors if not in a table cell (table cells can have multiple errors for grouped inputs)
+            if (col.tagName !== 'TD') {
+                col.querySelectorAll('.invalid-feedback.lt-field-error').forEach(function (node) {
+                    node.remove();
+                });
+            }
 
             markInvalid(el);
 
             const feedback = document.createElement('div');
             feedback.className = 'invalid-feedback d-block lt-field-error';
             feedback.setAttribute('role', 'alert');
-            feedback.textContent = Array.isArray(message) ? message[0] : String(message);
+            // Make error text nicer for array fields
+            let errorText = Array.isArray(message) ? message[0] : String(message);
+            errorText = errorText.replace(/encashment_rules\.\d+\./g, '');
+            errorText = errorText.replace(/_/g, ' ');
+            errorText = errorText.charAt(0).toUpperCase() + errorText.slice(1);
+            feedback.textContent = errorText;
+            
+            if (col.tagName === 'TD') {
+                feedback.style.fontSize = '0.75rem';
+                feedback.style.marginTop = '2px';
+            }
             col.appendChild(feedback);
         }
 
         function showValidationErrors(errors) {
             clearFieldErrors();
-            const seen = {};
             Object.keys(errors || {}).forEach(function (key) {
-                const baseKey = key.split('.')[0];
-                if (seen[baseKey]) {
-                    return;
-                }
-                seen[baseKey] = true;
-                showFieldError(baseKey, errors[key]);
+                showFieldError(key, errors[key]);
             });
 
             const firstInvalid = form.querySelector('.is-invalid');
@@ -380,7 +744,52 @@
             if (cascadeApi && typeof cascadeApi.refreshHiddenInputs === 'function') {
                 cascadeApi.refreshHiddenInputs();
             }
+
+            // Normalize encashment rule fields BEFORE FormData snapshot
+            const encashmentRuleRows = encashmentRulesTbody
+                ? Array.from(encashmentRulesTbody.querySelectorAll('tr:not(#no_rules_row)'))
+                : [];
+            encashmentRuleRows.forEach((rowTr, index) => {
+                if (typeof rowTr.syncEncashmentRuleRow === 'function') {
+                    rowTr.syncEncashmentRuleRow(index);
+                }
+
+                ['service_years', 'service_months'].forEach(field => {
+                    const input = rowTr.querySelector(`input[name*="[${field}]"]`);
+                    if (input) {
+                        if (input.value === '' || input.value === null || isNaN(input.value)) {
+                            input.value = '0';
+                        } else {
+                            // Strip leading zeros by parsing as int
+                            input.value = parseInt(input.value, 10).toString();
+                        }
+                    }
+                });
+                const maxDaysInput = rowTr.querySelector(`input[name*="[max_forward_days]"]`);
+                if (maxDaysInput) {
+                    if (maxDaysInput.value === '' || maxDaysInput.value === null || isNaN(maxDaysInput.value)) {
+                        maxDaysInput.value = '0';
+                    } else {
+                        maxDaysInput.value = parseFloat(maxDaysInput.value).toString();
+                    }
+                }
+            });
+
             const formData = new FormData(form);
+
+            encashmentRuleRows.forEach((rowTr, index) => {
+                Array.from(formData.keys()).forEach(function (key) {
+                    if (key.indexOf('encashment_rules[' + index + '][role_level_ids]') === 0) {
+                        formData.delete(key);
+                    }
+                });
+                rowTr.querySelectorAll('.rule-hidden-ids input[type="hidden"]').forEach(function (input) {
+                    if (input.value) {
+                        formData.append('encashment_rules[' + index + '][role_level_ids][]', input.value);
+                    }
+                });
+            });
+
             if (cascadeApi && typeof cascadeApi.getSelectedSbuIds === 'function') {
                 const selectedSbuIds = cascadeApi.getSelectedSbuIds();
                 if (selectedSbuIds.length) {

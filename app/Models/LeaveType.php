@@ -54,5 +54,10 @@ class LeaveType extends Model
     {
         return $this->hasOne(LeaveTypeSetting::class);
     }
+
+    public function encashmentRules(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(LeaveTypeEncashmentRule::class);
+    }
 }
 

@@ -72,9 +72,11 @@ class LeaveTypeController extends Controller
         // }
 
         $organizations = Organization::orderBy('name')->get(['id', 'name']);
+        $roleLevels = \App\Models\RoleLevel::excludingSystemAdmin()->where('is_active', true)->orderBy('level')->get(['id', 'name', 'level']);
 
         return view('admin.leave-type.create', [
             'organizations' => $organizations,
+            'roleLevels' => $roleLevels,
         ]);
     }
 
@@ -158,9 +160,11 @@ class LeaveTypeController extends Controller
             }
 
             $organizations = Organization::orderBy('name')->get(['id', 'name']);
+            $roleLevels = \App\Models\RoleLevel::excludingSystemAdmin()->where('is_active', true)->orderBy('level')->get(['id', 'name', 'level']);
 
             return view('admin.leave-type.create', [
                 'organizations' => $organizations,
+                'roleLevels' => $roleLevels,
                 'leaveType' => $leaveType,
                 'initialData' => $this->leaveTypeService->formatForForm($leaveType),
                 'isEdit' => true,

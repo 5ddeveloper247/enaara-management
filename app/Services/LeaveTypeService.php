@@ -70,7 +70,7 @@ class LeaveTypeService
 
     public function findById(int $id): ?LeaveType
     {
-        return LeaveType::with(['organization', 'sbu', 'sbus', 'setting'])->find($id);
+        return LeaveType::with(['organization', 'sbu', 'sbus', 'setting', 'encashmentRules'])->find($id);
     }
 
     public function formatForForm(LeaveType $leaveType): array
@@ -109,6 +109,18 @@ class LeaveTypeService
                 'short_leave_applicable' => $setting->short_leave_applicable,
                 'short_leave_max_hours' => $setting->short_leave_max_hours,
             ]);
+        }
+        
+        $encashmentRules = $leaveType->encashmentRules;
+        if ($encashmentRules && $encashmentRules->isNotEmpty()) {
+            $data['encashment_rules'] = $encashmentRules->map(function ($rule) {
+                return [
+                    'service_years' => floor($rule->service_months / 12),
+                    'service_months' => $rule->service_months % 12,
+                    'role_level_ids' => [$rule->role_level_id],
+                    'max_forward_days' => $rule->max_forward_days,
+                ];
+            })->all();
         }
 
         return $data;
@@ -156,7 +168,9 @@ class LeaveTypeService
                 ? $data['max_carry_forward_days']
                 : null,
             'encashment_allowed' => $data['encashment_allowed'] ?? 'no',
-            'encashment_rule' => $data['encashment_rule'] ?? null,
+            'encashment_rule' => ($data['encashment_allowed'] ?? 'no') !== 'no'
+                ? ($data['encashment_rule'] ?? null)
+                : null,
             'max_consecutive_days' => filled($data['max_consecutive_days'] ?? null)
                 ? (int) $data['max_consecutive_days']
                 : null,
@@ -166,6 +180,55 @@ class LeaveTypeService
                 ? (int) $data['short_leave_max_hours']
                 : null,
         ];
+    }
+    
+    private function syncEncashmentRules(LeaveType $leaveType, array $data): void
+    {
+        $leaveType->encashmentRules()->delete();
+
+        $encashmentAllowed = $data['encashment_allowed'] ?? 'no';
+        if ($encashmentAllowed === 'no') {
+            return;
+        }
+
+        $encashmentRule = $data['encashment_rule'] ?? null;
+        if ($encashmentAllowed === 'yes' && $encashmentRule === 'full') {
+            return;
+        }
+
+        $rules = $data['encashment_rules'] ?? [];
+
+        if (is_array($rules) && count($rules) > 0) {
+            $rulesToInsert = [];
+            foreach ($rules as $rule) {
+                $years = (int) ($rule['service_years'] ?? 0);
+                $months = (int) ($rule['service_months'] ?? 0);
+                $totalMonths = ($years * 12) + $months;
+
+                $roleLevelIds = $rule['role_level_ids'] ?? [];
+                if (!is_array($roleLevelIds)) {
+                    $roleLevelIds = isset($rule['role_level_id']) ? [$rule['role_level_id']] : [];
+                }
+
+                foreach ($roleLevelIds as $roleId) {
+                    $rulesToInsert[] = [
+                        'leave_type_id' => $leaveType->id,
+                        'service_months' => $totalMonths,
+                        'role_level_id' => (int) $roleId,
+                        'max_forward_days' => (float) ($rule['max_forward_days'] ?? 0),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+            // Group by unique keys to prevent duplicate insert errors
+            $uniqueRules = [];
+            foreach ($rulesToInsert as $rule) {
+                $key = $rule['service_months'] . '-' . $rule['role_level_id'];
+                $uniqueRules[$key] = $rule;
+            }
+            \App\Models\LeaveTypeEncashmentRule::insert(array_values($uniqueRules));
+        }
     }
 
     public function store(array $data): LeaveType
@@ -181,10 +244,12 @@ class LeaveTypeService
             $leaveType->setting()->create($this->extractSettingAttributes($data));
             $leaveType->sbus()->sync($sbuIds);
             $leaveType->departments()->detach();
+            
+            $this->syncEncashmentRules($leaveType, $data);
 
             DB::commit();
 
-            return $leaveType->fresh(['organization', 'sbu', 'sbus', 'setting']);
+            return $leaveType->fresh(['organization', 'sbu', 'sbus', 'setting', 'encashmentRules']);
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -215,10 +280,12 @@ class LeaveTypeService
 
             $leaveType->sbus()->sync($sbuIds);
             $leaveType->departments()->detach();
+            
+            $this->syncEncashmentRules($leaveType, $data);
 
             DB::commit();
 
-            return $leaveType->fresh(['organization', 'sbu', 'sbus', 'setting']);
+            return $leaveType->fresh(['organization', 'sbu', 'sbus', 'setting', 'encashmentRules']);
         } catch (\Exception $e) {
             DB::rollBack();
 

@@ -55,6 +55,12 @@ trait ValidatesLeaveTypeInput
             'max_carry_forward_days' => ['nullable', 'numeric', 'min:0', 'max:999.99'],
             'encashment_allowed' => ['required', 'string', 'in:no,yes,as_per_policy'],
             'encashment_rule' => ['nullable', 'string', 'in:full,partial,as_per_policy'],
+            'encashment_rules' => ['nullable', 'array'],
+            'encashment_rules.*.service_years' => ['nullable', 'integer', 'min:0'],
+            'encashment_rules.*.service_months' => ['nullable', 'integer', 'min:0', 'max:11'],
+            'encashment_rules.*.role_level_ids' => ['required', 'array', 'min:1'],
+            'encashment_rules.*.role_level_ids.*' => ['integer', 'exists:role_levels,id'],
+            'encashment_rules.*.max_forward_days' => ['nullable', 'numeric', 'min:0', 'max:999.99'],
             'max_consecutive_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'advance_notice_days' => ['required', 'integer', 'min:0', 'max:365'],
             'short_leave_applicable' => ['boolean'],
@@ -88,8 +94,38 @@ trait ValidatesLeaveTypeInput
             'unit_of_leave.required' => 'Unit of leave is required.',
             'carry_forward.required' => 'Carry forward is required.',
             'encashment_allowed.required' => 'Encashment allowed is required.',
+            'encashment_rule.required' => 'Encashment rule type is required when encashment is allowed.',
+            'encashment_rules.required' => 'At least one encashment rule is required.',
+            'encashment_rules.min' => 'At least one encashment rule is required.',
             'advance_notice_days.required' => 'Advance notice days is required.',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $encashmentAllowed = $this->input('encashment_allowed');
+
+            if (! in_array($encashmentAllowed, ['yes', 'as_per_policy'], true)) {
+                return;
+            }
+
+            $encashmentRule = $this->input('encashment_rule');
+
+            if ($encashmentAllowed === 'yes' && empty($encashmentRule)) {
+                $validator->errors()->add('encashment_rule', 'Encashment rule type is required when encashment is allowed.');
+            }
+
+            $requiresPolicyRules = $encashmentAllowed === 'as_per_policy'
+                || ($encashmentAllowed === 'yes' && $encashmentRule === 'partial');
+
+            if ($requiresPolicyRules) {
+                $rules = $this->input('encashment_rules', []);
+                if (! is_array($rules) || count($rules) === 0) {
+                    $validator->errors()->add('encashment_rules', 'At least one encashment rule is required.');
+                }
+            }
+        });
     }
 
     protected function prepareLeaveTypeInput(): void
@@ -109,6 +145,10 @@ trait ValidatesLeaveTypeInput
 
         if ($this->has('sbu_ids') && is_array($this->input('sbu_ids'))) {
             $merge['sbu_ids'] = array_values(array_filter(array_map('intval', $this->input('sbu_ids'))));
+        }
+
+        if ($this->input('encashment_allowed') === 'as_per_policy') {
+            $merge['encashment_rule'] = 'as_per_policy';
         }
 
         $this->merge($merge);

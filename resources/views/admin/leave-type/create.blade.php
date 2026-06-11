@@ -215,7 +215,7 @@
                                             <option value="as_earned">As Earned</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-3 carry-forward-dependent">
                                         <label for="lt_max_carry_forward" class="form-label">Max Carry Forward (days)</label>
                                         <input type="number" class="form-control" id="lt_max_carry_forward" name="max_carry_forward_days" min="0" step="0.25" placeholder="0">
                                     </div>
@@ -227,13 +227,40 @@
                                             <option value="as_per_policy">As per Policy</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-3 encashment-dependent" id="encashment_rule_col" style="display: none;">
                                         <label for="lt_encashment_rule" class="form-label">Encashment Rule</label>
-                                        <select class="form-select" id="lt_encashment_rule" name="encashment_rule" data-preview="encashment_rule">
-                                            <option value="full">Full</option>
-                                            <option value="partial">Partial</option>
-                                            <option value="as_per_policy" selected>As per policy</option>
+                                        <select class="form-select" id="lt_encashment_rule" name="encashment_rule">
+                                            <option value="full">Full (all remaining)</option>
+                                            <option value="partial">Partial (as per rules)</option>
                                         </select>
+                                    </div>
+                                </div>
+                                <div class="row mt-3 encashment-dependent" id="encashment_rules_section" style="display: none;">
+                                    <div class="col-12">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0 fw-semibold text-secondary">Encashment Rules</h6>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="add_encashment_rule_btn">
+                                                <i class="bi bi-plus-circle me-1"></i> Add Rule
+                                            </button>
+                                        </div>
+                                        <input type="hidden" id="lt_encashment_rules">
+                                        <div class="border rounded-3" style="overflow: visible;">
+                                            <table class="table table-sm table-borderless align-middle mb-0" id="encashment_rules_table">
+                                                <thead class="border-bottom" style="background-color: #f8f9fa;">
+                                                    <tr>
+                                                        <th class="fw-semibold" style="width: 28%; color: #495057 !important; font-size: 0.85rem;">Minimum Service</th>
+                                                        <th class="fw-semibold" style="width: 47%; color: #495057 !important; font-size: 0.85rem;">Role Level</th>
+                                                        <th class="fw-semibold" style="width: 20%; color: #495057 !important; font-size: 0.85rem;">Max Encashment Days</th>
+                                                        <th class="text-end" style="width: 5%;"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="encashment_rules_tbody">
+                                                    <tr id="no_rules_row">
+                                                        <td colspan="4" class="text-center text-muted py-3">No rules added. Click "Add Rule" to configure.</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </section>
@@ -368,6 +395,7 @@
         entitlementReferenceUrl: @json(route('admin.leave.type.entitlement-reference')),
         csrfToken: @json(csrf_token()),
         initialData: @json($initialData ?? null),
+        roleLevels: @json($roleLevels ?? []),
         successTitle: @json($isEdit ? 'Updated' : 'Saved'),
         successMessage: @json($isEdit ? 'Leave type updated successfully.' : 'Leave type created successfully.'),
     };

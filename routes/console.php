@@ -32,3 +32,10 @@ Schedule::command('compensatory:sync-quotas')
     ->runInBackground()
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/compensatory_sync_quotas.log'));
+
+Schedule::command('leave:rollover')
+    ->yearlyOn(1, 1, '00:30')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/leave_rollover.log'));

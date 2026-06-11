@@ -20,12 +20,16 @@ class EmployeeLeaveQuota extends Model
         'year',
         'quota',
         'used',
+        'carried_forward',
+        'encashed',
     ];
 
     protected $casts = [
         'year' => 'integer',
         'quota' => 'decimal:2',
         'used' => 'decimal:2',
+        'carried_forward' => 'decimal:2',
+        'encashed' => 'decimal:2',
     ];
 
     public function employee(): BelongsTo
