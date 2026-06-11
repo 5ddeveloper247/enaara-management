@@ -135,15 +135,49 @@
                     </div>
                 </div>
 
-                <!-- Calculated Days -->
-                <div class="mb-3 p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="small opacity-75 text-white">Total Days:</span>
-                        <strong class="fs-5" id="calculatedDays">0</strong>
+                <!-- Leave Duration Breakdown -->
+                <div class="mb-3 p-3 rounded-3 border leave-duration-card" style="border-color: #ffffff1a !important;">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <strong class="fs-5 text-white mb-0" id="leaveDurationHeadline">Select dates</strong>
+                        <span class="badge rounded-pill leave-duration-type-badge d-none" id="leaveDurationTypeBadge">Full leave</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center d-none" id="billableDaysRow">
-                        <span class="small opacity-75 text-white">Billable Days:</span>
-                        <strong class="fs-6" id="billableDays">0</strong>
+                    <div id="leaveDurationBreakdownEmpty" class="small opacity-50 text-white">
+                        Select start and end dates to see how leave days are calculated.
+                    </div>
+                    <div id="leaveDurationBreakdownBody" class="d-none">
+                        <div class="leave-duration-breakdown-row leave-duration-breakdown-excluded d-none" id="leaveOffDaysRow">
+                            <span class="leave-duration-breakdown-label">
+                                <i class="bi bi-moon me-2"></i>Weekends / off days
+                            </span>
+                            <span class="leave-duration-breakdown-value text-danger" id="leaveOffDays">0</span>
+                        </div>
+                        <div class="leave-duration-breakdown-row leave-duration-breakdown-excluded d-none" id="leaveHolidayDaysRow">
+                            <span class="leave-duration-breakdown-label">
+                                <i class="bi bi-umbrella me-2"></i>Public holidays
+                            </span>
+                            <span class="leave-duration-breakdown-value text-danger" id="leaveHolidayDays">0</span>
+                        </div>
+                        <div class="leave-duration-breakdown-divider">
+                            <span>net leave days</span>
+                        </div>
+                        <div class="leave-duration-breakdown-row">
+                            <span class="leave-duration-breakdown-label">
+                                <i class="bi bi-briefcase me-2"></i>Working days
+                            </span>
+                            <span class="leave-duration-breakdown-value fw-semibold text-white" id="leaveWorkingDays">0</span>
+                        </div>
+                        <div class="leave-duration-breakdown-row leave-duration-breakdown-excluded d-none" id="leaveTravelExemptRow">
+                            <span class="leave-duration-breakdown-label">
+                                <i class="bi bi-airplane me-2"></i>Travel exempt (outstation)
+                            </span>
+                            <span class="leave-duration-breakdown-value text-danger" id="leaveTravelExemptDays">0</span>
+                        </div>
+                        <div class="leave-duration-breakdown-row leave-duration-breakdown-total mt-2 pt-2 border-top" style="border-color: #ffffff1a !important;">
+                            <span class="leave-duration-breakdown-label fw-semibold text-white">
+                                <i class="bi bi-check-circle me-2"></i>Deducted from balance
+                            </span>
+                            <span class="leave-duration-breakdown-value fs-5 fw-bold text-info" id="leaveBillableDays">0</span>
+                        </div>
                     </div>
                 </div>
 
@@ -242,6 +276,60 @@
     .leave-balance-heading--unconditional { color: #7dd3ac; }
     .leave-balance-heading--general { color: #93c5fd; }
     .leave-balance-heading--conditional { color: #fbbf24; }
+
+    .leave-duration-type-badge {
+        background: rgba(25, 135, 84, 0.2);
+        color: #75d99a;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .leave-duration-type-badge.is-half-day {
+        background: rgba(255, 193, 7, 0.15);
+        color: #ffc107;
+    }
+
+    .leave-duration-breakdown-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.35rem 0;
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.85);
+    }
+
+    .leave-duration-breakdown-label {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .leave-duration-breakdown-value {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .leave-duration-breakdown-excluded .leave-duration-breakdown-value::before {
+        content: '-';
+    }
+
+    .leave-duration-breakdown-divider {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0.65rem 0;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 0.75rem;
+        text-transform: lowercase;
+    }
+
+    .leave-duration-breakdown-divider::before,
+    .leave-duration-breakdown-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.12);
+    }
 </style>
 @endpush
 @push('scripts')

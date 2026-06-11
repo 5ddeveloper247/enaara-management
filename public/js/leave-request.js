@@ -8,27 +8,106 @@
     return !!(selectEl && selectEl.dataset && selectEl.dataset.preloaded === '1');
   }
 
-  function updateBillableDaysDisplay(exemptDays, billableDuration) {
-    var billableRow = document.getElementById('billableDaysRow');
-    var billableEl = document.getElementById('billableDays');
-
-    if (!billableRow || !billableEl) {
+  function setLeaveDurationRowVisibility(rowId, count) {
+    var row = document.getElementById(rowId);
+    if (!row) {
       return;
     }
 
-    if (exemptDays > 0) {
-      billableRow.classList.remove('d-none');
-      billableEl.textContent = String(billableDuration);
+    if (count > 0) {
+      row.classList.remove('d-none');
     } else {
-      billableRow.classList.add('d-none');
-      billableEl.textContent = '0';
+      row.classList.add('d-none');
     }
   }
 
-  function calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput, outstationState) {
+  function formatLeaveHeadline(calendarDays, duration, isHalfDay) {
+    if (isHalfDay && duration === 0.5) {
+      return '0.5 working day';
+    }
+
+    if (isHalfDay && duration === 0) {
+      return 'Short leave not available';
+    }
+
+    var totalDays = parseInt(calendarDays || 0, 10);
+    return totalDays + (totalDays === 1 ? ' total day of leave' : ' total days of leave');
+  }
+
+  function renderLeaveDurationBreakdown(summary, state) {
+    var headlineEl = document.getElementById('leaveDurationHeadline');
+    var emptyEl = document.getElementById('leaveDurationBreakdownEmpty');
+    var bodyEl = document.getElementById('leaveDurationBreakdownBody');
+    var typeBadgeEl = document.getElementById('leaveDurationTypeBadge');
+    var offDaysEl = document.getElementById('leaveOffDays');
+    var holidayDaysEl = document.getElementById('leaveHolidayDays');
+    var workingDaysEl = document.getElementById('leaveWorkingDays');
+    var travelExemptEl = document.getElementById('leaveTravelExemptDays');
+    var billableEl = document.getElementById('leaveBillableDays');
+
+    if (!headlineEl || !emptyEl || !bodyEl) {
+      return;
+    }
+
+    if (!summary) {
+      headlineEl.textContent = state === 'loading' ? 'Calculating...' : 'Select dates';
+      emptyEl.classList.remove('d-none');
+      emptyEl.textContent = state === 'loading'
+        ? 'Calculating leave days...'
+        : 'Select start and end dates to see how leave days are calculated.';
+      bodyEl.classList.add('d-none');
+      if (typeBadgeEl) {
+        typeBadgeEl.classList.add('d-none');
+      }
+      return;
+    }
+
+    var isHalfDay = !!summary.is_half_day;
+    var duration = parseFloat(summary.duration || 0);
+    var workingDays = parseFloat(summary.working_days !== undefined ? summary.working_days : duration);
+    var billableDuration = parseFloat(
+      summary.billable_duration !== undefined ? summary.billable_duration : duration
+    );
+    var exemptDays = parseFloat(summary.exempt_days || 0);
+    var calendarDays = parseInt(summary.calendar_days || 0, 10);
+    var offDays = parseInt(summary.off_days || 0, 10);
+    var holidayDays = parseInt(summary.public_holiday_days || 0, 10);
+
+    emptyEl.classList.add('d-none');
+    bodyEl.classList.remove('d-none');
+
+    if (typeBadgeEl) {
+      typeBadgeEl.classList.remove('d-none');
+      typeBadgeEl.textContent = isHalfDay ? 'Short leave' : 'Full leave';
+      typeBadgeEl.classList.toggle('is-half-day', isHalfDay);
+    }
+
+    headlineEl.textContent = formatLeaveHeadline(calendarDays, duration, isHalfDay);
+
+    if (offDaysEl) {
+      offDaysEl.textContent = String(offDays);
+    }
+    if (holidayDaysEl) {
+      holidayDaysEl.textContent = String(holidayDays);
+    }
+    if (workingDaysEl) {
+      workingDaysEl.textContent = isHalfDay ? String(duration) : String(workingDays);
+    }
+    if (travelExemptEl) {
+      travelExemptEl.textContent = String(exemptDays);
+    }
+    if (billableEl) {
+      billableEl.textContent = String(billableDuration);
+    }
+
+    setLeaveDurationRowVisibility('leaveOffDaysRow', offDays);
+    setLeaveDurationRowVisibility('leaveHolidayDaysRow', holidayDays);
+    setLeaveDurationRowVisibility('leaveTravelExemptRow', exemptDays);
+  }
+
+  function calculateDays(startDateInput, endDateInput, isHalfDayInput, outstationState) {
     if (!startDateInput.value || !endDateInput.value) {
-      calculatedDaysEl.textContent = '0';
-      updateBillableDaysDisplay(0, 0);
+      renderLeaveDurationBreakdown(null);
       return;
     }
 
@@ -36,19 +115,13 @@
     var end = new Date(endDateInput.value);
 
     if (end < start) {
-      calculatedDaysEl.textContent = '0';
-      updateBillableDaysDisplay(0, 0);
+      renderLeaveDurationBreakdown(null);
       return;
     }
 
-    var isHalfDay = !!(isHalfDayInput && isHalfDayInput.checked);
-    var diffTime = end.getTime() - start.getTime();
-    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    calculatedDaysEl.textContent = isHalfDay ? '0.5' : String(diffDays);
-    updateBillableDaysDisplay(0, isHalfDay ? 0.5 : diffDays);
-
     var employeeSelect = document.getElementById('leaveEmployee');
     var employeeId = employeeSelect ? employeeSelect.value : null;
+    var isHalfDay = !!(isHalfDayInput && isHalfDayInput.checked);
     var isOutstation = !!(outstationState && outstationState.isOutstationInput && outstationState.isOutstationInput.checked);
     var destination = null;
 
@@ -56,30 +129,36 @@
       destination = outstationState.getSelectedDestination();
     }
 
-    if (employeeId && startDateInput.value && endDateInput.value) {
-      $.ajax({
-        url: '/admin/leave-request/calculate-duration',
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        data: {
-          employee_id: employeeId,
-          start_date: startDateInput.value,
-          end_date: endDateInput.value,
-          is_half_day: isHalfDay ? 1 : 0,
-          is_outstation_leave: isOutstation ? 1 : 0,
-          outstation_destination: destination || ''
-        },
-        success: function (resp) {
-          if (resp && resp.success && resp.duration !== undefined) {
-            calculatedDaysEl.textContent = String(resp.duration);
-            updateBillableDaysDisplay(
-              parseFloat(resp.exempt_days || 0),
-              parseFloat(resp.billable_duration !== undefined ? resp.billable_duration : resp.duration)
-            );
-          }
-        }
-      });
+    if (!employeeId) {
+      renderLeaveDurationBreakdown(null);
+      return;
     }
+
+    renderLeaveDurationBreakdown(null, 'loading');
+
+    $.ajax({
+      url: '/admin/leave-request/calculate-duration',
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      data: {
+        employee_id: employeeId,
+        start_date: startDateInput.value,
+        end_date: endDateInput.value,
+        is_half_day: isHalfDay ? 1 : 0,
+        is_outstation_leave: isOutstation ? 1 : 0,
+        outstation_destination: destination || ''
+      },
+      success: function (resp) {
+        if (resp && resp.success) {
+          renderLeaveDurationBreakdown(resp);
+        } else {
+          renderLeaveDurationBreakdown(null);
+        }
+      },
+      error: function () {
+        renderLeaveDurationBreakdown(null);
+      }
+    });
   }
 
   function renderOutstationDestinations(payload, optionsContainer, noAddressMessage, exemptNotice) {
@@ -136,11 +215,10 @@
         syncOutstationExemptNotice(optionsContainer, exemptNotice);
         var startDateInput = document.getElementById('leaveStartDate');
         var endDateInput = document.getElementById('leaveEndDate');
-        var calculatedDaysEl = document.getElementById('calculatedDays');
         var isHalfDayInput = document.getElementById('leaveIsHalfDay');
         var isOutstationInput = document.getElementById('leaveIsOutstation');
-        if (startDateInput && endDateInput && calculatedDaysEl) {
-          calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput, {
+        if (startDateInput && endDateInput) {
+          calculateDays(startDateInput, endDateInput, isHalfDayInput, {
             isOutstationInput: isOutstationInput,
             getSelectedDestination: function () {
               var selected = optionsContainer.querySelector('input[name="outstation_destination"]:checked');
@@ -639,7 +717,6 @@
     var startDateInput = document.getElementById('leaveStartDate');
     var endDateInput = document.getElementById('leaveEndDate');
     var leaveTypeSelect = document.getElementById('leaveType');
-    var calculatedDaysEl = document.getElementById('calculatedDays');
     var medicalCertSection = document.getElementById('medicalCertSection');
     var medicalReportInput = document.getElementById('medical_report');
     var halfDaySection = document.getElementById('halfDaySection');
@@ -763,10 +840,10 @@
         startDateInput,
         endDateInput
       );
-      calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput, getOutstationState());
+      calculateDays(startDateInput, endDateInput, isHalfDayInput, getOutstationState());
     }
 
-    if (startDateInput && endDateInput && calculatedDaysEl) {
+    if (startDateInput && endDateInput) {
       var onDateChange = function () {
         if (startDateInput.value) {
           endDateInput.min = startDateInput.value;
@@ -908,8 +985,7 @@
           populateLeaveTypes(leaveTypeSelect, []);
         }
 
-        if (calculatedDaysEl) calculatedDaysEl.textContent = '0';
-        updateBillableDaysDisplay(0, 0);
+        renderLeaveDurationBreakdown(null);
         if (halfDaySection) halfDaySection.style.display = 'none';
         if (isHalfDayInput) isHalfDayInput.checked = false;
         if (isOutstationInput) isOutstationInput.checked = false;
@@ -964,7 +1040,7 @@
         var employeeId = employeeSelect.value;
         var employeeChanged = lastLoadedEmployeeId !== employeeId;
 
-        calculateDays(startDateInput, endDateInput, calculatedDaysEl, isHalfDayInput);
+        calculateDays(startDateInput, endDateInput, isHalfDayInput, getOutstationState());
 
         loadEmployeeLeaveData(employeeId, {
           reloadLeaveTypes: employeeChanged && !keepPreloadedLeaveTypes

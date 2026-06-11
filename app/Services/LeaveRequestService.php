@@ -287,16 +287,48 @@ class LeaveRequestService
         bool $isOutstation = false,
         ?string $outstationDestination = null
     ): array {
-        $duration = $this->calculateActualLeaveDuration($employee, $startDate, $endDate, $isHalfDay);
+        return $this->getLeaveDurationBreakdown(
+            $employee,
+            $startDate,
+            $endDate,
+            $isHalfDay,
+            $isOutstation,
+            $outstationDestination
+        );
+    }
+
+    public function getLeaveDurationBreakdown(
+        Employee $employee,
+        Carbon $startDate,
+        Carbon $endDate,
+        bool $isHalfDay = false,
+        bool $isOutstation = false,
+        ?string $outstationDestination = null
+    ): array {
+        $classification = $this->classifyLeaveDatesInRange($employee, $startDate, $endDate);
+        $activeCount = count($classification['active_dates']);
+
+        $duration = 0.0;
+        if ($activeCount > 0) {
+            $duration = $isHalfDay
+                ? ($activeCount === 1 ? 0.5 : 0.0)
+                : (float) $activeCount;
+        }
+
         $exemptDays = $isHalfDay
             ? 0.0
             : $this->leaveRequestOutstationService->resolveExemptDays($employee, $isOutstation, $outstationDestination);
-        $billableDuration = $this->leaveRequestOutstationService->billableDuration((float) $duration, $exemptDays);
+        $billableDuration = $this->leaveRequestOutstationService->billableDuration($duration, $exemptDays);
 
         return [
+            'calendar_days' => $classification['calendar_days'],
+            'public_holiday_days' => $classification['public_holiday_days'],
+            'off_days' => $classification['off_days'],
+            'working_days' => (float) $activeCount,
             'duration' => $duration,
             'exempt_days' => $exemptDays,
             'billable_duration' => $billableDuration,
+            'is_half_day' => $isHalfDay,
         ];
     }
 
@@ -344,7 +376,23 @@ class LeaveRequestService
 
     public function getActiveLeaveDates(Employee $employee, Carbon $startDate, Carbon $endDate): array
     {
+        return $this->classifyLeaveDatesInRange($employee, $startDate, $endDate)['active_dates'];
+    }
+
+    /**
+     * @return array{
+     *     active_dates: array<int, string>,
+     *     calendar_days: int,
+     *     public_holiday_days: int,
+     *     off_days: int
+     * }
+     */
+    private function classifyLeaveDatesInRange(Employee $employee, Carbon $startDate, Carbon $endDate): array
+    {
         $activeDates = [];
+        $calendarDays = 0;
+        $publicHolidayDays = 0;
+        $offDays = 0;
 
         $holidayResolver = app(\App\Services\PublicHolidayResolver::class);
         $holidays = $holidayResolver->loadHolidaysForRange($startDate, $endDate);
@@ -376,6 +424,7 @@ class LeaveRequestService
         $end = $endDate->copy()->startOfDay();
 
         while ($current->lte($end)) {
+            $calendarDays++;
             $dateStr = $current->toDateString();
 
             $isPublicHoliday = $holidayResolver->resolveForAssigneeOnDate(
@@ -387,22 +436,26 @@ class LeaveRequestService
             ) !== null;
 
             if ($isPublicHoliday) {
+                $publicHolidayDays++;
                 $current->addDay();
                 continue;
             }
 
+            $isWeeklyOff = false;
+
             if ($isShiftBased) {
                 if ($hasAnyRoster) {
                     $roster = $rostersByDate->get($dateStr);
-                    if ($roster && strtolower(trim((string) $roster->status)) === 'off') {
-                        $current->addDay();
-                        continue;
-                    }
-                } elseif ($this->employeeWorkingScheduleService->isWeeklyOffDay($current, null)) {
-                    $current->addDay();
-                    continue;
+                    $isWeeklyOff = $roster && strtolower(trim((string) $roster->status)) === 'off';
+                } else {
+                    $isWeeklyOff = $this->employeeWorkingScheduleService->isWeeklyOffDay($current, null);
                 }
-            } elseif ($this->employeeWorkingScheduleService->isWeeklyOffDay($current, $workingDays)) {
+            } else {
+                $isWeeklyOff = $this->employeeWorkingScheduleService->isWeeklyOffDay($current, $workingDays);
+            }
+
+            if ($isWeeklyOff) {
+                $offDays++;
                 $current->addDay();
                 continue;
             }
@@ -411,7 +464,12 @@ class LeaveRequestService
             $current->addDay();
         }
 
-        return $activeDates;
+        return [
+            'active_dates' => $activeDates,
+            'calendar_days' => $calendarDays,
+            'public_holiday_days' => $publicHolidayDays,
+            'off_days' => $offDays,
+        ];
     }
 
     public function calculateActualLeaveDuration(
