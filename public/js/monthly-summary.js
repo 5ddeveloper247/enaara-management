@@ -13,6 +13,8 @@
     let monthlySummaryData = [];
     const currentDate = new Date();
     let selectedMonth = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
+    let currentCalendarContext = null;
+    let currentCalendarDays = [];
 
     // ============================================
     // INITIALIZATION
@@ -282,6 +284,12 @@
 
         // Export employee report
         $('#exportEmployeeReportBtn').on('click', handleExportEmployeeReport);
+
+        $('#monthlyCalendarGrid').on('click', '.calendar-day[data-date]', handleCalendarDayClick);
+        $('#saveWorkAssignmentBtn').on('click', handleSaveWorkAssignment);
+        $('#workAssignmentLocationGrid').on('change', 'input[name="work_type"]', function () {
+            setWorkAssignmentSelection($(this).val());
+        });
     }
 
     // ============================================
@@ -374,6 +382,12 @@
             branch: button.getAttribute('data-branch') || '-'
         };
 
+        currentCalendarContext = {
+            employeeId: employeeData.employeeId,
+            employeeName: employeeData.employeeName,
+            employeeAvatar: employeeData.employeeAvatar,
+        };
+
         populateDetailCanvas(employeeData);
         loadMonthlyCalendar(employeeData);
     }
@@ -449,6 +463,8 @@
         calendarGrid.empty();
 
         const days = Array.isArray(calendarData.days) ? calendarData.days : [];
+        currentCalendarDays = days;
+
         if (!days.length) {
             calendarGrid.html('<div class="col-12 text-center text-white-50 py-4">No calendar data.</div>');
             return;
@@ -470,18 +486,235 @@
         days.forEach(function (dayData) {
             const statusClass = dayData.status || 'present';
             const label = dayData.label || statusClass;
-            const displayText = (statusClass === 'leave' || statusClass === 'half-day')
-                ? (dayData.detail || label)
-                : label;
-            const detail = dayData.detail ? ` — ${dayData.detail}` : '';
-            const title = `${label}${detail}`;
+            const displayText = getCalendarDisplayText(dayData, statusClass, label);
+            const title = getCalendarTooltip(dayData, label);
 
             calendarGrid.append(`
-                <div class="calendar-day ${escapeHtml(statusClass)}" title="${escapeAttr(title)}">
+                <div class="calendar-day ${escapeHtml(statusClass)}"
+                     data-date="${escapeAttr(dayData.date)}"
+                     title="${escapeAttr(title)}">
                     <div class="calendar-day-number">${dayData.day}</div>
                     <div class="calendar-day-status">${escapeHtml(displayText)}</div>
                 </div>
             `);
+        });
+    }
+
+    function getCalendarDisplayText(dayData, statusClass, label) {
+        if (statusClass === 'leave' || statusClass === 'half-day') {
+            return dayData.detail || label;
+        }
+
+        return label;
+    }
+
+    function getCalendarTooltip(dayData, label) {
+        const notes = dayData.notes ? String(dayData.notes).trim() : '';
+        if (notes) {
+            return `${label} — ${notes}`;
+        }
+
+        if ((dayData.status === 'leave' || dayData.status === 'half-day') && dayData.detail) {
+            return `${label} — ${dayData.detail}`;
+        }
+
+        return label;
+    }
+
+    function handleCalendarDayClick(event) {
+        const date = event.currentTarget.getAttribute('data-date');
+        if (!date || !currentCalendarContext) {
+            return;
+        }
+
+        const dayData = currentCalendarDays.find(function (day) {
+            return day.date === date;
+        });
+
+        if (!dayData) {
+            return;
+        }
+
+        openWorkAssignmentModal(dayData);
+    }
+
+    function openWorkAssignmentModal(dayData) {
+        const modalEl = document.getElementById('workAssignmentModal');
+        if (!modalEl || !currentCalendarContext) {
+            return;
+        }
+
+        const formattedDate = formatDisplayDate(dayData.date);
+        const avatar = currentCalendarContext.employeeAvatar
+            || getEmployeeInitials(currentCalendarContext.employeeName);
+
+        $('#workAssignmentEmployeeAvatar').text(avatar);
+        $('#workAssignmentEmployeeName').text(currentCalendarContext.employeeName || '-');
+        $('#workAssignmentDateLabel').text(formattedDate);
+        updateWorkAssignmentStatusBadge(dayData);
+
+        const isAssignable = !!dayData.is_assignable;
+        const blockedNotice = $('#workAssignmentBlockedNotice');
+        const form = $('#workAssignmentForm');
+        const saveBtn = $('#saveWorkAssignmentBtn');
+        const locationCards = $('#workAssignmentLocationGrid .work-assignment-location-card');
+
+        blockedNotice.toggleClass('d-none', isAssignable);
+        form.find('textarea').prop('disabled', !isAssignable);
+        form.find('input[name="work_type"]').prop('disabled', !isAssignable);
+        locationCards.toggleClass('is-disabled', !isAssignable);
+        saveBtn.prop('disabled', !isAssignable);
+
+        const workType = dayData.work_type || 'none';
+        setWorkAssignmentSelection(workType);
+
+        $('#workAssignmentNotes').val(dayData.notes || '');
+
+        modalEl.dataset.assignmentDate = dayData.date;
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+
+    function setWorkAssignmentSelection(workType) {
+        const normalized = workType || 'none';
+        const input = $(`#workAssignmentLocationGrid input[name="work_type"][value="${normalized}"]`);
+        if (input.length) {
+            input.prop('checked', true);
+        }
+
+        $('#workAssignmentLocationGrid .work-assignment-location-card').each(function () {
+            const cardType = String($(this).data('work-type') || 'none');
+            $(this).toggleClass('is-selected', cardType === normalized);
+        });
+    }
+
+    function updateWorkAssignmentStatusBadge(dayData) {
+        const badge = $('#workAssignmentDayStatus');
+        const label = dayData.label || dayData.status || '-';
+        const status = dayData.status || 'present';
+
+        badge.removeClass('is-warning is-muted is-primary');
+
+        if (['leave', 'half-day', 'absent', 'outstation'].includes(status)) {
+            badge.addClass('is-warning');
+        } else if (['off', 'holiday'].includes(status)) {
+            badge.addClass('is-muted');
+        } else if (status === 'work-from-home') {
+            badge.addClass('is-primary');
+        }
+
+        $('#workAssignmentDayStatusText').text(label);
+    }
+
+    function getEmployeeInitials(name) {
+        const parts = String(name || '')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+
+        if (!parts.length) {
+            return 'E';
+        }
+
+        if (parts.length === 1) {
+            return parts[0].slice(0, 2).toUpperCase();
+        }
+
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    async function handleSaveWorkAssignment() {
+        const modalEl = document.getElementById('workAssignmentModal');
+        if (!modalEl || !currentCalendarContext) {
+            return;
+        }
+
+        const assignmentDate = modalEl.dataset.assignmentDate;
+        if (!assignmentDate) {
+            return;
+        }
+
+        const workType = $('input[name="work_type"]:checked').val() || 'none';
+        const notes = ($('#workAssignmentNotes').val() || '').trim();
+        const urlTemplate = window.monthlySummaryWorkAssignmentUrl || '';
+        const saveUrl = urlTemplate.replace('__ID__', String(currentCalendarContext.employeeId));
+
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const token = tokenMeta ? tokenMeta.getAttribute('content') : '';
+        const saveBtn = $('#saveWorkAssignmentBtn');
+
+        saveBtn.prop('disabled', true);
+
+        try {
+            const response = await fetch(saveUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                },
+                body: JSON.stringify({
+                    assignment_date: assignmentDate,
+                    work_type: workType,
+                    notes: notes,
+                }),
+            });
+
+            const payload = await response.json().catch(function () { return { success: false }; });
+
+            if (!response.ok || !payload.success) {
+                const message = payload.message || 'Unable to save work assignment.';
+                if (window.Swal) {
+                    Swal.fire('Error', message, 'error');
+                } else {
+                    alert(message);
+                }
+                return;
+            }
+
+            if (payload.data && payload.data.calendar) {
+                renderMonthlyCalendar(payload.data.calendar);
+                updateDetailStatsFromCalendar(payload.data.calendar.stats || {});
+            }
+
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) {
+                modal.hide();
+            }
+
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Saved',
+                    text: payload.message || 'Work assignment saved.',
+                    timer: 1600,
+                    showConfirmButton: false,
+                });
+            }
+        } catch (e) {
+            if (window.Swal) {
+                Swal.fire('Error', 'Unable to save work assignment.', 'error');
+            } else {
+                alert('Unable to save work assignment.');
+            }
+        } finally {
+            saveBtn.prop('disabled', false);
+        }
+    }
+
+    function formatDisplayDate(dateStr) {
+        const parts = String(dateStr).split('-').map(Number);
+        if (parts.length !== 3) {
+            return dateStr;
+        }
+
+        const date = new Date(parts[0], parts[1] - 1, parts[2]);
+        return date.toLocaleDateString(undefined, {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
         });
     }
 

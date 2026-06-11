@@ -96,6 +96,11 @@ class Employee extends Model
         return $this->hasMany(EmployeeLeaveQuota::class, 'employee_id');
     }
 
+    public function workAssignments()
+    {
+        return $this->hasMany(EmployeeWorkAssignment::class, 'employee_id');
+    }
+
     public function scopeShiftBasedWorkArrangement($query)
     {
         return $query->where('engagement_mode', 'shifts');

@@ -78,6 +78,16 @@
     border-color: rgba(25, 135, 84, 0.5);
 }
 
+.calendar-day.work-from-home {
+    background-color: rgba(13, 110, 253, 0.35);
+    border-color: rgba(13, 110, 253, 0.55);
+}
+
+.calendar-day.outstation {
+    background-color: rgba(255, 193, 7, 0.35);
+    border-color: rgba(255, 193, 7, 0.55);
+}
+
 .calendar-day.absent {
     background-color: rgba(220, 53, 69, 0.3);
     border-color: rgba(220, 53, 69, 0.5);
@@ -143,6 +153,283 @@
 }
 
 /* ============================================
+   WORK ASSIGNMENT MODAL
+   ============================================ */
+.work-assignment-modal-dialog {
+    max-width: 560px;
+}
+
+.work-assignment-modal {
+    padding: 0.25rem 0.25rem 0;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.14);
+}
+
+.work-assignment-modal-header,
+.work-assignment-modal-body,
+.work-assignment-modal-footer {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+.work-assignment-modal-header {
+    padding-top: 1.35rem;
+    padding-bottom: 1rem;
+}
+
+.work-assignment-modal-body {
+    padding-bottom: 0.5rem;
+}
+
+.work-assignment-modal-footer {
+    padding-top: 1rem;
+    padding-bottom: 1.35rem;
+    border-top: 1px solid #e8e8e8 !important;
+    gap: 0.75rem;
+}
+
+.work-assignment-title-icon {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid #d7dce3;
+    border-radius: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    font-size: 0.95rem;
+}
+
+.work-assignment-employee-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: #f3f1ec;
+    border-radius: 0.85rem;
+    padding: 0.9rem 1rem;
+    margin-bottom: 1.35rem;
+}
+
+.work-assignment-employee-avatar {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.work-assignment-employee-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.work-assignment-employee-name {
+    font-weight: 700;
+    color: #111827;
+    font-size: 0.95rem;
+    line-height: 1.3;
+}
+
+.work-assignment-employee-date {
+    color: #6b7280;
+    font-size: 0.82rem;
+    margin-top: 0.1rem;
+}
+
+.work-assignment-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #e8f7ee;
+    color: #15803d;
+    border-radius: 999px;
+    padding: 0.28rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.work-assignment-status-badge.is-warning {
+    background: #fff7e6;
+    color: #b45309;
+}
+
+.work-assignment-status-badge.is-muted {
+    background: #eef2f7;
+    color: #64748b;
+}
+
+.work-assignment-status-badge.is-primary {
+    background: #e8f0ff;
+    color: #1d4ed8;
+}
+
+.work-assignment-blocked-notice {
+    background: #fff8e8;
+    border: 1px solid #f5d78e;
+    color: #8a5b00;
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.work-assignment-section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 0.65rem;
+}
+
+.work-assignment-optional {
+    text-transform: none;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.work-assignment-location-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.work-assignment-location-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 7.5rem;
+    padding: 1rem 0.65rem 0.8rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 0.85rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    text-align: center;
+}
+
+.work-assignment-location-card:hover {
+    border-color: #cbd5e1;
+}
+
+.work-assignment-location-card.is-selected {
+    border-color: #2563eb;
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.08);
+}
+
+.work-assignment-location-card.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.work-assignment-location-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.work-assignment-location-icon {
+    font-size: 1.35rem;
+    color: #6b7280;
+    line-height: 1;
+}
+
+.work-assignment-location-card.is-selected .work-assignment-location-icon,
+.work-assignment-location-card.is-selected .work-assignment-location-label {
+    color: #2563eb;
+}
+
+.work-assignment-location-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.25;
+    margin-top: 0.55rem;
+}
+
+.work-assignment-location-radio {
+    width: 1.15rem;
+    height: 1.15rem;
+    border: 1.5px solid #d1d5db;
+    border-radius: 50%;
+    margin-top: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+}
+
+.work-assignment-location-card.is-selected .work-assignment-location-radio {
+    border-color: #2563eb;
+    background: #2563eb;
+}
+
+.work-assignment-location-card.is-selected .work-assignment-location-radio::after {
+    content: '';
+    width: 0.28rem;
+    height: 0.52rem;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(45deg) translateY(-1px);
+}
+
+.work-assignment-notes {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    resize: vertical;
+    min-height: 5.5rem;
+    font-size: 0.9rem;
+    color: #111827;
+    padding: 0.85rem 0.95rem;
+}
+
+.work-assignment-notes:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.12);
+}
+
+.work-assignment-btn-cancel,
+.work-assignment-btn-save {
+    min-width: 6.5rem;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #111827;
+    font-weight: 600;
+    border-radius: 0.65rem;
+    padding: 0.55rem 1rem;
+}
+
+.work-assignment-btn-save {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+.work-assignment-btn-cancel:hover,
+.work-assignment-btn-save:hover {
+    background: #f9fafb;
+    border-color: #cbd5e1;
+    color: #111827;
+}
+
+.work-assignment-btn-save:disabled,
+.work-assignment-btn-cancel:disabled {
+    opacity: 0.55;
+}
+
+/* ============================================
    RESPONSIVE ADJUSTMENTS
    ============================================ */
 @media (max-width: 768px) {
@@ -154,6 +441,18 @@
     .calendar-day {
         padding: 0.25rem;
         font-size: 0.65rem;
+    }
+
+    .work-assignment-location-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .work-assignment-employee-card {
+        flex-wrap: wrap;
+    }
+
+    .work-assignment-status-badge {
+        margin-left: 3.45rem;
     }
 }
 

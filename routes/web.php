@@ -336,6 +336,7 @@ Route::middleware(['auth', EnsurePasswordIsNotTemporary::class])->prefix('admin'
     // Monthly Summary ROutes
     Route::get('/monthly-summary', [MonthlySummaryController::class, 'index'])->name('admin.monthly-summary.index');
     Route::get('/monthly-summary/employees/{employeeId}/calendar', [MonthlySummaryController::class, 'employeeCalendar'])->name('admin.monthly-summary.employee_calendar');
+    Route::post('/monthly-summary/employees/{employeeId}/work-assignments', [MonthlySummaryController::class, 'saveWorkAssignment'])->name('admin.monthly-summary.work_assignment');
 
     // Route::get('/my-leaves', function () {
     //     return view('admin.my-leaves.index');

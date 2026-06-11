@@ -32,6 +32,9 @@
 
 <!-- Employee Monthly Detail Canvas -->
 @include('admin.monthly-summary.detail_canvas')
+
+<!-- Work Assignment Modal -->
+@include('admin.monthly-summary.work_assignment_modal')
 @endsection
 
 @push('scripts')
@@ -59,6 +62,7 @@
     window.monthlySummaryRows = @json($monthlySummary);
     window.monthlySummaryFloors = @json($floorsForFilter ?? []);
     window.monthlySummaryCalendarUrl = @json(route('admin.monthly-summary.employee_calendar', ['employeeId' => '__ID__']));
+    window.monthlySummaryWorkAssignmentUrl = @json(route('admin.monthly-summary.work_assignment', ['employeeId' => '__ID__']));
 </script>
 <script src="{{ asset('js/monthly-summary.js') }}"></script>
 @endpush

@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\EmployeLeaveEntity;
 use App\Models\Organization;
 use App\Models\Sbu;
+use App\Models\EmployeeWorkAssignment;
 use App\Models\ShiftRosterEntry;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -120,6 +121,12 @@ class MonthlySummaryService
             ->get()
             ->keyBy(static fn (EmployeLeaveEntity $entity) => $entity->leave_date->toDateString());
 
+        $workAssignments = EmployeeWorkAssignment::query()
+            ->where('employee_id', $employee->id)
+            ->whereBetween('assignment_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get()
+            ->keyBy(static fn (EmployeeWorkAssignment $assignment) => $assignment->assignment_date->toDateString());
+
         $workingDays = $this->resolveWorkingDays($employee);
         $isShiftBased = $employee->engagement_mode === 'shifts';
 
@@ -146,6 +153,8 @@ class MonthlySummaryService
                 $rosterEntries->get($dateStr),
                 $leaveEntities->get($dateStr),
             );
+
+            $day = $this->applyWorkAssignmentOverlay($day, $workAssignments->get($dateStr));
 
             $days[] = $day;
             $this->incrementCalendarStat($stats, $day);
@@ -213,42 +222,42 @@ class MonthlySummaryService
         }
 
         if ($isShiftBased) {
-            return $this->resolveShiftBasedDay($date, $rosterEntry);
+            return $this->resolveShiftBasedDay($date, $rosterEntry, $workingDays);
         }
 
         return $this->resolveStandardDay($date, $workingDays);
     }
 
-    private function resolveShiftBasedDay(Carbon $date, ?ShiftRosterEntry $rosterEntry): array
+    private function resolveShiftBasedDay(Carbon $date, ?ShiftRosterEntry $rosterEntry, ?array $workingDays): array
     {
         $base = [
             'date' => $date->toDateString(),
             'day' => (int) $date->day,
         ];
 
-        if (! $rosterEntry) {
+        if ($rosterEntry) {
+            $status = strtolower(trim((string) $rosterEntry->status));
+
+            if ($status === 'off') {
+                return array_merge($base, [
+                    'status' => 'off',
+                    'label' => 'Off',
+                    'detail' => 'Scheduled off day',
+                ]);
+            }
+
             return array_merge($base, [
-                'status' => 'off',
-                'label' => 'Off',
-                'detail' => 'No shift scheduled',
+                'status' => 'present',
+                'label' => 'Present',
+                'detail' => 'Working day',
             ]);
         }
 
-        $status = strtolower(trim((string) $rosterEntry->status));
-
-        if ($status === 'off') {
+        if ($this->isWeeklyOffDay($date, $workingDays)) {
             return array_merge($base, [
                 'status' => 'off',
                 'label' => 'Off',
-                'detail' => 'Scheduled off day',
-            ]);
-        }
-
-        if (in_array($status, ['cancelled'], true)) {
-            return array_merge($base, [
-                'status' => 'off',
-                'label' => 'Off',
-                'detail' => 'Shift cancelled',
+                'detail' => 'Weekly off',
             ]);
         }
 
@@ -259,6 +268,17 @@ class MonthlySummaryService
         ]);
     }
 
+    private function isWeeklyOffDay(Carbon $date, ?array $workingDays): bool
+    {
+        $dayKey = strtolower($date->format('l'));
+
+        if ($workingDays) {
+            return ! in_array($dayKey, $workingDays, true);
+        }
+
+        return $date->isSunday();
+    }
+
     private function resolveStandardDay(Carbon $date, ?array $workingDays): array
     {
         $base = [
@@ -266,10 +286,7 @@ class MonthlySummaryService
             'day' => (int) $date->day,
         ];
 
-        $dayKey = strtolower($date->format('l'));
-        $isWorkingDay = $workingDays ? in_array($dayKey, $workingDays, true) : ! $date->isSunday();
-
-        if (! $isWorkingDay) {
+        if ($this->isWeeklyOffDay($date, $workingDays)) {
             return array_merge($base, [
                 'status' => 'off',
                 'label' => 'Off',
@@ -314,10 +331,105 @@ class MonthlySummaryService
         return null;
     }
 
+    public function saveEmployeeWorkAssignment(
+        int $employeeId,
+        string $date,
+        string $workType,
+        ?string $notes = null,
+    ): array {
+        $employee = Employee::with(['department', 'sbu', 'organization'])->findOrFail($employeeId);
+        $month = Carbon::parse($date)->format('Y-m');
+        $attendance = $this->computeEmployeeMonthlyAttendance($employee, $month);
+        $day = collect($attendance['days'])->firstWhere('date', Carbon::parse($date)->toDateString());
+
+        if ($day === null) {
+            throw new \InvalidArgumentException('Invalid assignment date.');
+        }
+
+        if ($workType !== 'none' && empty($day['is_assignable'])) {
+            throw new \InvalidArgumentException('Work location can only be assigned on working days.');
+        }
+
+        if ($workType === 'none') {
+            EmployeeWorkAssignment::query()
+                ->where('employee_id', $employeeId)
+                ->whereDate('assignment_date', $date)
+                ->delete();
+
+            return ['cleared' => true];
+        }
+
+        if (! in_array($workType, [
+            EmployeeWorkAssignment::TYPE_WORK_FROM_HOME,
+            EmployeeWorkAssignment::TYPE_OUTSTATION,
+        ], true)) {
+            throw new \InvalidArgumentException('Invalid work type.');
+        }
+
+        $assignment = EmployeeWorkAssignment::query()->firstOrNew([
+            'employee_id' => $employeeId,
+            'assignment_date' => $date,
+        ]);
+
+        $assignment->work_type = $workType;
+        $assignment->notes = $notes !== null && trim($notes) !== '' ? trim($notes) : null;
+
+        if (! $assignment->exists) {
+            $assignment->created_by = auth()->id();
+        }
+
+        $assignment->updated_by = auth()->id();
+        $assignment->save();
+
+        return [
+            'assignment' => [
+                'id' => $assignment->id,
+                'employee_id' => $assignment->employee_id,
+                'assignment_date' => $assignment->assignment_date->toDateString(),
+                'work_type' => $assignment->work_type,
+                'notes' => $assignment->notes,
+            ],
+        ];
+    }
+
+    private function applyWorkAssignmentOverlay(array $day, ?EmployeeWorkAssignment $assignment): array
+    {
+        $day['base_status'] = $day['status'];
+        $day['is_assignable'] = $day['status'] === 'present';
+
+        if ($assignment === null || $day['status'] !== 'present') {
+            return $day;
+        }
+
+        if ($assignment->work_type === EmployeeWorkAssignment::TYPE_WORK_FROM_HOME) {
+            return array_merge($day, [
+                'status' => 'work-from-home',
+                'label' => 'Work from home',
+                'detail' => 'Work from home',
+                'notes' => $assignment->notes,
+                'work_assignment_id' => $assignment->id,
+                'work_type' => $assignment->work_type,
+            ]);
+        }
+
+        if ($assignment->work_type === EmployeeWorkAssignment::TYPE_OUTSTATION) {
+            return array_merge($day, [
+                'status' => 'outstation',
+                'label' => 'Outstation',
+                'detail' => 'Outstation',
+                'notes' => $assignment->notes,
+                'work_assignment_id' => $assignment->id,
+                'work_type' => $assignment->work_type,
+            ]);
+        }
+
+        return $day;
+    }
+
     private function incrementCalendarStat(array &$stats, array $day): void
     {
         match ($day['status']) {
-            'present' => $stats['present']++,
+            'present', 'work-from-home', 'outstation' => $stats['present']++,
             'half-day' => $stats['half_days']++,
             'leave' => $stats['leave']++,
             'off' => $stats['off']++,

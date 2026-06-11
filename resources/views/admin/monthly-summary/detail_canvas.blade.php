@@ -71,6 +71,12 @@
                         <span class="badge bg-success px-2 py-1">Present</span>
                     </div>
                     <div class="col-auto">
+                        <span class="badge bg-primary px-2 py-1">WFH</span>
+                    </div>
+                    <div class="col-auto">
+                        <span class="badge bg-warning text-dark px-2 py-1">Outstation</span>
+                    </div>
+                    <div class="col-auto">
                         <span class="badge bg-danger px-2 py-1">Absent</span>
                     </div>
                     <div class="col-auto">
