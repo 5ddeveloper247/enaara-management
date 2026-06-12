@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Employee;
 
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeDesignationId;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesHybridWorkSchedule;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesBankRowsFromRequest;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesNokRelationFields;
@@ -23,6 +24,7 @@ class EmployeeUpdateRequest extends FormRequest
     use ValidatesEmployeeRoleScope;
     use ValidatesUniqueBankIdentifiers;
     use ValidatesUniqueContactNumbers;
+    use ValidatesHybridWorkSchedule;
 
     public function withValidator($validator): void
     {
@@ -35,6 +37,7 @@ class EmployeeUpdateRequest extends FormRequest
             $this->assertUniqueBankIdentifiers($v);
             $this->assertUniqueContactNumbers($v);
             $this->assertUniqueDepartmentLineManager($v);
+            $this->assertHybridWorkScheduleRules($v);
         });
     }
 
@@ -408,13 +411,10 @@ class EmployeeUpdateRequest extends FormRequest
             'probation_end_date' => ['nullable', 'date', 'after_or_equal:probation_start_date', Rule::requiredIf(fn () => $this->input('employment_category') === 'employee')],
             'probation_contract_start_date' => ['nullable', 'date'],
             'engagement_mode' => ['required', Rule::in(['standard', 'remote', 'shifts', 'hybrid'])],
-            'hybrid_days' => [
-                'nullable',
-                'array',
-                Rule::requiredIf(fn () => $this->input('engagement_mode') === 'hybrid'),
-                Rule::when($this->input('engagement_mode') === 'hybrid', ['min:1']),
-            ],
+            'hybrid_days' => ['nullable', 'array'],
             'hybrid_days.*' => ['nullable', Rule::in(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])],
+            'hybrid_offsite_days' => ['nullable', 'array'],
+            'hybrid_offsite_days.*' => ['nullable', Rule::in(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])],
             'standard_schedule_mode' => [
                 'nullable',
                 Rule::in(['default', 'custom']),
@@ -434,15 +434,17 @@ class EmployeeUpdateRequest extends FormRequest
             'working_start_time' => [
                 'nullable',
                 'date_format:H:i',
-                Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard'
-                    && $this->input('standard_schedule_mode') === 'custom'),
+                Rule::requiredIf(fn () => ($this->input('engagement_mode') === 'standard'
+                    && $this->input('standard_schedule_mode') === 'custom')
+                    || $this->input('engagement_mode') === 'hybrid'),
             ],
             'working_end_time' => [
                 'nullable',
                 'date_format:H:i',
                 'after:working_start_time',
-                Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard'
-                    && $this->input('standard_schedule_mode') === 'custom'),
+                Rule::requiredIf(fn () => ($this->input('engagement_mode') === 'standard'
+                    && $this->input('standard_schedule_mode') === 'custom')
+                    || $this->input('engagement_mode') === 'hybrid'),
             ],
             'grace_period' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:600'],
             'opening_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],

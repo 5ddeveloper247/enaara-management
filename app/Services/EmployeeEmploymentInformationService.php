@@ -20,6 +20,7 @@ class EmployeeEmploymentInformationService
             'contract_end_date',
             'engagement_mode',
             'hybrid_days',
+            'hybrid_offsite_days',
             'organization_id',
             'role_id',
             'sbu_id',
@@ -83,6 +84,7 @@ class EmployeeEmploymentInformationService
         $mode = $payload['engagement_mode'] ?? $data['engagement_mode'] ?? null;
         if ($mode !== 'hybrid') {
             $payload['hybrid_days'] = null;
+            $payload['hybrid_offsite_days'] = null;
         }
 
         $cat = $payload['employment_category'] ?? $data['employment_category'] ?? null;
@@ -115,7 +117,7 @@ class EmployeeEmploymentInformationService
 
         $roleId = isset($payload['role_id']) ? (int) $payload['role_id'] : (int) ($data['role_id'] ?? 0);
         $role = $roleId > 0 ? Role::query()->find($roleId) : null;
-        $merged = array_merge($payload, $this->standardScheduleAttributesForPersist($data, $role, $orgLevel));
+        $merged = array_merge($payload, $this->scheduleAttributesForPersist($data, $role, $orgLevel));
 
         $status = $merged['employee_status'] ?? $data['employee_status'] ?? null;
         if ($status !== 'Terminated') {
@@ -132,12 +134,23 @@ class EmployeeEmploymentInformationService
         return $merged;
     }
 
-    public function standardScheduleAttributesForPersist(array $data, ?Role $role, bool $orgLevel): array
+    public function scheduleAttributesForPersist(array $data, ?Role $role, bool $orgLevel): array
     {
         $engagement = $data['engagement_mode'] ?? null;
+
+        if ($engagement === 'hybrid') {
+            return $this->hybridScheduleAttributesForPersist($data);
+        }
+
         if ($engagement !== 'standard') {
             return $this->blankStandardSchedulePayload();
         }
+
+        return $this->standardScheduleAttributesForPersist($data, $role, $orgLevel);
+    }
+
+    public function standardScheduleAttributesForPersist(array $data, ?Role $role, bool $orgLevel): array
+    {
 
         $schedMode = $data['standard_schedule_mode'] ?? 'default';
         if (! in_array($schedMode, ['default', 'custom'], true)) {
@@ -163,6 +176,18 @@ class EmployeeEmploymentInformationService
         $resolved = $this->resolveStandardScheduleFromRole($role, $orgLevel, $orgId, $sbuId);
 
         return array_merge(['standard_schedule_mode' => 'default'], $resolved);
+    }
+
+    protected function hybridScheduleAttributesForPersist(array $data): array
+    {
+        $grace = $this->syncedGracePeriodFromPayload($data);
+
+        return array_merge($this->blankStandardSchedulePayload(), [
+            'working_start_time' => $this->normalizeTimeForStore($data['working_start_time'] ?? null),
+            'working_end_time' => $this->normalizeTimeForStore($data['working_end_time'] ?? null),
+            'opening_grace_period' => $grace,
+            'closing_grace_period' => $grace,
+        ]);
     }
 
     protected function blankStandardSchedulePayload(): array

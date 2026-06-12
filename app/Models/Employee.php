@@ -30,7 +30,7 @@ class Employee extends Model
         'biometric_id', 'sync_with_biometric',
         'employment_category', 'intern_type', 'intern_duration', 'contractual_type',
         'contract_start_date', 'contract_end_date', 'probation_start_date', 'probation_end_date',
-        'engagement_mode', 'hybrid_days',
+        'engagement_mode', 'hybrid_days', 'hybrid_offsite_days',
         'standard_schedule_mode', 'working_days', 'working_start_time', 'working_end_time',
         'opening_grace_period', 'closing_grace_period',
     ];
@@ -57,6 +57,7 @@ class Employee extends Model
         'is_father_deceased'  => 'boolean',
         'roster_display_middle_name' => 'boolean',
         'hybrid_days'         => 'array',
+        'hybrid_offsite_days' => 'array',
         'department_ids'      => 'array',
         'working_days'        => 'array',
     ];

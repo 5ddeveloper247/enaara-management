@@ -409,7 +409,7 @@ class EmployeeService
 
             $code = $this->ensureGloballyUniqueEmployeeCode($code, null);
 
-            $scheduleAttrs = $this->employmentInformation->standardScheduleAttributesForPersist($data, $role, $orgLevel);
+            $scheduleAttrs = $this->employmentInformation->scheduleAttributesForPersist($data, $role, $orgLevel);
 
             $employee = Employee::create([
                 'first_name'          => $data['first_name'],
@@ -479,6 +479,7 @@ class EmployeeService
                 'probation_end_date' => ! empty($data['probation_end_date']) ? $data['probation_end_date'] : null,
                 'engagement_mode'     => $data['engagement_mode'] ?? null,
                 'hybrid_days'         => $data['hybrid_days'] ?? null,
+                'hybrid_offsite_days' => $data['hybrid_offsite_days'] ?? null,
                 'standard_schedule_mode' => $scheduleAttrs['standard_schedule_mode'] ?? null,
                 'working_days'        => $scheduleAttrs['working_days'] ?? null,
                 'working_start_time'  => $scheduleAttrs['working_start_time'] ?? null,
@@ -1781,6 +1782,7 @@ class EmployeeService
                 'probation_end_date'  => $emp->probation_end_date?->format('d M Y') ?? '-',
                 'engagement_mode'     => $emp->engagement_mode ?? '-',
                 'hybrid_days'         => is_array($emp->hybrid_days) ? implode(', ', $emp->hybrid_days) : '-',
+                'hybrid_offsite_days' => is_array($emp->hybrid_offsite_days) ? implode(', ', $emp->hybrid_offsite_days) : '-',
                 'standard_schedule_mode' => $emp->standard_schedule_mode ?? '-',
                 'working_days'        => is_array($emp->working_days) ? implode(', ', $emp->working_days) : '-',
                 'working_start_time'  => $emp->working_start_time ?? '-',
@@ -2088,6 +2090,7 @@ class EmployeeService
             'contract_end_date'   => $employee->contract_end_date instanceof \Carbon\Carbon ? $employee->contract_end_date->format('Y-m-d') : null,
             'engagement_mode'     => $employee->engagement_mode,
             'hybrid_days'         => is_array($employee->hybrid_days) ? array_values($employee->hybrid_days) : $employee->hybrid_days,
+            'hybrid_offsite_days' => is_array($employee->hybrid_offsite_days) ? array_values($employee->hybrid_offsite_days) : $employee->hybrid_offsite_days,
             'standard_schedule_mode' => $employee->standard_schedule_mode,
             'working_days'        => is_array($employee->working_days) ? array_values($employee->working_days) : $employee->working_days,
             'working_start_time'  => $employee->working_start_time
@@ -2330,6 +2333,7 @@ class EmployeeService
                 'termination_date',
                 'engagement_mode',
                 'hybrid_days',
+                'hybrid_offsite_days',
                 'standard_schedule_mode',
                 'working_days',
                 'working_start_time',

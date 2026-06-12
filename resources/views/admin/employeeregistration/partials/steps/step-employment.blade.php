@@ -716,44 +716,114 @@
                                             {{-- Hybrid Fields --}}
                                             <div class="row g-3 {{ ($employee->engagement_mode ?? '') == 'hybrid' ? '' : 'd-none' }} mt-2"
                                                 id="employmentWorkArrangementHybridFields">
-                                                <div class="col-12">
-                                                    <div class="rounded-3 p-3"
+                                                @php
+                                                    $hybridDaysRaw = isset($employee->hybrid_days)
+                                                        ? (is_array($employee->hybrid_days)
+                                                            ? $employee->hybrid_days
+                                                            : explode(',', $employee->hybrid_days))
+                                                        : [];
+                                                    $hybridDays = collect($hybridDaysRaw)
+                                                        ->map(fn($d) => strtolower(trim((string) $d)))
+                                                        ->values()
+                                                        ->all();
+                                                    $hybridOffsiteDaysRaw = isset($employee->hybrid_offsite_days)
+                                                        ? (is_array($employee->hybrid_offsite_days)
+                                                            ? $employee->hybrid_offsite_days
+                                                            : explode(',', $employee->hybrid_offsite_days))
+                                                        : [];
+                                                    $hybridOffsiteDays = collect($hybridOffsiteDaysRaw)
+                                                        ->map(fn($d) => strtolower(trim((string) $d)))
+                                                        ->values()
+                                                        ->all();
+                                                    $hybridDayOptions = [
+                                                        'mon' => 'Mon',
+                                                        'tue' => 'Tue',
+                                                        'wed' => 'Wed',
+                                                        'thu' => 'Thu',
+                                                        'fri' => 'Fri',
+                                                        'sat' => 'Sat',
+                                                        'sun' => 'Sun',
+                                                    ];
+                                                @endphp
+                                                <div class="col-md-6">
+                                                    <div class="rounded-3 p-3 h-100"
                                                         style="background:rgba(1,36,69,0.03); border:1px dashed rgba(1,36,69,0.15);">
                                                         <label class="form-label fw-semibold small text-uppercase mb-2"
                                                             style="color:#012d5a; letter-spacing:0.04em;">
-                                                            On-site Days <span class="text-danger">*</span>
+                                                            On-site Days
                                                         </label>
-                                                        <div class="d-flex flex-wrap gap-2">
-                                                            @php
-                                                                $hybridDaysRaw = isset($employee->hybrid_days)
-                                                                    ? (is_array($employee->hybrid_days)
-                                                                        ? $employee->hybrid_days
-                                                                        : explode(',', $employee->hybrid_days))
-                                                                    : [];
-                                                                $hybridDays = collect($hybridDaysRaw)
-                                                                    ->map(fn($d) => strtolower(trim((string) $d)))
-                                                                    ->values()
-                                                                    ->all();
-                                                                $hybridDayOptions = [
-                                                                    'mon' => 'Mon',
-                                                                    'tue' => 'Tue',
-                                                                    'wed' => 'Wed',
-                                                                    'thu' => 'Thu',
-                                                                    'fri' => 'Fri',
-                                                                    'sat' => 'Sat',
-                                                                    'sun' => 'Sun',
-                                                                ];
-                                                            @endphp
+                                                        <div class="d-flex flex-wrap gap-2" id="employmentHybridOnsiteDaysWrap">
                                                             @foreach ($hybridDayOptions as $dayValue => $dayLabel)
-                                                                <input type="checkbox" class="btn-check"
+                                                                <input type="checkbox" class="btn-check hybrid-onsite-day"
                                                                     name="hybrid_days[]"
-                                                                    id="employmentHybridDay{{ $dayLabel }}"
+                                                                    id="employmentHybridOnsiteDay{{ $dayLabel }}"
                                                                     value="{{ $dayValue }}"
+                                                                    data-day-key="{{ $dayValue }}"
                                                                     {{ in_array($dayValue, $hybridDays, true) ? 'checked' : '' }}>
                                                                 <label
                                                                     class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold"
-                                                                    for="employmentHybridDay{{ $dayLabel }}">{{ $dayLabel }}</label>
+                                                                    for="employmentHybridOnsiteDay{{ $dayLabel }}">{{ $dayLabel }}</label>
                                                             @endforeach
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="rounded-3 p-3 h-100"
+                                                        style="background:rgba(1,36,69,0.03); border:1px dashed rgba(1,36,69,0.15);">
+                                                        <label class="form-label fw-semibold small text-uppercase mb-2"
+                                                            style="color:#012d5a; letter-spacing:0.04em;">
+                                                            Off-site Days
+                                                        </label>
+                                                        <div class="d-flex flex-wrap gap-2" id="employmentHybridOffsiteDaysWrap">
+                                                            @foreach ($hybridDayOptions as $dayValue => $dayLabel)
+                                                                <input type="checkbox" class="btn-check hybrid-offsite-day"
+                                                                    name="hybrid_offsite_days[]"
+                                                                    id="employmentHybridOffsiteDay{{ $dayLabel }}"
+                                                                    value="{{ $dayValue }}"
+                                                                    data-day-key="{{ $dayValue }}"
+                                                                    {{ in_array($dayValue, $hybridOffsiteDays, true) ? 'checked' : '' }}>
+                                                                <label
+                                                                    class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold"
+                                                                    for="employmentHybridOffsiteDay{{ $dayLabel }}">{{ $dayLabel }}</label>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <p class="small text-muted mb-0" id="employmentHybridOffDaysHint">
+                                                        Days not selected in either on-site or off-site will be treated as off days for this employee.
+                                                    </p>
+                                                </div>
+                                                <div class="col-12">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-semibold"
+                                                                for="employmentHybridGracePeriodInput">Grace Period <span class="text-muted fw-normal">(min)</span></label>
+                                                            <input type="number" name="grace_period"
+                                                                min="0" max="600" class="form-control"
+                                                                id="employmentHybridGracePeriodInput"
+                                                                placeholder="Optional"
+                                                                value="{{ $employee->opening_grace_period ?? $employee->closing_grace_period ?? '' }}">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-semibold">
+                                                                <i class="bi bi-sunrise text-secondary me-1"></i>
+                                                                Start Time<span class="text-danger">*</span>
+                                                            </label>
+                                                            <input type="time" name="working_start_time"
+                                                                class="form-control"
+                                                                id="employmentHybridWorkingStartInput"
+                                                                value="{{ isset($employee->working_start_time) ? substr($employee->working_start_time, 0, 5) : '' }}">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-semibold">
+                                                                <i class="bi bi-sunset text-secondary me-1"></i>
+                                                                End Time<span class="text-danger">*</span>
+                                                            </label>
+                                                            <input type="time" name="working_end_time"
+                                                                class="form-control"
+                                                                id="employmentHybridWorkingEndInput"
+                                                                value="{{ isset($employee->working_end_time) ? substr($employee->working_end_time, 0, 5) : '' }}">
                                                         </div>
                                                     </div>
                                                 </div>

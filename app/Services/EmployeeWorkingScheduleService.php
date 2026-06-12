@@ -10,13 +10,34 @@ use Carbon\Carbon;
 
 class EmployeeWorkingScheduleService
 {
+    private const HYBRID_DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+    private const HYBRID_SHORT_TO_FULL = [
+        'mon' => 'monday',
+        'tue' => 'tuesday',
+        'wed' => 'wednesday',
+        'thu' => 'thursday',
+        'fri' => 'friday',
+        'sat' => 'saturday',
+        'sun' => 'sunday',
+    ];
+
     public function isShiftBased(Employee $employee): bool
     {
         return strtolower(trim((string) ($employee->engagement_mode ?? ''))) === 'shifts';
     }
 
+    public function isHybrid(Employee $employee): bool
+    {
+        return strtolower(trim((string) ($employee->engagement_mode ?? ''))) === 'hybrid';
+    }
+
     public function resolveWorkingDays(Employee $employee): ?array
     {
+        if ($this->isHybrid($employee)) {
+            return $this->resolveHybridWorkingDays($employee);
+        }
+
         if (is_array($employee->working_days) && $employee->working_days !== []) {
             return $this->normalizeWorkingDays($employee->working_days);
         }
@@ -54,6 +75,16 @@ class EmployeeWorkingScheduleService
         return null;
     }
 
+    public function isHybridOnsiteDay(Carbon $date, Employee $employee): bool
+    {
+        return in_array($this->hybridDayKeyFromDate($date), $this->normalizeHybridDayKeys($employee->hybrid_days), true);
+    }
+
+    public function isHybridOffsiteDay(Carbon $date, Employee $employee): bool
+    {
+        return in_array($this->hybridDayKeyFromDate($date), $this->normalizeHybridDayKeys($employee->hybrid_offsite_days), true);
+    }
+
     public function isWeeklyOffDay(Carbon $date, ?array $workingDays): bool
     {
         $dayKey = strtolower($date->format('l'));
@@ -63,6 +94,56 @@ class EmployeeWorkingScheduleService
         }
 
         return $date->isSunday();
+    }
+
+    /**
+     * @return array<int, string>|null
+     */
+    protected function resolveHybridWorkingDays(Employee $employee): ?array
+    {
+        $onsite = $this->normalizeHybridDaysToFull($employee->hybrid_days);
+        $offsite = $this->normalizeHybridDaysToFull($employee->hybrid_offsite_days);
+        $union = array_values(array_unique(array_merge($onsite, $offsite)));
+
+        return $union === [] ? null : $union;
+    }
+
+    protected function hybridDayKeyFromDate(Carbon $date): string
+    {
+        return strtolower(substr($date->format('D'), 0, 3));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function normalizeHybridDayKeys(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($raw as $day) {
+            $key = is_string($day) ? strtolower(trim($day)) : '';
+            if (in_array($key, self::HYBRID_DAY_KEYS, true)) {
+                $out[] = $key;
+            }
+        }
+
+        return array_values(array_unique($out));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function normalizeHybridDaysToFull(mixed $raw): array
+    {
+        $out = [];
+        foreach ($this->normalizeHybridDayKeys($raw) as $shortKey) {
+            $out[] = self::HYBRID_SHORT_TO_FULL[$shortKey];
+        }
+
+        return $out;
     }
 
     /**

@@ -1960,6 +1960,7 @@
         'engagement_mode':          null, // handled as radio group below
         'standard_schedule_mode':   null,
         'hybrid_days':              null,
+        'hybrid_offsite_days':      null,
         'working_days':             null,
         'employee_contract_start_date': 'employmentDetailsEmployeeContractStartDateInput',
         'employee_contract_end_date':   'employmentDetailsEmployeeContractEndDateInput',
@@ -2004,6 +2005,8 @@
     // For radio groups: map field name -> wrapper element id to append error immediately after the pill row
     const radioGroupWrapperMap = {
         'working_days':           'employmentWorkArrangementCustomFields',
+        'hybrid_days':            'employmentHybridOnsiteDaysWrap',
+        'hybrid_offsite_days':    'employmentHybridOffsiteDaysWrap',
         'account_category':      'bankAccountCategoryWrapper',
         'is_salary_account':     'isSalaryAccountWrapper',
         'account_type':          'bankAccountTypeWrapper',
@@ -2049,7 +2052,19 @@
             let input = null;
             if (fieldElementMap[field] !== undefined && container === document) {
                 if (fieldElementMap[field]) {
-                    input = document.getElementById(fieldElementMap[field]);
+                    let mappedId = fieldElementMap[field];
+                    if (['working_start_time', 'working_end_time', 'grace_period', 'opening_grace_period', 'closing_grace_period'].includes(field)
+                        && document.querySelector('input[name="engagement_mode"]:checked')?.value === 'hybrid') {
+                        const hybridIds = {
+                            working_start_time: 'employmentHybridWorkingStartInput',
+                            working_end_time: 'employmentHybridWorkingEndInput',
+                            grace_period: 'employmentHybridGracePeriodInput',
+                            opening_grace_period: 'employmentHybridGracePeriodInput',
+                            closing_grace_period: 'employmentHybridGracePeriodInput',
+                        };
+                        mappedId = hybridIds[field] || mappedId;
+                    }
+                    input = document.getElementById(mappedId);
                 }
             } else {
                 input = container.querySelector(`[name="${fieldName}"]`) ||
@@ -3590,6 +3605,16 @@
         if (graceEl)    graceEl.textContent    = graceMin != null && graceMin !== '' ? `${graceMin} min` : '-';
     }
 
+    function setWorkArrangementInputsEnabled(container, enabled) {
+        if (!container) {
+            return;
+        }
+
+        container.querySelectorAll('input, select, textarea').forEach(el => {
+            el.disabled = !enabled;
+        });
+    }
+
     function toggleWorkArrangementFields() {
         const active = document.querySelector('input[name="engagement_mode"]:checked');
         const mode = active ? active.value : null;
@@ -3605,12 +3630,17 @@
         if (customFields)   customFields.classList.add('d-none');
         if (hybridFields)   hybridFields.classList.add('d-none');
 
+        setWorkArrangementInputsEnabled(standardFields, false);
+        setWorkArrangementInputsEnabled(hybridFields, false);
+
         if (mode === 'standard') {
             if (standardFields) standardFields.classList.remove('d-none');
+            setWorkArrangementInputsEnabled(standardFields, true);
             // Also trigger inner standard-type toggle
             toggleStandardTypeFields();
         } else if (mode === 'hybrid') {
             if (hybridFields) hybridFields.classList.remove('d-none');
+            setWorkArrangementInputsEnabled(hybridFields, true);
         }
         // shift_based and remote: nothing extra to show
     }
@@ -3624,6 +3654,8 @@
 
         if (defaultCard)  defaultCard.classList.toggle('d-none', schedMode !== 'default');
         if (customFields) customFields.classList.toggle('d-none', schedMode !== 'custom');
+
+        setWorkArrangementInputsEnabled(customFields, schedMode === 'custom');
 
         if (schedMode === 'default') {
             updateDefaultScheduleCard();
@@ -3648,6 +3680,30 @@
     toggleWorkArrangementFields();
 
     // â”€â”€â”€ End Work Arrangement Toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    function syncHybridDayExclusion(changedInput, oppositeSelector) {
+        const dayKey = changedInput.dataset.dayKey;
+        if (!dayKey || !changedInput.checked) {
+            return;
+        }
+
+        const opposite = document.querySelector(`${oppositeSelector}[data-day-key="${dayKey}"]`);
+        if (opposite && opposite.checked) {
+            opposite.checked = false;
+        }
+    }
+
+    document.querySelectorAll('.hybrid-onsite-day').forEach(input => {
+        input.addEventListener('change', () => {
+            syncHybridDayExclusion(input, '.hybrid-offsite-day');
+        });
+    });
+
+    document.querySelectorAll('.hybrid-offsite-day').forEach(input => {
+        input.addEventListener('change', () => {
+            syncHybridDayExclusion(input, '.hybrid-onsite-day');
+        });
+    });
 
     // Location Dependent Selects (Nationality -> Province -> District)
     function resetLocationSelect(select, placeholderText, disabled) {

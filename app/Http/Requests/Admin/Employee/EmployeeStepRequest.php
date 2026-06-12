@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Employee;
 
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesEmployeeDesignationId;
+use App\Http\Requests\Admin\Employee\Concerns\ValidatesHybridWorkSchedule;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesBankRowsFromRequest;
 use App\Http\Requests\Admin\Employee\Concerns\NormalizesNokRelationFields;
 use App\Http\Requests\Admin\Employee\Concerns\ValidatesExactlyOneSalaryBank;
@@ -23,6 +24,7 @@ class EmployeeStepRequest extends FormRequest
     use ValidatesEmployeeRoleScope;
     use ValidatesUniqueBankIdentifiers;
     use ValidatesUniqueContactNumbers;
+    use ValidatesHybridWorkSchedule;
 
     public function withValidator($validator): void
     {
@@ -44,6 +46,7 @@ class EmployeeStepRequest extends FormRequest
             }
             if ((int) $this->input('step') === 2) {
                 $this->assertUniqueDepartmentLineManager($v);
+                $this->assertHybridWorkScheduleRules($v);
             }
         });
     }
@@ -519,11 +522,10 @@ class EmployeeStepRequest extends FormRequest
                         && $this->input('contractual_type') === 'time_bound'),
                 ],
                 'engagement_mode' => ['required', Rule::in(['standard', 'remote', 'shifts', 'hybrid'])],
-                'hybrid_days' => [
-                    'nullable',
-                    'array',
-                    Rule::requiredIf(fn () => $this->input('engagement_mode') === 'hybrid'),
-                ],
+                'hybrid_days' => ['nullable', 'array'],
+                'hybrid_days.*' => ['nullable', Rule::in(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])],
+                'hybrid_offsite_days' => ['nullable', 'array'],
+                'hybrid_offsite_days.*' => ['nullable', Rule::in(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])],
                 'standard_schedule_mode' => [
                     'nullable',
                     Rule::in(['default', 'custom']),
@@ -537,13 +539,15 @@ class EmployeeStepRequest extends FormRequest
                 'working_start_time' => [
                     'nullable',
                     'date_format:H:i',
-                    Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard' && $this->input('standard_schedule_mode') === 'custom'),
+                    Rule::requiredIf(fn () => ($this->input('engagement_mode') === 'standard' && $this->input('standard_schedule_mode') === 'custom')
+                        || $this->input('engagement_mode') === 'hybrid'),
                 ],
                 'working_end_time' => [
                     'nullable',
                     'date_format:H:i',
                     'after:working_start_time',
-                    Rule::requiredIf(fn () => $this->input('engagement_mode') === 'standard' && $this->input('standard_schedule_mode') === 'custom'),
+                    Rule::requiredIf(fn () => ($this->input('engagement_mode') === 'standard' && $this->input('standard_schedule_mode') === 'custom')
+                        || $this->input('engagement_mode') === 'hybrid'),
                 ],
                 'grace_period' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:600'],
                 'opening_grace_period' => ['nullable', 'integer', 'min:0', 'max:600'],
@@ -1208,8 +1212,8 @@ class EmployeeStepRequest extends FormRequest
             'contract_end_date.after_or_equal' => 'Contract end date must be on or after the start date.',
             'engagement_mode.required' => 'Work arrangement is required.',
             'engagement_mode.in' => 'The selected work arrangement is invalid.',
-            'hybrid_days.required' => 'Select at least one weekday when work arrangement is Hybrid.',
-            'hybrid_days.min' => 'Select at least one weekday when work arrangement is Hybrid.',
+            'hybrid_days.required' => 'Select at least one on-site or off-site day when work arrangement is Hybrid.',
+            'hybrid_offsite_days.required' => 'Select at least one on-site or off-site day when work arrangement is Hybrid.',
             'standard_schedule_mode.required' => 'Choose Default or Custom for standard office hours.',
             'standard_schedule_mode.in' => 'Standard schedule mode must be Default or Custom.',
             'working_days.required' => 'Select at least one working day for your custom schedule.',

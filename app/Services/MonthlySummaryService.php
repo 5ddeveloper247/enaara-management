@@ -243,6 +243,10 @@ class MonthlySummaryService
             return $this->resolveShiftBasedDay($date, $rosterEntry, $workingDays);
         }
 
+        if ($this->employeeWorkingScheduleService->isHybrid($employee)) {
+            return $this->resolveHybridDay($employee, $date, $workingDays);
+        }
+
         return $this->resolveStandardDay($date, $workingDays);
     }
 
@@ -283,6 +287,36 @@ class MonthlySummaryService
             'status' => 'present',
             'label' => 'Present',
             'detail' => 'Working day',
+        ]);
+    }
+
+    private function resolveHybridDay(Employee $employee, Carbon $date, ?array $workingDays): array
+    {
+        $base = [
+            'date' => $date->toDateString(),
+            'day' => (int) $date->day,
+        ];
+
+        if ($this->employeeWorkingScheduleService->isWeeklyOffDay($date, $workingDays)) {
+            return array_merge($base, [
+                'status' => 'off',
+                'label' => 'Off',
+                'detail' => 'Weekly off',
+            ]);
+        }
+
+        if ($this->employeeWorkingScheduleService->isHybridOffsiteDay($date, $employee)) {
+            return array_merge($base, [
+                'status' => 'work-from-home',
+                'label' => 'WFH',
+                'detail' => 'Scheduled off-site day',
+            ]);
+        }
+
+        return array_merge($base, [
+            'status' => 'present',
+            'label' => 'Present',
+            'detail' => 'Scheduled on-site day',
         ]);
     }
 
