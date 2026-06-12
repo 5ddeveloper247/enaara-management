@@ -32,12 +32,16 @@
                     <label for="leaveEmployee" class="form-label fw-semibold small text-white">Employee <span class="text-danger">*</span></label>
                     <select class="form-select" id="leaveEmployee" name="employee_id" required>
                         <option value="">Select Employee</option>
-                        @isset($employees)
-                        @foreach($employees as $employee)
-                        <option value="{{ $employee->id }}">
-                            {{ $employee->full_name }}@if(!empty($employee->employee_code)) ({{ $employee->employee_code }})@endif
-                        </option>
-                        @endforeach
+                        @isset($employeesGrouped)
+                            @foreach($employeesGrouped as $departmentName => $departmentEmployees)
+                                <optgroup label="{{ $departmentName }}">
+                                    @foreach($departmentEmployees as $employee)
+                                        <option value="{{ $employee->id }}">
+                                            {{ $employee->full_name }}@if(!empty($employee->employee_code)) ({{ $employee->employee_code }})@endif
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
                         @endisset
                     </select>
                     <small class="opacity-75 text-white d-block mt-1">Submitted by {{ Auth::user()->name }}</small>
@@ -271,6 +275,28 @@
     /* Make the select2 container match standard form-control height */
     .select2-container--bootstrap-5 .select2-selection {
         min-height: 38px;
+    }
+
+    .select2-container--bootstrap-5 .select2-results__group {
+        font-weight: 700;
+        font-size: 0.8125rem;
+        color: #1a237e;
+        background: linear-gradient(90deg, #e8eaf6 0%, #f4f6fb 100%);
+        padding: 0.55rem 0.85rem;
+        letter-spacing: 0.02em;
+        border-top: 1px solid #d8deea;
+        border-bottom: 1px solid #d8deea;
+        margin-top: 0.15rem;
+    }
+
+    .select2-container--bootstrap-5 .select2-results__options--nested .select2-results__option {
+        padding-left: 1.35rem;
+        font-size: 0.875rem;
+    }
+
+    .select2-container--bootstrap-5 .select2-results__option--highlighted {
+        background-color: #1a237e !important;
+        color: #fff !important;
     }
 
     .leave-balance-heading--unconditional { color: #7dd3ac; }

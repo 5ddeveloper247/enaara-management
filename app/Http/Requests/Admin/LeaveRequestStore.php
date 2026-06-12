@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\Employee;
 use App\Models\LeaveType;
+use App\Services\leaverequestPrivatefunctions\AuthenticatedEmployeeRecords;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -101,6 +102,18 @@ class LeaveRequestStore extends FormRequest
 
             if ($this->input('start_date') !== $this->input('end_date')) {
                 $validator->errors()->add('end_date', 'End date must match start date for half-day leave.');
+            }
+
+            $employeeId = (int) $this->input('employee_id');
+
+            if (
+                $employeeId > 0
+                && ! app(AuthenticatedEmployeeRecords::class)->canApplyLeaveForEmployee($employeeId)
+            ) {
+                $validator->errors()->add(
+                    'employee_id',
+                    'You are not authorized to apply leave for the selected employee.'
+                );
             }
         });
     }

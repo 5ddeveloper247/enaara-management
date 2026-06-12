@@ -48,10 +48,7 @@ class LeaveRequestIndexData
         $personalQuota = $this->buildPersonalQuota($currentEmployee);
 
         return view('admin.leave-requests.index', [
-            'employees' => Employee::query()
-                ->where('is_active', true)
-                ->orderBy('full_name')
-                ->get(['id', 'full_name', 'employee_code']),
+            'employeesGrouped' => $this->authenticatedEmployeeRecords->getEmployeesGroupedForLeaveApplication(),
             'leaveTypes' => $this->leaveRequestLeaveTypeFilter->excludeCompensatoryFromList(
                 LeaveType::query()
                     ->with('setting:id,leave_type_id,short_leave_applicable')

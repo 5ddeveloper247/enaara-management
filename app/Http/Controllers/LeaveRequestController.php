@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Requests\Admin\LeaveRequestStore;
 use App\Services\LeaveRequestService;
+use App\Services\leaverequestPrivatefunctions\AuthenticatedEmployeeRecords;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestWorkflowPreviewService;
 use Illuminate\Http\RedirectResponse;
 use App\Models\Employee;
@@ -13,9 +14,14 @@ class LeaveRequestController extends Controller
 {
     private LeaveRequestService $leaveRequestService;
 
-    public function __construct(LeaveRequestService $leaveRequestService)
-    {
+    private AuthenticatedEmployeeRecords $authenticatedEmployeeRecords;
+
+    public function __construct(
+        LeaveRequestService $leaveRequestService,
+        AuthenticatedEmployeeRecords $authenticatedEmployeeRecords
+    ) {
         $this->leaveRequestService = $leaveRequestService;
+        $this->authenticatedEmployeeRecords = $authenticatedEmployeeRecords;
     }
 
     public function index(){
@@ -97,6 +103,13 @@ class LeaveRequestController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        if (
+            validatePermissions('admin/leave-request/add')
+            && ! $this->authenticatedEmployeeRecords->canApplyLeaveForEmployee($employeeId)
+        ) {
+            abort(403, 'You are not authorized to apply leave for this employee.');
+        }
+
         $employee = Employee::query()->findOrFail($employeeId);
 
         return response()->json([
@@ -124,6 +137,13 @@ class LeaveRequestController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        if (
+            validatePermissions('admin/leave-request/add')
+            && ! $this->authenticatedEmployeeRecords->canApplyLeaveForEmployee($employeeId)
+        ) {
+            abort(403, 'You are not authorized to apply leave for this employee.');
+        }
+
         $employee = Employee::query()->findOrFail($employeeId);
 
         return response()->json([
@@ -148,6 +168,14 @@ class LeaveRequestController extends Controller
         ]);
 
         $employee = Employee::findOrFail((int) $request->input('employee_id'));
+
+        if (
+            validatePermissions('admin/leave-request/add')
+            && ! $this->authenticatedEmployeeRecords->canApplyLeaveForEmployee((int) $employee->id)
+        ) {
+            abort(403, 'You are not authorized to apply leave for this employee.');
+        }
+
         $startDate = \Carbon\Carbon::parse($request->input('start_date'))->startOfDay();
         $endDate = \Carbon\Carbon::parse($request->input('end_date'))->startOfDay();
         $isHalfDay = $request->boolean('is_half_day');

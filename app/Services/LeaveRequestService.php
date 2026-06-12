@@ -340,6 +340,10 @@ class LeaveRequestService
 
         $employee = Employee::with('role')->findOrFail((int) $request->input('employee_id'));
 
+        if (! $this->authenticatedEmployeeRecords->canApplyLeaveForEmployee((int) $employee->id)) {
+            abort(403, 'You are not authorized to apply leave for this employee.');
+        }
+
         $leaveTypes = $this->leaveRequestLeaveTypeFilter
             ->filterForEmployee(
                 $this->authenticatedEmployeeRecords->getLeaveTypesForQuotaSummary($employee),

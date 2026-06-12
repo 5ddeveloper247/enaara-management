@@ -2,8 +2,11 @@
 
 namespace App\Services\leaverequestPrivatefunctions;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\LeaveType;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +73,146 @@ class AuthenticatedEmployeeRecords
         }
 
         return $this->getLeaveTypesForAdminEmployee($employee);
+    }
+
+    public function getEmployeesForLeaveApplication(?User $user = null): Collection
+    {
+        $user = $user ?? Auth::user();
+
+        if ($user === null) {
+            return collect();
+        }
+
+        return $this->buildLeaveApplicationEmployeeQuery($user)
+            ->with('department:id,name')
+            ->orderBy('full_name')
+            ->get(['id', 'full_name', 'employee_code', 'department_id']);
+    }
+
+    /**
+     * @return array<string, \Illuminate\Support\Collection<int, Employee>>
+     */
+    public function getEmployeesGroupedForLeaveApplication(?User $user = null): array
+    {
+        $employees = $this->getEmployeesForLeaveApplication($user);
+        $grouped = [];
+
+        foreach ($employees as $employee) {
+            $departmentName = trim((string) (optional($employee->department)->name ?? 'Unassigned'));
+            $departmentName = $departmentName !== '' ? $departmentName : 'Unassigned';
+
+            if (! isset($grouped[$departmentName])) {
+                $grouped[$departmentName] = collect();
+            }
+
+            $grouped[$departmentName]->push($employee);
+        }
+
+        ksort($grouped, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $grouped;
+    }
+
+    public function canApplyLeaveForEmployee(int $employeeId, ?User $user = null): bool
+    {
+        $user = $user ?? Auth::user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if ($user->employee_id && (int) $user->employee_id === $employeeId) {
+            return Employee::query()
+                ->where('id', $employeeId)
+                ->where('is_active', true)
+                ->exists();
+        }
+
+        return $this->buildLeaveApplicationEmployeeQuery($user)
+            ->where('id', $employeeId)
+            ->exists();
+    }
+
+    private function buildLeaveApplicationEmployeeQuery(?User $user): Builder
+    {
+        $query = Employee::query()->where('is_active', true);
+
+        if ($user === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->isSystemAdminUser()) {
+            return $query;
+        }
+
+        $viewerEmployee = $user->employee;
+
+        if ($viewerEmployee === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $viewerEmployee->loadMissing('department');
+
+        if ($viewerEmployee->organization_id) {
+            $query->where('organization_id', (int) $viewerEmployee->organization_id);
+        }
+
+        $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
+
+        if (! $sbuId) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->where('sbu_id', $sbuId);
+
+        if ($this->isHumanResourceDepartment($viewerEmployee->department)) {
+            return $query;
+        }
+
+        $departmentIds = $this->resolveViewerAllowedDepartmentIds($viewerEmployee);
+
+        if ($departmentIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->whereIn('department_id', $departmentIds);
+
+        return $query;
+    }
+
+    /**
+     * Departments assigned to the logged-in employee (primary + additional assignments).
+     *
+     * @return array<int, int>
+     */
+    private function resolveViewerAllowedDepartmentIds(Employee $employee): array
+    {
+        $departmentIds = [];
+
+        if ($employee->department_id) {
+            $departmentIds[] = (int) $employee->department_id;
+        }
+
+        if (is_array($employee->department_ids)) {
+            foreach ($employee->department_ids as $departmentId) {
+                if ($departmentId !== null && $departmentId !== '') {
+                    $departmentIds[] = (int) $departmentId;
+                }
+            }
+        }
+
+        return array_values(array_unique(array_filter($departmentIds)));
+    }
+
+    private function isHumanResourceDepartment(?Department $department): bool
+    {
+        if (! $department) {
+            return false;
+        }
+
+        $normalized = strtolower(trim((string) $department->name));
+
+        return in_array($normalized, ['human resource', 'human resources'], true);
     }
 
     private function getLeaveTypesForAdminEmployee(Employee $employee): Collection
