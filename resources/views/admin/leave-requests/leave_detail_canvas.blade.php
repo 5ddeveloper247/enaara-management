@@ -120,7 +120,7 @@
             </h6>
             <div class="p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
                 <div class="mb-2">
-                    <small class="opacity-75 text-white d-block mb-1">Current Level</small>
+                    <small class="opacity-75 text-white d-block mb-1">Current Status</small>
                     <div class="fw-semibold small" id="detailApprovalLevel">Supervisor</div>
                 </div>
                 <div class="mt-3 pt-3 border-top" style="border-color: #ffffff1a !important;">

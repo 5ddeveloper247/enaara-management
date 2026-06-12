@@ -599,52 +599,58 @@
             `);
 
         // Step 2: Recommendations (Children)
-        let step2Icon = 'bi-circle text-white-50';
-        let step2Text = 'Waiting for Recommendation';
-        if (request.statusCode == 1) {
-            step2Icon = 'bi-check-circle-fill text-success';
-            step2Text = 'Recommended';
-        } else if (request.statusCode == 2) {
-            step2Icon = 'bi-x-circle-fill text-danger';
-            step2Text = 'Not Recommended';
-        } else if (request.statusCode >= 3) {
-            step2Icon = 'bi-check-circle-fill text-success';
-            step2Text = 'Recommendation Step Passed';
-        }
+        if (request.recommenderName) {
+            let step2Icon = 'bi-circle text-white-50';
+            let step2Text = 'Waiting for Recommendation';
+            
+            if (request.recommenderStatus === 1) {
+                step2Icon = 'bi-check-circle-fill text-success';
+                step2Text = 'Recommended';
+            } else if (request.recommenderStatus === 2) {
+                step2Icon = 'bi-x-circle-fill text-danger';
+                step2Text = 'Not Recommended';
+            } else if (request.statusCode >= 3) {
+                step2Icon = 'bi-check-circle-fill text-success';
+                step2Text = 'Recommendation Step Passed';
+            }
 
-        timelineContainer.append(`
+            timelineContainer.append(`
                 <div class="d-flex align-items-center mb-3">
                     <i class="bi ${step2Icon} me-3 fs-5"></i>
                     <div>
-                        <div class="fw-semibold small">Child Roles: ${step2Text}</div>
-                        <small class="opacity-75">Team/Department Members</small>
+                        <div class="fw-semibold small">${step2Text}</div>
+                        <small class="opacity-75">By ${request.recommenderName}</small>
                     </div>
                 </div>
             `);
-
-        // Step 3: Final Approval (Parent)
-        let step3Icon = 'bi-circle text-white-50';
-        let step3Text = 'Awaiting Final Decision';
-        if (request.statusCode == 3) {
-            step3Icon = 'bi-check-circle-fill text-success';
-            step3Text = 'Approved';
-        } else if (request.statusCode == 4) {
-            step3Icon = 'bi-x-circle-fill text-danger';
-            step3Text = 'Rejected';
-        } else if (request.statusCode == 5) {
-            step3Icon = 'bi-dash-circle-fill text-secondary';
-            step3Text = 'Cancelled';
         }
 
-        timelineContainer.append(`
+        // Step 3: Final Approval (Parent)
+        if (request.approverName) {
+            let step3Icon = 'bi-circle text-white-50';
+            let step3Text = 'Awaiting Final Decision';
+            
+            if (request.approverStatus === 3 || request.statusCode === 3) {
+                step3Icon = 'bi-check-circle-fill text-success';
+                step3Text = 'Approved';
+            } else if (request.approverStatus === 4 || request.statusCode === 4) {
+                step3Icon = 'bi-x-circle-fill text-danger';
+                step3Text = 'Rejected';
+            } else if (request.approverStatus === 5 || request.statusCode === 5) {
+                step3Icon = 'bi-dash-circle-fill text-secondary';
+                step3Text = 'Cancelled';
+            }
+
+            timelineContainer.append(`
                 <div class="d-flex align-items-center">
                     <i class="bi ${step3Icon} me-3 fs-5"></i>
                     <div>
-                        <div class="fw-semibold small">Parent Role: ${step3Text}</div>
-                        <small class="opacity-75">Reporting Manager / Super Admin</small>
+                        <div class="fw-semibold small">${step3Text}</div>
+                        <small class="opacity-75">By ${request.approverName}</small>
                     </div>
                 </div>
             `);
+        }
 
         // Setup Buttons
         const approveBtn = $('#approveDetailBtn');

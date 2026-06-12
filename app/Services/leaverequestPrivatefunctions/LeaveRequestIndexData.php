@@ -69,6 +69,7 @@ class LeaveRequestIndexData
             'fromEmployee.role:id,parent_role_id,organization_id,department_id',
             'fromEmployee:id,full_name,department_id,organization_id,role_id',
             'toEmployee:id,full_name,department_id,organization_id,role_id',
+            'toEmployee.role:id,name',
             'leaveType:id,name,annual_quota',
         ])
             ->when(
@@ -86,7 +87,16 @@ class LeaveRequestIndexData
 
         $currentEmployee = $currentUser?->employee;
 
-        return $requests->map(function ($request) use ($statusMap, $currentEmployee, $balanceLookup) {
+        // Pre-fetch related requests to determine recommender and approver names
+        $relatedRequests = \App\Models\EmployeLeaveRequest::with('toEmployee:id,full_name')
+            ->whereIn('from_employee_id', $requests->pluck('from_employee_id'))
+            ->whereIn('leave_type_id', $requests->pluck('leave_type_id'))
+            ->get()
+            ->groupBy(function ($r) {
+                return $r->from_employee_id . '_' . $r->leave_type_id . '_' . \Carbon\Carbon::parse($r->start_date)->toDateString() . '_' . \Carbon\Carbon::parse($r->end_date)->toDateString();
+            });
+
+        return $requests->map(function ($request) use ($statusMap, $currentEmployee, $balanceLookup, $relatedRequests) {
             $isAssignedApprover = $currentEmployee
                 && (int) $request->to_employee_id === (int) $currentEmployee->id;
 
@@ -107,7 +117,22 @@ class LeaveRequestIndexData
                 && $actionType === self::FINAL_APPROVAL_ACTION_TYPE
                 && $statusCode === 0;
 
-            return [
+            $requestKey = $request->from_employee_id . '_' . $request->leave_type_id . '_' . \Carbon\Carbon::parse($request->start_date)->toDateString() . '_' . \Carbon\Carbon::parse($request->end_date)->toDateString();
+            $siblings = $relatedRequests->get($requestKey, collect());
+
+            $recommenderRow = $siblings->where('action_type', self::RECOMMENDATION_ACTION_TYPE)->first();
+            $approverRow = $siblings->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)->first();
+
+                $currentLevelStr = match ((int) $request->status) {
+                    1 => 'Recommended',
+                    2 => 'Not Recommended',
+                    3 => 'Approved',
+                    4 => 'Rejected',
+                    5 => 'Cancelled',
+                    default => 'Pending',
+                };
+
+                return [
                 'id' => $request->id,
                 'employeeName' => optional($request->fromEmployee)->full_name ?? 'Unknown',
                 'employeeId' => 'EMP-' . str_pad($request->from_employee_id, 3, '0', STR_PAD_LEFT),
@@ -130,7 +155,7 @@ class LeaveRequestIndexData
                 'reason' => $request->reason ?? '-',
                 'status' => $statusMap[$request->status] ?? 'pending',
                 'statusCode' => $request->status,
-                'approvalLevel' => $this->approvalLevelLabel((int) $request->action_type),
+                'approvalLevel' => $currentLevelStr,
                 'pendingSince' => $request->created_at ? $request->created_at->diffForHumans() : '-',
                 'balance' => $balanceLookup[$balanceKey] ?? '0 / 0',
                 'actionType' => $actionType,
@@ -140,6 +165,10 @@ class LeaveRequestIndexData
                 'canCancel' => $canApprove,
                 'canRecommend' => $canRecommend,
                 'canNotRecommend' => $canRecommend,
+                'recommenderName' => $recommenderRow ? optional($recommenderRow->toEmployee)->full_name : null,
+                'recommenderStatus' => $recommenderRow ? (int) $recommenderRow->status : null,
+                'approverName' => $approverRow ? optional($approverRow->toEmployee)->full_name : null,
+                'approverStatus' => $approverRow ? (int) $approverRow->status : null,
             ];
         })->values()->all();
     }
