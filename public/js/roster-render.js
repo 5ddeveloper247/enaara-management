@@ -1363,7 +1363,7 @@
             if (titleEl) titleEl.textContent = 'Add Shift';
             if (saveBtnText) saveBtnText.textContent = 'Save';
             if (deleteWrap) deleteWrap.style.display = 'none';
-            if (markOffWrap) markOffWrap.style.display = 'none';
+            if (markOffWrap) markOffWrap.style.display = 'block';
             if (shiftSelect) shiftSelect.value = '';
             if (startTimeEl) startTimeEl.value = '';
             if (endTimeEl) endTimeEl.value = '';
@@ -1413,7 +1413,7 @@
                 deleteWrap.style.display = 'block';
             }
             if (markOffWrap) {
-                markOffWrap.style.display = shift ? 'block' : 'none';
+                markOffWrap.style.display = isOffDayEntry ? 'none' : 'block';
             }
             var pendingSyncPanel = document.getElementById('rosterShiftPendingSyncPanel');
             if (pendingSyncPanel) {
@@ -1562,8 +1562,8 @@
 
     function markRosterAsOff() {
         var base = window.rosterUpdateUrlBase || '';
+        var storeUrl = window.rosterStoreUrl || '';
         var rosterId = document.getElementById('rosterShiftRosterId').value;
-        if (!base || !rosterId) return;
 
         var employeeId = document.getElementById('rosterShiftEmployeeId').value;
         var employeeType = document.getElementById('rosterShiftEmployeeType')?.value || 'employee';
@@ -1575,7 +1575,8 @@
             return;
         }
 
-        var url = base + '/' + rosterId;
+        var url = rosterId ? (base + '/' + rosterId) : storeUrl;
+        if (!url) return;
         var markOffBtn = document.getElementById('rosterShiftMarkOffBtn');
         if (markOffBtn) markOffBtn.disabled = true;
 
@@ -1774,9 +1775,13 @@
                 var employeeName = document.getElementById('rosterShiftEmployeeName');
                 var dateText = dateLabel ? dateLabel.textContent.trim() : 'this date';
                 var nameText = employeeName ? employeeName.textContent.trim() : 'this employee';
+                var rosterIdVal = document.getElementById('rosterShiftRosterId')?.value || '';
+                var offConfirmText = rosterIdVal
+                    ? 'Mark ' + dateText + ' as off for ' + nameText + '? The shift assignment will be replaced with an off day.'
+                    : 'Mark ' + dateText + ' as off for ' + nameText + '?';
                 Swal.fire({
                     title: 'Mark as off?',
-                    text: 'Mark ' + dateText + ' as off for ' + nameText + '? The shift assignment will be replaced with an off day.',
+                    text: offConfirmText,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#ffc107',
