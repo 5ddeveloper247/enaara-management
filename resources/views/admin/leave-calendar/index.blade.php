@@ -332,55 +332,137 @@
         return dates;
     }
 
-    function initializeCalendar() {
-        calendarEl = document.getElementById('leaveCalendar');
-        if (!calendarEl) return;
+    function holidayOccursOnDate(holiday, dateStr) {
+        const target = new Date(dateStr + 'T00:00:00');
+        if (isNaN(target.getTime())) {
+            return false;
+        }
 
-        const events = [];
+        if (holiday.is_recurring) {
+            const startParts = formatDateOnly(holiday.start_date).split('-');
+            const endParts = formatDateOnly(holiday.end_date || holiday.start_date).split('-');
+            const year = target.getFullYear();
 
-        // Public Holidays - create separate event for each day
-        publicHolidays.forEach(holiday => {
-            if (!holiday.is_blackout) {
-                const holidayDates = getDatesBetween(holiday.start_date, holiday.end_date);
+            const occurrenceStart = new Date(
+                year,
+                parseInt(startParts[1], 10) - 1,
+                parseInt(startParts[2], 10)
+            );
+            const occurrenceEnd = new Date(
+                year,
+                parseInt(endParts[1], 10) - 1,
+                parseInt(endParts[2], 10)
+            );
 
-                holidayDates.forEach(singleDate => {
-                    events.push({
-                        id: `holiday_${holiday.id}_${singleDate}`,
-                        title: holiday.name || 'Holiday',
-                        start: singleDate,
-                        allDay: true,
-                        display: 'block',
-                        classNames: ['holiday-event', 'holiday-single-day-event'],
-                        extendedProps: {
-                            id: holiday.id,
-                            type: 'holiday',
-                            clicked_date: singleDate,
-                            original_start_date: formatDateOnly(holiday.start_date),
-                            original_end_date: formatDateOnly(holiday.end_date || holiday.start_date),
-                            organization: holiday.organization_scope === 'all'
-                                ? 'All Organizations'
-                                : (holiday.organizations && holiday.organizations.length
-                                    ? holiday.organizations.map(o => o.name).join(', ')
-                                    : 'Specific Organization'),
-                            department: holiday.department_scope === 'all'
-                                ? 'All Departments'
-                                : (holiday.departments && holiday.departments.length
-                                    ? holiday.departments.map(d => d.name).join(', ')
-                                    : ''),
-                            sbu: holiday.sbu_scope === 'all'
-                                ? 'All SBUs'
-                                : (holiday.sbus && holiday.sbus.length
-                                    ? holiday.sbus.map(s => s.name).join(', ')
-                                    : ''),
-                            reason: holiday.reason || ''
-                        }
-                    });
-                });
+            if (occurrenceEnd < occurrenceStart) {
+                return target >= occurrenceStart || target <= occurrenceEnd;
             }
+
+            return target >= occurrenceStart && target <= occurrenceEnd;
+        }
+
+        return getDatesBetween(holiday.start_date, holiday.end_date).includes(dateStr);
+    }
+
+    function eachDateInRange(rangeStart, rangeEnd, callback) {
+        const current = new Date(rangeStart);
+        current.setHours(0, 0, 0, 0);
+        const end = new Date(rangeEnd);
+        end.setHours(0, 0, 0, 0);
+
+        while (current < end) {
+            const yyyy = current.getFullYear();
+            const mm = String(current.getMonth() + 1).padStart(2, '0');
+            const dd = String(current.getDate()).padStart(2, '0');
+            callback(`${yyyy}-${mm}-${dd}`);
+            current.setDate(current.getDate() + 1);
+        }
+    }
+
+    function createHolidayEvent(holiday, singleDate) {
+        return {
+            id: `holiday_${holiday.id}_${singleDate}`,
+            title: holiday.name || 'Holiday',
+            start: singleDate,
+            allDay: true,
+            display: 'block',
+            classNames: ['holiday-event', 'holiday-single-day-event'],
+            extendedProps: {
+                id: holiday.id,
+                type: 'holiday',
+                clicked_date: singleDate,
+                original_start_date: formatDateOnly(holiday.start_date),
+                original_end_date: formatDateOnly(holiday.end_date || holiday.start_date),
+                is_recurring: !!holiday.is_recurring,
+                organization: holiday.organization_scope === 'all'
+                    ? 'All Organizations'
+                    : (holiday.organizations && holiday.organizations.length
+                        ? holiday.organizations.map(o => o.name).join(', ')
+                        : 'Specific Organization'),
+                department: holiday.department_scope === 'all'
+                    ? 'All Departments'
+                    : (holiday.departments && holiday.departments.length
+                        ? holiday.departments.map(d => d.name).join(', ')
+                        : ''),
+                sbu: holiday.sbu_scope === 'all'
+                    ? 'All SBUs'
+                    : (holiday.sbus && holiday.sbus.length
+                        ? holiday.sbus.map(s => s.name).join(', ')
+                        : ''),
+                reason: holiday.reason || ''
+            }
+        };
+    }
+
+    function createBlackoutEvent(holiday, singleDate) {
+        return {
+            id: `blackout_${holiday.id}_${singleDate}`,
+            title: holiday.reason || holiday.name || 'Blackout Date',
+            start: singleDate,
+            allDay: true,
+            classNames: ['blackout-date'],
+            extendedProps: {
+                type: 'blackout',
+                reason: holiday.reason || holiday.name || 'Blackout Date',
+                clicked_date: singleDate
+            }
+        };
+    }
+
+    function buildCalendarEvents(rangeStart, rangeEnd) {
+        const events = [];
+        const seen = new Set();
+
+        eachDateInRange(rangeStart, rangeEnd, function(dateStr) {
+            publicHolidays.forEach(function(holiday) {
+                if (!holidayOccursOnDate(holiday, dateStr)) {
+                    return;
+                }
+
+                const eventKey = `${holiday.is_blackout ? 'blackout' : 'holiday'}_${holiday.id}_${dateStr}`;
+                if (seen.has(eventKey)) {
+                    return;
+                }
+                seen.add(eventKey);
+
+                events.push(
+                    holiday.is_blackout
+                        ? createBlackoutEvent(holiday, dateStr)
+                        : createHolidayEvent(holiday, dateStr)
+                );
+            });
         });
 
-        // Department Leaves
-        deptLeaves.forEach(leave => {
+        deptLeaves.forEach(function(leave) {
+            const leaveDate = formatDateOnly(leave.date);
+            const leaveTime = new Date(leaveDate + 'T00:00:00').getTime();
+            const rangeStartTime = new Date(rangeStart).setHours(0, 0, 0, 0);
+            const rangeEndTime = new Date(rangeEnd).setHours(0, 0, 0, 0);
+
+            if (leaveTime < rangeStartTime || leaveTime >= rangeEndTime) {
+                return;
+            }
+
             const percentage = leave.total > 0 ? (leave.count / leave.total) * 100 : 0;
             let intensity = 'low';
 
@@ -389,7 +471,7 @@
 
             events.push({
                 title: `${leave.department}: ${leave.count} on leave`,
-                start: formatDateOnly(leave.date),
+                start: leaveDate,
                 allDay: true,
                 classNames: [`department-leave-${intensity}`],
                 extendedProps: {
@@ -403,22 +485,53 @@
             });
         });
 
-        // Blackout Dates
-        blackoutDates.forEach(blackout => {
-            events.push({
-                title: blackout.reason || 'Blackout Date',
-                start: formatDateOnly(blackout.date),
-                allDay: true,
-                classNames: ['blackout-date'],
-                extendedProps: {
-                    type: 'blackout',
-                    reason: blackout.reason || 'Blackout Date'
-                }
-            });
-        });
+        return events;
+    }
 
-        console.log('publicHolidays', publicHolidays);
-        console.log('calendar events', events);
+    function getHolidayDisplayDate(holiday, year) {
+        if (holiday.is_recurring) {
+            const parts = formatDateOnly(holiday.start_date).split('-');
+            return `${year}-${parts[1]}-${parts[2]}`;
+        }
+
+        return formatDateOnly(holiday.start_date);
+    }
+
+    function holidayOccursInYear(holiday, year) {
+        if (holiday.is_recurring) {
+            return true;
+        }
+
+        const startYear = new Date(formatDateOnly(holiday.start_date) + 'T00:00:00').getFullYear();
+        const endYear = new Date(formatDateOnly(holiday.end_date || holiday.start_date) + 'T00:00:00').getFullYear();
+
+        return year >= startYear && year <= endYear;
+    }
+
+    function getNextOccurrenceTimestamp(holiday, fromDate) {
+        const from = new Date(fromDate);
+        from.setHours(0, 0, 0, 0);
+
+        if (!holiday.is_recurring) {
+            const singleDate = new Date(formatDateOnly(holiday.start_date) + 'T00:00:00');
+            return singleDate >= from ? singleDate.getTime() : null;
+        }
+
+        const parts = formatDateOnly(holiday.start_date).split('-');
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        let candidate = new Date(from.getFullYear(), month, day);
+
+        if (candidate < from) {
+            candidate = new Date(from.getFullYear() + 1, month, day);
+        }
+
+        return candidate.getTime();
+    }
+
+    function initializeCalendar() {
+        calendarEl = document.getElementById('leaveCalendar');
+        if (!calendarEl) return;
 
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
@@ -440,7 +553,9 @@
                 }
             },
 
-            events: events,
+            events: function(info, successCallback) {
+                successCallback(buildCalendarEvents(info.start, info.end));
+            },
             eventDisplay: 'block',
             dayMaxEvents: 5,
             moreLinkClick: 'popover',
@@ -763,24 +878,33 @@
             today.setHours(0, 0, 0, 0);
 
             const upcoming = publicHolidays
-                .filter(h => new Date(formatDateOnly(h.start_date) + 'T00:00:00') >= today)
-                .sort((a, b) =>
-                    new Date(formatDateOnly(a.start_date) + 'T00:00:00') -
-                    new Date(formatDateOnly(b.start_date) + 'T00:00:00')
-                );
+                .map(function(holiday) {
+                    return {
+                        holiday: holiday,
+                        nextTs: getNextOccurrenceTimestamp(holiday, today)
+                    };
+                })
+                .filter(function(item) {
+                    return item.nextTs !== null;
+                })
+                .sort(function(a, b) {
+                    return a.nextTs - b.nextTs;
+                });
 
             if (upcoming.length === 0) {
                 upcomingHolidaysContainer.innerHTML =
                     '<div class="text-muted small py-4 text-center opacity-75">No upcoming holidays found</div>';
             } else {
-                upcoming.forEach(holiday => {
+                upcoming.forEach(function(entry) {
+                    const holiday = entry.holiday;
+                    const nextDate = new Date(entry.nextTs);
                     const item = document.createElement('div');
                     item.className = 'holiday-list-item d-flex justify-content-between align-items-center p-2 mb-2 rounded-3';
                     item.style.backgroundColor = 'rgba(1, 36, 69, 0.02)';
                     item.innerHTML = `
                         <div class="flex-grow-1">
                             <div class="fw-semibold" style="font-size: 13px; color: #333;">${holiday.name}</div>
-                            <small class="text-muted" style="font-size: 11px;">${new Date(formatDateOnly(holiday.start_date) + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
+                            <small class="text-muted" style="font-size: 11px;">${nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
                         </div>
                         <button class="btn btn-outline-primary btn-sm rounded-pill"
                                 style="font-size: 9px !important; padding: 2px 8px; height: 22px;"
@@ -973,12 +1097,17 @@
         const container = document.getElementById('allHolidaysList');
         if (!container) return;
 
+        const yearNumber = parseInt(year, 10);
+
         const filtered = publicHolidays
-            .filter(h => new Date(formatDateOnly(h.start_date) + 'T00:00:00').getFullYear() === parseInt(year))
-            .sort((a, b) =>
-                new Date(formatDateOnly(b.start_date) + 'T00:00:00') -
-                new Date(formatDateOnly(a.start_date) + 'T00:00:00')
-            );
+            .filter(function(h) {
+                return holidayOccursInYear(h, yearNumber);
+            })
+            .sort(function(a, b) {
+                const dateA = new Date(getHolidayDisplayDate(a, yearNumber) + 'T00:00:00');
+                const dateB = new Date(getHolidayDisplayDate(b, yearNumber) + 'T00:00:00');
+                return dateB - dateA;
+            });
 
         container.innerHTML = '';
 
@@ -995,7 +1124,7 @@
                 <div class="flex-grow-1">
                     <div class="fw-semibold" style="font-size: 13px; color: #333;">${holiday.name}</div>
                     <small class="text-muted" style="font-size: 11px;">
-                        ${new Date(formatDateOnly(holiday.start_date) + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        ${new Date(getHolidayDisplayDate(holiday, yearNumber) + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </small>
                 </div>
                 <button class="btn btn-outline-primary btn-sm rounded-pill"
