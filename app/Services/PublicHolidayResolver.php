@@ -167,6 +167,45 @@ class PublicHolidayResolver
         return $virtual;
     }
 
+    /**
+     * Holiday names keyed by date (Y-m-d) for roster column headers.
+     *
+     * @return array<string, list<string>>
+     */
+    public function buildPublicHolidaysByDateForRange(Carbon $rangeStart, Carbon $rangeEnd): array
+    {
+        $holidays = $this->loadHolidaysForRange($rangeStart, $rangeEnd);
+        if ($holidays->isEmpty()) {
+            return [];
+        }
+
+        $byDate = [];
+        $period = CarbonPeriod::create(
+            $rangeStart->copy()->startOfDay(),
+            $rangeEnd->copy()->startOfDay()
+        );
+
+        foreach ($period as $date) {
+            $dateString = $date->toDateString();
+
+            foreach ($holidays as $holiday) {
+                if (! $this->holidayOccursOnDate($holiday, $dateString)) {
+                    continue;
+                }
+
+                $byDate[$dateString] ??= [];
+                $name = trim((string) $holiday->name);
+                if ($name === '' || in_array($name, $byDate[$dateString], true)) {
+                    continue;
+                }
+
+                $byDate[$dateString][] = $name;
+            }
+        }
+
+        return $byDate;
+    }
+
     public function holidayOccursOnDate(PublicHoliday $holiday, string $date): bool
     {
         $target = Carbon::parse($date)->startOfDay();

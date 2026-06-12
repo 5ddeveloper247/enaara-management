@@ -646,16 +646,10 @@ class ShiftRosterService
             ))
             ->all();
 
-        $virtualHolidays = $this->publicHolidayResolver->buildVirtualRosterHolidaysForGrid(
-            $employees,
-            $outsourcedEmployees,
+        $publicHolidaysByDate = $this->publicHolidayResolver->buildPublicHolidaysByDateForRange(
             $startDate,
             $endDate
         );
-
-        if ($virtualHolidays !== []) {
-            $shiftsOut = array_merge($shiftsOut, $virtualHolidays);
-        }
 
         // --- Add Virtual Leaves ---
         $leaveEntities = \App\Models\EmployeLeaveEntity::query()
@@ -728,6 +722,7 @@ class ShiftRosterService
             'departments' => $departments,
             'employees' => $empPayload,
             'shifts' => $shiftsOut,
+            'publicHolidaysByDate' => $publicHolidaysByDate,
             'meta' => [
                 'draftPendingCount' => $approvalReviewScope ? 0 : $draftPendingCount,
                 'canApplyForApproval' => $approvalReviewScope ? false : $draftPendingCount > 0,

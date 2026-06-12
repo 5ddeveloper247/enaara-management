@@ -163,14 +163,15 @@
         return holidays.concat(active).concat(deleted);
     }
 
-    function renderCellShiftsHtml(shiftList) {
+    function renderCellShiftsHtml(shiftList, rosterDateIso, holidaysByDate) {
         var ordered = sortShiftsForCell(shiftList);
         if (!ordered.length) {
             return '';
         }
         var html = '<div class="shift-cell-stack">';
         ordered.forEach(function(s) {
-            html += '<div class="shift-pill-hit" data-shift="' + encodeURIComponent(JSON.stringify(s)) + '">' + pillHtml(s) + '</div>';
+            html += '<div class="shift-pill-hit" data-shift="' + encodeURIComponent(JSON.stringify(s)) + '">' +
+                pillHtml(s, rosterDateIso, holidaysByDate) + '</div>';
         });
         html += '</div>';
         return html;
@@ -190,7 +191,15 @@
         return '<span class="shift-place">' + escapeHtml(floor || location) + '</span>';
     }
 
-    function pillHtml(s) {
+    function rosterHolidayLabelForDate(iso, holidaysByDate) {
+        var names = (holidaysByDate && iso && holidaysByDate[iso]) ? holidaysByDate[iso] : [];
+        if (!names.length) {
+            return 'Public Holiday';
+        }
+        return names.join(', ');
+    }
+
+    function pillHtml(s, rosterDateIso, holidaysByDate) {
         if (s.isPublicHoliday || (s.status && String(s.status).toLowerCase() === 'holiday')) {
             var holidayLabel = s.holidayName ? String(s.holidayName) : 'Holiday';
             if (holidayLabel.length > 18) {
@@ -243,6 +252,16 @@
         }
 
         if (s.isOffDay || (s.status && String(s.status).toLowerCase() === 'off')) {
+            if (rosterDateIso && isRosterHolidayDate(rosterDateIso, holidaysByDate)) {
+                var publicHolidayTitle = rosterHolidayLabelForDate(rosterDateIso, holidaysByDate);
+                return '<div class="shift-pill shift-holiday" title="' + escapeHtml(publicHolidayTitle) + '">' +
+                    '<span class="shift-pill-icon" aria-hidden="true"><i class="bi bi-calendar-event"></i></span>' +
+                    '<div class="shift-pill-top">' +
+                    '<span class="shift-time">Public Holiday</span>' +
+                    '</div>' +
+                    '</div>';
+            }
+
             return '<div class="shift-pill shift-off">' +
                 '<span class="shift-pill-icon" aria-hidden="true"><i class="bi bi-calendar-x"></i></span>' +
                 '<div class="shift-pill-top">' +
@@ -370,9 +389,6 @@
         var active = (rawCellShifts || []).filter(function(s) {
             return !s.deletedAt;
         });
-        var holidayShifts = active.filter(function(s) {
-            return s.isPublicHoliday;
-        });
         var nonHoliday = active.filter(function(s) {
             return !s.isPublicHoliday;
         });
@@ -389,10 +405,6 @@
 
         if (leaveShifts.length) {
             return sortShiftsForCell(leaveShifts);
-        }
-
-        if (holidayShifts.length) {
-            return sortShiftsForCell(holidayShifts);
         }
 
         return sortShiftsForCell(nonHoliday);
@@ -525,7 +537,9 @@
         if (rosterWeekIndex < 1) rosterWeekIndex = 1;
 
         var days = getWeekDays(year, month1, rosterWeekIndex);
-        var holidaysByDate = collectHolidaysByDate(shifts);
+        var holidaysByDate = (r.publicHolidaysByDate && typeof r.publicHolidaysByDate === 'object')
+            ? r.publicHolidaysByDate
+            : collectHolidaysByDate(shifts);
 
         buildTheadRow(days, holidaysByDate);
         updateRosterWeekDisplay();
@@ -580,8 +594,8 @@
                         var hasOffDayEntry = displayShifts.some(function(s) {
                             return isRosterOffDayShift(s) && !s.deletedAt;
                         });
-                        var hasPublicHoliday = displayShifts.some(function(s) {
-                            return !s.deletedAt && s.isPublicHoliday;
+                        var hasLeave = displayShifts.some(function(s) {
+                            return !s.deletedAt && (s.isLeave || String(s.status || '').toLowerCase() === 'leave');
                         });
 
                         var td = document.createElement('td');
@@ -600,13 +614,13 @@
 
                         if (displayShifts.length) {
                             td.setAttribute('data-shifts', JSON.stringify(displayShifts));
-                            td.innerHTML = renderCellShiftsHtml(displayShifts);
+                            td.innerHTML = renderCellShiftsHtml(displayShifts, iso, holidaysByDate);
                         }
 
-                        if (!hasActiveShift && !hasOffDayEntry && !hasPublicHoliday) {
+                        if (!hasActiveShift && !hasOffDayEntry && !hasLeave) {
                             td.classList.add('roster-day-cell-empty');
                             td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add"><i class="bi bi-plus-lg"></i></span>';
-                        } else if (hasActiveShift || hasOffDayEntry) {
+                        } else if (hasActiveShift || hasOffDayEntry || hasLeave) {
                             td.insertAdjacentHTML('beforeend',
                                 '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add roster-day-add-inline"><i class="bi bi-plus-lg"></i></span>');
                         }
