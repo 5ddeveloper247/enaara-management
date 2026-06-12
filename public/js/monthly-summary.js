@@ -557,18 +557,26 @@
             const displayText = getCalendarDisplayText(dayData, statusClass, label);
             const title = getCalendarTooltip(dayData, label);
 
+            const statusHtml = displayText
+                ? `<div class="calendar-day-status">${escapeHtml(displayText)}</div>`
+                : '';
+
             calendarGrid.append(`
                 <div class="calendar-day ${escapeHtml(statusClass)}"
                      data-date="${escapeAttr(dayData.date)}"
                      title="${escapeAttr(title)}">
                     <div class="calendar-day-number">${dayData.day}</div>
-                    <div class="calendar-day-status">${escapeHtml(displayText)}</div>
+                    ${statusHtml}
                 </div>
             `);
         });
     }
 
     function getCalendarDisplayText(dayData, statusClass, label) {
+        if (statusClass === 'scheduled') {
+            return '';
+        }
+
         if (statusClass === 'leave' || statusClass === 'half-day' || statusClass === 'holiday') {
             return dayData.detail || label;
         }
@@ -577,6 +585,10 @@
     }
 
     function getCalendarTooltip(dayData, label) {
+        if (dayData.status === 'scheduled') {
+            return '';
+        }
+
         const notes = dayData.notes ? String(dayData.notes).trim() : '';
         if (notes) {
             return `${label} — ${notes}`;
@@ -632,6 +644,9 @@
         const locationCards = $('#workAssignmentLocationGrid .work-assignment-location-card');
 
         blockedNotice.toggleClass('d-none', isAssignable);
+        if (!isAssignable) {
+            $('#workAssignmentBlockedNoticeText').html(resolveWorkAssignmentBlockedMessage(dayData));
+        }
         form.find('textarea').prop('disabled', !isAssignable);
         form.find('input[name="work_type"]').prop('disabled', !isAssignable);
         locationCards.toggleClass('is-disabled', !isAssignable);
@@ -659,6 +674,33 @@
             const cardType = String($(this).data('work-type') || 'none');
             $(this).toggleClass('is-selected', cardType === normalized);
         });
+    }
+
+    function resolveWorkAssignmentBlockedMessage(dayData) {
+        if (dayData.assignment_blocked_message) {
+            return escapeHtml(dayData.assignment_blocked_message);
+        }
+
+        if (dayData.assignment_block_reason === 'shift_planner') {
+            return buildShiftPlannerBlockedMessage();
+        }
+
+        if (['leave', 'half-day'].includes(dayData.status)) {
+            return 'Work location cannot be assigned on leave days.';
+        }
+
+        return 'Work location cannot be assigned on this day.';
+    }
+
+    function buildShiftPlannerBlockedMessage() {
+        const shiftPlannerUrl = window.monthlySummaryShiftPlannerUrl || '';
+        const message = 'This employee uses shift-based scheduling. Update off days and holidays from Shift Planner.';
+
+        if (!shiftPlannerUrl) {
+            return escapeHtml(message);
+        }
+
+        return `${escapeHtml(message)} <a href="${escapeHtml(shiftPlannerUrl)}" class="work-assignment-blocked-link">Open Shift Planner</a>`;
     }
 
     function updateWorkAssignmentStatusBadge(dayData) {

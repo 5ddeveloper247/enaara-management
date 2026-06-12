@@ -25,7 +25,7 @@
                 </div>
 
                 <div id="workAssignmentBlockedNotice" class="work-assignment-blocked-notice d-none">
-                    Work location can only be assigned on working days (Present). Leave, off days, and holidays cannot be changed here.
+                    <span id="workAssignmentBlockedNoticeText">Work location cannot be assigned on this day.</span>
                 </div>
 
                 <form id="workAssignmentForm">

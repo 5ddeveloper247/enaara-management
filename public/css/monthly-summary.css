@@ -73,44 +73,74 @@
     border-color: rgba(255, 255, 255, 0.5);
 }
 
-.calendar-day.present {
+.calendar-day.present,
+.calendar-legend-swatch.present {
     background-color: rgba(25, 135, 84, 0.3);
     border-color: rgba(25, 135, 84, 0.5);
 }
 
-.calendar-day.work-from-home {
+.calendar-day.scheduled,
+.calendar-legend-swatch.scheduled {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.calendar-day.work-from-home,
+.calendar-legend-swatch.work-from-home {
     background-color: rgba(13, 110, 253, 0.35);
     border-color: rgba(13, 110, 253, 0.55);
 }
 
-.calendar-day.outstation {
+.calendar-day.outstation,
+.calendar-legend-swatch.outstation {
     background-color: rgba(255, 193, 7, 0.35);
     border-color: rgba(255, 193, 7, 0.55);
 }
 
-.calendar-day.absent {
+.calendar-day.absent,
+.calendar-legend-swatch.absent {
     background-color: rgba(220, 53, 69, 0.3);
     border-color: rgba(220, 53, 69, 0.5);
 }
 
-.calendar-day.half-day {
+.calendar-day.half-day,
+.calendar-legend-swatch.half-day {
     background-color: rgba(255, 193, 7, 0.3);
     border-color: rgba(255, 193, 7, 0.5);
 }
 
-.calendar-day.leave {
+.calendar-day.leave,
+.calendar-legend-swatch.leave {
     background-color: rgba(13, 110, 253, 0.3);
     border-color: rgba(13, 110, 253, 0.5);
 }
 
-.calendar-day.off {
+.calendar-day.off,
+.calendar-legend-swatch.off {
     background-color: rgba(108, 117, 125, 0.25);
     border-color: rgba(108, 117, 125, 0.45);
 }
 
-.calendar-day.holiday {
+.calendar-day.holiday,
+.calendar-legend-swatch.holiday {
     background-color: rgba(108, 117, 125, 0.3);
     border-color: rgba(108, 117, 125, 0.5);
+}
+
+.calendar-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.calendar-legend-swatch {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 0.25rem;
+    border: 1px solid transparent;
+    flex-shrink: 0;
 }
 
 .calendar-day.late {
@@ -322,6 +352,13 @@
     padding: 0.75rem 0.9rem;
     font-size: 0.8rem;
     margin-bottom: 1rem;
+}
+
+.work-assignment-blocked-link {
+    color: #1d4ed8;
+    font-weight: 600;
+    text-decoration: underline;
+    margin-left: 0.25rem;
 }
 
 .work-assignment-section-label {

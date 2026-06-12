@@ -93,6 +93,7 @@ class MonthlySummaryService
             'employee_id' => $employee->id,
             'month' => $month,
             'engagement_mode' => $employee->engagement_mode,
+            'is_shift_based' => $this->employeeWorkingScheduleService->isShiftBased($employee),
             'days' => $attendance['days'],
             'stats' => $attendance['stats'],
         ];
@@ -152,7 +153,8 @@ class MonthlySummaryService
                 $leaveEntities->get($dateStr),
             );
 
-            $day = $this->applyWorkAssignmentOverlay($day, $workAssignments->get($dateStr));
+            $day = $this->applyFutureDayContext($day, $cursor);
+            $day = $this->applyWorkAssignmentOverlay($day, $workAssignments->get($dateStr), $isShiftBased);
 
             $days[] = $day;
             $this->incrementCalendarStat($stats, $day);
@@ -304,7 +306,9 @@ class MonthlySummaryService
         }
 
         if ($workType !== 'none' && empty($day['is_assignable'])) {
-            throw new \InvalidArgumentException('Work location can only be assigned on working days.');
+            throw new \InvalidArgumentException(
+                $day['assignment_blocked_message'] ?? 'Work location cannot be assigned on this day.'
+            );
         }
 
         if ($workType === 'none') {
@@ -349,12 +353,35 @@ class MonthlySummaryService
         ];
     }
 
-    private function applyWorkAssignmentOverlay(array $day, ?EmployeeWorkAssignment $assignment): array
+    private function applyFutureDayContext(array $day, Carbon $date): array
     {
-        $day['base_status'] = $day['status'];
-        $day['is_assignable'] = $day['status'] === 'present';
+        if ($date->isAfter(Carbon::today()) && ($day['status'] ?? null) === 'present') {
+            return array_merge($day, [
+                'status' => 'scheduled',
+                'label' => '',
+                'detail' => '',
+            ]);
+        }
 
-        if ($assignment === null || $day['status'] !== 'present') {
+        return $day;
+    }
+
+    private function applyWorkAssignmentOverlay(
+        array $day,
+        ?EmployeeWorkAssignment $assignment,
+        bool $isShiftBased,
+    ): array {
+        $day['base_status'] = $day['status'];
+        $day['is_assignable'] = $this->isWorkLocationAssignable($day['status'], $isShiftBased);
+
+        if (! $day['is_assignable']) {
+            $day['assignment_block_reason'] = $this->resolveAssignmentBlockReason($day['status'], $isShiftBased);
+            $day['assignment_blocked_message'] = $this->buildWorkAssignmentBlockedMessage(
+                $day['assignment_block_reason']
+            );
+        }
+
+        if ($assignment === null || ! $this->supportsWorkAssignmentOverlay($day['status'], $isShiftBased)) {
             return $day;
         }
 
@@ -381,6 +408,50 @@ class MonthlySummaryService
         }
 
         return $day;
+    }
+
+    private function isWorkLocationAssignable(string $status, bool $isShiftBased): bool
+    {
+        if (in_array($status, ['leave', 'half-day'], true)) {
+            return false;
+        }
+
+        if (in_array($status, ['present', 'scheduled', 'work-from-home', 'outstation'], true)) {
+            return true;
+        }
+
+        if ($isShiftBased) {
+            return false;
+        }
+
+        return in_array($status, ['off', 'holiday'], true);
+    }
+
+    private function supportsWorkAssignmentOverlay(string $status, bool $isShiftBased): bool
+    {
+        return $this->isWorkLocationAssignable($status, $isShiftBased);
+    }
+
+    private function resolveAssignmentBlockReason(string $status, bool $isShiftBased): ?string
+    {
+        if (in_array($status, ['leave', 'half-day'], true)) {
+            return 'leave';
+        }
+
+        if ($isShiftBased && in_array($status, ['off', 'holiday'], true)) {
+            return 'shift_planner';
+        }
+
+        return 'blocked';
+    }
+
+    private function buildWorkAssignmentBlockedMessage(?string $reason): string
+    {
+        return match ($reason) {
+            'shift_planner' => 'This employee uses shift-based scheduling. Update off days and holidays from Shift Planner.',
+            'leave' => 'Work location cannot be assigned on leave days.',
+            default => 'Work location cannot be assigned on this day.',
+        };
     }
 
     private function incrementCalendarStat(array &$stats, array $day): void

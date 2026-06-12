@@ -77,34 +77,43 @@
                 <i class="bi bi-calendar-check me-2"></i>Daily Attendance Calendar
             </h6>
             <div class="calendar-legend mb-3 p-3 rounded-3 border" style="border-color: #ffffff1a !important;">
-                <div class="row g-2">
-                    <div class="col-auto">
-                        <span class="badge bg-success px-2 py-1">Present</span>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge bg-primary px-2 py-1">WFH</span>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge bg-warning text-dark px-2 py-1">Outstation</span>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge bg-danger px-2 py-1">Absent</span>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge bg-info text-dark px-2 py-1">Half-day</span>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge bg-info px-2 py-1">Leave</span>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge bg-secondary px-2 py-1">Off</span>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge bg-secondary px-2 py-1">Holiday</span>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge bg-warning px-2 py-1">Late</span>
-                    </div>
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch present" aria-hidden="true"></span>
+                        <span>Present</span>
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch work-from-home" aria-hidden="true"></span>
+                        <span>WFH</span>
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch outstation" aria-hidden="true"></span>
+                        <span>Outstation</span>
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch scheduled" aria-hidden="true"></span>
+                        <span>Upcoming</span>
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch absent" aria-hidden="true"></span>
+                        <span>Absent</span>
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch half-day" aria-hidden="true"></span>
+                        <span>Half-day</span>
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch leave" aria-hidden="true"></span>
+                        <span>Leave</span>
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch off" aria-hidden="true"></span>
+                        <span>Off</span>
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch holiday" aria-hidden="true"></span>
+                        <span>Holiday</span>
+                    </span>
                 </div>
             </div>
             <div class="calendar-grid" id="monthlyCalendarGrid">

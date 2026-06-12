@@ -63,6 +63,7 @@
     window.monthlySummaryFloors = @json($floorsForFilter ?? []);
     window.monthlySummaryCalendarUrl = @json(route('admin.monthly-summary.employee_calendar', ['employeeId' => '__ID__']));
     window.monthlySummaryWorkAssignmentUrl = @json(route('admin.monthly-summary.work_assignment', ['employeeId' => '__ID__']));
+    window.monthlySummaryShiftPlannerUrl = @json(route('admin.shift-roster.index'));
 </script>
 <script src="{{ asset('js/monthly-summary.js') }}"></script>
 @endpush
