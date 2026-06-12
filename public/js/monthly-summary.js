@@ -17,6 +17,33 @@
     let currentCalendarDays = [];
     let detailViewMonth = null;
 
+    function getLeaveTypes() {
+        return Array.isArray(window.monthlySummaryLeaveTypes) ? window.monthlySummaryLeaveTypes : [];
+    }
+
+    function getTableColumnLayout() {
+        const leaveTypeCount = getLeaveTypes().length;
+        const halfDaysCol = 5;
+        const firstLeaveCol = 6;
+        const lateCol = firstLeaveCol + leaveTypeCount;
+        const earlyCol = lateCol + 1;
+        const zoneCol = earlyCol + 1;
+        const regularizationCol = zoneCol + 1;
+        const actionsCol = regularizationCol + 1;
+
+        return {
+            leaveTypeCount,
+            halfDaysCol,
+            firstLeaveCol,
+            lateCol,
+            earlyCol,
+            zoneCol,
+            regularizationCol,
+            actionsCol,
+            totalColumns: actionsCol + 1,
+        };
+    }
+
     // ============================================
     // INITIALIZATION
     // ============================================
@@ -105,6 +132,21 @@
             const row = buildTableRow(employee);
             tbody.append(row);
         });
+        const layout = getTableColumnLayout();
+        const leaveColumnTargets = Array.from(
+            { length: layout.leaveTypeCount },
+            (_, index) => layout.firstLeaveCol + index
+        );
+        const detailColumnTargets = [
+            layout.lateCol,
+            layout.earlyCol,
+            layout.zoneCol,
+            layout.regularizationCol,
+        ];
+        const colvisTargets = [1, 2, 3, 4, 5]
+            .concat(leaveColumnTargets)
+            .concat(detailColumnTargets);
+
         monthlySummaryTable = initUserDataTable('#monthlySummaryTable', {
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
@@ -124,11 +166,7 @@
                     responsivePriority: 0
                 },
                 {
-                    targets: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-                    visible: true
-                },
-                {
-                    targets: 13,
+                    targets: layout.actionsCol,
                     orderable: false,
                     className: 'no-toggle',
                     responsivePriority: 1
@@ -142,7 +180,7 @@
                     responsivePriority: 3
                 },
                 {
-                    targets: [6, 7, 8, 9, 10, 11, 12],
+                    targets: leaveColumnTargets.concat(detailColumnTargets),
                     responsivePriority: 4
                 }
             ],
@@ -158,7 +196,7 @@
                 extend: 'colvis',
                 text: 'Select Columns',
                 className: 'btn btn-sm border-0 bg-main text-white',
-                columns: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                columns: colvisTargets
             }],
             drawCallback: function() {
                 $('[data-bs-toggle="tooltip"]').tooltip();
@@ -169,25 +207,30 @@
     // ============================================
     // TABLE ROW BUILDER
     // ============================================
+    function buildLeaveUsageCells(employee) {
+        const usage = employee.leave_usage || {};
+        const badgeClasses = ['bg-info', 'bg-primary', 'bg-secondary', 'bg-success', 'bg-warning text-dark', 'bg-danger'];
+
+        return getLeaveTypes().map(function (leaveType, index) {
+            const value = parseFloat(usage[String(leaveType.id)] ?? 0) || 0;
+
+            if (value > 0) {
+                const badgeClass = badgeClasses[index % badgeClasses.length];
+                return `<td><span class="badge px-2 rounded-1 ${badgeClass}">${value}</span></td>`;
+            }
+
+            return '<td><span class="text-muted">-</span></td>';
+        }).join('');
+    }
+
     function buildTableRow(employee) {
         const floorLabel = employee.floor_name || 'N/A';
         const floorIds = Array.isArray(employee.sbu_floor_ids) ? employee.sbu_floor_ids.join(',') : '';
         const halfDaysBadge = employee.half_days > 0
             ? `<span class="badge px-2 rounded-1 bg-warning text-dark">${employee.half_days}</span>`
             : '<span class="text-muted">-</span>';
-    
-        const annualLeaveBadge = employee.annual_leave > 0
-            ? `<span class="badge px-2 rounded-1 bg-info">${employee.annual_leave}</span>`
-            : '<span class="text-muted">-</span>';
-    
-        const sickLeaveBadge = employee.sick_leave > 0
-            ? `<span class="badge px-2 rounded-1 bg-primary">${employee.sick_leave}</span>`
-            : '<span class="text-muted">-</span>';
-    
-        const casualLeaveBadge = employee.casual_leave > 0
-            ? `<span class="badge px-2 rounded-1 bg-secondary">${employee.casual_leave}</span>`
-            : '<span class="text-muted">-</span>';
-    
+        const leaveUsageCells = buildLeaveUsageCells(employee);
+
         const lateArrivalsBadge = employee.late_arrivals > 0
             ? `<span class="badge px-2 rounded-1 bg-warning text-dark">${employee.late_arrivals}</span>`
             : '<span class="text-muted">-</span>';
@@ -217,9 +260,7 @@
                 <td><span class="badge px-2 rounded-1 bg-success">${employee.present}</span></td>
                 <td><span class="badge px-2 rounded-1 bg-danger">${employee.absent}</span></td>
                 <td>${halfDaysBadge}</td>
-                <td>${annualLeaveBadge}</td>
-                <td>${sickLeaveBadge}</td>
-                <td>${casualLeaveBadge}</td>
+                ${leaveUsageCells}
                 <td>${lateArrivalsBadge}</td>
                 <td>${earlyDeparturesBadge}</td>
                 <td>${employee.zone2_verification}</td>
@@ -237,9 +278,6 @@
                             data-present="${employee.present}"
                             data-absent="${employee.absent}"
                             data-half-days="${employee.half_days}"
-                            data-annual-leave="${employee.annual_leave}"
-                            data-sick-leave="${employee.sick_leave}"
-                            data-casual-leave="${employee.casual_leave}"
                             data-late-arrivals="${employee.late_arrivals}"
                             data-early-departures="${employee.early_departures}"
                             data-zone2-verification="${employee.zone2_verification}"
@@ -336,7 +374,9 @@
             return;
         }
 
-        const headers = ['Employee', 'Employee Code', 'Department', 'SBU', 'Total Days', 'Present', 'Absent', 'Half-days', 'Annual Leave', 'Sick Leave', 'Casual Leave', 'Late Arrivals', 'Early Departures', 'Zone-2 Verification', 'Regularization'];
+        const headers = ['Employee', 'Employee Code', 'Department', 'SBU', 'Total Days', 'Present', 'Absent', 'Half-days']
+            .concat(getLeaveTypes().map(function (leaveType) { return leaveType.name; }))
+            .concat(['Late Arrivals', 'Early Departures', 'Zone-2 Verification', 'Regularization']);
         let csv = headers.join(',') + '\n';
         rows.forEach(function (row) {
             csv += row.map(csvEscape).join(',') + '\n';
@@ -380,9 +420,6 @@
             present: parseInt(button.getAttribute('data-present')) || 0,
             absent: parseInt(button.getAttribute('data-absent')) || 0,
             halfDays: parseInt(button.getAttribute('data-half-days')) || 0,
-            annualLeave: parseInt(button.getAttribute('data-annual-leave')) || 0,
-            sickLeave: parseInt(button.getAttribute('data-sick-leave')) || 0,
-            casualLeave: parseInt(button.getAttribute('data-casual-leave')) || 0,
             lateArrivals: parseInt(button.getAttribute('data-late-arrivals')) || 0,
             earlyDepartures: parseInt(button.getAttribute('data-early-departures')) || 0,
             zone2Verification: button.getAttribute('data-zone2-verification') || 'N/A',
@@ -910,6 +947,7 @@
 
     function getExportRows() {
         if (!monthlySummaryTable) return [];
+        const layout = getTableColumnLayout();
         const rows = [];
         monthlySummaryTable.rows({ search: 'applied' }).every(function () {
             const rowNode = this.node();
@@ -922,7 +960,7 @@
             const department = parts[1] || '';
             const sbuFloor = employeeInfo.find('.badge').first().text().trim();
 
-            rows.push([
+            const row = [
                 employeeName,
                 employeeCode,
                 department,
@@ -931,25 +969,35 @@
                 $row.find('td:eq(3)').text().trim(),
                 $row.find('td:eq(4)').text().trim(),
                 $row.find('td:eq(5)').text().trim(),
-                $row.find('td:eq(6)').text().trim(),
-                $row.find('td:eq(7)').text().trim(),
-                $row.find('td:eq(8)').text().trim(),
-                $row.find('td:eq(9)').text().trim(),
-                $row.find('td:eq(10)').text().trim(),
-                $row.find('td:eq(11)').text().trim(),
-                $row.find('td:eq(12)').text().trim()
-            ]);
+            ];
+
+            for (let col = layout.firstLeaveCol; col < layout.lateCol; col += 1) {
+                row.push($row.find(`td:eq(${col})`).text().trim());
+            }
+
+            row.push(
+                $row.find(`td:eq(${layout.lateCol})`).text().trim(),
+                $row.find(`td:eq(${layout.earlyCol})`).text().trim(),
+                $row.find(`td:eq(${layout.zoneCol})`).text().trim(),
+                $row.find(`td:eq(${layout.regularizationCol})`).text().trim()
+            );
+
+            rows.push(row);
         });
         return rows;
     }
 
     function buildPrintableHtml(rows) {
+        const leaveHeaders = getLeaveTypes().map(function (leaveType) {
+            return `<th>${escapeHtml(leaveType.name)}</th>`;
+        }).join('');
+
         const head = `
             <tr>
                 <th>Employee</th><th>Code</th><th>Department</th><th>SBU/Floor</th>
                 <th>Total</th><th>Present</th><th>Absent</th><th>Half</th>
-                <th>Annual</th><th>Sick</th><th>Casual</th><th>Late</th>
-                <th>Early</th><th>Zone-2</th><th>Regularization</th>
+                ${leaveHeaders}
+                <th>Late</th><th>Early</th><th>Zone-2</th><th>Regularization</th>
             </tr>`;
         const body = rows.map(function (r) {
             return '<tr>' + r.map(function (c) { return `<td>${escapeHtml(c)}</td>`; }).join('') + '</tr>';

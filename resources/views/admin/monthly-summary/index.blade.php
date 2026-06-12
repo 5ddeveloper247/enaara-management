@@ -60,6 +60,7 @@
 <!-- Monthly Summary Module JavaScript -->
 <script>
     window.monthlySummaryRows = @json($monthlySummary);
+    window.monthlySummaryLeaveTypes = @json($monthlySummaryLeaveTypes ?? []);
     window.monthlySummaryFloors = @json($floorsForFilter ?? []);
     window.monthlySummaryCalendarUrl = @json(route('admin.monthly-summary.employee_calendar', ['employeeId' => '__ID__']));
     window.monthlySummaryWorkAssignmentUrl = @json(route('admin.monthly-summary.work_assignment', ['employeeId' => '__ID__']));

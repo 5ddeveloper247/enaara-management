@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Models\Employee;
 use App\Models\EmployeLeaveEntity;
 use App\Models\EmployeeWorkAssignment;
+use App\Models\LeaveType;
 use App\Models\ShiftRosterEntry;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class MonthlySummaryService
 {
@@ -71,12 +73,28 @@ class MonthlySummaryService
 
         $employees = $employeesQuery->get();
 
-        $monthlySummary = $employees->map(function ($employee) use ($month) {
-            return $this->buildEmployeeMonthlySummary($employee, $month);
+        $tableLeaveTypes = $this->resolveTableLeaveTypes(
+            ! empty($sbuId) ? (int) $sbuId : null,
+            $employees->pluck('sbu_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all(),
+        );
+
+        $monthlySummary = $employees->map(function ($employee) use ($month, $tableLeaveTypes) {
+            return $this->buildEmployeeMonthlySummary($employee, $month, $tableLeaveTypes);
         })->values();
+
+        $monthlySummaryLeaveTypes = $tableLeaveTypes
+            ->map(static fn (LeaveType $leaveType) => [
+                'id' => $leaveType->id,
+                'name' => $leaveType->name,
+                'code' => $leaveType->code,
+            ])
+            ->values()
+            ->all();
 
         return view('admin.monthly-summary.index', compact(
             'monthlySummary',
+            'tableLeaveTypes',
+            'monthlySummaryLeaveTypes',
             'sbus',
             'departments',
             'month',
@@ -466,25 +484,49 @@ class MonthlySummaryService
         };
     }
 
-    private function buildEmployeeMonthlySummary(Employee $employee, string $month): array
+    /**
+     * @param  array<int>  $employeeSbuIds
+     * @return Collection<int, LeaveType>
+     */
+    private function resolveTableLeaveTypes(?int $filteredSbuId, array $employeeSbuIds): Collection
+    {
+        $sbuIds = $filteredSbuId !== null
+            ? [$filteredSbuId]
+            : array_values(array_unique(array_filter($employeeSbuIds)));
+
+        if ($sbuIds === []) {
+            return collect();
+        }
+
+        $linkedLeaveTypeIds = DB::table('leave_type_sbu')
+            ->whereIn('sbu_id', $sbuIds)
+            ->pluck('leave_type_id')
+            ->unique()
+            ->values();
+
+        return LeaveType::query()
+            ->where('is_active', true)
+            ->where(function ($query) use ($sbuIds, $linkedLeaveTypeIds) {
+                $query->whereIn('sbu_id', $sbuIds);
+
+                if ($linkedLeaveTypeIds->isNotEmpty()) {
+                    $query->orWhereIn('id', $linkedLeaveTypeIds);
+                }
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
+    }
+
+    private function buildEmployeeMonthlySummary(Employee $employee, string $month, Collection $tableLeaveTypes): array
     {
         $startDate = Carbon::parse($month . '-01')->startOfMonth();
+        $quotaByLeaveType = $employee->leaveQuotas->keyBy('leave_type_id');
 
-        $annualLeaveUsed = 0;
-        $sickLeaveUsed = 0;
-        $casualLeaveUsed = 0;
-
-        foreach ($employee->leaveQuotas as $quota) {
-            $leaveTypeName = strtolower(trim($quota->leaveType->name ?? ''));
-
-            if (str_contains($leaveTypeName, 'annual')) {
-                $annualLeaveUsed = (float) $quota->used;
-            } elseif (str_contains($leaveTypeName, 'sick')) {
-                $sickLeaveUsed = (float) $quota->used;
-            } elseif (str_contains($leaveTypeName, 'casual')) {
-                $casualLeaveUsed = (float) $quota->used;
-            }
-        }
+        $leaveUsage = $tableLeaveTypes->mapWithKeys(function (LeaveType $leaveType) use ($quotaByLeaveType) {
+            return [
+                (string) $leaveType->id => (float) ($quotaByLeaveType->get($leaveType->id)?->used ?? 0),
+            ];
+        })->all();
 
         $floors = $employee->relationLoaded('assignedFloors') ? $employee->assignedFloors : collect();
         $floorNames = $floors->pluck('name')->filter()->implode(', ');
@@ -510,10 +552,7 @@ class MonthlySummaryService
             'present' => $stats['present'],
             'absent' => $stats['absent'],
             'half_days' => $stats['half_days'],
-
-            'annual_leave' => $annualLeaveUsed,
-            'sick_leave' => $sickLeaveUsed,
-            'casual_leave' => $casualLeaveUsed,
+            'leave_usage' => $leaveUsage,
 
             'late_arrivals' => 0,
             'early_departures' => 0,

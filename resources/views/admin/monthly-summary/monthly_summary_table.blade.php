@@ -7,9 +7,9 @@
             <th>Present</th>
             <th>Absent</th>
             <th>Half-days</th>
-            <th>Annual Leave</th>
-            <th>Sick Leave</th>
-            <th>Casual Leave</th>
+            @foreach ($tableLeaveTypes ?? [] as $leaveType)
+                <th>{{ $leaveType->name }}</th>
+            @endforeach
             <th>Late Arrivals</th>
             <th>Early Departures</th>
             <th>Zone-2 Verification</th>
