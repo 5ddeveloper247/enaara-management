@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\EmployeLeaveRequest;
 use App\Models\Geofence;
 use App\Models\PublicHoliday;
+use App\Services\leaverequestPrivatefunctions\LeaveRequestApproverResolver;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,8 +17,11 @@ class DashboardService
 {
     private const FINAL_APPROVAL_ACTION_TYPE = 2;
 
+    private const DEPARTMENT_HEAD_ROLE_LEVEL = 3;
+
     public function __construct(
-        private readonly ShiftRosterApprovalService $shiftRosterApprovalService
+        private readonly ShiftRosterApprovalService $shiftRosterApprovalService,
+        private readonly LeaveRequestApproverResolver $leaveRequestApproverResolver,
     ) {
     }
 
@@ -67,6 +71,7 @@ class DashboardService
 
         $query = EmployeLeaveRequest::with([
                 'fromEmployee:id,full_name,department_id',
+                'toEmployee:id,full_name',
                 'leaveType:id,name',
             ])
             ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
@@ -106,6 +111,12 @@ class DashboardService
                     $isHumanResource,
                     $isSystemAdmin
                 ),
+                'requires_hr_delegation_confirm' => $this->requiresHrDelegationConfirm(
+                    $r,
+                    $viewerEmployee,
+                    $isHumanResource
+                ),
+                'assigned_approver_name' => optional($r->toEmployee)->full_name ?? 'Unknown',
             ];
         })->values()->all();
 
@@ -617,6 +628,10 @@ class DashboardService
         bool $isHumanResourceViewer,
         bool $isSystemAdmin
     ): bool {
+        if ($this->canHrDelegateOnPendingApproval($request, $viewerEmployee, $isHumanResourceViewer)) {
+            return true;
+        }
+
         $isAssignedApprover = (int) $request->to_employee_id === (int) $viewerEmployee->id;
 
         if (! $isAssignedApprover) {
@@ -635,6 +650,64 @@ class DashboardService
         return $viewerDepartmentId
             && $applicantDepartmentId
             && $viewerDepartmentId === $applicantDepartmentId;
+    }
+
+    private function requiresHrDelegationConfirm(
+        EmployeLeaveRequest $request,
+        Employee $viewerEmployee,
+        bool $isHumanResourceViewer
+    ): bool {
+        return $this->canHrDelegateOnPendingApproval($request, $viewerEmployee, $isHumanResourceViewer);
+    }
+
+    private function canHrDelegateOnPendingApproval(
+        EmployeLeaveRequest $request,
+        Employee $viewerEmployee,
+        bool $isHumanResourceViewer
+    ): bool {
+        if (! $isHumanResourceViewer || ! $this->isHrRoleLevelThreeViewer($viewerEmployee)) {
+            return false;
+        }
+
+        if ((int) $request->action_type !== self::FINAL_APPROVAL_ACTION_TYPE) {
+            return false;
+        }
+
+        if ((int) $request->status !== 0) {
+            return false;
+        }
+
+        $viewerDepartmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
+        $applicantDepartmentId = $request->fromEmployee?->department_id
+            ? (int) $request->fromEmployee->department_id
+            : null;
+
+        if (! $viewerDepartmentId || ! $applicantDepartmentId || $viewerDepartmentId === $applicantDepartmentId) {
+            return false;
+        }
+
+        $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
+
+        if (! $sbuId) {
+            return false;
+        }
+
+        return Department::query()
+            ->where('id', $applicantDepartmentId)
+            ->where('sbu_id', $sbuId)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    private function isHrRoleLevelThreeViewer(Employee $viewerEmployee): bool
+    {
+        $viewerEmployee->loadMissing('department');
+
+        if (! $this->isHumanResourceDepartment($viewerEmployee->department)) {
+            return false;
+        }
+
+        return $this->leaveRequestApproverResolver->resolveEmployeeRoleLevel($viewerEmployee) === self::DEPARTMENT_HEAD_ROLE_LEVEL;
     }
 
     /**

@@ -464,6 +464,7 @@
         currentLeaveCanAct: false,
         canActOnApprovals: true,
         isHumanResourceViewer: false,
+        pendingItemsById: {},
 
         ensureSwalModalFocusFix() {
             if (this._swalFocusFixBound) return;
@@ -522,8 +523,46 @@
             alert(message);
         },
 
+        confirmHrDelegatedAction(actionLabel, approverName, onConfirmed) {
+            const safeApproverName = approverName || 'the assigned approver';
+
+            if (typeof Swal === 'undefined') {
+                if (confirm('The real approver is ' + safeApproverName + '. Proceed on their behalf?')) {
+                    onConfirmed();
+                }
+                return;
+            }
+
+            Swal.fire({
+                icon: 'question',
+                title: actionLabel + ' on Behalf?',
+                html: '<p class="mb-2">The real approver for this leave request is <strong>' +
+                    this.esc(safeApproverName) +
+                    '</strong>.</p>' +
+                    '<p class="mb-2">Do you want to ' + actionLabel.toLowerCase() +
+                    ' this request on their behalf?</p>' +
+                    '<p class="text-muted small mb-0">Any action you take will inform that employee through email and notification.</p>',
+                showCancelButton: true,
+                confirmButtonColor: '#1a237e',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, ' + actionLabel,
+                cancelButtonText: 'No',
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    onConfirmed();
+                }
+            });
+        },
+
         confirmApprove(id, onConfirmed, canAct) {
             if (!this.guardLeaveAction(canAct)) {
+                return;
+            }
+
+            const item = this.pendingItemsById[id];
+            if (item && item.requires_hr_delegation_confirm) {
+                this.confirmHrDelegatedAction('Approve', item.assigned_approver_name, onConfirmed);
                 return;
             }
 
@@ -556,6 +595,12 @@
                 return;
             }
 
+            const item = this.pendingItemsById[id];
+            if (item && item.requires_hr_delegation_confirm) {
+                this.confirmHrDelegatedAction('Reject', item.assigned_approver_name, onConfirmed);
+                return;
+            }
+
             if (typeof Swal === 'undefined') {
                 if (confirm('Reject this leave request?')) {
                     onConfirmed();
@@ -581,6 +626,20 @@
         },
 
         confirmBulkApprove(count, onConfirmed) {
+            const hasDelegatedItems = Array.from(document.querySelectorAll('.approval-checkbox:checked'))
+                .some(function (cb) {
+                    const item = DashboardApprovals.pendingItemsById[cb.value];
+                    return item && item.requires_hr_delegation_confirm;
+                });
+
+            if (hasDelegatedItems) {
+                this.showLeaveAlert(
+                    'Bulk approve is not available for other department leave requests. Please approve them individually.',
+                    'error'
+                );
+                return;
+            }
+
             if (!this.guardLeaveAction()) {
                 return;
             }
@@ -644,6 +703,7 @@
             const list = document.getElementById('approvalsList');
             if (!list) return;
             list.innerHTML = '';
+            this.pendingItemsById = {};
 
             const header = document.getElementById('bulkApproveHeader');
             if (header) {
@@ -657,6 +717,7 @@
             }
 
             items.forEach(function (item) {
+                DashboardApprovals.pendingItemsById[item.id] = item;
                 const itemCanAct = item.can_act === true;
                 const div = document.createElement('div');
                 div.className = 'approval-item';
