@@ -7,6 +7,7 @@ use App\Models\EmployeLeaveRequest;
 use App\Models\LeaveType;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class LeaveRequestIndexData
@@ -92,9 +93,7 @@ class LeaveRequestIndexData
             ->whereIn('from_employee_id', $requests->pluck('from_employee_id'))
             ->whereIn('leave_type_id', $requests->pluck('leave_type_id'))
             ->get()
-            ->groupBy(function ($r) {
-                return $r->from_employee_id . '_' . $r->leave_type_id . '_' . \Carbon\Carbon::parse($r->start_date)->toDateString() . '_' . \Carbon\Carbon::parse($r->end_date)->toDateString();
-            });
+            ->groupBy(fn ($row) => $this->buildLeaveApplicationKey($row));
 
         return $requests->map(function ($request) use ($statusMap, $currentEmployee, $balanceLookup, $relatedRequests) {
             $isAssignedApprover = $currentEmployee
@@ -117,22 +116,31 @@ class LeaveRequestIndexData
                 && $actionType === self::FINAL_APPROVAL_ACTION_TYPE
                 && $statusCode === 0;
 
-            $requestKey = $request->from_employee_id . '_' . $request->leave_type_id . '_' . \Carbon\Carbon::parse($request->start_date)->toDateString() . '_' . \Carbon\Carbon::parse($request->end_date)->toDateString();
-            $siblings = $relatedRequests->get($requestKey, collect());
+            $siblings = $relatedRequests->get($this->buildLeaveApplicationKey($request), collect());
 
-            $recommenderRow = $siblings->where('action_type', self::RECOMMENDATION_ACTION_TYPE)->first();
-            $approverRow = $siblings->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)->first();
+            $recommenderRow = $siblings
+                ->where('action_type', self::RECOMMENDATION_ACTION_TYPE)
+                ->sortByDesc('id')
+                ->first();
+            $approverRow = $siblings
+                ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
+                ->sortByDesc('id')
+                ->first();
 
-                $currentLevelStr = match ((int) $request->status) {
-                    1 => 'Recommended',
-                    2 => 'Not Recommended',
-                    3 => 'Approved',
-                    4 => 'Rejected',
-                    5 => 'Cancelled',
-                    default => 'Pending',
-                };
+            $displayStatusCode = $this->aggregateApplicationStatus(
+                $siblings->isNotEmpty() ? $siblings : collect([$request])
+            );
 
-                return [
+            $currentLevelStr = match ($displayStatusCode) {
+                1 => 'Recommended',
+                2 => 'Not Recommended',
+                3 => 'Approved',
+                4 => 'Rejected',
+                5 => 'Cancelled',
+                default => 'Pending',
+            };
+
+            return [
                 'id' => $request->id,
                 'employeeName' => optional($request->fromEmployee)->full_name ?? 'Unknown',
                 'employeeId' => 'EMP-' . str_pad($request->from_employee_id, 3, '0', STR_PAD_LEFT),
@@ -153,8 +161,8 @@ class LeaveRequestIndexData
                 'exemptDays' => (float) ($request->exempt_days ?? 0),
                 'billableDays' => max(0.0, (float) $request->duration - (float) ($request->exempt_days ?? 0)),
                 'reason' => $request->reason ?? '-',
-                'status' => $statusMap[$request->status] ?? 'pending',
-                'statusCode' => $request->status,
+                'status' => $statusMap[$displayStatusCode] ?? 'pending',
+                'statusCode' => $displayStatusCode,
                 'approvalLevel' => $currentLevelStr,
                 'pendingSince' => $request->created_at ? $request->created_at->diffForHumans() : '-',
                 'balance' => $balanceLookup[$balanceKey] ?? '0 / 0',
@@ -234,5 +242,31 @@ class LeaveRequestIndexData
             4 => 'rejected',
             5 => 'cancelled',
         ];
+    }
+
+    private function buildLeaveApplicationKey(EmployeLeaveRequest $request): string
+    {
+        $submittedMinute = Carbon::parse($request->created_at)->format('Y-m-d H:i');
+
+        return implode('_', [
+            (int) $request->from_employee_id,
+            (int) $request->leave_type_id,
+            Carbon::parse($request->start_date)->toDateString(),
+            Carbon::parse($request->end_date)->toDateString(),
+            $submittedMinute,
+        ]);
+    }
+
+    private function aggregateApplicationStatus(Collection $rows): int
+    {
+        $statuses = $rows->pluck('status')->map(fn ($status) => (int) $status)->unique();
+
+        foreach ([4, 5, 3, 2, 1, 0] as $code) {
+            if ($statuses->contains($code)) {
+                return $code;
+            }
+        }
+
+        return 0;
     }
 }
