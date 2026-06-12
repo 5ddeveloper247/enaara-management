@@ -32,7 +32,11 @@ class LeaveRequestApproverResolver
             return collect();
         }
 
-        if (! empty($employee->department_id) && $this->hasSingleSeniorTierAbove($employee, $currentLevel)) {
+        if (
+            ! empty($employee->department_id)
+            && $this->hasSingleSeniorTierAbove($employee, $currentLevel)
+            && ! $this->hasEligibleDepartmentLineManager($employee, $currentLevel, $hodIds)
+        ) {
             return collect();
         }
 
@@ -75,7 +79,7 @@ class LeaveRequestApproverResolver
             return null;
         }
 
-        if (! $this->isMoreSeniorThan($manager, $applicantLevel)) {
+        if (! $this->isSameOrMoreSeniorThan($manager, $applicantLevel)) {
             return null;
         }
 
@@ -92,7 +96,7 @@ class LeaveRequestApproverResolver
 
         $lineManagers = $this->findLineManagersInScope($scope, $employee->id)
             ->filter(fn (Employee $manager) => ! in_array($manager->id, $hodIds, true))
-            ->filter(fn (Employee $manager) => $this->isMoreSeniorThan($manager, $currentLevel));
+            ->filter(fn (Employee $manager) => $this->isSameOrMoreSeniorThan($manager, $currentLevel));
 
         if ($lineManagers->isNotEmpty()) {
             return $this->wrapPrimaryRecommender($lineManagers->first());
@@ -234,6 +238,32 @@ class LeaveRequestApproverResolver
         $managerLevel = $this->resolveEmployeeRoleLevel($manager);
 
         return $managerLevel !== null && $managerLevel < $applicantLevel;
+    }
+
+    private function isSameOrMoreSeniorThan(Employee $manager, int $applicantLevel): bool
+    {
+        $managerLevel = $this->resolveEmployeeRoleLevel($manager);
+
+        return $managerLevel !== null && $managerLevel <= $applicantLevel;
+    }
+
+    private function hasEligibleDepartmentLineManager(Employee $employee, int $currentLevel, array $hodIds): bool
+    {
+        if (empty($employee->department_id)) {
+            return false;
+        }
+
+        $scope = [
+            'organization_id' => $employee->organization_id,
+            'sbu_id' => $employee->sbu_id,
+            'department_id' => $employee->department_id,
+        ];
+
+        return $this->findLineManagersInScope($scope, $employee->id)
+            ->contains(function (Employee $manager) use ($hodIds, $currentLevel) {
+                return ! in_array($manager->id, $hodIds, true)
+                    && $this->isSameOrMoreSeniorThan($manager, $currentLevel);
+            });
     }
 
     private function hasSingleSeniorTierAbove(Employee $employee, int $currentLevel): bool
