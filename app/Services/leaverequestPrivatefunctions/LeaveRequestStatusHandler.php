@@ -2,10 +2,12 @@
 
 namespace App\Services\leaverequestPrivatefunctions;
 
+use App\Models\Department;
 use App\Models\EmployeLeaveRequest;
 use App\Models\User;
 use App\Notifications\LeaveApprovalRequestToHodNotification;
 use App\Notifications\LeaveApprovedToHodNotification;
+use App\Notifications\LeaveHrDelegatedActionNotification;
 use App\Notifications\LeaveStatusUpdateNotification;
 use App\Services\AuditTrailService;
 use Illuminate\Http\Request;
@@ -16,6 +18,8 @@ class LeaveRequestStatusHandler
     private const RECOMMENDATION_ACTION_TYPE = 1;
 
     private const FINAL_APPROVAL_ACTION_TYPE = 2;
+
+    private const DEPARTMENT_HEAD_ROLE_LEVEL = 3;
 
     public function __construct(
         private AuditTrailService $auditTrailService,
@@ -38,6 +42,9 @@ class LeaveRequestStatusHandler
             return $denied;
         }
 
+        $currentUser = Auth::user();
+        $isHrDelegatedAction = $this->canHumanResourceDelegateOnLeaveRequest($currentUser, $leaveRequest);
+
         // If the requester is cancelling a PENDING request, permanently delete all related rows.
         $isRequester = (int) $leaveRequest->from_employee_id === (int) optional(Auth::user()->employee)->id;
         if ($newStatus === 5 && $isRequester && $currentStatus === 0) {
@@ -57,6 +64,7 @@ class LeaveRequestStatusHandler
 
         $this->notifyHodAfterRecommendation($leaveRequest, $newStatus, $actorName);
         $this->notifyHodAfterApproval($leaveRequest, $newStatus, $actorName, $requesterUser);
+        $this->notifyAssignedApproverOfHrDelegation($leaveRequest, $isHrDelegatedAction, $actorName);
         $this->syncRelatedRequestStatuses($leaveRequest, $newStatus);
 
         return $this->successResponse($request);
@@ -72,6 +80,7 @@ class LeaveRequestStatusHandler
 
         $isAssigned = (int) $leaveRequest->to_employee_id === (int) optional($currentUser->employee)->id;
         $isRequester = (int) $leaveRequest->from_employee_id === (int) optional($currentUser->employee)->id;
+        $isHrDelegate = $this->canHumanResourceDelegateOnLeaveRequest($currentUser, $leaveRequest);
 
         if ($newStatus === 5 && $isRequester) {
             // Allow cancellation if pending (0), recommended (1), not-recommended (2), or approved (3).
@@ -86,6 +95,7 @@ class LeaveRequestStatusHandler
             && ! $currentUser->isSystemAdminUser()
             && in_array($newStatus, [1, 2, 3, 4], true)
             && ! $this->canHumanResourceActOnLeaveRequest($currentUser, $leaveRequest)
+            && ! $isHrDelegate
         ) {
             return $this->deny(
                 $request,
@@ -93,7 +103,7 @@ class LeaveRequestStatusHandler
             );
         }
 
-        if (! $isAssigned) {
+        if (! $isAssigned && ! $isHrDelegate) {
             return $this->deny($request, 'You do not have permission to act on this request.');
         }
 
@@ -224,6 +234,27 @@ class LeaveRequestStatusHandler
 
             $this->leaveRequestNotifier->notifyApprover($hodEmployee, $notification, true);
         }
+    }
+
+    private function notifyAssignedApproverOfHrDelegation(
+        EmployeLeaveRequest $leaveRequest,
+        bool $isHrDelegatedAction,
+        string $hrActorName
+    ): void {
+        if (! $isHrDelegatedAction) {
+            return;
+        }
+
+        $assignedEmployeeId = (int) $leaveRequest->to_employee_id;
+
+        if ($assignedEmployeeId <= 0) {
+            return;
+        }
+
+        $notification = (new LeaveHrDelegatedActionNotification($leaveRequest, $hrActorName))
+            ->delay(now()->addSeconds(4));
+
+        $this->leaveRequestNotifier->notifyEmployeeById($assignedEmployeeId, $notification, true);
     }
 
     private function syncRelatedRequestStatuses(EmployeLeaveRequest $leaveRequest, int $newStatus): void
@@ -379,5 +410,59 @@ class LeaveRequestStatusHandler
         return $viewerDepartmentId
             && $applicantDepartmentId
             && $viewerDepartmentId === $applicantDepartmentId;
+    }
+
+    private function canHumanResourceDelegateOnLeaveRequest(?User $user, EmployeLeaveRequest $leaveRequest): bool
+    {
+        if (! $this->isHrRoleLevelThreeViewer($user)) {
+            return false;
+        }
+
+        $viewerEmployee = $user?->employee;
+
+        if (! $viewerEmployee) {
+            return false;
+        }
+
+        $leaveRequest->loadMissing('fromEmployee');
+        $viewerDepartmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
+        $applicantDepartmentId = $leaveRequest->fromEmployee?->department_id
+            ? (int) $leaveRequest->fromEmployee->department_id
+            : null;
+
+        if (! $viewerDepartmentId || ! $applicantDepartmentId || $viewerDepartmentId === $applicantDepartmentId) {
+            return false;
+        }
+
+        if ((int) $leaveRequest->action_type !== self::FINAL_APPROVAL_ACTION_TYPE) {
+            return false;
+        }
+
+        $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
+
+        if (! $sbuId) {
+            return false;
+        }
+
+        return Department::query()
+            ->where('id', $applicantDepartmentId)
+            ->where('sbu_id', $sbuId)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    private function isHrRoleLevelThreeViewer(?User $user): bool
+    {
+        if (! $this->isHumanResourceViewer($user)) {
+            return false;
+        }
+
+        $employee = $user?->employee;
+
+        if (! $employee) {
+            return false;
+        }
+
+        return $this->leaveRequestApproverResolver->resolveEmployeeRoleLevel($employee) === self::DEPARTMENT_HEAD_ROLE_LEVEL;
     }
 }

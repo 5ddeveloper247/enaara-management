@@ -80,6 +80,16 @@
     border-bottom: none;
 }
 
+.leave-request-scope-tabs .leave-scope-toggle .btn {
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.leave-request-scope-tabs .leave-scope-toggle .btn-outline-secondary {
+    border-color: #ced4da;
+    color: #495057;
+}
+
 #leaveRequestsTable tbody tr.child .dtr-title {
     font-weight: 600;
     min-width: 120px;

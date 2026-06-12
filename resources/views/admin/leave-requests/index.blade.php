@@ -148,6 +148,20 @@
                             </div>
                         </div>
                     </div>
+                    @if(!empty($showHrScopeTabs))
+                        <div id="leaveRequestScopeTabs" class="leave-request-scope-tabs px-4 pt-3 pb-0">
+                            <div class="btn-group leave-scope-toggle" role="group" aria-label="Leave request scope">
+                                <a href="{{ route('admin.leave.request.index', ['scope' => 'human_resource']) }}"
+                                    class="btn btn-sm {{ ($leaveScope ?? 'human_resource') === 'human_resource' ? 'btn-primary bg-main border-0' : 'btn-outline-secondary' }}">
+                                    Human Resource
+                                </a>
+                                <a href="{{ route('admin.leave.request.index', ['scope' => 'other_departments']) }}"
+                                    class="btn btn-sm {{ ($leaveScope ?? 'human_resource') === 'other_departments' ? 'btn-primary bg-main border-0' : 'btn-outline-secondary' }}">
+                                    Other Department Leaves
+                                </a>
+                            </div>
+                        </div>
+                    @endif
                     @include('admin.leave-requests.leave_requests_table')
                 </div>
             </div>
@@ -260,6 +274,16 @@
             }],
             drawCallback: function() {
                 $('[data-bs-toggle="tooltip"]').tooltip();
+            },
+            initComplete: function() {
+                const $scopeTabs = $('#leaveRequestScopeTabs');
+                const $lengthColumn = $('#leaveRequestsTable_wrapper .row:first .col-md-6:first');
+
+                if ($scopeTabs.length && $lengthColumn.length) {
+                    $scopeTabs.removeClass('px-4 pt-3 pb-0').addClass('ms-3');
+                    $lengthColumn.addClass('d-flex align-items-center flex-wrap gap-2');
+                    $scopeTabs.appendTo($lengthColumn);
+                }
             }
         });
 
@@ -515,6 +539,7 @@
 
     function handleLeaveAction(requestId, actionCode) {
         const actionMeta = getActionMeta(actionCode);
+        const request = sampleLeaveRequests.find(r => Number(r.id) === Number(requestId));
 
         if (!requestId || !actionMeta) {
             window.showError('Invalid leave action request. Please refresh and try again.');
@@ -548,7 +573,7 @@
             });
         };
 
-        if (actionMeta.requiresConfirmation) {
+        const confirmStandardAction = function(onConfirm) {
             Swal.fire({
                 icon: 'warning',
                 title: `${actionMeta.label} Leave Request?`,
@@ -560,9 +585,41 @@
                 cancelButtonColor: '#6c757d'
             }).then(function(result) {
                 if (result.isConfirmed) {
-                    performStatusUpdate();
+                    onConfirm();
                 }
             });
+        };
+
+        const confirmHrDelegatedAction = function(onConfirm) {
+            const approverName = request?.assignedApproverName || 'the assigned approver';
+
+            Swal.fire({
+                icon: 'question',
+                title: `${actionMeta.label} on Behalf?`,
+                html: `
+                    <p class="mb-2">The real approver for this leave request is <strong>${approverName}</strong>.</p>
+                    <p class="mb-2">Do you want to ${actionMeta.label.toLowerCase()} this request on their behalf?</p>
+                    <p class="text-muted small mb-0">Any action you take will inform that employee through email and notification.</p>
+                `,
+                showCancelButton: true,
+                confirmButtonText: `Yes, ${actionMeta.label}`,
+                cancelButtonText: 'No',
+                confirmButtonColor: '#1a237e',
+                cancelButtonColor: '#6c757d'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    onConfirm();
+                }
+            });
+        };
+
+        if (request?.requiresHrDelegationConfirm) {
+            confirmHrDelegatedAction(performStatusUpdate);
+            return;
+        }
+
+        if (actionMeta.requiresConfirmation) {
+            confirmStandardAction(performStatusUpdate);
             return;
         }
 
