@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Department;
+use App\Models\Designation;
 use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\OutsourcedEmployee;
@@ -160,6 +161,56 @@ class EmployeeViewerScopeService
             'employee',
             fn (Builder $employeeQuery) => $employeeQuery->where('sbu_id', $sbuId)
         );
+    }
+
+    public function applySbuScopeToDesignationQuery(Builder $query, ?User $user = null): Builder
+    {
+        $sbuId = $this->resolveViewerSbuId($user);
+
+        if ($sbuId === null) {
+            return $query;
+        }
+
+        if ($sbuId <= 0) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('sbu_id', $sbuId);
+    }
+
+    public function designationBelongsToViewerScope(Designation $designation, ?User $user = null): bool
+    {
+        if ($this->isUnrestricted($user)) {
+            return true;
+        }
+
+        $viewerSbuId = $this->resolveViewerSbuId($user);
+        if ($viewerSbuId <= 0) {
+            return false;
+        }
+
+        return (int) ($designation->sbu_id ?? 0) === $viewerSbuId;
+    }
+
+    public function assertDesignationIdAccessible(int $designationId, ?User $user = null): void
+    {
+        if ($this->isUnrestricted($user)) {
+            return;
+        }
+
+        $viewerSbuId = $this->resolveViewerSbuId($user);
+        if ($viewerSbuId <= 0) {
+            throw ValidationException::withMessages([
+                'designation' => 'You are not authorized to access designations.',
+            ]);
+        }
+
+        $designation = Designation::query()->select(['id', 'sbu_id'])->find($designationId);
+        if ($designation === null || ! $this->designationBelongsToViewerScope($designation, $user)) {
+            throw ValidationException::withMessages([
+                'designation' => 'This designation is outside your SBU scope.',
+            ]);
+        }
     }
 
     public function assertUserIdAccessible(int $userId, ?User $user = null): void

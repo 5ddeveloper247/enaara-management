@@ -12,6 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 class DesignationService
 {
+    public function __construct(
+        private readonly EmployeeViewerScopeService $viewerScope,
+    ) {}
+
     private function assertSbuBelongsToOrganization(int $sbuId, int $organizationId): void
     {
         $sbu = Sbu::query()->select(['id', 'organization_id'])->find($sbuId);
@@ -61,7 +65,7 @@ class DesignationService
 
     public function getList(): Collection
     {
-        return Designation::query()
+        $query = Designation::query()
             ->with([
                 'organization:id,name',
                 'sbu:id,name,organization_id',
@@ -69,13 +73,17 @@ class DesignationService
                 'department:id,name,sbu_id',
             ])
             ->where('is_system_generated', false)
-            ->orderByDesc('id')
-            ->get();
+            ->orderByDesc('id');
+
+        $this->viewerScope->applySbuScopeToDesignationQuery($query);
+
+        return $query->get();
     }
 
     public function getCounts(): array
     {
-        $base    = Designation::where('is_system_generated', false);
+        $base = Designation::query()->where('is_system_generated', false);
+        $this->viewerScope->applySbuScopeToDesignationQuery($base);
         $total   = (clone $base)->count();
         $active  = (clone $base)->where('is_active', true)->count();
         $inactive = (clone $base)->where('is_active', false)->count();
@@ -90,14 +98,17 @@ class DesignationService
 
     public function findById(int $id): ?Designation
     {
-        $designation = Designation::query()
+        $query = Designation::query()
             ->with([
                 'organization:id,name',
                 'sbu:id,name,organization_id',
                 'sbu.organization:id,name',
                 'department:id,name,sbu_id',
-            ])
-            ->find($id);
+            ]);
+
+        $this->viewerScope->applySbuScopeToDesignationQuery($query);
+
+        $designation = $query->find($id);
 
         // Do not expose system-generated designations through the admin UI
         if ($designation && $designation->is_system_generated) {
@@ -113,6 +124,8 @@ class DesignationService
         $orgId = (int) $payload['organization_id'];
         $sbuId = (int) $payload['sbu_id'];
         $departmentId = (int) $payload['department_id'];
+        $this->viewerScope->assertSbuIdAllowed($sbuId);
+        $this->viewerScope->assertDepartmentIdAllowed($departmentId);
         $this->assertSbuBelongsToOrganization($sbuId, $orgId);
         $this->assertDepartmentBelongsToSbu($departmentId, $sbuId, $orgId);
         if (! empty($payload['name'])) {
@@ -134,6 +147,9 @@ class DesignationService
         $orgId = (int) ($payload['organization_id'] ?? $designation->organization_id);
         $sbuId = (int) ($payload['sbu_id'] ?? $designation->sbu_id);
         $departmentId = (int) ($payload['department_id'] ?? $designation->department_id);
+        $this->viewerScope->assertDesignationIdAccessible((int) $designation->id);
+        $this->viewerScope->assertSbuIdAllowed($sbuId);
+        $this->viewerScope->assertDepartmentIdAllowed($departmentId);
         $this->assertSbuBelongsToOrganization($sbuId, $orgId);
         $this->assertDepartmentBelongsToSbu($departmentId, $sbuId, $orgId);
         if (! empty($payload['name'])) {
@@ -158,6 +174,8 @@ class DesignationService
             ]);
         }
 
+        $this->viewerScope->assertDesignationIdAccessible((int) $designation->id);
+
         return $designation->delete();
     }
 
@@ -170,12 +188,15 @@ class DesignationService
 
     public function listActiveByOrganizationSbuAndDepartments(int $organizationId, int $sbuId, array $departmentIds): array
     {
+        $this->viewerScope->assertSbuIdAllowed($sbuId);
         $this->assertSbuBelongsToOrganization($sbuId, $organizationId);
 
         $departmentIds = array_values(array_unique(array_filter(array_map('intval', $departmentIds))));
         if ($departmentIds === []) {
             return [];
         }
+
+        $this->viewerScope->assertDepartmentIdsAllowed($departmentIds);
 
         foreach ($departmentIds as $departmentId) {
             $this->assertDepartmentBelongsToSbu($departmentId, $sbuId, $organizationId);
@@ -201,7 +222,7 @@ class DesignationService
 
     public function getOrganizationHierarchy(): Collection
     {
-        return Organization::query()
+        $organizations = Organization::query()
             ->select(['id', 'name'])
             ->where('is_active', true)
             ->with([
@@ -218,5 +239,7 @@ class DesignationService
             ])
             ->orderBy('name')
             ->get();
+
+        return $this->viewerScope->filterOrganizations($organizations);
     }
 }
