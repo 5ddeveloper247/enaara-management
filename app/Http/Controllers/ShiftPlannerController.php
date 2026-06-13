@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\ShiftPlannerService;
 use App\Services\ShiftRosterService;
+use App\Services\EmployeeViewerScopeService;
 use App\Http\Requests\Admin\ShiftPlanner\ShiftPlannerRequest;
 use App\Models\Department;
-use App\Models\ShiftPlanner;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftRosterEntry;
@@ -20,7 +20,8 @@ class ShiftPlannerController extends Controller
 
     public function __construct(
         ShiftPlannerService $shiftPlannerService,
-        private readonly ShiftRosterService $shiftRosterService
+        private readonly ShiftRosterService $shiftRosterService,
+        private readonly EmployeeViewerScopeService $viewerScope,
     ) {
         $this->shiftPlannerService = $shiftPlannerService;
     }
@@ -61,9 +62,9 @@ class ShiftPlannerController extends Controller
                 ->get();
         }
 
-        $shifts = ShiftPlanner::where('is_active', 1)
-            ->orderBy('name')
-            ->get();
+        $shifts = $this->shiftPlannerService->getAllForManagement();
+        $organizations = $this->shiftPlannerService->getOrganizationHierarchy();
+        $viewerEmployeeScope = $this->viewerScope->frontendScopePayload();
 
         $rosters = ShiftRosterEntry::with(['employee.department', 'outsourcedEmployee.contractorCompany', 'shift'])
             ->where(function ($query) {
@@ -73,7 +74,15 @@ class ShiftPlannerController extends Controller
             ->orderBy('roster_date', 'asc')
             ->get();
 
-        return view('admin.shift-planner.index', compact('employees', 'outsourcedEmployees', 'shifts', 'rosters', 'departments'));
+        return view('admin.shift-planner.index', compact(
+            'employees',
+            'outsourcedEmployees',
+            'shifts',
+            'rosters',
+            'departments',
+            'organizations',
+            'viewerEmployeeScope',
+        ));
     }
 
     public function show($id)
@@ -83,7 +92,11 @@ class ShiftPlannerController extends Controller
         }
 
         try {
-            $shift = ShiftPlanner::findOrFail($id);
+            $shift = $this->shiftPlannerService->findAccessible((int) $id);
+
+            if ($shift === null) {
+                return response()->json(['success' => false, 'message' => 'Shift not found.'], 404);
+            }
 
             return response()->json([
                 'success' => true,

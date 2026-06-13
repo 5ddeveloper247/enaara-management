@@ -31,25 +31,46 @@
                     data-break-time="{{ $shift->break_time_minutes }}"
                     data-overtime-allowed="{{ $shift->overtime_allowed ? 'true' : 'false' }}"
                     data-overtime-trigger="{{ $shift->overtime_trigger_hours ?? 0 }}"
-                    data-is-active="{{ $shift->is_active ? 'active' : 'inactive' }}">
+                    data-is-active="{{ $shift->is_active ? 'active' : 'inactive' }}"
+                    data-organization-id="{{ $shift->organization_id ?? '' }}"
+                    data-sbu-id="{{ $shift->sbu_id ?? '' }}">
 
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h6 class="mb-1 fw-semibold">{{ $shift->name }}</h6>
-                                <small class="text-muted">{{ $startTime }} - {{ $endTime }}</small>
+                            <div class="d-flex align-items-center min-w-0">
+                                <div class="me-3 bg-main text-white rounded-2 d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                                    style="width: 45px; height: 45px; font-size: 1.1rem;">
+                                    {{ strtoupper(substr($shift->name, 0, 2)) }}
+                                </div>
+                                <div class="min-w-0">
+                                    <h6 class="mb-0 fw-semibold small text-truncate">{{ $shift->name }}</h6>
+                                    <small class="text-muted small">{{ $startTime }} – {{ $endTime }}</small>
+                                </div>
                             </div>
 
                             @if($shift->is_active)
-                            <span class="badge bg-success" style="font-size: 10px !important; padding: 4px 6px !important;">
-                                Active
-                            </span>
+                            <span class="badge bg-success flex-shrink-0 ms-2" style="font-size: 10px; padding: 4px 6px;">Active</span>
                             @else
-                            <span class="badge bg-secondary" style="font-size: 10px !important; padding: 4px 6px !important;">
-                                Inactive
-                            </span>
+                            <span class="badge bg-secondary flex-shrink-0 ms-2" style="font-size: 10px; padding: 4px 6px;">Inactive</span>
                             @endif
                         </div>
+
+                        @if($shift->organization || $shift->sbu)
+                        <div class="mb-3">
+                            @if($shift->organization)
+                            <div class="mb-2">
+                                <i class="bi bi-building me-1 text-main small"></i>
+                                <small class="text-muted small text-break">{{ $shift->organization->name }}</small>
+                            </div>
+                            @endif
+                            @if($shift->sbu)
+                            <div class="mb-2">
+                                <i class="bi bi-geo-alt me-1 text-main small"></i>
+                                <small class="text-muted small text-break">{{ $shift->sbu->name }}</small>
+                            </div>
+                            @endif
+                        </div>
+                        @endif
 
                         <div class="mb-3">
                             <div class="d-flex align-items-center mb-2">

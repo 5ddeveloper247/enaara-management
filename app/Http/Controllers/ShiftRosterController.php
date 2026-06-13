@@ -7,7 +7,7 @@ use App\Models\ShiftRosterApprovalRequest;
 use App\Models\ShiftRosterAssignment;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
-use App\Models\ShiftPlanner;
+use App\Services\ShiftPlannerService;
 use App\Services\ShiftRosterAuditHistoryService;
 use App\Services\ShiftRosterPdfExportService;
 use App\Services\ShiftRosterService;
@@ -26,7 +26,8 @@ class ShiftRosterController extends Controller
 
     public function __construct(
         ShiftRosterService $shiftRosterService,
-        ShiftRosterPdfExportService $shiftRosterPdfExportService
+        ShiftRosterPdfExportService $shiftRosterPdfExportService,
+        private readonly ShiftPlannerService $shiftPlannerService,
     ) {
         $this->shiftRosterService = $shiftRosterService;
         $this->shiftRosterPdfExportService = $shiftRosterPdfExportService;
@@ -175,9 +176,7 @@ class ShiftRosterController extends Controller
             ->whereNull('deleted_at')
             ->orderBy('full_name')
             ->get();
-        $shifts = ShiftPlanner::where('is_active', 1)
-            ->orderBy('name')
-            ->get();
+        $shifts = $this->shiftPlannerService->getActiveList();
 
         return view('admin.shift-planner.roster', compact('rosters', 'employees', 'outsourcedEmployees', 'shifts'));
     }

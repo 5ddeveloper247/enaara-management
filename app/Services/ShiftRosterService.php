@@ -24,6 +24,7 @@ class ShiftRosterService
         private readonly ShiftRosterHistoryService $historyService,
         private readonly PublicHolidayResolver $publicHolidayResolver,
         private readonly CompensatoryLeaveAwardService $compensatoryLeaveAwardService,
+        private readonly EmployeeViewerScopeService $viewerScope,
     ) {
     }
 
@@ -1027,6 +1028,7 @@ class ShiftRosterService
             throw new \InvalidArgumentException('Select a shift from the list or enable custom start and end time.');
         }
 
+        $this->viewerScope->assertShiftPlannerIdAccessible((int) $shiftId);
         $shift = ShiftPlanner::findOrFail((int) $shiftId);
         $hasTimeOverride = ! empty($data['start_time']) && ! empty($data['end_time']);
 

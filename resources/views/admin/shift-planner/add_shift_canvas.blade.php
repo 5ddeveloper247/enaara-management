@@ -14,6 +14,35 @@
             <!-- Hidden ID for update -->
             <input type="hidden" name="id" id="shiftId">
 
+            <div class="mb-4">
+                <h6 class="fw-semibold mb-3 small">
+                    <i class="bi bi-building me-2"></i>Organization & SBU
+                </h6>
+
+                <div class="mb-3">
+                    <label for="shift_organization_id" class="form-label fw-semibold small text-white">
+                        Organization <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="shift_organization_id" name="organization_id" required>
+                        <option value="" hidden selected>— Select Organization —</option>
+                        @foreach($organizations ?? [] as $organization)
+                            <option value="{{ $organization->id }}">{{ $organization->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="shift_sbu_id" class="form-label fw-semibold small text-white">
+                        SBU <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="shift_sbu_id" name="sbu_id" disabled required>
+                        <option value="" hidden selected>— Select SBU —</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr class="my-4" style="border-color: #ffffffab !important">
+
             <!-- Shift Name -->
             <div class="mb-4">
                 <h6 class="fw-semibold mb-3 small">
@@ -149,7 +178,12 @@
     </div>
 </div>
 <script>
+    window.shiftPlannerOrganizations = @json($organizations ?? []);
+    window.viewerEmployeeScope = @json($viewerEmployeeScope ?? []);
+
     document.addEventListener('DOMContentLoaded', function() {
+        const organizations = Array.isArray(window.shiftPlannerOrganizations) ? window.shiftPlannerOrganizations : [];
+        const viewerScope = window.viewerEmployeeScope || {};
         const addShiftCanvas = document.getElementById('addShiftCanvas');
         const addShiftForm = document.getElementById('addShiftForm');
         const saveBtn = document.getElementById('saveShiftBtn');
@@ -157,6 +191,8 @@
         let isShiftSaving = false;
 
         const shiftIdInput = document.getElementById('shiftId');
+        const shiftOrganization = document.getElementById('shift_organization_id');
+        const shiftSbu = document.getElementById('shift_sbu_id');
         const shiftName = document.getElementById('shiftName');
         const shiftStartTime = document.getElementById('shiftStartTime');
         const shiftEndTime = document.getElementById('shiftEndTime');
@@ -167,6 +203,82 @@
         const overtimeAllowed = document.getElementById('overtimeAllowed');
         const overtimeTriggerSection = document.getElementById('overtimeTriggerSection');
         const overtimeTrigger = document.getElementById('overtimeTrigger');
+
+        function findOrganization(orgId) {
+            return organizations.find(function(org) {
+                return String(org.id) === String(orgId);
+            }) || null;
+        }
+
+        function setSelectOptions(select, placeholder, items, selectedValue) {
+            if (!select) {
+                return;
+            }
+
+            select.innerHTML = '';
+
+            if (placeholder) {
+                const placeholderOption = document.createElement('option');
+                placeholderOption.value = '';
+                placeholderOption.hidden = true;
+                placeholderOption.textContent = placeholder;
+                if (!selectedValue) {
+                    placeholderOption.selected = true;
+                }
+                select.appendChild(placeholderOption);
+            }
+
+            (items || []).forEach(function(item) {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.name;
+                if (selectedValue !== null && selectedValue !== undefined && String(item.id) === String(selectedValue)) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+
+        function populateSbuOptions(selectedSbuId) {
+            const orgId = shiftOrganization ? shiftOrganization.value : '';
+            const organization = findOrganization(orgId);
+            setSelectOptions(shiftSbu, '— Select SBU —', organization ? organization.sbus : [], selectedSbuId);
+            if (shiftSbu) {
+                shiftSbu.disabled = !organization;
+            }
+        }
+
+        function setScopeCascade(organizationId, sbuId) {
+            if (shiftOrganization) {
+                shiftOrganization.value = organizationId || '';
+            }
+            populateSbuOptions(sbuId || null);
+            if (shiftSbu && sbuId) {
+                shiftSbu.value = sbuId;
+            }
+        }
+
+        function resetScopeFields() {
+            if (shiftOrganization) {
+                shiftOrganization.value = '';
+            }
+            setSelectOptions(shiftSbu, '— Select SBU —', []);
+            if (shiftSbu) {
+                shiftSbu.disabled = true;
+            }
+
+            if (viewerScope.restricted && viewerScope.organization_id && viewerScope.sbu_id) {
+                setScopeCascade(viewerScope.organization_id, viewerScope.sbu_id);
+            } else if (organizations.length === 1 && organizations[0].sbus && organizations[0].sbus.length === 1) {
+                setScopeCascade(organizations[0].id, organizations[0].sbus[0].id);
+            }
+        }
+
+        if (shiftOrganization) {
+            shiftOrganization.addEventListener('change', function() {
+                populateSbuOptions(null);
+            });
+        }
 
         function toggleOvertimeSection() {
             if (overtimeAllowed.checked) {
@@ -223,6 +335,7 @@
                 breakTime.value = 60;
             }
 
+            resetScopeFields();
             toggleOvertimeSection();
         }
 
@@ -260,6 +373,7 @@
                                 if (response.success && response.shift) {
                                     const data = response.shift;
 
+                                    setScopeCascade(data.organization_id, data.sbu_id);
                                     shiftName.value = data.name ?? '';
                                     shiftStartTime.value = data.start_time ?? '';
                                     shiftEndTime.value = data.end_time ?? '';

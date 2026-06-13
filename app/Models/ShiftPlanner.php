@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-
 use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ShiftPlanner extends Model
 {
@@ -18,6 +18,8 @@ class ShiftPlanner extends Model
      * Mass assignable fields
      */
     protected $fillable = [
+        'organization_id',
+        'sbu_id',
         'name',
         'code',
         'start_time',
@@ -56,6 +58,16 @@ class ShiftPlanner extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function sbu(): BelongsTo
+    {
+        return $this->belongsTo(Sbu::class);
     }
 
     public function updater()

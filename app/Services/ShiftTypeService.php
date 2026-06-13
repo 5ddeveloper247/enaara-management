@@ -4,27 +4,42 @@ namespace App\Services;
 
 use App\Models\Organization;
 use App\Models\ShiftType;
+use App\Services\ViewerScope\ShiftViewerScopeService;
 use Illuminate\Database\Eloquent\Collection;
 
 class ShiftTypeService
 {
+    public function __construct(
+        private readonly ShiftViewerScopeService $shiftScope,
+        private readonly EmployeeViewerScopeService $viewerScope,
+    ) {}
+
     public function getList(): Collection
     {
-        return ShiftType::with(['organization', 'department'])
-            ->orderByDesc('id')
-            ->get();
+        $query = ShiftType::query()
+            ->with(['organization', 'department'])
+            ->orderByDesc('id');
+
+        $this->shiftScope->applyShiftTypeQueryScope($query);
+
+        return $query->get();
     }
 
     public function getOrganizationsForFilter(): Collection
     {
-        return Organization::orderBy('name')->get(['id', 'name']);
+        $organizations = Organization::orderBy('name')->get(['id', 'name']);
+
+        return $this->viewerScope->filterOrganizations($organizations);
     }
 
     public function getCounts(): array
     {
-        $total = ShiftType::count();
-        $active = ShiftType::where('is_active', true)->count();
-        $inactive = ShiftType::where('is_active', false)->count();
+        $base = ShiftType::query();
+        $this->shiftScope->applyShiftTypeQueryScope($base);
+
+        $total = (clone $base)->count();
+        $active = (clone $base)->where('is_active', true)->count();
+        $inactive = (clone $base)->where('is_active', false)->count();
 
         return [
             'total' => $total,
@@ -35,22 +50,34 @@ class ShiftTypeService
 
     public function updateStatus(int $id, bool $isActive): ?ShiftType
     {
-        $shiftType = ShiftType::find($id);
-        if (!$shiftType) {
+        $query = ShiftType::query();
+        $this->shiftScope->applyShiftTypeQueryScope($query);
+
+        $shiftType = $query->find($id);
+        if (! $shiftType) {
             return null;
         }
+
+        $this->shiftScope->assertShiftTypeIdAccessible((int) $shiftType->id);
         $shiftType->is_active = $isActive;
         $shiftType->save();
+
         return $shiftType;
     }
 
     public function delete(int $id): bool
     {
-        $shiftType = ShiftType::find($id);
-        if (!$shiftType) {
+        $query = ShiftType::query();
+        $this->shiftScope->applyShiftTypeQueryScope($query);
+
+        $shiftType = $query->find($id);
+        if (! $shiftType) {
             return false;
         }
+
+        $this->shiftScope->assertShiftTypeIdAccessible((int) $shiftType->id);
         $shiftType->delete();
+
         return true;
     }
 }

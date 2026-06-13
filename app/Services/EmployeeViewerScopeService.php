@@ -9,115 +9,49 @@ use App\Models\Organization;
 use App\Models\OutsourcedEmployee;
 use App\Models\Sbu;
 use App\Models\User;
+use App\Services\ViewerScope\DesignationViewerScopeService;
+use App\Services\ViewerScope\ShiftViewerScopeService;
+use App\Services\ViewerScope\ViewerScopeContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class EmployeeViewerScopeService
 {
-    /**
-     * null = unrestricted (system admin), 0 = blocked, positive int = viewer SBU.
-     */
+    public function __construct(
+        private readonly ViewerScopeContext $context,
+        private readonly DesignationViewerScopeService $designationScope,
+        private readonly ShiftViewerScopeService $shiftScope,
+    ) {}
+
     public function resolveViewerSbuId(?User $user = null): ?int
     {
-        $user = $user ?? Auth::user();
-
-        if ($user === null) {
-            return 0;
-        }
-
-        if ($user->isSystemAdminUser()) {
-            return null;
-        }
-
-        $viewerEmployee = $user->employee;
-        if ($viewerEmployee === null || ! $viewerEmployee->sbu_id) {
-            return 0;
-        }
-
-        return (int) $viewerEmployee->sbu_id;
+        return $this->context->resolveViewerSbuId($user);
     }
 
     public function resolveViewerOrganizationId(?User $user = null): ?int
     {
-        $user = $user ?? Auth::user();
-
-        if ($user === null) {
-            return null;
-        }
-
-        if ($user->isSystemAdminUser()) {
-            return null;
-        }
-
-        $organizationId = $user->employee?->organization_id;
-
-        return $organizationId ? (int) $organizationId : null;
+        return $this->context->resolveViewerOrganizationId($user);
     }
 
     public function isUnrestricted(?User $user = null): bool
     {
-        return $this->resolveViewerSbuId($user) === null;
+        return $this->context->isUnrestricted($user);
     }
 
     public function canManageEmployees(?User $user = null): bool
     {
-        $sbuId = $this->resolveViewerSbuId($user);
-
-        return $sbuId === null || $sbuId > 0;
+        return $this->context->canManageEmployees($user);
     }
 
-    /**
-     * @return array{
-     *     restricted: bool,
-     *     organization_id: ?int,
-     *     sbu_id: ?int,
-     *     organization_name: ?string,
-     *     sbu_name: ?string
-     * }
-     */
     public function frontendScopePayload(?User $user = null): array
     {
-        if ($this->isUnrestricted($user)) {
-            return [
-                'restricted' => false,
-                'organization_id' => null,
-                'sbu_id' => null,
-                'organization_name' => null,
-                'sbu_name' => null,
-            ];
-        }
-
-        $sbuId = $this->resolveViewerSbuId($user);
-        if ($sbuId <= 0) {
-            return [
-                'restricted' => true,
-                'organization_id' => null,
-                'sbu_id' => null,
-                'organization_name' => null,
-                'sbu_name' => null,
-            ];
-        }
-
-        $sbu = Sbu::query()->select(['id', 'name', 'organization_id'])->find($sbuId);
-        $organizationId = $sbu?->organization_id ? (int) $sbu->organization_id : $this->resolveViewerOrganizationId($user);
-        $organizationName = $organizationId
-            ? Organization::query()->whereKey($organizationId)->value('name')
-            : null;
-
-        return [
-            'restricted' => true,
-            'organization_id' => $organizationId,
-            'sbu_id' => $sbuId,
-            'organization_name' => $organizationName,
-            'sbu_name' => $sbu?->name,
-        ];
+        return $this->context->frontendScopePayload($user);
     }
 
     public function applySbuScopeToEmployeeQuery(Builder $query, ?User $user = null): Builder
     {
-        $sbuId = $this->resolveViewerSbuId($user);
+        $sbuId = $this->context->resolveViewerSbuId($user);
 
         if ($sbuId === null) {
             return $query;
@@ -132,7 +66,7 @@ class EmployeeViewerScopeService
 
     public function applySbuScopeToOutsourcedEmployeeQuery(Builder $query, ?User $user = null): Builder
     {
-        $sbuId = $this->resolveViewerSbuId($user);
+        $sbuId = $this->context->resolveViewerSbuId($user);
 
         if ($sbuId === null) {
             return $query;
@@ -147,7 +81,7 @@ class EmployeeViewerScopeService
 
     public function applySbuScopeToUserQuery(Builder $query, ?User $user = null): Builder
     {
-        $sbuId = $this->resolveViewerSbuId($user);
+        $sbuId = $this->context->resolveViewerSbuId($user);
 
         if ($sbuId === null) {
             return $query;
@@ -165,61 +99,46 @@ class EmployeeViewerScopeService
 
     public function applySbuScopeToDesignationQuery(Builder $query, ?User $user = null): Builder
     {
-        $sbuId = $this->resolveViewerSbuId($user);
-
-        if ($sbuId === null) {
-            return $query;
-        }
-
-        if ($sbuId <= 0) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->where('sbu_id', $sbuId);
+        return $this->designationScope->applyQueryScope($query, $user);
     }
 
     public function designationBelongsToViewerScope(Designation $designation, ?User $user = null): bool
     {
-        if ($this->isUnrestricted($user)) {
-            return true;
-        }
-
-        $viewerSbuId = $this->resolveViewerSbuId($user);
-        if ($viewerSbuId <= 0) {
-            return false;
-        }
-
-        return (int) ($designation->sbu_id ?? 0) === $viewerSbuId;
+        return $this->designationScope->belongsToViewerScope($designation, $user);
     }
 
     public function assertDesignationIdAccessible(int $designationId, ?User $user = null): void
     {
-        if ($this->isUnrestricted($user)) {
-            return;
-        }
+        $this->designationScope->assertIdAccessible($designationId, $user);
+    }
 
-        $viewerSbuId = $this->resolveViewerSbuId($user);
-        if ($viewerSbuId <= 0) {
-            throw ValidationException::withMessages([
-                'designation' => 'You are not authorized to access designations.',
-            ]);
-        }
+    public function applySbuScopeToShiftPlannerQuery(Builder $query, ?User $user = null): Builder
+    {
+        return $this->shiftScope->applyPlannerQueryScope($query, $user);
+    }
 
-        $designation = Designation::query()->select(['id', 'sbu_id'])->find($designationId);
-        if ($designation === null || ! $this->designationBelongsToViewerScope($designation, $user)) {
-            throw ValidationException::withMessages([
-                'designation' => 'This designation is outside your SBU scope.',
-            ]);
-        }
+    public function applySbuScopeToShiftTypeQuery(Builder $query, ?User $user = null): Builder
+    {
+        return $this->shiftScope->applyShiftTypeQueryScope($query, $user);
+    }
+
+    public function assertShiftPlannerIdAccessible(int $shiftPlannerId, ?User $user = null): void
+    {
+        $this->shiftScope->assertPlannerIdAccessible($shiftPlannerId, $user);
+    }
+
+    public function assertShiftTypeIdAccessible(int $shiftTypeId, ?User $user = null): void
+    {
+        $this->shiftScope->assertShiftTypeIdAccessible($shiftTypeId, $user);
     }
 
     public function assertUserIdAccessible(int $userId, ?User $user = null): void
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return;
         }
 
-        $viewerSbuId = $this->resolveViewerSbuId($user);
+        $viewerSbuId = $this->context->resolveViewerSbuId($user);
         if ($viewerSbuId <= 0) {
             throw ValidationException::withMessages([
                 'user' => 'You are not authorized to access user accounts.',
@@ -246,11 +165,11 @@ class EmployeeViewerScopeService
 
     public function employeeBelongsToViewerScope(Employee $employee, ?User $user = null): bool
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return true;
         }
 
-        $viewerSbuId = $this->resolveViewerSbuId($user);
+        $viewerSbuId = $this->context->resolveViewerSbuId($user);
         if ($viewerSbuId <= 0) {
             return false;
         }
@@ -260,11 +179,11 @@ class EmployeeViewerScopeService
 
     public function assertEmployeeIdAccessible(int $employeeId, ?User $user = null): void
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return;
         }
 
-        $viewerSbuId = $this->resolveViewerSbuId($user);
+        $viewerSbuId = $this->context->resolveViewerSbuId($user);
         if ($viewerSbuId <= 0) {
             throw ValidationException::withMessages([
                 'employee' => 'You are not authorized to access employee records.',
@@ -281,11 +200,11 @@ class EmployeeViewerScopeService
 
     public function assertSbuIdAllowed(?int $sbuId, ?User $user = null): void
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return;
         }
 
-        $viewerSbuId = $this->resolveViewerSbuId($user);
+        $viewerSbuId = $this->context->resolveViewerSbuId($user);
         if ($viewerSbuId <= 0) {
             throw ValidationException::withMessages([
                 'sbu_id' => 'You are not authorized to manage employees.',
@@ -301,11 +220,11 @@ class EmployeeViewerScopeService
 
     public function assertDepartmentIdAllowed(int $departmentId, ?User $user = null): void
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return;
         }
 
-        $viewerSbuId = $this->resolveViewerSbuId($user);
+        $viewerSbuId = $this->context->resolveViewerSbuId($user);
         if ($viewerSbuId <= 0) {
             throw ValidationException::withMessages([
                 'department_id' => 'You are not authorized to manage employees.',
@@ -344,11 +263,11 @@ class EmployeeViewerScopeService
      */
     public function applyDefaultOrganizationSbuToRegistrationData(array &$data, ?User $user = null): void
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return;
         }
 
-        $scope = $this->frontendScopePayload($user);
+        $scope = $this->context->frontendScopePayload($user);
         if (! $scope['restricted'] || empty($scope['sbu_id'])) {
             return;
         }
@@ -362,11 +281,11 @@ class EmployeeViewerScopeService
      */
     public function assertRegistrationDataAllowed(array $data, ?User $user = null): void
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return;
         }
 
-        $scope = $this->frontendScopePayload($user);
+        $scope = $this->context->frontendScopePayload($user);
         if (! $scope['restricted']) {
             return;
         }
@@ -403,11 +322,11 @@ class EmployeeViewerScopeService
      */
     public function filterOrganizations(Collection $organizations, ?User $user = null): Collection
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return $organizations;
         }
 
-        $scope = $this->frontendScopePayload($user);
+        $scope = $this->context->frontendScopePayload($user);
         if (empty($scope['organization_id']) || empty($scope['sbu_id'])) {
             return collect();
         }
@@ -455,7 +374,7 @@ class EmployeeViewerScopeService
      */
     public function filterSbus(Collection $sbus, ?User $user = null): Collection
     {
-        $sbuId = $this->resolveViewerSbuId($user);
+        $sbuId = $this->context->resolveViewerSbuId($user);
         if ($sbuId === null) {
             return $sbus;
         }
@@ -472,7 +391,7 @@ class EmployeeViewerScopeService
      */
     public function filterDepartments(Collection $departments, ?User $user = null): Collection
     {
-        $sbuId = $this->resolveViewerSbuId($user);
+        $sbuId = $this->context->resolveViewerSbuId($user);
         if ($sbuId === null) {
             return $departments;
         }
@@ -488,7 +407,7 @@ class EmployeeViewerScopeService
      */
     public function filterFloors(Collection $floors, ?User $user = null): Collection
     {
-        $sbuId = $this->resolveViewerSbuId($user);
+        $sbuId = $this->context->resolveViewerSbuId($user);
         if ($sbuId === null) {
             return $floors;
         }
@@ -505,11 +424,11 @@ class EmployeeViewerScopeService
      */
     public function filterOrgsData(array $orgsData, ?User $user = null): array
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return $orgsData;
         }
 
-        $scope = $this->frontendScopePayload($user);
+        $scope = $this->context->frontendScopePayload($user);
         if (empty($scope['organization_id']) || empty($scope['sbu_id'])) {
             return [];
         }
@@ -533,11 +452,11 @@ class EmployeeViewerScopeService
      */
     public function filterRolesData($rolesData, ?User $user = null)
     {
-        if ($this->isUnrestricted($user)) {
+        if ($this->context->isUnrestricted($user)) {
             return $rolesData;
         }
 
-        $scope = $this->frontendScopePayload($user);
+        $scope = $this->context->frontendScopePayload($user);
         if (empty($scope['organization_id']) || empty($scope['sbu_id'])) {
             return collect();
         }
