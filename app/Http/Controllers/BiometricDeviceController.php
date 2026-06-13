@@ -4,38 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Admin\BiometricDevice\BiometricDeviceStoreRequest;
 use App\Http\Requests\Admin\BiometricDevice\BiometricDeviceUpdateRequest;
-use App\Models\Organization;
-use App\Models\Sbu;
 use App\Services\BiometricDeviceService;
+use App\Services\EmployeeViewerScopeService;
 use Illuminate\View\View;
 
 class BiometricDeviceController extends Controller
 {
     public function __construct(
-        private BiometricDeviceService $biometricDeviceService
+        private BiometricDeviceService $biometricDeviceService,
+        private EmployeeViewerScopeService $viewerScope,
     ) {}
 
     public function index(): View
     {
-        $devices = $this->biometricDeviceService->getList();
-        $counts = $this->biometricDeviceService->getCounts();
-        $organizations = Organization::query()->where('is_active', true)->orderBy('name')->get();
-        $sbus = Sbu::query()
-            ->select(['id', 'name', 'organization_id'])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
-        return view('admin.biometric-device.index', [
-            'devices' => $devices,
-            'organizations' => $organizations,
-            'sbus' => $sbus,
-            'totalDevices' => $counts['total'],
-            'activeDevices' => $counts['active'],
-            'inactiveDevices' => $counts['inactive'],
-            'faultyDevices' => $counts['faulty'],
-            'activePercentage' => $counts['active_percentage'],
-        ]);
+        return view('admin.biometric-device.index', $this->indexViewData());
     }
 
     public function create()
@@ -44,7 +26,7 @@ class BiometricDeviceController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        return $this->index();
+        return view('admin.biometric-device.index', $this->indexViewData());
     }
 
     public function store(BiometricDeviceStoreRequest $request)
@@ -226,5 +208,25 @@ class BiometricDeviceController extends Controller
                 ->back()
                 ->with('error', 'Failed to delete device: '.$e->getMessage());
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function indexViewData(): array
+    {
+        $counts = $this->biometricDeviceService->getCounts();
+
+        return [
+            'devices' => $this->biometricDeviceService->getList(),
+            'organizations' => $this->biometricDeviceService->getOrganizationsForFilter(),
+            'sbus' => $this->biometricDeviceService->getSbusForFilter(),
+            'totalDevices' => $counts['total'],
+            'activeDevices' => $counts['active'],
+            'inactiveDevices' => $counts['inactive'],
+            'faultyDevices' => $counts['faulty'],
+            'activePercentage' => $counts['active_percentage'],
+            'viewerEmployeeScope' => $this->viewerScope->frontendScopePayload(),
+        ];
     }
 }

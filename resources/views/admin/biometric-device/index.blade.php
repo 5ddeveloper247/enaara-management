@@ -44,6 +44,7 @@
 <script>
     window.biometricOrganizations = @json($bioOrgs);
     window.biometricSbus = @json($bioSbus);
+    window.viewerEmployeeScope = @json($viewerEmployeeScope ?? []);
 </script>
 <script src="{{ asset('js/biometric-device.js') }}"></script>
 @endpush

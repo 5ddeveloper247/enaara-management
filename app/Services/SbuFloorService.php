@@ -6,6 +6,7 @@ use App\Models\BiometricDevice;
 use App\Models\Organization;
 use App\Models\Sbu;
 use App\Models\SbuFloor;
+use App\Services\ViewerScope\BiometricDeviceViewerScopeService;
 use App\Services\ViewerScope\SbuFloorViewerScopeService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
@@ -17,6 +18,7 @@ class SbuFloorService
 {
     public function __construct(
         private readonly SbuFloorViewerScopeService $sbuFloorScope,
+        private readonly BiometricDeviceViewerScopeService $biometricDeviceScope,
         private readonly EmployeeViewerScopeService $viewerScope,
     ) {}
 
@@ -78,14 +80,7 @@ class SbuFloorService
         $query = BiometricDevice::query()
             ->orderByDesc('id');
 
-        $sbuId = $this->viewerScope->resolveViewerSbuId();
-        if ($sbuId !== null) {
-            if ($sbuId <= 0) {
-                return collect();
-            }
-
-            $query->where('sbu_id', $sbuId);
-        }
+        $this->biometricDeviceScope->applyQueryScope($query);
 
         return $query->get(['id', 'sbu_id', 'device_name', 'serial_number', 'sbu_floor_id']);
     }

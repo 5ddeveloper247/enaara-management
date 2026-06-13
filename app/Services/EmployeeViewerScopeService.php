@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BiometricDevice;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Employee;
@@ -10,6 +11,7 @@ use App\Models\OutsourcedEmployee;
 use App\Models\Sbu;
 use App\Models\ThirdParty;
 use App\Models\User;
+use App\Services\ViewerScope\BiometricDeviceViewerScopeService;
 use App\Services\ViewerScope\DepartmentViewerScopeService;
 use App\Services\ViewerScope\DesignationViewerScopeService;
 use App\Services\ViewerScope\ShiftViewerScopeService;
@@ -24,6 +26,7 @@ class EmployeeViewerScopeService
 {
     public function __construct(
         private readonly ViewerScopeContext $context,
+        private readonly BiometricDeviceViewerScopeService $biometricDeviceScope,
         private readonly DepartmentViewerScopeService $departmentScope,
         private readonly DesignationViewerScopeService $designationScope,
         private readonly ShiftViewerScopeService $shiftScope,
@@ -152,6 +155,21 @@ class EmployeeViewerScopeService
     public function applySbuScopeToSbuFloorQuery(Builder $query, ?User $user = null): Builder
     {
         return $this->sbuFloorScope->applyQueryScope($query, $user);
+    }
+
+    public function applySbuScopeToBiometricDeviceQuery(Builder $query, ?User $user = null): Builder
+    {
+        return $this->biometricDeviceScope->applyQueryScope($query, $user);
+    }
+
+    public function biometricDeviceBelongsToViewerScope(BiometricDevice $device, ?User $user = null): bool
+    {
+        return $this->biometricDeviceScope->belongsToViewerScope($device, $user);
+    }
+
+    public function assertBiometricDeviceIdAccessible(int $deviceId, ?User $user = null): void
+    {
+        $this->biometricDeviceScope->assertIdAccessible($deviceId, $user);
     }
 
     public function assertSbuFloorIdAccessible(int $sbuFloorId, ?User $user = null): void

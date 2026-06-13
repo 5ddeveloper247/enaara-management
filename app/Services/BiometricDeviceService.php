@@ -3,26 +3,63 @@
 namespace App\Services;
 
 use App\Models\BiometricDevice;
+use App\Models\Organization;
+use App\Models\Sbu;
+use App\Services\ViewerScope\BiometricDeviceViewerScopeService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class BiometricDeviceService
 {
+    public function __construct(
+        private readonly BiometricDeviceViewerScopeService $biometricDeviceScope,
+        private readonly EmployeeViewerScopeService $viewerScope,
+    ) {}
+
     public function getList(): Collection
     {
-        return BiometricDevice::query()
+        $query = BiometricDevice::query()
             ->with(['organization', 'sbu', 'creator'])
-            ->orderByDesc('id')
+            ->orderByDesc('id');
+
+        $this->biometricDeviceScope->applyQueryScope($query);
+
+        return $query->get();
+    }
+
+    public function getOrganizationsForFilter(): Collection
+    {
+        $organizations = Organization::query()
+            ->select(['id', 'name'])
+            ->where('is_active', true)
+            ->orderBy('name')
             ->get();
+
+        return $this->viewerScope->filterOrganizations($organizations);
+    }
+
+    public function getSbusForFilter(): Collection
+    {
+        $sbus = Sbu::query()
+            ->select(['id', 'name', 'organization_id'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return $this->viewerScope->filterSbus($sbus);
     }
 
     public function getCounts(): array
     {
-        $total = BiometricDevice::count();
-        $active = BiometricDevice::where('device_status', 'active')->count();
-        $inactive = BiometricDevice::where('device_status', 'inactive')->count();
-        $faulty = BiometricDevice::where('device_status', 'faulty')->count();
+        $base = BiometricDevice::query();
+        $this->biometricDeviceScope->applyQueryScope($base);
+
+        $total = (clone $base)->count();
+        $active = (clone $base)->where('device_status', 'active')->count();
+        $inactive = (clone $base)->where('device_status', 'inactive')->count();
+        $faulty = (clone $base)->where('device_status', 'faulty')->count();
 
         return [
             'total' => $total,
@@ -35,6 +72,8 @@ class BiometricDeviceService
 
     public function store(array $data): BiometricDevice
     {
+        $this->assertWriteDataAllowed($data);
+
         DB::beginTransaction();
 
         try {
@@ -68,14 +107,25 @@ class BiometricDeviceService
 
     public function findById(int $id): ?BiometricDevice
     {
-        return BiometricDevice::query()
-            ->with(['organization', 'sbu', 'creator'])
-            ->find($id);
+        $query = BiometricDevice::query()
+            ->with(['organization', 'sbu', 'creator']);
+
+        $this->biometricDeviceScope->applyQueryScope($query);
+
+        return $query->find($id);
     }
 
     public function update(int $id, array $data): BiometricDevice
     {
-        $device = BiometricDevice::findOrFail($id);
+        $device = $this->findById($id);
+        if ($device === null) {
+            throw ValidationException::withMessages([
+                'biometric_device' => ['Biometric device not found or outside your SBU scope.'],
+            ]);
+        }
+
+        $this->biometricDeviceScope->assertIdAccessible((int) $device->id);
+        $this->assertWriteDataAllowed($data);
 
         $device->update([
             'organization_id' => (int) $data['organization_id'],
@@ -99,7 +149,14 @@ class BiometricDeviceService
         DB::beginTransaction();
 
         try {
-            $device = BiometricDevice::findOrFail($id);
+            $device = $this->findById($id);
+            if ($device === null) {
+                throw ValidationException::withMessages([
+                    'biometric_device' => ['Biometric device not found or outside your SBU scope.'],
+                ]);
+            }
+
+            $this->biometricDeviceScope->assertIdAccessible((int) $device->id);
             $device->delete();
             DB::commit();
         } catch (\Exception $e) {
@@ -107,5 +164,13 @@ class BiometricDeviceService
             Log::error('Biometric device delete error: '.$e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function assertWriteDataAllowed(array $data): void
+    {
+        $this->viewerScope->assertSbuIdAllowed((int) ($data['sbu_id'] ?? 0));
     }
 }

@@ -190,6 +190,23 @@
         }
         clearFormMessages('#addBiometricDeviceForm');
         populateSbuSelect($('#bd_sbu_id'), '', '', true);
+        applyDefaultScopeToAddForm();
+    }
+
+    function applyDefaultScopeToAddForm() {
+        var scope = window.viewerEmployeeScope || {};
+        var sbus = getSbus();
+
+        if (scope.restricted && scope.organization_id && scope.sbu_id) {
+            $('#bd_organization_id').val(String(scope.organization_id));
+            populateSbuSelect($('#bd_sbu_id'), scope.organization_id, scope.sbu_id, false);
+            return;
+        }
+
+        if (sbus.length === 1) {
+            $('#bd_organization_id').val(String(sbus[0].organization_id));
+            populateSbuSelect($('#bd_sbu_id'), sbus[0].organization_id, sbus[0].id, false);
+        }
     }
 
     function resetEditForm() {
