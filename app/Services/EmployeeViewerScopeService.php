@@ -9,6 +9,7 @@ use App\Models\Organization;
 use App\Models\OutsourcedEmployee;
 use App\Models\Sbu;
 use App\Models\User;
+use App\Services\ViewerScope\DepartmentViewerScopeService;
 use App\Services\ViewerScope\DesignationViewerScopeService;
 use App\Services\ViewerScope\ShiftViewerScopeService;
 use App\Services\ViewerScope\SbuFloorViewerScopeService;
@@ -21,6 +22,7 @@ class EmployeeViewerScopeService
 {
     public function __construct(
         private readonly ViewerScopeContext $context,
+        private readonly DepartmentViewerScopeService $departmentScope,
         private readonly DesignationViewerScopeService $designationScope,
         private readonly ShiftViewerScopeService $shiftScope,
         private readonly SbuFloorViewerScopeService $sbuFloorScope,
@@ -64,6 +66,16 @@ class EmployeeViewerScopeService
         }
 
         return $query->where('sbu_id', $sbuId);
+    }
+
+    public function applySbuScopeToDepartmentQuery(Builder $query, ?User $user = null): Builder
+    {
+        return $this->departmentScope->applyQueryScope($query, $user);
+    }
+
+    public function departmentBelongsToViewerScope(Department $department, ?User $user = null): bool
+    {
+        return $this->departmentScope->belongsToViewerScope($department, $user);
     }
 
     public function applySbuScopeToOutsourcedEmployeeQuery(Builder $query, ?User $user = null): Builder

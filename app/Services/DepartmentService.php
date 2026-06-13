@@ -5,41 +5,79 @@ namespace App\Services;
 use App\Models\Department;
 use App\Models\Organization;
 use App\Models\Sbu;
+use App\Services\ViewerScope\DepartmentViewerScopeService;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\ValidationException;
 
 class DepartmentService
 {
+    public function __construct(
+        private readonly DepartmentViewerScopeService $departmentScope,
+        private readonly EmployeeViewerScopeService $viewerScope,
+    ) {}
+
     public function getList(): Collection
     {
-        return Department::with(['organization', 'sbu', 'parent'])
-            ->orderByDesc('id')
-            ->get();
+        $query = Department::query()
+            ->with(['organization', 'sbu', 'parent'])
+            ->orderByDesc('id');
+
+        $this->departmentScope->applyQueryScope($query);
+
+        return $query->get();
     }
 
     public function getOrganizationsForFilter(): Collection
     {
-        return Organization::orderBy('name')->get(['id', 'name']);
+        $organizations = Organization::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+
+        return $this->viewerScope->filterOrganizations($organizations);
     }
 
     public function getSbusForFilter(): Collection
     {
-        return Sbu::orderBy('name')->get([
-            'id',
-            'name',
-            'organization_id',
-            'working_days',
-            'working_start_time',
-            'working_end_time',
-            'opening_grace_period',
-            'closing_grace_period',
-        ]);
+        $sbus = Sbu::query()
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'organization_id',
+                'working_days',
+                'working_start_time',
+                'working_end_time',
+                'opening_grace_period',
+                'closing_grace_period',
+            ]);
+
+        return $this->viewerScope->filterSbus($sbus);
+    }
+
+    public function getParentDepartmentsForForm(?int $excludeId = null): Collection
+    {
+        $query = Department::query()
+            ->with('organization')
+            ->orderBy('name');
+
+        $this->departmentScope->applyQueryScope($query);
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->get(['id', 'name', 'organization_id', 'sbu_id']);
     }
 
     public function getCounts(): array
     {
-        $total = Department::count();
-        $active = Department::where('is_active', true)->count();
-        $inactive = Department::where('is_active', false)->count();
+        $base = Department::query();
+        $this->departmentScope->applyQueryScope($base);
+
+        $total = (clone $base)->count();
+        $active = (clone $base)->where('is_active', true)->count();
+        $inactive = (clone $base)->where('is_active', false)->count();
 
         return [
             'total' => $total,
@@ -51,11 +89,18 @@ class DepartmentService
 
     public function findById(int $id): ?Department
     {
-        return Department::with(['organization', 'sbu', 'parent'])->find($id);
+        $query = Department::query()
+            ->with(['organization', 'sbu', 'parent']);
+
+        $this->departmentScope->applyQueryScope($query);
+
+        return $query->find($id);
     }
 
     public function create(array $data): Department
     {
+        $this->assertDepartmentWriteDataAllowed($data);
+
         $data = $this->withSyncedGracePeriod($data);
 
         return Department::create($data);
@@ -63,10 +108,27 @@ class DepartmentService
 
     public function update(Department $department, array $data): Department
     {
+        if (! $this->departmentScope->belongsToViewerScope($department)) {
+            throw ValidationException::withMessages([
+                'department' => 'This department is outside your SBU scope.',
+            ]);
+        }
+
+        $this->assertDepartmentWriteDataAllowed($data);
+
         $data = $this->withSyncedGracePeriod($data);
         $department->update($data);
 
         return $department->fresh(['organization', 'sbu', 'parent']);
+    }
+
+    private function assertDepartmentWriteDataAllowed(array $data): void
+    {
+        $this->viewerScope->assertSbuIdAllowed((int) ($data['sbu_id'] ?? 0));
+
+        if (! empty($data['parent_department_id'])) {
+            $this->viewerScope->assertDepartmentIdAllowed((int) $data['parent_department_id']);
+        }
     }
 
     private function withSyncedGracePeriod(array $data): array
@@ -83,6 +145,12 @@ class DepartmentService
 
     public function destroy(Department $department): bool
     {
+        if (! $this->departmentScope->belongsToViewerScope($department)) {
+            throw ValidationException::withMessages([
+                'department' => 'This department is outside your SBU scope.',
+            ]);
+        }
+
         return $department->delete();
     }
 }

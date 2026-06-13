@@ -81,6 +81,9 @@
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
+        window.viewerEmployeeScope = @json($viewerEmployeeScope ?? []);
+    </script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             var departmentEditUrl = '{{ route("admin.department.edit", ":id") }}';
@@ -129,6 +132,24 @@
             
             var allSbus = [];
             var allParentDepartments = [];
+            var viewerScope = window.viewerEmployeeScope || {};
+
+            function applyDefaultScopeToDepartmentForm() {
+                if (viewerScope.restricted && viewerScope.organization_id && viewerScope.sbu_id) {
+                    $('#editOrganizationId').val(String(viewerScope.organization_id));
+                    updateSbuDropdown(viewerScope.organization_id, viewerScope.sbu_id);
+                    updateParentDepartmentDropdown(viewerScope.sbu_id);
+                    return;
+                }
+
+                if (allSbus.length === 1) {
+                    var sbu = allSbus[0];
+                    $('#editOrganizationId').val(String(sbu.organization_id));
+                    updateSbuDropdown(sbu.organization_id, sbu.id);
+                    updateParentDepartmentDropdown(sbu.id);
+                }
+            }
+
             var DEPT_LIMITED_FIELDS = [
                 { fieldName: 'name', inputId: 'editDepartmentName', errorId: 'editDepartmentNameError', lenId: 'editDepartmentNameLen', metaId: 'editDepartmentNameMeta', max: 50 },
                 { fieldName: 'code', inputId: 'editDepartmentCode', errorId: 'editDepartmentCodeError', lenId: 'editDepartmentCodeLen', metaId: 'editDepartmentCodeMeta', max: 10 },
@@ -331,9 +352,10 @@
                         
                         allSbus = response.sbus;
                         allParentDepartments = response.parentDepartments;
-                        
+
                         updateSbuDropdown('');
                         updateParentDepartmentDropdown('');
+                        applyDefaultScopeToDepartmentForm();
                         
                         $('#editDepartmentName').val('');
                         $('#editDepartmentCode').val('');

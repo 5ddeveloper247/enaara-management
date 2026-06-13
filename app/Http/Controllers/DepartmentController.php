@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Department;
-use App\Services\DepartmentService;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 use App\Http\Requests\Admin\Department\DepartmentStoreRequest;
 use App\Http\Requests\Admin\Department\DepartmentUpdateRequest;
-use Illuminate\Validation\ValidationException;
+use App\Services\DepartmentService;
+use App\Services\EmployeeViewerScopeService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class DepartmentController extends Controller
 {
     public function __construct(
-        private DepartmentService $departmentService
+        private DepartmentService $departmentService,
+        private EmployeeViewerScopeService $viewerScope,
     ) {}
 
     public function index(): View|\Illuminate\Http\JsonResponse
@@ -23,43 +24,47 @@ class DepartmentController extends Controller
         $organizations = $this->departmentService->getOrganizationsForFilter();
         $sbus = $this->departmentService->getSbusForFilter();
         $counts = $this->departmentService->getCounts();
-        
+
         if (request()->expectsJson() || request()->wantsJson()) {
             $organizationId = request()->get('organization_id');
             $sbuId = request()->get('sbu_id');
-            
+
             if ($sbuId) {
-                $filteredDepartments = $departments->filter(function($dept) use ($sbuId) {
+                $filteredDepartments = $departments->filter(function ($dept) use ($sbuId) {
                     return $dept->sbu_id == $sbuId;
-                })->map(function($dept) {
+                })->map(function ($dept) {
                     return [
                         'id' => $dept->id,
                         'name' => $dept->name,
                         'sbu_id' => $dept->sbu_id,
                     ];
                 })->values();
+
                 return response()->json(['departments' => $filteredDepartments]);
             }
-            
+
             if ($organizationId) {
-                $filteredDepartments = $departments->filter(function($dept) use ($organizationId) {
+                $filteredDepartments = $departments->filter(function ($dept) use ($organizationId) {
                     return $dept->organization_id == $organizationId;
-                })->map(function($dept) {
+                })->map(function ($dept) {
                     return [
                         'id' => $dept->id,
                         'name' => $dept->name,
                         'organization_id' => $dept->organization_id,
                     ];
                 })->values();
+
                 return response()->json(['departments' => $filteredDepartments]);
             }
-            $departmentsArray = $departments->map(function($dept) {
+
+            $departmentsArray = $departments->map(function ($dept) {
                 return [
                     'id' => $dept->id,
                     'name' => $dept->name,
                     'organization_id' => $dept->organization_id,
                 ];
             })->values();
+
             return response()->json(['departments' => $departmentsArray]);
         }
 
@@ -71,6 +76,7 @@ class DepartmentController extends Controller
             'activeDepartments' => $counts['active'],
             'inactiveDepartments' => $counts['inactive'],
             'activePercentage' => $counts['active_percentage'],
+            'viewerEmployeeScope' => $this->viewerScope->frontendScopePayload(),
         ]);
     }
 
@@ -78,8 +84,8 @@ class DepartmentController extends Controller
     {
         $organizations = $this->departmentService->getOrganizationsForFilter();
         $sbus = $this->departmentService->getSbusForFilter();
-        $departments = Department::with('organization')->orderBy('name')->get(['id', 'name', 'organization_id', 'sbu_id']);
-        
+        $departments = $this->departmentService->getParentDepartmentsForForm();
+
         if (request()->expectsJson()) {
             return response()->json([
                 'organizations' => $organizations,
@@ -99,9 +105,9 @@ class DepartmentController extends Controller
     {
         try {
             $validated = $request->validated();
-            
+
             $department = $this->departmentService->create($validated);
-            
+
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
@@ -109,7 +115,7 @@ class DepartmentController extends Controller
                     'department' => $department,
                 ]);
             }
-            
+
             return redirect()->route('admin.department.index')->with('success', 'Department created successfully.');
         } catch (ValidationException $e) {
             if ($request->expectsJson() || $request->ajax()) {
@@ -130,6 +136,7 @@ class DepartmentController extends Controller
                     'message' => 'Failed to create department.',
                 ], 500);
             }
+
             return redirect()->back()->withInput()->with('error', 'Failed to create department.');
         }
     }
@@ -137,56 +144,45 @@ class DepartmentController extends Controller
     public function edit(int $id): View|RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $department = $this->departmentService->findById($id);
-        if (!$department) {
+        if (! $department) {
             if (request()->expectsJson()) {
                 return response()->json(['error' => 'Department not found'], 404);
             }
             abort(404);
         }
-        
+
         if (request()->expectsJson()) {
-            $organizations = $this->departmentService->getOrganizationsForFilter();
-            $sbus = $this->departmentService->getSbusForFilter();
-            $parentDepartments = Department::with('organization')
-                ->where('id', '!=', $id)
-                ->orderBy('name')
-                ->get(['id', 'name', 'organization_id', 'sbu_id']);
-            
             return response()->json([
                 'department' => $department,
-                'organizations' => $organizations,
-                'sbus' => $sbus,
-                'parentDepartments' => $parentDepartments,
+                'organizations' => $this->departmentService->getOrganizationsForFilter(),
+                'sbus' => $this->departmentService->getSbusForFilter(),
+                'parentDepartments' => $this->departmentService->getParentDepartmentsForForm($id),
             ]);
         }
-        
-        $organizations = $this->departmentService->getOrganizationsForFilter();
-        $sbus = $this->departmentService->getSbusForFilter();
-        $parentDepartments = Department::with('organization')->orderBy('name')->get(['id', 'name', 'organization_id']);
 
         return view('admin.departments.edit', [
             'department' => $department,
-            'organizations' => $organizations,
-            'sbus' => $sbus,
-            'parentDepartments' => $parentDepartments,
+            'organizations' => $this->departmentService->getOrganizationsForFilter(),
+            'sbus' => $this->departmentService->getSbusForFilter(),
+            'parentDepartments' => $this->departmentService->getParentDepartmentsForForm($id),
         ]);
     }
 
     public function update(DepartmentUpdateRequest $request, int $id): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $department = $this->departmentService->findById($id);
-        if (!$department) {
+        if (! $department) {
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json(['error' => 'Department not found'], 404);
             }
             abort(404);
         }
-        
+
         try {
             $validated = $request->validated();
-            
+
             $this->departmentService->update($department, $validated);
-            
+
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
@@ -194,7 +190,7 @@ class DepartmentController extends Controller
                     'department' => $this->departmentService->findById($id),
                 ]);
             }
-            
+
             return redirect()->route('admin.department.index')->with('success', 'Department updated successfully.');
         } catch (ValidationException $e) {
             if ($request->expectsJson() || $request->ajax()) {
@@ -216,6 +212,7 @@ class DepartmentController extends Controller
                     'message' => 'Failed to update department.',
                 ], 500);
             }
+
             return redirect()->back()->withInput()->with('error', 'Failed to update department.');
         }
     }
@@ -224,13 +221,14 @@ class DepartmentController extends Controller
     {
         $department = $this->departmentService->findById($id);
 
-        if (!$department) {
+        if (! $department) {
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Department not found.'
+                    'message' => 'Department not found.',
                 ], 404);
             }
+
             return redirect()->back()->with('error', 'Department not found.');
         }
 
@@ -240,7 +238,7 @@ class DepartmentController extends Controller
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Department deleted successfully.'
+                    'message' => 'Department deleted successfully.',
                 ]);
             }
 
@@ -253,7 +251,7 @@ class DepartmentController extends Controller
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to delete department.'
+                    'message' => 'Failed to delete department.',
                 ], 500);
             }
 
