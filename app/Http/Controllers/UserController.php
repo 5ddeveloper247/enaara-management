@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -56,6 +57,11 @@ class UserController extends Controller
                 'success' => true,
                 'message' => 'User "' . $user->name . '" created successfully.',
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         } catch (\Exception $e) {
             Log::error('User store failed', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Something went wrong: ' . $e->getMessage()], 500);
@@ -71,6 +77,11 @@ class UserController extends Controller
                 'success' => true,
                 'message' => 'User "' . $user->name . '" updated successfully.',
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         } catch (\Exception $e) {
             Log::error('User update failed', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Something went wrong: ' . $e->getMessage()], 500);
@@ -88,6 +99,11 @@ class UserController extends Controller
                 'message' => 'User status updated.',
                 'is_active' => $user->is_active,
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         } catch (\Exception $e) {
             Log::error('User status update failed', ['user_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Something went wrong.'], 500);
@@ -99,6 +115,11 @@ class UserController extends Controller
         try {
             $this->userService->destroy($id);
             return response()->json(['success' => true, 'message' => 'User deleted successfully.']);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         } catch (\Exception $e) {
             Log::error('User delete failed', ['user_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Something went wrong.'], 500);
@@ -118,6 +139,11 @@ class UserController extends Controller
                 'success' => true,
                 'message' => 'A temporary password has been emailed to the user. They must sign in and set a new password.',
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         } catch (\Exception $e) {
             Log::error('User password reset failed', ['user_id' => $id, 'error' => $e->getMessage()]);
 

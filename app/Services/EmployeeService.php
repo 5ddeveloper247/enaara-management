@@ -51,7 +51,8 @@ class EmployeeService
         AuditTrailService $auditTrailService,
         EmployeeGeneralInformationService $generalInformation,
         EmployeeEmploymentInformationService $employmentInformation,
-        private readonly UserRoleSyncService $userRoleSyncService
+        private readonly UserRoleSyncService $userRoleSyncService,
+        private readonly EmployeeViewerScopeService $viewerScope,
     ) {
         $this->auditTrailService   = $auditTrailService;
         $this->generalInformation  = $generalInformation;
@@ -111,7 +112,20 @@ class EmployeeService
             ->orderBy('third_party_name')
             ->get();
 
-        return view('admin.employee.index', compact('organizations', 'departments', 'sbus', 'floors', 'outsourcedVendors'));
+        $organizations = $this->viewerScope->filterOrganizations($organizations);
+        $departments = $this->viewerScope->filterDepartments($departments);
+        $sbus = $this->viewerScope->filterSbus($sbus);
+        $floors = $this->viewerScope->filterFloors($floors);
+        $viewerEmployeeScope = $this->viewerScope->frontendScopePayload();
+
+        return view('admin.employee.index', compact(
+            'organizations',
+            'departments',
+            'sbus',
+            'floors',
+            'outsourcedVendors',
+            'viewerEmployeeScope',
+        ));
     }
 
     public function getFormData(): array
@@ -290,7 +304,14 @@ class EmployeeService
             Log::warning('getFormData dynamic docs failed: ' . $e->getMessage());
         }
 
-        return compact('organizations', 'orgsData', 'rolesData', 'requiredDocumentTypes');
+        $organizations = $this->viewerScope->filterOrganizations($organizations);
+        $orgsData = $this->viewerScope->filterOrgsData($orgsData);
+        $rolesData = $this->viewerScope->filterRolesData(collect($rolesData))->values()->all();
+
+        return array_merge(
+            compact('organizations', 'orgsData', 'rolesData', 'requiredDocumentTypes'),
+            ['viewerEmployeeScope' => $this->viewerScope->frontendScopePayload()],
+        );
     }
 
     private function normalizeEmployeeDesignationFields(array &$data, ?Employee $employee = null): void
@@ -375,6 +396,8 @@ class EmployeeService
     public function store(array $data, array $files = [], array $attachments = []): Employee
     {
         return DB::transaction(function () use ($data, $files, $attachments) {
+            $this->viewerScope->applyDefaultOrganizationSbuToRegistrationData($data);
+            $this->viewerScope->assertRegistrationDataAllowed($data);
             $this->normalizeEmployeeDesignationFields($data);
             $role = Role::find($data['role_id'] ?? 0);
             $code = null;
@@ -383,7 +406,10 @@ class EmployeeService
             if ($role) {
                 $orgLevel = $role->isOrganizationLevelRole();
                 if ($orgLevel) {
-                    $sbuForCode = Sbu::where('organization_id', (int) ($data['organization_id'] ?? 0))->orderBy('id')->value('id');
+                    $sbuForCode = $this->resolveSbuIdForEmployeeCode(
+                        (int) ($data['organization_id'] ?? 0),
+                        isset($data['sbu_id']) ? (int) $data['sbu_id'] : null,
+                    );
                     if (!$sbuForCode) {
                         throw new \InvalidArgumentException('No SBU found under organization for employee code generation.');
                     }
@@ -400,7 +426,10 @@ class EmployeeService
             $codeSbuForSync = null;
             if ($role) {
                 if ($orgLevel) {
-                    $sid = Sbu::where('organization_id', (int) ($data['organization_id'] ?? 0))->orderBy('id')->value('id');
+                    $sid = $this->resolveSbuIdForEmployeeCode(
+                        (int) ($data['organization_id'] ?? 0),
+                        isset($data['sbu_id']) ? (int) $data['sbu_id'] : null,
+                    );
                     $codeSbuForSync = $sid ? (int) $sid : null;
                 } elseif (! empty($data['sbu_id'])) {
                     $codeSbuForSync = (int) $data['sbu_id'];
@@ -552,7 +581,7 @@ class EmployeeService
         }
         $orgLevel = $role->isOrganizationLevelRole();
         if ($orgLevel) {
-            $sbuForCode = Sbu::query()->where('organization_id', $organizationId)->orderBy('id')->value('id');
+            $sbuForCode = $this->resolveSbuIdForEmployeeCode($organizationId, $sbuId);
             if (! $sbuForCode) {
                 throw new \InvalidArgumentException('No SBU found under organization for employee code generation.');
             }
@@ -718,6 +747,28 @@ class EmployeeService
         }
 
         return substr(implode('', $letters), 0, 4);
+    }
+
+    private function resolveSbuIdForEmployeeCode(int $organizationId, ?int $requestedSbuId = null): ?int
+    {
+        $viewerSbuId = $this->viewerScope->resolveViewerSbuId();
+        if ($viewerSbuId !== null && $viewerSbuId > 0) {
+            return $viewerSbuId;
+        }
+
+        if ($requestedSbuId && $requestedSbuId > 0) {
+            $sbu = Sbu::query()->find($requestedSbuId);
+            if ($sbu && (int) $sbu->organization_id === $organizationId) {
+                return $requestedSbuId;
+            }
+        }
+
+        $sbuForCode = Sbu::query()
+            ->where('organization_id', $organizationId)
+            ->orderBy('id')
+            ->value('id');
+
+        return $sbuForCode ? (int) $sbuForCode : null;
     }
 
     public function savePoliceVerification(int $id, array $d): void
@@ -1528,6 +1579,8 @@ class EmployeeService
             ])
             ->orderByDesc('id');
 
+        $this->viewerScope->applySbuScopeToEmployeeQuery($query);
+
         $type = $filters['filter_employee_type'] ?? null;
         if (!empty($type)) {
             if ($type === 'Third-party') {
@@ -1887,12 +1940,15 @@ class EmployeeService
     public function getStats(): array
     {
         $base = Employee::query();
+        $this->viewerScope->applySbuScopeToEmployeeQuery($base);
 
         $internal = (clone $base)->where(function ($q) {
             $q->whereNull('employment_type')->orWhere('employment_type', '!=', 'Third-party');
         })->count();
         $outsourcedLegacy = (clone $base)->where('employment_type', 'Third-party')->count();
-        $outsourcedDedicated = OutsourcedEmployee::query()->count();
+        $outsourcedQuery = OutsourcedEmployee::query();
+        $this->viewerScope->applySbuScopeToOutsourcedEmployeeQuery($outsourcedQuery);
+        $outsourcedDedicated = $outsourcedQuery->count();
         $outsourced = $outsourcedLegacy + $outsourcedDedicated;
         $total = $internal + $outsourced;
         $active = (clone $base)->where('is_active', true)->count();
@@ -1991,6 +2047,8 @@ class EmployeeService
             'role:id,name',
             'assignedFloors:id,name',
         ])->findOrFail($id);
+
+        $this->viewerScope->assertEmployeeIdAccessible($id);
 
         $formData = $this->getFormData();
 
@@ -2222,6 +2280,9 @@ class EmployeeService
     ): Employee {
         return DB::transaction(function () use ($id, $data, $files, $attachments, $keptAttachmentIds, $syncAttachments) {
             $employee = Employee::findOrFail($id);
+            $this->viewerScope->assertEmployeeIdAccessible($id);
+            $this->viewerScope->applyDefaultOrganizationSbuToRegistrationData($data);
+            $this->viewerScope->assertRegistrationDataAllowed($data);
             $this->normalizeEmployeeDesignationFields($data, $employee);
             $role      = Role::find($data['role_id'] ?? $employee->role_id);
             $orgLevel  = $role && $role->isOrganizationLevelRole();
@@ -2229,7 +2290,10 @@ class EmployeeService
             $code = $employee->employee_code;
             if (!$code && $role) {
                 if ($orgLevel) {
-                    $sbuForCode = Sbu::where('organization_id', (int) ($data['organization_id'] ?? $employee->organization_id))->orderBy('id')->value('id');
+                    $sbuForCode = $this->resolveSbuIdForEmployeeCode(
+                        (int) ($data['organization_id'] ?? $employee->organization_id),
+                        isset($data['sbu_id']) ? (int) $data['sbu_id'] : ($employee->sbu_id ? (int) $employee->sbu_id : null),
+                    );
                     if ($sbuForCode) {
                         $code = $this->generateNextCode((int) $sbuForCode);
                     }
@@ -2531,6 +2595,7 @@ class EmployeeService
     public function destroy(int $id): void
     {
         $employee = Employee::findOrFail($id);
+        $this->viewerScope->assertEmployeeIdAccessible($id);
         $employee->delete();
         Log::info('Employee deleted', ['id' => $id]);
     }

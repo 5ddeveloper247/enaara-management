@@ -48,6 +48,7 @@
     // INITIALIZATION
     // ============================================
     $(document).ready(function () {
+        applyViewerEmployeeScopeFilters();
         loadMonthlySummaryData();
         initializeDataTable();
         const selectedSbuId = $('#filterSBU').val();
@@ -76,6 +77,28 @@
         } else {
             console.warn('monthlySummaryRows not found, using empty array');
             monthlySummaryData = [];
+        }
+    }
+
+    function applyViewerEmployeeScopeFilters() {
+        const scope = window.viewerEmployeeScope || {};
+        if (!scope.restricted || !scope.sbu_id) {
+            return;
+        }
+
+        const sbuSelect = document.getElementById('filterSBU');
+        if (!sbuSelect) {
+            return;
+        }
+
+        const sbuKey = String(scope.sbu_id);
+        const hasOption = Array.from(sbuSelect.options).some(function (option) {
+            return option.value === sbuKey;
+        });
+
+        if (hasOption) {
+            sbuSelect.value = sbuKey;
+            sbuSelect.disabled = true;
         }
     }
 

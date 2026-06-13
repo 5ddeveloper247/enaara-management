@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\MonthlySummaryService;
+use Illuminate\Validation\ValidationException;
 
 class MonthlySummaryController extends Controller
 {
@@ -16,7 +17,11 @@ class MonthlySummaryController extends Controller
 
     public function index(Request $request)
     {
-        return $this->monthlySummaryService->index($request);
+        try {
+            return $this->monthlySummaryService->index($request);
+        } catch (ValidationException $e) {
+            abort(403, collect($e->errors())->flatten()->first() ?? 'Unauthorized action.');
+        }
     }
 
     public function employeeCalendar(Request $request, int $employeeId)
@@ -35,6 +40,11 @@ class MonthlySummaryController extends Controller
                 'success' => true,
                 'data' => $calendar,
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -72,6 +82,11 @@ class MonthlySummaryController extends Controller
                     'calendar' => $calendar,
                 ],
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'success' => false,

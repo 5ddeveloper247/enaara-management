@@ -15,33 +15,39 @@ use Illuminate\Support\Str;
 class UserService
 {
     public function __construct(
-        private readonly UserRoleSyncService $userRoleSyncService
+        private readonly UserRoleSyncService $userRoleSyncService,
+        private readonly EmployeeViewerScopeService $viewerScope,
     ) {}
 
     public function index(): View
     {
         $linkedEmployeeIds = User::excludingSystemAdmin()->whereNotNull('employee_id')->pluck('employee_id');
 
-        $employees = Employee::with(['role:id,name', 'contact:id,employee_id,email', 'sbu:id,name', 'mediaFiles'])
+        $employeesQuery = Employee::with(['role:id,name', 'contact:id,employee_id,email', 'sbu:id,name', 'mediaFiles'])
             ->whereNull('deleted_at')
             ->whereNotIn('id', $linkedEmployeeIds)
-            ->orderBy('full_name')
-            ->get(['id', 'full_name', 'employee_code', 'email', 'role_id', 'sbu_id']);
+            ->orderBy('full_name');
+        $this->viewerScope->applySbuScopeToEmployeeQuery($employeesQuery);
+        $employees = $employeesQuery->get(['id', 'full_name', 'employee_code', 'email', 'role_id', 'sbu_id']);
 
-        $allEmployees = Employee::with(['role:id,name', 'contact:id,employee_id,email'])
+        $allEmployeesQuery = Employee::with(['role:id,name', 'contact:id,employee_id,email'])
             ->whereNull('deleted_at')
-            ->orderBy('full_name')
-            ->get(['id', 'full_name', 'employee_code', 'email', 'role_id']);
+            ->orderBy('full_name');
+        $this->viewerScope->applySbuScopeToEmployeeQuery($allEmployeesQuery);
+        $allEmployees = $allEmployeesQuery->get(['id', 'full_name', 'employee_code', 'email', 'role_id']);
 
-        return view('admin.users.index', compact('employees', 'allEmployees'));
+        $viewerEmployeeScope = $this->viewerScope->frontendScopePayload();
+
+        return view('admin.users.index', compact('employees', 'allEmployees', 'viewerEmployeeScope'));
     }
 
     public function getTableData(): array
     {
-        $users = User::excludingSystemAdmin()
+        $usersQuery = User::excludingSystemAdmin()
             ->with(['roles', 'employee.department', 'employee.sbu', 'employee.mediaFiles'])
-            ->orderByDesc('id')
-            ->get();
+            ->orderByDesc('id');
+        $this->viewerScope->applySbuScopeToUserQuery($usersQuery);
+        $users = $usersQuery->get();
 
         $departmentIds = [];
         foreach ($users as $user) {
@@ -127,7 +133,9 @@ class UserService
 
     public function getStats(): array
     {
-        $users   = User::excludingSystemAdmin()->with('roles')->get();
+        $usersQuery = User::excludingSystemAdmin()->with('roles');
+        $this->viewerScope->applySbuScopeToUserQuery($usersQuery);
+        $users = $usersQuery->get();
         $total   = $users->count();
         $active  = $users->where('is_active', true)->count();
 
@@ -148,6 +156,8 @@ class UserService
     public function store(array $data): User
     {
         return DB::transaction(function () use ($data) {
+            $this->viewerScope->assertEmployeeIdAccessible((int) $data['employee_id']);
+
             $plainPassword = Str::password(12);
 
             $user = User::create([
@@ -173,6 +183,7 @@ class UserService
     public function sendTemporaryPasswordReset(int $id): User
     {
         return DB::transaction(function () use ($id) {
+            $this->viewerScope->assertUserIdAccessible($id);
             $user = User::findOrFail($id);
             if ($user->isSystemAdminUser()) {
                 throw new \RuntimeException('This user cannot be modified.');
@@ -194,6 +205,9 @@ class UserService
     public function update(int $id, array $data): User
     {
         return DB::transaction(function () use ($id, $data) {
+            $this->viewerScope->assertUserIdAccessible($id);
+            $this->viewerScope->assertEmployeeIdAccessible((int) $data['employee_id']);
+
             $user = User::findOrFail($id);
             if ($user->isSystemAdminUser()) {
                 throw new \RuntimeException('This user cannot be modified.');
@@ -218,6 +232,7 @@ class UserService
 
     public function updateStatus(int $id, bool $isActive): User
     {
+        $this->viewerScope->assertUserIdAccessible($id);
         $user = User::findOrFail($id);
         if ($user->isSystemAdminUser()) {
             throw new \RuntimeException('This user cannot be modified.');
@@ -229,6 +244,7 @@ class UserService
 
     public function destroy(int $id): void
     {
+        $this->viewerScope->assertUserIdAccessible($id);
         $user = User::findOrFail($id);
         if ($user->isSystemAdminUser()) {
             throw new \RuntimeException('This user cannot be deleted.');

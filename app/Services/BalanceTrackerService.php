@@ -13,6 +13,7 @@ use App\Services\leaverequestPrivatefunctions\LeaveRequestNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class BalanceTrackerService
 {
@@ -20,6 +21,7 @@ class BalanceTrackerService
         private LeaveRequestNotifier $leaveRequestNotifier,
         private LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
         private EmployeeLeaveQuotaRecords $employeeLeaveQuotaRecords,
+        private EmployeeViewerScopeService $viewerScope,
     ) {}
 
     public function getBalances($organization = null, $department = null)
@@ -27,18 +29,20 @@ class BalanceTrackerService
         try {
             $currentYear = Carbon::now()->year;
 
-            // Fetch all employees based on filter
-            $employees = Employee::with(['organization', 'department'])
+            $employeesQuery = Employee::with(['organization', 'department'])
                 ->where('is_active', 1)
                 ->where(function ($query) use ($organization, $department) {
                     if ($organization) {
-                        $query->whereHas('organization', fn($q) => $q->where('name', $organization));
+                        $query->whereHas('organization', fn ($q) => $q->where('name', $organization));
                     }
                     if ($department) {
-                        $query->whereHas('department', fn($q) => $q->where('name', $department));
+                        $query->whereHas('department', fn ($q) => $q->where('name', $department));
                     }
-                })
-                ->get();
+                });
+
+            $this->viewerScope->applySbuScopeToEmployeeQuery($employeesQuery);
+
+            $employees = $employeesQuery->get();
 
             $employeeIds = $employees->pluck('id');
 
@@ -185,7 +189,9 @@ class BalanceTrackerService
     {
         return DB::transaction(function () use ($data) {
             try {
-                $employeeId = $data['employee_id'];
+                $employeeId = (int) $data['employee_id'];
+                $this->viewerScope->assertEmployeeIdAccessible($employeeId);
+
                 $adjustmentType = $data['increment_type'];
                 $days = round((float) $data['days'], 2);
                 $reason = $data['reason'];
@@ -289,6 +295,8 @@ class BalanceTrackerService
                 );
 
                 return true;
+            } catch (ValidationException $e) {
+                throw $e;
             } catch (\Exception $e) {
                 Log::error('Error adjusting leave balance: ' . $e->getMessage(), [
                     'data' => $data,

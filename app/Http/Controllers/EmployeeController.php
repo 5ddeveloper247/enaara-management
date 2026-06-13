@@ -6,6 +6,7 @@ use App\Http\Requests\Admin\Employee\EmployeeStoreRequest;
 use App\Http\Requests\Admin\Employee\EmployeeUpdateRequest;
 use App\Services\DesignationService;
 use App\Services\EmployeeService;
+use App\Services\EmployeeViewerScopeService;
 use App\Services\UniversityDirectoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,12 +23,18 @@ class EmployeeController extends Controller
     private EmployeeService $employeeService;
     private UniversityDirectoryService $universityDirectoryService;
     private DesignationService $designationService;
+    private EmployeeViewerScopeService $viewerScope;
 
-    public function __construct(EmployeeService $employeeService, UniversityDirectoryService $universityDirectoryService, DesignationService $designationService)
-    {
+    public function __construct(
+        EmployeeService $employeeService,
+        UniversityDirectoryService $universityDirectoryService,
+        DesignationService $designationService,
+        EmployeeViewerScopeService $viewerScope,
+    ) {
         $this->employeeService = $employeeService;
         $this->universityDirectoryService = $universityDirectoryService;
         $this->designationService = $designationService;
+        $this->viewerScope = $viewerScope;
     }
 
     public function index()
@@ -165,6 +172,8 @@ class EmployeeController extends Controller
         }
 
         try {
+            $this->viewerScope->assertSbuIdAllowed((int) $validated['sbu_id']);
+            $this->viewerScope->assertDepartmentIdsAllowed($departmentIds);
             $data = $this->designationService->listActiveByOrganizationSbuAndDepartments(
                 (int) $validated['organization_id'],
                 (int) $validated['sbu_id'],
@@ -179,7 +188,7 @@ class EmployeeController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed.',
+                'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed.',
                 'errors' => $e->errors(),
                 'data' => [],
             ], 422);
@@ -218,6 +227,18 @@ class EmployeeController extends Controller
             'employee_id'   => ['nullable', 'integer', 'exists:employees,id'],
         ]);
 
+        try {
+            $this->viewerScope->assertDepartmentIdAllowed((int) $validated['department_id']);
+            if (! empty($validated['employee_id'])) {
+                $this->viewerScope->assertEmployeeIdAccessible((int) $validated['employee_id']);
+            }
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
+        }
+
         $departmentId = (int) $validated['department_id'];
         $excludeId = isset($validated['employee_id']) ? (int) $validated['employee_id'] : null;
 
@@ -248,13 +269,26 @@ class EmployeeController extends Controller
         ]);
 
         try {
+            $sbuId = isset($validated['sbu_id']) ? (int) $validated['sbu_id'] : null;
+            if ($sbuId === null || $sbuId <= 0) {
+                $scope = $this->viewerScope->frontendScopePayload();
+                if (! empty($scope['restricted']) && ! empty($scope['sbu_id'])) {
+                    $sbuId = (int) $scope['sbu_id'];
+                }
+            }
+            $this->viewerScope->assertSbuIdAllowed($sbuId);
             $code = $this->employeeService->previewNextEmployeeCode(
                 (int) $validated['organization_id'],
                 (int) $validated['role_id'],
-                isset($validated['sbu_id']) ? (int) $validated['sbu_id'] : null
+                $sbuId
             );
 
             return response()->json(['success' => true, 'code' => $code]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
@@ -309,6 +343,9 @@ class EmployeeController extends Controller
         try {
             $step = (int) $request->input('step');
             $employeeId = $request->input('employee_id');
+            if ($employeeId) {
+                $this->viewerScope->assertEmployeeIdAccessible((int) $employeeId);
+            }
             $data = $request->except(['_token', 'employee_id', 'kept_attachment_ids', 'attachments', 'profile_photo']);
 
             $photos   = $request->hasFile('profile_photo') ? [$request->file('profile_photo')] : [];
@@ -343,6 +380,12 @@ class EmployeeController extends Controller
                 'employee_code' => $employee->employee_code,
                 'next_step' => $step + 1
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Employee saveStep failed', ['step' => $request->input('step'), 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -363,6 +406,8 @@ class EmployeeController extends Controller
             if (!$employeeId) {
                 return response()->json(['success' => false, 'message' => 'Employee ID is required.'], 422);
             }
+
+            $this->viewerScope->assertEmployeeIdAccessible((int) $employeeId);
 
             switch ($subsection) {
                 case 'contact':
@@ -568,6 +613,12 @@ class EmployeeController extends Controller
                 'subsection' => $subsection
             ], $responseData ?? []));
 
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Employee saveSubsection failed', ['subsection' => $request->input('subsection'), 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -609,6 +660,7 @@ class EmployeeController extends Controller
                     Rule::exists('employee_bank_details', 'id')->where('employee_id', (int) $request->input('employee_id')),
                 ],
             ]);
+            $this->viewerScope->assertEmployeeIdAccessible((int) $validated['employee_id']);
             $deleted = $this->employeeService->deleteBankDetailRow((int) $validated['employee_id'], (int) $validated['id']);
             if (! $deleted) {
                 return response()->json(['success' => false, 'message' => 'Record not found or already deleted.'], 404);
@@ -652,9 +704,22 @@ class EmployeeController extends Controller
 
     public function saveAttachment(\App\Http\Requests\Admin\Employee\EmployeeStepRequest $request)
     {
+        if (! validatePermissions('admin/employees')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
         $employeeId = $request->input('employee_id');
         if (!$employeeId) {
             return response()->json(['success' => false, 'message' => 'Employee must be saved before adding attachments.'], 422);
+        }
+
+        try {
+            $this->viewerScope->assertEmployeeIdAccessible((int) $employeeId);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         }
 
         try {
@@ -733,6 +798,7 @@ class EmployeeController extends Controller
         }
 
         try {
+            $this->viewerScope->assertEmployeeIdAccessible($id);
             $employee = \App\Models\Employee::query()->findOrFail($id);
             $attachments = $this->employeeService->attachmentsForEditPayload($employee);
 

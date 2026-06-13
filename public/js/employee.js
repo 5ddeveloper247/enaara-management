@@ -14,10 +14,38 @@
     };
 
     $(document).ready(function () {
+        applyViewerEmployeeScopeFilters();
         initializeDataTable();
         initializeEventHandlers();
         updateEmployeeStats();
     });
+
+    function applyViewerEmployeeScopeFilters() {
+        const scope = window.viewerEmployeeScope || {};
+        if (!scope.restricted || !scope.sbu_name) {
+            return;
+        }
+
+        const orgSelect = document.getElementById('filterOrganization');
+        const sbuSelect = document.getElementById('filterSbu');
+
+        if (scope.organization_name && orgSelect) {
+            orgSelect.value = scope.organization_name;
+            orgSelect.disabled = true;
+            window.employeeFilters.organization = scope.organization_name;
+        }
+
+        if (sbuSelect) {
+            const hasOption = Array.from(sbuSelect.options).some(function (option) {
+                return option.value === scope.sbu_name;
+            });
+            if (hasOption) {
+                sbuSelect.value = scope.sbu_name;
+                sbuSelect.disabled = true;
+                window.employeeFilters.sbu = scope.sbu_name;
+            }
+        }
+    }
 
     function initializeDataTable() {
         employeeTable = initUserDataTable('#employeeTable', {

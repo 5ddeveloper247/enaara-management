@@ -22,6 +22,7 @@ class DashboardService
     public function __construct(
         private readonly ShiftRosterApprovalService $shiftRosterApprovalService,
         private readonly LeaveRequestApproverResolver $leaveRequestApproverResolver,
+        private readonly EmployeeViewerScopeService $viewerScope,
     ) {
     }
 
@@ -289,7 +290,9 @@ class DashboardService
         $deptTotals = Employee::query()
             ->whereIn('department_id', $departmentIds)
             ->where('is_active', true)
-            ->whereNull('deleted_at')
+            ->whereNull('deleted_at');
+        $this->viewerScope->applySbuScopeToEmployeeQuery($deptTotals);
+        $deptTotals = $deptTotals
             ->groupBy('department_id')
             ->selectRaw('department_id, COUNT(*) as total')
             ->pluck('total', 'department_id');
@@ -349,11 +352,12 @@ class DashboardService
             return ['labels' => [], 'present' => [], 'absent' => [], 'onLeave' => []];
         }
 
-        $totalEmployees = Employee::query()
+        $totalEmployeesQuery = Employee::query()
             ->where('is_active', true)
             ->whereNull('deleted_at')
-            ->whereIn('department_id', $departmentIds)
-            ->count();
+            ->whereIn('department_id', $departmentIds);
+        $this->viewerScope->applySbuScopeToEmployeeQuery($totalEmployeesQuery);
+        $totalEmployees = $totalEmployeesQuery->count();
 
         $labels  = [];
         $present = [];
@@ -381,32 +385,37 @@ class DashboardService
                 ->whereIn('action_type', [0, 2])
                 ->where('start_date', '<=', $date)
                 ->where('end_date', '>=', $date)
-                ->whereHas('fromEmployee', fn ($query) => $query
-                    ->whereIn('department_id', $departmentIds)
-                    ->where('is_active', true)
-                    ->whereNull('deleted_at'))
+                ->whereHas('fromEmployee', function ($query) use ($departmentIds) {
+                    $query
+                        ->whereIn('department_id', $departmentIds)
+                        ->where('is_active', true)
+                        ->whereNull('deleted_at');
+                    $this->viewerScope->applySbuScopeToEmployeeQuery($query);
+                })
                 ->distinct()
                 ->count('from_employee_id');
 
-            $presentCount = DB::table('shift_rosters as sr')
+            $presentCountQuery = DB::table('shift_rosters as sr')
                 ->join('employees as e', 'e.id', '=', 'sr.employee_id')
                 ->whereDate('sr.roster_date', $date)
                 ->where('sr.status', 1)
                 ->whereNull('sr.deleted_at')
                 ->whereNull('e.deleted_at')
                 ->where('e.is_active', true)
-                ->whereIn('e.department_id', $departmentIds)
-                ->count();
+                ->whereIn('e.department_id', $departmentIds);
+            $this->applySbuScopeToEmployeesDbTable($presentCountQuery, 'e');
+            $presentCount = $presentCountQuery->count();
 
-            $absentCount = DB::table('shift_rosters as sr')
+            $absentCountQuery = DB::table('shift_rosters as sr')
                 ->join('employees as e', 'e.id', '=', 'sr.employee_id')
                 ->whereDate('sr.roster_date', $date)
                 ->where('sr.status', 3)
                 ->whereNull('sr.deleted_at')
                 ->whereNull('e.deleted_at')
                 ->where('e.is_active', true)
-                ->whereIn('e.department_id', $departmentIds)
-                ->count();
+                ->whereIn('e.department_id', $departmentIds);
+            $this->applySbuScopeToEmployeesDbTable($absentCountQuery, 'e');
+            $absentCount = $absentCountQuery->count();
 
             if ($presentCount === 0 && $absentCount === 0) {
                 $presentCount = max(0, $totalEmployees - $onLeaveCount);
@@ -428,47 +437,72 @@ class DashboardService
         $yesterday = now()->subDay()->toDateString();
 
         // ── Total Employees ──────────────────────────────────────────────
-        $totalToday     = Employee::whereNull('deleted_at')->count();
-        $totalYesterday = Employee::whereNull('deleted_at')
-            ->whereDate('created_at', '<=', $yesterday)
-            ->count();
+        $totalTodayQuery = Employee::query()->whereNull('deleted_at');
+        $this->viewerScope->applySbuScopeToEmployeeQuery($totalTodayQuery);
+        $totalToday = $totalTodayQuery->count();
+
+        $totalYesterdayQuery = Employee::query()
+            ->whereNull('deleted_at')
+            ->whereDate('created_at', '<=', $yesterday);
+        $this->viewerScope->applySbuScopeToEmployeeQuery($totalYesterdayQuery);
+        $totalYesterday = $totalYesterdayQuery->count();
         $totalDelta     = $this->percentDelta($totalToday, $totalYesterday);
 
         // ── Active / Workforce ────────────────────────────────────────────
-        $activeEmployees   = Employee::where('is_active', true)->whereNull('deleted_at')->count();
-        $workforcePercent  = $totalToday > 0
+        $activeEmployeesQuery = Employee::query()
+            ->where('is_active', true)
+            ->whereNull('deleted_at');
+        $this->viewerScope->applySbuScopeToEmployeeQuery($activeEmployeesQuery);
+        $activeEmployees  = $activeEmployeesQuery->count();
+        $workforcePercent = $totalToday > 0
             ? round(($activeEmployees / $totalToday) * 100)
             : 0;
 
         // ── Absent / On Leave (approved leaves covering today) ────────────
-        $absentToday = EmployeLeaveRequest::where('status', 3)
+        $absentToday = EmployeLeaveRequest::query()
+            ->where('status', 3)
             ->whereIn('action_type', [0, 2])
             ->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today)
+            ->whereHas('fromEmployee', function ($query) {
+                $query->whereNull('deleted_at');
+                $this->viewerScope->applySbuScopeToEmployeeQuery($query);
+            })
             ->distinct('from_employee_id')
             ->count('from_employee_id');
 
-        $absentYesterday = EmployeLeaveRequest::where('status', 3)
+        $absentYesterday = EmployeLeaveRequest::query()
+            ->where('status', 3)
             ->whereIn('action_type', [0, 2])
             ->where('start_date', '<=', $yesterday)
             ->where('end_date', '>=', $yesterday)
+            ->whereHas('fromEmployee', function ($query) {
+                $query->whereNull('deleted_at');
+                $this->viewerScope->applySbuScopeToEmployeeQuery($query);
+            })
             ->distinct('from_employee_id')
             ->count('from_employee_id');
 
         $absentDelta = $this->percentDelta($absentToday, $absentYesterday);
 
         // ── Present Today (total − on-leave fallback) ─────────────────────
-        $rosterPresent = DB::table('shift_rosters')
-            ->whereDate('roster_date', $today)
-            ->where('status', 1)       // 1 = present
-            ->whereNull('deleted_at')
-            ->count();
+        $rosterPresentQuery = DB::table('shift_rosters as sr')
+            ->join('employees as e', 'e.id', '=', 'sr.employee_id')
+            ->whereDate('sr.roster_date', $today)
+            ->where('sr.status', 1)
+            ->whereNull('sr.deleted_at')
+            ->whereNull('e.deleted_at');
+        $this->applySbuScopeToEmployeesDbTable($rosterPresentQuery, 'e');
+        $rosterPresent = $rosterPresentQuery->count();
 
-        $rosterYesterdayPresent = DB::table('shift_rosters')
-            ->whereDate('roster_date', $yesterday)
-            ->where('status', 1)
-            ->whereNull('deleted_at')
-            ->count();
+        $rosterYesterdayPresentQuery = DB::table('shift_rosters as sr')
+            ->join('employees as e', 'e.id', '=', 'sr.employee_id')
+            ->whereDate('sr.roster_date', $yesterday)
+            ->where('sr.status', 1)
+            ->whereNull('sr.deleted_at')
+            ->whereNull('e.deleted_at');
+        $this->applySbuScopeToEmployeesDbTable($rosterYesterdayPresentQuery, 'e');
+        $rosterYesterdayPresent = $rosterYesterdayPresentQuery->count();
 
         // Use roster data if available, otherwise fall back to total − absent
         $presentToday     = $rosterPresent > 0
@@ -482,17 +516,23 @@ class DashboardService
         $presentDelta = $this->percentDelta($presentToday, $presentYesterday);
 
         // ── Late Arrivals (from shift_rosters status=2 for late) ──────────
-        $lateToday = DB::table('shift_rosters')
-            ->whereDate('roster_date', $today)
-            ->where('status', 2)       // 2 = late
-            ->whereNull('deleted_at')
-            ->count();
+        $lateTodayQuery = DB::table('shift_rosters as sr')
+            ->join('employees as e', 'e.id', '=', 'sr.employee_id')
+            ->whereDate('sr.roster_date', $today)
+            ->where('sr.status', 2)
+            ->whereNull('sr.deleted_at')
+            ->whereNull('e.deleted_at');
+        $this->applySbuScopeToEmployeesDbTable($lateTodayQuery, 'e');
+        $lateToday = $lateTodayQuery->count();
 
-        $lateYesterday = DB::table('shift_rosters')
-            ->whereDate('roster_date', $yesterday)
-            ->where('status', 2)
-            ->whereNull('deleted_at')
-            ->count();
+        $lateYesterdayQuery = DB::table('shift_rosters as sr')
+            ->join('employees as e', 'e.id', '=', 'sr.employee_id')
+            ->whereDate('sr.roster_date', $yesterday)
+            ->where('sr.status', 2)
+            ->whereNull('sr.deleted_at')
+            ->whereNull('e.deleted_at');
+        $this->applySbuScopeToEmployeesDbTable($lateYesterdayQuery, 'e');
+        $lateYesterday = $lateYesterdayQuery->count();
 
         $lateDelta = $this->percentDelta($lateToday, $lateYesterday);
 
@@ -541,11 +581,13 @@ class DashboardService
         $today = Carbon::today();
         $warnings = [];
 
-        $deptTotals = DB::table('employees')
+        $deptTotalsQuery = DB::table('employees')
             ->whereNull('deleted_at')
             ->where('is_active', true)
             ->whereNotNull('department_id')
-            ->whereIn('department_id', $departmentIds)
+            ->whereIn('department_id', $departmentIds);
+        $this->applySbuScopeToEmployeesDbTable($deptTotalsQuery);
+        $deptTotals = $deptTotalsQuery
             ->select('department_id', DB::raw('COUNT(*) as total'))
             ->groupBy('department_id')
             ->pluck('total', 'department_id');
@@ -560,14 +602,16 @@ class DashboardService
             $date = $today->copy()->addDays($i);
             $dateStr = $date->toDateString();
 
-            $leaveCounts = DB::table($leaveRequestTable . ' as lr')
+            $leaveCountsQuery = DB::table($leaveRequestTable . ' as lr')
                 ->join('employees as e', 'e.id', '=', 'lr.from_employee_id')
                 ->where('lr.status', 3)
                 ->whereIn('lr.action_type', [0, 2])
                 ->where('lr.start_date', '<=', $dateStr)
                 ->where('lr.end_date', '>=', $dateStr)
                 ->whereNull('e.deleted_at')
-                ->whereIn('e.department_id', $departmentIds)
+                ->whereIn('e.department_id', $departmentIds);
+            $this->applySbuScopeToEmployeesDbTable($leaveCountsQuery, 'e');
+            $leaveCounts = $leaveCountsQuery
                 ->select('e.department_id', DB::raw('COUNT(DISTINCT lr.from_employee_id) as on_leave'))
                 ->groupBy('e.department_id')
                 ->pluck('on_leave', 'department_id');
@@ -716,10 +760,13 @@ class DashboardService
     private function resolveDepartmentIdsForDistribution(?Employee $viewerEmployee, $viewer): array
     {
         if ($viewer?->isSystemAdminUser()) {
-            return Employee::query()
+            $adminDepartmentsQuery = Employee::query()
                 ->where('is_active', true)
                 ->whereNull('deleted_at')
-                ->whereNotNull('department_id')
+                ->whereNotNull('department_id');
+            $this->viewerScope->applySbuScopeToEmployeeQuery($adminDepartmentsQuery);
+
+            return $adminDepartmentsQuery
                 ->distinct()
                 ->pluck('department_id')
                 ->map(fn ($id) => (int) $id)
@@ -759,10 +806,13 @@ class DashboardService
                 ->whereIn('action_type', [0, 2])
                 ->where('start_date', '<=', $date)
                 ->where('end_date', '>=', $date)
-                ->whereHas('fromEmployee', fn ($query) => $query
-                    ->where('department_id', $departmentId)
-                    ->where('is_active', true)
-                    ->whereNull('deleted_at'))
+                ->whereHas('fromEmployee', function ($query) use ($departmentId) {
+                    $query
+                        ->where('department_id', $departmentId)
+                        ->where('is_active', true)
+                        ->whereNull('deleted_at');
+                    $this->viewerScope->applySbuScopeToEmployeeQuery($query);
+                })
                 ->distinct()
                 ->count('from_employee_id');
 
@@ -789,8 +839,32 @@ class DashboardService
 
         $query->whereHas(
             'fromEmployee',
-            fn ($employeeQuery) => $employeeQuery->whereIn('department_id', $departmentIds)
+            function ($employeeQuery) use ($departmentIds) {
+                $employeeQuery->whereIn('department_id', $departmentIds);
+                $this->viewerScope->applySbuScopeToEmployeeQuery($employeeQuery);
+            }
         );
+    }
+
+    /**
+     * @param  \Illuminate\Database\Query\Builder  $query
+     */
+    private function applySbuScopeToEmployeesDbTable($query, ?string $alias = null): void
+    {
+        $sbuId = $this->viewerScope->resolveViewerSbuId();
+
+        if ($sbuId === null) {
+            return;
+        }
+
+        if ($sbuId <= 0) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $column = $alias !== null ? "{$alias}.sbu_id" : 'sbu_id';
+        $query->where($column, $sbuId);
     }
 
     /**

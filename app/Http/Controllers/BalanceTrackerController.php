@@ -4,17 +4,24 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\BalanceTrackerService;
+use App\Services\EmployeeViewerScopeService;
 use App\Http\Requests\Admin\BalanceTracker\BalanceTrackerAdjustRequest;
 use App\Models\Organization;
 use App\Models\Department;
+use Illuminate\Validation\ValidationException;
 
 class BalanceTrackerController extends Controller
 {
-    protected $balanceTrackerService;
+    protected BalanceTrackerService $balanceTrackerService;
 
-    public function __construct(BalanceTrackerService $balanceTrackerService)
-    {
+    protected EmployeeViewerScopeService $viewerScope;
+
+    public function __construct(
+        BalanceTrackerService $balanceTrackerService,
+        EmployeeViewerScopeService $viewerScope,
+    ) {
         $this->balanceTrackerService = $balanceTrackerService;
+        $this->viewerScope = $viewerScope;
     }
 
     public function index(Request $request)
@@ -32,12 +39,16 @@ class BalanceTrackerController extends Controller
         
         $organizations = Organization::where('is_active', true)->orderBy('name', 'asc')->get();
         $departments = Department::where('is_active', true)->orderBy('name', 'asc')->get();
+        $organizations = $this->viewerScope->filterOrganizations($organizations);
+        $departments = $this->viewerScope->filterDepartments($departments);
+        $viewerEmployeeScope = $this->viewerScope->frontendScopePayload();
 
         return view('admin.balance-tracker.index', compact(
             'balances',
             'leaveTypes',
             'organizations',
-            'departments'
+            'departments',
+            'viewerEmployeeScope',
         ));
     }
 
@@ -58,6 +69,11 @@ class BalanceTrackerController extends Controller
                 'message' => 'Leave balance successfully adjusted.'
             ]);
             
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

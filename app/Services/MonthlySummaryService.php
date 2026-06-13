@@ -7,6 +7,9 @@ use App\Models\EmployeLeaveEntity;
 use App\Models\EmployeeWorkAssignment;
 use App\Models\LeaveType;
 use App\Models\ShiftRosterEntry;
+use App\Models\Sbu;
+use App\Models\Department;
+use App\Models\SbuFloor;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -17,6 +20,7 @@ class MonthlySummaryService
     public function __construct(
         private readonly PublicHolidayResolver $publicHolidayResolver,
         private readonly EmployeeWorkingScheduleService $employeeWorkingScheduleService,
+        private readonly EmployeeViewerScopeService $viewerScope,
     ) {}
 
     public function index(Request $request)
@@ -28,15 +32,17 @@ class MonthlySummaryService
 
         $year = Carbon::parse($month . '-01')->year;
 
-        $sbus = \App\Models\Sbu::query()->orderBy('name')->get();
-        $departments = \App\Models\Department::query()->orderBy('name')->get();
+        $sbus = $this->viewerScope->filterSbus(Sbu::query()->orderBy('name')->get());
+        $departments = $this->viewerScope->filterDepartments(Department::query()->orderBy('name')->get());
 
-        $floorsForFilter = \App\Models\SbuFloor::query()
-            ->where('is_active', true)
-            ->orderBy('sbu_id')
-            ->orderBy('floor_number')
-            ->orderBy('name')
-            ->get(['id', 'sbu_id', 'name', 'floor_number'])
+        $floorsForFilter = $this->viewerScope->filterFloors(
+            SbuFloor::query()
+                ->where('is_active', true)
+                ->orderBy('sbu_id')
+                ->orderBy('floor_number')
+                ->orderBy('name')
+                ->get(['id', 'sbu_id', 'name', 'floor_number'])
+        )
             ->map(fn ($f) => [
                 'id' => $f->id,
                 'sbu_id' => $f->sbu_id,
@@ -57,6 +63,7 @@ class MonthlySummaryService
         ]);
 
         if (! empty($sbuId)) {
+            $this->viewerScope->assertSbuIdAllowed((int) $sbuId);
             $employeesQuery->where('sbu_id', $sbuId);
         }
 
@@ -70,6 +77,8 @@ class MonthlySummaryService
                 $employeesQuery->whereHas('assignedFloors', static fn ($q) => $q->where('sbu_floors.id', $fid));
             }
         }
+
+        $this->viewerScope->applySbuScopeToEmployeeQuery($employeesQuery);
 
         $employees = $employeesQuery->get();
 
@@ -91,6 +100,8 @@ class MonthlySummaryService
             ->values()
             ->all();
 
+        $viewerEmployeeScope = $this->viewerScope->frontendScopePayload();
+
         return view('admin.monthly-summary.index', compact(
             'monthlySummary',
             'tableLeaveTypes',
@@ -98,12 +109,15 @@ class MonthlySummaryService
             'sbus',
             'departments',
             'month',
-            'floorsForFilter'
+            'floorsForFilter',
+            'viewerEmployeeScope',
         ));
     }
 
     public function getEmployeeMonthlyCalendar(int $employeeId, string $month): array
     {
+        $this->viewerScope->assertEmployeeIdAccessible($employeeId);
+
         $employee = Employee::with(['department', 'sbu', 'organization'])->findOrFail($employeeId);
         $attendance = $this->computeEmployeeMonthlyAttendance($employee, $month);
 
@@ -348,6 +362,8 @@ class MonthlySummaryService
         string $workType,
         ?string $notes = null,
     ): array {
+        $this->viewerScope->assertEmployeeIdAccessible($employeeId);
+
         $employee = Employee::with(['department', 'sbu', 'organization'])->findOrFail($employeeId);
         $month = Carbon::parse($date)->format('Y-m');
         $attendance = $this->computeEmployeeMonthlyAttendance($employee, $month);

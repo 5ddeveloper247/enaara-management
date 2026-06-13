@@ -1718,6 +1718,30 @@
     const initialSbu = sbuSelect ? sbuSelect.value : null;
     const initialRole = roleSelect ? roleSelect.value : null;
 
+    function applyViewerEmploymentScopeLock() {
+        const scope = window.viewerEmployeeScope || {};
+        if (!scope.restricted || !scope.sbu_id || !orgSelect || !sbuSelect) {
+            return;
+        }
+
+        const orgId = scope.organization_id ? String(scope.organization_id) : '';
+        const sbuId = String(scope.sbu_id);
+
+        if (orgId) {
+            orgSelect.value = orgId;
+            orgSelect.disabled = true;
+        }
+
+        populateSbus(orgId, sbuId);
+        sbuSelect.value = sbuId;
+        sbuSelect.disabled = true;
+        populateRoles(orgId, sbuId, initialRole);
+        populateDepartments(orgId, sbuId);
+        populateFloors(orgId, sbuId);
+        refreshDesignationsForEmployment(window.employeeDesignationId || null);
+        updateDefaultScheduleCard();
+    }
+
     // Conditional Visibility Handling
     function syncConditionalVisibility() {
         const armyCheck = document.getElementById('giExArmyRetiredCheckbox');
@@ -4285,6 +4309,8 @@
         populateFloors(oId, sId);
         refreshDesignationsForEmployment(window.employeeDesignationId || null);
     }
+
+    applyViewerEmploymentScopeLock();
     if (probationEndInput) {
         probationEndInput.addEventListener('change', function () {
             syncProbationContractStartDate(true);

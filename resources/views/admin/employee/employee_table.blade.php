@@ -6,6 +6,7 @@
     window.outsourcedEmployeeDataUrl = "{{ route('admin.outsourced_employee.data') }}";
     window.outsourcedEmployeeStoreUrl = "{{ route('admin.outsourced_employee.store') }}";
     window.outsourcedEmployeeShowUrlBase = "{{ url('admin/outsourced-employees') }}";
+    window.viewerEmployeeScope = @json($viewerEmployeeScope ?? ['restricted' => false]);
 </script>
 
 {{--
@@ -74,6 +75,7 @@
     window.outsourcedEmployeeDataUrl = "{{ route('admin.outsourced_employee.data') }}";
     window.outsourcedEmployeeStoreUrl = "{{ route('admin.outsourced_employee.store') }}";
     window.outsourcedEmployeeShowUrlBase = "{{ url('admin/outsourced-employees') }}";
+    window.viewerEmployeeScope = @json($viewerEmployeeScope ?? ['restricted' => false]);
 </script>
 
 <div id="tableViewWrapper" class="row g-3">
