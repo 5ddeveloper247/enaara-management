@@ -8,11 +8,13 @@ use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\OutsourcedEmployee;
 use App\Models\Sbu;
+use App\Models\ThirdParty;
 use App\Models\User;
 use App\Services\ViewerScope\DepartmentViewerScopeService;
 use App\Services\ViewerScope\DesignationViewerScopeService;
 use App\Services\ViewerScope\ShiftViewerScopeService;
 use App\Services\ViewerScope\SbuFloorViewerScopeService;
+use App\Services\ViewerScope\ThirdPartyViewerScopeService;
 use App\Services\ViewerScope\ViewerScopeContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -26,6 +28,7 @@ class EmployeeViewerScopeService
         private readonly DesignationViewerScopeService $designationScope,
         private readonly ShiftViewerScopeService $shiftScope,
         private readonly SbuFloorViewerScopeService $sbuFloorScope,
+        private readonly ThirdPartyViewerScopeService $thirdPartyScope,
     ) {}
 
     public function resolveViewerSbuId(?User $user = null): ?int
@@ -154,6 +157,21 @@ class EmployeeViewerScopeService
     public function assertSbuFloorIdAccessible(int $sbuFloorId, ?User $user = null): void
     {
         $this->sbuFloorScope->assertIdAccessible($sbuFloorId, $user);
+    }
+
+    public function applySbuScopeToThirdPartyQuery(Builder $query, ?User $user = null): Builder
+    {
+        return $this->thirdPartyScope->applyQueryScope($query, $user);
+    }
+
+    public function thirdPartyBelongsToViewerScope(ThirdParty $thirdParty, ?User $user = null): bool
+    {
+        return $this->thirdPartyScope->belongsToViewerScope($thirdParty, $user);
+    }
+
+    public function assertThirdPartyIdAccessible(int $thirdPartyId, ?User $user = null): void
+    {
+        $this->thirdPartyScope->assertIdAccessible($thirdPartyId, $user);
     }
 
     public function assertUserIdAccessible(int $userId, ?User $user = null): void

@@ -2,16 +2,24 @@
 
 namespace App\Services;
 
+use App\Models\Organization;
 use App\Models\Sbu;
 use App\Models\ThirdParty;
+use App\Services\ViewerScope\ThirdPartyViewerScopeService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ThirdPartyService
 {
+    public function __construct(
+        private readonly ThirdPartyViewerScopeService $thirdPartyScope,
+        private readonly EmployeeViewerScopeService $viewerScope,
+    ) {}
+
     protected function buildVendorId(int $id): string
     {
         return 'VND-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
@@ -54,15 +62,43 @@ class ThirdPartyService
 
     public function getList(): Collection
     {
-        return ThirdParty::with(['organization', 'organizations', 'sbus'])
-            ->orderByDesc('id')
+        $query = ThirdParty::query()
+            ->with(['organization', 'organizations', 'sbus'])
+            ->orderByDesc('id');
+
+        $this->thirdPartyScope->applyQueryScope($query);
+
+        return $query->get();
+    }
+
+    public function getOrganizationsForFilter(): Collection
+    {
+        $organizations = Organization::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
             ->get();
+
+        return $this->viewerScope->filterOrganizations($organizations);
+    }
+
+    public function getSbusForFilter(): Collection
+    {
+        $sbus = Sbu::query()
+            ->select(['id', 'name', 'organization_id'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return $this->viewerScope->filterSbus($sbus);
     }
 
     public function getCounts(): array
     {
-        $total  = ThirdParty::count();
-        $active = ThirdParty::where('is_active', true)->count();
+        $base = ThirdParty::query();
+        $this->thirdPartyScope->applyQueryScope($base);
+
+        $total = (clone $base)->count();
+        $active = (clone $base)->where('is_active', true)->count();
 
         return [
             'total'              => $total,
@@ -73,6 +109,8 @@ class ThirdPartyService
 
     public function store(array $data, ?UploadedFile $companyRegistrationDocument = null, ?UploadedFile $contractCopy = null): ThirdParty
     {
+        $this->thirdPartyScope->assertWriteDataAllowed($data);
+
         DB::beginTransaction();
 
         try {
@@ -133,14 +171,27 @@ class ThirdPartyService
     }
 
     public function findById($id): ?ThirdParty
-    { 
-        return ThirdParty::with(['organization', 'organizations', 'sbus'])->find($id);
+    {
+        $query = ThirdParty::query()
+            ->with(['organization', 'organizations', 'sbus']);
+
+        $this->thirdPartyScope->applyQueryScope($query);
+
+        return $query->find($id);
     }
 
     public function update($id, array $data, ?UploadedFile $companyRegistrationDocument = null, ?UploadedFile $contractCopy = null): ThirdParty
     {
         return DB::transaction(function () use ($id, $data, $companyRegistrationDocument, $contractCopy) {
-            $thirdParty = ThirdParty::findOrFail($id);
+            $thirdParty = $this->findById((int) $id);
+            if ($thirdParty === null) {
+                throw ValidationException::withMessages([
+                    'third_party' => ['Third party not found or outside your SBU scope.'],
+                ]);
+            }
+
+            $this->thirdPartyScope->assertIdAccessible((int) $thirdParty->id);
+            $this->thirdPartyScope->assertWriteDataAllowed($data);
             $organizationIds = $this->sanitizeIds($data['organization_ids'] ?? []);
             $sbuIds = $this->sanitizeIds($data['sbu_ids'] ?? []);
             $primaryOrganizationId = $this->resolvePrimaryOrganizationId(
@@ -203,7 +254,14 @@ class ThirdPartyService
         DB::beginTransaction();
 
         try {
-            $thirdParty = ThirdParty::findOrFail($id);
+            $thirdParty = $this->findById((int) $id);
+            if ($thirdParty === null) {
+                throw ValidationException::withMessages([
+                    'third_party' => ['Third party not found or outside your SBU scope.'],
+                ]);
+            }
+
+            $this->thirdPartyScope->assertIdAccessible((int) $thirdParty->id);
             $thirdParty->delete();
             DB::commit();
         } catch (\Exception $e) {

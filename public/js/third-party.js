@@ -619,11 +619,30 @@
         tpState.addOrganization.clear(false);
         updateAddSbuOptions([]);
         tpState.addSbu.clear(false);
+        applyDefaultScopeToAddForm();
         syncSpecifyServiceTypeUi('add');
         $('#is_individual_contractor').val('0');
         $('#ntn').val('');
         $('#contractor_cnic').val('');
         syncVendorTaxUi('add');
+    }
+
+    function applyDefaultScopeToAddForm() {
+        const scope = window.viewerEmployeeScope || {};
+        const sbus = getSbus();
+
+        if (scope.restricted && scope.organization_id && scope.sbu_id) {
+            tpState.addOrganization.setSelected([String(scope.organization_id)]);
+            updateAddSbuOptions([String(scope.organization_id)]);
+            tpState.addSbu.setSelected([String(scope.sbu_id)]);
+            return;
+        }
+
+        if (sbus.length === 1) {
+            tpState.addOrganization.setSelected([String(sbus[0].organization_id)]);
+            updateAddSbuOptions([String(sbus[0].organization_id)]);
+            tpState.addSbu.setSelected([String(sbus[0].id)]);
+        }
     }
 
     function resetEditTpForm() {

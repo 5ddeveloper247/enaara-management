@@ -126,6 +126,7 @@
 <script>
     window.thirdPartyOrganizations = @json($thirdPartyOrganizations);
     window.thirdPartySbus = @json($thirdPartySbus);
+    window.viewerEmployeeScope = @json($viewerEmployeeScope ?? []);
 </script>
 <script src="{{ asset('js/third-party.js') }}"></script>
 @endpush

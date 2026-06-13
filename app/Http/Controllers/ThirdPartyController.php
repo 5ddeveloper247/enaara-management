@@ -4,36 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Admin\ThirdParty\ThirdPartyStoreRequest;
 use App\Http\Requests\Admin\ThirdParty\ThirdPartyUpdateRequest;
-use App\Models\Organization;
-use App\Models\Sbu;
+use App\Services\EmployeeViewerScopeService;
 use App\Services\ThirdPartyService;
 use Illuminate\View\View;
 
 class ThirdPartyController extends Controller
 {
     public function __construct(
-        private ThirdPartyService $thirdPartyService
+        private ThirdPartyService $thirdPartyService,
+        private EmployeeViewerScopeService $viewerScope,
     ) {}
 
     public function index(): View
     {
-        $thirdParties = $this->thirdPartyService->getList();
-        $counts       = $this->thirdPartyService->getCounts();
-        $organizations = Organization::orderBy('name')->get();
-        $sbus = Sbu::query()
-            ->select(['id', 'name', 'organization_id'])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
-        return view('admin.third-party.index', [
-            'thirdParties'     => $thirdParties,
-            'organizations'   => $organizations,
-            'sbus'            => $sbus,
-            'totalThirdParties' => $counts['total'],
-            'activeThirdParties' => $counts['active'],
-            'activePercentage' => $counts['active_percentage'],
-        ]);
+        return view('admin.third-party.index', $this->indexViewData());
     }
 
     public function create()
@@ -42,23 +26,7 @@ class ThirdPartyController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $thirdParties = $this->thirdPartyService->getList();
-        $counts         = $this->thirdPartyService->getCounts();
-        $organizations = Organization::orderBy('name')->get();
-        $sbus = Sbu::query()
-            ->select(['id', 'name', 'organization_id'])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
-        return view('admin.third-party.index', [
-            'thirdParties'       => $thirdParties,
-            'organizations'     => $organizations,
-            'sbus'              => $sbus,
-            'totalThirdParties'   => $counts['total'],
-            'activeThirdParties'  => $counts['active'],
-            'activePercentage'   => $counts['active_percentage'],
-        ]);
+        return view('admin.third-party.index', $this->indexViewData());
     }
 
     public function store(ThirdPartyStoreRequest $request)
@@ -95,14 +63,14 @@ class ThirdPartyController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to create third party: ' . $e->getMessage(),
+                    'message' => 'Failed to create third party: '.$e->getMessage(),
                 ], 500);
             }
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Failed to create third party: ' . $e->getMessage());
+                ->with('error', 'Failed to create third party: '.$e->getMessage());
         }
     }
 
@@ -142,44 +110,44 @@ class ThirdPartyController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data'    => [
-                    'id'               => $thirdParty->id,
-                    'organization_id'  => $thirdParty->organization_id,
+                'data' => [
+                    'id' => $thirdParty->id,
+                    'organization_id' => $thirdParty->organization_id,
                     'organization_ids' => $thirdParty->organizations->pluck('id')->whenEmpty(
                         fn ($collection) => collect($thirdParty->organization_id ? [$thirdParty->organization_id] : [])
                     )->values(),
-                    'sbu_ids'          => $thirdParty->sbus->pluck('id')->values(),
+                    'sbu_ids' => $thirdParty->sbus->pluck('id')->values(),
                     'third_party_name' => $thirdParty->third_party_name,
-                    'vendor_id'         => $thirdParty->vendor_id,
-                    'service_type'      => $thirdParty->service_type,
+                    'vendor_id' => $thirdParty->vendor_id,
+                    'service_type' => $thirdParty->service_type,
                     'specify_service_type' => $thirdParty->specify_service_type,
                     'is_individual_contractor' => $thirdParty->is_individual_contractor ? 1 : 0,
-                    'ntn'               => $thirdParty->ntn,
-                    'contractor_cnic'   => $thirdParty->contractor_cnic,
+                    'ntn' => $thirdParty->ntn,
+                    'contractor_cnic' => $thirdParty->contractor_cnic,
                     'contact_person_name' => $thirdParty->contact_person_name,
-                    'mobile_number'     => $thirdParty->mobile_number,
-                    'email'             => $thirdParty->email,
-                    'supervisor_name'   => $thirdParty->supervisor_name,
-                    'supervisor_cnic'   => $thirdParty->supervisor_cnic,
+                    'mobile_number' => $thirdParty->mobile_number,
+                    'email' => $thirdParty->email,
+                    'supervisor_name' => $thirdParty->supervisor_name,
+                    'supervisor_cnic' => $thirdParty->supervisor_cnic,
                     'supervisor_mobile_number' => $thirdParty->supervisor_mobile_number,
                     'contract_start_date' => optional($thirdParty->contract_start_date)->format('Y-m-d'),
                     'contract_end_date' => optional($thirdParty->contract_end_date)->format('Y-m-d'),
-                    'scope_of_work'     => $thirdParty->scope_of_work,
+                    'scope_of_work' => $thirdParty->scope_of_work,
                     'estimated_staff_count' => $thirdParty->estimated_staff_count,
-                    'company_registration_document_url' => $thirdParty->company_registration_document_path ? asset('storage/' . $thirdParty->company_registration_document_path) : null,
-                    'contract_copy_url' => $thirdParty->contract_copy_path ? asset('storage/' . $thirdParty->contract_copy_path) : null,
-                    'remarks'           => $thirdParty->remarks,
-                    'city'             => $thirdParty->city,
-                    'address'          => $thirdParty->address,
-                    'latitude'         => $thirdParty->latitude,
-                    'longitude'        => $thirdParty->longitude,
-                    'is_active'        => $thirdParty->is_active,
+                    'company_registration_document_url' => $thirdParty->company_registration_document_path ? asset('storage/'.$thirdParty->company_registration_document_path) : null,
+                    'contract_copy_url' => $thirdParty->contract_copy_path ? asset('storage/'.$thirdParty->contract_copy_path) : null,
+                    'remarks' => $thirdParty->remarks,
+                    'city' => $thirdParty->city,
+                    'address' => $thirdParty->address,
+                    'latitude' => $thirdParty->latitude,
+                    'longitude' => $thirdParty->longitude,
+                    'is_active' => $thirdParty->is_active,
                 ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch third party: ' . $e->getMessage(),
+                'message' => 'Failed to fetch third party: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -219,14 +187,14 @@ class ThirdPartyController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update third party: ' . $e->getMessage(),
+                    'message' => 'Failed to update third party: '.$e->getMessage(),
                 ], 500);
             }
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Failed to update third party: ' . $e->getMessage());
+                ->with('error', 'Failed to update third party: '.$e->getMessage());
         }
     }
 
@@ -260,13 +228,31 @@ class ThirdPartyController extends Controller
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to delete third party: ' . $e->getMessage(),
+                    'message' => 'Failed to delete third party: '.$e->getMessage(),
                 ], 500);
             }
 
             return redirect()
                 ->back()
-                ->with('error', 'Failed to delete third party: ' . $e->getMessage());
+                ->with('error', 'Failed to delete third party: '.$e->getMessage());
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function indexViewData(): array
+    {
+        $counts = $this->thirdPartyService->getCounts();
+
+        return [
+            'thirdParties' => $this->thirdPartyService->getList(),
+            'organizations' => $this->thirdPartyService->getOrganizationsForFilter(),
+            'sbus' => $this->thirdPartyService->getSbusForFilter(),
+            'totalThirdParties' => $counts['total'],
+            'activeThirdParties' => $counts['active'],
+            'activePercentage' => $counts['active_percentage'],
+            'viewerEmployeeScope' => $this->viewerScope->frontendScopePayload(),
+        ];
     }
 }

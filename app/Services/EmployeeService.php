@@ -109,8 +109,9 @@ class EmployeeService
                 'organizations:id',
                 'sbus:id',
             ])
-            ->orderBy('third_party_name')
-            ->get();
+            ->orderBy('third_party_name');
+        $this->viewerScope->applySbuScopeToThirdPartyQuery($outsourcedVendors);
+        $outsourcedVendors = $outsourcedVendors->get();
 
         $organizations = $this->viewerScope->filterOrganizations($organizations);
         $departments = $this->viewerScope->filterDepartments($departments);
@@ -1959,7 +1960,9 @@ class EmployeeService
 
         $permanent = (clone $base)->where('employment_type', 'Permanent')->count();
         $contract = (clone $base)->where('employment_type', 'Contract')->count();
-        $vendors = ThirdParty::query()->where('is_active', true)->count();
+        $vendorsQuery = ThirdParty::query()->where('is_active', true);
+        $this->viewerScope->applySbuScopeToThirdPartyQuery($vendorsQuery);
+        $vendors = $vendorsQuery->count();
 
         return [
             'total'            => $total,
