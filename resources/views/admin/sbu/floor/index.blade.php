@@ -69,6 +69,7 @@
 <script>
     window.sbuFloorSbus = @json($sbuFloorSbus);
     window.sbuFloorBiometricDevices = @json($sbuFloorBiometricDevices);
+    window.viewerEmployeeScope = @json($viewerEmployeeScope ?? []);
 </script>
 <script src="{{ asset('js/sbu-floor.js') }}"></script>
 @endpush

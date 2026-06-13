@@ -275,6 +275,31 @@
         return Array.isArray(window.sbuFloorSbus) ? window.sbuFloorSbus : [];
     }
 
+    function getViewerScope() {
+        return window.viewerEmployeeScope || {};
+    }
+
+    function applyDefaultScopeToAddForm() {
+        const scope = getViewerScope();
+        const sbus = getAllSbus();
+
+        if (scope.restricted && scope.organization_id && scope.sbu_id) {
+            $('#organization_id').val(String(scope.organization_id));
+            setSbuOptions('#sbu_id', scope.organization_id, 'Select SBU');
+            $('#sbu_id').val(String(scope.sbu_id));
+            refreshAddFloorBiometricList();
+            return;
+        }
+
+        if (sbus.length === 1) {
+            const sbu = sbus[0];
+            $('#organization_id').val(String(sbu.organization_id));
+            setSbuOptions('#sbu_id', sbu.organization_id, 'Select SBU');
+            $('#sbu_id').val(String(sbu.id));
+            refreshAddFloorBiometricList();
+        }
+    }
+
     function getBiometricDevices() {
         return Array.isArray(window.sbuFloorBiometricDevices) ? window.sbuFloorBiometricDevices : [];
     }
@@ -390,6 +415,7 @@
         $('#is_active').val('1');
         refreshAddFloorBiometricList();
         syncFloorLimitedFieldsState();
+        applyDefaultScopeToAddForm();
     }
 
     function resetEditFloorForm() {
@@ -759,6 +785,7 @@
 
         setSbuOptions('#sbu_id', $('#organization_id').val(), 'First select organization');
         setSbuOptions('#edit_sbu_id', $('#edit_organization_id').val(), 'First select organization');
+        applyDefaultScopeToAddForm();
         refreshAddFloorBiometricList();
         refreshEditFloorBiometricList([]);
         syncFloorLimitedFieldsState();

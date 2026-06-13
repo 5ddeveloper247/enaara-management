@@ -11,6 +11,7 @@ use App\Models\Sbu;
 use App\Models\User;
 use App\Services\ViewerScope\DesignationViewerScopeService;
 use App\Services\ViewerScope\ShiftViewerScopeService;
+use App\Services\ViewerScope\SbuFloorViewerScopeService;
 use App\Services\ViewerScope\ViewerScopeContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -22,6 +23,7 @@ class EmployeeViewerScopeService
         private readonly ViewerScopeContext $context,
         private readonly DesignationViewerScopeService $designationScope,
         private readonly ShiftViewerScopeService $shiftScope,
+        private readonly SbuFloorViewerScopeService $sbuFloorScope,
     ) {}
 
     public function resolveViewerSbuId(?User $user = null): ?int
@@ -130,6 +132,16 @@ class EmployeeViewerScopeService
     public function assertShiftTypeIdAccessible(int $shiftTypeId, ?User $user = null): void
     {
         $this->shiftScope->assertShiftTypeIdAccessible($shiftTypeId, $user);
+    }
+
+    public function applySbuScopeToSbuFloorQuery(Builder $query, ?User $user = null): Builder
+    {
+        return $this->sbuFloorScope->applyQueryScope($query, $user);
+    }
+
+    public function assertSbuFloorIdAccessible(int $sbuFloorId, ?User $user = null): void
+    {
+        $this->sbuFloorScope->assertIdAccessible($sbuFloorId, $user);
     }
 
     public function assertUserIdAccessible(int $userId, ?User $user = null): void

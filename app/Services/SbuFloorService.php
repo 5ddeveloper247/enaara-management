@@ -3,31 +3,46 @@
 namespace App\Services;
 
 use App\Models\BiometricDevice;
+use App\Models\Organization;
+use App\Models\Sbu;
 use App\Models\SbuFloor;
+use App\Services\ViewerScope\SbuFloorViewerScopeService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class SbuFloorService
 {
+    public function __construct(
+        private readonly SbuFloorViewerScopeService $sbuFloorScope,
+        private readonly EmployeeViewerScopeService $viewerScope,
+    ) {}
+
     public function getList(): Collection
     {
-        return SbuFloor::query()
+        $query = SbuFloor::query()
             ->with([
                 'sbu.organization',
                 'biometricDevices' => function ($query) {
                     $query->orderByDesc('id');
                 },
             ])
-            ->orderByDesc('id')
-            ->get();
+            ->orderByDesc('id');
+
+        $this->sbuFloorScope->applyQueryScope($query);
+
+        return $query->get();
     }
 
     public function getCounts(): array
     {
-        $total = SbuFloor::count();
-        $active = SbuFloor::where('is_active', true)->count();
+        $base = SbuFloor::query();
+        $this->sbuFloorScope->applyQueryScope($base);
+
+        $total = (clone $base)->count();
+        $active = (clone $base)->where('is_active', true)->count();
 
         return [
             'total' => $total,
@@ -36,8 +51,49 @@ class SbuFloorService
         ];
     }
 
+    public function getOrganizationsForFilter(): Collection
+    {
+        $organizations = Organization::query()
+            ->select(['id', 'name'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return $this->viewerScope->filterOrganizations($organizations);
+    }
+
+    public function getSbusForFilter(): Collection
+    {
+        $sbus = Sbu::query()
+            ->select(['id', 'name', 'organization_id'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return $this->viewerScope->filterSbus($sbus);
+    }
+
+    public function getBiometricDevicesForForms(): Collection
+    {
+        $query = BiometricDevice::query()
+            ->orderByDesc('id');
+
+        $sbuId = $this->viewerScope->resolveViewerSbuId();
+        if ($sbuId !== null) {
+            if ($sbuId <= 0) {
+                return collect();
+            }
+
+            $query->where('sbu_id', $sbuId);
+        }
+
+        return $query->get(['id', 'sbu_id', 'device_name', 'serial_number', 'sbu_floor_id']);
+    }
+
     public function store(array $data): SbuFloor
     {
+        $this->viewerScope->assertSbuIdAllowed((int) ($data['sbu_id'] ?? 0));
+
         DB::beginTransaction();
 
         try {
@@ -78,14 +134,17 @@ class SbuFloorService
 
     public function findById($id): ?SbuFloor
     {
-        return SbuFloor::query()
+        $query = SbuFloor::query()
             ->with([
                 'sbu.organization',
                 'biometricDevices' => function ($query) {
                     $query->orderByDesc('id');
                 },
-            ])
-            ->find($id);
+            ]);
+
+        $this->sbuFloorScope->applyQueryScope($query);
+
+        return $query->find($id);
     }
 
     public function update($id, array $data): SbuFloor
@@ -93,7 +152,16 @@ class SbuFloorService
         DB::beginTransaction();
 
         try {
-            $sbuFloor = SbuFloor::findOrFail($id);
+            $sbuFloor = $this->findById((int) $id);
+            if ($sbuFloor === null) {
+                throw ValidationException::withMessages([
+                    'sbu_floor' => ['SBU floor not found or outside your SBU scope.'],
+                ]);
+            }
+
+            $this->sbuFloorScope->assertIdAccessible((int) $sbuFloor->id);
+            $this->viewerScope->assertSbuIdAllowed((int) ($data['sbu_id'] ?? 0));
+
             $oldSbuId = (int) $sbuFloor->sbu_id;
             $newSbuId = (int) $data['sbu_id'];
 
@@ -135,7 +203,14 @@ class SbuFloorService
         DB::beginTransaction();
 
         try {
-            $sbuFloor = SbuFloor::findOrFail($id);
+            $sbuFloor = $this->findById((int) $id);
+            if ($sbuFloor === null) {
+                throw ValidationException::withMessages([
+                    'sbu_floor' => ['SBU floor not found or outside your SBU scope.'],
+                ]);
+            }
+
+            $this->sbuFloorScope->assertIdAccessible((int) $sbuFloor->id);
 
             BiometricDevice::query()
                 ->where('sbu_floor_id', $sbuFloor->id)

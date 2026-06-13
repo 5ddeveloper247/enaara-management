@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Admin\Sbu_floor\SbuFloorStoreRequest;
 use App\Http\Requests\Admin\Sbu_floor\SbuFloorUpdateRequest;
 use App\Models\BiometricDevice;
-use App\Models\Organization;
-use App\Models\Sbu;
+use App\Services\EmployeeViewerScopeService;
 use App\Services\SbuFloorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -14,25 +13,13 @@ use Illuminate\View\View;
 class SbuFloorsController extends Controller
 {
     public function __construct(
-        private SbuFloorService $sbuFloorService
+        private SbuFloorService $sbuFloorService,
+        private EmployeeViewerScopeService $viewerScope,
     ) {}
 
     public function index(): View
     {
-        $sbuFloors = $this->sbuFloorService->getList();
-        $counts = $this->sbuFloorService->getCounts();
-        $organizations = Organization::where('is_active', 1)->orderBy('name')->get();
-        $sbus = Sbu::where('is_active', 1)->orderBy('name')->get();
-
-        return view('admin.sbu.floor.index', [
-            'sbuFloors' => $sbuFloors,
-            'organizations' => $organizations,
-            'sbus' => $sbus,
-            'biometricDevicesForFloors' => $this->biometricDevicesForFloorForms(),
-            'totalSbuFloors' => $counts['total'],
-            'activeSbuFloors' => $counts['active'],
-            'activePercentage' => $counts['active_percentage'],
-        ]);
+        return view('admin.sbu.floor.index', $this->indexViewData());
     }
 
     public function create(SbuFloorStoreRequest $request)
@@ -41,20 +28,7 @@ class SbuFloorsController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $sbuFloors = $this->sbuFloorService->getList();
-        $counts = $this->sbuFloorService->getCounts();
-        $organizations = Organization::where('is_active', 1)->orderBy('name')->get();
-        $sbus = Sbu::where('is_active', 1)->orderBy('name')->get();
-
-        return view('admin.sbu.floor.index', [
-            'sbuFloors' => $sbuFloors,
-            'organizations' => $organizations,
-            'sbus' => $sbus,
-            'biometricDevicesForFloors' => $this->biometricDevicesForFloorForms(),
-            'totalSbuFloors' => $counts['total'],
-            'activeSbuFloors' => $counts['active'],
-            'activePercentage' => $counts['active_percentage'],
-        ]);
+        return view('admin.sbu.floor.index', $this->indexViewData());
     }
 
     public function store(SbuFloorStoreRequest $request)
@@ -282,10 +256,22 @@ class SbuFloorsController extends Controller
         }
     }
 
-    protected function biometricDevicesForFloorForms()
+    /**
+     * @return array<string, mixed>
+     */
+    protected function indexViewData(): array
     {
-        return BiometricDevice::query()
-            ->orderByDesc('id')
-            ->get(['id', 'sbu_id', 'device_name', 'serial_number', 'sbu_floor_id']);
+        $counts = $this->sbuFloorService->getCounts();
+
+        return [
+            'sbuFloors' => $this->sbuFloorService->getList(),
+            'organizations' => $this->sbuFloorService->getOrganizationsForFilter(),
+            'sbus' => $this->sbuFloorService->getSbusForFilter(),
+            'biometricDevicesForFloors' => $this->sbuFloorService->getBiometricDevicesForForms(),
+            'totalSbuFloors' => $counts['total'],
+            'activeSbuFloors' => $counts['active'],
+            'activePercentage' => $counts['active_percentage'],
+            'viewerEmployeeScope' => $this->viewerScope->frontendScopePayload(),
+        ];
     }
 }
