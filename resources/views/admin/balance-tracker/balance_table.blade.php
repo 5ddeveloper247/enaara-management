@@ -8,7 +8,9 @@
             @foreach($leaveTypes as $type)
                 <th>{{ $type->name }}</th>
             @endforeach
+            @if(validatePermissions('admin/balance-tracker/update'))
             <th class="text-end">Actions</th>
+            @endif
         </tr>
     </thead>
     <tbody class="bg-transparent" id="balanceTableBody">

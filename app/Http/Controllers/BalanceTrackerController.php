@@ -54,7 +54,7 @@ class BalanceTrackerController extends Controller
 
     public function adjustBalance(BalanceTrackerAdjustRequest $request)
     {
-        if (!validatePermissions('admin/balance-tracker')) {
+        if (!validatePermissions('admin/balance-tracker/update')) {
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
             }

@@ -168,6 +168,7 @@
     <script>
         const balanceData = @json($balances);
         const leaveTypes = @json($leaveTypes);
+        const canUpdateBalance = @json(validatePermissions('admin/balance-tracker/update'));
     </script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -333,14 +334,16 @@
                     }
                 });
 
-                columns += `
-                    <td class="text-end">
-                        <button type="button" class="btn btn-sm btn-outline-primary adjust-balance-btn" 
-                                data-employee-id="${employee.id}" data-bs-toggle="tooltip" title="Adjust Balance">
-                            <i class="bi bi-pencil-square"></i>
-                        </button>
-                    </td>
-                `;
+                if (canUpdateBalance) {
+                    columns += `
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary adjust-balance-btn" 
+                                    data-employee-id="${employee.id}" data-bs-toggle="tooltip" title="Adjust Balance">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                        </td>
+                    `;
+                }
 
                 tbody.append(`<tr>${columns}</tr>`);
             });
@@ -391,12 +394,12 @@
                         className: 'dt-control',
                         responsivePriority: 0
                     },
-                    {
+                    ...(canUpdateBalance ? [{
                         targets: leafTypeCount + 4, // Actions column (control + 3 standard + leafTypeCount)
                         orderable: false,
                         className: 'no-toggle',
                         responsivePriority: 1
-                    }
+                    }] : [])
                 ],
                 language: {
                     search: "",
