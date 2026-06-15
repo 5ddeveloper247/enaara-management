@@ -97,19 +97,23 @@
                             style="display: none;">
                             <i class="bi bi-files me-1"></i>Copy Schedule
                         </button>
+                        @if(validatePermissions('admin/shift-roster/add'))
                         <button type="button" class="btn btn-outline-secondary me-2" id="bulkAssignBtn">
                             <i class="bi bi-people-fill me-1"></i>Bulk Assign
                         </button>
+                        @endif
                         <button type="button" class="btn btn-outline-secondary me-2" id="rosterExportPdfBtn">
                             <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
                         </button>
                         <button type="button" class="btn btn-outline-secondary me-2" id="rosterExportExcelBtn" style="display: none;">
                             <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export Excel
                         </button>
+                        @if(validatePermissions('admin/shift-planner/add'))
                         <button type="button" class="btn btn-primary bg-main border-0" id="addShiftBtn"
                             style="display: none;">
                             <i class="bi bi-plus-circle me-1"></i>Add New Shift
                         </button>
+                        @endif
                     </div>
                 </div>
 

@@ -145,21 +145,27 @@
     <div class="offcanvas-footer border-top p-3 d-flex justify-content-between flex-wrap gap-2 roster-shift-footer">
         <div class="d-flex flex-wrap gap-2">
             <div id="rosterShiftDeleteWrap" style="display: none;">
+                @if(validatePermissions('admin/shift-roster/delete'))
                 <button type="button" class="btn btn-outline-danger border-danger text-danger" id="rosterShiftDeleteBtn">
                     <i class="bi bi-trash me-1"></i>Remove
                 </button>
+                @endif
             </div>
             <div id="rosterShiftMarkOffWrap" style="display: none;">
+                @if(validatePermissions('admin/shift-roster/edit'))
                 <button type="button" class="btn btn-outline-warning border-warning text-warning" id="rosterShiftMarkOffBtn">
                     <i class="bi bi-calendar-x me-1"></i>Mark as Off
                 </button>
+                @endif
             </div>
         </div>
         <div class="d-flex gap-2 ms-auto">
             <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
+            @if(validatePermissions('admin/shift-roster/add') || validatePermissions('admin/shift-roster/edit'))
             <button type="button" class="btn btn-light text-dark border-0" id="rosterShiftSaveBtn">
                 <i class="bi bi-check-lg me-1"></i><span id="rosterShiftSaveBtnText">Save</span>
             </button>
+            @endif
         </div>
     </div>
 </div>

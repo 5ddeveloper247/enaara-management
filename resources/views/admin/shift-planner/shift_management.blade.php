@@ -110,6 +110,7 @@
                         </div>
 
                         <div class="d-flex gap-2 pt-3 border-top">
+                            @if(validatePermissions('admin/shift-planner/edit'))
                             <button type="button"
                                 class="btn btn-sm btn-outline-primary flex-fill edit-shift-btn"
                                 data-bs-toggle="offcanvas"
@@ -118,12 +119,15 @@
                                 data-shift-id="{{ $shift->id }}">
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </button>
+                            @endif
 
+                            @if(validatePermissions('admin/shift-planner/delete'))
                             <button type="button"
                                 class="btn btn-sm btn-outline-danger flex-fill delete-shift-btn"
                                 data-shift-id="{{ $shift->id }}">
                                 <i class="bi bi-trash me-1"></i>Delete
                             </button>
+                            @endif
 
                             <button type="button"
                                 class="btn btn-sm btn-primary flex-fill view-shift-btn"
