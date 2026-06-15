@@ -17,6 +17,10 @@ class BiometricDeviceController extends Controller
 
     public function index(): View
     {
+        if (! validatePermissions('admin.biometric-device.index')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('admin.biometric-device.index', $this->indexViewData());
     }
 
@@ -72,6 +76,10 @@ class BiometricDeviceController extends Controller
 
     public function show(int $id): View
     {
+        if (! validatePermissions('admin.biometric-device.index')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $device = $this->biometricDeviceService->findById($id);
 
         if (! $device) {
