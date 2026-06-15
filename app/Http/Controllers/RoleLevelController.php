@@ -20,6 +20,10 @@ class RoleLevelController extends Controller
 
     public function index(): View|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/role-levels')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $roleLevels = $this->roleLevelService->getList();
         $counts = $this->roleLevelService->getCounts();
 

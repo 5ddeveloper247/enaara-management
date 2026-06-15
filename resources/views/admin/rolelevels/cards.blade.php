@@ -33,6 +33,7 @@
                         </div>
                         <div class="mt-3 pt-3 border-top d-flex gap-1">
 
+                            @if(validatePermissions('admin/role-levels/edit'))
                             <!-- Edit Button -->
                             <button type="button"
                                 class="btn btn-sm btn-outline-primary flex-grow-1 edit-rolelevel-btn"
@@ -43,11 +44,14 @@
                                 data-update-url="{{ route('admin.role-levels.update', $roleLevel->id) }}">
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </button>
+                            @endif
 
+                            @if(validatePermissions('admin/role-levels/delete'))
                             <!-- Delete Button -->
                             <button type="button" class="btn btn-sm btn-outline-danger delete-rolelevel-btn" data-delete-url="{{ route('admin.role-levels.destroy', $roleLevel->id) }}">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            @endif
 
                             <!-- View Button -->
                             <button type="button"

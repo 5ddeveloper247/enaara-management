@@ -52,6 +52,8 @@ class RoleController extends Controller
 
     public function index(): View
     {
+        $this->denyIfUnauthorized('admin/role');
+
         $roles = $this->roleService->getList();
         $counts = $this->roleService->getCounts();
 
@@ -65,7 +67,7 @@ class RoleController extends Controller
 
     public function create(): View
     {
-        // $this->denyIfUnauthorized('admin/role/add');
+        $this->denyIfUnauthorized('admin/role/add');
 
         $moduleCategories = $this->roleService->getModuleCategoriesWithModules();
         $organizations = Organization::where('is_active', true)->orderBy('name')->get();
@@ -85,7 +87,7 @@ class RoleController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        // $this->denyIfUnauthorized('admin/role/add');
+        $this->denyIfUnauthorized('admin/role/add');
 
         $validated = $request->validate([
             'level_id' => 'required|exists:role_levels,id',
@@ -134,7 +136,7 @@ class RoleController extends Controller
 
     public function edit(int $id): View|RedirectResponse
     {
-        // $this->denyIfUnauthorized('admin/role/edit');
+        $this->denyIfUnauthorized('admin/role/edit');
 
         $role = $this->roleService->findById($id);
 
@@ -178,7 +180,7 @@ class RoleController extends Controller
 
     public function update(Request $request, int $id): RedirectResponse
     {
-        // $this->denyIfUnauthorized('admin/role/edit');
+        $this->denyIfUnauthorized('admin/role/edit');
 
         $role = $this->roleService->findById($id);
 

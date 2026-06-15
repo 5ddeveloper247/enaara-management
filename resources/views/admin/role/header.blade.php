@@ -2,10 +2,12 @@
     <div class="col-md-6">
         <h5 class="mb-0 fw-semibold">Roles Management</h5>
     </div>
+    @if(validatePermissions('admin/role/add'))
     <div class="col-md-6 text-end">
         <a href="{{ route('admin.role.add') }}" class="btn btn-primary bg-main border-0 me-2">
             <i class="bi bi-plus-circle me-1"></i>Add New
         </a>
     </div>
+    @endif
 </div>
 

@@ -14,12 +14,14 @@
         <div class="col-md-6">
             <h5 class="mb-0">Role Level Management</h5>
         </div>
+        @if(validatePermissions('admin/role-levels/add'))
         <div class="col-md-6 text-end">
             <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                 data-bs-target="#addRoleLevelCanvas" aria-controls="addRoleLevelCanvas">
                 <i class="bi bi-layers me-1"></i>Add New Role Level
             </button>
         </div>
+        @endif
     </div>
 
     @include('admin.rolelevels.counters')

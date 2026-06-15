@@ -38,9 +38,12 @@
             </td>
             <td class="text-end">
                 <div class="btn-group d-flex align-items-center gap-1">
+                    @if(validatePermissions('admin/role/edit'))
                     <a href="{{ route('admin.role.edit', $r->id) }}" class="action-btn border-0 btn btn-success btn-sm" title="Edit">
                         <i class="bi bi-pencil text-white"></i>
                     </a>
+                    @endif
+                    @if(validatePermissions('admin/role/delete'))
                     <!-- <button type="button" class="action-btn border-0 btn btn-danger btn-sm delete-role"
                         data-bs-toggle="modal"
                         data-bs-target="#deleteRoleModal"
@@ -49,6 +52,7 @@
                         title="Delete">
                         <i class="bi bi-trash text-white"></i>
                     </button> -->
+                    @endif
                 </div>
             </td>
         </tr>
