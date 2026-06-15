@@ -304,12 +304,14 @@
 
                     <div class="lt-form-footer mt-3">
                         <a href="{{ route('admin.leave.type.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        @if(($isEdit && validatePermissions('admin/leave-type/edit')) || (!$isEdit && validatePermissions('admin/leave-type/add')))
                         <button type="button" class="btn btn-primary bg-main border-0" id="ltSaveBtn"
                             data-default-label="{{ $isEdit ? 'Update Leave Type' : 'Save Leave Type' }}"
                             data-loading-label="{{ $isEdit ? 'Updating...' : 'Saving...' }}">
                             <i class="bi bi-check-lg me-1 lt-save-icon" aria-hidden="true"></i>
                             <span class="lt-save-label">{{ $isEdit ? 'Update Leave Type' : 'Save Leave Type' }}</span>
                         </button>
+                        @endif
                     </div>
                 </div>
 

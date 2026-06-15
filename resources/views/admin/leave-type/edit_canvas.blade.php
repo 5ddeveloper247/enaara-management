@@ -229,9 +229,11 @@
 
             <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top" style="border-color: #ffffffab !important">
                 <button type="button" class="btn btn-outline-light" data-bs-dismiss="offcanvas">Cancel</button>
+                @if(validatePermissions('admin/leave-type/edit'))
                 <button type="submit" class="btn btn-light text-dark" id="submitLeaveTypeBtn">
                     <i class="bi bi-check-lg me-1"></i><span id="submitBtnText">Submit</span>
                 </button>
+                @endif
             </div>
         </form>
     </div>

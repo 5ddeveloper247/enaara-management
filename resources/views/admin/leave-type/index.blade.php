@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Leave Types - Admin Panel')
 
@@ -48,9 +48,11 @@
                     <h5 class="mb-0">Manage Leave Types</h5>
                 </div>
                 <div class="col-md-6 text-end">
+                    @if(validatePermissions('admin/leave-type/add'))
                     <a href="{{ route('admin.leave.type.add') }}" class="btn btn-primary bg-main border-0">
                         <i class="bi bi-plus-circle me-1"></i>Add New Leave Type
                     </a>
+                    @endif
                 </div>
             </div>
 
@@ -170,12 +172,16 @@
                                 @endif
                             </td>
                             <td class="text-end">
+                                @if(validatePermissions('admin/leave-type/edit'))
                                 <a href="{{ route('admin.leave.type.edit', $lt->id) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil me-1"></i>Edit
                                 </a>
+                                @endif
+                                @if(validatePermissions('admin/leave-type/delete'))
                                 <button type="button" class="btn btn-sm btn-outline-danger delete-leave-type-btn ms-1" data-leave-type-id="{{ $lt->id }}">
                                     <i class="bi bi-trash me-1"></i>Delete
                                 </button>
+                                @endif
                             </td>
                         </tr>
                         @empty

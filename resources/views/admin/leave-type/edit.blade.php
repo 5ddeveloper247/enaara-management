@@ -57,7 +57,9 @@
                             </div>
                         </div>
                         <div class="col-12">
+                            @if(validatePermissions('admin/leave-type/edit'))
                             <button type="submit" class="btn btn-primary bg-main border-0">Update Leave Type</button>
+                            @endif
                             <a href="{{ route('admin.leave.type.index') }}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </div>
