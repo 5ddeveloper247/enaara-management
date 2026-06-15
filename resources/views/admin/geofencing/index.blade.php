@@ -167,10 +167,12 @@
                 {{-- <button type="button" class="btn btn-outline-secondary me-2" id="toggleBreadcrumbsBtn">
                     <i class="bi bi-map me-1"></i>Toggle Breadcrumbs
                 </button> --}}
+                @if(validatePermissions('admin/geofencing/add'))
                 <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                     data-bs-target="#addFenceCanvas">
                     <i class="bi bi-plus-circle me-1"></i>Add New Fence
                 </button>
+                @endif
             </div>
         </div>
 
@@ -420,12 +422,16 @@
                             <button class="btn btn-sm btn-outline-primary view-fence-btn" data-fence-id="${fence.id}" data-bs-toggle="tooltip" title="View Details">
                                 <i class="bi bi-eye"></i>
                             </button>
+                            @if(validatePermissions('admin/geofencing/edit'))
                             <button class="btn btn-sm btn-outline-secondary edit-fence-btn" data-fence-id="${fence.id}" data-bs-toggle="tooltip" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </button>
+                            @endif
+                            @if(validatePermissions('admin/geofencing/delete'))
                             <button class="btn btn-sm btn-outline-danger delete-fence-btn" data-fence-id="${fence.id}" data-bs-toggle="tooltip" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            @endif
                         </td>
                     </tr>
                 `;
