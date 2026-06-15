@@ -48,9 +48,12 @@
                     <!-- <a href="{{ route('admin.module.edit', $m->id) }}" class="action-btn border-0 text-primary bg-primary-subtle" title="Edit">
                         <i class="bi bi-pencil"></i>
                     </a> -->
+                    @if(validatePermissions('admin/module/edit/{id}'))
                     <a href="{{ route('admin.module.edit', $m->id) }}" class="action-btn border-0 btn btn-success btn-sm" title="Edit">
                         <i class="bi bi-pencil text-white"></i>
                     </a>
+                    @endif
+                    @if(validatePermissions('admin/module/{id}/delete'))
                     <button type="button" class="action-btn border-0 text-danger bg-danger-subtle delete-module"
                         data-bs-toggle="modal"
                         data-bs-target="#deleteModuleModal"
@@ -59,6 +62,7 @@
                         title="Delete">
                         <i class="bi bi-trash"></i>
                     </button>
+                    @endif
                 </div>
             </td>
         </tr>

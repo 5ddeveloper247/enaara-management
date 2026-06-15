@@ -51,11 +51,13 @@
                         title="View">
                         <i class="bi bi-eye"></i>
                     </button>
+                    @if(validatePermissions('admin/module-categories/edit'))
                     <a href="{{ route('admin.module.category.edit', $mc->ID) }}" class="action-btn btn btn-sm btn-outline-primary" title="Edit">
                         <i class="bi bi-pencil"></i>
                     </a>
-
+                    @endif
                     
+                    @if(validatePermissions('admin/module-categories/delete'))
                     <button type="button" class="action-btn border-0 text-danger bg-danger-subtle delete-module-category"
                         data-bs-toggle="modal"
                         data-bs-target="#deleteModuleCategoryModal"
@@ -64,6 +66,7 @@
                         title="Delete">
                         <i class="bi bi-trash"></i>
                     </button>
+                    @endif
                 </div>
             </td>
         </tr>

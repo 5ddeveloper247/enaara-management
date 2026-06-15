@@ -16,8 +16,15 @@ class ModuleController extends Controller
         private ModuleService $moduleService
     ) {}
 
-    public function index(): View
+    public function index(): View|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/module')) {
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $modules = $this->moduleService->getList();
         $counts = $this->moduleService->getCounts();
 
@@ -29,8 +36,15 @@ class ModuleController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(): View|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/module/add')) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $moduleCategories = $this->moduleService->getModuleCategoriesForSelect();
 
         return view('admin.module.create', [
@@ -38,8 +52,15 @@ class ModuleController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/module/add')) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'module_category_id' => 'required|exists:module_categories,ID',
             'module_name' => ['required', 'string', 'max:155', Rule::unique('modules', 'module_name')],
@@ -57,8 +78,15 @@ class ModuleController extends Controller
             ->with('success', 'Module created successfully.');
     }
 
-    public function show(int $id): View|RedirectResponse
+    public function show(int $id): View|RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/module')) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $module = $this->moduleService->findById($id);
 
         if (!$module instanceof Module) {
@@ -70,8 +98,15 @@ class ModuleController extends Controller
         ]);
     }
 
-    public function edit(int $id): View|RedirectResponse
+    public function edit(int $id): View|RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/module/edit/{id}')) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $module = $this->moduleService->findById($id);
 
         if (!$module instanceof Module) {
@@ -86,8 +121,15 @@ class ModuleController extends Controller
         ]);
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/module/edit/{id}')) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $module = $this->moduleService->findById($id);
 
         if (!$module instanceof Module) {
@@ -113,6 +155,10 @@ class ModuleController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
+        if (!validatePermissions('admin/module/{id}/delete')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $deleted = $this->moduleService->delete($id);
 
         if (!$deleted) {
@@ -124,6 +170,10 @@ class ModuleController extends Controller
 
     public function updateStatus(Request $request, int $id): JsonResponse
     {
+        if (!validatePermissions('admin/module/edit/{id}')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $request->validate(['show_in_menu' => 'required|boolean']);
         $module = $this->moduleService->updateStatus($id, (bool) $request->input('show_in_menu'));
 
@@ -139,6 +189,10 @@ class ModuleController extends Controller
 
     public function searchModule(Request $request): JsonResponse
     {
+        if (!validatePermissions('admin/module')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $term = $request->query('term', '');
         $items = $this->moduleService->searchModule($term);
 

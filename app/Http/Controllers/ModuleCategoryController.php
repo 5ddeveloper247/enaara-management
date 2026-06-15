@@ -18,28 +18,14 @@ class ModuleCategoryController extends Controller
         private ModuleCategoryService $moduleCategoryService
     ) {}
 
-    private function denyIfUnauthorized(string|array $permission, bool $expectsJson = false): ?JsonResponse
+    public function index(): View|\Illuminate\Http\JsonResponse
     {
-        $permissions = is_array($permission) ? $permission : [$permission];
-        foreach ($permissions as $permissionKey) {
-            if (validatePermissions($permissionKey)) {
-                return null;
+        if (!validatePermissions('admin/module-categories')) {
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
             }
+            abort(403, 'Unauthorized action.');
         }
-
-        if ($expectsJson) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized action.',
-            ], 403);
-        }
-
-        abort(403, 'Unauthorized action.');
-    }
-
-    public function index(): View
-    {
-        $this->denyIfUnauthorized('admin/module-categories');
 
         $moduleCategories = $this->moduleCategoryService->getList();
         $counts = $this->moduleCategoryService->getCounts();
@@ -52,16 +38,26 @@ class ModuleCategoryController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(): View|\Illuminate\Http\JsonResponse
     {
-        $this->denyIfUnauthorized(['admin/module-categories', 'admin/module-categories/add']);
+        if (!validatePermissions('admin/module-categories/add')) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
 
         return view('admin.module-categories.create');
     }
 
-    public function store(ModuleCategoryStoreRequest $request): RedirectResponse
+    public function store(ModuleCategoryStoreRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
-        $this->denyIfUnauthorized(['admin/module-categories', 'admin/module-categories/add']);
+        if (!validatePermissions('admin/module-categories/add')) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
 
         try {
             $validated = $request->validated();
@@ -79,9 +75,14 @@ class ModuleCategoryController extends Controller
         }
     }
 
-    public function show(int $id): View|RedirectResponse
+    public function show(int $id): View|RedirectResponse|\Illuminate\Http\JsonResponse
     {
-        $this->denyIfUnauthorized('admin/module-categories');
+        if (!validatePermissions('admin/module-categories')) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
 
         $moduleCategory = $this->moduleCategoryService->findById($id);
 
@@ -94,9 +95,14 @@ class ModuleCategoryController extends Controller
         ]);
     }
 
-    public function edit(int $id): View|RedirectResponse
+    public function edit(int $id): View|RedirectResponse|\Illuminate\Http\JsonResponse
     {
-        $this->denyIfUnauthorized(['admin/module-categories', 'admin/module-categories/edit']);
+        if (!validatePermissions('admin/module-categories/edit')) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
 
         $moduleCategory = $this->moduleCategoryService->findById($id);
 
@@ -109,9 +115,14 @@ class ModuleCategoryController extends Controller
         ]);
     }
 
-    public function update(ModuleCategoryUpdateRequest $request, int $id): RedirectResponse
+    public function update(ModuleCategoryUpdateRequest $request, int $id): RedirectResponse|\Illuminate\Http\JsonResponse
     {
-        $this->denyIfUnauthorized(['admin/module-categories', 'admin/module-categories/edit']);
+        if (!validatePermissions('admin/module-categories/edit')) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
 
         $moduleCategory = $this->moduleCategoryService->findById($id);
 
@@ -138,9 +149,8 @@ class ModuleCategoryController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $denied = $this->denyIfUnauthorized(['admin/module-categories', 'admin/module-categories/delete'], true);
-        if ($denied instanceof JsonResponse) {
-            return $denied;
+        if (!validatePermissions('admin/module-categories/delete')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
         try {
@@ -177,9 +187,8 @@ class ModuleCategoryController extends Controller
 
     public function updateStatus(Request $request, int $id): JsonResponse
     {
-        $denied = $this->denyIfUnauthorized(['admin/module-categories', 'admin/module-categories/edit'], true);
-        if ($denied instanceof JsonResponse) {
-            return $denied;
+        if (!validatePermissions('admin/module-categories/edit')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
         $request->validate(['is_active' => 'required|boolean']);
@@ -209,9 +218,8 @@ class ModuleCategoryController extends Controller
 
     public function searchModuleCategory(Request $request): JsonResponse
     {
-        $denied = $this->denyIfUnauthorized('admin/module-categories', true);
-        if ($denied instanceof JsonResponse) {
-            return $denied;
+        if (!validatePermissions('admin/module-categories')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
         $term = $request->query('term', '');
