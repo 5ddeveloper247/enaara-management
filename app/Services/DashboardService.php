@@ -318,7 +318,7 @@ class DashboardService
             $series = [0];
 
             foreach ($weekStarts as $weekStart) {
-                $series[] = $this->averageOnLeavePercentForDepartmentWeek(
+                $series[] = $this->averageAvailablePercentForDepartmentWeek(
                     $departmentId,
                     $deptTotal,
                     $weekStart
@@ -781,7 +781,7 @@ class DashboardService
         return $this->resolveViewerApplicantDepartmentIds($viewerEmployee);
     }
 
-    private function averageOnLeavePercentForDepartmentWeek(
+    private function averageAvailablePercentForDepartmentWeek(
         int $departmentId,
         int $deptTotal,
         Carbon $weekStart
@@ -816,7 +816,8 @@ class DashboardService
                 ->distinct()
                 ->count('from_employee_id');
 
-            $dailyPercents[] = ($onLeave / $deptTotal) * 100;
+            $available = max(0, $deptTotal - $onLeave);
+            $dailyPercents[] = ($available / $deptTotal) * 100;
         }
 
         if ($dailyPercents === []) {
