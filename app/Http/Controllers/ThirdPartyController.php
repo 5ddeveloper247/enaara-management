@@ -17,6 +17,10 @@ class ThirdPartyController extends Controller
 
     public function index(): View
     {
+        if (! validatePermissions('admin/third-party')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('admin.third-party.index', $this->indexViewData());
     }
 
@@ -76,6 +80,10 @@ class ThirdPartyController extends Controller
 
     public function show(int $id): View
     {
+        if (! validatePermissions('admin/third-party')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $thirdParty = $this->thirdPartyService->findById($id);
 
         if (! $thirdParty) {

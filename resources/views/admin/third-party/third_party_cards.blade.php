@@ -46,6 +46,7 @@
                         @endif
                         <div class="mt-3 pt-3 border-top d-flex gap-1">
 
+                            @if(validatePermissions('admin/third-party/edit'))
                             <button type="button"
                                 class="btn btn-sm btn-outline-primary flex-grow-1 edit-tp-btn"
                                 data-bs-toggle="offcanvas"
@@ -56,10 +57,13 @@
                                 data-delete-url="{{ route('admin.third-party.destroy', $tp->id) }}">
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </button>
+                            @endif
 
+                            @if(validatePermissions('admin/third-party/delete'))
                             <button type="button" class="btn btn-sm btn-outline-danger delete-tp-btn" data-delete-url="{{ route('admin.third-party.destroy', $tp->id) }}">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            @endif
 
                             <button type="button"
                                 class="btn btn-sm btn-outline-secondary view-tp-btn"

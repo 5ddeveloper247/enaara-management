@@ -86,12 +86,14 @@
         <div class="col-md-6">
             <h5 class="mb-0">Third Party Management</h5>
         </div>
+        @if(validatePermissions('admin/third-party/add'))
         <div class="col-md-6 text-end">
             <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                 data-bs-target="#addThirdPartyCanvas" aria-controls="addThirdPartyCanvas">
                 <i class="bi bi-building-add me-1"></i>Add New Third Party
             </button>
         </div>
+        @endif
     </div>
 
     @include('admin.third-party.counters')
