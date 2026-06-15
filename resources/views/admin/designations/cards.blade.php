@@ -37,6 +37,7 @@
                             <small class="text-muted small">{{ $designation->department->name ?? '—' }}</small>
                         </div>
                         <div class="mt-3 pt-3 border-top d-flex gap-1">
+                            @if(validatePermissions('admin/designations/edit'))
                             <button type="button"
                                 class="btn btn-sm btn-outline-primary flex-grow-1 edit-designation-btn"
                                 data-bs-toggle="offcanvas"
@@ -46,9 +47,12 @@
                                 data-update-url="{{ route('admin.designations.update', $designation->id) }}">
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </button>
+                            @endif
+                            @if(validatePermissions('admin/designations/delete'))
                             <button type="button" class="btn btn-sm btn-outline-danger delete-designation-btn" data-delete-url="{{ route('admin.designations.destroy', $designation->id) }}">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            @endif
                             <button type="button"
                                 class="btn btn-sm btn-outline-secondary view-designation-btn"
                                 data-bs-toggle="offcanvas"

@@ -15,10 +15,12 @@
             <h5 class="mb-0">Designation Management</h5>
         </div>
         <div class="col-md-6 text-end">
+            @if(validatePermissions('admin/designations/add'))
             <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                 data-bs-target="#addDesignationCanvas" aria-controls="addDesignationCanvas">
                 <i class="bi bi-briefcase me-1"></i>Add New Designation
             </button>
+            @endif
         </div>
     </div>
 
