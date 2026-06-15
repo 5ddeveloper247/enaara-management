@@ -35,6 +35,9 @@
 
 <!-- Work Assignment Modal -->
 @include('admin.monthly-summary.work_assignment_modal')
+
+<!-- Leave Breakdown Modal -->
+@include('admin.monthly-summary.leave_breakdown_modal')
 @endsection
 
 @push('scripts')

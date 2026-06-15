@@ -7,9 +7,7 @@
             <th>Present</th>
             <th>Absent</th>
             <th>Half-days</th>
-            @foreach ($tableLeaveTypes ?? [] as $leaveType)
-                <th>{{ $leaveType->name }}</th>
-            @endforeach
+            <th>Leaves</th>
             <th>Late Arrivals</th>
             <th>Early Departures</th>
             <th>Zone-2 Verification</th>

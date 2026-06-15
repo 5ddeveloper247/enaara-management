@@ -22,7 +22,7 @@
     }
 
     function getTableColumnLayout() {
-        const leaveTypeCount = getLeaveTypes().length;
+        const leaveTypeCount = 1; // Only 1 column for "Leaves" now
         const halfDaysCol = 5;
         const firstLeaveCol = 6;
         const lateCol = firstLeaveCol + leaveTypeCount;
@@ -230,20 +230,32 @@
     // ============================================
     // TABLE ROW BUILDER
     // ============================================
-    function buildLeaveUsageCells(employee) {
+    function buildTotalLeavesCell(employee) {
         const usage = employee.leave_usage || {};
-        const badgeClasses = ['bg-info', 'bg-primary', 'bg-secondary', 'bg-success', 'bg-warning text-dark', 'bg-danger'];
+        let totalLeaves = 0;
+        
+        // Sum all leaves
+        getLeaveTypes().forEach(function (leaveType) {
+            totalLeaves += parseFloat(usage[String(leaveType.id)] ?? 0) || 0;
+        });
 
-        return getLeaveTypes().map(function (leaveType, index) {
-            const value = parseFloat(usage[String(leaveType.id)] ?? 0) || 0;
+        // Store breakdown in data attribute as JSON
+        const breakdownData = escapeHtml(JSON.stringify(usage));
 
-            if (value > 0) {
-                const badgeClass = badgeClasses[index % badgeClasses.length];
-                return `<td><span class="badge px-2 rounded-1 ${badgeClass}">${value}</span></td>`;
-            }
+        if (totalLeaves > 0) {
+            return `<td>
+                        <button type="button" class="btn btn-sm btn-light border-0 badge bg-primary fs-6 px-3 rounded-pill leave-breakdown-btn" 
+                                data-employee-name="${escapeHtml(employee.employee_name)}" 
+                                data-employee-avatar="${escapeHtml(employee.employee_avatar || 'E')}"
+                                data-employee-info="${escapeHtml(employee.employee_code)} | ${escapeHtml(employee.department)}"
+                                data-total="${totalLeaves}" 
+                                data-breakdown="${breakdownData}">
+                            ${totalLeaves}
+                        </button>
+                    </td>`;
+        }
 
-            return '<td><span class="text-muted">-</span></td>';
-        }).join('');
+        return '<td><span class="text-muted">-</span></td>';
     }
 
     function buildTableRow(employee) {
@@ -252,7 +264,7 @@
         const halfDaysBadge = employee.half_days > 0
             ? `<span class="badge px-2 rounded-1 bg-warning text-dark">${employee.half_days}</span>`
             : '<span class="text-muted">-</span>';
-        const leaveUsageCells = buildLeaveUsageCells(employee);
+        const totalLeavesCell = buildTotalLeavesCell(employee);
 
         const lateArrivalsBadge = employee.late_arrivals > 0
             ? `<span class="badge px-2 rounded-1 bg-warning text-dark">${employee.late_arrivals}</span>`
@@ -283,7 +295,7 @@
                 <td><span class="badge px-2 rounded-1 bg-success">${employee.present}</span></td>
                 <td><span class="badge px-2 rounded-1 bg-danger">${employee.absent}</span></td>
                 <td>${halfDaysBadge}</td>
-                ${leaveUsageCells}
+                ${totalLeavesCell}
                 <td>${lateArrivalsBadge}</td>
                 <td>${earlyDeparturesBadge}</td>
                 <td>${employee.zone2_verification}</td>
@@ -361,6 +373,41 @@
         $('#detailMonthNextBtn').on('click', function () {
             navigateDetailMonth(1);
         });
+
+        // Leave Breakdown Modal Event
+        $('#monthlySummaryTableBody').on('click', '.leave-breakdown-btn', function() {
+            const btn = $(this);
+            $('#leaveBreakdownName').text(btn.data('employee-name'));
+            $('#leaveBreakdownAvatar').text(btn.data('employee-avatar'));
+            $('#leaveBreakdownInfo').text(btn.data('employee-info'));
+            $('#leaveBreakdownTotal').text(btn.data('total'));
+
+            const breakdown = btn.data('breakdown');
+            const list = $('#leaveBreakdownList');
+            list.empty();
+
+            const badgeClasses = ['bg-info', 'bg-primary', 'bg-secondary', 'bg-success', 'bg-warning text-dark', 'bg-danger'];
+            
+            getLeaveTypes().forEach(function (leaveType, index) {
+                const value = parseFloat(breakdown[String(leaveType.id)] ?? 0) || 0;
+                if (value > 0) {
+                    const badgeClass = badgeClasses[index % badgeClasses.length];
+                    list.append(`
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
+                            <span><i class="bi bi-dot text-muted me-1"></i>${leaveType.name}</span>
+                            <span class="badge ${badgeClass} rounded-pill px-2">${value}</span>
+                        </li>
+                    `);
+                }
+            });
+
+            if (list.children().length === 0) {
+                list.append('<li class="list-group-item text-muted px-0 bg-transparent">No leaves taken.</li>');
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('leaveBreakdownModal'));
+            modal.show();
+        });
     }
 
     // ============================================
@@ -397,9 +444,7 @@
             return;
         }
 
-        const headers = ['Employee', 'Employee Code', 'Department', 'SBU', 'Total Days', 'Present', 'Absent', 'Half-days']
-            .concat(getLeaveTypes().map(function (leaveType) { return leaveType.name; }))
-            .concat(['Late Arrivals', 'Early Departures', 'Zone-2 Verification', 'Regularization']);
+        const headers = ['Employee', 'Employee Code', 'Department', 'SBU', 'Total Days', 'Present', 'Absent', 'Half-days', 'Total Leaves', 'Late Arrivals', 'Early Departures', 'Zone-2 Verification', 'Regularization'];
         let csv = headers.join(',') + '\n';
         rows.forEach(function (row) {
             csv += row.map(csvEscape).join(',') + '\n';
@@ -1011,15 +1056,11 @@
     }
 
     function buildPrintableHtml(rows) {
-        const leaveHeaders = getLeaveTypes().map(function (leaveType) {
-            return `<th>${escapeHtml(leaveType.name)}</th>`;
-        }).join('');
-
         const head = `
             <tr>
                 <th>Employee</th><th>Code</th><th>Department</th><th>SBU/Floor</th>
                 <th>Total</th><th>Present</th><th>Absent</th><th>Half</th>
-                ${leaveHeaders}
+                <th>Leaves</th>
                 <th>Late</th><th>Early</th><th>Zone-2</th><th>Regularization</th>
             </tr>`;
         const body = rows.map(function (r) {
