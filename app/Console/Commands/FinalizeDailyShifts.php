@@ -8,16 +8,25 @@ use Illuminate\Console\Command;
 
 class FinalizeDailyShifts extends Command
 {
-    protected $signature = 'shift-roster:finalize {--date= : The date to finalize (YYYY-MM-DD)}';
+    protected $signature = 'shift-roster:finalize
+                            {--date= : Finalize only this date (YYYY-MM-DD). Omit to finalize all pending shifts through today}';
 
     protected $description = 'Finalize pending shift roster entries and award compensatory leave for holiday/off-day work';
 
     public function handle(ShiftRosterFinalizeService $finalizeService): int
     {
-        $dateStr = $this->option('date') ?: now()->toDateString();
-        $this->info("Finalizing shifts for {$dateStr}...");
+        $singleDate = $this->option('date');
 
-        if ($finalizeService->pendingCountForDate($dateStr) === 0) {
+        if ($singleDate) {
+            $this->info("Finalizing shifts for {$singleDate}...");
+            $pendingCount = $finalizeService->pendingCountForDate($singleDate);
+        } else {
+            $throughDate = now()->toDateString();
+            $this->info("Finalizing all pending shifts through {$throughDate}...");
+            $pendingCount = $finalizeService->pendingCountThrough($throughDate);
+        }
+
+        if ($pendingCount === 0) {
             $this->info('No pending internal employee shifts to process.');
 
             return self::SUCCESS;
@@ -29,7 +38,9 @@ class FinalizeDailyShifts extends Command
             return self::FAILURE;
         }
 
-        $stats = $finalizeService->finalizeForDate($dateStr);
+        $stats = $singleDate
+            ? $finalizeService->finalizeForDate($singleDate)
+            : $finalizeService->finalizeAllPendingThrough(now()->toDateString());
 
         $this->info("Processed: {$stats['processed']}");
         $this->info("Compensatory leave awarded: {$stats['cpl_awarded']}");

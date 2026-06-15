@@ -20,15 +20,35 @@ class ShiftRosterFinalizeService
             ? $date->toDateString()
             : Carbon::parse($date)->toDateString();
 
-        $entries = ShiftRosterEntry::query()
-            ->whereDate('roster_date', $dateStr)
-            ->where('status', 'pending')
-            ->whereNotNull('employee_id')
-            ->where(function ($query) {
-                $query->whereHas('approvalRequest', fn ($approvalQuery) => $approvalQuery->where('approval_status', 'approved'))
-                    ->orWhereHas('approvalSegment', fn ($segmentQuery) => $segmentQuery->where('approval_status', 'approved'));
-            })
+        return $this->finalizeEntries(
+            $this->eligiblePendingQuery()->whereDate('roster_date', $dateStr)
+        );
+    }
+
+    /**
+     * Finalize every eligible pending shift on or before the given date (oldest first).
+     *
+     * @return array{processed:int, cpl_awarded:int, used:int, skipped:int, errors:array<int, string>}
+     */
+    public function finalizeAllPendingThrough(Carbon|string $throughDate): array
+    {
+        $throughStr = $throughDate instanceof Carbon
+            ? $throughDate->toDateString()
+            : Carbon::parse($throughDate)->toDateString();
+
+        return $this->finalizeEntries(
+            $this->eligiblePendingQuery()->whereDate('roster_date', '<=', $throughStr)
+        );
+    }
+
+    /**
+     * @return array{processed:int, cpl_awarded:int, used:int, skipped:int, errors:array<int, string>}
+     */
+    private function finalizeEntries($query): array
+    {
+        $entries = $query
             ->with(['employee.department', 'employee.organization'])
+            ->orderBy('roster_date')
             ->orderBy('id')
             ->get();
 
@@ -49,6 +69,17 @@ class ShiftRosterFinalizeService
         }
 
         return $stats;
+    }
+
+    private function eligiblePendingQuery()
+    {
+        return ShiftRosterEntry::query()
+            ->where('status', 'pending')
+            ->whereNotNull('employee_id')
+            ->where(function ($query) {
+                $query->whereHas('approvalRequest', fn ($approvalQuery) => $approvalQuery->where('approval_status', 'approved'))
+                    ->orWhereHas('approvalSegment', fn ($segmentQuery) => $segmentQuery->where('approval_status', 'approved'));
+            });
     }
 
     private function finalizeEntry(ShiftRosterEntry $entry, array &$stats): void
@@ -80,14 +111,15 @@ class ShiftRosterFinalizeService
             ? $date->toDateString()
             : Carbon::parse($date)->toDateString();
 
-        return ShiftRosterEntry::query()
-            ->whereDate('roster_date', $dateStr)
-            ->where('status', 'pending')
-            ->whereNotNull('employee_id')
-            ->where(function ($query) {
-                $query->whereHas('approvalRequest', fn ($approvalQuery) => $approvalQuery->where('approval_status', 'approved'))
-                    ->orWhereHas('approvalSegment', fn ($segmentQuery) => $segmentQuery->where('approval_status', 'approved'));
-            })
-            ->count();
+        return $this->eligiblePendingQuery()->whereDate('roster_date', $dateStr)->count();
+    }
+
+    public function pendingCountThrough(Carbon|string $throughDate): int
+    {
+        $throughStr = $throughDate instanceof Carbon
+            ? $throughDate->toDateString()
+            : Carbon::parse($throughDate)->toDateString();
+
+        return $this->eligiblePendingQuery()->whereDate('roster_date', '<=', $throughStr)->count();
     }
 }
