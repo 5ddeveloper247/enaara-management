@@ -15,10 +15,12 @@
             <h5 class="mb-0">SBU Management</h5>
         </div>
         <div class="col-md-6 text-end">
+            @if(validatePermissions('admin/sbu/add'))
             <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                 data-bs-target="#addSbuCanvas" aria-controls="addSbuCanvas">
                 <i class="bi bi-building-add me-1"></i>Add New SBU
             </button>
+            @endif
         </div>
     </div>
 

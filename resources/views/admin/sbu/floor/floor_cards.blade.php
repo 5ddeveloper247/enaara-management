@@ -41,6 +41,7 @@
                             <!-- <a href="{{ route('admin.sbu.floor.show', $floor->id) }}" class="btn btn-sm btn-outline-secondary me-1">Open</a> -->
                             <div class="mt-3 pt-3 border-top d-flex gap-1">
 
+                                @if(validatePermissions('admin/sbu-floor/edit'))
                                 <!-- Edit Button -->
                                 <button type="button"
                                     class="btn btn-sm btn-outline-primary flex-grow-1 edit-floor-btn"
@@ -52,13 +53,15 @@
                                     data-delete-url="{{ route('admin.sbu.floor.destroy', $floor->id) }}">
                                     <i class="bi bi-pencil me-1"></i>Edit
                                 </button>
+                                @endif
 
-                                
+                                @if(validatePermissions('admin/sbu-floor/delete'))
                                 <!-- Delete Button -->
                                 <button type="button" class="btn btn-sm btn-outline-danger flex-grow-1 delete-floor-btn" data-delete-url="{{ route('admin.sbu.floor.destroy', $floor->id) }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
-                                
+                                @endif
+
                                 <!-- View Button -->
                                 <button type="button"
                                     class="btn btn-sm btn-outline-secondary view-floor-btn"

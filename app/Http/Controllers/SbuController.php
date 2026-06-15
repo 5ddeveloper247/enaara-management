@@ -17,6 +17,10 @@ class SbuController extends Controller
 
     public function index(): View|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/sbu')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $sbus = $this->sbuService->getList();
         $counts = $this->sbuService->getCounts();
         $organizations = Organization::orderBy('name')->get();

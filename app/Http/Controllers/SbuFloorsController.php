@@ -19,6 +19,10 @@ class SbuFloorsController extends Controller
 
     public function index(): View
     {
+        if (! validatePermissions('admin/sbu-floor')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('admin.sbu.floor.index', $this->indexViewData());
     }
 

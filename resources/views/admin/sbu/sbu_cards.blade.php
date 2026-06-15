@@ -37,6 +37,7 @@
                             @endif
                             <div class="mt-3 pt-3 border-top d-flex gap-1">
 
+                                @if(validatePermissions('admin/sbu/edit'))
                                 <!-- Edit Button -->
                                 <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1 edit-sbu-btn"
                                     data-bs-toggle="offcanvas" data-bs-target="#editSbuCanvas" data-id="{{ $sbu->id }}"
@@ -45,12 +46,15 @@
                                     data-delete-url="{{ route('admin.sbu.destroy', $sbu->id) }}">
                                     <i class="bi bi-pencil me-1"></i>Edit
                                 </button>
+                                @endif
 
+                                @if(validatePermissions('admin/sbu/delete'))
                                 <!-- Delete Button -->
                                 <button type="button" class="btn btn-sm btn-outline-danger delete-sbu-btn"
                                     data-delete-url="{{ route('admin.sbu.destroy', $sbu->id) }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
+                                @endif
 
                                 <!-- View Button -->
                                 <button type="button" class="btn btn-sm btn-outline-secondary view-sbu-btn"
