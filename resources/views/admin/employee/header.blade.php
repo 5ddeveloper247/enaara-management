@@ -20,6 +20,7 @@
         <button type="button" class="btn btn-outline-secondary me-2" id="exportBtn">
             <i class="bi bi-download me-1"></i>Export Record
         </button>
+        @if(validatePermissions('admin/register'))
         <a href="{{ route('admin.register.index') }}"
             class="btn btn-primary bg-main border-0 me-2"
             id="addEmployeeActionBtn"
@@ -27,6 +28,7 @@
             data-outsourced-target="#outsourcedEmployeeCanvas">
             <i class="bi bi-person-plus me-1"></i>Add Employee
         </a>
+        @endif
         <div class="btn-group">
             <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
                 aria-expanded="false" id="filterDropdownBtn">
