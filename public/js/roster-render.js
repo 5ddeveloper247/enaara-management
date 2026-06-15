@@ -489,7 +489,7 @@
         });
     }
 
-    function orderDepartmentsForFilter(depts) {
+    function filterDepartmentsForView(depts) {
         if (!Array.isArray(depts) || rosterDepartmentFilter === 'all' || rosterDepartmentFilter === '') {
             return depts || [];
         }
@@ -499,17 +499,9 @@
             return depts;
         }
 
-        var selected = [];
-        var others = [];
-        depts.forEach(function(dept) {
-            if (Number(dept.id) === filterId) {
-                selected.push(dept);
-            } else {
-                others.push(dept);
-            }
+        return depts.filter(function(dept) {
+            return Number(dept.id) === filterId;
         });
-
-        return selected.concat(others);
     }
 
     function syncRosterDepartmentFilterSelect(meta) {
@@ -582,7 +574,7 @@
         var r = rosterData;
         if (!r || !r.departments || !r.employees) return;
 
-        var depts = orderDepartmentsForFilter(r.departments);
+        var depts = filterDepartmentsForView(r.departments);
         var employees = r.employees;
         var shifts = r.shifts || [];
         var shiftsByEmpDay = {};
