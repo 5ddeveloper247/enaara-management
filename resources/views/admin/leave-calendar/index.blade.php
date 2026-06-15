@@ -157,10 +157,12 @@
             <button type="button" class="btn btn-outline-secondary me-2" id="todayBtn">
                 <i class="bi bi-calendar-day me-1"></i>Today
             </button>
+            @if(validatePermissions('admin/leave-calendar/add'))
             <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                 data-bs-target="#addHolidayCanvas">
                 <i class="bi bi-plus-circle me-1"></i>Add Holiday
             </button>
+            @endif
         </div>
     </div>
 
@@ -246,6 +248,9 @@
 <script>
     let calendar;
     let calendarEl;
+
+    const canEditHoliday = @json(validatePermissions('admin/leave-calendar/update/{id}'));
+    const canDeleteHoliday = @json(validatePermissions('admin/leave-calendar/destroy/{id}'));
 
     const publicHolidays = @json($publicHolidays);
     const deptLeaves = @json($deptLeaves);
@@ -906,11 +911,13 @@
                             <div class="fw-semibold" style="font-size: 13px; color: #333;">${holiday.name}</div>
                             <small class="text-muted" style="font-size: 11px;">${nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
                         </div>
+                        ${canEditHoliday ? `
                         <button class="btn btn-outline-primary btn-sm rounded-pill"
                                 style="font-size: 9px !important; padding: 2px 8px; height: 22px;"
                                 onclick="editHoliday(${holiday.id})">
                             Edit
                         </button>
+                        ` : ''}
                     `;
                     upcomingHolidaysContainer.appendChild(item);
                 });
@@ -1127,11 +1134,13 @@
                         ${new Date(getHolidayDisplayDate(holiday, yearNumber) + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </small>
                 </div>
+                ${canEditHoliday ? `
                 <button class="btn btn-outline-primary btn-sm rounded-pill"
                         style="font-size: 9px !important; padding: 2px 8px; height: 22px;"
                         onclick="window.editHoliday(${holiday.id})">
                     Edit
                 </button>
+                ` : ''}
             `;
             container.appendChild(item);
         });

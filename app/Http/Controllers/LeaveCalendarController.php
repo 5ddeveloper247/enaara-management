@@ -74,7 +74,9 @@ class LeaveCalendarController extends Controller
 
     public function show($id)
     {
-        if (!validatePermissions('admin/leave-calendar/add')) {
+        if (!validatePermissions('admin/leave-calendar/add') &&
+            !validatePermissions('admin/leave-calendar/update/{id}') &&
+            !validatePermissions('admin/leave-calendar/destroy/{id}')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
@@ -129,7 +131,7 @@ class LeaveCalendarController extends Controller
 
     public function update(LeaveCalendarRequest $request, $id)
     {
-        if (!validatePermissions('admin/leave-calendar/add')) {
+        if (!validatePermissions('admin/leave-calendar/update/{id}')) {
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
             }
@@ -166,7 +168,7 @@ class LeaveCalendarController extends Controller
 
     public function destroy($id)
     {
-        if (!validatePermissions('admin/leave-calendar/add')) {
+        if (!validatePermissions('admin/leave-calendar/destroy/{id}')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
