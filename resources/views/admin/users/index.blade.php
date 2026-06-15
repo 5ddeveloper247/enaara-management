@@ -222,8 +222,10 @@
                     ' data-user-id="' + row.id + '"' +
                     ' title="Email new temporary password"><i class="bi bi-key"></i></button>';
             }
-            return '<div class="btn-group d-flex align-items-center gap-1">' +
-                '<button type="button" class="action-btn border-0 text-white btn-primary edit-user-btn"' +
+            
+            var editBtn = '';
+            @if(validatePermissions('admin/users/{id}/update'))
+            editBtn = '<button type="button" class="action-btn border-0 text-white btn-primary edit-user-btn"' +
                 ' data-bs-toggle="offcanvas" data-bs-target="#userCanvas"' +
                 ' data-id="'          + row.id                        + '"' +
                 ' data-name="'        + escAttr(row.name)             + '"' +
@@ -235,7 +237,11 @@
                 ' data-avatar-url="'  + escAttr(row.avatar_url || '') + '"' +
                 ' data-role-name="'    + escAttr(row.role || '')          + '"' +
                 ' data-role-id="'     + (row.role_id || '')           + '"' +
-                ' title="Edit"><i class="bi bi-pencil"></i></button>' +
+                ' title="Edit"><i class="bi bi-pencil"></i></button>';
+            @endif
+
+            return '<div class="btn-group d-flex align-items-center gap-1">' +
+                editBtn +
                 resetBtn +
                 // '<button type="button" class="action-btn border-0 text-danger bg-danger-subtle delete-user-btn"' +
                 // ' data-bs-toggle="modal" data-bs-target="#deleteConfirmModal"' +

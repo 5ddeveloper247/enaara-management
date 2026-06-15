@@ -3,11 +3,12 @@
         <h5 class="mb-0">Manage Users</h5>
     </div>
     <div class="col-md-6 text-end d-flex align-items-center justify-content-end gap-2">
+        @if(validatePermissions('admin/users/store'))
         <button type="button" class="btn btn-primary bg-main border-0 px-3" id="addUserBtn"
             data-bs-toggle="offcanvas" data-bs-target="#userCanvas">
             <i class="bi bi-person-plus me-1"></i>Add User
         </button>
-
+        @endif
         <button type="button" class="btn btn-outline-secondary" id="exportBtn">
             <i class="bi bi-download me-1"></i>Export
         </button>

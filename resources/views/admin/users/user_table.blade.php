@@ -6,7 +6,7 @@
     window.usersStatusUrl = "{{ url('admin/users') }}";
     window.usersDeleteUrl = "{{ url('admin/users') }}";
     window.usersResetPasswordUrl = "{{ url('admin/users') }}";
-    window.canResetUserPassword = @json(validatePermissions('admin/users'));
+    window.canResetUserPassword = @json(validatePermissions('admin/users/{id}/update'));
     window.csrfToken      = "{{ csrf_token() }}";
 </script>
 
