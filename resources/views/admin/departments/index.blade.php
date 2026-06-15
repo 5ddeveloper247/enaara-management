@@ -57,9 +57,11 @@
             </div>
 
             <div class="col-md-6 text-end">
+            @if(validatePermissions('/admin/department/add'))
                 <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas" data-bs-target="#departmentEditCanvas" id="addDepartmentBtn">
                     <i class="bi bi-building-add me-1"></i>Add New Department
                 </button>
+            @endif
             </div>
         </div>
 

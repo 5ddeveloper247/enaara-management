@@ -35,6 +35,7 @@
                         </div>
                         @endif
                         <div class="mt-3 pt-3 border-top d-flex gap-1">
+                            @if(validatePermissions('admin/department/edit/{id}'))
                             <button type="button"
                                 class="btn btn-sm btn-outline-primary flex-grow-1 edit-department-btn"
                                 data-bs-toggle="offcanvas"
@@ -42,9 +43,12 @@
                                 data-department-id="{{ $dept->id }}">
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </button>
+                            @endif
+                            @if(validatePermissions('/admin/department/delete'))
                             <button type="button" class="btn btn-sm btn-outline-danger flex-grow-1 delete-department-btn" data-delete-url="{{ route('admin.department.destroy', $dept->id) }}">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            @endif
                             <button type="button"
                                 class="btn btn-sm btn-outline-secondary view-department-btn"
                                 data-bs-toggle="offcanvas"

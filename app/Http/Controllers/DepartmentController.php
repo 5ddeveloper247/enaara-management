@@ -20,6 +20,13 @@ class DepartmentController extends Controller
 
     public function index(): View|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/department')) {
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $departments = $this->departmentService->getList();
         $organizations = $this->departmentService->getOrganizationsForFilter();
         $sbus = $this->departmentService->getSbusForFilter();
@@ -103,6 +110,13 @@ class DepartmentController extends Controller
 
     public function store(DepartmentStoreRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('/admin/department/add')) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         try {
             $validated = $request->validated();
 
@@ -143,6 +157,13 @@ class DepartmentController extends Controller
 
     public function edit(int $id): View|RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/department/edit/{id}')) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $department = $this->departmentService->findById($id);
         if (! $department) {
             if (request()->expectsJson()) {
@@ -170,6 +191,13 @@ class DepartmentController extends Controller
 
     public function update(DepartmentUpdateRequest $request, int $id): RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('admin/department/edit/{id}')) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $department = $this->departmentService->findById($id);
         if (! $department) {
             if ($request->expectsJson() || $request->ajax()) {
@@ -219,6 +247,13 @@ class DepartmentController extends Controller
 
     public function destroy(int $id): RedirectResponse|\Illuminate\Http\JsonResponse
     {
+        if (!validatePermissions('/admin/department/delete')) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $department = $this->departmentService->findById($id);
 
         if (! $department) {
