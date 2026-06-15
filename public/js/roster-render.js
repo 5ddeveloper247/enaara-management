@@ -28,6 +28,8 @@
     var rosterData = null;
     var rosterPersonnelFilter = 'internal';
     var rosterShowDeleted = false;
+    var ROSTER_DEPARTMENT_FILTER_KEY = 'rosterDepartmentFilter';
+    var rosterDepartmentFilter = sessionStorage.getItem(ROSTER_DEPARTMENT_FILTER_KEY) || 'all';
 
     function stripTime(d) {
         return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -487,6 +489,69 @@
         });
     }
 
+    function orderDepartmentsForFilter(depts) {
+        if (!Array.isArray(depts) || rosterDepartmentFilter === 'all' || rosterDepartmentFilter === '') {
+            return depts || [];
+        }
+
+        var filterId = Number(rosterDepartmentFilter);
+        if (!filterId) {
+            return depts;
+        }
+
+        var selected = [];
+        var others = [];
+        depts.forEach(function(dept) {
+            if (Number(dept.id) === filterId) {
+                selected.push(dept);
+            } else {
+                others.push(dept);
+            }
+        });
+
+        return selected.concat(others);
+    }
+
+    function syncRosterDepartmentFilterSelect(meta) {
+        var wrap = document.getElementById('rosterDepartmentFilterWrap');
+        var select = document.getElementById('rosterDepartmentFilter');
+        if (!select) {
+            return;
+        }
+
+        if (wrap) {
+            wrap.classList.toggle('d-none', rosterPersonnelFilter === 'third_party');
+        }
+
+        if (rosterPersonnelFilter === 'third_party') {
+            return;
+        }
+
+        var departments = (meta && Array.isArray(meta.filterDepartments)) ? meta.filterDepartments : [];
+        var previousValue = rosterDepartmentFilter;
+        var optionsHtml = '<option value="all">All</option>';
+
+        departments.forEach(function(dept) {
+            optionsHtml += '<option value="' + String(dept.id) + '">' + escapeHtml(dept.name) + '</option>';
+        });
+
+        select.innerHTML = optionsHtml;
+
+        var hasPrevious = previousValue === 'all'
+            || departments.some(function(dept) { return String(dept.id) === String(previousValue); });
+
+        rosterDepartmentFilter = hasPrevious ? previousValue : 'all';
+        select.value = rosterDepartmentFilter;
+        sessionStorage.setItem(ROSTER_DEPARTMENT_FILTER_KEY, rosterDepartmentFilter);
+    }
+
+    function updateRosterDepartmentFilterVisibility() {
+        var wrap = document.getElementById('rosterDepartmentFilterWrap');
+        if (wrap) {
+            wrap.classList.toggle('d-none', rosterPersonnelFilter === 'third_party');
+        }
+    }
+
     function renderRosterEmployeeCellHtml(emp) {
         var isThirdPartyPersonnel = String(emp.sourceType || '') === 'outsourced';
         var employeeCode = String(emp.employeeCode || emp.employee_code || '').trim();
@@ -517,7 +582,7 @@
         var r = rosterData;
         if (!r || !r.departments || !r.employees) return;
 
-        var depts = r.departments;
+        var depts = orderDepartmentsForFilter(r.departments);
         var employees = r.employees;
         var shifts = r.shifts || [];
         var shiftsByEmpDay = {};
@@ -685,6 +750,7 @@
                     return;
                 }
                 rosterData = json.data;
+                syncRosterDepartmentFilterSelect(json.data && json.data.meta ? json.data.meta : null);
                 renderRosterTableFromData();
                 updateRosterApprovalBars(json.data && json.data.meta ? json.data.meta : null);
             })
@@ -2135,6 +2201,7 @@
             internalTab.addEventListener('click', function() {
                 rosterPersonnelFilter = 'internal';
                 setActiveTab('rosterInternalTab');
+                updateRosterDepartmentFilterVisibility();
                 loadRosterGrid();
             });
         }
@@ -2142,6 +2209,7 @@
             thirdPartyTab.addEventListener('click', function() {
                 rosterPersonnelFilter = 'third_party';
                 setActiveTab('rosterThirdPartyTab');
+                updateRosterDepartmentFilterVisibility();
                 loadRosterGrid();
             });
         }
@@ -2151,6 +2219,18 @@
                 loadRosterGrid();
             });
         }
+
+        var departmentFilter = document.getElementById('rosterDepartmentFilter');
+        if (departmentFilter && !window._rosterDepartmentFilterBound) {
+            window._rosterDepartmentFilterBound = true;
+            departmentFilter.addEventListener('change', function() {
+                rosterDepartmentFilter = departmentFilter.value || 'all';
+                sessionStorage.setItem(ROSTER_DEPARTMENT_FILTER_KEY, rosterDepartmentFilter);
+                renderRosterTableFromData();
+            });
+        }
+
+        updateRosterDepartmentFilterVisibility();
     }
 
     window.getRosterExportContext = function() {

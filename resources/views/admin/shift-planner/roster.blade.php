@@ -24,6 +24,12 @@
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-2 roster-personnel-btn active" id="rosterInternalTab" role="tab" aria-selected="true">Internal Employees</button>
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-2 roster-personnel-btn" id="rosterThirdPartyTab" role="tab" aria-selected="false">Third-Party Employees</button>
                             </div>
+                            <div id="rosterDepartmentFilterWrap" class="d-flex align-items-center gap-1 ms-1">
+                                <label for="rosterDepartmentFilter" class="small text-muted mb-0 text-nowrap">Department</label>
+                                <select id="rosterDepartmentFilter" class="form-select form-select-sm roster-dept-filter-select rounded-2" aria-label="Filter by department">
+                                    <option value="all">All</option>
+                                </select>
+                            </div>
                             <div class="form-check form-check-inline roster-show-deleted-wrap ms-1 mb-0">
                                 <input class="form-check-input" type="checkbox" id="rosterShowDeletedShifts" value="1">
                                 <label class="form-check-label small text-dark" for="rosterShowDeletedShifts">Show deleted shifts</label>

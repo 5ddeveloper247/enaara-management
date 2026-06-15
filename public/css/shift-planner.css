@@ -110,6 +110,13 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     border-color: var(--main-color) !important;
 }
 
+.roster-toolbar .roster-dept-filter-select {
+    min-width: 160px;
+    max-width: 220px;
+    font-size: 0.8125rem;
+    border-color: var(--main-color);
+}
+
 .roster-legend {
     font-size: 0.8rem;
 }

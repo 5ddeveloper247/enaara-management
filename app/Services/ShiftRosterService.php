@@ -729,8 +729,66 @@ class ShiftRosterService
                 'canApplyForApproval' => $approvalReviewScope ? false : $draftPendingCount > 0,
                 'approvalReviewMode' => $approvalReviewScope !== null,
                 'approvalRequestId' => $approvalReviewScope['request_id'] ?? null,
+                'filterDepartments' => $this->getRosterFilterDepartments($viewerUserId),
             ],
         ];
+    }
+
+    /**
+     * Department options for the roster grid filter dropdown.
+     * HR users see all active departments in their SBU; others see only assigned departments.
+     *
+     * @return array<int, array{id: int, name: string}>
+     */
+    public function getRosterFilterDepartments(?int $viewerUserId = null): array
+    {
+        $viewerUserId = $viewerUserId ?? Auth::id();
+        $scope = $this->resolveViewerRosterDepartmentScope($viewerUserId);
+
+        if ($scope === null) {
+            return Department::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (Department $department) => [
+                    'id' => (int) $department->id,
+                    'name' => (string) $department->name,
+                ])
+                ->values()
+                ->all();
+        }
+
+        if ($scope['is_human_resource'] && $scope['sbu_id']) {
+            return Department::query()
+                ->where('sbu_id', (int) $scope['sbu_id'])
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (Department $department) => [
+                    'id' => (int) $department->id,
+                    'name' => (string) $department->name,
+                ])
+                ->values()
+                ->all();
+        }
+
+        $departmentIds = array_values(array_unique(array_map('intval', $scope['department_ids'] ?? [])));
+
+        if ($departmentIds === []) {
+            return [];
+        }
+
+        return Department::query()
+            ->whereIn('id', $departmentIds)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Department $department) => [
+                'id' => (int) $department->id,
+                'name' => (string) $department->name,
+            ])
+            ->values()
+            ->all();
     }
 
     /**
