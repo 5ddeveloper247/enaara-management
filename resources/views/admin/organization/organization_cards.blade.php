@@ -42,6 +42,7 @@
                         @endif
                         <div class="mt-auto pt-3 border-top d-flex gap-1">
 
+                            @if(validatePermissions('admin/organization/edit'))
                             <!-- Edit Button -->
                             <button type="button"
                                 class="btn btn-sm btn-outline-primary flex-grow-1 edit-organization-btn"
@@ -50,11 +51,14 @@
                                 data-org-id="{{ $org->id }}">
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </button>
+                            @endif
 
+                            @if(validatePermissions('admin/organization/delete'))
                             <!-- Delete Button -->
                             <button type="button" class="btn btn-sm btn-outline-danger flex-grow-1 delete-organization-btn" data-delete-url="{{ route('admin.organization.destroy', $org->id) }}">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            @endif
                             <!-- View Button -->
                             <button type="button"
                                 class="btn btn-sm btn-outline-secondary view-organization-btn"

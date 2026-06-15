@@ -15,6 +15,10 @@ class OrganizationController extends Controller
 
     public function index(): View
     {
+        if (!validatePermissions('admin/organization')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $organizations = $this->organizationService->getOrganizationsList();
         $counts = $this->organizationService->getOrganizationsCounts();
 

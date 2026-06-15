@@ -22,10 +22,12 @@
                     data-bs-target="#bulkPolicyModal">
                     <i class="bi bi-clipboard-data me-1"></i>Bulk Policy Update
                 </button> -->
+            @if(validatePermissions('admin/organization/add'))
             <button type="button" class="btn btn-primary bg-main border-0" data-bs-toggle="offcanvas"
                 data-bs-target="#addOrganizationCanvas">
                 <i class="bi bi-building-add me-1"></i>Add New Organization
             </button>
+            @endif
         </div>
     </div>
 
