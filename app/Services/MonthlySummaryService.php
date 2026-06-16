@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class MonthlySummaryService
 {
+    private const PUBLIC_HOLIDAY_LABEL = 'Public Holiday';
+
     public function __construct(
         private readonly PublicHolidayResolver $publicHolidayResolver,
         private readonly EmployeeWorkingScheduleService $employeeWorkingScheduleService,
@@ -68,6 +70,7 @@ class MonthlySummaryService
         }
 
         if (! empty($departmentId)) {
+            $this->viewerScope->assertDepartmentIdAccessible((int) $departmentId);
             $employeesQuery->where('department_id', $departmentId);
         }
 
@@ -78,7 +81,7 @@ class MonthlySummaryService
             }
         }
 
-        $this->viewerScope->applySbuScopeToEmployeeQuery($employeesQuery);
+        $this->viewerScope->applyViewerScopeToEmployeeQuery($employeesQuery);
 
         $employees = $employeesQuery->get();
 
@@ -219,16 +222,6 @@ class MonthlySummaryService
             $dateStr,
         );
 
-        if ($holiday) {
-            return [
-                'date' => $dateStr,
-                'day' => (int) $date->day,
-                'status' => 'holiday',
-                'label' => 'Holiday',
-                'detail' => $holiday->name,
-            ];
-        }
-
         if ($leaveEntity) {
             $leaveTypeName = $leaveEntity->leaveType?->name ?? 'Leave';
             $duration = (float) $leaveEntity->duration;
@@ -253,6 +246,31 @@ class MonthlySummaryService
             ];
         }
 
+        if ($isShiftBased && $rosterEntry !== null && $this->isRosterWorkShift($rosterEntry)) {
+            $day = $this->resolveShiftBasedDay($date, $rosterEntry, $workingDays);
+
+            if ($holiday !== null) {
+                return array_merge($day, [
+                    'status' => 'present',
+                    'label' => 'Present',
+                    'detail' => self::PUBLIC_HOLIDAY_LABEL . ' (working)',
+                    'is_holiday_work' => true,
+                ]);
+            }
+
+            return $day;
+        }
+
+        if ($holiday !== null) {
+            return [
+                'date' => $dateStr,
+                'day' => (int) $date->day,
+                'status' => 'holiday',
+                'label' => self::PUBLIC_HOLIDAY_LABEL,
+                'detail' => self::PUBLIC_HOLIDAY_LABEL,
+            ];
+        }
+
         if ($isShiftBased) {
             return $this->resolveShiftBasedDay($date, $rosterEntry, $workingDays);
         }
@@ -262,6 +280,21 @@ class MonthlySummaryService
         }
 
         return $this->resolveStandardDay($date, $workingDays);
+    }
+
+    private function isRosterWorkShift(ShiftRosterEntry $entry): bool
+    {
+        $status = strtolower(trim((string) $entry->status));
+
+        if (in_array($status, ['off', 'cancelled', 'holiday', 'blackout'], true)) {
+            return false;
+        }
+
+        if ($entry->is_custom_time) {
+            return $entry->start_time !== null && $entry->end_time !== null;
+        }
+
+        return $entry->shift_planner_id !== null;
     }
 
     private function resolveShiftBasedDay(Carbon $date, ?ShiftRosterEntry $rosterEntry, ?array $workingDays): array

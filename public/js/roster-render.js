@@ -203,14 +203,10 @@
 
     function pillHtml(s, rosterDateIso, holidaysByDate) {
         if (s.isPublicHoliday || (s.status && String(s.status).toLowerCase() === 'holiday')) {
-            var holidayLabel = s.holidayName ? String(s.holidayName) : 'Holiday';
-            if (holidayLabel.length > 18) {
-                holidayLabel = holidayLabel.substring(0, 16) + '…';
-            }
-            return '<div class="shift-pill shift-holiday" title="' + escapeHtml(s.holidayName || 'Public holiday') + '">' +
+            return '<div class="shift-pill shift-holiday" title="Public Holiday">' +
                 '<span class="shift-pill-icon" aria-hidden="true"><i class="bi bi-calendar-event"></i></span>' +
                 '<div class="shift-pill-top">' +
-                '<span class="shift-time">' + escapeHtml(holidayLabel) + '</span>' +
+                '<span class="shift-time">Public Holiday</span>' +
                 '</div>' +
                 '</div>';
         }
@@ -380,10 +376,9 @@
         if (!names || !names.length) {
             return '';
         }
-        var label = names.join(', ');
-        return '<span class="roster-col-holiday-badge" title="' + escapeHtml(label) + '">' +
+        return '<span class="roster-col-holiday-badge" title="Public Holiday">' +
             '<i class="bi bi-calendar-event" aria-hidden="true"></i>' +
-            '<span class="roster-col-holiday-text">' + escapeHtml(label) + '</span>' +
+            '<span class="roster-col-holiday-text">Public Holiday</span>' +
             '</span>';
     }
 

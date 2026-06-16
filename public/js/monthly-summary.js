@@ -682,6 +682,10 @@
             return '';
         }
 
+        if (dayData.is_holiday_work && dayData.detail) {
+            return dayData.detail;
+        }
+
         if (statusClass === 'leave' || statusClass === 'half-day' || statusClass === 'holiday') {
             return dayData.detail || label;
         }
@@ -697,6 +701,10 @@
         const notes = dayData.notes ? String(dayData.notes).trim() : '';
         if (notes) {
             return `${label} — ${notes}`;
+        }
+
+        if (dayData.is_holiday_work && dayData.detail) {
+            return dayData.detail;
         }
 
         if (dayData.status === 'holiday' && dayData.detail) {

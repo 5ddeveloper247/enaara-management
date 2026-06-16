@@ -399,6 +399,23 @@ class EmployeeViewerScopeService
         }
     }
 
+    public function assertDepartmentIdAccessible(int $departmentId, ?User $user = null): void
+    {
+        $this->assertDepartmentIdAllowed($departmentId, $user);
+
+        $allowedDepartmentIds = $this->resolveViewerDepartmentIds($user);
+
+        if ($allowedDepartmentIds === null) {
+            return;
+        }
+
+        if (! in_array($departmentId, $allowedDepartmentIds, true)) {
+            throw ValidationException::withMessages([
+                'department_id' => 'The selected department is outside your department scope.',
+            ]);
+        }
+    }
+
     /**
      * @param  array<int, int>  $departmentIds
      */
