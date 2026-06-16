@@ -255,8 +255,12 @@ class EmployeeLeaveQuotaRecords
 
             if ($requestedDays > $remaining) {
                 throw ValidationException::withMessages([
-                    'leave_type_id' => "Insufficient compensatory leave balance. You have {$remaining} day(s) available (earned days expire after "
-                        .CompensatoryLeaveBalanceService::EXPIRY_DAYS.' days), but you are requesting '.$requestedDays.' day(s).',
+                    'leave_type_id' => $this->compensatoryLeaveBalanceService->resolveInsufficientBalanceMessage(
+                        $employee->id,
+                        $startDate,
+                        $requestedDays,
+                        $remaining
+                    ),
                 ]);
             }
 

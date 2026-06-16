@@ -71,6 +71,60 @@ class CompensatoryLeaveBalanceService
         return $cplType !== null && (int) $cplType->id === $leaveTypeId;
     }
 
+    public function resolveInsufficientBalanceMessage(
+        int $employeeId,
+        Carbon $startDate,
+        float $requestedDays,
+        float $availableOnLeaveDate
+    ): string {
+        $startDate = $startDate->copy()->startOfDay();
+        $today = Carbon::today();
+        $leaveDateLabel = $startDate->toDateString();
+        $earnedOnLeaveDate = $this->validEarnedDays($employeeId, $startDate);
+        $earnedToday = $this->validEarnedDays($employeeId, $today);
+
+        if ($earnedToday > $earnedOnLeaveDate) {
+            $firstEarnedAfterLeave = ShiftRosterEntry::query()
+                ->where('employee_id', $employeeId)
+                ->where('is_compensatory_earned', true)
+                ->whereDate('roster_date', '>', $startDate->toDateString())
+                ->whereDate('roster_date', '<=', $today->toDateString())
+                ->min('roster_date');
+
+            if ($firstEarnedAfterLeave !== null) {
+                $earnedDate = Carbon::parse($firstEarnedAfterLeave)->format('Y-m-d');
+
+                return "Compensatory leave cannot be applied for {$leaveDateLabel}. "
+                    ."Your current balance includes time earned on {$earnedDate}, which is after this leave date. "
+                    .'Compensatory leave can only be used from the date it was earned onward.';
+            }
+        }
+
+        $hasExpiredEarnedBeforeLeave = ShiftRosterEntry::query()
+            ->where('employee_id', $employeeId)
+            ->where('is_compensatory_earned', true)
+            ->whereDate('roster_date', '<', $this->expiryCutoffDate($startDate)->toDateString())
+            ->whereDate('roster_date', '<=', $startDate->toDateString())
+            ->exists();
+
+        if ($hasExpiredEarnedBeforeLeave && $earnedOnLeaveDate < $requestedDays) {
+            return "Insufficient compensatory leave balance for leave starting {$leaveDateLabel}. "
+                .'Earned compensatory day(s) for that period have expired (valid for '
+                .self::EXPIRY_DAYS.' days from the date earned). You have '.$availableOnLeaveDate
+                ." day(s) available, but you are requesting {$requestedDays} day(s).";
+        }
+
+        if ($earnedOnLeaveDate >= $requestedDays && $availableOnLeaveDate < $requestedDays) {
+            return "Insufficient compensatory leave balance for leave starting {$leaveDateLabel}. "
+                .'You have '.$availableOnLeaveDate.' day(s) available after pending or approved usage, '
+                ."but you are requesting {$requestedDays} day(s).";
+        }
+
+        return "Insufficient compensatory leave balance for leave starting {$leaveDateLabel}. "
+            .'You have '.$availableOnLeaveDate.' day(s) available (earned days expire after '
+            .self::EXPIRY_DAYS." days), but you are requesting {$requestedDays} day(s).";
+    }
+
     private function sumDedupedRequestDuration(
         int $employeeId,
         int $leaveTypeId,
