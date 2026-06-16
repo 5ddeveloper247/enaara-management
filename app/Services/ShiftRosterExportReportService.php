@@ -18,6 +18,7 @@ class ShiftRosterExportReportService
 {
     public function __construct(
         private readonly PublicHolidayResolver $publicHolidayResolver,
+        private readonly ShiftRosterService $shiftRosterService,
     ) {}
 
     public function buildTabularReport(array $options): array
@@ -234,20 +235,20 @@ class ShiftRosterExportReportService
 
         if ($context['employee_group'] === 'third_party') {
             $entriesQuery->whereNotNull('outsourced_employee_id');
-
-            if (! empty($context['department_id'])) {
-                $entriesQuery->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
-                    $employeeQuery->where('contractor_company_id', $context['department_id']);
-                });
-            }
+            $entriesQuery->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
+                $this->shiftRosterService->applyViewerRosterScopeToOutsourcedEmployeeQuery(
+                    $employeeQuery,
+                    ! empty($context['department_id']) ? (int) $context['department_id'] : null
+                );
+            });
         } else {
             $entriesQuery->whereNotNull('employee_id');
-
-            if (! empty($context['department_id'])) {
-                $entriesQuery->whereHas('employee', function ($employeeQuery) use ($context) {
-                    $employeeQuery->where('department_id', $context['department_id']);
-                });
-            }
+            $entriesQuery->whereHas('employee', function ($employeeQuery) use ($context) {
+                $this->shiftRosterService->applyViewerRosterScopeToEmployeeQuery(
+                    $employeeQuery,
+                    ! empty($context['department_id']) ? (int) $context['department_id'] : null
+                );
+            });
         }
 
         $entries = $entriesQuery->get();
@@ -261,20 +262,20 @@ class ShiftRosterExportReportService
 
             if ($context['employee_group'] === 'third_party') {
                 $trashedQuery->whereNotNull('outsourced_employee_id');
-
-                if (! empty($context['department_id'])) {
-                    $trashedQuery->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
-                        $employeeQuery->where('contractor_company_id', $context['department_id']);
-                    });
-                }
+                $trashedQuery->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
+                    $this->shiftRosterService->applyViewerRosterScopeToOutsourcedEmployeeQuery(
+                        $employeeQuery,
+                        ! empty($context['department_id']) ? (int) $context['department_id'] : null
+                    );
+                });
             } else {
                 $trashedQuery->whereNotNull('employee_id');
-
-                if (! empty($context['department_id'])) {
-                    $trashedQuery->whereHas('employee', function ($employeeQuery) use ($context) {
-                        $employeeQuery->where('department_id', $context['department_id']);
-                    });
-                }
+                $trashedQuery->whereHas('employee', function ($employeeQuery) use ($context) {
+                    $this->shiftRosterService->applyViewerRosterScopeToEmployeeQuery(
+                        $employeeQuery,
+                        ! empty($context['department_id']) ? (int) $context['department_id'] : null
+                    );
+                });
             }
 
             $entries = $entries->merge($trashedQuery->get())->unique('id')->values();

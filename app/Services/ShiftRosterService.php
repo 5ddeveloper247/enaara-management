@@ -11,6 +11,7 @@ use App\Models\ShiftPlanner;
 use App\Models\ShiftRosterApprovalRequest;
 use App\Models\ShiftRosterApprovalSegment;
 use App\Models\ShiftRosterEntry;
+use App\Models\ThirdParty;
 use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -800,6 +801,112 @@ class ShiftRosterService
             ])
             ->values()
             ->all();
+    }
+
+    public function assertExportDepartmentInViewerScope(
+        ?int $departmentId,
+        string $employeeGroup = 'internal',
+        ?int $viewerUserId = null
+    ): void {
+        if ($departmentId === null) {
+            return;
+        }
+
+        $allowedIds = $employeeGroup === 'third_party'
+            ? array_column($this->getRosterFilterThirdPartyCompanies($viewerUserId), 'id')
+            : array_column($this->getRosterFilterDepartments($viewerUserId), 'id');
+
+        if (! in_array($departmentId, $allowedIds, true)) {
+            throw ValidationException::withMessages([
+                'department_id' => 'The selected department is outside your department scope.',
+            ]);
+        }
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string}>
+     */
+    public function getRosterFilterThirdPartyCompanies(?int $viewerUserId = null): array
+    {
+        $query = OutsourcedEmployee::query()
+            ->whereNull('deleted_at')
+            ->whereNotNull('contractor_company_id');
+
+        $this->applyViewerRosterScopeToOutsourcedEmployeeQuery($query, null, $viewerUserId);
+
+        $companyIds = $query->distinct()->pluck('contractor_company_id');
+
+        return ThirdParty::query()
+            ->whereIn('id', $companyIds)
+            ->orderBy('third_party_name')
+            ->get(['id', 'third_party_name'])
+            ->map(fn (ThirdParty $company) => [
+                'id' => (int) $company->id,
+                'name' => (string) $company->third_party_name,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<Employee>  $query
+     */
+    public function applyViewerRosterScopeToEmployeeQuery($query, ?int $departmentId = null, ?int $viewerUserId = null): void
+    {
+        $scope = $this->resolveViewerRosterDepartmentScope($viewerUserId ?? Auth::id());
+
+        if ($scope === null) {
+            if ($departmentId) {
+                $this->applyEmployeeDepartmentScope($query, [$departmentId]);
+            }
+
+            return;
+        }
+
+        if ($departmentId) {
+            $this->applyEmployeeDepartmentScope($query, [$departmentId]);
+
+            return;
+        }
+
+        $allowedIds = array_values(array_unique(array_map('intval', $scope['department_ids'] ?? [])));
+
+        if ($allowedIds === []) {
+            $query->whereRaw('0 = 1');
+
+            return;
+        }
+
+        $this->applyEmployeeDepartmentScope($query, $allowedIds);
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<OutsourcedEmployee>  $query
+     */
+    public function applyViewerRosterScopeToOutsourcedEmployeeQuery(
+        $query,
+        ?int $contractorCompanyId = null,
+        ?int $viewerUserId = null
+    ): void {
+        $scope = $this->resolveViewerRosterDepartmentScope($viewerUserId ?? Auth::id());
+
+        if ($scope === null) {
+            if ($contractorCompanyId) {
+                $query->where('contractor_company_id', $contractorCompanyId);
+            }
+
+            return;
+        }
+
+        if ($scope['sbu_id']) {
+            $query->where('sbu_id', (int) $scope['sbu_id']);
+        } else {
+            $query->whereRaw('0 = 1');
+        }
+
+        if ($contractorCompanyId) {
+            $query->where('contractor_company_id', $contractorCompanyId);
+        }
     }
 
     /**

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin\ShiftRoster;
 
+use App\Services\ShiftRosterService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\ValidationException;
 
 class ShiftRosterExcelExportRequest extends FormRequest
 {
@@ -41,5 +43,27 @@ class ShiftRosterExcelExportRequest extends FormRequest
             'employee_group' => $this->input('employee_group', 'internal'),
             'department_id' => $this->filled('department_id') ? (int) $this->input('department_id') : null,
         ]);
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($v) {
+            if ($v->errors()->isNotEmpty()) {
+                return;
+            }
+
+            try {
+                app(ShiftRosterService::class)->assertExportDepartmentInViewerScope(
+                    $this->input('department_id') ? (int) $this->input('department_id') : null,
+                    (string) $this->input('employee_group', 'internal')
+                );
+            } catch (ValidationException $e) {
+                foreach ($e->errors() as $field => $messages) {
+                    foreach ($messages as $message) {
+                        $v->errors()->add($field, $message);
+                    }
+                }
+            }
+        });
     }
 }

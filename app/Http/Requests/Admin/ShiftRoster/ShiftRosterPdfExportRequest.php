@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Admin\ShiftRoster;
 
+use App\Services\ShiftRosterService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ShiftRosterPdfExportRequest extends FormRequest
 {
@@ -57,22 +59,35 @@ class ShiftRosterPdfExportRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($v) {
-            if ($this->input('export_period_type') !== 'date_range') {
+            if ($v->errors()->isNotEmpty()) {
                 return;
             }
 
-            $start = $this->input('start_date');
-            $end = $this->input('end_date');
-            if (! $start || ! $end) {
-                return;
+            if ($this->input('export_period_type') === 'date_range') {
+                $start = $this->input('start_date');
+                $end = $this->input('end_date');
+                if ($start && $end) {
+                    $startDate = \Carbon\Carbon::parse($start);
+                    $endDate = \Carbon\Carbon::parse($end);
+                    $maxDays = 366;
+
+                    if ($startDate->diffInDays($endDate) + 1 > $maxDays) {
+                        $v->errors()->add('end_date', 'Date range may not exceed ' . $maxDays . ' days.');
+                    }
+                }
             }
 
-            $startDate = \Carbon\Carbon::parse($start);
-            $endDate = \Carbon\Carbon::parse($end);
-            $maxDays = 366;
-
-            if ($startDate->diffInDays($endDate) + 1 > $maxDays) {
-                $v->errors()->add('end_date', 'Date range may not exceed ' . $maxDays . ' days.');
+            try {
+                app(ShiftRosterService::class)->assertExportDepartmentInViewerScope(
+                    $this->input('department_id') ? (int) $this->input('department_id') : null,
+                    (string) $this->input('employee_group', 'internal')
+                );
+            } catch (ValidationException $e) {
+                foreach ($e->errors() as $field => $messages) {
+                    foreach ($messages as $message) {
+                        $v->errors()->add($field, $message);
+                    }
+                }
             }
         });
     }

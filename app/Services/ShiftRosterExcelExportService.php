@@ -2,54 +2,26 @@
 
 namespace App\Services;
 
-use App\Models\Department;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftRosterEntry;
-use App\Models\ThirdParty;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class ShiftRosterExcelExportService
 {
+    public function __construct(
+        private readonly ShiftRosterService $shiftRosterService,
+    ) {
+    }
+
     public function listDepartments(string $employeeGroup): array
     {
         if ($employeeGroup === 'third_party') {
-            $companyIds = OutsourcedEmployee::query()
-                ->whereNull('deleted_at')
-                ->whereNotNull('contractor_company_id')
-                ->distinct()
-                ->pluck('contractor_company_id');
-
-            return ThirdParty::query()
-                ->whereIn('id', $companyIds)
-                ->orderBy('third_party_name')
-                ->get(['id', 'third_party_name'])
-                ->map(fn (ThirdParty $company) => [
-                    'id' => $company->id,
-                    'name' => (string) $company->third_party_name,
-                ])
-                ->values()
-                ->all();
+            return $this->shiftRosterService->getRosterFilterThirdPartyCompanies();
         }
 
-        $departmentIds = Employee::query()
-            ->where('is_active', 1)
-            ->shiftBasedWorkArrangement()
-            ->whereNotNull('department_id')
-            ->distinct()
-            ->pluck('department_id');
-
-        return Department::query()
-            ->whereIn('id', $departmentIds)
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn (Department $department) => [
-                'id' => $department->id,
-                'name' => (string) $department->name,
-            ])
-            ->values()
-            ->all();
+        return $this->shiftRosterService->getRosterFilterDepartments();
     }
 
     public function buildPayload(array $options): array
@@ -168,9 +140,10 @@ class ShiftRosterExcelExportService
             $query = OutsourcedEmployee::with('contractorCompany')
                 ->whereNull('deleted_at');
 
-            if ($departmentId) {
-                $query->where('contractor_company_id', $departmentId);
-            }
+            $this->shiftRosterService->applyViewerRosterScopeToOutsourcedEmployeeQuery(
+                $query,
+                $departmentId ? (int) $departmentId : null
+            );
 
             return $query->get()
                 ->map(function (OutsourcedEmployee $employee) {
@@ -192,9 +165,10 @@ class ShiftRosterExcelExportService
             ->where('is_active', 1)
             ->shiftBasedWorkArrangement();
 
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-        }
+        $this->shiftRosterService->applyViewerRosterScopeToEmployeeQuery(
+            $query,
+            $departmentId ? (int) $departmentId : null
+        );
 
         return $query->get()
             ->map(function (Employee $employee) {
@@ -257,20 +231,20 @@ class ShiftRosterExcelExportService
 
         if ($context['employee_group'] === 'third_party') {
             $query->whereNotNull('outsourced_employee_id');
-
-            if (! empty($context['department_id'])) {
-                $query->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
-                    $employeeQuery->where('contractor_company_id', $context['department_id']);
-                });
-            }
+            $query->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
+                $this->shiftRosterService->applyViewerRosterScopeToOutsourcedEmployeeQuery(
+                    $employeeQuery,
+                    ! empty($context['department_id']) ? (int) $context['department_id'] : null
+                );
+            });
         } else {
             $query->whereNotNull('employee_id');
-
-            if (! empty($context['department_id'])) {
-                $query->whereHas('employee', function ($employeeQuery) use ($context) {
-                    $employeeQuery->where('department_id', $context['department_id']);
-                });
-            }
+            $query->whereHas('employee', function ($employeeQuery) use ($context) {
+                $this->shiftRosterService->applyViewerRosterScopeToEmployeeQuery(
+                    $employeeQuery,
+                    ! empty($context['department_id']) ? (int) $context['department_id'] : null
+                );
+            });
         }
 
         return $query->get();
