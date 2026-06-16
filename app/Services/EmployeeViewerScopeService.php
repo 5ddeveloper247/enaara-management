@@ -20,6 +20,7 @@ use App\Services\ViewerScope\ThirdPartyViewerScopeService;
 use App\Services\ViewerScope\ViewerScopeContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class EmployeeViewerScopeService
@@ -72,6 +73,75 @@ class EmployeeViewerScopeService
         }
 
         return $query->where('sbu_id', $sbuId);
+    }
+
+    /**
+     * Restrict employee queries to departments the viewer may access.
+     * System admin: no extra filter. HR: all active departments in SBU. Others: assigned departments only.
+     */
+    public function applyDepartmentScopeToEmployeeQuery(Builder $query, ?User $user = null): Builder
+    {
+        $departmentIds = $this->resolveViewerDepartmentIds($user);
+
+        if ($departmentIds === null) {
+            return $query;
+        }
+
+        if ($departmentIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $this->applyEmployeeDepartmentIdsScope($query, $departmentIds);
+
+        return $query;
+    }
+
+    /**
+     * Apply SBU and department scope together (matches roster / leave application modules).
+     */
+    public function applyViewerScopeToEmployeeQuery(Builder $query, ?User $user = null): Builder
+    {
+        $this->applySbuScopeToEmployeeQuery($query, $user);
+        $this->applyDepartmentScopeToEmployeeQuery($query, $user);
+
+        return $query;
+    }
+
+    /**
+     * @return array<int, int>|null null = unrestricted viewer (system admin)
+     */
+    public function resolveViewerDepartmentIds(?User $user = null): ?array
+    {
+        if ($this->context->isUnrestricted($user)) {
+            return null;
+        }
+
+        $user = $user ?? Auth::user();
+        $user?->loadMissing('employee.department');
+        $viewerEmployee = $user?->employee;
+
+        if ($viewerEmployee === null) {
+            return [];
+        }
+
+        $viewerEmployee->loadMissing('department');
+        $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
+
+        if ($this->isHumanResourceDepartment($viewerEmployee->department)) {
+            if (! $sbuId) {
+                return [];
+            }
+
+            return Department::query()
+                ->where('sbu_id', $sbuId)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+        }
+
+        return $this->resolveEmployeeAssignedDepartmentIds($viewerEmployee);
     }
 
     public function applySbuScopeToDepartmentQuery(Builder $query, ?User $user = null): Builder
@@ -250,12 +320,38 @@ class EmployeeViewerScopeService
             ]);
         }
 
-        $employee = Employee::query()->select(['id', 'sbu_id'])->find($employeeId);
+        $employee = Employee::query()
+            ->select(['id', 'sbu_id', 'department_id', 'department_ids'])
+            ->find($employeeId);
+
         if ($employee === null || ! $this->employeeBelongsToViewerScope($employee, $user)) {
             throw ValidationException::withMessages([
                 'employee' => 'This employee is outside your SBU scope.',
             ]);
         }
+
+        if (! $this->employeeBelongsToViewerDepartmentScope($employee, $user)) {
+            throw ValidationException::withMessages([
+                'employee' => 'This employee is outside your department scope.',
+            ]);
+        }
+    }
+
+    public function employeeBelongsToViewerDepartmentScope(Employee $employee, ?User $user = null): bool
+    {
+        $departmentIds = $this->resolveViewerDepartmentIds($user);
+
+        if ($departmentIds === null) {
+            return true;
+        }
+
+        if ($departmentIds === []) {
+            return false;
+        }
+
+        $employeeDepartmentIds = $this->resolveEmployeeAssignedDepartmentIds($employee);
+
+        return count(array_intersect($employeeDepartmentIds, $departmentIds)) > 0;
     }
 
     public function assertSbuIdAllowed(?int $sbuId, ?User $user = null): void
@@ -459,7 +555,75 @@ class EmployeeViewerScopeService
             return collect();
         }
 
-        return $departments->filter(fn (Department $department) => (int) $department->sbu_id === $sbuId)->values();
+        $departments = $departments
+            ->filter(fn (Department $department) => (int) $department->sbu_id === $sbuId)
+            ->values();
+
+        $allowedDepartmentIds = $this->resolveViewerDepartmentIds($user);
+
+        if ($allowedDepartmentIds === null) {
+            return $departments;
+        }
+
+        if ($allowedDepartmentIds === []) {
+            return collect();
+        }
+
+        $allowed = array_flip($allowedDepartmentIds);
+
+        return $departments
+            ->filter(fn (Department $department) => isset($allowed[(int) $department->id]))
+            ->values();
+    }
+
+    /**
+     * @param  array<int, int>  $departmentIds
+     */
+    private function applyEmployeeDepartmentIdsScope(Builder $query, array $departmentIds): void
+    {
+        $query->where(function ($departmentQuery) use ($departmentIds) {
+            $departmentQuery->whereIn('department_id', $departmentIds);
+
+            foreach ($departmentIds as $departmentId) {
+                $departmentQuery->orWhere(function ($jsonQuery) use ($departmentId) {
+                    $jsonQuery->whereJsonContains('department_ids', $departmentId)
+                        ->orWhereJsonContains('department_ids', (string) $departmentId);
+                });
+            }
+        });
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function resolveEmployeeAssignedDepartmentIds(Employee $employee): array
+    {
+        $departmentIds = [];
+
+        if ($employee->department_id) {
+            $departmentIds[] = (int) $employee->department_id;
+        }
+
+        if (is_array($employee->department_ids)) {
+            foreach ($employee->department_ids as $departmentId) {
+                if ($departmentId !== null && $departmentId !== '') {
+                    $departmentIds[] = (int) $departmentId;
+                }
+            }
+        }
+
+        return array_values(array_unique(array_filter($departmentIds)));
+    }
+
+    private function isHumanResourceDepartment(?Department $department): bool
+    {
+        if (! $department) {
+            return false;
+        }
+
+        $normalized = strtolower(trim((string) $department->name));
+
+        return in_array($normalized, ['human resource', 'human resources'], true);
     }
 
     /**

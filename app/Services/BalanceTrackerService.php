@@ -40,7 +40,7 @@ class BalanceTrackerService
                     }
                 });
 
-            $this->viewerScope->applySbuScopeToEmployeeQuery($employeesQuery);
+            $this->viewerScope->applyViewerScopeToEmployeeQuery($employeesQuery);
 
             $employees = $employeesQuery->get();
 
