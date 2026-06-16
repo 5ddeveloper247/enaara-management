@@ -869,28 +869,16 @@ class DashboardService
     }
 
     /**
+     * Departments whose applicants this viewer may see on dashboard widgets.
+     * Uses the same rules as roster / balance tracker (primary department + department_ids JSON).
+     *
      * @return array<int, int>
      */
     private function resolveViewerApplicantDepartmentIds(Employee $viewerEmployee): array
     {
-        if ($this->isHumanResourceDepartment($viewerEmployee->department)) {
-            $sbuId = $viewerEmployee->sbu_id ? (int) $viewerEmployee->sbu_id : null;
-            if (! $sbuId) {
-                return [];
-            }
+        $departmentIds = $this->viewerScope->resolveViewerDepartmentIds();
 
-            return Department::query()
-                ->where('sbu_id', $sbuId)
-                ->where('is_active', true)
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->values()
-                ->all();
-        }
-
-        $departmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
-
-        return $departmentId ? [$departmentId] : [];
+        return $departmentIds ?? [];
     }
 
     private function isHumanResourceDepartment(?Department $department): bool
