@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Department;
+use App\Models\PublicHoliday;
 use App\Models\ShiftPlanner;
 use App\Models\ShiftRosterApprovalRequest;
+use App\Models\ShiftRosterApprovalSegment;
 use App\Models\ShiftRosterEntry;
 use App\Models\ThirdParty;
 use Carbon\Carbon;
@@ -12,9 +14,13 @@ use Illuminate\Support\Collection;
 
 class ShiftRosterExportReportService
 {
+    public function __construct(
+        private readonly PublicHolidayResolver $publicHolidayResolver,
+    ) {}
+
     public function buildTabularReport(array $options): array
     {
-        $context = $this->resolveExportContext($options);
+        $context = $this->enrichExportContextWithHolidays($this->resolveExportContext($options));
         $rows = $this->collectExportRows($context);
 
         $grouped = $rows->groupBy('department_key');
@@ -58,7 +64,7 @@ class ShiftRosterExportReportService
 
     public function buildCalendarReport(array $options): array
     {
-        $context = $this->resolveExportContext($options);
+        $context = $this->enrichExportContextWithHolidays($this->resolveExportContext($options));
         $days = $this->buildCalendarDays($context['date_range']);
         $dateKeys = array_column($days, 'date_key');
 
@@ -66,7 +72,11 @@ class ShiftRosterExportReportService
             ->filter(fn (ShiftRosterEntry $entry) => $this->isExportableRosterEntry($entry));
 
         $exportRows = $entries
-            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToExportRow($entry, $context['include_shift_times']))
+            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToExportRow(
+                $entry,
+                $context['include_shift_times'],
+                $context['holidays'] ?? null
+            ))
             ->values();
 
         $employeeCount = $entries
@@ -105,7 +115,7 @@ class ShiftRosterExportReportService
 
     public function buildPerEmployeeReport(array $options): array
     {
-        $context = $this->resolveExportContext($options);
+        $context = $this->enrichExportContextWithHolidays($this->resolveExportContext($options));
         $entries = $this->fetchExportEntries($context);
 
         $employees = $entries
@@ -118,7 +128,11 @@ class ShiftRosterExportReportService
                 $shifts = $group
                     ->sortBy(fn (ShiftRosterEntry $entry) => $entry->roster_date->format('Y-m-d'))
                     ->values()
-                    ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToShiftRow($entry, $context['include_shift_times']))
+                    ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToShiftRow(
+                        $entry,
+                        $context['include_shift_times'],
+                        $context['holidays'] ?? null
+                    ))
                     ->all();
 
                 $totalHours = (int) array_sum(array_column($shifts, 'hours'));
@@ -270,8 +284,22 @@ class ShiftRosterExportReportService
     {
         return $this->fetchExportEntries($context)
             ->filter(fn (ShiftRosterEntry $entry) => $this->isExportableRosterEntry($entry))
-            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToExportRow($entry, $context['include_shift_times']))
+            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToExportRow(
+                $entry,
+                $context['include_shift_times'],
+                $context['holidays'] ?? null
+            ))
             ->values();
+    }
+
+    private function enrichExportContextWithHolidays(array $context): array
+    {
+        $context['holidays'] = $this->publicHolidayResolver->loadHolidaysForRange(
+            Carbon::parse($context['date_range'][0])->startOfDay(),
+            Carbon::parse($context['date_range'][1])->endOfDay()
+        );
+
+        return $context;
     }
 
     private function buildReportShell(array $context): array
@@ -355,31 +383,63 @@ class ShiftRosterExportReportService
 
     private function buildSignatureBlock(array $context): array
     {
+        $empty = [
+            'applied_by_name' => '',
+            'applied_by_designation' => '',
+            'approved_by_name' => '',
+            'approved_by_designation' => '',
+        ];
+
         $query = ShiftRosterApprovalRequest::query()
             ->with([
                 'requestedByUser.employee.assignedDesignation',
                 'requestedByUser.employee.role',
-                'approverEmployee.role',
                 'approverEmployee.assignedDesignation',
+                'approverEmployee.role',
+                'segments.approverEmployee.assignedDesignation',
+                'segments.approverEmployee.role',
+                'segments.department',
             ])
             ->where('approval_status', 'approved')
             ->whereDate('start_date', '<=', $context['date_range'][1])
             ->whereDate('end_date', '>=', $context['date_range'][0]);
 
-        if ($context['employee_group'] === 'third_party') {
-            $query->whereNotNull('outsourced_employee_id');
+        $departmentId = ! empty($context['department_id']) ? (int) $context['department_id'] : null;
 
-            if (! empty($context['department_id'])) {
-                $query->whereHas('outsourcedEmployee', function ($employeeQuery) use ($context) {
-                    $employeeQuery->where('contractor_company_id', $context['department_id']);
+        if ($context['employee_group'] === 'third_party') {
+            $query->where(function ($groupQuery) {
+                $groupQuery->whereNotNull('outsourced_employee_id')
+                    ->orWhere('request_type', 'roster');
+            });
+
+            if ($departmentId) {
+                $query->where(function ($filterQuery) use ($departmentId) {
+                    $filterQuery->whereHas('outsourcedEmployee', function ($employeeQuery) use ($departmentId) {
+                        $employeeQuery->where('contractor_company_id', $departmentId);
+                    })->orWhere(function ($rosterQuery) use ($departmentId) {
+                        $rosterQuery->where('request_type', 'roster')
+                            ->whereHas('segments.entries.outsourcedEmployee', function ($employeeQuery) use ($departmentId) {
+                                $employeeQuery->where('contractor_company_id', $departmentId);
+                            });
+                    });
                 });
             }
         } else {
-            $query->whereNotNull('employee_id');
+            $query->where(function ($groupQuery) {
+                $groupQuery->whereNotNull('employee_id')
+                    ->orWhere('request_type', 'roster');
+            });
 
-            if (! empty($context['department_id'])) {
-                $query->whereHas('employee', function ($employeeQuery) use ($context) {
-                    $employeeQuery->where('department_id', $context['department_id']);
+            if ($departmentId) {
+                $query->where(function ($filterQuery) use ($departmentId) {
+                    $filterQuery->whereHas('employee', function ($employeeQuery) use ($departmentId) {
+                        $employeeQuery->where('department_id', $departmentId);
+                    })->orWhere(function ($rosterQuery) use ($departmentId) {
+                        $rosterQuery->where('request_type', 'roster')
+                            ->whereHas('segments', function ($segmentQuery) use ($departmentId) {
+                                $segmentQuery->where('department_id', $departmentId);
+                            });
+                    });
                 });
             }
         }
@@ -387,18 +447,11 @@ class ShiftRosterExportReportService
         $request = $query->orderByDesc('approved_at')->first();
 
         if ($request === null) {
-            return [
-                'applied_by_name' => '',
-                'applied_by_designation' => '',
-                'approved_by_name' => '',
-                'approved_by_designation' => '',
-            ];
+            return $empty;
         }
 
         $requester = $request->requestedByUser;
         $requesterEmployee = $requester?->employee;
-        $approver = $request->approverEmployee;
-
         $requesterDesignation = trim((string) (
             $requesterEmployee?->assignedDesignation?->name
             ?? $requesterEmployee?->designation
@@ -406,6 +459,7 @@ class ShiftRosterExportReportService
             ?? ''
         ));
 
+        $approver = $this->resolveSignatureApprover($request, $departmentId);
         $approverDesignation = trim((string) (
             $approver?->assignedDesignation?->name
             ?? $approver?->designation
@@ -421,17 +475,40 @@ class ShiftRosterExportReportService
         ];
     }
 
+    private function resolveSignatureApprover(
+        ShiftRosterApprovalRequest $request,
+        ?int $departmentId
+    ): ?\App\Models\Employee {
+        if ($request->request_type === 'roster') {
+            $segments = $request->segments
+                ->where('approval_status', 'approved')
+                ->when($departmentId, fn (Collection $segments) => $segments->where('department_id', $departmentId));
+
+            /** @var ShiftRosterApprovalSegment|null $segment */
+            $segment = $segments
+                ->sortByDesc(fn (ShiftRosterApprovalSegment $segment) => $segment->approved_at?->timestamp ?? 0)
+                ->first();
+
+            return $segment?->approverEmployee;
+        }
+
+        return $request->approverEmployee;
+    }
+
     private function buildStatsFromRows(Collection $rows, ?int $employeeCount = null): array
     {
+        $workingRows = $rows->reject(fn (array $row) => in_array($row['shift_type'] ?? '', ['off', 'holiday'], true));
         $employeeNames = $rows->pluck('employee')->filter()->unique();
 
         return [
             'total_employees' => $employeeCount ?? $employeeNames->count(),
-            'shifts_scheduled' => $rows->count(),
-            'morning' => $rows->where('shift_type', 'morning')->count(),
-            'evening' => $rows->where('shift_type', 'evening')->count(),
-            'night' => $rows->where('shift_type', 'night')->count(),
-            'total_hours' => (int) $rows->sum('hours'),
+            'shifts_scheduled' => $workingRows->count(),
+            'morning' => $workingRows->where('shift_type', 'morning')->count(),
+            'evening' => $workingRows->where('shift_type', 'evening')->count(),
+            'night' => $workingRows->where('shift_type', 'night')->count(),
+            'off_days' => $rows->where('shift_type', 'off')->count(),
+            'public_holidays' => $rows->where('shift_type', 'holiday')->count(),
+            'total_hours' => (int) $workingRows->sum('hours'),
         ];
     }
 
@@ -461,7 +538,7 @@ class ShiftRosterExportReportService
     {
         $status = strtolower((string) $entry->status);
 
-        if (in_array($status, ['off', 'cancelled'], true)) {
+        if ($status === 'cancelled') {
             return false;
         }
 
@@ -492,8 +569,11 @@ class ShiftRosterExportReportService
         return is_array($snapshot) && $snapshot !== [] ? $snapshot : null;
     }
 
-    private function mapEntryToExportRow(ShiftRosterEntry $entry, bool $includeShiftTimes): array
-    {
+    private function mapEntryToExportRow(
+        ShiftRosterEntry $entry,
+        bool $includeShiftTimes,
+        ?Collection $holidays = null
+    ): array {
         $snapshot = $this->resolvePublishedSnapshot($entry);
         $status = (string) ($snapshot['status'] ?? $entry->status);
         $isOffDay = strtolower($status) === 'off';
@@ -516,11 +596,27 @@ class ShiftRosterExportReportService
         $employeeName = $this->resolveExportEmployeeDisplayName($entry);
 
         $departmentName = $this->resolveExportDepartmentName($entry);
-        $shiftLabel = $shiftType === 'general'
-            ? ($entry->shift?->name ?? 'Custom')
-            : ucfirst($shiftType);
-
         $rosterDate = $entry->roster_date->copy();
+
+        if ($isOffDay) {
+            $publicHoliday = $this->resolvePublicHolidayForEntry(
+                $entry,
+                $rosterDate->toDateString(),
+                $holidays
+            );
+
+            if ($publicHoliday !== null) {
+                $shiftType = 'holiday';
+                $shiftLabel = 'Public Holiday';
+            } else {
+                $shiftType = 'off';
+                $shiftLabel = 'Off Day';
+            }
+        } else {
+            $shiftLabel = $shiftType === 'general'
+                ? ($entry->shift?->name ?? 'Custom')
+                : ucfirst($shiftType);
+        }
 
         return [
             'employee' => $employeeName,
@@ -539,9 +635,41 @@ class ShiftRosterExportReportService
         ];
     }
 
-    private function mapEntryToShiftRow(ShiftRosterEntry $entry, bool $includeShiftTimes): array
+    private function resolvePublicHolidayForEntry(
+        ShiftRosterEntry $entry,
+        string $dateString,
+        ?Collection $holidays
+    ): ?PublicHoliday {
+        if ($holidays === null || $holidays->isEmpty()) {
+            return null;
+        }
+
+        if ($entry->employee_id && $entry->employee) {
+            return $this->publicHolidayResolver->resolveForAssigneeOnDate(
+                $holidays,
+                $entry->employee->organization_id ? (int) $entry->employee->organization_id : null,
+                $entry->employee->department_id ? (int) $entry->employee->department_id : null,
+                $entry->employee->sbu_id ? (int) $entry->employee->sbu_id : null,
+                $dateString
+            );
+        }
+
+        if ($entry->outsourced_employee_id && $entry->outsourcedEmployee) {
+            return $this->publicHolidayResolver->resolveForAssigneeOnDate(
+                $holidays,
+                $entry->outsourcedEmployee->organization_id ? (int) $entry->outsourcedEmployee->organization_id : null,
+                null,
+                $entry->outsourcedEmployee->sbu_id ? (int) $entry->outsourcedEmployee->sbu_id : null,
+                $dateString
+            );
+        }
+
+        return null;
+    }
+
+    private function mapEntryToShiftRow(ShiftRosterEntry $entry, bool $includeShiftTimes, ?Collection $holidays = null): array
     {
-        $row = $this->mapEntryToExportRow($entry, $includeShiftTimes);
+        $row = $this->mapEntryToExportRow($entry, $includeShiftTimes, $holidays);
         unset($row['employee'], $row['department_key'], $row['department_name']);
 
         return $row;
@@ -577,7 +705,8 @@ class ShiftRosterExportReportService
                 foreach ($group->sortBy(fn (ShiftRosterEntry $entry) => $entry->roster_date->format('Y-m-d') . '-' . $entry->id) as $entry) {
                     $cellsByDate[$entry->roster_date->format('Y-m-d')] = $this->mapEntryToCalendarCell(
                         $entry,
-                        $context['include_shift_times']
+                        $context['include_shift_times'],
+                        $context['holidays'] ?? null
                     );
                 }
 
@@ -598,9 +727,12 @@ class ShiftRosterExportReportService
             ->all();
     }
 
-    private function mapEntryToCalendarCell(ShiftRosterEntry $entry, bool $includeShiftTimes): array
-    {
-        $row = $this->mapEntryToExportRow($entry, $includeShiftTimes);
+    private function mapEntryToCalendarCell(
+        ShiftRosterEntry $entry,
+        bool $includeShiftTimes,
+        ?Collection $holidays = null
+    ): array {
+        $row = $this->mapEntryToExportRow($entry, $includeShiftTimes, $holidays);
 
         return [
             'shift_type' => $row['shift_type'],
@@ -661,6 +793,8 @@ class ShiftRosterExportReportService
             'morning' => 'M',
             'evening' => 'E',
             'night' => 'N',
+            'off' => 'OFF',
+            'holiday' => 'PH',
             default => mb_strtoupper(mb_substr(trim($fullLabel), 0, 1)) ?: '•',
         };
     }

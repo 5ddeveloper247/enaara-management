@@ -182,6 +182,11 @@
             color: #94a3b8;
         }
 
+        .pill-holiday {
+            background: #fef9c3;
+            color: #a16207;
+        }
+
         .pill-hours {
             background: #dcfce7;
             color: #15803d;

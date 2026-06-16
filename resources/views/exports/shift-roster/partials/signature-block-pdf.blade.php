@@ -14,9 +14,11 @@
                 <div class="signature-heading">Prepared By</div>
                 <div class="signature-line"></div>
                 <div class="signature-meta">
+                    <span class="signature-meta-label">Name:</span>
                     {{ $appliedName !== '' ? $appliedName : $blank }}
                 </div>
                 <div class="signature-meta">
+                    <span class="signature-meta-label">Designation:</span>
                     {{ $appliedDesignation !== '' ? $appliedDesignation : $blank }}
                 </div>
             </td>
@@ -25,9 +27,11 @@
                 <div class="signature-heading">Approved By</div>
                 <div class="signature-line"></div>
                 <div class="signature-meta">
+                    <span class="signature-meta-label">Name:</span>
                     {{ $approvedName !== '' ? $approvedName : $blank }}
                 </div>
                 <div class="signature-meta">
+                    <span class="signature-meta-label">Designation:</span>
                     {{ $approvedDesignation !== '' ? $approvedDesignation : $blank }}
                 </div>
             </td>

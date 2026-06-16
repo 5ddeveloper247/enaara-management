@@ -250,6 +250,8 @@
         .day-cell-evening { background: #ffedd5; }
         .day-cell-night { background: #ede9fe; }
         .day-cell-general { background: #f1f5f9; }
+        .day-cell-off { background: #f8fafc; }
+        .day-cell-holiday { background: #fef9c3; }
 
         .day-cell-deleted {
             opacity: 0.72;
@@ -272,6 +274,8 @@
         .shift-short-evening { color: #c2410c; }
         .shift-short-night { color: #6d28d9; }
         .shift-short-general { color: #475569; }
+        .shift-short-off { color: #64748b; }
+        .shift-short-holiday { color: #a16207; }
 
         .shift-time-stack {
             display: block;
@@ -320,6 +324,8 @@
         .dot-morning { background: #0369a1; }
         .dot-evening { background: #c2410c; }
         .dot-night { background: #6d28d9; }
+        .dot-off { background: #94a3b8; }
+        .dot-holiday { background: #eab308; }
 
         .pdf-footer {
             position: fixed;
@@ -417,6 +423,8 @@
             'evening' => 'day-cell-evening',
             'night' => 'day-cell-night',
             'general' => 'day-cell-general',
+            'off' => 'day-cell-off',
+            'holiday' => 'day-cell-holiday',
         ];
     @endphp
 
@@ -474,6 +482,14 @@
                 <div class="stat-value stat-night">{{ $stats['night'] }}</div>
             </td>
             <td>
+                <div class="stat-label">Off days</div>
+                <div class="stat-value">{{ $stats['off_days'] ?? 0 }}</div>
+            </td>
+            <td>
+                <div class="stat-label">Public holidays</div>
+                <div class="stat-value">{{ $stats['public_holidays'] ?? 0 }}</div>
+            </td>
+            <td>
                 <div class="stat-label">Total hours</div>
                 <div class="stat-value">{{ $stats['total_hours'] }} hrs</div>
             </td>
@@ -524,7 +540,7 @@
                             <td class="day-cell{{ $cellClass ? ' ' . $cellClass : '' }}{{ is_array($cell) && !empty($cell['is_deleted']) ? ' day-cell-deleted' : '' }}">
                                 @if(is_array($cell))
                                     <span class="shift-short-label shift-short-{{ $shiftType }}">{{ $cell['shift_short'] ?? '•' }}</span>
-                                    @if($include_shift_times)
+                                    @if($include_shift_times && !in_array($shiftType, ['off', 'holiday'], true))
                                         @if(!empty($cell['time_start_short']))
                                             <span class="shift-time-stack">{{ $cell['time_start_short'] }}</span>
                                         @endif
@@ -548,6 +564,8 @@
                 <td><span class="legend-dot dot-morning"></span> M — Morning</td>
                 <td><span class="legend-dot dot-evening"></span> E — Evening</td>
                 <td><span class="legend-dot dot-night"></span> N — Night</td>
+                <td><span class="legend-dot dot-off"></span> OFF — Off Day</td>
+                <td><span class="legend-dot dot-holiday"></span> PH — Public Holiday</td>
                 @if($include_deleted)
                     <td><span style="color: #dc2626; font-weight: bold;">×</span> Removed shift</td>
                 @endif
