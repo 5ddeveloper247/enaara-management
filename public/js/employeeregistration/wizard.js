@@ -1729,12 +1729,10 @@
 
         if (orgId) {
             orgSelect.value = orgId;
-            orgSelect.disabled = true;
         }
 
         populateSbus(orgId, sbuId);
         sbuSelect.value = sbuId;
-        sbuSelect.disabled = true;
         populateRoles(orgId, sbuId, initialRole);
         populateDepartments(orgId, sbuId);
         populateFloors(orgId, sbuId);

@@ -351,6 +351,10 @@ class EmployeeViewerScopeService
 
         $employeeDepartmentIds = $this->resolveEmployeeAssignedDepartmentIds($employee);
 
+        if (empty($employeeDepartmentIds)) {
+            return true;
+        }
+
         return count(array_intersect($employeeDepartmentIds, $departmentIds)) > 0;
     }
 
