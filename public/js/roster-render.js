@@ -211,6 +211,32 @@
                 '</div>';
         }
 
+        if (
+            s.shiftType === 'absent'
+            || s.workAssignmentType === 'absent'
+            || (s.status && String(s.status).toLowerCase() === 'absent')
+        ) {
+            return '<div class="shift-pill shift-absent" title="Absent (Monthly Summary)">' +
+                '<span class="shift-pill-icon" aria-hidden="true"><i class="bi bi-person-x"></i></span>' +
+                '<div class="shift-pill-top">' +
+                '<span class="shift-time">Absent</span>' +
+                '</div>' +
+                '</div>';
+        }
+
+        if (
+            s.shiftType === 'work_from_home'
+            || s.workAssignmentType === 'work_from_home'
+            || (s.status && String(s.status).toLowerCase() === 'work_from_home')
+        ) {
+            return '<div class="shift-pill shift-wfh" title="Work from home (Monthly Summary)">' +
+                '<span class="shift-pill-icon" aria-hidden="true"><i class="bi bi-house-door"></i></span>' +
+                '<div class="shift-pill-top">' +
+                '<span class="shift-time">Work from home</span>' +
+                '</div>' +
+                '</div>';
+        }
+
         if (s.isLeave || (s.status && String(s.status).toLowerCase() === 'leave')) {
             var rawName = s.leaveName ? String(s.leaveName).trim() : 'leave';
             var typeName = rawName.replace(/\s*leaves?\s*$/i, '').trim() || rawName;
@@ -382,6 +408,24 @@
             '</span>';
     }
 
+    function isRosterWorkAssignmentShift(shift) {
+        if (!shift || shift.deletedAt) {
+            return false;
+        }
+
+        if (shift.isWorkAssignment) {
+            return true;
+        }
+
+        var shiftType = String(shift.shiftType || '').toLowerCase();
+        var status = String(shift.status || '').toLowerCase();
+
+        return shiftType === 'absent'
+            || shiftType === 'work_from_home'
+            || status === 'absent'
+            || status === 'work_from_home';
+    }
+
     function buildDisplayCellShifts(rawCellShifts) {
         var active = (rawCellShifts || []).filter(function(s) {
             return !s.deletedAt;
@@ -389,6 +433,14 @@
         var nonHoliday = active.filter(function(s) {
             return !s.isPublicHoliday;
         });
+        var workAssignmentShifts = nonHoliday.filter(function(s) {
+            return isRosterWorkAssignmentShift(s);
+        });
+
+        if (workAssignmentShifts.length) {
+            return sortShiftsForCell(workAssignmentShifts);
+        }
+
         var workingShifts = nonHoliday.filter(function(s) {
             return isRosterWorkingShift(s);
         });
@@ -649,6 +701,9 @@
                         var hasLeave = displayShifts.some(function(s) {
                             return !s.deletedAt && (s.isLeave || String(s.status || '').toLowerCase() === 'leave');
                         });
+                        var hasWorkAssignment = displayShifts.some(function(s) {
+                            return !s.deletedAt && isRosterWorkAssignmentShift(s);
+                        });
 
                         var td = document.createElement('td');
                         td.className = 'shift-cell roster-day-cell';
@@ -669,10 +724,10 @@
                             td.innerHTML = renderCellShiftsHtml(displayShifts, iso, holidaysByDate);
                         }
 
-                        if (!hasActiveShift && !hasOffDayEntry && !hasLeave) {
+                        if (!hasActiveShift && !hasOffDayEntry && !hasLeave && !hasWorkAssignment) {
                             td.classList.add('roster-day-cell-empty');
                             td.innerHTML = '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add"><i class="bi bi-plus-lg"></i></span>';
-                        } else if (hasActiveShift || hasOffDayEntry || hasLeave) {
+                        } else if (hasActiveShift || hasOffDayEntry || hasLeave || hasWorkAssignment) {
                             td.insertAdjacentHTML('beforeend',
                                 '<span class="text-muted d-inline-flex align-items-center justify-content-center w-100 roster-day-add roster-day-add-inline"><i class="bi bi-plus-lg"></i></span>');
                         }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Department;
+use App\Models\EmployeeWorkAssignment;
 use App\Models\EmployeLeaveEntity;
 use App\Models\PublicHoliday;
 use App\Models\ShiftPlanner;
@@ -707,10 +708,11 @@ class ShiftRosterExportReportService
             ->all();
 
         $leavesByAssigneeDate = $this->loadApprovedLeavesByAssigneeDate($context, $employeeIds);
+        $workAssignmentsByAssigneeDate = $this->loadWorkAssignmentsByAssigneeDate($context, $employeeIds);
 
         return $entries
             ->groupBy(fn (ShiftRosterEntry $entry) => $this->assigneeExportKey($entry))
-            ->map(function (Collection $group) use ($dateKeys, $context, $leavesByAssigneeDate) {
+            ->map(function (Collection $group) use ($dateKeys, $context, $leavesByAssigneeDate, $workAssignmentsByAssigneeDate) {
                 $first = $group->first();
                 $name = $this->resolveExportEmployeeDisplayName($first);
                 $assigneeKey = $this->assigneeExportKey($first);
@@ -733,6 +735,11 @@ class ShiftRosterExportReportService
 
                     if ($leaveEntity !== null && ! $this->isWorkingExportCell($cell)) {
                         $cell = $this->mapLeaveToCalendarCell($leaveEntity);
+                    }
+
+                    $workAssignment = $workAssignmentsByAssigneeDate[$assigneeKey][$dateKey] ?? null;
+                    if ($workAssignment !== null) {
+                        $cell = $this->mapWorkAssignmentToCalendarCell($workAssignment);
                     }
 
                     $cells[] = $cell;
@@ -770,6 +777,34 @@ class ShiftRosterExportReportService
         foreach ($leaves as $entity) {
             $assigneeKey = 'employee:' . $entity->employee_id;
             $map[$assigneeKey][$entity->leave_date->toDateString()] = $entity;
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return array<string, array<string, EmployeeWorkAssignment>>
+     */
+    private function loadWorkAssignmentsByAssigneeDate(array $context, array $employeeIds): array
+    {
+        if ($employeeIds === []) {
+            return [];
+        }
+
+        $assignments = EmployeeWorkAssignment::query()
+            ->whereIn('employee_id', $employeeIds)
+            ->whereIn('work_type', [
+                EmployeeWorkAssignment::TYPE_ABSENT,
+                EmployeeWorkAssignment::TYPE_WORK_FROM_HOME,
+            ])
+            ->whereBetween('assignment_date', $context['date_range'])
+            ->get();
+
+        $map = [];
+
+        foreach ($assignments as $assignment) {
+            $assigneeKey = 'employee:'.$assignment->employee_id;
+            $map[$assigneeKey][$assignment->assignment_date->toDateString()] = $assignment;
         }
 
         return $map;
@@ -866,6 +901,25 @@ class ShiftRosterExportReportService
         ];
     }
 
+    private function mapWorkAssignmentToCalendarCell(EmployeeWorkAssignment $assignment): array
+    {
+        $isAbsent = $assignment->work_type === EmployeeWorkAssignment::TYPE_ABSENT;
+        $shiftType = $isAbsent ? 'absent' : 'work_from_home';
+        $label = $isAbsent ? 'Absent' : 'Work from home';
+
+        return [
+            'shift_type' => $shiftType,
+            'shift_label' => $label,
+            'shift_short' => $this->shiftTypeShortLabel($shiftType, $label),
+            'time_start' => null,
+            'time_end' => null,
+            'time_start_short' => null,
+            'time_end_short' => null,
+            'hours' => 0,
+            'is_deleted' => false,
+        ];
+    }
+
     private function isWorkingExportCell(?array $cell): bool
     {
         if (! is_array($cell)) {
@@ -946,6 +1000,8 @@ class ShiftRosterExportReportService
             'holiday' => 'PH',
             'leave' => 'LEAVE',
             'half_leave' => 'SL',
+            'absent' => 'A',
+            'work_from_home' => 'WFH',
             default => mb_strtoupper(mb_substr(trim($fullLabel), 0, 1)) ?: '•',
         };
     }

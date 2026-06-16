@@ -605,6 +605,28 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     color: #b45309;
 }
 
+.shift-pill.shift-absent {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #991b1b;
+    border-color: rgba(220, 38, 38, 0.45);
+    cursor: default;
+}
+
+.shift-pill.shift-absent .shift-pill-icon {
+    color: #b91c1c;
+}
+
+.shift-pill.shift-wfh {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1e40af;
+    border-color: rgba(37, 99, 235, 0.45);
+    cursor: default;
+}
+
+.shift-pill.shift-wfh .shift-pill-icon {
+    color: #1d4ed8;
+}
+
 .shift-half-session {
     display: inline-block;
     font-size: 9px;

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\EmployeeWorkAssignment;
 use App\Models\OutsourcedEmployee;
 use App\Models\SbuFloor;
 use App\Models\ShiftPlanner;
@@ -706,6 +707,16 @@ class ShiftRosterService
 
         if ($virtualLeaves !== []) {
             $shiftsOut = array_merge($shiftsOut, $virtualLeaves);
+        }
+
+        $virtualWorkAssignments = $this->buildVirtualWorkAssignmentShifts(
+            $shiftEmployeeIds,
+            $startDate,
+            $endDate
+        );
+
+        if ($virtualWorkAssignments !== []) {
+            $shiftsOut = array_merge($shiftsOut, $virtualWorkAssignments);
         }
 
         $draftPendingQuery = ShiftRosterEntry::query()
@@ -1691,6 +1702,75 @@ class ShiftRosterService
             'assignedByName' => $entry->assignedBy?->name,
             'deletedByName' => $entry->deletedBy?->name,
         ];
+    }
+
+    /**
+     * Overlay absent / WFH marks from Monthly Summary (employee_work_assignments) onto the roster grid.
+     *
+     * @param  array<int, int>  $employeeIds
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildVirtualWorkAssignmentShifts(
+        array $employeeIds,
+        Carbon $startDate,
+        Carbon $endDate
+    ): array {
+        if ($employeeIds === []) {
+            return [];
+        }
+
+        $assignments = EmployeeWorkAssignment::query()
+            ->whereIn('employee_id', $employeeIds)
+            ->whereIn('work_type', [
+                EmployeeWorkAssignment::TYPE_ABSENT,
+                EmployeeWorkAssignment::TYPE_WORK_FROM_HOME,
+            ])
+            ->whereBetween('assignment_date', [
+                $startDate->toDateString(),
+                $endDate->toDateString(),
+            ])
+            ->get();
+
+        return $assignments->map(function (EmployeeWorkAssignment $assignment) {
+            $isAbsent = $assignment->work_type === EmployeeWorkAssignment::TYPE_ABSENT;
+            $shiftType = $isAbsent ? 'absent' : 'work_from_home';
+            $dateString = $assignment->assignment_date->toDateString();
+
+            return [
+                'rosterId' => null,
+                'employeeId' => 'employee:'.$assignment->employee_id,
+                'employeeType' => 'employee',
+                'sourceId' => $assignment->employee_id,
+                'rosterDate' => $dateString,
+                'day' => (int) $assignment->assignment_date->format('d'),
+                'shiftPlannerId' => null,
+                'isCustomTime' => false,
+                'shiftType' => $shiftType,
+                'timeStart' => null,
+                'timeEnd' => null,
+                'floor' => null,
+                'location' => null,
+                'notes' => $assignment->notes,
+                'sbuFloorId' => null,
+                'status' => $shiftType,
+                'isOffDay' => false,
+                'isPublicHoliday' => false,
+                'isLeave' => false,
+                'isHalfDayLeave' => false,
+                'isWorkAssignment' => true,
+                'workAssignmentType' => $assignment->work_type,
+                'workAssignmentLabel' => $isAbsent ? 'Absent' : 'Work from home',
+                'isCompensatory' => false,
+                'deletedAt' => null,
+                'createdAt' => null,
+                'updatedAt' => null,
+                'assignedAt' => null,
+                'createdByName' => null,
+                'updatedByName' => null,
+                'assignedByName' => null,
+                'deletedByName' => null,
+            ];
+        })->all();
     }
 
     private function buildPublishedSnapshotFromEntry(ShiftRosterEntry $entry): array
