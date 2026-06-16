@@ -290,6 +290,7 @@ class ShiftRosterExcelExportService
 
         $isOffDay = false;
         $shiftNameRaw = strtolower($entry->shift?->name ?? '');
+        $shiftCodeRaw = strtolower($entry->shift?->code ?? '');
         $isCustomTime = (bool) $entry->is_custom_time;
         $startRaw = $entry->start_time ?? $entry->shift?->start_time;
         $endRaw = $entry->end_time ?? $entry->shift?->end_time;
@@ -297,7 +298,8 @@ class ShiftRosterExcelExportService
             $startRaw ? $this->formatShiftTime($startRaw) : null,
             $isOffDay,
             $isCustomTime,
-            $shiftNameRaw
+            $shiftNameRaw,
+            $shiftCodeRaw
         );
 
         $displayShiftName = '';
@@ -339,10 +341,34 @@ class ShiftRosterExcelExportService
         return Carbon::parse($value)->format('h:i A');
     }
 
-    private function resolveShiftType(?string $startTime, bool $isOffDay, bool $isCustomTime, string $shiftName = ''): string
-    {
+    private function resolveShiftType(
+        ?string $startTime,
+        bool $isOffDay,
+        bool $isCustomTime,
+        string $shiftName = '',
+        string $shiftCode = ''
+    ): string {
         if ($isOffDay) {
             return 'off';
+        }
+
+        $shiftCode = strtolower($shiftCode);
+        $shiftName = strtolower($shiftName);
+
+        if ($shiftCode === 'gen' || ($shiftName !== '' && str_contains($shiftName, 'general'))) {
+            return 'general';
+        }
+
+        if ($shiftName !== '') {
+            if (str_contains($shiftName, 'morning')) {
+                return 'morning';
+            }
+            if (str_contains($shiftName, 'evening')) {
+                return 'evening';
+            }
+            if (str_contains($shiftName, 'night')) {
+                return 'night';
+            }
         }
 
         if ($startTime) {
@@ -354,18 +380,6 @@ class ShiftRosterExcelExportService
                 return 'evening';
             }
             if ($hour >= 18 || $hour < 4) {
-                return 'night';
-            }
-        }
-
-        if (! $isCustomTime && $shiftName !== '') {
-            if (str_contains($shiftName, 'morning')) {
-                return 'morning';
-            }
-            if (str_contains($shiftName, 'evening')) {
-                return 'evening';
-            }
-            if (str_contains($shiftName, 'night')) {
                 return 'night';
             }
         }

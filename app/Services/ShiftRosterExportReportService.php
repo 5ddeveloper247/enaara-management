@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Department;
+use App\Models\EmployeLeaveEntity;
 use App\Models\PublicHoliday;
 use App\Models\ShiftPlanner;
 use App\Models\ShiftRosterApprovalRequest;
@@ -77,6 +78,7 @@ class ShiftRosterExportReportService
                 $context['include_shift_times'],
                 $context['holidays'] ?? null
             ))
+            ->merge($this->buildLeaveExportRows($context, $entries))
             ->values();
 
         $employeeCount = $entries
@@ -497,7 +499,7 @@ class ShiftRosterExportReportService
 
     private function buildStatsFromRows(Collection $rows, ?int $employeeCount = null): array
     {
-        $workingRows = $rows->reject(fn (array $row) => in_array($row['shift_type'] ?? '', ['off', 'holiday'], true));
+        $workingRows = $rows->reject(fn (array $row) => in_array($row['shift_type'] ?? '', ['off', 'holiday', 'leave', 'half_leave'], true));
         $employeeNames = $rows->pluck('employee')->filter()->unique();
 
         return [
@@ -508,6 +510,7 @@ class ShiftRosterExportReportService
             'night' => $workingRows->where('shift_type', 'night')->count(),
             'off_days' => $rows->where('shift_type', 'off')->count(),
             'public_holidays' => $rows->where('shift_type', 'holiday')->count(),
+            'leaves' => $rows->whereIn('shift_type', ['leave', 'half_leave'])->count(),
             'total_hours' => (int) $workingRows->sum('hours'),
         ];
     }
@@ -583,6 +586,7 @@ class ShiftRosterExportReportService
             $shift = ShiftPlanner::query()->find($shiftPlannerId);
         }
         $shiftName = strtolower($shift?->name ?? '');
+        $shiftCode = strtolower($shift?->code ?? '');
         $isCustomTime = (bool) ($snapshot['is_custom_time'] ?? $entry->is_custom_time);
         $startRaw = $isOffDay ? null : ($snapshot['start_time'] ?? $entry->start_time ?? $shift?->start_time);
         $endRaw = $isOffDay ? null : ($snapshot['end_time'] ?? $entry->end_time ?? $shift?->end_time);
@@ -590,7 +594,8 @@ class ShiftRosterExportReportService
             $startRaw ? $this->formatShiftTime($startRaw) : null,
             $isOffDay,
             $isCustomTime,
-            $shiftName
+            $shiftName,
+            $shiftCode
         );
 
         $employeeName = $this->resolveExportEmployeeDisplayName($entry);
@@ -694,11 +699,21 @@ class ShiftRosterExportReportService
 
     private function buildCalendarEmployees(Collection $entries, array $dateKeys, array $context): array
     {
+        $employeeIds = $entries
+            ->pluck('employee_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $leavesByAssigneeDate = $this->loadApprovedLeavesByAssigneeDate($context, $employeeIds);
+
         return $entries
             ->groupBy(fn (ShiftRosterEntry $entry) => $this->assigneeExportKey($entry))
-            ->map(function (Collection $group) use ($dateKeys, $context) {
+            ->map(function (Collection $group) use ($dateKeys, $context, $leavesByAssigneeDate) {
                 $first = $group->first();
                 $name = $this->resolveExportEmployeeDisplayName($first);
+                $assigneeKey = $this->assigneeExportKey($first);
 
                 $cellsByDate = [];
 
@@ -713,7 +728,14 @@ class ShiftRosterExportReportService
                 $cells = [];
 
                 foreach ($dateKeys as $dateKey) {
-                    $cells[] = $cellsByDate[$dateKey] ?? null;
+                    $cell = $cellsByDate[$dateKey] ?? null;
+                    $leaveEntity = $leavesByAssigneeDate[$assigneeKey][$dateKey] ?? null;
+
+                    if ($leaveEntity !== null && ! $this->isWorkingExportCell($cell)) {
+                        $cell = $this->mapLeaveToCalendarCell($leaveEntity);
+                    }
+
+                    $cells[] = $cell;
                 }
 
                 return [
@@ -725,6 +747,132 @@ class ShiftRosterExportReportService
             ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<string, array<string, EmployeLeaveEntity>>
+     */
+    private function loadApprovedLeavesByAssigneeDate(array $context, array $employeeIds): array
+    {
+        if ($employeeIds === []) {
+            return [];
+        }
+
+        $leaves = EmployeLeaveEntity::query()
+            ->with('leaveRequest.leaveType')
+            ->whereIn('employee_id', $employeeIds)
+            ->whereIn('status', [0, 1])
+            ->whereBetween('leave_date', $context['date_range'])
+            ->get();
+
+        $map = [];
+
+        foreach ($leaves as $entity) {
+            $assigneeKey = 'employee:' . $entity->employee_id;
+            $map[$assigneeKey][$entity->leave_date->toDateString()] = $entity;
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function buildLeaveExportRows(array $context, Collection $entries): Collection
+    {
+        $employeeIds = $entries
+            ->pluck('employee_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($employeeIds === []) {
+            return collect();
+        }
+
+        $workingCellsByAssigneeDate = [];
+
+        foreach ($entries as $entry) {
+            if (! $this->isExportableRosterEntry($entry)) {
+                continue;
+            }
+
+            $assigneeKey = $this->assigneeExportKey($entry);
+            $dateKey = $entry->roster_date->toDateString();
+            $cell = $this->mapEntryToCalendarCell(
+                $entry,
+                $context['include_shift_times'],
+                $context['holidays'] ?? null
+            );
+
+            if ($this->isWorkingExportCell($cell)) {
+                $workingCellsByAssigneeDate[$assigneeKey][$dateKey] = true;
+            }
+        }
+
+        $leavesByAssigneeDate = $this->loadApprovedLeavesByAssigneeDate($context, $employeeIds);
+        $rows = collect();
+
+        foreach ($leavesByAssigneeDate as $assigneeKey => $dates) {
+            foreach ($dates as $dateKey => $entity) {
+                if (isset($workingCellsByAssigneeDate[$assigneeKey][$dateKey])) {
+                    continue;
+                }
+
+                $rows->push($this->mapLeaveToExportRow($entity));
+            }
+        }
+
+        return $rows;
+    }
+
+    private function mapLeaveToExportRow(EmployeLeaveEntity $entity): array
+    {
+        $isHalfDayLeave = (float) $entity->duration < 1.0
+            || (bool) ($entity->leaveRequest?->is_half_day ?? false);
+        $leaveName = $entity->leaveRequest?->leaveType?->name ?? 'Leave';
+        $shiftType = $isHalfDayLeave ? 'half_leave' : 'leave';
+
+        return [
+            'employee' => null,
+            'designation' => null,
+            'date' => $entity->leave_date->format('d M'),
+            'date_sort' => $entity->leave_date->format('Y-m-d'),
+            'day' => $entity->leave_date->format('D'),
+            'start_time' => null,
+            'end_time' => null,
+            'shift_type' => $shiftType,
+            'shift_label' => $isHalfDayLeave ? 'Short Leave' : $leaveName,
+            'hours' => 0,
+            'is_deleted' => false,
+        ];
+    }
+
+    private function mapLeaveToCalendarCell(EmployeLeaveEntity $entity): array
+    {
+        $row = $this->mapLeaveToExportRow($entity);
+
+        return [
+            'shift_type' => $row['shift_type'],
+            'shift_label' => $row['shift_label'],
+            'shift_short' => $this->shiftTypeShortLabel($row['shift_type'], $row['shift_label']),
+            'time_start' => null,
+            'time_end' => null,
+            'time_start_short' => null,
+            'time_end_short' => null,
+            'hours' => 0,
+            'is_deleted' => false,
+        ];
+    }
+
+    private function isWorkingExportCell(?array $cell): bool
+    {
+        if (! is_array($cell)) {
+            return false;
+        }
+
+        return in_array($cell['shift_type'] ?? '', ['morning', 'evening', 'night', 'general'], true);
     }
 
     private function mapEntryToCalendarCell(
@@ -793,8 +941,11 @@ class ShiftRosterExportReportService
             'morning' => 'M',
             'evening' => 'E',
             'night' => 'N',
+            'general' => 'G',
             'off' => 'OFF',
             'holiday' => 'PH',
+            'leave' => 'LEAVE',
+            'half_leave' => 'SL',
             default => mb_strtoupper(mb_substr(trim($fullLabel), 0, 1)) ?: '•',
         };
     }
@@ -864,10 +1015,34 @@ class ShiftRosterExportReportService
         return max(1, (int) round($minutes / 60));
     }
 
-    private function resolveShiftType(?string $startTime, bool $isOffDay, bool $isCustomTime, string $shiftName = ''): string
-    {
+    private function resolveShiftType(
+        ?string $startTime,
+        bool $isOffDay,
+        bool $isCustomTime,
+        string $shiftName = '',
+        string $shiftCode = ''
+    ): string {
         if ($isOffDay) {
             return 'off';
+        }
+
+        $shiftCode = strtolower($shiftCode);
+        $shiftName = strtolower($shiftName);
+
+        if ($shiftCode === 'gen' || ($shiftName !== '' && str_contains($shiftName, 'general'))) {
+            return 'general';
+        }
+
+        if ($shiftName !== '') {
+            if (str_contains($shiftName, 'morning')) {
+                return 'morning';
+            }
+            if (str_contains($shiftName, 'evening')) {
+                return 'evening';
+            }
+            if (str_contains($shiftName, 'night')) {
+                return 'night';
+            }
         }
 
         if ($startTime) {
@@ -879,18 +1054,6 @@ class ShiftRosterExportReportService
                 return 'evening';
             }
             if ($hour >= 18 || $hour < 4) {
-                return 'night';
-            }
-        }
-
-        if (! $isCustomTime && $shiftName !== '') {
-            if (str_contains($shiftName, 'morning')) {
-                return 'morning';
-            }
-            if (str_contains($shiftName, 'evening')) {
-                return 'evening';
-            }
-            if (str_contains($shiftName, 'night')) {
                 return 'night';
             }
         }

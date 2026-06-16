@@ -252,6 +252,8 @@
         .day-cell-general { background: #f1f5f9; }
         .day-cell-off { background: #f8fafc; }
         .day-cell-holiday { background: #fef9c3; }
+        .day-cell-leave { background: #fef08a; }
+        .day-cell-half_leave { background: #fef9c3; }
 
         .day-cell-deleted {
             opacity: 0.72;
@@ -276,6 +278,8 @@
         .shift-short-general { color: #475569; }
         .shift-short-off { color: #64748b; }
         .shift-short-holiday { color: #a16207; }
+        .shift-short-leave { color: #854d0e; }
+        .shift-short-half_leave { color: #a16207; }
 
         .shift-time-stack {
             display: block;
@@ -326,6 +330,8 @@
         .dot-night { background: #6d28d9; }
         .dot-off { background: #94a3b8; }
         .dot-holiday { background: #eab308; }
+        .dot-general { background: #475569; }
+        .dot-leave { background: #ca8a04; }
 
         .pdf-footer {
             position: fixed;
@@ -425,6 +431,8 @@
             'general' => 'day-cell-general',
             'off' => 'day-cell-off',
             'holiday' => 'day-cell-holiday',
+            'leave' => 'day-cell-leave',
+            'half_leave' => 'day-cell-half_leave',
         ];
     @endphp
 
@@ -540,7 +548,7 @@
                             <td class="day-cell{{ $cellClass ? ' ' . $cellClass : '' }}{{ is_array($cell) && !empty($cell['is_deleted']) ? ' day-cell-deleted' : '' }}">
                                 @if(is_array($cell))
                                     <span class="shift-short-label shift-short-{{ $shiftType }}">{{ $cell['shift_short'] ?? '•' }}</span>
-                                    @if($include_shift_times && !in_array($shiftType, ['off', 'holiday'], true))
+                                    @if($include_shift_times && !in_array($shiftType, ['off', 'holiday', 'leave', 'half_leave'], true))
                                         @if(!empty($cell['time_start_short']))
                                             <span class="shift-time-stack">{{ $cell['time_start_short'] }}</span>
                                         @endif
@@ -564,8 +572,10 @@
                 <td><span class="legend-dot dot-morning"></span> M — Morning</td>
                 <td><span class="legend-dot dot-evening"></span> E — Evening</td>
                 <td><span class="legend-dot dot-night"></span> N — Night</td>
+                <td><span class="legend-dot dot-general"></span> G — General Duty</td>
                 <td><span class="legend-dot dot-off"></span> OFF — Off Day</td>
                 <td><span class="legend-dot dot-holiday"></span> PH — Public Holiday</td>
+                <td><span class="legend-dot dot-leave"></span> LEAVE — On Leave</td>
                 @if($include_deleted)
                     <td><span style="color: #dc2626; font-weight: bold;">×</span> Removed shift</td>
                 @endif

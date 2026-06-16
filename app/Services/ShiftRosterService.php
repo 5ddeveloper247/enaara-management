@@ -1102,10 +1102,34 @@ class ShiftRosterService
         ];
     }
 
-    private function resolveShiftType(?string $startTime, bool $isOffDay, bool $isCustomTime, string $shiftName = ''): string
-    {
+    private function resolveShiftType(
+        ?string $startTime,
+        bool $isOffDay,
+        bool $isCustomTime,
+        string $shiftName = '',
+        string $shiftCode = ''
+    ): string {
         if ($isOffDay) {
             return 'off';
+        }
+
+        $shiftCode = strtolower($shiftCode);
+        $shiftName = strtolower($shiftName);
+
+        if ($shiftCode === 'gen' || ($shiftName !== '' && str_contains($shiftName, 'general'))) {
+            return 'general';
+        }
+
+        if ($shiftName !== '') {
+            if (str_contains($shiftName, 'morning')) {
+                return 'morning';
+            }
+            if (str_contains($shiftName, 'evening')) {
+                return 'evening';
+            }
+            if (str_contains($shiftName, 'night')) {
+                return 'night';
+            }
         }
 
         if ($startTime) {
@@ -1117,18 +1141,6 @@ class ShiftRosterService
                 return 'evening';
             }
             if ($hour >= 18 || $hour < 4) {
-                return 'night';
-            }
-        }
-
-        if (! $isCustomTime && $shiftName !== '') {
-            if (str_contains($shiftName, 'morning')) {
-                return 'morning';
-            }
-            if (str_contains($shiftName, 'evening')) {
-                return 'evening';
-            }
-            if (str_contains($shiftName, 'night')) {
                 return 'night';
             }
         }
@@ -1625,8 +1637,15 @@ class ShiftRosterService
         }
 
         $shiftName = strtolower($shift?->name ?? '');
+        $shiftCode = strtolower($shift?->code ?? '');
         $resolvedStart = $isOffDay ? null : ($startTime ?? $shift?->start_time);
-        $shiftType = $this->resolveShiftType($resolvedStart, $isOffDay, $isCustomTime, $shiftName);
+        $shiftType = $this->resolveShiftType(
+            $resolvedStart ? $this->formatShiftTime($resolvedStart) : null,
+            $isOffDay,
+            $isCustomTime,
+            $shiftName,
+            $shiftCode
+        );
 
         $employeeType = $entry->employee_id ? 'employee' : 'outsourced';
         $sourceId = (int) ($entry->employee_id ?: $entry->outsourced_employee_id);
