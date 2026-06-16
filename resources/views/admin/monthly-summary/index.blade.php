@@ -68,6 +68,8 @@
     window.viewerEmployeeScope = @json($viewerEmployeeScope ?? ['restricted' => false]);
     window.monthlySummaryCalendarUrl = @json(route('admin.monthly-summary.employee_calendar', ['employeeId' => '__ID__']));
     window.monthlySummaryWorkAssignmentUrl = @json(route('admin.monthly-summary.work_assignment', ['employeeId' => '__ID__']));
+    window.monthlySummaryExportPdfUrl = @json(route('admin.monthly-summary.export_pdf'));
+    window.monthlySummaryEmployeeExportPdfUrl = @json(route('admin.monthly-summary.employee_export_pdf', ['employeeId' => '__ID__']));
     window.monthlySummaryShiftPlannerUrl = @json(route('admin.shift-roster.index'));
 </script>
 <script src="{{ asset('js/monthly-summary.js') }}"></script>

@@ -11,6 +11,8 @@ class EmployeeWorkAssignment extends Model
 
     public const TYPE_OUTSTATION = 'outstation';
 
+    public const TYPE_ABSENT = 'absent';
+
     protected $fillable = [
         'employee_id',
         'assignment_date',

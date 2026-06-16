@@ -27,12 +27,8 @@ class MonthlySummaryService
 
     public function index(Request $request)
     {
-        $month = $request->get('month', now()->format('Y-m'));
-        $sbuId = $request->get('sbu_id');
-        $departmentId = $request->get('department_id');
-        $floorId = $request->get('floor_id');
-
-        $year = Carbon::parse($month . '-01')->year;
+        $filters = $this->resolveSummaryFilters($request);
+        $month = $filters['month'];
 
         $sbus = $this->viewerScope->filterSbus(Sbu::query()->orderBy('name')->get());
         $departments = $this->viewerScope->filterDepartments(Department::query()->orderBy('name')->get());
@@ -54,39 +50,10 @@ class MonthlySummaryService
             ->values()
             ->all();
 
-        $employeesQuery = Employee::with([
-            'sbu',
-            'department',
-            'assignedFloors' => static fn ($q) => $q->where('is_active', true)->orderBy('floor_number'),
-            'leaveQuotas' => function ($query) use ($year) {
-                $query->where('year', $year)
-                    ->with('leaveType');
-            },
-        ]);
-
-        if (! empty($sbuId)) {
-            $this->viewerScope->assertSbuIdAllowed((int) $sbuId);
-            $employeesQuery->where('sbu_id', $sbuId);
-        }
-
-        if (! empty($departmentId)) {
-            $this->viewerScope->assertDepartmentIdAccessible((int) $departmentId);
-            $employeesQuery->where('department_id', $departmentId);
-        }
-
-        if ($floorId !== null && $floorId !== '') {
-            $fid = (int) $floorId;
-            if ($fid > 0) {
-                $employeesQuery->whereHas('assignedFloors', static fn ($q) => $q->where('sbu_floors.id', $fid));
-            }
-        }
-
-        $this->viewerScope->applyViewerScopeToEmployeeQuery($employeesQuery);
-
-        $employees = $employeesQuery->get();
+        $employees = $this->fetchEmployeesForSummary($filters);
 
         $tableLeaveTypes = $this->resolveTableLeaveTypes(
-            ! empty($sbuId) ? (int) $sbuId : null,
+            $filters['sbu_id'],
             $employees->pluck('sbu_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all(),
         );
 
@@ -117,6 +84,60 @@ class MonthlySummaryService
         ));
     }
 
+    public function buildExportReport(Request $request): array
+    {
+        $filters = $this->resolveSummaryFilters($request);
+        $month = $filters['month'];
+        $period = Carbon::parse($month . '-01')->startOfMonth();
+
+        $employees = $this->fetchEmployeesForSummary($filters);
+        $tableLeaveTypes = $this->resolveTableLeaveTypes(
+            $filters['sbu_id'],
+            $employees->pluck('sbu_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all(),
+        );
+
+        $rows = $employees
+            ->map(fn (Employee $employee) => $this->buildEmployeeMonthlySummary($employee, $month, $tableLeaveTypes))
+            ->sortBy('employee_name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+
+        $totalPresent = (int) array_sum(array_column($rows, 'present'));
+        $totalAbsent = (int) array_sum(array_column($rows, 'absent'));
+        $totalHalfDays = (int) array_sum(array_column($rows, 'half_days'));
+        $employeeCount = count($rows);
+        $totalScheduledDays = $employeeCount * $period->daysInMonth;
+        $attendancePercentage = $totalScheduledDays > 0
+            ? round(($totalPresent / $totalScheduledDays) * 100, 1)
+            : 0.0;
+
+        return [
+            'organization_name' => config('app.name', 'Enaara Systems'),
+            'report_title' => 'Monthly Summary Report',
+            'report_subtitle' => 'Pre-Payroll Attendance & Leave Report',
+            'period_label' => $period->format('F Y'),
+            'period_slug' => $month,
+            'generated_at' => now()->format('d M Y, h:i A'),
+            'filter_labels' => $this->resolveSummaryFilterLabels($filters),
+            'leave_types' => $tableLeaveTypes
+                ->map(static fn (LeaveType $leaveType) => [
+                    'id' => $leaveType->id,
+                    'name' => $leaveType->name,
+                    'code' => $leaveType->code,
+                ])
+                ->values()
+                ->all(),
+            'employees' => $rows,
+            'stats' => [
+                'total_employees' => $employeeCount,
+                'total_present' => $totalPresent,
+                'total_absent' => $totalAbsent,
+                'total_half_days' => $totalHalfDays,
+                'attendance_percentage' => $attendancePercentage,
+            ],
+        ];
+    }
+
     public function getEmployeeMonthlyCalendar(int $employeeId, string $month): array
     {
         $this->viewerScope->assertEmployeeIdAccessible($employeeId);
@@ -132,6 +153,76 @@ class MonthlySummaryService
             'days' => $attendance['days'],
             'stats' => $attendance['stats'],
         ];
+    }
+
+    public function buildEmployeeExportReport(int $employeeId, string $month): array
+    {
+        $this->viewerScope->assertEmployeeIdAccessible($employeeId);
+
+        $employee = Employee::with([
+            'department',
+            'sbu',
+            'assignedFloors' => static fn ($q) => $q->where('is_active', true)->orderBy('floor_number'),
+            'leaveQuotas' => function ($query) use ($month) {
+                $query->where('year', Carbon::parse($month . '-01')->year)
+                    ->with('leaveType');
+            },
+        ])->findOrFail($employeeId);
+
+        $tableLeaveTypes = $this->resolveTableLeaveTypes(
+            $employee->sbu_id ? (int) $employee->sbu_id : null,
+            $employee->sbu_id ? [(int) $employee->sbu_id] : [],
+        );
+
+        $summary = $this->buildEmployeeMonthlySummary($employee, $month, $tableLeaveTypes);
+        $calendar = $this->getEmployeeMonthlyCalendar($employeeId, $month);
+        $period = Carbon::parse($month . '-01')->startOfMonth();
+        $stats = $calendar['stats'];
+        $totalDays = $period->daysInMonth;
+        $attendancePercentage = $totalDays > 0
+            ? round((($stats['present'] ?? 0) / $totalDays) * 100, 1)
+            : 0.0;
+
+        return [
+            'organization_name' => config('app.name', 'Enaara Systems'),
+            'report_title' => 'Employee Monthly Report',
+            'report_subtitle' => 'Attendance & Leave Summary',
+            'period_label' => $period->format('F Y'),
+            'period_slug' => $month,
+            'generated_at' => now()->format('d M Y, h:i A'),
+            'employee' => $summary,
+            'days' => $calendar['days'],
+            'calendar_weeks' => $this->buildCalendarWeeks($calendar['days'], $month),
+            'stats' => array_merge($stats, [
+                'total_days' => $totalDays,
+                'attendance_percentage' => $attendancePercentage,
+            ]),
+        ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $days
+     * @return array<int, array<int, array<string, mixed>|null>>
+     */
+    private function buildCalendarWeeks(array $days, string $month): array
+    {
+        $firstDay = Carbon::parse($month . '-01')->startOfMonth();
+        $daysByNumber = collect($days)->keyBy('day');
+        $cells = [];
+
+        for ($i = 0; $i < (int) $firstDay->format('w'); $i++) {
+            $cells[] = null;
+        }
+
+        for ($day = 1; $day <= $firstDay->daysInMonth; $day++) {
+            $cells[] = $daysByNumber->get($day);
+        }
+
+        while (count($cells) % 7 !== 0) {
+            $cells[] = null;
+        }
+
+        return array_chunk($cells, 7);
     }
 
     private function computeEmployeeMonthlyAttendance(Employee $employee, string $month): array
@@ -190,6 +281,7 @@ class MonthlySummaryService
 
             $day = $this->applyFutureDayContext($day, $cursor);
             $day = $this->applyWorkAssignmentOverlay($day, $workAssignments->get($dateStr), $isShiftBased);
+            $day['is_absent_markable'] = $this->isAbsentMarkable($day, $cursor);
 
             $days[] = $day;
             $this->incrementCalendarStat($stats, $day);
@@ -424,8 +516,13 @@ class MonthlySummaryService
         if (! in_array($workType, [
             EmployeeWorkAssignment::TYPE_WORK_FROM_HOME,
             EmployeeWorkAssignment::TYPE_OUTSTATION,
+            EmployeeWorkAssignment::TYPE_ABSENT,
         ], true)) {
             throw new \InvalidArgumentException('Invalid work type.');
+        }
+
+        if ($workType === EmployeeWorkAssignment::TYPE_ABSENT && empty($day['is_absent_markable'])) {
+            throw new \InvalidArgumentException('Absent can only be marked on eligible working days.');
         }
 
         $assignment = EmployeeWorkAssignment::query()->firstOrNew([
@@ -486,6 +583,17 @@ class MonthlySummaryService
             return $day;
         }
 
+        if ($assignment->work_type === EmployeeWorkAssignment::TYPE_ABSENT) {
+            return array_merge($day, [
+                'status' => 'absent',
+                'label' => 'Absent',
+                'detail' => 'Marked absent',
+                'notes' => $assignment->notes,
+                'work_assignment_id' => $assignment->id,
+                'work_type' => $assignment->work_type,
+            ]);
+        }
+
         if ($assignment->work_type === EmployeeWorkAssignment::TYPE_WORK_FROM_HOME) {
             return array_merge($day, [
                 'status' => 'work-from-home',
@@ -517,7 +625,7 @@ class MonthlySummaryService
             return false;
         }
 
-        if (in_array($status, ['present', 'scheduled', 'work-from-home', 'outstation'], true)) {
+        if (in_array($status, ['present', 'scheduled', 'work-from-home', 'outstation', 'absent'], true)) {
             return true;
         }
 
@@ -559,12 +667,114 @@ class MonthlySummaryService
     {
         match ($day['status']) {
             'present', 'work-from-home', 'outstation' => $stats['present']++,
+            'absent' => $stats['absent']++,
             'half-day' => $stats['half_days']++,
             'leave' => $stats['leave']++,
             'off' => $stats['off']++,
             'holiday' => $stats['holiday']++,
             default => null,
         };
+    }
+
+    private function isAbsentMarkable(array $day, Carbon $date): bool
+    {
+        if ($date->isAfter(Carbon::today())) {
+            return false;
+        }
+
+        if (($day['status'] ?? null) === 'scheduled') {
+            return false;
+        }
+
+        $baseStatus = $day['base_status'] ?? ($day['status'] ?? null);
+
+        if (in_array($baseStatus, ['leave', 'half-day', 'off', 'holiday', 'scheduled'], true)) {
+            return false;
+        }
+
+        if (($day['status'] ?? null) === 'absent') {
+            return true;
+        }
+
+        return in_array($baseStatus, ['present', 'work-from-home', 'outstation'], true);
+    }
+
+    /**
+     * @param  array<int>  $employeeSbuIds
+     * @return Collection<int, LeaveType>
+     */
+    private function resolveSummaryFilters(Request $request): array
+    {
+        return [
+            'month' => $request->get('month', now()->format('Y-m')),
+            'sbu_id' => $request->filled('sbu_id') ? (int) $request->get('sbu_id') : null,
+            'department_id' => $request->filled('department_id') ? (int) $request->get('department_id') : null,
+            'floor_id' => $request->filled('floor_id') ? (int) $request->get('floor_id') : null,
+        ];
+    }
+
+    private function fetchEmployeesForSummary(array $filters): Collection
+    {
+        $year = Carbon::parse($filters['month'] . '-01')->year;
+
+        $employeesQuery = Employee::with([
+            'sbu',
+            'department',
+            'assignedFloors' => static fn ($q) => $q->where('is_active', true)->orderBy('floor_number'),
+            'leaveQuotas' => function ($query) use ($year) {
+                $query->where('year', $year)
+                    ->with('leaveType');
+            },
+        ]);
+
+        if (! empty($filters['sbu_id'])) {
+            $this->viewerScope->assertSbuIdAllowed((int) $filters['sbu_id']);
+            $employeesQuery->where('sbu_id', $filters['sbu_id']);
+        }
+
+        if (! empty($filters['department_id'])) {
+            $this->viewerScope->assertDepartmentIdAccessible((int) $filters['department_id']);
+            $employeesQuery->where('department_id', $filters['department_id']);
+        }
+
+        if (! empty($filters['floor_id'])) {
+            $employeesQuery->whereHas(
+                'assignedFloors',
+                static fn ($q) => $q->where('sbu_floors.id', (int) $filters['floor_id'])
+            );
+        }
+
+        $this->viewerScope->applyViewerScopeToEmployeeQuery($employeesQuery);
+
+        return $employeesQuery->get();
+    }
+
+    private function resolveSummaryFilterLabels(array $filters): array
+    {
+        $labels = [];
+
+        if (! empty($filters['sbu_id'])) {
+            $name = Sbu::query()->find($filters['sbu_id'])?->name;
+            if ($name) {
+                $labels[] = 'SBU: ' . $name;
+            }
+        }
+
+        if (! empty($filters['department_id'])) {
+            $name = Department::query()->find($filters['department_id'])?->name;
+            if ($name) {
+                $labels[] = 'Department: ' . $name;
+            }
+        }
+
+        if (! empty($filters['floor_id'])) {
+            $floor = SbuFloor::query()->find($filters['floor_id']);
+            if ($floor) {
+                $labels[] = 'Floor: ' . $floor->name;
+            }
+        }
+
+        return $labels;
     }
 
     /**

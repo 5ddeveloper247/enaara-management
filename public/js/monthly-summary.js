@@ -453,23 +453,41 @@
     }
 
     function handleExportPdf() {
-        const rows = getExportRows();
-        if (!rows.length) {
-            if (window.Swal) Swal.fire('Info', 'No rows available to export.', 'info');
+        const params = new URLSearchParams();
+        const month = $('#filterMonth').val() || selectedMonth;
+        const sbu = $('#filterSBU').val();
+        const department = $('#filterBranch').val();
+        const floor = ($('#filterFloor').val() || '').trim();
+        const exportUrl = window.monthlySummaryExportPdfUrl || '';
+
+        if (!exportUrl) {
+            if (window.Swal) Swal.fire('Error', 'PDF export is not configured.', 'error');
             return;
         }
 
-        const html = buildPrintableHtml(rows);
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+        if (month) params.set('month', month);
+        if (sbu) params.set('sbu_id', sbu);
+        if (department) params.set('department_id', department);
+        if (floor) params.set('floor_id', floor);
+
+        window.location.href = `${exportUrl}?${params.toString()}`;
     }
 
     function handleExportEmployeeReport() {
-        alert('Employee report export will be implemented with backend integration.');
+        if (!currentCalendarContext || !currentCalendarContext.employeeId) {
+            if (window.Swal) Swal.fire('Info', 'Open an employee calendar first.', 'info');
+            return;
+        }
+
+        const urlTemplate = window.monthlySummaryEmployeeExportPdfUrl || '';
+        if (!urlTemplate) {
+            if (window.Swal) Swal.fire('Error', 'Employee PDF export is not configured.', 'error');
+            return;
+        }
+
+        const month = detailViewMonth || $('#filterMonth').val() || selectedMonth;
+        const exportUrl = urlTemplate.replace('__ID__', String(currentCalendarContext.employeeId));
+        window.location.href = `${exportUrl}?month=${encodeURIComponent(month)}`;
     }
 
     // ============================================
@@ -690,6 +708,10 @@
             return dayData.detail || label;
         }
 
+        if (statusClass === 'absent') {
+            return 'Absent';
+        }
+
         return label;
     }
 
@@ -751,10 +773,13 @@
         updateWorkAssignmentStatusBadge(dayData);
 
         const isAssignable = !!dayData.is_assignable;
+        const isAbsentMarkable = !!dayData.is_absent_markable;
         const blockedNotice = $('#workAssignmentBlockedNotice');
         const form = $('#workAssignmentForm');
         const saveBtn = $('#saveWorkAssignmentBtn');
         const locationCards = $('#workAssignmentLocationGrid .work-assignment-location-card');
+        const absentCard = $('#workTypeAbsentCard');
+        const absentInput = $('#workTypeAbsent');
 
         blockedNotice.toggleClass('d-none', isAssignable);
         if (!isAssignable) {
@@ -763,6 +788,8 @@
         form.find('textarea').prop('disabled', !isAssignable);
         form.find('input[name="work_type"]').prop('disabled', !isAssignable);
         locationCards.toggleClass('is-disabled', !isAssignable);
+        absentCard.toggleClass('is-disabled', !isAssignable || !isAbsentMarkable);
+        absentInput.prop('disabled', !isAssignable || !isAbsentMarkable);
         saveBtn.prop('disabled', !isAssignable);
 
         const workType = dayData.work_type || 'none';
@@ -821,9 +848,11 @@
         const label = dayData.label || dayData.status || '-';
         const status = dayData.status || 'present';
 
-        badge.removeClass('is-warning is-muted is-primary');
+        badge.removeClass('is-warning is-muted is-primary is-danger');
 
-        if (['leave', 'half-day', 'absent', 'outstation'].includes(status)) {
+        if (status === 'absent') {
+            badge.addClass('is-danger');
+        } else if (['leave', 'half-day', 'outstation'].includes(status)) {
             badge.addClass('is-warning');
         } else if (['off', 'holiday'].includes(status)) {
             badge.addClass('is-muted');
@@ -906,6 +935,10 @@
                     payload.data.calendar.stats || {},
                     payload.data.calendar.month || detailViewMonth,
                 );
+                syncEmployeeSummaryRow(
+                    currentCalendarContext.employeeId,
+                    payload.data.calendar.stats || {},
+                );
             }
 
             const modal = bootstrap.Modal.getInstance(modalEl);
@@ -957,6 +990,51 @@
         $('#detailAbsent').text(stats.absent ?? 0);
         $('#detailHalfDays').text(stats.half_days ?? 0);
         $('#detailLateArrivals').text(stats.late ?? 0);
+    }
+
+    function syncEmployeeSummaryRow(employeeId, stats) {
+        if (!employeeId || !stats) {
+            return;
+        }
+
+        const rowButton = document.querySelector(
+            `.view-detail-btn[data-employee-id="${String(employeeId)}"]`,
+        );
+
+        if (!rowButton) {
+            return;
+        }
+
+        const present = stats.present ?? 0;
+        const absent = stats.absent ?? 0;
+        const halfDays = stats.half_days ?? 0;
+
+        rowButton.setAttribute('data-present', String(present));
+        rowButton.setAttribute('data-absent', String(absent));
+        rowButton.setAttribute('data-half-days', String(halfDays));
+
+        const row = rowButton.closest('tr');
+        if (!row) {
+            return;
+        }
+
+        const presentCell = row.querySelector('td:nth-child(4) .badge, td:nth-child(4) .fw-semibold');
+        const absentCell = row.querySelector('td:nth-child(5) .badge');
+        const halfDayCell = row.querySelector('td:nth-child(6) .badge, td:nth-child(6) span');
+
+        if (presentCell) {
+            presentCell.textContent = String(present);
+        }
+
+        if (absentCell) {
+            absentCell.textContent = String(absent);
+        }
+
+        if (halfDayCell) {
+            halfDayCell.textContent = halfDays > 0 ? String(halfDays) : '-';
+        }
+
+        updateCounters();
     }
 
     function escapeAttr(value) {

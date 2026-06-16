@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\MonthlySummaryService;
+use App\Services\MonthlySummaryPdfExportService;
+use App\Http\Requests\Admin\MonthlySummaryExportRequest;
 use Illuminate\Validation\ValidationException;
 
 class MonthlySummaryController extends Controller
@@ -57,7 +59,7 @@ class MonthlySummaryController extends Controller
     {
         $validated = $request->validate([
             'assignment_date' => ['required', 'date'],
-            'work_type' => ['required', 'in:none,work_from_home,outstation'],
+            'work_type' => ['required', 'in:none,work_from_home,outstation,absent'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -96,6 +98,43 @@ class MonthlySummaryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Unable to save work assignment.',
+            ], 500);
+        }
+    }
+
+    public function exportPdf(MonthlySummaryExportRequest $request, MonthlySummaryPdfExportService $pdfExportService)
+    {
+        try {
+            return $pdfExportService->download($request);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to export monthly summary PDF: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function exportEmployeePdf(
+        MonthlySummaryExportRequest $request,
+        int $employeeId,
+        MonthlySummaryPdfExportService $pdfExportService,
+    ) {
+        try {
+            return $pdfExportService->downloadEmployee($employeeId, $request);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Unauthorized.',
+            ], 403);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to export employee report PDF: ' . $e->getMessage(),
             ], 500);
         }
     }

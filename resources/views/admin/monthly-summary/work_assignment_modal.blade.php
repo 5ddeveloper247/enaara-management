@@ -57,6 +57,15 @@
                             <span class="work-assignment-location-label">Outstation</span>
                             <span class="work-assignment-location-radio" aria-hidden="true"></span>
                         </label>
+
+                        <label class="work-assignment-location-card work-assignment-location-card-absent" data-work-type="absent" id="workTypeAbsentCard">
+                            <input class="work-assignment-location-input" type="radio" name="work_type" id="workTypeAbsent" value="absent">
+                            <span class="work-assignment-location-icon">
+                                <i class="bi bi-person-x"></i>
+                            </span>
+                            <span class="work-assignment-location-label">Mark as absent</span>
+                            <span class="work-assignment-location-radio" aria-hidden="true"></span>
+                        </label>
                     </div>
 
                     <div class="work-assignment-section-label mt-4">Notes <span class="work-assignment-optional">(optional)</span></div>
