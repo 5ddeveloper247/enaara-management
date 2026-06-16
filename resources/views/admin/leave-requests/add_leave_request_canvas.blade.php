@@ -86,6 +86,8 @@
                         @foreach($leaveTypes as $leaveType)
                         <option value="{{ $leaveType->id }}"
                             data-leave-condition="{{ $leaveType->leave_condition ?? '' }}"
+                            data-leave-code="{{ strtoupper(trim($leaveType->code ?? '')) }}"
+                            data-requires-document="{{ app(\App\Services\leaverequestPrivatefunctions\LeaveRequestLeaveTypeFilter::class)->requiresSupportingDocument($leaveType) ? '1' : '0' }}"
                             data-short-leave-applicable="{{ ($leaveType->setting?->short_leave_applicable ?? false) ? '1' : '0' }}">{{ $leaveType->name }}</option>
                         @endforeach
                         @endisset

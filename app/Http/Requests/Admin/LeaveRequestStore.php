@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Models\Employee;
 use App\Models\LeaveType;
 use App\Services\leaverequestPrivatefunctions\AuthenticatedEmployeeRecords;
+use App\Services\leaverequestPrivatefunctions\LeaveRequestLeaveTypeFilter;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -139,9 +140,12 @@ class LeaveRequestStore extends FormRequest
             return false;
         }
 
-        return LeaveType::query()
-            ->whereKey($leaveTypeId)
-            ->where('leave_condition', 'conditional')
-            ->exists();
+        $leaveType = LeaveType::query()->whereKey($leaveTypeId)->first();
+
+        if ($leaveType === null) {
+            return false;
+        }
+
+        return app(LeaveRequestLeaveTypeFilter::class)->requiresSupportingDocument($leaveType);
     }
 }

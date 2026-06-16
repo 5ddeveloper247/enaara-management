@@ -361,21 +361,30 @@
     return (selected.getAttribute('data-leave-condition') || '').toLowerCase();
   }
 
+  function requiresSupportingDocument(leaveTypeSelect) {
+    if (!leaveTypeSelect || leaveTypeSelect.selectedIndex < 0) {
+      return false;
+    }
+
+    var selected = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+    return selected.getAttribute('data-requires-document') === '1';
+  }
+
   function showDocumentSectionIfRequired(leaveTypeSelect, documentSection, fileInput) {
-    var isConditional = selectedLeaveCondition(leaveTypeSelect) === 'conditional';
+    var needsDocument = requiresSupportingDocument(leaveTypeSelect);
     var requiredMark = documentSection ? documentSection.querySelector('.document-required-mark') : null;
 
     if (documentSection) {
-      documentSection.style.display = isConditional ? 'block' : 'none';
+      documentSection.style.display = needsDocument ? 'block' : 'none';
     }
 
     if (requiredMark) {
-      requiredMark.style.display = isConditional ? 'inline' : 'none';
+      requiredMark.style.display = needsDocument ? 'inline' : 'none';
     }
 
     if (fileInput) {
-      fileInput.required = isConditional;
-      if (!isConditional) {
+      fileInput.required = needsDocument;
+      if (!needsDocument) {
         fileInput.value = '';
       }
     }
@@ -478,6 +487,13 @@
       if (it.leave_condition) {
         opt.setAttribute('data-leave-condition', it.leave_condition);
       }
+      if (it.code) {
+        opt.setAttribute('data-leave-code', String(it.code).toUpperCase());
+      }
+      opt.setAttribute(
+        'data-requires-document',
+        it.requires_supporting_document ? '1' : '0'
+      );
       opt.setAttribute(
         'data-short-leave-applicable',
         it.short_leave_applicable ? '1' : '0'
@@ -1073,7 +1089,7 @@
         return;
       }
 
-      if (selectedLeaveCondition(leaveTypeSelect) === 'conditional' && medicalReportInput && !medicalReportInput.files.length) {
+      if (requiresSupportingDocument(leaveTypeSelect) && medicalReportInput && !medicalReportInput.files.length) {
         medicalReportInput.classList.add('is-invalid');
         showFieldErrors(form, {
           medical_report: ['A supporting document is required for this leave type.']

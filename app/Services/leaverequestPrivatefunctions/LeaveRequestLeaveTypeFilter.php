@@ -152,6 +152,15 @@ class LeaveRequestLeaveTypeFilter
         return $this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId);
     }
 
+    public function requiresSupportingDocument(LeaveType $leaveType): bool
+    {
+        if (($leaveType->leave_condition ?? '') !== 'conditional') {
+            return false;
+        }
+
+        return ! $this->isCompensatoryLeaveType($leaveType);
+    }
+
     public function quotaDisplayEligibilityMessage(
         Employee $employee,
         LeaveType $leaveType,

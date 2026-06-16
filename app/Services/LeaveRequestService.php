@@ -355,8 +355,11 @@ class LeaveRequestService
                 return [
                     'id' => $type->id,
                     'name' => $type->name,
+                    'code' => $type->code,
                     'leave_condition' => $type->leave_condition,
                     'short_leave_applicable' => (bool) ($type->setting?->short_leave_applicable ?? false),
+                    'requires_supporting_document' => $this->leaveRequestLeaveTypeFilter
+                        ->requiresSupportingDocument($type),
                 ];
             })
             ->values();
