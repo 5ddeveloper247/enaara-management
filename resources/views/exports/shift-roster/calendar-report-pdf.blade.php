@@ -5,7 +5,7 @@
     <title>{{ $report_title }} — {{ $period_label }}</title>
     <style>
         @page {
-            margin: 10px 8px 52px 8px;
+            margin: 10px 24px 52px 24px;
             size: A3 landscape;
         }
 
@@ -25,7 +25,7 @@
             background: #012445;
             color: #ffffff;
             padding: 12px 16px;
-            margin: -10px -8px 0 -8px;
+            margin: -10px -24px 0 -24px;
         }
 
         .pdf-header-table {
@@ -282,7 +282,7 @@
 
         .shift-time-stack {
             display: block;
-            font-size: 6px;
+            font-size: 7.5px;
             line-height: 1.25;
             color: #475569;
             margin: 0;
