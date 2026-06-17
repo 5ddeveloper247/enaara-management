@@ -313,7 +313,7 @@ class ShiftRosterExportReportService
             'report_title' => 'Shift Planner — Monthly Report',
             'period_label' => $context['period_label'],
             'period_slug' => $context['period_slug'],
-            'generated_at' => now()->format('d M Y, h:i A'),
+            'generated_at' => now()->timezone('Asia/Karachi')->format('d M Y, h:i A'),
             'employee_group_label' => $context['employee_group'] === 'third_party'
                 ? 'Third-party employees'
                 : 'Internal employees',
@@ -376,7 +376,7 @@ class ShiftRosterExportReportService
     private function buildPrintInfo(): array
     {
         $user = auth()->user();
-        $now = now();
+        $now = now()->timezone('Asia/Karachi');
 
         return [
             'printed_by_name' => trim((string) ($user?->name ?? '')),
