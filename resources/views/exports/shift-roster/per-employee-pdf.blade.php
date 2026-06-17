@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -448,8 +448,17 @@
         <table class="pdf-header-table">
             <tr>
                 <td style="width: 58%;">
-                    <div class="org-name">{{ $organization_name }}</div>
-                    <p class="report-subtitle">{{ $report_title }}</p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 50px; vertical-align: middle; padding-right: 12px;">
+                                <img src="{{ public_path('images/enaara-logo.png') }}" alt="Logo" style="height: 38px; width: auto;">
+                            </td>
+                            <td style="vertical-align: middle;">
+                                <div class="org-name">Madison Square Mall Rawalpindi</div>
+                                <p class="report-subtitle">{{ $report_title }}</p>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
                 <td style="width: 42%;">
                     <p class="period-label">{{ $period_label }}</p>
