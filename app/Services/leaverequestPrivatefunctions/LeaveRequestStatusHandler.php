@@ -53,6 +53,12 @@ class LeaveRequestStatusHandler
         }
 
         $leaveRequest->status = $newStatus;
+
+        $actorEmployee = $currentUser?->employee;
+        if ($actorEmployee && in_array($newStatus, [1, 2, 3, 4, 5], true)) {
+            $leaveRequest->acted_by_employee_id = $actorEmployee->id;
+        }
+
         $leaveRequest->save();
 
         $actorName = Auth::user()->name ?? 'System';

@@ -100,7 +100,10 @@ class LeaveRequestIndexData
         $currentEmployee = $currentUser?->employee;
 
         // Pre-fetch related requests to determine recommender and approver names
-        $relatedRequests = \App\Models\EmployeLeaveRequest::with('toEmployee:id,full_name')
+        $relatedRequests = \App\Models\EmployeLeaveRequest::with([
+            'toEmployee:id,full_name',
+            'actedByEmployee:id,full_name',
+        ])
             ->whereIn('from_employee_id', $requests->pluck('from_employee_id'))
             ->whereIn('leave_type_id', $requests->pluck('leave_type_id'))
             ->get()
@@ -195,9 +198,9 @@ class LeaveRequestIndexData
                 'canCancel' => $canApprove,
                 'canRecommend' => $canRecommend,
                 'canNotRecommend' => $canRecommend,
-                'recommenderName' => $recommenderRow ? optional($recommenderRow->toEmployee)->full_name : null,
+                'recommenderName' => $recommenderRow ? $recommenderRow->resolveActingEmployeeName() : null,
                 'recommenderStatus' => $recommenderRow ? (int) $recommenderRow->status : null,
-                'approverName' => $approverRow ? optional($approverRow->toEmployee)->full_name : null,
+                'approverName' => $approverRow ? $approverRow->resolveActingEmployeeName() : null,
                 'approverStatus' => $approverRow ? (int) $approverRow->status : null,
                 'requiresHrDelegationConfirm' => $requiresHrDelegationConfirm,
                 'assignedApproverName' => $assignedApproverName,

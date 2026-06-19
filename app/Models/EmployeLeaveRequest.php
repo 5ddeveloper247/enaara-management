@@ -19,6 +19,7 @@ class EmployeLeaveRequest extends Model
         'to_employee_id',
         'from_user_id',
         'to_user_id',
+        'acted_by_employee_id',
         'leave_type_id',
         'start_date',
         'end_date',
@@ -64,6 +65,22 @@ class EmployeLeaveRequest extends Model
     public function toUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'to_user_id');
+    }
+
+    public function actedByEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'acted_by_employee_id');
+    }
+
+    public function resolveActingEmployeeName(): ?string
+    {
+        if (in_array((int) $this->status, [1, 2, 3, 4, 5], true) && $this->acted_by_employee_id) {
+            $this->loadMissing('actedByEmployee:id,full_name');
+
+            return $this->actedByEmployee?->full_name ?? $this->toEmployee?->full_name;
+        }
+
+        return $this->toEmployee?->full_name;
     }
 
     public function leaveType(): BelongsTo
