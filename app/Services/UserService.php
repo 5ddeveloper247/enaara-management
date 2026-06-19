@@ -44,10 +44,22 @@ class UserService
     public function getTableData(): array
     {
         $usersQuery = User::excludingSystemAdmin()
-            ->with(['roles', 'employee.department', 'employee.sbu', 'employee.mediaFiles'])
-            ->orderByDesc('id');
+            ->with(['roles.roleLevel:id,level', 'employee.department', 'employee.sbu', 'employee.mediaFiles']);
         $this->viewerScope->applySbuScopeToUserQuery($usersQuery);
         $users = $usersQuery->get();
+
+        $users = $users
+            ->sortBy(function (User $user): string {
+                $role = $user->roles->first();
+                $level = $role ? ($role->resolvedNumericLevel() ?? 999999) : 999999;
+
+                return sprintf(
+                    '%010d-%s',
+                    $level,
+                    mb_strtolower((string) ($user->name ?? ''))
+                );
+            })
+            ->values();
 
         $departmentIds = [];
         foreach ($users as $user) {

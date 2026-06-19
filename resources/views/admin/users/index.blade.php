@@ -88,6 +88,7 @@
         // =============================================
         function initDataTable() {
             usersTable = initUserDataTable('#usersTable', {
+                order: [],
                 search: { smart: false },
                 ajax: {
                     url: window.usersDataUrl,
