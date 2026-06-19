@@ -640,9 +640,21 @@
         // FILTER & EXPORT
         // =============================================
 
-        // Custom DataTables search filter for role & status
-        var _filterRole   = '';
-        var _filterStatus = '';
+        // Custom DataTables search filter for role, department & status
+        var _filterRole       = '';
+        var _filterDepartment = '';
+        var _filterStatus     = '';
+
+        function userHasDepartment(row, department) {
+            if (!department) return true;
+            if (!row || !row.department || row.department === '-') return false;
+
+            return String(row.department)
+                .split(',')
+                .map(function (d) { return d.trim(); })
+                .filter(function (d) { return d.length > 0; })
+                .indexOf(department) !== -1;
+        }
 
         $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
             if (settings.nTable.id !== 'usersTable') return true;
@@ -650,6 +662,7 @@
             if (!row) return true;
 
             if (_filterRole && row.role !== _filterRole) return false;
+            if (_filterDepartment && !userHasDepartment(row, _filterDepartment)) return false;
             if (_filterStatus !== '' && String(row.is_active ? '1' : '0') !== _filterStatus) return false;
             return true;
         });
@@ -659,13 +672,15 @@
             if (usersTable) {
                 usersTable.one('init.dt', function () {
                     populateFilterRoles();
+                    populateFilterDepartments();
                 });
             }
 
             // Apply filters
             document.getElementById('applyFiltersBtn').addEventListener('click', function () {
-                _filterRole   = document.getElementById('filterRole').value;
-                _filterStatus = document.getElementById('filterStatus').value;
+                _filterRole       = document.getElementById('filterRole').value;
+                _filterDepartment = document.getElementById('filterDepartment').value;
+                _filterStatus     = document.getElementById('filterStatus').value;
                 usersTable.draw();
                 // Close dropdown
                 var dd = document.querySelector('[data-bs-toggle="dropdown"].dropdown-toggle');
@@ -674,10 +689,12 @@
 
             // Clear filters
             document.getElementById('clearFiltersBtn').addEventListener('click', function () {
-                _filterRole   = '';
-                _filterStatus = '';
-                document.getElementById('filterRole').value   = '';
-                document.getElementById('filterStatus').value = '';
+                _filterRole       = '';
+                _filterDepartment = '';
+                _filterStatus     = '';
+                document.getElementById('filterRole').value       = '';
+                document.getElementById('filterDepartment').value = '';
+                document.getElementById('filterStatus').value     = '';
                 usersTable.draw();
             });
 
@@ -760,6 +777,29 @@
                     opt.textContent = row.role;
                     sel.appendChild(opt);
                 }
+            });
+        }
+
+        function populateFilterDepartments() {
+            var sel  = document.getElementById('filterDepartment');
+            if (!sel) return;
+            var seen = new Set();
+            usersTable.rows().data().each(function (row) {
+                if (!row.department || row.department === '-') return;
+
+                String(row.department)
+                    .split(',')
+                    .map(function (d) { return d.trim(); })
+                    .filter(function (d) { return d.length > 0; })
+                    .forEach(function (dept) {
+                        if (!seen.has(dept)) {
+                            seen.add(dept);
+                            var opt = document.createElement('option');
+                            opt.value       = dept;
+                            opt.textContent = dept;
+                            sel.appendChild(opt);
+                        }
+                    });
             });
         }
 

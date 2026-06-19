@@ -29,6 +29,14 @@
                 </li>
                 <li>
                     <div class="mb-3">
+                        <label class="form-label small text-muted mb-1">Department</label>
+                        <select class="form-select form-select-sm" id="filterDepartment">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                </li>
+                <li>
+                    <div class="mb-3">
                         <label class="form-label small text-muted mb-1">Status</label>
                         <select class="form-select form-select-sm" id="filterStatus">
                             <option value="">All Status</option>
