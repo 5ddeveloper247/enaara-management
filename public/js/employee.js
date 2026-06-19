@@ -207,9 +207,7 @@
                     className: 'text-end no-toggle'
                 }, // 23 Actions
             ],
-            order: [
-                [2, 'desc']
-            ],
+            order: [],
             scrollX: false,
             responsive: false,
             columnDefs: [{

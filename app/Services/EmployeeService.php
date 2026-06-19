@@ -1564,7 +1564,8 @@ class EmployeeService
                 'department:id,name',
                 'organization:id,name',
                 'sbu:id,name',
-                'role:id,name',
+                'role:id,name,role_level_id',
+                'role.roleLevel:id,level',
                 'assignedFloors:id,name',
                 'mediaFiles',
                 'policeVerification',
@@ -1577,8 +1578,7 @@ class EmployeeService
                 'exEmployments',
                 'medical',
                 'references',
-            ])
-            ->orderByDesc('id');
+            ]);
 
         $this->viewerScope->applySbuScopeToEmployeeQuery($query);
 
@@ -1640,6 +1640,37 @@ class EmployeeService
 
         $employees = $query->get();
 
+        $roleLevelByName = RoleLevel::query()
+            ->where('is_active', true)
+            ->whereNotNull('name')
+            ->where('name', '!=', '')
+            ->get(['name', 'level'])
+            ->groupBy(fn (RoleLevel $roleLevel): string => Str::lower(trim((string) $roleLevel->name)))
+            ->map(fn ($group) => (int) $group->min('level'))
+            ->all();
+
+        $resolveRoleLevel = function (Employee $emp) use ($roleLevelByName): int {
+            $fromFk = $emp->role?->roleLevel?->level;
+            if ($fromFk !== null && $fromFk !== '') {
+                return (int) $fromFk;
+            }
+
+            $normalizedRoleName = Str::lower(trim((string) ($emp->role?->name ?? '')));
+            if ($normalizedRoleName !== '' && isset($roleLevelByName[$normalizedRoleName])) {
+                return $roleLevelByName[$normalizedRoleName];
+            }
+
+            return 999999;
+        };
+
+        $employees = $employees
+            ->sortBy(fn (Employee $emp) => sprintf(
+                '%010d-%s',
+                $resolveRoleLevel($emp),
+                mb_strtolower((string) ($emp->full_name ?? ''))
+            ))
+            ->values();
+
         $allDeptIds = [];
         foreach ($employees as $emp) {
             if (! empty($emp->department_id)) {
@@ -1666,7 +1697,7 @@ class EmployeeService
             ->pluck('name', 'id')
             ->toArray();
 
-        return $employees->map(function (Employee $emp) use ($deptRows, $sbuNameById) {
+        return $employees->map(function (Employee $emp) use ($deptRows, $sbuNameById, $resolveRoleLevel) {
             $rawDeptIds = $emp->department_ids;
             if (! is_array($rawDeptIds)) {
                 $rawDeptIds = $rawDeptIds !== null && $rawDeptIds !== '' ? [$rawDeptIds] : [];
@@ -1816,6 +1847,7 @@ class EmployeeService
                 'sbu'                 => $sbuLabel,
                 'department'          => $departmentLabel,
                 'role'                => $emp->role?->name ?? '-',
+                'role_level'          => $resolveRoleLevel($emp),
                 'join_date'           => $emp->join_date?->format('d M Y') ?? '-',
                 'designation'         => $emp->designation ?? '-',
                 'grade'               => $emp->grade ?? '-',
