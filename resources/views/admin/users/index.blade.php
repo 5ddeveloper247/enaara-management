@@ -6,6 +6,8 @@
 @push('styles')
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     <link href="{{ asset('css/users.css') }}" rel="stylesheet">
     <style>
         .btn { font-size: 13px; }
@@ -15,6 +17,21 @@
         .dt-buttons { margin-top: 2px; }
         .offcanvas select option { background: #012445; color: #fff; }
         #userCanvas input::placeholder, #userCanvas select { color: rgba(255,255,255,0.7) !important; }
+        #userCanvas .select2-container--bootstrap-5 .select2-selection {
+            background: transparent !important;
+            border-color: #ffffff42 !important;
+            min-height: 31px;
+        }
+        #userCanvas .select2-container--bootstrap-5 .select2-selection__rendered {
+            color: rgba(255,255,255,0.85) !important;
+        }
+        #userCanvas .select2-container--bootstrap-5 .select2-selection__placeholder {
+            color: rgba(255,255,255,0.5) !important;
+        }
+        #userCanvas .select2-container--bootstrap-5 .select2-selection__arrow b {
+            border-color: rgba(255,255,255,0.7) transparent transparent transparent;
+        }
+        #userCanvas .select2-search__field { outline: none; }
         .dept-chip-wrap { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .35rem; max-width: 260px; }
         .dept-chip { background: #eef3ff; color: #1e3a8a; border: 1px solid #dbe6ff; border-radius: 999px; padding: .22rem .6rem; font-size: .75rem; line-height: 1.2; white-space: nowrap; }
         .dept-more-btn { border-radius: 999px; padding: .22rem .62rem; font-size: .75rem; line-height: 1.2; background: #1f3f92; color: #fff; border: 0; font-weight: 600; }
@@ -61,6 +78,7 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="{{ asset('js/helpers.js') }}"></script>
 
     <script>
@@ -76,6 +94,7 @@
         $(document).ready(function () {
             initDataTable();
             loadStats();
+            initEmployeeSelect();
             initCanvasEvents();
             initDeleteModal();
             initStatusToggles();
@@ -235,6 +254,7 @@
                 ' data-employee-code="'+ escAttr(row.employee_code || '') + '"' +
                 ' data-employee-name="'+ escAttr(row.employee_name || '') + '"' +
                 ' data-sbu-name="'    + escAttr(row.sbu_name || '')   + '"' +
+                ' data-department="'  + escAttr(row.department || '') + '"' +
                 ' data-avatar-url="'  + escAttr(row.avatar_url || '') + '"' +
                 ' data-role-name="'    + escAttr(row.role || '')          + '"' +
                 ' data-role-id="'     + (row.role_id || '')           + '"' +
@@ -270,6 +290,29 @@
         // =============================================
         // OFFCANVAS — ADD / EDIT
         // =============================================
+        function formatEmployeeOptionLabel(code, name, department) {
+            var label = (code || '') + ' — ' + (name || '');
+            if (department && department !== '-') {
+                label += ' — ' + department;
+            }
+            return label;
+        }
+
+        function initEmployeeSelect() {
+            var $select = $('#userEmployeeSelect');
+            if (!$select.length || $select.data('select2')) {
+                return;
+            }
+
+            $select.select2({
+                theme: 'bootstrap-5',
+                dropdownParent: $('#userCanvas'),
+                width: '100%',
+                placeholder: 'Search by name, code or department…',
+                allowClear: true,
+            });
+        }
+
         function initCanvasEvents() {
             var canvas = document.getElementById('userCanvas');
             if (!canvas) return;
@@ -295,11 +338,15 @@
                 resetForm();
             });
 
-            document.getElementById('userEmployeeSelect').addEventListener('change', function () {
-                var opt = this.options[this.selectedIndex];
-                var hint = document.getElementById('emailManualHint');
-                var avatarHolder = document.getElementById('userCanvasAvatar');
-                if (opt.value) {
+            $('#userEmployeeSelect').on('change', handleEmployeeSelectChange);
+        }
+
+        function handleEmployeeSelectChange() {
+            var select = document.getElementById('userEmployeeSelect');
+            var opt = select.options[select.selectedIndex];
+            var hint = document.getElementById('emailManualHint');
+            var avatarHolder = document.getElementById('userCanvasAvatar');
+            if (opt && opt.value) {
                     var name  = opt.getAttribute('data-name')  || '';
                     var email = opt.getAttribute('data-email') || '';
                     var role  = opt.getAttribute('data-role')  || '';
@@ -327,7 +374,6 @@
                     }
                     if (hint) hint.classList.add('d-none');
                 }
-            });
         }
 
         function openAddMode() {
@@ -358,6 +404,7 @@
             var empName  = btn.dataset.employeeName || '';
             var roleName = btn.dataset.roleName || '';
             var sbuName  = btn.dataset.sbuName || '';
+            var deptName = btn.dataset.department || '';
             var avatarUrl = btn.dataset.avatarUrl || '';
 
             var empSel   = document.getElementById('userEmployeeSelect');
@@ -378,12 +425,12 @@
                     opt.setAttribute('data-email',  btn.dataset.email || '');
                     opt.setAttribute('data-role',   roleName === '-' ? '' : roleName);
                     opt.setAttribute('data-sbu',    sbuName === '-' ? '' : sbuName);
+                    opt.setAttribute('data-department', deptName === '-' ? '' : deptName);
                     opt.setAttribute('data-avatar', avatarUrl);
-                    opt.textContent                 = empCode + ' — ' + empName;
-                    empSel.insertAdjacentElement('afterend', opt);
+                    opt.textContent                 = formatEmployeeOptionLabel(empCode, empName, deptName);
                     empSel.appendChild(opt);
                 }
-                empSel.value = empId;
+                $('#userEmployeeSelect').val(empId).trigger('change');
             }
 
         }
@@ -393,6 +440,7 @@
             document.getElementById('editUserId').value = '';
             document.getElementById('userAssignedRole').value = '';
             document.getElementById('userAssignedSbu').value = '';
+            $('#userEmployeeSelect').val('').trigger('change');
             var avatarHolder = document.getElementById('userCanvasAvatar');
             if (avatarHolder) {
                 avatarHolder.src = 'https://ui-avatars.com/api/?name=User&background=e6c673&color=000&size=80';

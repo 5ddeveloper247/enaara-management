@@ -23,12 +23,20 @@ class UserService
     {
         $linkedEmployeeIds = User::excludingSystemAdmin()->whereNotNull('employee_id')->pluck('employee_id');
 
-        $employeesQuery = Employee::with(['role:id,name', 'contact:id,employee_id,email', 'sbu:id,name', 'mediaFiles'])
+        $employeesQuery = Employee::with(['role:id,name', 'contact:id,employee_id,email', 'sbu:id,name', 'department:id,name', 'mediaFiles'])
             ->whereNull('deleted_at')
             ->whereNotIn('id', $linkedEmployeeIds)
             ->orderBy('full_name');
         $this->viewerScope->applySbuScopeToEmployeeQuery($employeesQuery);
-        $employees = $employeesQuery->get(['id', 'full_name', 'employee_code', 'email', 'role_id', 'sbu_id']);
+        $employees = $employeesQuery->get(['id', 'full_name', 'employee_code', 'email', 'role_id', 'sbu_id', 'department_id', 'department_ids']);
+
+        $departmentNameById = $this->departmentNameMapForEmployees($employees);
+        $employees->each(function (Employee $employee) use ($departmentNameById): void {
+            $employee->setAttribute(
+                'department_label',
+                $this->resolveEmployeeDepartmentLabel($employee, $departmentNameById)
+            );
+        });
 
         $allEmployeesQuery = Employee::with(['role:id,name', 'contact:id,employee_id,email'])
             ->whereNull('deleted_at')
@@ -273,5 +281,64 @@ class UserService
             return strtoupper(substr($words[0], 0, 1) . substr(end($words), 0, 1));
         }
         return strtoupper(substr($name, 0, 2)) ?: '??';
+    }
+
+    /**
+     * @param  iterable<int, Employee>  $employees
+     * @return array<int, string>
+     */
+    private function departmentNameMapForEmployees(iterable $employees): array
+    {
+        $departmentIds = [];
+        foreach ($employees as $employee) {
+            if (! $employee instanceof Employee) {
+                continue;
+            }
+
+            $rawMulti = is_array($employee->department_ids) ? $employee->department_ids : [];
+            foreach ($rawMulti as $id) {
+                $val = (int) $id;
+                if ($val > 0) {
+                    $departmentIds[] = $val;
+                }
+            }
+
+            if ($employee->department_id) {
+                $departmentIds[] = (int) $employee->department_id;
+            }
+        }
+
+        $departmentIds = array_values(array_unique(array_filter($departmentIds)));
+        if ($departmentIds === []) {
+            return [];
+        }
+
+        return Department::query()
+            ->whereIn('id', $departmentIds)
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    private function resolveEmployeeDepartmentLabel(Employee $employee, array $departmentNameById): string
+    {
+        $ids = is_array($employee->department_ids) ? $employee->department_ids : [];
+        if ($employee->department_id) {
+            $ids[] = $employee->department_id;
+        }
+
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        $names = [];
+        foreach ($ids as $id) {
+            $name = $departmentNameById[$id] ?? null;
+            if ($name) {
+                $names[] = $name;
+            }
+        }
+
+        if ($names !== []) {
+            return implode(', ', $names);
+        }
+
+        return $employee->department?->name ?? '-';
     }
 }

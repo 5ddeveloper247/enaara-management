@@ -27,6 +27,7 @@
                         @php
                             $prefillEmail = trim((string) ($emp->email ?: $emp->contact?->email ?? ''));
                             $sbuName      = $emp->sbu?->name ?? '-';
+                            $department   = $emp->department_label ?? '-';
                             $photo        = $emp->mediaFiles->where('file_type', 'photo')->first();
                             $avatarUrl    = $photo && $photo->file_path ? asset('storage/' . $photo->file_path) : '';
                         @endphp
@@ -34,9 +35,10 @@
                             data-name="{{ $emp->full_name }}"
                             data-email="{{ e($prefillEmail) }}"
                             data-sbu="{{ e($sbuName) }}"
+                            data-department="{{ e($department) }}"
                             data-avatar="{{ $avatarUrl }}"
                             data-role="{{ $emp->role?->name ?? '' }}">
-                            {{ $emp->employee_code }} — {{ $emp->full_name }}
+                            {{ $emp->employee_code }} — {{ $emp->full_name }}@if($department !== '-') — {{ $department }}@endif
                         </option>
                     @endforeach
                 </select>
