@@ -79,14 +79,90 @@
         }
     }
 
+    function collectSbus() {
+        const sbus = [];
+        const seen = new Set();
+
+        organizations.forEach(function(org) {
+            (org.sbus || []).forEach(function(sbu) {
+                if (!seen.has(String(sbu.id))) {
+                    seen.add(String(sbu.id));
+                    sbus.push(sbu);
+                }
+            });
+        });
+
+        return sbus.sort(function(a, b) {
+            return String(a.name || '').localeCompare(String(b.name || ''));
+        });
+    }
+
+    function collectDepartments(sbuId) {
+        const departments = [];
+        const seen = new Set();
+
+        organizations.forEach(function(org) {
+            (org.sbus || []).forEach(function(sbu) {
+                if (sbuId && String(sbu.id) !== String(sbuId)) {
+                    return;
+                }
+
+                (sbu.departments || []).forEach(function(department) {
+                    if (!seen.has(String(department.id))) {
+                        seen.add(String(department.id));
+                        departments.push(department);
+                    }
+                });
+            });
+        });
+
+        return departments.sort(function(a, b) {
+            return String(a.name || '').localeCompare(String(b.name || ''));
+        });
+    }
+
+    function populateFilterSbus() {
+        const $select = $('#filterDesignationSbu');
+        if (!$select.length) {
+            return;
+        }
+
+        $select.empty();
+        $select.append('<option value="">All SBU\'s</option>');
+        collectSbus().forEach(function(sbu) {
+            $select.append(`<option value="${sbu.id}">${sbu.name}</option>`);
+        });
+    }
+
+    function populateFilterDepartments(selectedSbuId) {
+        const $select = $('#filterDesignationDepartment');
+        if (!$select.length) {
+            return;
+        }
+
+        $select.empty();
+        $select.append('<option value="">All Departments</option>');
+        collectDepartments(selectedSbuId).forEach(function(department) {
+            $select.append(`<option value="${department.id}">${department.name}</option>`);
+        });
+    }
+
     function applyFilters() {
         const status = $('input[name="filterStatus"]:checked').val();
+        const sbuId = $('#filterDesignationSbu').val() || '';
+        const departmentId = $('#filterDesignationDepartment').val() || '';
 
         $('#designationsGrid .col-md-6').each(function() {
             const card = $(this).find('.sbu-card');
             const cardStatus = String(card.data('designation-status'));
+            const cardSbuId = String(card.data('sbu-id') || '');
+            const cardDepartmentId = String(card.data('department-id') || '');
 
-            if (status === 'all' || cardStatus === status) {
+            const statusMatch = status === 'all' || cardStatus === status;
+            const sbuMatch = !sbuId || cardSbuId === String(sbuId);
+            const departmentMatch = !departmentId || cardDepartmentId === String(departmentId);
+
+            if (statusMatch && sbuMatch && departmentMatch) {
                 $(this).show();
             } else {
                 $(this).hide();
@@ -96,6 +172,9 @@
 
     function clearFilters() {
         $('input#filterStatusAll').prop('checked', true);
+        $('#filterDesignationSbu').val('');
+        populateFilterDepartments('');
+        $('#filterDesignationDepartment').val('');
         $('#designationsGrid .col-md-6').show();
     }
 
@@ -487,6 +566,18 @@
         }
 
         $('.filter-status').on('change', function() {
+            applyFilters();
+        });
+
+        populateFilterSbus();
+        populateFilterDepartments('');
+
+        $('#filterDesignationSbu').on('change', function() {
+            populateFilterDepartments($(this).val());
+            applyFilters();
+        });
+
+        $('#filterDesignationDepartment').on('change', function() {
             applyFilters();
         });
 

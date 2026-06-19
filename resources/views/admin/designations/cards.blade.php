@@ -6,7 +6,8 @@
                 <div class="card sbu-card border-1 rounded-3 h-100"
                     data-designation-status="{{ $designation->is_active ? 'active' : 'inactive' }}"
                     data-organization-id="{{ $designation->organization_id ?? '' }}"
-                    data-sbu-id="{{ $designation->sbu_id }}">
+                    data-sbu-id="{{ $designation->sbu_id }}"
+                    data-department-id="{{ $designation->department_id ?? '' }}">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="d-flex align-items-center">
@@ -83,6 +84,18 @@
                 <h6 class="fw-semibold mb-3">
                     <i class="bi bi-funnel me-2"></i>Filters
                 </h6>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-muted mb-2">SBU</label>
+                    <select class="form-select form-select-sm" id="filterDesignationSbu">
+                        <option value="">All SBU's</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-muted mb-2">Department</label>
+                    <select class="form-select form-select-sm" id="filterDesignationDepartment">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
                 <div class="mb-4">
                     <label class="form-label small fw-semibold text-muted mb-2">Status</label>
                     <div class="bg-transparent">
