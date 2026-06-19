@@ -88,6 +88,32 @@
                         </select>
                     </div>
                 </li>
+                <!-- Role Filter -->
+                <li>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-1">Role</label>
+                        <select class="form-select form-select-sm" id="filterRole">
+                            <option value="">All Roles</option>
+                            @isset($roles)
+                            @foreach ($roles->unique('name') as $role)
+                            <option value="{{ $role->name }}">{{ $role->name }}</option>
+                            @endforeach
+                            @endisset
+                        </select>
+                    </div>
+                </li>
+                <!-- Gender Filter -->
+                <li>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-1">Gender</label>
+                        <select class="form-select form-select-sm" id="filterGender">
+                            <option value="">All Genders</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </li>
 
                 <li>
                     <div class="mb-3">

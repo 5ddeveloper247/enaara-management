@@ -113,10 +113,17 @@ class EmployeeService
         $this->viewerScope->applySbuScopeToThirdPartyQuery($outsourcedVendors);
         $outsourcedVendors = $outsourcedVendors->get();
 
+        $roles = Role::query()
+            ->select(['id', 'name', 'organization_id', 'sbu_id', 'department_id'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
         $organizations = $this->viewerScope->filterOrganizations($organizations);
         $departments = $this->viewerScope->filterDepartments($departments);
         $sbus = $this->viewerScope->filterSbus($sbus);
         $floors = $this->viewerScope->filterFloors($floors);
+        $roles = $this->viewerScope->filterRolesData($roles);
         $viewerEmployeeScope = $this->viewerScope->frontendScopePayload();
 
         return view('admin.employee.index', compact(
@@ -124,6 +131,7 @@ class EmployeeService
             'departments',
             'sbus',
             'floors',
+            'roles',
             'outsourcedVendors',
             'viewerEmployeeScope',
         ));
@@ -1636,6 +1644,17 @@ class EmployeeService
         if (!empty($filters['filter_cnic'])) {
             $cnic = $filters['filter_cnic'];
             $query->where('cnic', 'like', '%' . $cnic . '%');
+        }
+
+        if (!empty($filters['filter_role'])) {
+            $roleName = $filters['filter_role'];
+            $query->whereIn('role_id', Role::query()
+                ->where('name', $roleName)
+                ->select('id'));
+        }
+
+        if (!empty($filters['filter_gender'])) {
+            $query->where('gender', $filters['filter_gender']);
         }
 
         $employees = $query->get();

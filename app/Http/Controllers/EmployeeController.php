@@ -85,6 +85,8 @@ class EmployeeController extends Controller
                     'filter_organization'  => $request->query('filter_organization'),
                     'filter_sbu'           => $request->query('filter_sbu'),
                     'filter_department'    => $request->query('filter_department'),
+                    'filter_role'          => $request->query('filter_role'),
+                    'filter_gender'        => $request->query('filter_gender'),
                     'filter_name'          => $request->query('filter_name'),
                     'filter_cnic'          => $request->query('filter_cnic'),
                 ]),

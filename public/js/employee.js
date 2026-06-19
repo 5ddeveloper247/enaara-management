@@ -9,6 +9,8 @@
         organization: '',
         sbu: '',
         department: '',
+        role: '',
+        gender: '',
         name: '',
         cnic: '',
     };
@@ -64,6 +66,8 @@
                     d.filter_organization  = window.employeeFilters.organization;
                     d.filter_sbu           = window.employeeFilters.sbu;
                     d.filter_department    = window.employeeFilters.department;
+                    d.filter_role          = window.employeeFilters.role;
+                    d.filter_gender        = window.employeeFilters.gender;
                     d.filter_name          = window.employeeFilters.name;
                     d.filter_cnic          = window.employeeFilters.cnic;
                 },
@@ -839,6 +843,8 @@
             window.employeeFilters.organization = ($('#filterOrganization').val() || '').trim();
             window.employeeFilters.sbu          = ($('#filterSbu').val() || '').trim();
             window.employeeFilters.department   = ($('#filterDepartment').val() || '').trim();
+            window.employeeFilters.role         = ($('#filterRole').val() || '').trim();
+            window.employeeFilters.gender       = ($('#filterGender').val() || '').trim();
             window.employeeFilters.name         = ($('#filterName').val() || '').trim();
             window.employeeFilters.cnic         = ($('#filterCnic').val() || '').trim();
 
@@ -855,6 +861,8 @@
             $('#filterOrganization').val('');
             $('#filterSbu').val('');
             $('#filterDepartment').val('');
+            $('#filterRole').val('');
+            $('#filterGender').val('');
             $('#filterName').val('');
             $('#filterCnic').val('');
 
@@ -862,6 +870,8 @@
             window.employeeFilters.organization = '';
             window.employeeFilters.sbu          = '';
             window.employeeFilters.department   = '';
+            window.employeeFilters.role         = '';
+            window.employeeFilters.gender       = '';
             window.employeeFilters.name         = '';
             window.employeeFilters.cnic         = '';
 

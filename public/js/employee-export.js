@@ -160,6 +160,8 @@
             filter_organization: f.organization || '',
             filter_sbu: f.sbu || '',
             filter_department: f.department || '',
+            filter_role: f.role || '',
+            filter_gender: f.gender || '',
             filter_name: f.name || '',
             filter_cnic: f.cnic || ''
         };
