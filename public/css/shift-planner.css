@@ -214,6 +214,42 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     min-width: 0;
 }
 
+.roster-col-toggle-cell {
+    vertical-align: middle !important;
+    padding: 0.35rem 0.25rem !important;
+}
+
+.roster-emp-avatar {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    margin: 0 auto;
+}
+
+.roster-emp-avatar-img {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    border: 1px solid rgba(1, 36, 69, 0.12);
+}
+
+.roster-emp-avatar-fallback {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--main-color), var(--secondary-color));
+    color: var(--light-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1;
+    margin: 0 auto;
+}
+
 .roster-emp-subrow {
     display: flex;
     align-items: center;

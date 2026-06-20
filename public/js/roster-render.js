@@ -591,6 +591,26 @@
         }
     }
 
+    function rosterEmployeeInitials(name) {
+        var words = String(name || '').trim().split(/\s+/).filter(Boolean);
+        if (words.length >= 2) {
+            return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+        }
+        return String(name || '??').trim().substring(0, 2).toUpperCase() || '??';
+    }
+
+    function renderRosterEmployeeAvatarHtml(emp) {
+        var avatarUrl = String(emp.avatarUrl || emp.avatar_url || '').trim();
+        var name = String(emp.name || '').trim();
+        var alt = escapeHtml(name || 'Employee');
+
+        if (avatarUrl) {
+            return '<img src="' + escapeHtml(avatarUrl) + '" alt="' + alt + '" class="roster-emp-avatar-img">';
+        }
+
+        return '<div class="roster-emp-avatar-fallback" aria-hidden="true">' + escapeHtml(rosterEmployeeInitials(name)) + '</div>';
+    }
+
     function renderRosterEmployeeCellHtml(emp) {
         var isThirdPartyPersonnel = String(emp.sourceType || '') === 'outsourced';
         var employeeCode = String(emp.employeeCode || emp.employee_code || '').trim();
@@ -686,7 +706,9 @@
                     var tr = document.createElement('tr');
                     tr.className = 'roster-emp-row';
                     tr.setAttribute('data-dept-id', String(dept.id));
-                    tr.innerHTML = '<td></td><td class="roster-col-employee-cell">' + renderRosterEmployeeCellHtml(emp) + '</td>';
+                    tr.innerHTML = '<td class="text-center roster-col-toggle-cell">' +
+                        '<div class="roster-emp-avatar">' + renderRosterEmployeeAvatarHtml(emp) + '</div></td>' +
+                        '<td class="roster-col-employee-cell">' + renderRosterEmployeeCellHtml(emp) + '</td>';
                     days.forEach(function(d) {
                         var iso = dateToISO(d);
                         var k = empRef + '-' + iso;
