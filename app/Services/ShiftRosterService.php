@@ -465,7 +465,7 @@ class ShiftRosterService
             $viewerEmployeeId
         );
 
-        $employees = Employee::with(['department', 'assignedDesignation', 'role.roleLevel'])
+        $employees = Employee::with(['department', 'assignedDesignation', 'role.roleLevel', 'mediaFiles'])
             ->where('is_active', 1)
             ->shiftBasedWorkArrangement()
             ->get();
@@ -526,29 +526,44 @@ class ShiftRosterService
         usort($departments, fn($a, $b) => strcmp($a['name'], $b['name']));
 
         // Build Employee Payload
-        $empPayload = $employees->map(fn($e) => [
-            'id' => 'employee:' . $e->id,
-            'sourceType' => 'employee',
-            'sourceId' => $e->id,
-            'name' => $e->rosterDisplayName(),
-            'employeeCode' => $e->employee_code ?? '',
-            'designation' => trim((string) ($e->assignedDesignation?->name ?? $e->designation ?? '')),
-            'roleLevel' => $e->role?->resolvedNumericLevel() ?? 999999,
-            'departmentId' => (int) $e->department_id,
-            'departmentName' => $e->department->name ?? 'Unassigned'
-        ])->values();
+        $empPayload = $employees->map(function($e) {
+            $avatarUrl = null;
+            $photo = $e->mediaFiles->where('file_type', 'photo')->first();
+            if ($photo && $photo->file_path) {
+                $avatarUrl = asset('storage/' . $photo->file_path);
+            }
+            return [
+                'id' => 'employee:' . $e->id,
+                'sourceType' => 'employee',
+                'sourceId' => $e->id,
+                'name' => $e->rosterDisplayName(),
+                'employeeCode' => $e->employee_code ?? '',
+                'designation' => trim((string) ($e->assignedDesignation?->name ?? $e->designation ?? '')),
+                'roleLevel' => $e->role?->resolvedNumericLevel() ?? 999999,
+                'departmentId' => (int) $e->department_id,
+                'departmentName' => $e->department->name ?? 'Unassigned',
+                'avatarUrl' => $avatarUrl,
+            ];
+        })->values();
 
-        $outsourcedPayload = $outsourcedEmployees->map(fn($e) => [
-            'id' => 'outsourced:' . $e->id,
-            'sourceType' => 'outsourced',
-            'sourceId' => $e->id,
-            'name' => trim((string) ($e->full_name ?? '')),
-            'employeeCode' => $e->biometric_id ? (string) $e->biometric_id : ('OSP-' . $e->id),
-            'designation' => trim((string) ($e->job_role_trade ?? '')),
-            'roleLevel' => 999999,
-            'departmentId' => 1000000 + (int) $e->contractor_company_id,
-            'departmentName' => $e->contractorCompany->third_party_name ?? 'Unassigned'
-        ])->values();
+        $outsourcedPayload = $outsourcedEmployees->map(function($e) {
+            $avatarUrl = null;
+            if ($e->photo_path) {
+                $avatarUrl = asset('storage/' . $e->photo_path);
+            }
+            return [
+                'id' => 'outsourced:' . $e->id,
+                'sourceType' => 'outsourced',
+                'sourceId' => $e->id,
+                'name' => trim((string) ($e->full_name ?? '')),
+                'employeeCode' => $e->biometric_id ? (string) $e->biometric_id : ('OSP-' . $e->id),
+                'designation' => trim((string) ($e->job_role_trade ?? '')),
+                'roleLevel' => 999999,
+                'departmentId' => 1000000 + (int) $e->contractor_company_id,
+                'departmentName' => $e->contractorCompany->third_party_name ?? 'Unassigned',
+                'avatarUrl' => $avatarUrl,
+            ];
+        })->values();
         
         $empPayload = collect($empPayload)
             ->concat($outsourcedPayload)

@@ -1395,7 +1395,7 @@
         });
     }
 
-    function openRosterShiftCanvas(employeeId, employeeName, deptName, rosterDate, shift) {
+    function openRosterShiftCanvas(employeeId, employeeName, deptName, rosterDate, shift, avatarUrl) {
         if (rosterGmApprovalContext && !shift) {
             return;
         }
@@ -1434,8 +1434,12 @@
         }
         var initialBox = document.getElementById('rosterShiftEmployeeInitial');
         if (initialBox) {
-            var nm = String(employeeName || '').trim();
-            initialBox.textContent = nm ? nm.charAt(0).toUpperCase() : '?';
+            if (avatarUrl) {
+                initialBox.innerHTML = '<img src="' + avatarUrl + '" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+            } else {
+                var nm = String(employeeName || '').trim();
+                initialBox.textContent = nm ? nm.charAt(0).toUpperCase() : '?';
+            }
         }
         var dateObj = parseISODate(rosterDate);
         if (!isNaN(dateObj.getTime())) {
@@ -1838,6 +1842,7 @@
 
                 var empName = '';
                 var deptName = '';
+                var avatarUrl = null;
                 if (rosterData && rosterData.employees) {
                     var emp = rosterData.employees.find(function(e) {
                         var ref = e.id ?? e.employeeId ?? e.employee_id ?? '';
@@ -1846,6 +1851,7 @@
                     if (emp) {
                         empName = emp.name;
                         deptName = emp.departmentName;
+                        avatarUrl = emp.avatarUrl;
                     }
                 }
                 
@@ -1856,7 +1862,7 @@
                         if (nameCell) empName = nameCell.textContent.trim();
                     }
                 }
-                openRosterShiftCanvas(employeeId, empName, deptName, rosterDate, shift);
+                openRosterShiftCanvas(employeeId, empName, deptName, rosterDate, shift, avatarUrl);
             });
         }
         var saveBtn = document.getElementById('rosterShiftSaveBtn');
