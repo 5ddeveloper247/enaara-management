@@ -1915,13 +1915,33 @@
                 const wrapper = clone.querySelector('.avatar-gallery-item');
                 
                 wrapper.setAttribute('title', item.name + ' - ' + item.leave_type);
-                wrapper.querySelector('.initials').textContent = item.initials;
                 wrapper.querySelector('.avatar-gallery-name').textContent = item.short_name;
                 wrapper.querySelector('.avatar-gallery-role').textContent = item.leave_type;
                 
-                if (item.status_dot) {
-                    const dot = wrapper.querySelector('.avatar-status-dot');
-                    dot.className = 'avatar-status-dot ' + item.status_dot;
+                const avatarContainer = wrapper.querySelector('.avatar-gallery-avatar');
+                if (item.avatar_url) {
+                    const img = document.createElement('img');
+                    img.src = item.avatar_url;
+                    img.alt = item.initials;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '50%';
+                    
+                    avatarContainer.innerHTML = '';
+                    avatarContainer.appendChild(img);
+                    
+                    if (item.status_dot) {
+                        const dot = document.createElement('span');
+                        dot.className = 'avatar-status-dot ' + item.status_dot;
+                        avatarContainer.appendChild(dot);
+                    }
+                } else {
+                    wrapper.querySelector('.initials').textContent = item.initials;
+                    if (item.status_dot) {
+                        const dot = wrapper.querySelector('.avatar-status-dot');
+                        if (dot) dot.className = 'avatar-status-dot ' + item.status_dot;
+                    }
                 }
 
                 container.appendChild(clone);

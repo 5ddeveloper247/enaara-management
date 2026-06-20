@@ -229,6 +229,7 @@ class DashboardService
         $today = now()->toDateString();
         $requests = EmployeLeaveRequest::with([
                 'fromEmployee:id,full_name,department_id',
+                'fromEmployee.mediaFiles',
                 'leaveType:id,name',
             ])
             ->where('status', 3)
@@ -255,11 +256,20 @@ class DashboardService
                 $shortName .= ' ' . substr($words[1], 0, 1) . '.';
             }
 
+            $avatarUrl = null;
+            if ($r->fromEmployee) {
+                $photo = $r->fromEmployee->mediaFiles->where('file_type', 'photo')->first();
+                if ($photo && $photo->file_path) {
+                    $avatarUrl = asset('storage/' . $photo->file_path);
+                }
+            }
+
             return [
                 'id'           => $r->id,
                 'name'         => $name,
                 'short_name'   => $shortName,
                 'initials'     => $initials,
+                'avatar_url'   => $avatarUrl,
                 'leave_type'   => optional($r->leaveType)->name ?? 'Leave',
                 'status_dot'   => 'on-leave', 
             ];
