@@ -22,8 +22,17 @@ class ShiftRosterApprovalController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
+        $viewerEmployee = $user->employee;
+        if (! $viewerEmployee) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'count' => 0,
+            ]);
+        }
+
         $requests = $this->approvalService
-            ->getPendingForApprover($user->employee_id ? (int) $user->employee_id : null)
+            ->getPendingForDashboardViewer($viewerEmployee, $user)
             ->map(fn (array $item) => $this->approvalService->formatPendingListItem(
                 $item['request'],
                 $item['segment'] ?? null

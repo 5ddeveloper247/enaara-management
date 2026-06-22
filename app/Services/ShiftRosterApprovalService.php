@@ -403,7 +403,13 @@ class ShiftRosterApprovalService
             $this->isHumanResourceDepartment($viewerEmployee->department)
             && ! $viewer->isSystemAdminUser()
         ) {
-            return $this->getPendingForHumanResourceDashboard($viewerEmployee);
+            $sbuItems = $this->collectSbuPendingRosterItems($viewerEmployee);
+            $assignedItems = $this->getPendingForApprover((int) $viewerEmployee->id);
+
+            return $sbuItems
+                ->concat($assignedItems)
+                ->unique(fn (array $item) => ($item['request']->id ?? 0) . ':' . ($item['segment']?->id ?? 0))
+                ->values();
         }
 
         return $this->getPendingForApprover((int) $viewerEmployee->id);
@@ -989,13 +995,7 @@ class ShiftRosterApprovalService
 
     private function getPendingForHumanResourceDashboard(Employee $viewerEmployee): Collection
     {
-        return $this->collectSbuPendingRosterItems($viewerEmployee)
-            ->filter(fn (array $item) => $this->shouldShowPendingItemToHumanResourceViewer(
-                $item['request'],
-                $item['segment'] ?? null,
-                $viewerEmployee
-            ))
-            ->values();
+        return $this->collectSbuPendingRosterItems($viewerEmployee);
     }
 
     private function collectSbuPendingRosterItems(Employee $viewerEmployee): Collection
@@ -1053,25 +1053,6 @@ class ShiftRosterApprovalService
         }
 
         return $legacyRequests->concat($rosterSegments)->values();
-    }
-
-    private function shouldShowPendingItemToHumanResourceViewer(
-        ShiftRosterApprovalRequest $request,
-        ?ShiftRosterApprovalSegment $segment,
-        Employee $viewerEmployee
-    ): bool {
-        $viewerId = (int) $viewerEmployee->id;
-        $viewerDepartmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
-
-        if (! $this->viewerIsAssignedApproverOnItem($request, $segment, $viewerId)) {
-            return true;
-        }
-
-        $itemDepartmentId = $this->resolveItemDepartmentId($request, $segment);
-
-        return $viewerDepartmentId
-            && $itemDepartmentId
-            && $viewerDepartmentId === $itemDepartmentId;
     }
 
     private function viewerIsAssignedApproverOnRequest(
@@ -1173,16 +1154,7 @@ class ShiftRosterApprovalService
         ?ShiftRosterApprovalSegment $segment,
         Employee $viewerEmployee
     ): bool {
-        if (! $this->viewerIsAssignedApproverOnItem($request, $segment, (int) $viewerEmployee->id)) {
-            return false;
-        }
-
-        $viewerDepartmentId = $viewerEmployee->department_id ? (int) $viewerEmployee->department_id : null;
-        $itemDepartmentId = $this->resolveItemDepartmentId($request, $segment);
-
-        return $viewerDepartmentId
-            && $itemDepartmentId
-            && $viewerDepartmentId === $itemDepartmentId;
+        return $this->viewerIsAssignedApproverOnItem($request, $segment, (int) $viewerEmployee->id);
     }
 
     private function assertHumanResourceCanApprove(

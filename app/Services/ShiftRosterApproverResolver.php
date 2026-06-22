@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\OutsourcedEmployee;
 use App\Models\ShiftRosterEntry;
@@ -25,25 +26,28 @@ class ShiftRosterApproverResolver
             if ($departmentApprover !== null) {
                 return $departmentApprover;
             }
-        }
 
-        if (! empty($employee->sbu_id)) {
-            $sbuApprover = $this->findApproverInScope([
+            return $this->resolveHumanResourceApprover([
                 'organization_id' => $employee->organization_id,
                 'sbu_id' => $employee->sbu_id,
-                'department_id' => null,
+            ], excludeEmployeeId: (int) $employee->id);
+        }
+
+        if (! empty($employee->sbu_id) || ! empty($employee->organization_id)) {
+            $hrApprover = $this->resolveHumanResourceApprover([
+                'organization_id' => $employee->organization_id,
+                'sbu_id' => $employee->sbu_id,
             ], excludeEmployeeId: (int) $employee->id);
 
-            if ($sbuApprover !== null) {
-                return $sbuApprover;
+            if ($hrApprover !== null) {
+                return $hrApprover;
             }
         }
 
         if (! empty($employee->organization_id)) {
-            return $this->findApproverInScope([
+            return $this->resolveHumanResourceApprover([
                 'organization_id' => $employee->organization_id,
                 'sbu_id' => null,
-                'department_id' => null,
             ], excludeEmployeeId: (int) $employee->id);
         }
 
@@ -52,11 +56,23 @@ class ShiftRosterApproverResolver
 
     public function resolveGmForOutsourcedEmployee(OutsourcedEmployee $outsourcedEmployee): ?Employee
     {
-        return $this->findApproverInScope([
+        $hrApprover = $this->resolveHumanResourceApprover([
             'organization_id' => $outsourcedEmployee->organization_id,
             'sbu_id' => $outsourcedEmployee->sbu_id,
-            'department_id' => null,
         ]);
+
+        if ($hrApprover !== null) {
+            return $hrApprover;
+        }
+
+        if (! empty($outsourcedEmployee->organization_id)) {
+            return $this->resolveHumanResourceApprover([
+                'organization_id' => $outsourcedEmployee->organization_id,
+                'sbu_id' => null,
+            ]);
+        }
+
+        return null;
     }
 
     private function findApproverInScope(array $scope, ?int $excludeEmployeeId = null): ?Employee
@@ -114,6 +130,57 @@ class ShiftRosterApproverResolver
                 ->orWhereJsonContains('employees.department_ids', $departmentId)
                 ->orWhereJsonContains('employees.department_ids', (string) $departmentId);
         });
+    }
+
+    /**
+     * @param array{organization_id?: int|null, sbu_id?: int|null} $scope
+     */
+    private function resolveHumanResourceApprover(array $scope, ?int $excludeEmployeeId = null): ?Employee
+    {
+        $organizationId = ! empty($scope['organization_id']) ? (int) $scope['organization_id'] : null;
+        $sbuId = ! empty($scope['sbu_id']) ? (int) $scope['sbu_id'] : null;
+
+        foreach ($this->resolveHumanResourceDepartmentIds($organizationId, $sbuId) as $hrDepartmentId) {
+            $approver = $this->findApproverInScope([
+                'organization_id' => $organizationId,
+                'sbu_id' => $sbuId,
+                'department_id' => $hrDepartmentId,
+            ], excludeEmployeeId: $excludeEmployeeId);
+
+            if ($approver !== null) {
+                return $approver;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function resolveHumanResourceDepartmentIds(?int $organizationId, ?int $sbuId): array
+    {
+        $query = Department::query()
+            ->where('is_active', true)
+            ->where(function (Builder $nameQuery) {
+                $nameQuery->whereRaw('LOWER(TRIM(name)) = ?', ['human resource'])
+                    ->orWhereRaw('LOWER(TRIM(name)) = ?', ['human resources']);
+            });
+
+        if ($organizationId) {
+            $query->where('organization_id', $organizationId);
+        }
+
+        if ($sbuId) {
+            $query->where('sbu_id', $sbuId);
+        }
+
+        return $query
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
     }
 
     public function resolveGmForAssignee(string $assigneeType, int $assigneeId): ?Employee
