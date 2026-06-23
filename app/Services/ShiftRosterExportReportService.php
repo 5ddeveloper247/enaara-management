@@ -34,7 +34,7 @@ class ShiftRosterExportReportService
                 return [
                     'name' => $first['department_name'],
                     'rows' => $groupRows
-                        ->sortBy(['date_sort', 'employee'])
+                        ->sortBy(fn (array $row) => $row['date_sort'] . '-' . sprintf('%010d', $row['role_level']) . '-' . mb_strtolower($row['employee']))
                         ->values()
                         ->map(fn (array $row) => $this->stripDepartmentMeta($row))
                         ->all(),
@@ -49,7 +49,7 @@ class ShiftRosterExportReportService
                 [
                     'name' => null,
                     'rows' => $rows
-                        ->sortBy(['date_sort', 'employee'])
+                        ->sortBy(fn (array $row) => $row['date_sort'] . '-' . sprintf('%010d', $row['role_level']) . '-' . mb_strtolower($row['employee']))
                         ->values()
                         ->map(fn (array $row) => $this->stripDepartmentMeta($row))
                         ->all(),
@@ -149,9 +149,10 @@ class ShiftRosterExportReportService
                     'shift_count' => count($shifts),
                     'total_hours' => $totalHours,
                     'shifts' => $shifts,
+                    'role_level' => $this->resolveEmployeeRoleLevel($first),
                 ];
             })
-            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->sortBy(fn (array $emp) => sprintf('%010d-%s', $emp['role_level'], mb_strtolower($emp['name'])))
             ->values()
             ->all();
 
@@ -222,7 +223,7 @@ class ShiftRosterExportReportService
             'approvalSegment',
             'employee.department',
             'employee.assignedDesignation',
-            'employee.role',
+            'employee.role.roleLevel',
             'employee.sbu',
             'outsourcedEmployee.contractorCompany',
             'outsourcedEmployee.sbu',
@@ -639,6 +640,7 @@ class ShiftRosterExportReportService
             'is_deleted' => $entry->trashed(),
             'department_key' => $departmentName,
             'department_name' => strtoupper($departmentName),
+            'role_level' => $this->resolveEmployeeRoleLevel($entry),
         ];
     }
 
@@ -750,9 +752,10 @@ class ShiftRosterExportReportService
                     'name' => $name,
                     'designation' => $this->resolveExportEmployeeDesignation($first),
                     'cells' => $cells,
+                    'role_level' => $this->resolveEmployeeRoleLevel($first),
                 ];
             })
-            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->sortBy(fn (array $emp) => sprintf('%010d-%s', $emp['role_level'], mb_strtolower($emp['name'])))
             ->values()
             ->all();
     }
@@ -1116,5 +1119,14 @@ class ShiftRosterExportReportService
         }
 
         return 'general';
+    }
+
+    private function resolveEmployeeRoleLevel(ShiftRosterEntry $entry): int
+    {
+        if ($entry->employee_id && $entry->employee) {
+            return $entry->employee->role?->resolvedNumericLevel() ?? 999999;
+        }
+
+        return 999999;
     }
 }
