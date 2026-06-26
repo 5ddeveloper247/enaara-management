@@ -671,18 +671,29 @@ class ShiftRosterService
 
         // --- Add Virtual Leaves ---
         $leaveEntities = \App\Models\EmployeLeaveEntity::query()
-            ->with('leaveRequest.leaveType')
+            ->select([
+                'id',
+                'employee_id',
+                'leave_request_id',
+                'leave_type_id',
+                'leave_date',
+                'duration',
+                'counts_against_quota',
+                'half_day_session',
+            ])
+            ->with([
+                'leaveRequest:id,is_outstation_leave,is_half_day,half_day_session,leave_type_id',
+                'leaveRequest.leaveType:id,name',
+            ])
             ->whereIn('employee_id', $shiftEmployeeIds)
-            ->whereIn('status', [0, 1]) // 0: approved, 1: taken
+            ->whereIn('status', [0, 1])
             ->whereBetween('leave_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get();
 
         $virtualLeaves = $leaveEntities->map(function ($entity) {
             $dateString = $entity->leave_date->toDateString();
             $employeeKey = 'employee:' . $entity->employee_id;
-            $leaveName = $entity->leaveRequest?->leaveType?->name ?? 'Leave';
-            $isHalfDayLeave = (float) $entity->duration < 1.0
-                || (bool) ($entity->leaveRequest?->is_half_day ?? false);
+            $resolved = RosterLeaveCellResolver::fromEntity($entity);
             $halfDaySession = $entity->half_day_session ?? $entity->leaveRequest?->half_day_session;
 
             return [
@@ -694,21 +705,22 @@ class ShiftRosterService
                 'day' => (int) $entity->leave_date->format('d'),
                 'shiftPlannerId' => null,
                 'isCustomTime' => false,
-                'shiftType' => $isHalfDayLeave ? 'half_leave' : 'leave',
+                'shiftType' => $resolved['shiftType'],
                 'timeStart' => null,
                 'timeEnd' => null,
                 'floor' => null,
                 'location' => null,
                 'notes' => null,
                 'sbuFloorId' => null,
-                'status' => 'leave',
-                'isOffDay' => ! $isHalfDayLeave,
+                'status' => $resolved['shiftType'],
+                'isOffDay' => $resolved['isOffDay'],
                 'isPublicHoliday' => false,
-                'isLeave' => true,
-                'isHalfDayLeave' => $isHalfDayLeave,
+                'isLeave' => $resolved['isLeave'],
+                'isWeeklyRest' => $resolved['isWeeklyRest'],
+                'isHalfDayLeave' => $resolved['isHalfDayLeave'],
                 'leaveDuration' => (float) $entity->duration,
                 'halfDaySession' => $halfDaySession,
-                'leaveName' => $leaveName,
+                'leaveName' => $resolved['leaveName'],
                 'isCompensatory' => false,
                 'deletedAt' => null,
                 'createdAt' => null,

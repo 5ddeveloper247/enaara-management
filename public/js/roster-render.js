@@ -237,20 +237,27 @@
                 '</div>';
         }
 
-        if (s.isLeave || (s.status && String(s.status).toLowerCase() === 'leave')) {
+        if (
+            s.isLeave
+            || s.isWeeklyRest
+            || (s.shiftType && String(s.shiftType).toLowerCase() === 'weekly_rest')
+            || (s.status && String(s.status).toLowerCase() === 'leave')
+        ) {
             var rawName = s.leaveName ? String(s.leaveName).trim() : 'leave';
             var typeName = rawName.replace(/\s*leaves?\s*$/i, '').trim() || rawName;
             if (typeName.length > 16) {
                 typeName = typeName.substring(0, 14) + '…';
             }
-            var isHalfDayLeave = !!(s.isHalfDayLeave || (s.leaveDuration && parseFloat(s.leaveDuration) < 1));
+            var isWeeklyRest = !!(s.isWeeklyRest
+                || (s.shiftType && String(s.shiftType).toLowerCase() === 'weekly_rest'));
+            var isHalfDayLeave = !isWeeklyRest && !!s.isHalfDayLeave;
             var session = s.halfDaySession ? String(s.halfDaySession).toLowerCase() : '';
             var sessionLabel = session === 'morning'
                 ? 'Morning'
                 : (session === 'afternoon' ? 'Afternoon' : '');
-            var leaveDisplayText = isHalfDayLeave
-                ? 'Short Leave'
-                : ('On ' + typeName + ' leave');
+            var leaveDisplayText = isWeeklyRest
+                ? 'Weekly Rest'
+                : (isHalfDayLeave ? 'Short Leave' : ('On ' + typeName + ' leave'));
             var sessionMetaHtml = isHalfDayLeave && sessionLabel
                 ? '<div class="shift-pill-meta"><span class="shift-half-session">' + escapeHtml(sessionLabel) + '</span></div>'
                 : '';
@@ -259,9 +266,11 @@
                 ? ''
                 : 'background-color: #fef08a; border-color: #facc15; color: #854d0e;';
             var iconStyle = isHalfDayLeave ? '' : 'color: #ca8a04;';
-            var titleText = isHalfDayLeave
-                ? ('Short Leave' + (sessionLabel ? ' — ' + sessionLabel : '') + (rawName ? ' (' + rawName + ')' : ''))
-                : rawName;
+            var titleText = isWeeklyRest
+                ? 'Weekly Rest (Outstation travel exempt)'
+                : (isHalfDayLeave
+                    ? ('Short Leave' + (sessionLabel ? ' — ' + sessionLabel : '') + (rawName ? ' (' + rawName + ')' : ''))
+                    : rawName);
             return '<div class="' + pillClass + '"' +
                 (pillStyle ? ' style="' + pillStyle + '"' : '') +
                 ' title="' + escapeHtml(titleText) + '">' +
@@ -445,15 +454,17 @@
             return isRosterWorkingShift(s);
         });
         var leaveShifts = nonHoliday.filter(function(s) {
-            return !!(s.isLeave || String(s.status || '').toLowerCase() === 'leave');
+            return !!(s.isLeave || s.isWeeklyRest
+                || String(s.shiftType || '').toLowerCase() === 'weekly_rest'
+                || String(s.status || '').toLowerCase() === 'leave');
         });
-
-        if (workingShifts.length) {
-            return sortShiftsForCell(workingShifts);
-        }
 
         if (leaveShifts.length) {
             return sortShiftsForCell(leaveShifts);
+        }
+
+        if (workingShifts.length) {
+            return sortShiftsForCell(workingShifts);
         }
 
         return sortShiftsForCell(nonHoliday);
@@ -721,7 +732,9 @@
                             return isRosterOffDayShift(s) && !s.deletedAt;
                         });
                         var hasLeave = displayShifts.some(function(s) {
-                            return !s.deletedAt && (s.isLeave || String(s.status || '').toLowerCase() === 'leave');
+                            return !s.deletedAt && (s.isLeave || s.isWeeklyRest
+                                || String(s.shiftType || '').toLowerCase() === 'weekly_rest'
+                                || String(s.status || '').toLowerCase() === 'leave');
                         });
                         var hasWorkAssignment = displayShifts.some(function(s) {
                             return !s.deletedAt && isRosterWorkAssignmentShift(s);
@@ -1355,7 +1368,10 @@
         if (!shift) {
             return false;
         }
-        if (shift.isLeave && shift.isHalfDayLeave) {
+        if (shift.isWeeklyRest || String(shift.shiftType || '').toLowerCase() === 'weekly_rest') {
+            return false;
+        }
+        if (shift.isLeave && (shift.isHalfDayLeave || shift.isOffDay)) {
             return false;
         }
         if (shift.isOffDay) {

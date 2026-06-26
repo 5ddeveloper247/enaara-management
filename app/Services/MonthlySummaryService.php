@@ -242,7 +242,10 @@ class MonthlySummaryService
             ->where('employee_id', $employee->id)
             ->whereBetween('leave_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->whereIn('status', [0, 1])
-            ->with('leaveType:id,name,code')
+            ->with([
+                'leaveType:id,name,code',
+                'leaveRequest:id,is_outstation_leave,is_half_day,half_day_session,leave_type_id',
+            ])
             ->get()
             ->keyBy(static fn (EmployeLeaveEntity $entity) => $entity->leave_date->toDateString());
 
@@ -315,24 +318,35 @@ class MonthlySummaryService
         );
 
         if ($leaveEntity) {
-            $leaveTypeName = $leaveEntity->leaveType?->name ?? 'Leave';
+            $resolved = RosterLeaveCellResolver::fromEntity($leaveEntity);
             $duration = (float) $leaveEntity->duration;
-            $isHalfDay = $duration > 0 && $duration < 1;
             $session = $leaveEntity->half_day_session
                 ? strtoupper((string) $leaveEntity->half_day_session)
                 : null;
 
-            $label = $isHalfDay ? 'Half-day' : 'Leave';
-            $detail = $isHalfDay
-                ? trim($leaveTypeName . ($session ? " ({$session})" : ''))
-                : $leaveTypeName;
+            if ($resolved['isWeeklyRest']) {
+                return [
+                    'date' => $dateStr,
+                    'day' => (int) $date->day,
+                    'status' => 'weekly_rest',
+                    'label' => 'Weekly Rest',
+                    'detail' => 'Outstation travel exempt',
+                    'leave_type' => $resolved['leaveName'],
+                    'duration' => $duration,
+                ];
+            }
+
+            $isHalfDay = $resolved['isHalfDayLeave'];
+            $leaveTypeName = $resolved['leaveName'];
 
             return [
                 'date' => $dateStr,
                 'day' => (int) $date->day,
                 'status' => $isHalfDay ? 'half-day' : 'leave',
-                'label' => $label,
-                'detail' => $detail,
+                'label' => $isHalfDay ? 'Half-day' : 'Leave',
+                'detail' => $isHalfDay
+                    ? trim($leaveTypeName . ($session ? " ({$session})" : ''))
+                    : $leaveTypeName,
                 'leave_type' => $leaveTypeName,
                 'duration' => $duration,
             ];

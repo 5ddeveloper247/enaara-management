@@ -641,6 +641,17 @@ body.shift-planner-roster-mode .roster-back-btn:hover {
     color: #b45309;
 }
 
+.shift-pill.shift-weekly-rest {
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    color: #374151;
+    border: 1px dashed rgba(107, 114, 128, 0.55);
+    cursor: default;
+}
+
+.shift-pill.shift-weekly-rest .shift-pill-icon {
+    color: #6b7280;
+}
+
 .shift-pill.shift-absent {
     background: linear-gradient(135deg, #fee2e2, #fecaca);
     color: #991b1b;

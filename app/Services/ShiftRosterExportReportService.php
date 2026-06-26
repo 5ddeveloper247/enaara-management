@@ -502,7 +502,7 @@ class ShiftRosterExportReportService
 
     private function buildStatsFromRows(Collection $rows, ?int $employeeCount = null): array
     {
-        $workingRows = $rows->reject(fn (array $row) => in_array($row['shift_type'] ?? '', ['off', 'holiday', 'leave', 'half_leave'], true));
+        $workingRows = $rows->reject(fn (array $row) => in_array($row['shift_type'] ?? '', ['off', 'holiday', 'leave', 'half_leave', 'weekly_rest'], true));
         $employeeNames = $rows->pluck('employee')->filter()->unique();
 
         return [
@@ -513,7 +513,7 @@ class ShiftRosterExportReportService
             'night' => $workingRows->where('shift_type', 'night')->count(),
             'off_days' => $rows->where('shift_type', 'off')->count(),
             'public_holidays' => $rows->where('shift_type', 'holiday')->count(),
-            'leaves' => $rows->whereIn('shift_type', ['leave', 'half_leave'])->count(),
+            'leaves' => $rows->whereIn('shift_type', ['leave', 'half_leave', 'weekly_rest'])->count(),
             'total_hours' => (int) $workingRows->sum('hours'),
         ];
     }
@@ -770,7 +770,19 @@ class ShiftRosterExportReportService
         }
 
         $leaves = EmployeLeaveEntity::query()
-            ->with('leaveRequest.leaveType')
+            ->select([
+                'id',
+                'employee_id',
+                'leave_request_id',
+                'leave_type_id',
+                'leave_date',
+                'duration',
+                'counts_against_quota',
+            ])
+            ->with([
+                'leaveRequest:id,is_outstation_leave,is_half_day,leave_type_id',
+                'leaveRequest.leaveType:id,name',
+            ])
             ->whereIn('employee_id', $employeeIds)
             ->whereIn('status', [0, 1])
             ->whereBetween('leave_date', $context['date_range'])
@@ -868,10 +880,7 @@ class ShiftRosterExportReportService
 
     private function mapLeaveToExportRow(EmployeLeaveEntity $entity): array
     {
-        $isHalfDayLeave = (float) $entity->duration < 1.0
-            || (bool) ($entity->leaveRequest?->is_half_day ?? false);
-        $leaveName = $entity->leaveRequest?->leaveType?->name ?? 'Leave';
-        $shiftType = $isHalfDayLeave ? 'half_leave' : 'leave';
+        $resolved = RosterLeaveCellResolver::fromEntity($entity);
 
         return [
             'employee' => null,
@@ -881,8 +890,8 @@ class ShiftRosterExportReportService
             'day' => $entity->leave_date->format('D'),
             'start_time' => null,
             'end_time' => null,
-            'shift_type' => $shiftType,
-            'shift_label' => $isHalfDayLeave ? 'Short Leave' : $leaveName,
+            'shift_type' => $resolved['shiftType'],
+            'shift_label' => RosterLeaveCellResolver::exportLabel($resolved),
             'hours' => 0,
             'is_deleted' => false,
         ];
@@ -1004,6 +1013,7 @@ class ShiftRosterExportReportService
             'holiday' => 'PH',
             'leave' => 'LEAVE',
             'half_leave' => 'SL',
+            'weekly_rest' => 'WR',
             'absent' => 'A',
             'work_from_home' => 'WFH',
             default => mb_strtoupper(mb_substr(trim($fullLabel), 0, 1)) ?: '•',

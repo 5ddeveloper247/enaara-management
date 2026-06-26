@@ -253,6 +253,7 @@
         .day-cell-holiday { background: #fef9c3; }
         .day-cell-leave { background: #fef08a; }
         .day-cell-half_leave { background: #fef9c3; }
+        .day-cell-weekly_rest { background: #fef08a; }
 
         .day-cell-deleted {
             opacity: 0.72;
@@ -279,6 +280,7 @@
         .shift-short-holiday { color: #a16207; }
         .shift-short-leave { color: #854d0e; }
         .shift-short-half_leave { color: #a16207; }
+        .shift-short-weekly_rest { color: #854d0e; }
 
         .shift-time-stack {
             display: block;
@@ -432,6 +434,7 @@
             'holiday' => 'day-cell-holiday',
             'leave' => 'day-cell-leave',
             'half_leave' => 'day-cell-half_leave',
+            'weekly_rest' => 'day-cell-weekly_rest',
         ];
     @endphp
 
@@ -556,7 +559,7 @@
                             <td class="day-cell{{ $cellClass ? ' ' . $cellClass : '' }}{{ is_array($cell) && !empty($cell['is_deleted']) ? ' day-cell-deleted' : '' }}">
                                 @if(is_array($cell))
                                     <span class="shift-short-label shift-short-{{ $shiftType }}">{{ $cell['shift_short'] ?? '•' }}</span>
-                                    @if($include_shift_times && !in_array($shiftType, ['off', 'holiday', 'leave', 'half_leave'], true))
+                                    @if($include_shift_times && !in_array($shiftType, ['off', 'holiday', 'leave', 'half_leave', 'weekly_rest'], true))
                                         @if(!empty($cell['time_start_short']))
                                             <span class="shift-time-stack">{{ $cell['time_start_short'] }}</span>
                                         @endif
