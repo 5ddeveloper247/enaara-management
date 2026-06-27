@@ -1092,6 +1092,10 @@ class ShiftRosterExportReportService
             return 'off';
         }
 
+        if ($isCustomTime) {
+            return 'general';
+        }
+
         $shiftCode = strtolower($shiftCode);
         $shiftName = strtolower($shiftName);
 
