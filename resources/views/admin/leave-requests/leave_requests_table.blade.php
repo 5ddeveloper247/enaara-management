@@ -10,7 +10,7 @@
             <th>Reason</th>
             <th>Balance/Level</th>
             <th>Status</th>
-            <th>Pending Since</th>
+            <th>Last Activity</th>
             <th class="text-end">Actions</th>
         </tr>
     </thead>

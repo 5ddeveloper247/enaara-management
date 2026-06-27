@@ -189,7 +189,12 @@ class LeaveRequestIndexData
                 'status' => $statusMap[$displayStatusCode] ?? 'pending',
                 'statusCode' => $displayStatusCode,
                 'approvalLevel' => $currentLevelStr,
-                'pendingSince' => $request->created_at ? $request->created_at->diffForHumans() : '-',
+                'pendingSince' => $this->resolveStatusSinceLabel(
+                    $displayStatusCode,
+                    $request,
+                    $approverRow,
+                    $recommenderRow
+                ),
                 'balance' => $balanceLookup[$balanceKey] ?? '0 / 0',
                 'actionType' => $actionType,
                 'isApprover' => $isAssignedApprover,
@@ -399,5 +404,37 @@ class LeaveRequestIndexData
         $normalized = strtolower(trim((string) $department->name));
 
         return in_array($normalized, ['human resource', 'human resources'], true);
+    }
+
+    private function resolveStatusSinceLabel(
+        int $displayStatusCode,
+        EmployeLeaveRequest $request,
+        ?EmployeLeaveRequest $approverRow,
+        ?EmployeLeaveRequest $recommenderRow
+    ): string {
+        if ($displayStatusCode === 0) {
+            return $request->created_at?->diffForHumans() ?? '-';
+        }
+
+        $timestamp = match ($displayStatusCode) {
+            1, 2 => $recommenderRow?->updated_at ?? $request->updated_at,
+            3, 4 => $approverRow?->updated_at ?? $request->updated_at,
+            default => $request->updated_at,
+        };
+
+        if ($timestamp === null) {
+            return '-';
+        }
+
+        $prefix = match ($displayStatusCode) {
+            1 => 'Recommended',
+            2 => 'Not recommended',
+            3 => 'Approved',
+            4 => 'Rejected',
+            5 => 'Cancelled',
+            default => 'Updated',
+        };
+
+        return $prefix . ' · ' . $timestamp->diffForHumans();
     }
 }
