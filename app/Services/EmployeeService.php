@@ -354,6 +354,8 @@ class EmployeeService
                     }
                     $data['designation_id'] = (int) $designation->id;
                     $data['designation'] = $designation->name;
+                    $this->syncPrimaryDepartmentFromDesignation($data);
+
                     return;
                 }
             }
@@ -400,6 +402,99 @@ class EmployeeService
         }
         $data['designation_id'] = (int) $designation->id;
         $data['designation'] = $designation->name;
+        $this->syncPrimaryDepartmentFromDesignation($data);
+    }
+
+    /**
+     * Primary department_id should match the assigned designation's department
+     * so roster, leave, and reports group the employee correctly.
+     */
+    private function syncPrimaryDepartmentFromDesignation(array &$data): void
+    {
+        $designationId = (int) ($data['designation_id'] ?? 0);
+        if ($designationId <= 0) {
+            return;
+        }
+
+        $designation = Designation::query()->find($designationId);
+        if (! $designation?->department_id) {
+            return;
+        }
+
+        $primaryDepartmentId = (int) $designation->department_id;
+        $data['department_id'] = $primaryDepartmentId;
+
+        $departmentIds = [];
+        if (! empty($data['department_ids']) && is_array($data['department_ids'])) {
+            $departmentIds = array_values(array_unique(array_filter(array_map('intval', $data['department_ids']))));
+        }
+
+        if ($departmentIds === [] && $primaryDepartmentId > 0) {
+            $departmentIds = [$primaryDepartmentId];
+        }
+
+        if (! in_array($primaryDepartmentId, $departmentIds, true)) {
+            array_unshift($departmentIds, $primaryDepartmentId);
+        } else {
+            $departmentIds = array_values(array_unique(array_merge(
+                [$primaryDepartmentId],
+                array_values(array_filter(
+                    $departmentIds,
+                    fn (int $id) => $id !== $primaryDepartmentId
+                ))
+            )));
+        }
+
+        $data['department_ids'] = $departmentIds;
+    }
+
+    public function syncEmployeePrimaryDepartmentFromDesignation(Employee $employee, bool $persist = true): ?int
+    {
+        if (! $employee->designation_id) {
+            return null;
+        }
+
+        $designation = Designation::query()->find((int) $employee->designation_id);
+        if (! $designation?->department_id) {
+            return null;
+        }
+
+        $primaryDepartmentId = (int) $designation->department_id;
+        $departmentIds = is_array($employee->department_ids)
+            ? array_values(array_unique(array_filter(array_map('intval', $employee->department_ids))))
+            : [];
+
+        if ($employee->department_id) {
+            $departmentIds[] = (int) $employee->department_id;
+        }
+
+        if (! in_array($primaryDepartmentId, $departmentIds, true)) {
+            array_unshift($departmentIds, $primaryDepartmentId);
+        } else {
+            $departmentIds = array_values(array_unique(array_merge(
+                [$primaryDepartmentId],
+                array_values(array_filter(
+                    $departmentIds,
+                    fn (int $id) => $id !== $primaryDepartmentId
+                ))
+            )));
+        }
+
+        if (
+            (int) $employee->department_id === $primaryDepartmentId
+            && $departmentIds === array_values(array_unique(array_filter(array_map('intval', $employee->department_ids ?? []))))
+        ) {
+            return $primaryDepartmentId;
+        }
+
+        if ($persist) {
+            $employee->update([
+                'department_id' => $primaryDepartmentId,
+                'department_ids' => $departmentIds,
+            ]);
+        }
+
+        return $primaryDepartmentId;
     }
 
     public function store(array $data, array $files = [], array $attachments = []): Employee
