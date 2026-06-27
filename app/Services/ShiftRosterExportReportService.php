@@ -548,11 +548,7 @@ class ShiftRosterExportReportService
             return false;
         }
 
-        if ($entry->shift_roster_approval_request_id && ! $this->isEntryGmApproved($entry)) {
-            return false;
-        }
-
-        return true;
+        return $this->isEntryGmApproved($entry);
     }
 
     private function isEntryGmApproved(ShiftRosterEntry $entry): bool
