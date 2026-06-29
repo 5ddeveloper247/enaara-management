@@ -121,24 +121,51 @@ class LeaveRequestIndexData
 
             $actionType = (int) $request->action_type;
             $statusCode = (int) $request->status;
+            $leaveStillActionable = $this->isLeaveStillActionable($request);
 
             $canRecommend = $isAssignedApprover
                 && $actionType === self::RECOMMENDATION_ACTION_TYPE
+                && $leaveStillActionable
                 && in_array($statusCode, [0, 1, 2], true);
 
-            $canApprove = $isAssignedApprover
-                && $actionType === self::FINAL_APPROVAL_ACTION_TYPE
-                && $statusCode === 0;
+            $canApprove = false;
+            $canReject = false;
+            $canCancel = false;
+
+            if ($isAssignedApprover && $actionType === self::FINAL_APPROVAL_ACTION_TYPE) {
+                if ($statusCode === 0) {
+                    $canApprove = true;
+                    $canReject = true;
+                    $canCancel = true;
+                } elseif ($leaveStillActionable) {
+                    $canApprove = in_array($statusCode, [4, 5], true);
+                    $canReject = $statusCode === 3;
+                    $canCancel = $statusCode === 3;
+                }
+            }
 
             $requiresHrDelegationConfirm = false;
             $assignedApproverName = optional($request->toEmployee)->full_name;
 
             if ($leaveScope === self::SCOPE_OTHER_DEPARTMENTS && $this->canShowHrScopeTabs($currentEmployee)) {
                 $canRecommend = false;
-                $canApprove = $actionType === self::FINAL_APPROVAL_ACTION_TYPE
-                    && $statusCode === 0;
+                $canApprove = false;
+                $canReject = false;
+                $canCancel = false;
 
-                $requiresHrDelegationConfirm = $canApprove;
+                if ($actionType === self::FINAL_APPROVAL_ACTION_TYPE) {
+                    if ($statusCode === 0) {
+                        $canApprove = true;
+                        $canReject = true;
+                        $canCancel = true;
+                    } elseif ($leaveStillActionable) {
+                        $canApprove = in_array($statusCode, [4, 5], true);
+                        $canReject = $statusCode === 3;
+                        $canCancel = $statusCode === 3;
+                    }
+                }
+
+                $requiresHrDelegationConfirm = $canApprove || $canReject || $canCancel;
             }
 
             $siblings = $relatedRequests->get($this->buildLeaveApplicationKey($request), collect());
@@ -199,8 +226,8 @@ class LeaveRequestIndexData
                 'actionType' => $actionType,
                 'isApprover' => $isAssignedApprover,
                 'canApprove' => $canApprove,
-                'canReject' => $canApprove,
-                'canCancel' => $canApprove,
+                'canReject' => $canReject,
+                'canCancel' => $canCancel,
                 'canRecommend' => $canRecommend,
                 'canNotRecommend' => $canRecommend,
                 'recommenderName' => $recommenderRow ? $recommenderRow->resolveActingEmployeeName() : null,
@@ -436,5 +463,10 @@ class LeaveRequestIndexData
         };
 
         return $prefix . ' · ' . $timestamp->diffForHumans();
+    }
+
+    private function isLeaveStillActionable(EmployeLeaveRequest $request): bool
+    {
+        return Carbon::parse($request->end_date)->startOfDay()->gte(Carbon::today());
     }
 }

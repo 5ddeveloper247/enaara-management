@@ -10,6 +10,7 @@ use App\Notifications\LeaveApprovedToHodNotification;
 use App\Notifications\LeaveHrDelegatedActionNotification;
 use App\Notifications\LeaveStatusUpdateNotification;
 use App\Services\AuditTrailService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -114,18 +115,26 @@ class LeaveRequestStatusHandler
         }
 
         if ((int) $leaveRequest->action_type === self::RECOMMENDATION_ACTION_TYPE) {
-            return $this->authorizeRecommendationChange($request, $currentStatus, $newStatus);
+            return $this->authorizeRecommendationChange($request, $leaveRequest, $currentStatus, $newStatus);
         }
 
         if ((int) $leaveRequest->action_type === self::FINAL_APPROVAL_ACTION_TYPE) {
-            return $this->authorizeFinalApprovalChange($request, $currentStatus, $newStatus);
+            return $this->authorizeFinalApprovalChange($request, $leaveRequest, $currentStatus, $newStatus);
         }
 
         return $this->deny($request, 'This request has no valid action type assignment.');
     }
 
-    private function authorizeRecommendationChange(Request $request, int $currentStatus, int $newStatus)
-    {
+    private function authorizeRecommendationChange(
+        Request $request,
+        EmployeLeaveRequest $leaveRequest,
+        int $currentStatus,
+        int $newStatus
+    ) {
+        if (! $this->isLeaveStillActionable($leaveRequest)) {
+            return $this->deny($request, 'This leave request can no longer be modified because the leave period has ended.');
+        }
+
         if (! in_array($currentStatus, [0, 1, 2], true)) {
             return $this->deny($request, 'You can only act on pending or recommended requests.');
         }
@@ -137,17 +146,39 @@ class LeaveRequestStatusHandler
         return null;
     }
 
-    private function authorizeFinalApprovalChange(Request $request, int $currentStatus, int $newStatus)
-    {
-        if ($currentStatus !== 0) {
-            return $this->deny($request, 'This final approval request has already been actioned.');
+    private function authorizeFinalApprovalChange(
+        Request $request,
+        EmployeLeaveRequest $leaveRequest,
+        int $currentStatus,
+        int $newStatus
+    ) {
+        if (! $this->isLeaveStillActionable($leaveRequest)) {
+            return $this->deny($request, 'This leave request can no longer be modified because the leave period has ended.');
         }
 
-        if (! in_array($newStatus, [3, 4, 5], true)) {
-            return $this->deny($request, 'You can only approve, reject or cancel.');
+        $allowedTransitions = [
+            0 => [3, 4, 5],
+            3 => [4, 5],
+            4 => [3],
+            5 => [3],
+        ];
+
+        $allowedNextStatuses = $allowedTransitions[$currentStatus] ?? [];
+
+        if (! in_array($newStatus, $allowedNextStatuses, true)) {
+            if ($currentStatus === 0) {
+                return $this->deny($request, 'You can only approve, reject or cancel.');
+            }
+
+            return $this->deny($request, 'This action is not allowed for the current request status.');
         }
 
         return null;
+    }
+
+    private function isLeaveStillActionable(EmployeLeaveRequest $leaveRequest): bool
+    {
+        return Carbon::parse($leaveRequest->end_date)->startOfDay()->gte(Carbon::today());
     }
 
     private function logStatusChange(
