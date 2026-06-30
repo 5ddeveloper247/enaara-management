@@ -979,6 +979,15 @@ class ShiftRosterService
             if ($segment) {
                 $segmentId = (int) $segment->id;
                 $entryQuery->where('shift_roster_approval_segment_id', $segmentId);
+            } elseif ($viewerUserId && (int) $request->requested_by === (int) $viewerUserId) {
+                // Applicant reviews the full submitted roster.
+            } elseif ($viewerUserId && $this->viewerContributedToRosterRequest($request, $viewerUserId)) {
+                // Contributors only review entries they created or edited.
+                $entryQuery->where(function ($contributorQuery) use ($viewerUserId) {
+                    $contributorQuery->where('created_by', $viewerUserId)
+                        ->orWhere('assigned_by', $viewerUserId)
+                        ->orWhere('updated_by', $viewerUserId);
+                });
             } elseif (! $viewer?->isSystemAdminUser()) {
                 throw ValidationException::withMessages([
                     'approval' => 'You are not authorized to review this roster request.',
@@ -1030,6 +1039,10 @@ class ShiftRosterService
         }
 
         if ($viewerUserId && (int) $request->requested_by === (int) $viewerUserId) {
+            return;
+        }
+
+        if ($viewerUserId && $this->viewerContributedToRosterRequest($request, $viewerUserId)) {
             return;
         }
 
@@ -2006,6 +2019,20 @@ class ShiftRosterService
         return false;
     }
 
+    private function viewerContributedToRosterRequest(
+        ShiftRosterApprovalRequest $request,
+        int $viewerUserId
+    ): bool {
+        return ShiftRosterEntry::query()
+            ->where('shift_roster_approval_request_id', $request->id)
+            ->where(function ($query) use ($viewerUserId) {
+                $query->where('created_by', $viewerUserId)
+                    ->orWhere('assigned_by', $viewerUserId)
+                    ->orWhere('updated_by', $viewerUserId);
+            })
+            ->exists();
+    }
+
     private function viewerSeesPendingChange(
         ShiftRosterEntry $entry,
         ?int $viewerUserId,
@@ -2022,6 +2049,10 @@ class ShiftRosterService
 
         if ($entry->shift_roster_approval_request_id) {
             if ((int) $entry->approvalRequest?->requested_by === (int) $viewerUserId) {
+                return true;
+            }
+
+            if ($this->viewerIsDraftApplier($entry, $viewerUserId)) {
                 return true;
             }
 
@@ -2359,6 +2390,10 @@ class ShiftRosterService
 
         if ($entry->shift_roster_approval_request_id && $this->isEntryInPendingApproval($entry)) {
             if ((int) $entry->approvalRequest?->requested_by === (int) $viewerUserId) {
+                return true;
+            }
+
+            if ($this->viewerIsDraftApplier($entry, $viewerUserId)) {
                 return true;
             }
 

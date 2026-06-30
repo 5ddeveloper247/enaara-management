@@ -685,6 +685,7 @@ class ShiftRosterApprovalService
                 $segment = $request->segments()->create([
                     'department_id' => $departmentId,
                     'approver_employee_id' => $gm->id,
+                    'submitted_by_user_id' => Auth::id(),
                     'shift_count' => $segmentItems->where('entry_type', 'shift')->count(),
                     'off_day_count' => $segmentItems->where('entry_type', 'off')->count(),
                     'employee_count' => $groupEntries
@@ -1307,6 +1308,7 @@ class ShiftRosterApprovalService
             ->where('approval_status', 'pending')
             ->where('request_type', 'roster')
             ->where('shift_label', $shiftLabel)
+            ->where('requested_by', Auth::id())
             ->first();
     }
 
@@ -1358,11 +1360,14 @@ class ShiftRosterApprovalService
                     $segment = $request->segments()->create([
                         'department_id' => $departmentId,
                         'approver_employee_id' => $gm->id,
+                        'submitted_by_user_id' => Auth::id(),
                         'shift_count' => 0,
                         'off_day_count' => 0,
                         'employee_count' => 0,
                         'approval_status' => 'pending',
                     ]);
+                } else {
+                    $segment->update(['submitted_by_user_id' => Auth::id()]);
                 }
 
                 ShiftRosterEntry::query()

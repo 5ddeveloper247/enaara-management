@@ -12,6 +12,7 @@ class ShiftRosterApprovalSegment extends Model
         'shift_roster_approval_request_id',
         'department_id',
         'approver_employee_id',
+        'submitted_by_user_id',
         'shift_count',
         'off_day_count',
         'employee_count',
@@ -41,6 +42,11 @@ class ShiftRosterApprovalSegment extends Model
     public function approverEmployee(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'approver_employee_id');
+    }
+
+    public function submittedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by_user_id');
     }
 
     public function entries(): HasMany

@@ -395,56 +395,62 @@ class ShiftRosterExportReportService
             'approved_by_designation' => '',
         ];
 
+        $segment = $this->resolveExportSignatureSegment($context);
+
+        if ($segment !== null) {
+            $submitter = $segment->submittedByUser;
+            $submitterEmployee = $submitter?->employee;
+            $submitterDesignation = trim((string) (
+                $submitterEmployee?->assignedDesignation?->name
+                ?? $submitterEmployee?->designation
+                ?? $submitterEmployee?->role?->name
+                ?? ''
+            ));
+
+            $approver = $segment->approverEmployee;
+            $approverDesignation = trim((string) (
+                $approver?->assignedDesignation?->name
+                ?? $approver?->designation
+                ?? $approver?->role?->name
+                ?? ''
+            ));
+
+            return [
+                'applied_by_name' => trim((string) ($submitter?->name ?? '')),
+                'applied_by_designation' => $submitterDesignation,
+                'approved_by_name' => trim((string) ($approver?->full_name ?? $approver?->first_name ?? '')),
+                'approved_by_designation' => $approverDesignation,
+            ];
+        }
+
         $query = ShiftRosterApprovalRequest::query()
             ->with([
                 'requestedByUser.employee.assignedDesignation',
                 'requestedByUser.employee.role',
                 'approverEmployee.assignedDesignation',
                 'approverEmployee.role',
-                'segments.approverEmployee.assignedDesignation',
-                'segments.approverEmployee.role',
-                'segments.department',
             ])
             ->where('approval_status', 'approved')
+            ->where('request_type', '!=', 'roster')
             ->whereDate('start_date', '<=', $context['date_range'][1])
             ->whereDate('end_date', '>=', $context['date_range'][0]);
 
         $departmentId = ! empty($context['department_id']) ? (int) $context['department_id'] : null;
 
         if ($context['employee_group'] === 'third_party') {
-            $query->where(function ($groupQuery) {
-                $groupQuery->whereNotNull('outsourced_employee_id')
-                    ->orWhere('request_type', 'roster');
-            });
+            $query->whereNotNull('outsourced_employee_id');
 
             if ($departmentId) {
-                $query->where(function ($filterQuery) use ($departmentId) {
-                    $filterQuery->whereHas('outsourcedEmployee', function ($employeeQuery) use ($departmentId) {
-                        $employeeQuery->where('contractor_company_id', $departmentId);
-                    })->orWhere(function ($rosterQuery) use ($departmentId) {
-                        $rosterQuery->where('request_type', 'roster')
-                            ->whereHas('segments.entries.outsourcedEmployee', function ($employeeQuery) use ($departmentId) {
-                                $employeeQuery->where('contractor_company_id', $departmentId);
-                            });
-                    });
+                $query->whereHas('outsourcedEmployee', function ($employeeQuery) use ($departmentId) {
+                    $employeeQuery->where('contractor_company_id', $departmentId);
                 });
             }
         } else {
-            $query->where(function ($groupQuery) {
-                $groupQuery->whereNotNull('employee_id')
-                    ->orWhere('request_type', 'roster');
-            });
+            $query->whereNotNull('employee_id');
 
             if ($departmentId) {
-                $query->where(function ($filterQuery) use ($departmentId) {
-                    $filterQuery->whereHas('employee', function ($employeeQuery) use ($departmentId) {
-                        $employeeQuery->where('department_id', $departmentId);
-                    })->orWhere(function ($rosterQuery) use ($departmentId) {
-                        $rosterQuery->where('request_type', 'roster')
-                            ->whereHas('segments', function ($segmentQuery) use ($departmentId) {
-                                $segmentQuery->where('department_id', $departmentId);
-                            });
-                    });
+                $query->whereHas('employee', function ($employeeQuery) use ($departmentId) {
+                    $employeeQuery->where('department_id', $departmentId);
                 });
             }
         }
@@ -455,16 +461,16 @@ class ShiftRosterExportReportService
             return $empty;
         }
 
-        $requester = $request->requestedByUser;
-        $requesterEmployee = $requester?->employee;
-        $requesterDesignation = trim((string) (
-            $requesterEmployee?->assignedDesignation?->name
-            ?? $requesterEmployee?->designation
-            ?? $requesterEmployee?->role?->name
+        $submitter = $request->requestedByUser;
+        $submitterEmployee = $submitter?->employee;
+        $submitterDesignation = trim((string) (
+            $submitterEmployee?->assignedDesignation?->name
+            ?? $submitterEmployee?->designation
+            ?? $submitterEmployee?->role?->name
             ?? ''
         ));
 
-        $approver = $this->resolveSignatureApprover($request, $departmentId);
+        $approver = $request->approverEmployee;
         $approverDesignation = trim((string) (
             $approver?->assignedDesignation?->name
             ?? $approver?->designation
@@ -473,31 +479,45 @@ class ShiftRosterExportReportService
         ));
 
         return [
-            'applied_by_name' => trim((string) ($requester?->name ?? '')),
-            'applied_by_designation' => $requesterDesignation,
+            'applied_by_name' => trim((string) ($submitter?->name ?? '')),
+            'applied_by_designation' => $submitterDesignation,
             'approved_by_name' => trim((string) ($approver?->full_name ?? $approver?->first_name ?? '')),
             'approved_by_designation' => $approverDesignation,
         ];
     }
 
-    private function resolveSignatureApprover(
-        ShiftRosterApprovalRequest $request,
-        ?int $departmentId
-    ): ?\App\Models\Employee {
-        if ($request->request_type === 'roster') {
-            $segments = $request->segments
-                ->where('approval_status', 'approved')
-                ->when($departmentId, fn (Collection $segments) => $segments->where('department_id', $departmentId));
+    private function resolveExportSignatureSegment(array $context): ?ShiftRosterApprovalSegment
+    {
+        $departmentId = ! empty($context['department_id']) ? (int) $context['department_id'] : null;
 
-            /** @var ShiftRosterApprovalSegment|null $segment */
-            $segment = $segments
-                ->sortByDesc(fn (ShiftRosterApprovalSegment $segment) => $segment->approved_at?->timestamp ?? 0)
-                ->first();
+        $query = ShiftRosterApprovalSegment::query()
+            ->with([
+                'submittedByUser.employee.assignedDesignation',
+                'submittedByUser.employee.role',
+                'approverEmployee.assignedDesignation',
+                'approverEmployee.role',
+                'request',
+            ])
+            ->where('approval_status', 'approved')
+            ->whereHas('request', function ($requestQuery) use ($context) {
+                $requestQuery->where('request_type', 'roster')
+                    ->whereDate('start_date', '<=', $context['date_range'][1])
+                    ->whereDate('end_date', '>=', $context['date_range'][0]);
+            });
 
-            return $segment?->approverEmployee;
+        if ($context['employee_group'] === 'third_party') {
+            if ($departmentId) {
+                $query->whereHas('request.segments.entries.outsourcedEmployee', function ($employeeQuery) use ($departmentId) {
+                    $employeeQuery->where('contractor_company_id', $departmentId);
+                });
+            }
+        } elseif ($departmentId) {
+            $query->where('department_id', $departmentId);
         }
 
-        return $request->approverEmployee;
+        return $query
+            ->orderByDesc('approved_at')
+            ->first();
     }
 
     private function buildStatsFromRows(Collection $rows, ?int $employeeCount = null): array
