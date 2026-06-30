@@ -75,12 +75,34 @@ class ShiftRosterExportReportService
             ->filter(fn (ShiftRosterEntry $entry) => $this->isExportableRosterEntry($entry));
 
         $exportRows = $entries
-            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToExportRow(
-                $entry,
-                $context['include_shift_times'],
-                $context['holidays'] ?? null
-            ))
+            ->map(function (ShiftRosterEntry $entry) use ($context, $entries) {
+                // If this entry has a leave, we don't map the shift here to avoid double counting
+                $assigneeKey = $this->assigneeExportKey($entry);
+                $dateKey = $entry->roster_date->toDateString();
+                
+                // Instead of fully resolving here, just map it.
+                // We will rely on stats logic to calculate.
+                // Wait, to prevent double counting in stats, we should replace the shift with the leave!
+                $employeeIds = $entries->pluck('employee_id')->filter()->unique()->values()->all();
+                $leavesByAssigneeDate = $this->loadApprovedLeavesByAssigneeDate($context, $employeeIds);
+                
+                $leaveEntity = $leavesByAssigneeDate[$assigneeKey][$dateKey] ?? null;
+                if ($leaveEntity !== null) {
+                    $row = $this->mapLeaveToExportRow($leaveEntity);
+                    $row['employee'] = $this->resolveExportEmployeeDisplayName($entry);
+                    $row['department_key'] = $this->resolveExportDepartmentName($entry);
+                    return $row;
+                }
+                
+                return $this->mapEntryToExportRow(
+                    $entry,
+                    $context['include_shift_times'],
+                    $context['holidays'] ?? null
+                );
+            })
+            // We still merge buildLeaveExportRows to get leaves on days WITHOUT ShiftRosterEntry
             ->merge($this->buildLeaveExportRows($context, $entries))
+            ->unique(fn ($row) => ($row['employee'] ?? '') . '-' . $row['date_sort'])
             ->values();
 
         $employeeCount = $entries
@@ -287,14 +309,37 @@ class ShiftRosterExportReportService
 
     private function collectExportRows(array $context): Collection
     {
-        return $this->fetchExportEntries($context)
-            ->filter(fn (ShiftRosterEntry $entry) => $this->isExportableRosterEntry($entry))
-            ->map(fn (ShiftRosterEntry $entry) => $this->mapEntryToExportRow(
+        $entries = $this->fetchExportEntries($context)
+            ->filter(fn (ShiftRosterEntry $entry) => $this->isExportableRosterEntry($entry));
+
+        $employeeIds = $entries->pluck('employee_id')->filter()->unique()->values()->all();
+        $leavesByAssigneeDate = $this->loadApprovedLeavesByAssigneeDate($context, $employeeIds);
+
+        return $entries->map(function (ShiftRosterEntry $entry) use ($context, $leavesByAssigneeDate) {
+            $assigneeKey = $this->assigneeExportKey($entry);
+            $dateKey = $entry->roster_date->toDateString();
+            $leaveEntity = $leavesByAssigneeDate[$assigneeKey][$dateKey] ?? null;
+
+            if ($leaveEntity !== null) {
+                $row = $this->mapLeaveToExportRow($leaveEntity);
+                $row['employee'] = $this->resolveExportEmployeeDisplayName($entry);
+                $row['designation'] = $this->resolveExportEmployeeDesignation($entry);
+                $row['department_key'] = $this->resolveExportDepartmentName($entry);
+                $row['department_name'] = strtoupper($row['department_key']);
+                $row['role_level'] = $this->resolveEmployeeRoleLevel($entry);
+                $row['start_time'] = null;
+                $row['end_time'] = null;
+                $row['hours'] = 0;
+                $row['is_deleted'] = false;
+                return $row;
+            }
+
+            return $this->mapEntryToExportRow(
                 $entry,
                 $context['include_shift_times'],
                 $context['holidays'] ?? null
-            ))
-            ->values();
+            );
+        })->values();
     }
 
     private function enrichExportContextWithHolidays(array $context): array
@@ -752,7 +797,7 @@ class ShiftRosterExportReportService
                     $cell = $cellsByDate[$dateKey] ?? null;
                     $leaveEntity = $leavesByAssigneeDate[$assigneeKey][$dateKey] ?? null;
 
-                    if ($leaveEntity !== null && ! $this->isWorkingExportCell($cell)) {
+                    if ($leaveEntity !== null) {
                         $cell = $this->mapLeaveToCalendarCell($leaveEntity);
                     }
 
@@ -883,10 +928,6 @@ class ShiftRosterExportReportService
 
         foreach ($leavesByAssigneeDate as $assigneeKey => $dates) {
             foreach ($dates as $dateKey => $entity) {
-                if (isset($workingCellsByAssigneeDate[$assigneeKey][$dateKey])) {
-                    continue;
-                }
-
                 $rows->push($this->mapLeaveToExportRow($entity));
             }
         }
