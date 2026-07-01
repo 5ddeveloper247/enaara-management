@@ -249,15 +249,25 @@
                 }
 
                 var departments = Array.isArray(body.departments) ? body.departments : [];
-                departments.forEach(function(department) {
+                
+                if (departments.length === 1) {
+                    select.innerHTML = '';
                     var option = document.createElement('option');
-                    option.value = String(department.id);
-                    option.textContent = department.name || ('Department ' + department.id);
+                    option.value = String(departments[0].id);
+                    option.textContent = departments[0].name || ('Department ' + departments[0].id);
                     select.appendChild(option);
-                });
+                    select.value = String(departments[0].id);
+                } else {
+                    departments.forEach(function(department) {
+                        var option = document.createElement('option');
+                        option.value = String(department.id);
+                        option.textContent = department.name || ('Department ' + department.id);
+                        select.appendChild(option);
+                    });
 
-                if (previousValue && select.querySelector('option[value="' + previousValue + '"]')) {
-                    select.value = previousValue;
+                    if (previousValue && select.querySelector('option[value="' + previousValue + '"]')) {
+                        select.value = previousValue;
+                    }
                 }
             })
             .finally(function() {
