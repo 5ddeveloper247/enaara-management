@@ -470,6 +470,8 @@ class UniversityDirectoryService
             'Women University Mardan',
             'Women University Multan',
             'Women University Swabi',
+            'Cambridge International Education (CAIE)',
+            'Pearson Edexcel',
         ];
     }
 }

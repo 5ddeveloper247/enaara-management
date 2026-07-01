@@ -343,7 +343,9 @@
                                                             <option value="" selected disabled>Select degree type</option>
                                                             <option value="Under Matric">Under Matric</option>
                                                             <option value="Matric">Matric</option>
+                                                            <option value="O Level">O Level</option>
                                                             <option value="Intermediate">Intermediate</option>
+                                                            <option value="A Level">A Level</option>
                                                             <option value="Diploma">Diploma</option>
                                                             <option value="Associate Degree Program">Associate Degree Program</option>
                                                             <option value="Bachelor (2 Years)">Bachelor (2 Years)</option>
@@ -415,6 +417,7 @@
                                                             <option value="BISE Mirpur">BISE Mirpur</option>
                                                             <option value="BISE Gilgit-Baltistan">BISE Gilgit-Baltistan</option>
                                                             <option value="FBISE Islamabad">FBISE Islamabad</option>
+                                                            
                                                         </select>
                                                         <div class="academic-field-preview" data-academic-preview-board>-</div>
                                                     </div>
@@ -537,6 +540,8 @@
                                             <option value="University of Peshawar"></option>
                                             <option value="Bahauddin Zakariya University"></option>
                                             <option value="Government College University Lahore"></option>
+                                            <option value="Cambridge International Education (CAIE)"></option>
+                                            <option value="Pearson Edexcel"></option>
                                         </datalist>
 
                                         <div class="more-sub-pane flex-grow-1 min-width-0" id="moreStepPane4">
