@@ -749,7 +749,10 @@ class ShiftRosterService
 
         $draftPendingQuery = ShiftRosterEntry::query()
             ->with(['approvalRequest', 'approvalSegment'])
-            ->whereBetween('roster_date', $dateRange);
+            ->whereBetween('roster_date', [
+                $monthStart->toDateString(),
+                $monthStart->copy()->endOfMonth()->toDateString(),
+            ]);
         $employeeScope($draftPendingQuery);
         $draftPendingCount = $draftPendingQuery
             ->whereNull('shift_roster_approval_request_id')
