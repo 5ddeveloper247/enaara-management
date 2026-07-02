@@ -467,6 +467,6 @@ class LeaveRequestIndexData
 
     private function isLeaveStillActionable(EmployeLeaveRequest $request): bool
     {
-        return Carbon::parse($request->end_date)->startOfDay()->gte(Carbon::today());
+        return true;
     }
 }

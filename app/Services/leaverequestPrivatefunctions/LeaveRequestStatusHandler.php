@@ -131,9 +131,6 @@ class LeaveRequestStatusHandler
         int $currentStatus,
         int $newStatus
     ) {
-        if (! $this->isLeaveStillActionable($leaveRequest)) {
-            return $this->deny($request, 'This leave request can no longer be modified because the leave period has ended.');
-        }
 
         if (! in_array($currentStatus, [0, 1, 2], true)) {
             return $this->deny($request, 'You can only act on pending or recommended requests.');
@@ -152,9 +149,6 @@ class LeaveRequestStatusHandler
         int $currentStatus,
         int $newStatus
     ) {
-        if (! $this->isLeaveStillActionable($leaveRequest)) {
-            return $this->deny($request, 'This leave request can no longer be modified because the leave period has ended.');
-        }
 
         $allowedTransitions = [
             0 => [3, 4, 5],
@@ -176,10 +170,6 @@ class LeaveRequestStatusHandler
         return null;
     }
 
-    private function isLeaveStillActionable(EmployeLeaveRequest $leaveRequest): bool
-    {
-        return Carbon::parse($leaveRequest->end_date)->startOfDay()->gte(Carbon::today());
-    }
 
     private function logStatusChange(
         EmployeLeaveRequest $leaveRequest,
