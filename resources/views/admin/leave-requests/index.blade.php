@@ -220,7 +220,7 @@
                 [10, 25, 50, 100]
             ],
             order: [
-                [4, 'desc']
+                [6, 'desc']
             ],
             scrollX: false,
             responsive: {

@@ -5,9 +5,9 @@
             <th>Employee</th>
             <th>Department</th>
             <th>Leave Type</th>
-            <th>Date Range</th>
-            <th>Days</th>
             <th>Reason</th>
+            <th>Days</th>
+            <th>Date Range</th>
             <th>Balance/Level</th>
             <th>Status</th>
             <th>Last Activity</th>
@@ -57,14 +57,14 @@
                         <span class="badge {{ $type['class'] }} px-2 py-1 rounded-1">{{ $type['label'] }}</span>
                     </td>
                     <td>
-                        <div class="fw-semibold small">{{ $startDate->format('M j, Y') }}</div>
-                        <small class="text-muted">to {{ $endDate->format('M j, Y') }}</small>
+                        <div class="small">{{ $request['reason'] }}</div>
                     </td>
                     <td>
                         <div class="fw-semibold">{{ $request['days'] }} day{{ $request['days'] > 1 ? 's' : '' }}</div>
                     </td>
                     <td>
-                        <div class="small">{{ $request['reason'] }}</div>
+                        <div class="fw-semibold small">{{ $startDate->format('M j, Y') }}</div>
+                        <small class="text-muted">to {{ $endDate->format('M j, Y') }}</small>
                     </td>
                     <td>
                         <div class="small">
