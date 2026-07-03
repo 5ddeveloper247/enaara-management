@@ -5,7 +5,7 @@
             <span class="badge bg-main" id="whoIsOutCount">0</span>
         </div>
         <div class="card-body pt-3 p-0">
-            <div class="avatar-gallery p-0" id="whoIsOutContainer">
+            <div class="avatar-gallery who-is-out-gallery p-0" id="whoIsOutContainer">
                 <!-- Loading State -->
                 <div class="text-center py-4 w-100" id="whoIsOutLoading">
                     <div class="spinner-border spinner-border-sm text-main" role="status">

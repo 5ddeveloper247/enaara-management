@@ -230,7 +230,7 @@ class DashboardService
         $requests = EmployeLeaveRequest::with([
                 'fromEmployee:id,full_name,department_id',
                 'fromEmployee.mediaFiles',
-                'leaveType:id,name',
+                'leaveType:id,name,code',
             ])
             ->where('status', 3)
             ->whereIn('action_type', [0, 2])
@@ -250,11 +250,13 @@ class DashboardService
                 substr($words[0] ?? '', 0, 1) . substr($words[1] ?? '', 0, 1)
             );
             
-            // Format name as "First Name Last Initial."
             $shortName = $words[0] ?? '';
-            if (isset($words[1])) {
-                $shortName .= ' ' . substr($words[1], 0, 1) . '.';
+            if (isset($words[1]) && strlen(trim($words[1])) > 0 && preg_match('/^[a-zA-Z]/', $words[1])) {
+                $shortName .= ' '.substr($words[1], 0, 1).'.';
             }
+
+            $leaveTypeName = optional($r->leaveType)->name ?? 'Leave';
+            $leaveTypeCode = trim((string) (optional($r->leaveType)->code ?? ''));
 
             $avatarUrl = null;
             if ($r->fromEmployee) {
@@ -265,13 +267,14 @@ class DashboardService
             }
 
             return [
-                'id'           => $r->id,
-                'name'         => $name,
-                'short_name'   => $shortName,
-                'initials'     => $initials,
-                'avatar_url'   => $avatarUrl,
-                'leave_type'   => optional($r->leaveType)->name ?? 'Leave',
-                'status_dot'   => 'on-leave', 
+                'id'               => $r->id,
+                'name'             => $name,
+                'short_name'       => $shortName,
+                'initials'         => $initials,
+                'avatar_url'       => $avatarUrl,
+                'leave_type'       => $leaveTypeName,
+                'leave_type_short' => $leaveTypeCode !== '' ? $leaveTypeCode : $leaveTypeName,
+                'status_dot'       => 'on-leave',
             ];
         })->values()->all();
     }

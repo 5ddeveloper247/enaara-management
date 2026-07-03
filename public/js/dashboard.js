@@ -1914,9 +1914,9 @@
                 const clone = template.content.cloneNode(true);
                 const wrapper = clone.querySelector('.avatar-gallery-item');
                 
-                wrapper.setAttribute('title', item.name + ' - ' + item.leave_type);
+                wrapper.setAttribute('title', item.name + ' — ' + item.leave_type);
                 wrapper.querySelector('.avatar-gallery-name').textContent = item.short_name;
-                wrapper.querySelector('.avatar-gallery-role').textContent = item.leave_type;
+                wrapper.querySelector('.avatar-gallery-role').textContent = item.leave_type_short || item.leave_type;
                 
                 const avatarContainer = wrapper.querySelector('.avatar-gallery-avatar');
                 if (item.avatar_url) {

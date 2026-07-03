@@ -381,21 +381,46 @@
     white-space: nowrap;
 }
 
+/* Sidebar "Who is Out Today" — full labels, no cramped ellipsis */
+.who-is-out-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 0.25rem 0;
+}
+
+.who-is-out-gallery .avatar-gallery-name,
+.who-is-out-gallery .avatar-gallery-role {
+    max-width: 100%;
+    width: 100%;
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.who-is-out-gallery .avatar-gallery-role {
+    font-size: 0.7rem;
+    margin-top: 0.125rem;
+}
+
 /* Avatar Gallery Responsive */
 @media (max-width: 1400px) {
-    .avatar-gallery {
+    .avatar-gallery:not(.who-is-out-gallery) {
         grid-template-columns: repeat(4, 1fr);
     }
 }
 
 @media (max-width: 1200px) {
-    .avatar-gallery {
+    .avatar-gallery:not(.who-is-out-gallery) {
         grid-template-columns: repeat(5, 1fr);
     }
 }
 
 @media (max-width: 992px) {
-    .avatar-gallery {
+    .avatar-gallery:not(.who-is-out-gallery) {
         grid-template-columns: repeat(4, 1fr);
     }
 }
