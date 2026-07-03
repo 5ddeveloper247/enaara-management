@@ -37,9 +37,10 @@ class EmployeeLeaveQuotaRecords
             $leaveTypeId = (int) $type->id;
 
             if ($this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId)) {
-                $maxAllowed = $this->compensatoryLeaveBalanceService->validEarnedDays($employeeId);
-                $reserved = $this->compensatoryUsageDays($employeeId, $leaveTypeId, $year);
-                $remaining = max(0, $maxAllowed - $reserved);
+                $asOf = Carbon::today();
+                $maxAllowed = $this->compensatoryLeaveBalanceService->validEarnedDays($employeeId, $asOf);
+                $remaining = $this->compensatoryLeaveBalanceService->remainingDays($employeeId, $year, $asOf);
+                $reserved = max(0.0, $maxAllowed - $remaining);
                 $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
                 $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
                 $claimed = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 1);
@@ -195,11 +196,21 @@ class EmployeeLeaveQuotaRecords
             $employeeId = (int) $request->from_employee_id;
             $leaveTypeId = (int) $request->leave_type_id;
             $year = (int) Carbon::parse($request->start_date)->year;
-            $key = $this->rowKey($employeeId, $leaveTypeId, $year);
+            $key = $this->balanceLookupKeyForRequest($request);
 
+            if ($this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId)) {
+                $asOf = Carbon::parse($request->start_date)->startOfDay();
+                $maxAllowed = $this->compensatoryLeaveBalanceService->validEarnedDays($employeeId, $asOf);
+                $remaining = $this->compensatoryLeaveBalanceService->remainingDays($employeeId, $year, $asOf);
+                $lookup[$key] = $remaining.' / '.$maxAllowed;
+
+                continue;
+            }
+
+            $lookupKey = $this->rowKey($employeeId, $leaveTypeId, $year);
             $fallback = (float) (optional($request->leaveType)->annual_quota ?? 0);
-            $quota = $quotaByKey[$key] ?? null;
-            $adjustment = $adjustments[$key] ?? 0.0;
+            $quota = $quotaByKey[$lookupKey] ?? null;
+            $adjustment = $adjustments[$lookupKey] ?? 0.0;
 
             $maxAllowed = $quota
                 ? (float) $quota->quota + $adjustment
@@ -209,12 +220,12 @@ class EmployeeLeaveQuotaRecords
             $claimed = $quota ? (float) $quota->used : 0.0;
 
             // Approved but not yet claimed (entity status=0) — deducted immediately on approval
-            $approved = (float) ($approvedEntities[$key]->total_approved ?? 0);
+            $approved = (float) ($approvedEntities[$lookupKey]->total_approved ?? 0);
 
             $used = $claimed + $approved;
             $remaining = max(0, $maxAllowed - $used);
 
-            $lookup[$key] = $remaining . ' / ' . $maxAllowed;
+            $lookup[$lookupKey] = $remaining.' / '.$maxAllowed;
         }
 
         return $lookup;
@@ -234,7 +245,7 @@ class EmployeeLeaveQuotaRecords
         return [
             'remaining' => $remaining,
             'max_allowed' => $maxAllowed,
-            'display' => $remaining . ' / ' . $maxAllowed,
+            'display' => $remaining.' / '.$maxAllowed,
         ];
     }
 
@@ -288,7 +299,23 @@ class EmployeeLeaveQuotaRecords
 
     public function rowKey(int $employeeId, int $leaveTypeId, int $year): string
     {
-        return $employeeId . '|' . $leaveTypeId . '|' . $year;
+        return $employeeId.'|'.$leaveTypeId.'|'.$year;
+    }
+
+    public function balanceLookupKeyForRequest(EmployeLeaveRequest $request): string
+    {
+        $employeeId = (int) $request->from_employee_id;
+        $leaveTypeId = (int) $request->leave_type_id;
+        $year = (int) Carbon::parse($request->start_date)->year;
+        $baseKey = $this->rowKey($employeeId, $leaveTypeId, $year);
+
+        if ($this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId)) {
+            return $baseKey.'|'
+                .Carbon::parse($request->start_date)->toDateString().'|'
+                .Carbon::parse($request->end_date)->toDateString();
+        }
+
+        return $baseKey;
     }
 
     private function loadQuotaContext(

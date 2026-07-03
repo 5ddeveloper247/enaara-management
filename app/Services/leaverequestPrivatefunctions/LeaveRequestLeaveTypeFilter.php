@@ -132,13 +132,11 @@ class LeaveRequestLeaveTypeFilter
         ?EmployeeLeaveQuota $quota = null,
     ): array {
         $year = $year ?? (int) now()->year;
-        $validEarned = $this->compensatoryLeaveBalanceService->validEarnedDays($employeeId);
-        $remainingFromEarned = $this->compensatoryLeaveBalanceService->remainingDays($employeeId, $year);
-        $reserved = max(0.0, $validEarned - $remainingFromEarned);
+        $asOf = Carbon::today();
 
-        $earned = max($validEarned, $quota ? (float) $quota->adjusted_quota : 0.0);
-        $used = max($reserved, $quota ? (float) $quota->used : 0.0);
-        $remaining = max(0.0, $earned - $used);
+        $earned = $this->compensatoryLeaveBalanceService->validEarnedDays($employeeId, $asOf);
+        $remaining = $this->compensatoryLeaveBalanceService->remainingDays($employeeId, $year, $asOf);
+        $used = max(0.0, $earned - $remaining);
 
         return [
             'earned' => $earned,

@@ -100,7 +100,7 @@ class LeaveRequestIndexData
         $currentEmployee = $currentUser?->employee;
 
         // Pre-fetch related requests to determine recommender and approver names
-        $relatedRequests = \App\Models\EmployeLeaveRequest::with([
+        $relatedRequests = EmployeLeaveRequest::with([
             'toEmployee:id,full_name',
             'actedByEmployee:id,full_name',
         ])
@@ -113,11 +113,7 @@ class LeaveRequestIndexData
             $isAssignedApprover = $currentEmployee
                 && (int) $request->to_employee_id === (int) $currentEmployee->id;
 
-            $balanceKey = $this->employeeLeaveQuotaRecords->rowKey(
-                (int) $request->from_employee_id,
-                (int) $request->leave_type_id,
-                (int) Carbon::parse($request->start_date)->year
-            );
+            $balanceKey = $this->employeeLeaveQuotaRecords->balanceLookupKeyForRequest($request);
 
             $actionType = (int) $request->action_type;
             $statusCode = (int) $request->status;
@@ -195,7 +191,7 @@ class LeaveRequestIndexData
             return [
                 'id' => $request->id,
                 'employeeName' => optional($request->fromEmployee)->full_name ?? 'Unknown',
-                'employeeId' => 'EMP-' . str_pad($request->from_employee_id, 3, '0', STR_PAD_LEFT),
+                'employeeId' => 'EMP-'.str_pad($request->from_employee_id, 3, '0', STR_PAD_LEFT),
                 'department' => optional(optional($request->fromEmployee)->department)->name ?? 'Unknown',
                 'leaveType' => $request->leaveType
                     ? strtolower(str_replace(' ', '-', $request->leaveType->name))
@@ -378,9 +374,9 @@ class LeaveRequestIndexData
 
             $query->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
                 ->whereHas(
-                'fromEmployee',
-                fn ($employeeQuery) => $employeeQuery->whereIn('department_id', $otherDepartmentIds)
-            );
+                    'fromEmployee',
+                    fn ($employeeQuery) => $employeeQuery->whereIn('department_id', $otherDepartmentIds)
+                );
 
             return;
         }
@@ -462,7 +458,7 @@ class LeaveRequestIndexData
             default => 'Updated',
         };
 
-        return $prefix . ' · ' . $timestamp->diffForHumans();
+        return $prefix.' · '.$timestamp->diffForHumans();
     }
 
     private function isLeaveStillActionable(EmployeLeaveRequest $request): bool
