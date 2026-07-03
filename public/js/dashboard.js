@@ -750,6 +750,7 @@
                     '<div class="flex-grow-1">' +
                     '<h6 class="mb-0 small">' + DashboardApprovals.esc(item.name) + '</h6>' +
                     '<small class="text-muted">' + DashboardApprovals.esc(item.leave_type) + '</small>' +
+                    '<div class="small text-muted">Requested by: ' + DashboardApprovals.esc(item.requested_by) + '</div>' +
                     '<div class="small text-muted">Requested: ' + DashboardApprovals.esc(item.request_date) + '</div>' +
                     (DashboardApprovals.isHumanResourceViewer && !itemCanAct
                         ? '<div class="small text-info"><i class="bi bi-eye me-1"></i>View only</div>'
@@ -763,6 +764,7 @@
                     ' data-initials="' + DashboardApprovals.esc(item.initials) + '"' +
                     ' data-leave-type="' + DashboardApprovals.esc(item.leave_type) + '"' +
                     ' data-request-date="' + DashboardApprovals.esc(item.request_date) + '"' +
+                    ' data-requested-by="' + DashboardApprovals.esc(item.requested_by) + '"' +
                     ' data-start-date="' + DashboardApprovals.esc(item.start_date) + '"' +
                     ' data-end-date="' + DashboardApprovals.esc(item.end_date) + '"' +
                     ' data-reason="' + DashboardApprovals.esc(item.reason) + '">' +
@@ -883,6 +885,7 @@
                         this.getAttribute('data-start-date'),
                         this.getAttribute('data-end-date'),
                         this.getAttribute('data-reason'),
+                        this.getAttribute('data-requested-by'),
                         canAct
                     );
                 };
@@ -1022,12 +1025,13 @@
             }
         },
 
-        viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason, canAct) {
+        viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason, requestedBy, canAct) {
             this.currentLeaveId = id;
             this.currentLeaveCanAct = canAct === true;
             var avatarEl = document.getElementById('slideEmployeeAvatar');
             var nameEl = document.getElementById('slideEmployeeName');
             var typeEl = document.getElementById('slideLeaveType');
+            var requestedByEl = document.getElementById('slideRequestedBy');
             var requestDateEl = document.getElementById('slideRequestDate');
             var startDateEl = document.getElementById('slideStartDate');
             var endDateEl = document.getElementById('slideEndDate');
@@ -1036,6 +1040,7 @@
             if (avatarEl) avatarEl.textContent = initials || '';
             if (nameEl) nameEl.textContent = name || '';
             if (typeEl) typeEl.textContent = leaveType || '';
+            if (requestedByEl) requestedByEl.textContent = requestedBy || '-';
             if (requestDateEl) requestDateEl.textContent = requestDate || '';
             if (startDateEl) startDateEl.textContent = startDate || '';
             if (endDateEl) endDateEl.textContent = endDate || '';
@@ -1801,8 +1806,8 @@
     // ============================================
     // GLOBAL FUNCTIONS (for inline handlers)
     // ============================================
-    window.viewLeaveReason = function (id, name, initials, leaveType, requestDate, startDate, endDate, reason) {
-        DashboardApprovals.viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason);
+    window.viewLeaveReason = function (id, name, initials, leaveType, requestDate, startDate, endDate, reason, requestedBy) {
+        DashboardApprovals.viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason, requestedBy);
     };
 
     window.closeSlideOver = function () {

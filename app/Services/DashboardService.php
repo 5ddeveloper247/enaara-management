@@ -72,6 +72,8 @@ class DashboardService
 
         $query = EmployeLeaveRequest::with([
                 'fromEmployee:id,full_name,department_id',
+                'fromUser:id,name,employee_id',
+                'fromUser.employee:id,full_name',
                 'toEmployee:id,full_name',
                 'leaveType:id,name',
             ])
@@ -102,6 +104,9 @@ class DashboardService
                 'name'         => $name,
                 'initials'     => $initials,
                 'leave_type'   => optional($r->leaveType)->name ?? 'Leave',
+                'requested_by' => optional($r->fromUser)->name
+                    ?? optional($r->fromUser?->employee)->full_name
+                    ?? 'Unknown',
                 'request_date' => \Carbon\Carbon::parse($r->created_at)->format('M d, Y'),
                 'start_date'   => \Carbon\Carbon::parse($r->start_date)->format('M d, Y'),
                 'end_date'     => \Carbon\Carbon::parse($r->end_date)->format('M d, Y'),

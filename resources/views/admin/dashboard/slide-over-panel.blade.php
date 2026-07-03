@@ -19,6 +19,11 @@
         </div>
 
         <div class="leave-detail-item">
+            <div class="leave-detail-label">Requested by</div>
+            <div class="leave-detail-value" id="slideRequestedBy">-</div>
+        </div>
+
+        <div class="leave-detail-item">
             <div class="leave-detail-label">Request Date</div>
             <div class="leave-detail-value" id="slideRequestDate">Jan 15, 2024</div>
         </div>
