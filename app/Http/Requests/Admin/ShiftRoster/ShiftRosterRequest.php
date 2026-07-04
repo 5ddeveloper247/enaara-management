@@ -134,6 +134,7 @@ class ShiftRosterRequest extends FormRequest
                 $exists = Employee::query()
                     ->whereKey($id)
                     ->where('engagement_mode', 'shifts')
+                    ->excludeTerminated()
                     ->exists();
                 if (! $exists) {
                     $v->errors()->add('employee_id', 'Selected employee does not exist or is not shift-based.');

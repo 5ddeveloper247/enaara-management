@@ -67,6 +67,7 @@ class BulkShiftRosterRequest extends FormRequest
                 $validEmployeeCount = Employee::query()
                     ->whereKey($employeeIds)
                     ->where('engagement_mode', 'shifts')
+                    ->excludeTerminated()
                     ->count();
                 if ($validEmployeeCount !== count(array_unique($employeeIds))) {
                     $v->errors()->add('employee_ids', 'Only shift-based employees can be assigned.');

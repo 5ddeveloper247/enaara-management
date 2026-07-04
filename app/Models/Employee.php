@@ -107,6 +107,14 @@ class Employee extends Model
         return $query->where('engagement_mode', 'shifts');
     }
 
+    public function scopeExcludeTerminated($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('employee_status')
+                ->orWhere('employee_status', '!=', 'Terminated');
+        });
+    }
+
     public function routeNotificationForMail(): ?string
     {
         $email = trim((string) ($this->email ?? ''));

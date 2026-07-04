@@ -163,7 +163,8 @@ class ShiftRosterExcelExportService
 
         $query = Employee::with('department')
             ->where('is_active', 1)
-            ->shiftBasedWorkArrangement();
+            ->shiftBasedWorkArrangement()
+            ->excludeTerminated();
 
         $this->shiftRosterService->applyViewerRosterScopeToEmployeeQuery(
             $query,

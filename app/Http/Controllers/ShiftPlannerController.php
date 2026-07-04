@@ -35,6 +35,7 @@ class ShiftPlannerController extends Controller
         $employees = Employee::with('department')
             ->where('is_active', 1)
             ->shiftBasedWorkArrangement()
+            ->excludeTerminated()
             ->orderBy('full_name')
             ->get();
 

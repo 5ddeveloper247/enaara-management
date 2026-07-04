@@ -1663,10 +1663,7 @@ class EmployeeService
     public function getTableData(array $filters = []): array
     {
         $query = Employee::query()
-            ->where(function ($q) {
-                $q->whereNull('employee_status')
-                  ->orWhere('employee_status', '!=', 'Terminated');
-            })
+            ->excludeTerminated()
             ->with([
                 'department:id,name',
                 'organization:id,name',

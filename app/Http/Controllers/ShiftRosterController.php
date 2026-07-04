@@ -170,6 +170,7 @@ class ShiftRosterController extends Controller
 
         $employees = Employee::where('is_active', 1)
             ->shiftBasedWorkArrangement()
+            ->excludeTerminated()
             ->orderBy('full_name')
             ->get();
         $outsourcedEmployees = OutsourcedEmployee::with('contractorCompany')

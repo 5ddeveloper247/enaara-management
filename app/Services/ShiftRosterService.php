@@ -468,6 +468,7 @@ class ShiftRosterService
         $employees = Employee::with(['department', 'assignedDesignation', 'role.roleLevel', 'mediaFiles'])
             ->where('is_active', 1)
             ->shiftBasedWorkArrangement()
+            ->excludeTerminated()
             ->get();
         $outsourcedEmployees = OutsourcedEmployee::with('contractorCompany')
             ->whereNull('deleted_at')
@@ -1076,6 +1077,7 @@ class ShiftRosterService
             $sbuId = Employee::query()
                 ->where('is_active', 1)
                 ->shiftBasedWorkArrangement()
+                ->excludeTerminated()
                 ->whereKey($employeeId)
                 ->value('sbu_id');
         }
@@ -2165,7 +2167,8 @@ class ShiftRosterService
             ->whereKey($employeeIds)
             ->where('engagement_mode', 'shifts')
             ->where('is_active', true)
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->excludeTerminated();
 
         $departmentIds = $this->viewerRosterDepartmentIds();
 
