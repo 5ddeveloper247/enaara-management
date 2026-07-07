@@ -6,9 +6,10 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeLeaveRequest;
 use App\Models\Geofence;
-use App\Models\PublicHoliday;
+use App\Models\ShiftRosterEntry;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestApproverResolver;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -23,6 +24,8 @@ class DashboardService
         private readonly ShiftRosterApprovalService $shiftRosterApprovalService,
         private readonly LeaveRequestApproverResolver $leaveRequestApproverResolver,
         private readonly EmployeeViewerScopeService $viewerScope,
+        private readonly EmployeeWorkingScheduleService $employeeWorkingScheduleService,
+        private readonly PublicHolidayResolver $publicHolidayResolver,
     ) {
     }
 
@@ -445,107 +448,37 @@ class DashboardService
 
     private function getCounterStats(): array
     {
-        $today     = now()->toDateString();
-        $yesterday = now()->subDay()->toDateString();
+        $today     = Carbon::today();
+        $yesterday = Carbon::yesterday();
 
-        // ── Total Employees ──────────────────────────────────────────────
-        $totalTodayQuery = Employee::query()->whereNull('deleted_at');
-        $this->viewerScope->applySbuScopeToEmployeeQuery($totalTodayQuery);
-        $totalToday = $totalTodayQuery->count();
-
-        $totalYesterdayQuery = Employee::query()
-            ->whereNull('deleted_at')
-            ->whereDate('created_at', '<=', $yesterday);
-        $this->viewerScope->applySbuScopeToEmployeeQuery($totalYesterdayQuery);
-        $totalYesterday = $totalYesterdayQuery->count();
-        $totalDelta     = $this->percentDelta($totalToday, $totalYesterday);
+        // ── Total Employees (exclude terminated) ─────────────────────────
+        $totalToday     = $this->baseDashboardEmployeeQuery()->count();
+        $totalYesterday = $this->baseDashboardEmployeeQuery()
+            ->whereDate('created_at', '<=', $yesterday->toDateString())
+            ->count();
+        $totalDelta = $this->percentDelta($totalToday, $totalYesterday);
 
         // ── Active / Workforce ────────────────────────────────────────────
-        $activeEmployeesQuery = Employee::query()
+        $activeEmployees = $this->baseDashboardEmployeeQuery()
             ->where('is_active', true)
-            ->whereNull('deleted_at');
-        $this->viewerScope->applySbuScopeToEmployeeQuery($activeEmployeesQuery);
-        $activeEmployees  = $activeEmployeesQuery->count();
+            ->count();
         $workforcePercent = $totalToday > 0
             ? round(($activeEmployees / $totalToday) * 100)
             : 0;
 
         // ── Absent / On Leave (approved leaves covering today) ────────────
-        $absentToday = EmployeLeaveRequest::query()
-            ->where('status', 3)
-            ->whereIn('action_type', [0, 2])
-            ->where('start_date', '<=', $today)
-            ->where('end_date', '>=', $today)
-            ->whereHas('fromEmployee', function ($query) {
-                $query->whereNull('deleted_at');
-                $this->viewerScope->applySbuScopeToEmployeeQuery($query);
-            })
-            ->distinct('from_employee_id')
-            ->count('from_employee_id');
-
-        $absentYesterday = EmployeLeaveRequest::query()
-            ->where('status', 3)
-            ->whereIn('action_type', [0, 2])
-            ->where('start_date', '<=', $yesterday)
-            ->where('end_date', '>=', $yesterday)
-            ->whereHas('fromEmployee', function ($query) {
-                $query->whereNull('deleted_at');
-                $this->viewerScope->applySbuScopeToEmployeeQuery($query);
-            })
-            ->distinct('from_employee_id')
-            ->count('from_employee_id');
-
+        $absentToday = $this->countOnLeaveEmployeesForDate($today);
+        $absentYesterday = $this->countOnLeaveEmployeesForDate($yesterday);
         $absentDelta = $this->percentDelta($absentToday, $absentYesterday);
 
-        // ── Present Today (total − on-leave fallback) ─────────────────────
-        $rosterPresentQuery = DB::table('shift_rosters as sr')
-            ->join('employees as e', 'e.id', '=', 'sr.employee_id')
-            ->whereDate('sr.roster_date', $today)
-            ->where('sr.status', 1)
-            ->whereNull('sr.deleted_at')
-            ->whereNull('e.deleted_at');
-        $this->applySbuScopeToEmployeesDbTable($rosterPresentQuery, 'e');
-        $rosterPresent = $rosterPresentQuery->count();
-
-        $rosterYesterdayPresentQuery = DB::table('shift_rosters as sr')
-            ->join('employees as e', 'e.id', '=', 'sr.employee_id')
-            ->whereDate('sr.roster_date', $yesterday)
-            ->where('sr.status', 1)
-            ->whereNull('sr.deleted_at')
-            ->whereNull('e.deleted_at');
-        $this->applySbuScopeToEmployeesDbTable($rosterYesterdayPresentQuery, 'e');
-        $rosterYesterdayPresent = $rosterYesterdayPresentQuery->count();
-
-        // Use roster data if available, otherwise fall back to total − absent
-        $presentToday     = $rosterPresent > 0
-            ? $rosterPresent
-            : max(0, $totalToday - $absentToday);
-
-        $presentYesterday = $rosterYesterdayPresent > 0
-            ? $rosterYesterdayPresent
-            : max(0, $totalYesterday - $absentYesterday);
-
+        // ── Present Today (working-day schedule minus leave/off/unassigned) ─
+        $presentToday     = $this->countPresentEmployeesForDate($today);
+        $presentYesterday = $this->countPresentEmployeesForDate($yesterday);
         $presentDelta = $this->percentDelta($presentToday, $presentYesterday);
 
-        // ── Late Arrivals (from shift_rosters status=2 for late) ──────────
-        $lateTodayQuery = DB::table('shift_rosters as sr')
-            ->join('employees as e', 'e.id', '=', 'sr.employee_id')
-            ->whereDate('sr.roster_date', $today)
-            ->where('sr.status', 2)
-            ->whereNull('sr.deleted_at')
-            ->whereNull('e.deleted_at');
-        $this->applySbuScopeToEmployeesDbTable($lateTodayQuery, 'e');
-        $lateToday = $lateTodayQuery->count();
-
-        $lateYesterdayQuery = DB::table('shift_rosters as sr')
-            ->join('employees as e', 'e.id', '=', 'sr.employee_id')
-            ->whereDate('sr.roster_date', $yesterday)
-            ->where('sr.status', 2)
-            ->whereNull('sr.deleted_at')
-            ->whereNull('e.deleted_at');
-        $this->applySbuScopeToEmployeesDbTable($lateYesterdayQuery, 'e');
-        $lateYesterday = $lateYesterdayQuery->count();
-
+        // ── Late Arrivals (shift roster late check-in flag) ───────────────
+        $lateToday     = $this->countLateArrivalsForDate($today);
+        $lateYesterday = $this->countLateArrivalsForDate($yesterday);
         $lateDelta = $this->percentDelta($lateToday, $lateYesterday);
 
         return [
@@ -560,6 +493,152 @@ class DashboardService
             'activeEmployees'   => $activeEmployees,
             'workforcePercent'  => $workforcePercent,
         ];
+    }
+
+    private function baseDashboardEmployeeQuery()
+    {
+        $query = Employee::query()
+            ->excludeTerminated()
+            ->whereNull('deleted_at');
+        $this->viewerScope->applySbuScopeToEmployeeQuery($query);
+
+        return $query;
+    }
+
+    private function countOnLeaveEmployeesForDate(Carbon $date): int
+    {
+        $dateStr = $date->toDateString();
+
+        return EmployeLeaveRequest::query()
+            ->where('status', 3)
+            ->whereIn('action_type', [0, 2])
+            ->where('start_date', '<=', $dateStr)
+            ->where('end_date', '>=', $dateStr)
+            ->whereHas('fromEmployee', function ($query) {
+                $query->excludeTerminated()->whereNull('deleted_at');
+                $this->viewerScope->applySbuScopeToEmployeeQuery($query);
+            })
+            ->distinct('from_employee_id')
+            ->count('from_employee_id');
+    }
+
+    private function countPresentEmployeesForDate(Carbon $date): int
+    {
+        $dateStr = $date->toDateString();
+        $employees = $this->baseDashboardEmployeeQuery()
+            ->where('is_active', true)
+            ->get(['id', 'organization_id', 'department_id', 'sbu_id', 'engagement_mode', 'working_days', 'hybrid_days', 'hybrid_offsite_days']);
+
+        if ($employees->isEmpty()) {
+            return 0;
+        }
+
+        $employeeIds = $employees->pluck('id');
+        $onLeaveIds = EmployeLeaveRequest::query()
+            ->where('status', 3)
+            ->whereIn('action_type', [0, 2])
+            ->where('start_date', '<=', $dateStr)
+            ->where('end_date', '>=', $dateStr)
+            ->whereIn('from_employee_id', $employeeIds)
+            ->distinct()
+            ->pluck('from_employee_id')
+            ->flip();
+
+        $rosterEntries = ShiftRosterEntry::query()
+            ->whereIn('employee_id', $employeeIds)
+            ->whereDate('roster_date', $dateStr)
+            ->whereNull('deleted_at')
+            ->get()
+            ->keyBy('employee_id');
+
+        $holidays = $this->publicHolidayResolver->loadHolidaysForRange($date->copy(), $date->copy());
+
+        $present = 0;
+        foreach ($employees as $employee) {
+            if ($this->employeeCountsAsPresentToday(
+                $employee,
+                $date,
+                $rosterEntries->get($employee->id),
+                $onLeaveIds->has($employee->id),
+                $holidays
+            )) {
+                $present++;
+            }
+        }
+
+        return $present;
+    }
+
+    private function employeeCountsAsPresentToday(
+        Employee $employee,
+        Carbon $date,
+        ?ShiftRosterEntry $rosterEntry,
+        bool $onLeave,
+        Collection $holidays,
+    ): bool {
+        if ($onLeave) {
+            return false;
+        }
+
+        if ($rosterEntry && strtolower(trim((string) $rosterEntry->status)) === 'off') {
+            return false;
+        }
+
+        $holiday = $this->publicHolidayResolver->resolveForAssigneeOnDate(
+            $holidays,
+            $employee->organization_id ? (int) $employee->organization_id : null,
+            $employee->department_id ? (int) $employee->department_id : null,
+            $employee->sbu_id ? (int) $employee->sbu_id : null,
+            $date->toDateString(),
+        );
+
+        $isShiftBased = $this->employeeWorkingScheduleService->isShiftBased($employee);
+        $workingDays = $this->employeeWorkingScheduleService->resolveWorkingDays($employee);
+
+        if ($holiday !== null) {
+            return $isShiftBased
+                && $rosterEntry !== null
+                && $this->isRosterWorkShift($rosterEntry);
+        }
+
+        if ($isShiftBased) {
+            return $rosterEntry !== null && $this->isRosterWorkShift($rosterEntry);
+        }
+
+        if ($this->employeeWorkingScheduleService->isWeeklyOffDay($date, $workingDays)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function isRosterWorkShift(ShiftRosterEntry $entry): bool
+    {
+        $status = strtolower(trim((string) $entry->status));
+
+        if (in_array($status, ['off', 'cancelled', 'holiday', 'blackout'], true)) {
+            return false;
+        }
+
+        if ($entry->is_custom_time) {
+            return $entry->start_time !== null && $entry->end_time !== null;
+        }
+
+        return $entry->shift_planner_id !== null;
+    }
+
+    private function countLateArrivalsForDate(Carbon $date): int
+    {
+        return ShiftRosterEntry::query()
+            ->whereDate('roster_date', $date->toDateString())
+            ->where('late_check_in', true)
+            ->whereNull('deleted_at')
+            ->whereNotNull('employee_id')
+            ->whereHas('employee', function ($query) {
+                $query->excludeTerminated()->whereNull('deleted_at');
+                $this->viewerScope->applySbuScopeToEmployeeQuery($query);
+            })
+            ->count();
     }
 
     /**
