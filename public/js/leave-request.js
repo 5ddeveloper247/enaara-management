@@ -1050,7 +1050,7 @@
     }
 
     if (employeeSelect && leaveTypeSelect) {
-      employeeSelect.addEventListener('change', function () {
+      $(employeeSelect).on('change', function () {
         clearFieldErrors(form);
 
         var employeeId = employeeSelect.value;

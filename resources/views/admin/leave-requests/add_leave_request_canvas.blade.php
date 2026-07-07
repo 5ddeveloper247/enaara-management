@@ -384,10 +384,6 @@
                 dropdownParent: $('#addLeaveRequestCanvas'),
                 width: '100%',
                 placeholder: 'Search Employee...',
-            }).on('change', function(e) {
-                // Dispatch native event for leave-request.js
-                var event = new Event('change');
-                this.dispatchEvent(event);
             });
         }
     });
