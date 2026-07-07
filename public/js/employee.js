@@ -11,6 +11,9 @@
         department: '',
         role: '',
         gender: '',
+        employeeStatus: '',
+        resourceType: '',
+        employmentType: '',
         name: '',
         cnic: '',
     };
@@ -68,6 +71,9 @@
                     d.filter_department    = window.employeeFilters.department;
                     d.filter_role          = window.employeeFilters.role;
                     d.filter_gender        = window.employeeFilters.gender;
+                    d.filter_employee_status = window.employeeFilters.employeeStatus;
+                    d.filter_employment_category = window.employeeFilters.resourceType;
+                    d.filter_employment_type = window.employeeFilters.employmentType;
                     d.filter_name          = window.employeeFilters.name;
                     d.filter_cnic          = window.employeeFilters.cnic;
                 },
@@ -846,6 +852,9 @@
             window.employeeFilters.department   = ($('#filterDepartment').val() || '').trim();
             window.employeeFilters.role         = ($('#filterRole').val() || '').trim();
             window.employeeFilters.gender       = ($('#filterGender').val() || '').trim();
+            window.employeeFilters.employeeStatus = ($('#filterEmployeeStatus').val() || '').trim();
+            window.employeeFilters.resourceType = ($('#filterResourceType').val() || '').trim();
+            window.employeeFilters.employmentType = ($('#filterEmploymentType').val() || '').trim();
             window.employeeFilters.name         = ($('#filterName').val() || '').trim();
             window.employeeFilters.cnic         = ($('#filterCnic').val() || '').trim();
 
@@ -864,6 +873,9 @@
             $('#filterDepartment').val('');
             $('#filterRole').val('');
             $('#filterGender').val('');
+            $('#filterEmployeeStatus').val('');
+            $('#filterResourceType').val('');
+            $('#filterEmploymentType').val('');
             $('#filterName').val('');
             $('#filterCnic').val('');
 
@@ -873,6 +885,9 @@
             window.employeeFilters.department   = '';
             window.employeeFilters.role         = '';
             window.employeeFilters.gender       = '';
+            window.employeeFilters.employeeStatus = '';
+            window.employeeFilters.resourceType = '';
+            window.employeeFilters.employmentType = '';
             window.employeeFilters.name         = '';
             window.employeeFilters.cnic         = '';
 

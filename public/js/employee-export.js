@@ -162,6 +162,9 @@
             filter_department: f.department || '',
             filter_role: f.role || '',
             filter_gender: f.gender || '',
+            filter_employee_status: f.employeeStatus || '',
+            filter_employment_category: f.resourceType || '',
+            filter_employment_type: f.employmentType || '',
             filter_name: f.name || '',
             filter_cnic: f.cnic || ''
         };

@@ -1663,7 +1663,6 @@ class EmployeeService
     public function getTableData(array $filters = []): array
     {
         $query = Employee::query()
-            ->excludeTerminated()
             ->with([
                 'department:id,name',
                 'organization:id,name',
@@ -1685,6 +1684,13 @@ class EmployeeService
             ]);
 
         $this->viewerScope->applySbuScopeToEmployeeQuery($query);
+
+        $statusFilter = $filters['filter_employee_status'] ?? null;
+        if (! empty($statusFilter)) {
+            $query->where('employee_status', $statusFilter);
+        } else {
+            $query->excludeTerminated();
+        }
 
         $type = $filters['filter_employee_type'] ?? null;
         if (!empty($type)) {
@@ -1751,6 +1757,20 @@ class EmployeeService
 
         if (!empty($filters['filter_gender'])) {
             $query->where('gender', $filters['filter_gender']);
+        }
+
+        if (!empty($filters['filter_employment_category'])) {
+            $category = $filters['filter_employment_category'];
+            if ($category === 'consultant') {
+                $query->whereIn('employment_category', ['consultant', 'contractual']);
+            } else {
+                $query->where('employment_category', $category);
+            }
+        }
+
+        if (!empty($filters['filter_employment_type'])) {
+            $employmentType = strtolower((string) $filters['filter_employment_type']);
+            $query->whereRaw('LOWER(employment_type) = ?', [$employmentType]);
         }
 
         $employees = $query->get();

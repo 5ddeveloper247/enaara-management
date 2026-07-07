@@ -114,6 +114,42 @@
                         </select>
                     </div>
                 </li>
+                <!-- Status Filter -->
+                <li>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-1">Status</label>
+                        <select class="form-select form-select-sm" id="filterEmployeeStatus">
+                            <option value="">All Statuses</option>
+                            <option value="Active">Active</option>
+                            <option value="Suspend">Suspend</option>
+                            <option value="Terminated">Terminated</option>
+                        </select>
+                    </div>
+                </li>
+                <!-- Resource Type Filter -->
+                <li>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-1">Resource Type</label>
+                        <select class="form-select form-select-sm" id="filterResourceType">
+                            <option value="">All Resource Types</option>
+                            <option value="employee">Employee</option>
+                            <option value="consultant">Consultant / Retainer</option>
+                            <option value="intern">Intern</option>
+                        </select>
+                    </div>
+                </li>
+                <!-- Employment Type Filter -->
+                <li>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted mb-1">Employment Type</label>
+                        <select class="form-select form-select-sm" id="filterEmploymentType">
+                            <option value="">All Employment Types</option>
+                            <option value="permanent">Permanent</option>
+                            <option value="contractual">Contractual</option>
+                            <option value="dailywages">Dailywages</option>
+                        </select>
+                    </div>
+                </li>
 
                 <li>
                     <div class="mb-3">
