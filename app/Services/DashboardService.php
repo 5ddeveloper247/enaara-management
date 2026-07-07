@@ -458,13 +458,10 @@ class DashboardService
             ->count();
         $totalDelta = $this->percentDelta($totalToday, $totalYesterday);
 
-        // ── Active / Workforce ────────────────────────────────────────────
+        // ── Active employees (retained for other widgets if needed) ───────
         $activeEmployees = $this->baseDashboardEmployeeQuery()
             ->where('is_active', true)
             ->count();
-        $workforcePercent = $totalToday > 0
-            ? round(($activeEmployees / $totalToday) * 100)
-            : 0;
 
         // ── Absent / On Leave (approved leaves covering today) ────────────
         $absentToday = $this->countOnLeaveEmployeesForDate($today);
@@ -475,6 +472,11 @@ class DashboardService
         $presentToday     = $this->countPresentEmployeesForDate($today);
         $presentYesterday = $this->countPresentEmployeesForDate($yesterday);
         $presentDelta = $this->percentDelta($presentToday, $presentYesterday);
+
+        // ── Workforce strength = present today vs total headcount ─────────
+        $workforcePercent = $totalToday > 0
+            ? round(($presentToday / $totalToday) * 100)
+            : 0;
 
         // ── Late Arrivals (shift roster late check-in flag) ───────────────
         $lateToday     = $this->countLateArrivalsForDate($today);

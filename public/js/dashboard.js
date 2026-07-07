@@ -439,8 +439,8 @@
             const percentage = stats.workforcePercent !== undefined ?
                 stats.workforcePercent :
                 0;
-            const activeEmployees = stats.activeEmployees !== undefined ?
-                stats.activeEmployees :
+            const presentToday = stats.presentToday !== undefined ?
+                stats.presentToday :
                 0;
             const totalEmployees = stats.totalEmployees !== undefined ?
                 stats.totalEmployees :
@@ -451,7 +451,7 @@
             const progressBarEl = document.getElementById('workforceProgressBar');
 
             if (percentageEl) percentageEl.textContent = percentage + '%';
-            if (subtextEl) subtextEl.textContent = activeEmployees + ' Active / ' + totalEmployees + ' Total.';
+            if (subtextEl) subtextEl.textContent = presentToday + ' Present / ' + totalEmployees + ' Total.';
             if (progressBarEl) progressBarEl.style.width = percentage + '%';
         }
     };

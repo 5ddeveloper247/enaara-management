@@ -98,7 +98,7 @@
                     <div class="workforce-percentage text-white" id="workforcePercentage">{{ $counterStats['workforcePercent'] }}%</div>
                     <div class="workforce-label text-white fw-lighter mt-0">Current Workforce Strength.</div>
                     <div class="workforce-subtext fw-lighter text-white opacity-50" id="workforceSubtext">
-                        {{ $counterStats['activeEmployees'] }} Active / {{ $counterStats['totalEmployees'] }} Total.
+                        {{ $counterStats['presentToday'] }} Present / {{ $counterStats['totalEmployees'] }} Total.
                     </div>
                     <div class="workforce-progress bg-danger" style="max-width: 60%">
                         <div class="workforce-progress-bar" id="workforceProgressBar" style="width: {{ $counterStats['workforcePercent'] }}%"></div>
