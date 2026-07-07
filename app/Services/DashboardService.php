@@ -233,7 +233,7 @@ class DashboardService
 
         $today = now()->toDateString();
         $requests = EmployeLeaveRequest::with([
-                'fromEmployee:id,full_name,department_id',
+                'fromEmployee:id,first_name,middle_name,last_name,full_name,roster_display_middle_name,department_id',
                 'fromEmployee.mediaFiles',
                 'leaveType:id,name,code',
             ])
@@ -249,16 +249,14 @@ class DashboardService
             ->unique(fn (EmployeLeaveRequest $request) => (int) $request->from_employee_id);
 
         return $requests->map(function ($r) {
-            $name     = optional($r->fromEmployee)->full_name ?? 'Unknown';
-            $words    = explode(' ', trim($name));
+            $employee = $r->fromEmployee;
+            $name     = $employee?->full_name ?? 'Unknown';
+            $displayName = $employee ? $employee->rosterDisplayName() : 'Unknown';
+
+            $words = preg_split('/\s+/u', trim($displayName), -1, PREG_SPLIT_NO_EMPTY) ?: [];
             $initials = strtoupper(
                 substr($words[0] ?? '', 0, 1) . substr($words[1] ?? '', 0, 1)
             );
-            
-            $shortName = $words[0] ?? '';
-            if (isset($words[1]) && strlen(trim($words[1])) > 0 && preg_match('/^[a-zA-Z]/', $words[1])) {
-                $shortName .= ' '.substr($words[1], 0, 1).'.';
-            }
 
             $leaveTypeName = optional($r->leaveType)->name ?? 'Leave';
             $leaveTypeCode = trim((string) (optional($r->leaveType)->code ?? ''));
@@ -274,7 +272,7 @@ class DashboardService
             return [
                 'id'               => $r->id,
                 'name'             => $name,
-                'short_name'       => $shortName,
+                'short_name'       => $displayName,
                 'initials'         => $initials,
                 'avatar_url'       => $avatarUrl,
                 'leave_type'       => $leaveTypeName,
