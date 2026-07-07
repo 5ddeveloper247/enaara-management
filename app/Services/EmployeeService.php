@@ -2107,7 +2107,9 @@ class EmployeeService
 
     public function getStats(): array
     {
-        $base = Employee::query();
+        $base = Employee::query()
+            ->excludeTerminated()
+            ->whereNull('deleted_at');
         $this->viewerScope->applySbuScopeToEmployeeQuery($base);
 
         $internal = (clone $base)->where(function ($q) {
