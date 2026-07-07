@@ -746,7 +746,7 @@
                     '<div class="d-flex align-items-center justify-content-between">' +
                     '<div class="d-flex align-items-center flex-grow-1">' +
                     rowCheckboxHtml +
-                    '<div class="employee-avatar me-2">' + DashboardApprovals.esc(item.initials) + '</div>' +
+                    DashboardApprovals.renderEmployeeAvatar(item) +
                     '<div class="flex-grow-1">' +
                     '<h6 class="mb-0 small">' + DashboardApprovals.esc(item.name) + '</h6>' +
                     '<small class="text-muted">' + DashboardApprovals.esc(item.leave_type) + '</small>' +
@@ -762,6 +762,7 @@
                     ' data-id="' + item.id + '"' +
                     ' data-name="' + DashboardApprovals.esc(item.name) + '"' +
                     ' data-initials="' + DashboardApprovals.esc(item.initials) + '"' +
+                    ' data-avatar-url="' + DashboardApprovals.esc(item.avatar_url || '') + '"' +
                     ' data-leave-type="' + DashboardApprovals.esc(item.leave_type) + '"' +
                     ' data-request-date="' + DashboardApprovals.esc(item.request_date) + '"' +
                     ' data-requested-by="' + DashboardApprovals.esc(item.requested_by) + '"' +
@@ -786,6 +787,32 @@
                 .replace(/"/g, '&quot;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
+        },
+
+        renderEmployeeAvatar(item, extraClass) {
+            extraClass = extraClass || 'me-2';
+            if (item.avatar_url) {
+                return '<div class="employee-avatar ' + extraClass + ' overflow-hidden p-0">' +
+                    '<img src="' + this.esc(item.avatar_url) + '" alt="' + this.esc(item.initials) + '"' +
+                    ' style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' +
+                    '</div>';
+            }
+
+            return '<div class="employee-avatar ' + extraClass + '">' + this.esc(item.initials) + '</div>';
+        },
+
+        setEmployeeAvatarElement(el, initials, avatarUrl) {
+            if (!el) return;
+
+            if (avatarUrl) {
+                el.classList.add('overflow-hidden', 'p-0');
+                el.innerHTML = '<img src="' + this.esc(avatarUrl) + '" alt="' + this.esc(initials) + '"' +
+                    ' style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                return;
+            }
+
+            el.classList.remove('overflow-hidden', 'p-0');
+            el.textContent = initials || '';
         },
 
         initBulkApprove() {
@@ -880,6 +907,7 @@
                         this.getAttribute('data-id'),
                         this.getAttribute('data-name'),
                         this.getAttribute('data-initials'),
+                        this.getAttribute('data-avatar-url'),
                         this.getAttribute('data-leave-type'),
                         this.getAttribute('data-request-date'),
                         this.getAttribute('data-start-date'),
@@ -1025,7 +1053,7 @@
             }
         },
 
-        viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason, requestedBy, canAct) {
+        viewLeaveReason(id, name, initials, avatarUrl, leaveType, requestDate, startDate, endDate, reason, requestedBy, canAct) {
             this.currentLeaveId = id;
             this.currentLeaveCanAct = canAct === true;
             var avatarEl = document.getElementById('slideEmployeeAvatar');
@@ -1037,7 +1065,7 @@
             var endDateEl = document.getElementById('slideEndDate');
             var reasonEl = document.getElementById('slideReason');
 
-            if (avatarEl) avatarEl.textContent = initials || '';
+            this.setEmployeeAvatarElement(avatarEl, initials, avatarUrl);
             if (nameEl) nameEl.textContent = name || '';
             if (typeEl) typeEl.textContent = leaveType || '';
             if (requestedByEl) requestedByEl.textContent = requestedBy || '-';
@@ -1806,8 +1834,8 @@
     // ============================================
     // GLOBAL FUNCTIONS (for inline handlers)
     // ============================================
-    window.viewLeaveReason = function (id, name, initials, leaveType, requestDate, startDate, endDate, reason, requestedBy) {
-        DashboardApprovals.viewLeaveReason(id, name, initials, leaveType, requestDate, startDate, endDate, reason, requestedBy);
+    window.viewLeaveReason = function (id, name, initials, avatarUrl, leaveType, requestDate, startDate, endDate, reason, requestedBy) {
+        DashboardApprovals.viewLeaveReason(id, name, initials, avatarUrl, leaveType, requestDate, startDate, endDate, reason, requestedBy);
     };
 
     window.closeSlideOver = function () {

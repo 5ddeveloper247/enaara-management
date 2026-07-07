@@ -72,6 +72,7 @@ class DashboardService
 
         $query = EmployeLeaveRequest::with([
                 'fromEmployee:id,full_name,department_id',
+                'fromEmployee.mediaFiles',
                 'fromUser:id,name,employee_id',
                 'fromUser.employee:id,full_name',
                 'toEmployee:id,full_name',
@@ -103,6 +104,7 @@ class DashboardService
                 'id'           => $r->id,
                 'name'         => $name,
                 'initials'     => $initials,
+                'avatar_url'   => $this->resolveEmployeeAvatarUrl($r->fromEmployee),
                 'leave_type'   => optional($r->leaveType)->name ?? 'Leave',
                 'requested_by' => optional($r->fromUser)->name
                     ?? optional($r->fromUser?->employee)->full_name
@@ -261,13 +263,7 @@ class DashboardService
             $leaveTypeName = optional($r->leaveType)->name ?? 'Leave';
             $leaveTypeCode = trim((string) (optional($r->leaveType)->code ?? ''));
 
-            $avatarUrl = null;
-            if ($r->fromEmployee) {
-                $photo = $r->fromEmployee->mediaFiles->where('file_type', 'photo')->first();
-                if ($photo && $photo->file_path) {
-                    $avatarUrl = asset('storage/' . $photo->file_path);
-                }
-            }
+            $avatarUrl = $this->resolveEmployeeAvatarUrl($r->fromEmployee);
 
             return [
                 'id'               => $r->id,
@@ -906,5 +902,20 @@ class DashboardService
         $normalized = strtolower(trim((string) $department->name));
 
         return in_array($normalized, ['human resource', 'human resources'], true);
+    }
+
+    private function resolveEmployeeAvatarUrl(?Employee $employee): ?string
+    {
+        if (! $employee) {
+            return null;
+        }
+
+        $employee->loadMissing('mediaFiles');
+        $photo = $employee->mediaFiles->where('file_type', 'photo')->first();
+        if ($photo && $photo->file_path) {
+            return asset('storage/' . $photo->file_path);
+        }
+
+        return null;
     }
 }
