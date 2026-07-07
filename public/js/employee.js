@@ -463,6 +463,7 @@
 
         var cls = normalized === 'permanent' ? 'bg-success'
             : normalized === 'contract' || normalized === 'contractual' ? 'bg-info text-dark'
+            : normalized === 'dailywages' ? 'bg-warning text-dark'
             : 'bg-main text-white';
 
         return '<span class="badge px-2 rounded-1 ' + cls + '">' + escHtml(display) + '</span>';

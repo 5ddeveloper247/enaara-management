@@ -484,7 +484,7 @@ class EmployeeStepRequest extends FormRequest
                 ],
                 'employment_type' => [
                     'nullable',
-                    Rule::in(['permanent', 'contractual']),
+                    Rule::in(['permanent', 'contractual', 'dailywages']),
                     Rule::requiredIf(fn () => $this->input('employment_category') === 'employee'),
                 ],
                 'contractual_type' => [
@@ -1197,8 +1197,8 @@ class EmployeeStepRequest extends FormRequest
             'assigned_floor_ids.*.exists' => 'One or more selected floors are invalid for this SBU.',
             'intern_type.required' => 'Intern type is required when resource type is Intern.',
             'intern_duration.required' => 'Intern duration is required when resource type is Intern.',
-            'employment_type.required' => 'Select Permanent or Contractual.',
-            'employment_type.in' => 'The selected permanent or contractual option is invalid.',
+            'employment_type.required' => 'Select Permanent, Contractual, or Dailywages.',
+            'employment_type.in' => 'The selected employment type is invalid.',
             'contractual_type.required' => 'Contract type is required when Contractual is selected.',
             'contractual_type.in' => 'The selected contract type is invalid.',
             'contract_start_date.required' => 'Contract start date is required.',

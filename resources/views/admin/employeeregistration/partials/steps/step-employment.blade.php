@@ -130,6 +130,9 @@
                                                                 <option value="contractual"
                                                                     {{ ($employee->employment_type ?? '') == 'contractual' ? 'selected' : '' }}>
                                                                     Contractual</option>
+                                                                <option value="dailywages"
+                                                                    {{ ($employee->employment_type ?? '') == 'dailywages' ? 'selected' : '' }}>
+                                                                    Dailywages</option>
                                                             </select>
                                                         </div>
                                                         <div class="col-md-6 {{ ($employee->employment_type ?? '') == 'contractual' ? '' : 'd-none' }}"

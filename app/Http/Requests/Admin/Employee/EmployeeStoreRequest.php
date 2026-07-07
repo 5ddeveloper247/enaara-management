@@ -302,7 +302,7 @@ class EmployeeStoreRequest extends FormRequest
             'employee_type'          => ['nullable', 'string', 'min:2', 'max:100', 'regex:' . $this->alphaTextRegex()],
             'employment_type'        => [
                 'nullable',
-                Rule::in(['permanent', 'contractual']),
+                Rule::in(['permanent', 'contractual', 'dailywages']),
                 Rule::requiredIf(fn () => $this->input('employment_category') === 'employee'),
             ],
             ...$this->designationIdRules(),
@@ -669,8 +669,8 @@ class EmployeeStoreRequest extends FormRequest
             'role_id.exists'           => 'Selected role does not exist.',
 
             'employee_type.regex'      => 'Employee type may only contain letters and standard punctuation.',
-            'employment_type.required' => 'Select Permanent or Contractual.',
-            'employment_type.in'       => 'The selected permanent or contractual option is invalid.',
+            'employment_type.required' => 'Select Permanent, Contractual, or Dailywages.',
+            'employment_type.in'       => 'The selected employment type is invalid.',
             'grade.max'               => 'The grade field must not exceed 10 characters.',
             'grade.regex'             => 'Grade may only contain letters, numbers, spaces, and hyphens.',
             'branch.regex'            => 'Branch may only contain letters, spaces, and standard punctuation.',
