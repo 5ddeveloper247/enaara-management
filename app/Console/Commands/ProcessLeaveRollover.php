@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\EmployeeLeaveQuota;
 use App\Models\LeaveTypeEncashmentRule;
+use App\Services\leaverequestPrivatefunctions\LeaveQuotaProrationService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ class ProcessLeaveRollover extends Command
 
     protected $description = 'Process End of Year Leave Carry Forward and Encashment logic.';
 
-    public function handle(): int
+    public function handle(LeaveQuotaProrationService $leaveQuotaProrationService): int
     {
         $year = $this->option('year') ? (int) $this->option('year') : Carbon::now()->subYear()->year;
         $nextYear = $year + 1;
@@ -73,7 +74,11 @@ class ProcessLeaveRollover extends Command
                 ]);
 
                 if ($leaveType->is_active) {
-                    $newAnnualQuota = (float) $leaveType->annual_quota;
+                    $newAnnualQuota = $leaveQuotaProrationService->forLeaveType(
+                        $quota->employee,
+                        $leaveType,
+                        $nextYear
+                    );
 
                     EmployeeLeaveQuota::updateOrCreate(
                         [

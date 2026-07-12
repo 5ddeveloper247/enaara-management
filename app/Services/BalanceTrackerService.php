@@ -8,6 +8,7 @@ use App\Models\LeaveType;
 use App\Models\LeaveBalanceAdjustment;
 use App\Notifications\LeaveBalanceAdjustmentNotification;
 use App\Services\leaverequestPrivatefunctions\EmployeeLeaveQuotaRecords;
+use App\Services\leaverequestPrivatefunctions\LeaveQuotaProrationService;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestLeaveTypeFilter;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestNotifier;
 use Carbon\Carbon;
@@ -21,6 +22,7 @@ class BalanceTrackerService
         private LeaveRequestNotifier $leaveRequestNotifier,
         private LeaveRequestLeaveTypeFilter $leaveRequestLeaveTypeFilter,
         private EmployeeLeaveQuotaRecords $employeeLeaveQuotaRecords,
+        private LeaveQuotaProrationService $leaveQuotaProrationService,
         private EmployeeViewerScopeService $viewerScope,
     ) {}
 
@@ -242,7 +244,11 @@ class BalanceTrackerService
                     ],
                     [
                         'department_id' => $employee->department_id,
-                        'quota' => $leaveType->annual_quota,
+                        'quota' => $this->leaveQuotaProrationService->forLeaveType(
+                            $employee,
+                            $leaveType,
+                            $currentYear
+                        ),
                         'used' => 0,
                     ]
                 );

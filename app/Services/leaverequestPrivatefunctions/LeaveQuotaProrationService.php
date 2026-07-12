@@ -12,8 +12,8 @@ use Carbon\Carbon;
  * Example: annual_quota = 52, join_date = 2026-07-15 → remaining months Jul–Dec = 6
  *          prorated = 52 * 6 / 12 = 26
  *
- * Currently wired into EmployeeLeaveQuotaRecords (balance display + apply checks).
- * Other create paths still pending.
+ * Wired into: EmployeeLeaveQuotaRecords, ProcessDailyLeaves, BalanceTrackerService,
+ * ProcessLeaveRollover, and leaves:sync-prorated-quotas.
  */
 class LeaveQuotaProrationService
 {

@@ -2,11 +2,12 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\EmployeLeaveEntity;
 use App\Models\EmployeeLeaveQuota;
-use Illuminate\Support\Facades\DB;
+use App\Services\leaverequestPrivatefunctions\LeaveQuotaProrationService;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class ProcessDailyLeaves extends Command
 {
@@ -27,10 +28,10 @@ class ProcessDailyLeaves extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(LeaveQuotaProrationService $leaveQuotaProrationService)
     {
         $today = now()->toDateString();
-        
+
         $entities = EmployeLeaveEntity::where('status', 0) // pending
             ->where('leave_date', '<=', $today)
             ->with(['leaveType', 'employee'])
@@ -38,10 +39,11 @@ class ProcessDailyLeaves extends Command
 
         if ($entities->isEmpty()) {
             $this->info("No pending leaves to process for $today.");
+
             return;
         }
 
-        $this->info("Processing " . $entities->count() . " leave entities...");
+        $this->info('Processing '.$entities->count().' leave entities...');
 
         $processedCount = 0;
 
@@ -55,17 +57,26 @@ class ProcessDailyLeaves extends Command
                 // 2. Determine the year for the quota
                 $year = Carbon::parse($entity->leave_date)->year;
 
-                // 3. Find or Create the Quota record
+                $initialQuota = optional($entity->leaveType)->annual_quota ?? 0;
+                if ($entity->employee && $entity->leaveType) {
+                    $initialQuota = $leaveQuotaProrationService->forLeaveType(
+                        $entity->employee,
+                        $entity->leaveType,
+                        $year
+                    );
+                }
+
+                // 3. Find or Create the Quota record (prorated for unconditional leave types)
                 $quota = EmployeeLeaveQuota::firstOrCreate(
                     [
-                        'employee_id'   => $entity->employee_id,
+                        'employee_id' => $entity->employee_id,
                         'leave_type_id' => $entity->leave_type_id,
-                        'year'          => $year,
+                        'year' => $year,
                     ],
                     [
                         'department_id' => $entity->department_id,
-                        'quota'         => optional($entity->leaveType)->annual_quota ?? 0,
-                        'used'          => 0,
+                        'quota' => $initialQuota,
+                        'used' => 0,
                     ]
                 );
 
@@ -73,9 +84,9 @@ class ProcessDailyLeaves extends Command
                 if ((float) $entity->duration > 0 && ($entity->counts_against_quota ?? true)) {
                     $quota->used += $entity->duration;
                 }
-                
+
                 // Ensure department_id is synced if it was previously 0/null
-                if (!$quota->department_id && $entity->department_id) {
+                if (! $quota->department_id && $entity->department_id) {
                     $quota->department_id = $entity->department_id;
                 }
 
@@ -85,7 +96,7 @@ class ProcessDailyLeaves extends Command
                 $processedCount++;
             } catch (\Exception $e) {
                 DB::rollBack();
-                $this->error("Failed to process entity ID {$entity->id}: " . $e->getMessage());
+                $this->error("Failed to process entity ID {$entity->id}: ".$e->getMessage());
             }
         }
 
