@@ -18,6 +18,7 @@ class EmployeeLeaveQuotaRecords
 {
     public function __construct(
         private CompensatoryLeaveBalanceService $compensatoryLeaveBalanceService,
+        private LeaveQuotaProrationService $leaveQuotaProrationService,
     ) {}
 
     private const MASTER_ACTION_TYPES = [0, 2];
@@ -32,6 +33,7 @@ class EmployeeLeaveQuotaRecords
 
         $year = $year ?? (int) now()->year;
         $context = $this->loadQuotaContext($employeeId, $leaveTypes->pluck('id')->all(), $year);
+        $employee = Employee::query()->find($employeeId);
         $summary = [];
         foreach ($leaveTypes as $type) {
             $leaveTypeId = (int) $type->id;
@@ -45,7 +47,16 @@ class EmployeeLeaveQuotaRecords
                 $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
                 $claimed = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 1);
             } else {
-                $maxAllowed = $this->maxAllowedDays($context, $leaveTypeId, (float) $type->annual_quota);
+                $proratedQuota = $employee
+                    ? $this->leaveQuotaProrationService->forLeaveType($employee, $type, $year)
+                    : (float) $type->annual_quota;
+                $maxAllowed = $this->maxAllowedDays(
+                    $context,
+                    $leaveTypeId,
+                    $proratedQuota,
+                    (float) $type->annual_quota,
+                    $employee ? $this->leaveQuotaProrationService->shouldProrate($type) : false
+                );
 
                 $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
                 $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
@@ -278,13 +289,20 @@ class EmployeeLeaveQuotaRecords
             return;
         }
 
-        $leaveType = LeaveType::query()
-            ->whereKey($leaveTypeId)
-            ->value('annual_quota');
+        $leaveType = LeaveType::query()->whereKey($leaveTypeId)->first();
 
         $context = $this->loadQuotaContext($employee->id, [$leaveTypeId], $year, true);
 
-        $maxAllowed = $this->maxAllowedDays($context, $leaveTypeId, (float) ($leaveType ?? 0));
+        $fallbackQuota = $leaveType
+            ? $this->leaveQuotaProrationService->forLeaveType($employee, $leaveType, $year)
+            : 0.0;
+        $maxAllowed = $this->maxAllowedDays(
+            $context,
+            $leaveTypeId,
+            $fallbackQuota,
+            $leaveType ? (float) $leaveType->annual_quota : null,
+            $leaveType ? $this->leaveQuotaProrationService->shouldProrate($leaveType) : false
+        );
         $alreadyClaimed = $this->usedDays($context, $leaveTypeId);
         $alreadyClaimed += (float) ($context['pending'][$leaveTypeId] ?? 0);
 
@@ -394,15 +412,38 @@ class EmployeeLeaveQuotaRecords
         return $totals;
     }
 
-    private function maxAllowedDays(array $context, int $leaveTypeId, float $annualQuotaFallback): float
-    {
+    /**
+     * Resolve max allowed days for a leave type.
+     *
+     * If an existing quota row still stores the full annual entitlement for a
+     * proratable (unconditional) leave type, replace it with the prorated value
+     * so mid-year joiners are not stuck on the old full quota.
+     */
+    private function maxAllowedDays(
+        array $context,
+        int $leaveTypeId,
+        float $proratedOrFallback,
+        ?float $fullAnnualQuota = null,
+        bool $shouldProrate = false
+    ): float {
         $quota = $context['quotas'][$leaveTypeId] ?? null;
+        $adjustment = (float) ($context['adjustments'][$leaveTypeId] ?? 0);
 
         if ($quota === null) {
-            return $annualQuotaFallback;
+            return $proratedOrFallback;
         }
 
-        return (float) $quota->quota + (float) ($context['adjustments'][$leaveTypeId] ?? 0);
+        $stored = (float) $quota->quota;
+
+        if (
+            $shouldProrate
+            && $fullAnnualQuota !== null
+            && abs($stored - $fullAnnualQuota) < 0.001
+        ) {
+            return $proratedOrFallback + $adjustment;
+        }
+
+        return $stored + $adjustment;
     }
 
     private function usedDays(array $context, int $leaveTypeId): float
