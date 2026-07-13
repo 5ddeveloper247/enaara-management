@@ -829,6 +829,11 @@ class EmployeeService
 
     private function buildSbuPrefix(int $sbuId): string
     {
+        $fixed = strtoupper(trim((string) config('hr.employee_code_prefix', '')));
+        if ($fixed !== '') {
+            return $fixed;
+        }
+
         $sbu = Sbu::find($sbuId);
         if (!$sbu || empty($sbu->name)) {
             return 'SBU';
