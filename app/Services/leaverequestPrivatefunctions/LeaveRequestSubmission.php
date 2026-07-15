@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\EmployeLeaveRequest;
 use App\Models\User;
 use App\Notifications\LeaveApprovalRequestToHodNotification;
+use App\Notifications\LeaveSubmittedToHrNotification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -19,6 +20,9 @@ class LeaveRequestSubmission
     private const RECOMMENDATION_ACTION_TYPE = 1;
 
     private const FINAL_APPROVAL_ACTION_TYPE = 2;
+
+    /** Seconds between each HR FYI notification to avoid flooding the queue/mailer. */
+    private const HR_NOTIFY_STAGGER_SECONDS = 15;
 
     public function __construct(
         private LeaveRequestApproverResolver $leaveRequestApproverResolver,
@@ -51,9 +55,31 @@ class LeaveRequestSubmission
         $createdRequests = $this->createManagerRequests($recommenders, $basePayload);
         $finalLeaveRequests = $this->createHodRequests($hodEmployees, $basePayload);
 
-        return $finalLeaveRequests->first()
-            ?? $createdRequests[0]
-            ?? new EmployeLeaveRequest();
+        $referenceRequest = $finalLeaveRequests->first()
+            ?? ($createdRequests[0] ?? null);
+
+        if ($referenceRequest instanceof EmployeLeaveRequest && $referenceRequest->exists) {
+            $this->notifyHrEmployeesOfSubmission($fromEmployee, $referenceRequest);
+        }
+
+        return $referenceRequest ?? new EmployeLeaveRequest();
+    }
+
+    private function notifyHrEmployeesOfSubmission(Employee $fromEmployee, EmployeLeaveRequest $leaveRequest): void
+    {
+        $this->loadLeaveRequestRelations($leaveRequest);
+
+        $hrEmployees = $this->leaveRequestApproverResolver->resolveHrEmployeesForApplicantSbu($fromEmployee);
+        if ($hrEmployees->isEmpty()) {
+            return;
+        }
+
+        foreach ($hrEmployees->values() as $index => $hrEmployee) {
+            $notification = (new LeaveSubmittedToHrNotification($leaveRequest))
+                ->delay(now()->addSeconds(((int) $index) * self::HR_NOTIFY_STAGGER_SECONDS));
+
+            $this->leaveRequestNotifier->notifyApprover($hrEmployee, $notification, true);
+        }
     }
 
     private function assertNoDateConflict(int $employeeId, Carbon $startDate, Carbon $endDate, bool $isHalfDay): void
@@ -192,7 +218,8 @@ class LeaveRequestSubmission
     private function loadLeaveRequestRelations(EmployeLeaveRequest $leaveRequest): void
     {
         $leaveRequest->load([
-            'fromEmployee:id,full_name',
+            'fromEmployee:id,full_name,employee_code,department_id',
+            'fromEmployee.department:id,name',
             'toEmployee:id,full_name',
             'leaveType:id,name',
         ]);

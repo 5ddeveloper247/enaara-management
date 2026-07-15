@@ -122,6 +122,31 @@ class LeaveRequestApproverResolver
         return $this->resolveApprovers($employee, 'min');
     }
 
+    /**
+     * Active HR-department employees in the applicant's SBU (FYI on leave submit).
+     */
+    public function resolveHrEmployeesForApplicantSbu(Employee $applicant): Collection
+    {
+        $sbuId = (int) ($applicant->sbu_id ?? 0);
+        if ($sbuId <= 0) {
+            return collect();
+        }
+
+        return Employee::query()
+            ->excludeTerminated()
+            ->where('sbu_id', $sbuId)
+            ->where('is_active', true)
+            ->where('id', '!=', (int) $applicant->id)
+            ->whereHas('department', function ($query) {
+                $query->where(function ($inner) {
+                    $inner->whereRaw('LOWER(TRIM(name)) = ?', ['human resource'])
+                        ->orWhereRaw('LOWER(TRIM(name)) = ?', ['human resources']);
+                });
+            })
+            ->orderBy('id')
+            ->get();
+    }
+
     public function notifyManager(EmployeLeaveRequest $leaveRequest, ?Employee $manager): void
     {
         if ($manager === null) {
