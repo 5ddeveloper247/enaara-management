@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeLeaveRequest;
 use App\Models\Geofence;
+use App\Models\PublicHoliday;
 use App\Models\ShiftRosterEntry;
 use App\Services\leaverequestPrivatefunctions\LeaveRequestApproverResolver;
 use Carbon\Carbon;
