@@ -327,7 +327,13 @@ class EmployeeService
     {
         $roleId = $data['role_id'] ?? $employee?->role_id;
         $role = $roleId ? Role::find($roleId) : null;
-        if ($role && $role->resolvedNumericLevel() === 3) {
+        // Check if the designation_id is explicitly provided in the data as before we are auto generating a designation for level 3 roles. If it is provided, we will not generate a new designation.
+        $hasExplicitDesignation = array_key_exists('designation_id', $data)
+        && $data['designation_id'] !== null
+        && $data['designation_id'] !== ''
+        && (int) $data['designation_id'] !== 0;
+
+        if ($role && $role->resolvedNumericLevel() === 3 && ! $hasExplicitDesignation) {
             $orgId = (int) ($data['organization_id'] ?? $employee?->organization_id ?? 0);
             $sbuId = (int) ($data['sbu_id'] ?? $employee?->sbu_id ?? 0);
             $departmentId = (int) ($data['department_id'] ?? $employee?->department_id ?? 0);
