@@ -41,7 +41,7 @@ class MonthlySummaryService
                 ->orderBy('name')
                 ->get(['id', 'sbu_id', 'name', 'floor_number'])
         )
-            ->map(fn ($f) => [
+            ->map(fn($f) => [
                 'id' => $f->id,
                 'sbu_id' => $f->sbu_id,
                 'name' => $f->name,
@@ -54,7 +54,7 @@ class MonthlySummaryService
 
         $tableLeaveTypes = $this->resolveTableLeaveTypes(
             $filters['sbu_id'],
-            $employees->pluck('sbu_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all(),
+            $employees->pluck('sbu_id')->filter()->map(fn($id) => (int) $id)->unique()->values()->all(),
         );
 
         $monthlySummary = $employees->map(function ($employee) use ($month, $tableLeaveTypes) {
@@ -62,7 +62,7 @@ class MonthlySummaryService
         })->values();
 
         $monthlySummaryLeaveTypes = $tableLeaveTypes
-            ->map(static fn (LeaveType $leaveType) => [
+            ->map(static fn(LeaveType $leaveType) => [
                 'id' => $leaveType->id,
                 'name' => $leaveType->name,
                 'code' => $leaveType->code,
@@ -93,11 +93,11 @@ class MonthlySummaryService
         $employees = $this->fetchEmployeesForSummary($filters);
         $tableLeaveTypes = $this->resolveTableLeaveTypes(
             $filters['sbu_id'],
-            $employees->pluck('sbu_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all(),
+            $employees->pluck('sbu_id')->filter()->map(fn($id) => (int) $id)->unique()->values()->all(),
         );
 
         $rows = $employees
-            ->map(fn (Employee $employee) => $this->buildEmployeeMonthlySummary($employee, $month, $tableLeaveTypes))
+            ->map(fn(Employee $employee) => $this->buildEmployeeMonthlySummary($employee, $month, $tableLeaveTypes))
             ->sortBy('employee_name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
@@ -120,7 +120,7 @@ class MonthlySummaryService
             'generated_at' => now()->format('d M Y, h:i A'),
             'filter_labels' => $this->resolveSummaryFilterLabels($filters),
             'leave_types' => $tableLeaveTypes
-                ->map(static fn (LeaveType $leaveType) => [
+                ->map(static fn(LeaveType $leaveType) => [
                     'id' => $leaveType->id,
                     'name' => $leaveType->name,
                     'code' => $leaveType->code,
@@ -162,7 +162,7 @@ class MonthlySummaryService
         $employee = Employee::with([
             'department',
             'sbu',
-            'assignedFloors' => static fn ($q) => $q->where('is_active', true)->orderBy('floor_number'),
+            'assignedFloors' => static fn($q) => $q->where('is_active', true)->orderBy('floor_number'),
             'leaveQuotas' => function ($query) use ($month) {
                 $query->where('year', Carbon::parse($month . '-01')->year)
                     ->with('leaveType');
@@ -225,6 +225,82 @@ class MonthlySummaryService
         return array_chunk($cells, 7);
     }
 
+    // old monthly attendance computation based on roster, leave and work assignment data
+    // private function computeEmployeeMonthlyAttendance(Employee $employee, string $month): array
+    // {
+    //     $startDate = Carbon::parse($month . '-01')->startOfMonth();
+    //     $endDate = $startDate->copy()->endOfMonth();
+
+    //     $holidays = $this->publicHolidayResolver->loadHolidaysForRange($startDate, $endDate);
+
+    //     $rosterEntries = ShiftRosterEntry::query()
+    //         ->where('employee_id', $employee->id)
+    //         ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()])
+    //         ->get()
+    //         ->keyBy(static fn (ShiftRosterEntry $entry) => $entry->roster_date->toDateString());
+
+    //     $leaveEntities = EmployeLeaveEntity::query()
+    //         ->where('employee_id', $employee->id)
+    //         ->whereBetween('leave_date', [$startDate->toDateString(), $endDate->toDateString()])
+    //         ->whereIn('status', [0, 1])
+    //         ->with([
+    //             'leaveType:id,name,code',
+    //             'leaveRequest:id,is_outstation_leave,is_half_day,half_day_session,leave_type_id',
+    //         ])
+    //         ->get()
+    //         ->keyBy(static fn (EmployeLeaveEntity $entity) => $entity->leave_date->toDateString());
+
+    //     $workAssignments = EmployeeWorkAssignment::query()
+    //         ->where('employee_id', $employee->id)
+    //         ->whereBetween('assignment_date', [$startDate->toDateString(), $endDate->toDateString()])
+    //         ->get()
+    //         ->keyBy(static fn (EmployeeWorkAssignment $assignment) => $assignment->assignment_date->toDateString());
+
+    //     $workingDays = $this->employeeWorkingScheduleService->resolveWorkingDays($employee);
+    //     $isShiftBased = $this->employeeWorkingScheduleService->isShiftBased($employee);
+
+    //     $days = [];
+    //     $stats = [
+    //         'present' => 0,
+    //         'absent' => 0,
+    //         'half_days' => 0,
+    //         'leave' => 0,
+    //         'off' => 0,
+    //         'holiday' => 0,
+    //         'late' => 0,
+    //     ];
+
+    //     $cursor = $startDate->copy();
+    //     while ($cursor->lte($endDate)) {
+    //         $dateStr = $cursor->toDateString();
+    //         $day = $this->resolveDayStatus(
+    //             $employee,
+    //             $cursor,
+    //             $isShiftBased,
+    //             $workingDays,
+    //             $holidays,
+    //             $rosterEntries->get($dateStr),
+    //             $leaveEntities->get($dateStr),
+    //         );
+
+    //         $day = $this->applyFutureDayContext($day, $cursor);
+    //         $day = $this->applyWorkAssignmentOverlay($day, $workAssignments->get($dateStr), $isShiftBased);
+    //         $day['is_absent_markable'] = $this->isAbsentMarkable($day, $cursor);
+
+    //         $days[] = $day;
+    //         $this->incrementCalendarStat($stats, $day);
+
+    //         $cursor->addDay();
+    //     }
+
+    //     return [
+    //         'days' => $days,
+    //         'stats' => $stats,
+    //     ];
+    // }
+
+    //new monthly attendance computation based on roster, leave and work assignment data 
+
     private function computeEmployeeMonthlyAttendance(Employee $employee, string $month): array
     {
         $startDate = Carbon::parse($month . '-01')->startOfMonth();
@@ -236,9 +312,9 @@ class MonthlySummaryService
             ->where('employee_id', $employee->id)
             ->whereBetween('roster_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get()
-            ->keyBy(static fn (ShiftRosterEntry $entry) => $entry->roster_date->toDateString());
+            ->keyBy(static fn(ShiftRosterEntry $entry) => $entry->roster_date->toDateString());
 
-        $leaveEntities = EmployeLeaveEntity::query()
+        $leaveEntitiesCollection = EmployeLeaveEntity::query()
             ->where('employee_id', $employee->id)
             ->whereBetween('leave_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->whereIn('status', [0, 1])
@@ -246,14 +322,35 @@ class MonthlySummaryService
                 'leaveType:id,name,code',
                 'leaveRequest:id,is_outstation_leave,is_half_day,half_day_session,leave_type_id',
             ])
-            ->get()
-            ->keyBy(static fn (EmployeLeaveEntity $entity) => $entity->leave_date->toDateString());
+            ->get();
+
+        $leaveUsage = [];
+        foreach ($leaveEntitiesCollection as $leaveEntity) {
+            $resolved = RosterLeaveCellResolver::fromEntity($leaveEntity);
+            if ($resolved['isWeeklyRest']) {
+                continue;
+            }
+
+            $leaveTypeId = (int) ($leaveEntity->leave_type_id
+                ?: $leaveEntity->leaveRequest?->leave_type_id
+                ?: 0);
+
+            if ($leaveTypeId <= 0) {
+                continue;
+            }
+
+            $key = (string) $leaveTypeId;
+            $leaveUsage[$key] = ($leaveUsage[$key] ?? 0) + (float) $leaveEntity->duration;
+        }
+
+        $leaveEntities = $leaveEntitiesCollection
+            ->keyBy(static fn(EmployeLeaveEntity $entity) => $entity->leave_date->toDateString());
 
         $workAssignments = EmployeeWorkAssignment::query()
             ->where('employee_id', $employee->id)
             ->whereBetween('assignment_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get()
-            ->keyBy(static fn (EmployeeWorkAssignment $assignment) => $assignment->assignment_date->toDateString());
+            ->keyBy(static fn(EmployeeWorkAssignment $assignment) => $assignment->assignment_date->toDateString());
 
         $workingDays = $this->employeeWorkingScheduleService->resolveWorkingDays($employee);
         $isShiftBased = $this->employeeWorkingScheduleService->isShiftBased($employee);
@@ -295,8 +392,11 @@ class MonthlySummaryService
         return [
             'days' => $days,
             'stats' => $stats,
+            'leave_usage' => $leaveUsage,
         ];
     }
+
+
 
     private function resolveDayStatus(
         Employee $employee,
@@ -734,7 +834,7 @@ class MonthlySummaryService
         $employeesQuery = Employee::with([
             'sbu',
             'department',
-            'assignedFloors' => static fn ($q) => $q->where('is_active', true)->orderBy('floor_number'),
+            'assignedFloors' => static fn($q) => $q->where('is_active', true)->orderBy('floor_number'),
             'leaveQuotas' => function ($query) use ($year) {
                 $query->where('year', $year)
                     ->with('leaveType');
@@ -754,7 +854,7 @@ class MonthlySummaryService
         if (! empty($filters['floor_id'])) {
             $employeesQuery->whereHas(
                 'assignedFloors',
-                static fn ($q) => $q->where('sbu_floors.id', (int) $filters['floor_id'])
+                static fn($q) => $q->where('sbu_floors.id', (int) $filters['floor_id'])
             );
         }
 
@@ -823,24 +923,71 @@ class MonthlySummaryService
             ->orderBy('name')
             ->get(['id', 'name', 'code']);
     }
+    //old monthly summary builder based on employee leave quotas used annually and attendance stats
+    // private function buildEmployeeMonthlySummary(Employee $employee, string $month, Collection $tableLeaveTypes): array
+    // {
+    //     $startDate = Carbon::parse($month . '-01')->startOfMonth();
+    //     $quotaByLeaveType = $employee->leaveQuotas->keyBy('leave_type_id');
 
+    //     $leaveUsage = $tableLeaveTypes->mapWithKeys(function (LeaveType $leaveType) use ($quotaByLeaveType) {
+    //         return [
+    //             (string) $leaveType->id => (float) ($quotaByLeaveType->get($leaveType->id)?->used ?? 0),
+    //         ];
+    //     })->all();
+
+    //     $floors = $employee->relationLoaded('assignedFloors') ? $employee->assignedFloors : collect();
+    //     $floorNames = $floors->pluck('name')->filter()->implode(', ');
+    //     $sbuFloorIds = $floors->pluck('id')->map(static fn ($id) => (string) $id)->values()->all();
+    //     $firstFloor = $floors->first();
+    //     $attendance = $this->computeEmployeeMonthlyAttendance($employee, $month);
+    //     $stats = $attendance['stats'];
+
+    //     return [
+    //         'employee_id' => $employee->id,
+    //         'employee_code' => $employee->employee_code ?? 'N/A',
+    //         'employee_name' => $employee->full_name ?? 'N/A',
+    //         'employee_avatar' => strtoupper(substr($employee->full_name ?? 'E', 0, 1)),
+    //         'department' => $employee->department->name ?? 'N/A',
+    //         'department_id' => $employee->department_id,
+    //         'sbu' => $employee->sbu->name ?? 'N/A',
+    //         'sbu_id' => $employee->sbu_id,
+    //         'floor_name' => $floorNames !== '' ? $floorNames : 'N/A',
+    //         'sbu_floor_ids' => $sbuFloorIds,
+    //         'floor_number' => $firstFloor?->floor_number,
+
+    //         'total_days' => $startDate->daysInMonth,
+    //         'present' => $stats['present'],
+    //         'absent' => $stats['absent'],
+    //         'half_days' => $stats['half_days'],
+    //         'leave_usage' => $leaveUsage,
+
+    //         'late_arrivals' => 0,
+    //         'early_departures' => 0,
+    //         'zone2_verification' => 'N/A',
+    //         'regularization' => 0,
+    //     ];
+    // }
+
+    //new monthly summary builder based on employee leave usage on selected month computed from attendance stats
     private function buildEmployeeMonthlySummary(Employee $employee, string $month, Collection $tableLeaveTypes): array
     {
         $startDate = Carbon::parse($month . '-01')->startOfMonth();
-        $quotaByLeaveType = $employee->leaveQuotas->keyBy('leave_type_id');
-
-        $leaveUsage = $tableLeaveTypes->mapWithKeys(function (LeaveType $leaveType) use ($quotaByLeaveType) {
-            return [
-                (string) $leaveType->id => (float) ($quotaByLeaveType->get($leaveType->id)?->used ?? 0),
-            ];
-        })->all();
 
         $floors = $employee->relationLoaded('assignedFloors') ? $employee->assignedFloors : collect();
         $floorNames = $floors->pluck('name')->filter()->implode(', ');
-        $sbuFloorIds = $floors->pluck('id')->map(static fn ($id) => (string) $id)->values()->all();
+        $sbuFloorIds = $floors->pluck('id')->map(static fn($id) => (string) $id)->values()->all();
         $firstFloor = $floors->first();
         $attendance = $this->computeEmployeeMonthlyAttendance($employee, $month);
         $stats = $attendance['stats'];
+        $usageByType = $attendance['leave_usage'] ?? [];
+
+        $leaveUsage = $tableLeaveTypes->mapWithKeys(function (LeaveType $leaveType) use ($usageByType) {
+            $key = (string) $leaveType->id;
+
+            return [
+                $key => (float) ($usageByType[$key] ?? 0),
+            ];
+        })->all();
 
         return [
             'employee_id' => $employee->id,
