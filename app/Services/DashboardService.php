@@ -26,8 +26,7 @@ class DashboardService
         private readonly EmployeeViewerScopeService $viewerScope,
         private readonly EmployeeWorkingScheduleService $employeeWorkingScheduleService,
         private readonly PublicHolidayResolver $publicHolidayResolver,
-    ) {
-    }
+    ) {}
 
     public function index()
     {
@@ -74,13 +73,13 @@ class DashboardService
         $isSystemAdmin = $viewer->isSystemAdminUser();
 
         $query = EmployeLeaveRequest::with([
-                'fromEmployee:id,full_name,department_id',
-                'fromEmployee.mediaFiles',
-                'fromUser:id,name,employee_id',
-                'fromUser.employee:id,full_name',
-                'toEmployee:id,full_name',
-                'leaveType:id,name',
-            ])
+            'fromEmployee:id,full_name,department_id',
+            'fromEmployee.mediaFiles',
+            'fromUser:id,name,employee_id',
+            'fromUser.employee:id,full_name',
+            'toEmployee:id,full_name',
+            'leaveType:id,name',
+        ])
             ->where('action_type', self::FINAL_APPROVAL_ACTION_TYPE)
             ->where('status', 0);
 
@@ -131,7 +130,7 @@ class DashboardService
             ];
         })->values()->all();
 
-        $canAct = collect($items)->contains(fn (array $item) => $item['can_act']);
+        $canAct = collect($items)->contains(fn(array $item) => $item['can_act']);
 
         return [
             'items' => $items,
@@ -151,7 +150,7 @@ class DashboardService
 
         return $this->shiftRosterApprovalService
             ->getPendingForDashboardViewer($viewerEmployee, $user)
-            ->map(fn (array $item) => $this->shiftRosterApprovalService->formatPendingListItem(
+            ->map(fn(array $item) => $this->shiftRosterApprovalService->formatPendingListItem(
                 $item['request'],
                 $item['segment'] ?? null
             ))
@@ -172,15 +171,15 @@ class DashboardService
                     $q2->where('is_recurring', false)
                         ->where(function ($q3) use ($today, $end) {
                             $q3->where(function ($q4) use ($today, $end) {
-                                    $q4->where('start_date', '>=', $today)
-                                       ->where('start_date', '<=', $end);
-                                })
+                                $q4->where('start_date', '>=', $today)
+                                    ->where('start_date', '<=', $end);
+                            })
                                 ->orWhere(function ($q4) use ($today) {
                                     $q4->where('start_date', '<', $today)
-                                       ->where('end_date', '>=', $today);
+                                        ->where('end_date', '>=', $today);
                                 });
                         });
-                // Recurring: this year's occurrence falls within the window
+                    // Recurring: this year's occurrence falls within the window
                 })->orWhere(function ($q2) use ($today, $end) {
                     $q2->where('is_recurring', true)
                         ->whereRaw(
@@ -226,7 +225,62 @@ class DashboardService
             ];
         })->values()->all();
     }
+    //old function of who is out today where there is no consideration of roster and working days, only leave requests are considered
+    // public function getWhoIsOutToday(): array
+    // {
+    //     $viewer = Auth::user();
+    //     $viewerEmployee = $viewer?->employee;
 
+    //     if (! $viewerEmployee) {
+    //         return [];
+    //     }
+
+    //     $today = now()->toDateString();
+    //     $requests = EmployeLeaveRequest::with([
+    //             'fromEmployee:id,first_name,middle_name,last_name,full_name,roster_display_middle_name,department_id',
+    //             'fromEmployee.mediaFiles',
+    //             'leaveType:id,name,code',
+    //         ])
+    //         ->where('status', 3)
+    //         ->whereIn('action_type', [0, 2])
+    //         ->where('start_date', '<=', $today)
+    //         ->where('end_date', '>=', $today)
+    //         ->when(
+    //             ! $viewer->isSystemAdminUser(),
+    //             fn ($query) => $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee)
+    //         )
+    //         ->get()
+    //         ->unique(fn (EmployeLeaveRequest $request) => (int) $request->from_employee_id);
+
+    //     return $requests->map(function ($r) {
+    //         $employee = $r->fromEmployee;
+    //         $name     = $employee?->full_name ?? 'Unknown';
+    //         $displayName = $employee ? $employee->rosterDisplayName() : 'Unknown';
+
+    //         $words = preg_split('/\s+/u', trim($displayName), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    //         $initials = strtoupper(
+    //             substr($words[0] ?? '', 0, 1) . substr($words[1] ?? '', 0, 1)
+    //         );
+
+    //         $leaveTypeName = optional($r->leaveType)->name ?? 'Leave';
+    //         $leaveTypeCode = trim((string) (optional($r->leaveType)->code ?? ''));
+
+    //         $avatarUrl = $this->resolveEmployeeAvatarUrl($r->fromEmployee);
+
+    //         return [
+    //             'id'               => $r->id,
+    //             'name'             => $name,
+    //             'short_name'       => $displayName,
+    //             'initials'         => $initials,
+    //             'avatar_url'       => $avatarUrl,
+    //             'leave_type'       => $leaveTypeName,
+    //             'leave_type_short' => $leaveTypeCode !== '' ? $leaveTypeCode : $leaveTypeName,
+    //             'status_dot'       => 'on-leave',
+    //         ];
+    //     })->values()->all();
+    // }
+
+    // New function of who is out today where roster and working days are considered along with leave requests
     public function getWhoIsOutToday(): array
     {
         $viewer = Auth::user();
@@ -236,49 +290,140 @@ class DashboardService
             return [];
         }
 
-        $today = now()->toDateString();
-        $requests = EmployeLeaveRequest::with([
-                'fromEmployee:id,first_name,middle_name,last_name,full_name,roster_display_middle_name,department_id',
-                'fromEmployee.mediaFiles',
-                'leaveType:id,name,code',
-            ])
+        $today = Carbon::today();
+        $todayStr = $today->toDateString();
+
+        // ── Query 1: Approved leave requests covering today ──────────────
+        $leaveQuery = EmployeLeaveRequest::with([
+            'fromEmployee:id,first_name,middle_name,last_name,full_name,roster_display_middle_name,department_id,organization_id,sbu_id,engagement_mode,working_days,hybrid_days,hybrid_offsite_days',
+            'fromEmployee.mediaFiles',
+            'leaveType:id,name,code',
+        ])
             ->where('status', 3)
             ->whereIn('action_type', [0, 2])
-            ->where('start_date', '<=', $today)
-            ->where('end_date', '>=', $today)
+            ->where('start_date', '<=', $todayStr)
+            ->where('end_date', '>=', $todayStr)
             ->when(
                 ! $viewer->isSystemAdminUser(),
-                fn ($query) => $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee)
-            )
-            ->get()
-            ->unique(fn (EmployeLeaveRequest $request) => (int) $request->from_employee_id);
-
-        return $requests->map(function ($r) {
-            $employee = $r->fromEmployee;
-            $name     = $employee?->full_name ?? 'Unknown';
-            $displayName = $employee ? $employee->rosterDisplayName() : 'Unknown';
-
-            $words = preg_split('/\s+/u', trim($displayName), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-            $initials = strtoupper(
-                substr($words[0] ?? '', 0, 1) . substr($words[1] ?? '', 0, 1)
+                fn($query) => $this->scopePendingApprovalsByApplicantDepartment($query, $viewerEmployee)
             );
+
+        $leaveRequests = $leaveQuery->get()
+            ->unique(fn(EmployeLeaveRequest $request) => (int) $request->from_employee_id)
+            ->values();
+
+        $onLeaveEmployeeIds = $leaveRequests
+            ->pluck('from_employee_id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+
+        $items = $leaveRequests->map(function ($r) {
+            $employee    = $r->fromEmployee;
+            $displayName = $employee ? $employee->rosterDisplayName() : ($employee?->full_name ?? 'Unknown');
 
             $leaveTypeName = optional($r->leaveType)->name ?? 'Leave';
             $leaveTypeCode = trim((string) (optional($r->leaveType)->code ?? ''));
 
-            $avatarUrl = $this->resolveEmployeeAvatarUrl($r->fromEmployee);
-
             return [
-                'id'               => $r->id,
-                'name'             => $name,
+                'id'               => 'leave-' . $r->id,
+                'employee_id'      => (int) $r->from_employee_id,
+                'name'             => $employee?->full_name ?? 'Unknown',
                 'short_name'       => $displayName,
-                'initials'         => $initials,
-                'avatar_url'       => $avatarUrl,
+                'initials'         => $this->initialsFromName($displayName),
+                'avatar_url'       => $this->resolveEmployeeAvatarUrl($employee),
                 'leave_type'       => $leaveTypeName,
                 'leave_type_short' => $leaveTypeCode !== '' ? $leaveTypeCode : $leaveTypeName,
                 'status_dot'       => 'on-leave',
             ];
         })->values()->all();
+
+        // ── Query 2: Active employees (excluding those already on leave) ──
+        $employees = $this->baseDashboardEmployeeQuery()
+            ->where('is_active', true)
+            ->when($onLeaveEmployeeIds !== [], fn($q) => $q->whereNotIn('id', $onLeaveEmployeeIds))
+            ->with('mediaFiles')
+            ->get([
+                'id',
+                'first_name',
+                'middle_name',
+                'last_name',
+                'full_name',
+                'roster_display_middle_name',
+                'department_id',
+                'organization_id',
+                'sbu_id',
+                'engagement_mode',
+                'working_days',
+                'hybrid_days',
+                'hybrid_offsite_days',
+            ]);
+
+        if ($employees->isEmpty()) {
+            return $items;
+        }
+
+        // ── Query 3: Today's roster entries for those employees, batched ──
+        $rosterEntries = ShiftRosterEntry::query()
+            ->whereIn('employee_id', $employees->pluck('id'))
+            ->whereDate('roster_date', $todayStr)
+            ->whereNull('deleted_at')
+            ->get()
+            ->keyBy('employee_id');
+
+        // ── In-memory pass — no queries inside this loop ───────────────────
+        foreach ($employees as $employee) {
+            $rosterEntry = $rosterEntries->get($employee->id);
+
+            if (! $this->isEmployeeOffToday($employee, $rosterEntry)) {
+                continue;
+            }
+
+            $displayName = $employee->rosterDisplayName();
+
+            $items[] = [
+                'id'               => 'off-' . $employee->id,
+                'employee_id'      => (int) $employee->id,
+                'name'             => $employee->full_name ?? 'Unknown',
+                'short_name'       => $displayName,
+                'initials'         => $this->initialsFromName($displayName),
+                'avatar_url'       => $this->resolveEmployeeAvatarUrl($employee),
+                'leave_type'       => 'Day Off',
+                'leave_type_short' => 'Off',
+                'status_dot'       => 'day-off',
+            ];
+        }
+
+        return collect($items)->values()->all();
+    }
+
+    /**
+     * True when the employee is off today per roster status or their
+     * weekly working-days schedule (hybrid/standard). Never queries the DB —
+     * $rosterEntry must already be preloaded by the caller.
+     */
+    private function isEmployeeOffToday(Employee $employee, ?ShiftRosterEntry $rosterEntry): bool
+    {
+        if ($rosterEntry) {
+            return strtolower(trim((string) $rosterEntry->status)) === 'off';
+        }
+
+        // No roster entry today. Shift-based staff without an entry simply
+        // aren't scheduled — that's not the same as "off" — so only
+        // standard/hybrid employees are checked against their weekly days.
+        if ($this->employeeWorkingScheduleService->isShiftBased($employee)) {
+            return false;
+        }
+
+        $workingDays = $this->employeeWorkingScheduleService->resolveWorkingDays($employee);
+
+        return $this->employeeWorkingScheduleService->isWeeklyOffDay(Carbon::today(), $workingDays);
+    }
+
+    private function initialsFromName(string $name): string
+    {
+        $words = preg_split('/\s+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return strtoupper(substr($words[0] ?? '', 0, 1) . substr($words[1] ?? '', 0, 1));
     }
 
     public function getDepartmentDistributionData(): array
@@ -388,7 +533,7 @@ class DashboardService
         for ($i = 0; $i < $days; $i++) {
             $currentDate = $startDate->copy()->addDays($i);
             $date   = $currentDate->toDateString();
-            
+
             if ($days === 14) {
                 $label = $currentDate->format('D d');
             } else {
@@ -862,7 +1007,7 @@ class DashboardService
             return $adminDepartmentsQuery
                 ->distinct()
                 ->pluck('department_id')
-                ->map(fn ($id) => (int) $id)
+                ->map(fn($id) => (int) $id)
                 ->values()
                 ->all();
         }
