@@ -289,9 +289,37 @@ class EmployeeLeaveQuotaRecords
             return;
         }
 
+        //old code of checking the leave quota on leave submission
+        // $leaveType = LeaveType::query()->whereKey($leaveTypeId)->first();
+
+        // $context = $this->loadQuotaContext($employee->id, [$leaveTypeId], $year, true);
+
+        // $fallbackQuota = $leaveType
+        //     ? $this->leaveQuotaProrationService->forLeaveType($employee, $leaveType, $year)
+        //     : 0.0;
+        // $maxAllowed = $this->maxAllowedDays(
+        //     $context,
+        //     $leaveTypeId,
+        //     $fallbackQuota,
+        //     $leaveType ? (float) $leaveType->annual_quota : null,
+        //     $leaveType ? $this->leaveQuotaProrationService->shouldProrate($leaveType) : false
+        // );
+        // $alreadyClaimed = $this->usedDays($context, $leaveTypeId);
+        // $alreadyClaimed += (float) ($context['pending'][$leaveTypeId] ?? 0);
+
+        // if (($alreadyClaimed + $requestedDays) > $maxAllowed) {
+        //     $remaining = max(0, $maxAllowed - $alreadyClaimed);
+
+        //     throw ValidationException::withMessages([
+        //         'leave_type_id' => "Insufficient leave balance. You have {$remaining} day(s) remaining for this leave type in {$year}, but you are requesting {$requestedDays} day(s).",
+        //     ]);
+        // }
+
+        //new code is to check the leave balance on leave submission
+
         $leaveType = LeaveType::query()->whereKey($leaveTypeId)->first();
 
-        $context = $this->loadQuotaContext($employee->id, [$leaveTypeId], $year, true);
+        $context = $this->loadQuotaContext($employee->id, [$leaveTypeId], $year);
 
         $fallbackQuota = $leaveType
             ? $this->leaveQuotaProrationService->forLeaveType($employee, $leaveType, $year)
@@ -303,17 +331,34 @@ class EmployeeLeaveQuotaRecords
             $leaveType ? (float) $leaveType->annual_quota : null,
             $leaveType ? $this->leaveQuotaProrationService->shouldProrate($leaveType) : false
         );
-        $alreadyClaimed = $this->usedDays($context, $leaveTypeId);
-        $alreadyClaimed += (float) ($context['pending'][$leaveTypeId] ?? 0);
 
-        if (($alreadyClaimed + $requestedDays) > $maxAllowed) {
-            $remaining = max(0, $maxAllowed - $alreadyClaimed);
+        // Same logic as buildSummaryForEmployee / frontend display
+        $reserved = $this->reservedDaysAgainstQuota($employee->id, $leaveTypeId, $year);
+
+        if (($reserved + $requestedDays) > $maxAllowed) {
+            $remaining = max(0, $maxAllowed - $reserved);
 
             throw ValidationException::withMessages([
                 'leave_type_id' => "Insufficient leave balance. You have {$remaining} day(s) remaining for this leave type in {$year}, but you are requesting {$requestedDays} day(s).",
             ]);
         }
     }
+
+    //new function
+
+        /**
+     * Days already consuming quota for the year.
+     * Matches buildSummaryForEmployee "used" / Balance Tracker display.
+     */
+    public function reservedDaysAgainstQuota(int $employeeId, int $leaveTypeId, int $year): float
+    {
+        $applied = $this->sumDedupedRequestDuration($employeeId, $leaveTypeId, $year, [0, 1], null);
+        $approved = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 0);
+        $claimed = $this->sumLeaveEntityDurationByStatus($employeeId, $leaveTypeId, $year, 1);
+
+        return $applied + $approved + $claimed;
+    }
+    
 
     public function rowKey(int $employeeId, int $leaveTypeId, int $year): string
     {
