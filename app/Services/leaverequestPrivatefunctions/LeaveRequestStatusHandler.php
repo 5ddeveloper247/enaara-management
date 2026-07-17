@@ -11,6 +11,8 @@ use App\Notifications\LeaveHrDelegatedActionNotification;
 use App\Notifications\LeaveStatusUpdateNotification;
 use App\Services\AuditTrailService;
 use Carbon\Carbon;
+use App\Models\Employee;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,6 +28,7 @@ class LeaveRequestStatusHandler
         private AuditTrailService $auditTrailService,
         private LeaveRequestApproverResolver $leaveRequestApproverResolver,
         private LeaveRequestNotifier $leaveRequestNotifier,
+        private EmployeeLeaveQuotaRecords $employeeLeaveQuotaRecords,
     ) {}
 
     public function handle(Request $request, int $leaveRequestId)
@@ -53,6 +56,26 @@ class LeaveRequestStatusHandler
             return $this->successResponse($request, 'Leave request has been deleted successfully.');
         }
 
+        //new code start here
+        if (
+            $newStatus === 3
+            && (int) $leaveRequest->action_type === self::FINAL_APPROVAL_ACTION_TYPE
+            && (int) $currentStatus !== 3
+        ) {
+            $fromEmployee = Employee::find($leaveRequest->from_employee_id);
+            if ($fromEmployee) {
+                try {
+                    $this->employeeLeaveQuotaRecords->assertCanApproveDays($fromEmployee, $leaveRequest);
+                } catch (ValidationException $e) {
+                    $message = collect($e->errors())->flatten()->first()
+                        ?? 'Insufficient leave balance to approve this request.';
+                    return $this->deny($request, $message);
+                }
+            }
+        }
+
+        //new code end here
+        
         $leaveRequest->status = $newStatus;
 
         $actorEmployee = $currentUser?->employee;

@@ -358,7 +358,74 @@ class EmployeeLeaveQuotaRecords
 
         return $applied + $approved + $claimed;
     }
-    
+
+        /**
+     * Balance check when a final-approval row is being approved (status → 3).
+     * Pending/recommended days are already in reserved (applied); do not add them again.
+     */
+    public function assertCanApproveDays(Employee $employee, EmployeLeaveRequest $leaveRequest): void
+    {
+        $leaveTypeId = (int) $leaveRequest->leave_type_id;
+        $year = (int) Carbon::parse($leaveRequest->start_date)->year;
+        $currentStatus = (int) $leaveRequest->status;
+
+        $billableDuration = max(
+            0.0,
+            (float) $leaveRequest->duration - (float) ($leaveRequest->exempt_days ?? 0)
+        );
+
+        if ($this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId)) {
+            $remaining = $this->compensatoryLeaveBalanceService->remainingDays(
+                $employee->id,
+                $year,
+                Carbon::parse($leaveRequest->start_date)->startOfDay()
+            );
+
+            if ($billableDuration > $remaining) {
+                throw ValidationException::withMessages([
+                    'status' => "Insufficient leave balance. Employee has {$remaining} day(s) remaining, but this request needs {$billableDuration} day(s).",
+                ]);
+            }
+
+            return;
+        }
+
+        $leaveType = LeaveType::query()->whereKey($leaveTypeId)->first();
+        $context = $this->loadQuotaContext($employee->id, [$leaveTypeId], $year);
+
+        $fallbackQuota = $leaveType
+            ? $this->leaveQuotaProrationService->forLeaveType($employee, $leaveType, $year)
+            : 0.0;
+        $maxAllowed = $this->maxAllowedDays(
+            $context,
+            $leaveTypeId,
+            $fallbackQuota,
+            $leaveType ? (float) $leaveType->annual_quota : null,
+            $leaveType ? $this->leaveQuotaProrationService->shouldProrate($leaveType) : false
+        );
+        $reserved = $this->reservedDaysAgainstQuota($employee->id, $leaveTypeId, $year);
+
+        $wouldExceed = false;
+        $remaining = 0.0;
+
+        if (in_array($currentStatus, [0, 1], true)) {
+            // Already counted in reserved via pending/recommended requests
+            $wouldExceed = $reserved > $maxAllowed;
+            $remaining = max(0, $maxAllowed - $reserved);
+        } elseif (in_array($currentStatus, [4, 5], true)) {
+            // Rejected/cancelled: days are not currently reserved
+            $wouldExceed = ($reserved + $billableDuration) > $maxAllowed;
+            $remaining = max(0, $maxAllowed - $reserved);
+        }
+
+        if ($wouldExceed) {
+            throw ValidationException::withMessages([
+                'status' => "Insufficient leave balance. Employee has {$remaining} day(s) remaining for this leave type in {$year}, but this approval needs {$billableDuration} day(s).",
+            ]);
+        }
+    }
+
+    //new code end here
 
     public function rowKey(int $employeeId, int $leaveTypeId, int $year): string
     {
