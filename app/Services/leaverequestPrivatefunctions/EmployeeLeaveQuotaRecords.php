@@ -375,10 +375,18 @@ class EmployeeLeaveQuotaRecords
         );
 
         if ($this->compensatoryLeaveBalanceService->isCompensatoryLeaveTypeId($leaveTypeId)) {
+            // For pending/recommended requests the request's own days are already
+            // counted as a usage event in the FIFO snapshot, so exclude the request
+            // itself to avoid double-counting it against the balance.
+            $excludeRequestId = in_array($currentStatus, [0, 1], true)
+                ? (int) $leaveRequest->id
+                : null;
+
             $remaining = $this->compensatoryLeaveBalanceService->remainingDays(
                 $employee->id,
                 $year,
-                Carbon::parse($leaveRequest->start_date)->startOfDay()
+                Carbon::parse($leaveRequest->start_date)->startOfDay(),
+                $excludeRequestId
             );
 
             if ($billableDuration > $remaining) {

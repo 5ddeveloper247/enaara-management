@@ -39,8 +39,12 @@ class CompensatoryLeaveBalanceService
         return max(0.0, $validEarned - $remaining);
     }
 
-    public function remainingDays(int $employeeId, ?int $year = null, ?Carbon $asOf = null): float
-    {
+    public function remainingDays(
+        int $employeeId,
+        ?int $year = null,
+        ?Carbon $asOf = null,
+        ?int $excludeRequestId = null
+    ): float {
         $cplType = $this->compensatoryLeaveAwardService->resolveCompensatoryLeaveType();
 
         if ($cplType === null) {
@@ -50,7 +54,7 @@ class CompensatoryLeaveBalanceService
         $asOf = ($asOf ?? Carbon::today())->copy()->startOfDay();
         $year = $year ?? (int) $asOf->year;
 
-        $snapshot = $this->buildFifoSnapshot($employeeId, (int) $cplType->id, $year, $asOf);
+        $snapshot = $this->buildFifoSnapshot($employeeId, (int) $cplType->id, $year, $asOf, $excludeRequestId);
 
         return (float) count(array_filter(
             $snapshot['slots'],
